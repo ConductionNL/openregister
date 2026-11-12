@@ -15,7 +15,7 @@
  browser at all: the whole point of the broker is that the secret stays server-side
  and OpenRegister makes the outbound call.
 
- @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+ @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 -->
 <template>
 	<NcAppSettingsSection
@@ -136,6 +136,30 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 
+/**
+ * Fetch the caller's credentials and the providers that can be connected.
+ *
+ * @return {Promise<Array<object>>} The two axios responses.
+ */
+function fetchCredentialsAndProviders() {
+	return Promise.all([
+		axios.get(generateUrl('/apps/openregister/api/credentials')),
+		axios.get(generateUrl('/apps/openregister/api/credentials/providers')),
+	])
+}
+
+/**
+ * The OAuth2 token-set entries of a credentials answer.
+ *
+ * @param {object} response The axios response.
+ * @return {Array<object>} The entries.
+ */
+function tokenSetsOf(response) {
+	return (response.data?.results ?? []).filter(
+		(entry) => entry.kind === 'oauth2-token-set',
+	)
+}
+
 export default {
 	name: 'OAuth2ConnectionsSection',
 	components: {
@@ -166,7 +190,7 @@ export default {
 		 *
 		 * @return {boolean} True when a server address is required.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		needsInstanceHost() {
 			return Boolean(this.chosenProvider?.requiresInstanceBaseUrl)
@@ -185,24 +209,15 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once both are loaded.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		async load() {
 			this.loading = true
 			this.error = ''
 			try {
-				const [credentials, providers] = await Promise.all([
-					axios.get(generateUrl('/apps/openregister/api/credentials')),
-					axios.get(
-						generateUrl('/apps/openregister/api/credentials/providers'),
-					),
-				])
-				this.connections = (credentials.data?.results ?? []).filter(
-					(entry) => entry.kind === 'oauth2-token-set',
-				)
-				this.providers = (providers.data?.results ?? []).filter(
-					(entry) => entry.kind === 'oauth2-token-set',
-				)
+				const [credentials, providers] = await fetchCredentialsAndProviders()
+				this.connections = tokenSetsOf(credentials)
+				this.providers = tokenSetsOf(providers)
 			} catch {
 				this.error = t(
 					'openregister',
@@ -217,7 +232,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the browser has been sent onward.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		async connect() {
 			await this.startFlow({
@@ -233,7 +248,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the browser has been sent onward.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		async reconnect(connection) {
 			await this.startFlow({
@@ -250,7 +265,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the list has been reloaded.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		async disconnect(connection) {
 			this.busy = true
@@ -275,7 +290,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once the browser has been sent onward.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		async startFlow(payload) {
 			this.busy = true
@@ -335,7 +350,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		navigateTo(url) {
 			window.location.href = url
@@ -348,7 +363,7 @@ export default {
 		 *
 		 * @return {string} The handle.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		handleOf(connection) {
 			return (
@@ -363,7 +378,7 @@ export default {
 		 *
 		 * @return {string} The scopes.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		scopesOf(connection) {
 			return (connection.scopes ?? []).join(', ')
@@ -376,7 +391,7 @@ export default {
 		 *
 		 * @return {string} The expiry.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		expiryOf(connection) {
 			if (!connection.expiresAt) {
@@ -394,7 +409,7 @@ export default {
 		 *
 		 * @return {string} The label.
 		 *
-		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+		 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
 		 */
 		statusLabel(status) {
 			const labels = {

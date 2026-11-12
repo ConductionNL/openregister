@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
  */
 
@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
@@ -55,9 +56,35 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * Save-time survival of the hierarchy annotation and the department matrix.
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaComposition
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ParentReference
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
  */
 class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 
@@ -70,14 +97,18 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 		parent::setUp();
 
 		$this->mapper = new SchemaMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->createMock(IDBConnection::class),
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 
@@ -110,7 +141,7 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	private function validateHierarchy(Schema $schema): void {
-		$method = new ReflectionMethod(SchemaMapper::class, 'validateHierarchyAnnotation');
+		$method = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$method->invoke($this->mapper, $schema);
 	}//end validateHierarchy()
 
@@ -192,9 +223,14 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	public function testAWellFormedHierarchySaves(): void {
-		$this->validateHierarchy($this->zaakWith(['parent' => 'hoofdzaak', 'maxDepth' => 3]));
+		$refusal = null;
+		try {
+			$this->validateHierarchy($this->zaakWith(['parent' => 'hoofdzaak', 'maxDepth' => 3]));
+		} catch (Exception $e) {
+			$refusal = $e->getMessage();
+		}
 
-		$this->addToAssertionCount(1);
+		$this->assertNull($refusal, 'A well-formed hierarchy was refused at save.');
 	}//end testAWellFormedHierarchySaves()
 
 	/**
@@ -230,9 +266,16 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 			]
 		);
 
-		$this->validateHierarchy($schema);
+		$refusal = null;
+		try {
+			$this->validateHierarchy($schema);
+		} catch (Exception $e) {
+			$refusal = $e->getMessage();
+		}
 
-		$this->addToAssertionCount(1);
+		// The pair is testAHierarchyPointingAtAnotherSchemaIsRefusedAtSave: a
+		// `$ref` that names a different schema is refused by the same check.
+		$this->assertNull($refusal, 'A self-reference spelt as the schema id was refused at save.');
 	}//end testASelfReferenceSpeltAsTheSchemaIdIsAccepted()
 
 	/**
@@ -319,6 +362,304 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	}//end testAPropertyThatAuditsItsRevealsCanBeSaved()
 
 	/**
+	 * A property shown masked until it is revealed can be saved.
+	 *
+	 * `reveal: explicit` is the flag ExplicitReveal reads. Missing from the
+	 * control keys, it was read as a verb and the schema was refused with
+	 * "Invalid authorization action 'reveal'" (dossiq's brpPerson on import).
+	 *
+	 * @return void
+	 */
+	public function testAPropertyRevealedExplicitlyCanBeSaved(): void {
+		$this->assertContains(ExplicitReveal::KEY, PermissionCatalogue::CONTROL_KEYS);
+
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				'bsn' => [
+					'type' => 'string',
+					'authorization' => [
+						'read' => ['brp-raadplegers'],
+						ExplicitReveal::KEY => ExplicitReveal::EXPLICIT,
+					],
+				],
+			]
+		);
+
+		$this->assertTrue($schema->validateAuthorization());
+		$this->assertSame(
+			ExplicitReveal::EXPLICIT,
+			$schema->getPropertyAuthorization('bsn')[ExplicitReveal::KEY],
+			'the reveal flag did not survive on the property'
+		);
+	}//end testAPropertyRevealedExplicitlyCanBeSaved()
+
+	/**
+	 * A reveal value other than `explicit` is refused, naming the key and the property.
+	 *
+	 * The runtime only masks on `explicit`, so a misspelt value would save as a
+	 * property that is never masked.
+	 *
+	 * @return void
+	 */
+	public function testARevealValueOtherThanExplicitIsRefused(): void {
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				'bsn' => [
+					'type' => 'string',
+					'authorization' => [
+						'read' => ['brp-raadplegers'],
+						ExplicitReveal::KEY => 'explicitly',
+					],
+				],
+			]
+		);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Authorization key 'reveal' in property 'bsn' must be \"explicit\"");
+
+		$schema->validateAuthorization();
+	}//end testARevealValueOtherThanExplicitIsRefused()
+
+	/**
+	 * Reveal values that are not exactly `explicit` are refused.
+	 *
+	 * @return array<string, array{mixed}>
+	 */
+	public static function wrongRevealValues(): array {
+		return [
+			'true' => [true],
+			'other case' => ['Explicit'],
+		];
+	}//end wrongRevealValues()
+
+	/**
+	 * A reveal value that only looks like `explicit` is refused.
+	 *
+	 * @param mixed $value The reveal value.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('wrongRevealValues')]
+	public function testARevealValueThatIsNotExactlyExplicitIsRefused(mixed $value): void {
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				'bsn' => [
+					'type' => 'string',
+					'authorization' => ['read' => ['brp-raadplegers'], ExplicitReveal::KEY => $value],
+				],
+			]
+		);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("Authorization key 'reveal' in property 'bsn' must be \"explicit\"");
+
+		$schema->validateAuthorization();
+	}//end testARevealValueThatIsNotExactlyExplicitIsRefused()
+
+	/**
+	 * Only the declared action leaves the deny block; an undeclared one beside it is refused.
+	 *
+	 * @return void
+	 */
+	public function testAnUndeclaredActionInTheDenyIsStillRefused(): void {
+		$schema = $this->caseDeclaring(authorization: [
+			'read' => ['behandelaars'],
+			'deny' => ['finish-request' => ['ingehuurd'], 'suspend-request' => ['ingehuurd']],
+		]);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessageMatches('/names "suspend-request", which no app declares/');
+
+		$this->validateDeny($schema);
+	}//end testAnUndeclaredActionInTheDenyIsStillRefused()
+
+	/**
+	 * Declaring an action named `deny` does not take the deny block out of the check.
+	 *
+	 * @return void
+	 */
+	public function testDeclaringAnActionNamedDenyKeepsTheDenyBlockChecked(): void {
+		$schema = new Schema();
+		$schema->setSlug('case');
+		$schema->setConfiguration(
+			['x-openregister-action' => ['deny' => ['name' => 'Deny', 'description' => 'Refuse the request.']]]
+		);
+		$schema->setAuthorization(['read' => ['behandelaars'], 'deny' => ['raed' => ['ingehuurd']]]);
+
+		$this->assertSame([], $schema->declaredActionNames(), 'a control key was accepted as a declared action');
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessageMatches('/names "raed", which no app declares/');
+
+		$this->validateDeny($schema);
+	}//end testDeclaringAnActionNamedDenyKeepsTheDenyBlockChecked()
+
+	/**
+	 * A canonical verb declared again is not a declared action.
+	 *
+	 * @return void
+	 */
+	public function testACanonicalVerbIsNotADeclaredAction(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(
+			[
+				'x-openregister-action' => [
+					'read' => ['name' => 'Read', 'description' => 'Open the record.'],
+					'finish-request' => ['name' => 'Finish', 'description' => 'Close the request.'],
+				],
+			]
+		);
+
+		$this->assertSame(['finish-request'], $schema->declaredActionNames());
+	}//end testACanonicalVerbIsNotADeclaredAction()
+
+	/**
+	 * A schema may grant the actions it declares itself.
+	 *
+	 * The save-time catalogue check knew only the canonical verbs and the ones
+	 * apps publish, so a schema granting its own `x-openregister-action` was
+	 * refused with "which no app declares" (dossiq's case macros), and every
+	 * later write of that block failed.
+	 *
+	 * @return void
+	 */
+	public function testASchemaMayGrantTheActionsItDeclares(): void {
+		$schema = $this->caseDeclaring(authorization: [
+			'read' => ['behandelaars'],
+			'readGrants' => ['behandelaars'],
+			'finish-request' => ['behandelaars'],
+			'deny' => ['finish-request' => ['ingehuurd']],
+		]);
+
+		$this->validateDeny($schema);
+
+		$this->assertSame(
+			['behandelaars'],
+			$schema->getAuthorization()['readGrants'],
+			'the readGrants rule did not survive the save'
+		);
+	}//end testASchemaMayGrantTheActionsItDeclares()
+
+	/**
+	 * An action the schema does not declare is still refused by the catalogue check.
+	 *
+	 * The control for the test above: accepting declared actions must not turn
+	 * the check into one that accepts any name.
+	 *
+	 * @return void
+	 */
+	public function testAnUndeclaredActionIsStillRefusedByTheCatalogueCheck(): void {
+		$schema = $this->caseDeclaring(authorization: [
+			'read' => ['behandelaars'],
+			'finish-request' => ['behandelaars'],
+			'suspend-request' => ['behandelaars'],
+		]);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessageMatches('/names "suspend-request", which no app declares/');
+
+		$this->validateDeny($schema);
+	}//end testAnUndeclaredActionIsStillRefusedByTheCatalogueCheck()
+
+	/**
+	 * The authorization keys survive an import, an export and an update.
+	 *
+	 * Each step goes through the schema's own save checks, so a key that one
+	 * of them refuses or drops fails here rather than on an instance.
+	 *
+	 * @return void
+	 */
+	public function testTheAuthorizationKeysSurviveImportExportAndUpdate(): void {
+		$authorization = [
+			'read' => [['group' => 'authenticated', 'match' => ['assignee' => '$userId']]],
+			'readGrants' => [['group' => 'authenticated', 'match' => ['assignee' => '$userId']], 'background-service'],
+			'finish-request' => ['behandelaars'],
+		];
+		$bsn = [
+			'read' => ['brp-raadplegers'],
+			ExplicitReveal::KEY => ExplicitReveal::EXPLICIT,
+		];
+		$definition = [
+			'slug' => 'case',
+			'title' => 'Case',
+			'configuration' => [
+				'x-openregister-action' => [
+					'finish-request' => ['name' => 'Finish the request', 'description' => 'Close the request with a decision.'],
+				],
+			],
+			'authorization' => $authorization,
+			'properties' => [
+				'assignee' => ['type' => 'string'],
+				'bsn' => ['type' => 'string', 'authorization' => $bsn],
+			],
+		];
+
+		$imported = (new Schema())->hydrate(object: $definition);
+		$this->save($imported);
+
+		$reimported = (new Schema())->hydrate(object: $imported->jsonSerialize());
+		$this->save($reimported);
+
+		$updated = $reimported->hydrate(object: ['title' => 'Case, renamed']);
+		$this->save($updated);
+
+		foreach (['import' => $imported, 'export and re-import' => $reimported, 'update' => $updated] as $step => $schema) {
+			$this->assertSame($authorization, $schema->getAuthorization(), "the schema block changed on {$step}");
+			$this->assertSame($bsn, $schema->getPropertyAuthorization('bsn'), "the bsn block changed on {$step}");
+		}
+	}//end testTheAuthorizationKeysSurviveImportExportAndUpdate()
+
+	/**
+	 * Run the mapper's save-time checks the way insert() and update() do.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 */
+	private function save(Schema $schema): void {
+		$schema->validateAuthorization();
+		$method = new ReflectionMethod(SchemaMapper::class, 'cleanObject');
+		$method->invoke($this->mapper, $schema);
+	}//end save()
+
+	/**
+	 * A case schema that declares `finish-request` and carries the given block.
+	 *
+	 * @param array<string, mixed> $authorization The authorization block.
+	 *
+	 * @return Schema
+	 */
+	private function caseDeclaring(array $authorization): Schema {
+		$schema = new Schema();
+		$schema->setSlug('case');
+		$schema->setConfiguration(
+			[
+				'x-openregister-action' => [
+					'finish-request' => ['name' => 'Finish the request', 'description' => 'Close the request with a decision.'],
+				],
+			]
+		);
+		$schema->setAuthorization($authorization);
+
+		return $schema;
+	}//end caseDeclaring()
+
+	/**
+	 * Drive the mapper's private save-time catalogue and deny check.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 */
+	private function validateDeny(Schema $schema): void {
+		$method = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
+		$method->invoke($this->mapper, $schema);
+	}//end validateDeny()
+
+	/**
 	 * EVERY key the catalogue calls a control is accepted as a control.
 	 *
 	 * The durable half of the fix. `matrix` was not the only one: `deny`,
@@ -337,6 +678,7 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 			'scope' => 'private',
 			'deny' => ['read' => ['ingehuurd']],
 			DepartmentMatrixCompiler::KEY => ['read' => ['behandelaars' => 'afdeling']],
+			ExplicitReveal::KEY => ExplicitReveal::EXPLICIT,
 		];
 
 		foreach (PermissionCatalogue::CONTROL_KEYS as $key) {

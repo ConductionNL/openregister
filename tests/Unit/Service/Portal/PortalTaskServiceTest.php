@@ -24,15 +24,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\Task\TaskAct;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
+use OCA\OpenRegister\Service\Portal\PortalTaskSources;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -55,6 +62,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Task\TaskTemporalProjection
+ * @uses \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  */
 class PortalTaskServiceTest extends TestCase {
 
@@ -103,12 +111,9 @@ class PortalTaskServiceTest extends TestCase {
 		$this->tasks = $this->createMock(TaskService::class);
 		$this->mapper = $this->createMock(TaskMapper::class);
 		$this->files = $this->createMock(FileService::class);
-		$inbox = new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger());
+		$inbox = new TaskInboxService(tasks: $this->mapper, logger: new NullLogger());
 		$this->service = new PortalTaskService(
-			tasks: $this->tasks,
-			mapper: $this->mapper,
-			inbox: $inbox,
-			temporal: new TaskTemporalProjection(),
+			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
 			logger: new NullLogger()
 		);
@@ -147,9 +152,9 @@ class PortalTaskServiceTest extends TestCase {
 	private function openForRuns(Task $task): void {
 		$authorization = new TaskAuthorizationService();
 		$this->tasks->method('openFor')->willReturnCallback(
-			function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
-				$this->trace[] = 'authorize:' . $actor;
-				$authorization->assertMay(verb: $verb, task: $task, uid: $actor);
+			function (TaskAct $act) use ($task, $authorization): Task {
+				$this->trace[] = 'authorize:' . $act->actor;
+				$authorization->assertMay(act: $act, task: $task);
 
 				return $task;
 			}
@@ -183,7 +188,10 @@ class PortalTaskServiceTest extends TestCase {
 		$this->openForRuns($task);
 		$this->files->expects($this->once())
 			->method('addFile')
-			->with('case-7', 'payslip.pdf', 'PDFBYTES', false, ['portal-task:t-1'], null, null, 3)
+			->with(
+				$this->callback(fn (FileTarget $target): bool => $target->object === 'case-7' && $target->registerId === 3),
+				$this->callback(fn (FileUpload $upload): bool => $upload->fileName === 'payslip.pdf' && $upload->content === 'PDFBYTES' && $upload->share === false && $upload->tags === ['portal-task:t-1'])
+			)
 			->willReturnCallback(
 				function (): File {
 					$this->trace[] = 'store';
@@ -192,9 +200,10 @@ class PortalTaskServiceTest extends TestCase {
 				}
 			);
 		$this->tasks->expects($this->once())
-			->method('complete')
+			->method('completeWithAnswer')
 			->willReturnCallback(
-				function (string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses, ?array $evidence) use ($task): Task {
+				function (string $uuid, TaskAnswer $answer, ?string $actor) use ($task): Task {
+					[$outcome, $resultText, $comment, $responses, $evidence] = [$answer->outcome, $answer->resultText, $answer->comment, $answer->payload->responses, $answer->payload->evidence];
 					$this->trace[] = 'record';
 					$this->assertSame('t-1', $uuid);
 					$this->assertSame('submitted', $outcome);
@@ -211,9 +220,7 @@ class PortalTaskServiceTest extends TestCase {
 		$completed = $this->service->complete(
 			subject: new PortalSubject(subjectRef: 'bsn-1'),
 			uuid: 't-1',
-			answers: ['remarks' => 'ok'],
-			comment: null,
-			files: [['name' => 'payslip.pdf', 'type' => 'application/pdf', 'size' => 1200, 'content' => 'PDFBYTES']]
+			completion: new PortalCompletion(answers: ['remarks' => 'ok'], files: [['name' => 'payslip.pdf', 'type' => 'application/pdf', 'size' => 1200, 'content' => 'PDFBYTES']])
 		);
 
 		$this->assertSame(Task::STATE_COMPLETED, $completed->getState());
@@ -230,13 +237,13 @@ class PortalTaskServiceTest extends TestCase {
 		$task = $this->task();
 		$this->openForRuns($task);
 		$this->files->expects($this->never())->method('addFile');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		try {
 			$this->service->complete(
 				subject: new PortalSubject(subjectRef: 'bsn-2'),
 				uuid: 't-1',
-				files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]
+				completion: new PortalCompletion(files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']])
 			);
 			$this->fail('Another subject completed the task.');
 		} catch (TaskAccessDeniedException $denied) {
@@ -259,7 +266,7 @@ class PortalTaskServiceTest extends TestCase {
 		// No party resolver is consulted at completion at all: the service has
 		// none, and the mapper/object store is never asked for the case.
 		$this->mapper->expects($this->never())->method('findByUuid');
-		$this->tasks->method('complete')->willReturn($task);
+		$this->tasks->method('completeWithAnswer')->willReturn($task);
 
 		try {
 			$this->service->complete(subject: new PortalSubject(subjectRef: 'party-b'), uuid: 't-1');
@@ -285,8 +292,8 @@ class PortalTaskServiceTest extends TestCase {
 		$groups->method('isAdmin')->willReturn(true);
 		$authorization = new TaskAuthorizationService(groupManager: $groups);
 		$this->tasks->method('openFor')->willReturnCallback(
-			static function (string $verb, string $uuid, ?string $actor) use ($task, $authorization): Task {
-				$authorization->assertMay(verb: $verb, task: $task, uid: $actor);
+			static function (TaskAct $act) use ($task, $authorization): Task {
+				$authorization->assertMay(act: $act, task: $task);
 
 				return $task;
 			}
@@ -305,7 +312,7 @@ class PortalTaskServiceTest extends TestCase {
 	 */
 	public function testUploadConstraintsRefuseNamingTheConstraintBeforeAnythingIsStored(): void {
 		$this->files->expects($this->never())->method('addFile');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 		$subject = new PortalSubject(subjectRef: 'bsn-1');
 		$pdf = ['name' => 'a.pdf', 'type' => 'application/pdf', 'size' => 100, 'content' => 'x'];
 
@@ -323,15 +330,12 @@ class PortalTaskServiceTest extends TestCase {
 			$tasks = $this->createMock(TaskService::class);
 			$tasks->method('openFor')->willReturn($task);
 			$service = new PortalTaskService(
-				tasks: $tasks,
-				mapper: $this->mapper,
-				inbox: new TaskInboxService(tasks: $this->mapper, temporal: new TaskTemporalProjection(), logger: new NullLogger()),
-				temporal: new TaskTemporalProjection(),
+				sources: new PortalTaskSources(tasks: $tasks, mapper: $this->mapper, inbox: new TaskInboxService(tasks: $this->mapper, logger: new NullLogger()), temporal: new TaskTemporalProjection()),
 				files: $this->files,
 				logger: new NullLogger()
 			);
 			try {
-				$service->complete(subject: $subject, uuid: 't-1', files: $files);
+				$service->complete(subject: $subject, uuid: 't-1', completion: new PortalCompletion(files: $files));
 				$this->fail("Expected a refusal naming $constraint");
 			} catch (TaskValidationException $refused) {
 				$this->assertStringContainsString($constraint, $refused->getMessage());
@@ -373,7 +377,7 @@ class PortalTaskServiceTest extends TestCase {
 		$foreign = $this->task();
 		$foreign->setUuid('t-9');
 		$foreign->setAssignee('party:bsn-2');
-		$this->mapper->expects($this->once())->method('findOpenExternalForParty')->with('party:bsn-1', 25, 0)->willReturn([$mine, $foreign]);
+		$this->mapper->expects($this->once())->method('findOpenExternalForParty')->with('party:bsn-1', $this->equalTo(new ListQuery(limit: 25, offset: 0)))->willReturn([$mine, $foreign]);
 		$this->mapper->expects($this->once())->method('countOpenExternalForParty')->with('party:bsn-1')->willReturn(1);
 
 		$page = $this->service->listForSubject(subject: new PortalSubject(subjectRef: 'bsn-1'));
@@ -401,20 +405,16 @@ class PortalTaskServiceTest extends TestCase {
 		$case->setSchema('9');
 		$case->setObject(['name' => 'passport renewal', 'initiator' => 'bsn-1']);
 
-		$objects = $this->createMock(\OCA\OpenRegister\Db\AbstractObjectMapper::class);
+		$objects = $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 		$objects->method('findMultiple')->willReturn([$case]);
 
 		$inbox = new TaskInboxService(
 			tasks: $this->mapper,
-			temporal: new TaskTemporalProjection(),
 			logger: new NullLogger(),
 			objects: $objects
 		);
 		$service = new PortalTaskService(
-			tasks: $this->tasks,
-			mapper: $this->mapper,
-			inbox: $inbox,
-			temporal: new TaskTemporalProjection(),
+			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
 			logger: new NullLogger()
 		);
@@ -466,10 +466,10 @@ class PortalTaskServiceTest extends TestCase {
 		$task->setMetadata(array_merge($task->getMetadata(), [PortalTaskService::COMPLETE_VIA => ['app' => 'dossiq', 'action' => 'completeChecklistTask']]));
 		$this->openForRuns($task);
 		$this->files->expects($this->never())->method('addFile');
-		$this->tasks->expects($this->once())->method('complete')->willReturn($task);
+		$this->tasks->expects($this->once())->method('completeWithAnswer')->willReturn($task);
 
 		try {
-			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]);
+			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', completion: new PortalCompletion(files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]));
 			$this->fail('The seam completed a task its app completes.');
 		} catch (TaskCompleteViaAppException $elsewhere) {
 			$this->assertSame(['app' => 'dossiq', 'action' => 'completeChecklistTask'], $elsewhere->completeVia());
@@ -509,4 +509,76 @@ class PortalTaskServiceTest extends TestCase {
 		$task->setMetadata([PortalTaskService::COMPLETE_VIA => ['app' => ' dossiq ', 'action' => 'completeChecklistTask']]);
 		$this->assertSame(['app' => 'dossiq', 'action' => 'completeChecklistTask'], $this->service->completeVia(task: $task));
 	}//end testOnlyAWholeCompleteViaCounts()
+
+	/**
+	 * A task held back by an open blocker cannot be completed by its party, and nothing is stored.
+	 *
+	 * @return void
+	 */
+	public function testATaskWaitingOnAnOpenBlockerCannotBeCompletedThroughThePortal(): void {
+		$task = $this->task(['required' => false]);
+		$task->setBlockedBy('t-blocker');
+		$this->openForRuns($task);
+		$blocker = new Task();
+		$blocker->setUuid('t-blocker');
+		$blocker->setIsTerminal(false);
+		$this->mapper->method('findByUuid')->with('t-blocker')->willReturn($blocker);
+		$this->files->expects($this->never())->method('addFile');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
+
+		$this->expectException(DoesNotExistException::class);
+		$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');
+	}//end testATaskWaitingOnAnOpenBlockerCannotBeCompletedThroughThePortal()
+
+	/**
+	 * Once the blocker is closed (or gone) the task is the party's again.
+	 *
+	 * @return void
+	 */
+	public function testATaskWhoseBlockerIsClosedIsCompletedAsBefore(): void {
+		$task = $this->task(['required' => false]);
+		$task->setBlockedBy('t-blocker');
+		$this->openForRuns($task);
+		$blocker = new Task();
+		$blocker->setUuid('t-blocker');
+		$blocker->setIsTerminal(true);
+		$this->mapper->method('findByUuid')->willReturn($blocker);
+		$this->tasks->expects($this->once())->method('completeWithAnswer')->willReturn($task);
+
+		$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');
+	}//end testATaskWhoseBlockerIsClosedIsCompletedAsBefore()
+
+	/**
+	 * A blocked portal task is not shown by its uuid either: it reads like one that does not exist.
+	 *
+	 * @return void
+	 */
+	public function testABlockedPortalTaskIsNotShown(): void {
+		$task = $this->task();
+		$task->setBlockedBy('t-blocker');
+		$this->tasks->method('get')->willReturn($task);
+		$blocker = new Task();
+		$blocker->setIsTerminal(false);
+		$this->mapper->method('findByUuid')->willReturn($blocker);
+
+		$this->expectException(DoesNotExistException::class);
+		$this->service->show(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');
+	}//end testABlockedPortalTaskIsNotShown()
+
+	/**
+	 * The list reads its page with the blocker exclusion, so no row runs its own blocker query.
+	 *
+	 * @return void
+	 */
+	public function testThePortalListMarksNoRowBlockedAndAsksForNoBlockerPerRow(): void {
+		$task = $this->task();
+		$this->mapper->method('findOpenExternalForParty')->willReturn([$task]);
+		$this->mapper->method('countOpenExternalForParty')->willReturn(1);
+		$this->mapper->expects($this->never())->method('findByUuid');
+
+		$page = $this->service->listForSubject(subject: new PortalSubject(subjectRef: 'bsn-1'));
+
+		$this->assertSame(1, $page['total']);
+		$this->assertFalse($page['results'][0]['blocked']);
+	}//end testThePortalListMarksNoRowBlockedAndAsksForNoBlockerPerRow()
 }//end class

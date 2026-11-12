@@ -1,0 +1,52 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ConfigurationsIndex table shows every configuration with its badges and menu 1`] = `
+[
+  {
+    "headers": [
+      "",
+      "t:Title",
+      "t:Source",
+      "t:Local Version",
+      "t:Remote Version",
+      "t:Status",
+      "t:Updated",
+      "t:Actions",
+    ],
+    "rows": [
+      [
+        "",
+        "LocalShipped",
+        "Local",
+        "1.0",
+        "-",
+        "Local opencatalogi",
+        "-",
+        "t:Viewt:EditExportt:Delete",
+      ],
+      [
+        "",
+        "Remote",
+        "GitHub",
+        "1",
+        "2",
+        "External Sync failed Update Available",
+        "-",
+        "t:Viewt:EditCheck VersionPreview UpdateExportt:Delete",
+      ],
+      [
+        "",
+        "Synced",
+        "URL",
+        "-",
+        "-",
+        "External Never synced",
+        "-",
+        "t:Viewt:EditCheck VersionExportt:Delete",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`ConfigurationsIndex table shows the empty state without configurations 1`] = `"t:No configurations found | t:No configurations are available."`;

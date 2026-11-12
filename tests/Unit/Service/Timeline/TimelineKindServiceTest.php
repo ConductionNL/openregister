@@ -26,10 +26,10 @@ namespace Unit\Service\Timeline;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Db\TimelineKind;
-use OCA\OpenRegister\Db\TimelineKindMapper;
-use OCA\OpenRegister\Service\Timeline\TimelineKindService;
-use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
+use OCA\OpenRegister\Notifications\Db\TimelineKind;
+use OCA\OpenRegister\Notifications\Db\TimelineKindMapper;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 

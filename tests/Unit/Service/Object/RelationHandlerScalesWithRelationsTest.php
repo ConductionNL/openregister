@@ -34,12 +34,14 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 
 /**
  * Locks that a relation lookup touches only the tables that hold a match.
@@ -103,12 +105,13 @@ class RelationHandlerScalesWithRelationsTest extends TestCase {
 		$rbac->method('isAdmin')->willReturn(true);
 
 		return new RelationHandler(
-			objectEntityMapper: $magic,
-			schemaMapper: $schemaMapper,
-			performanceHandler: $this->createMock(PerformanceHandler::class),
+			stores: new RelationHandlerStores(
+				objects: $magic,
+				schemas: $schemaMapper,
+				registers: $registerMapper
+			),
 			rbacHandler: $rbac,
-			logger: $this->createMock(LoggerInterface::class),
-			registerMapper: $registerMapper
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end handler()
 
@@ -121,13 +124,13 @@ class RelationHandlerScalesWithRelationsTest extends TestCase {
 		$magic->method('find')->willReturn($lead);
 		$magic->expects($this->once())->method('findMultipleAcrossAllMagicTables')->willReturn([$client, $contact]);
 		$magic->expects($this->exactly(2))->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			static fn (Register $register, Schema $schema, ?int $limit = null, ?int $offset = null, ?array $filters = null): array => match ($schema->getId()) {
+			static fn (RegisterSchema $table): array => match ($table->schema->getId()) {
 				28 => [$client],
 				29 => [$contact],
 			}
 		);
 
-		$result = $this->handler($magic)->getUses(self::LEAD);
+		$result = $this->handler($magic)->getUses(lookup: new RelationLookup(objectId: self::LEAD));
 
 		$this->assertSame(2, $result['total']);
 		$this->assertSame(['c-1', 'p-1'], array_map(static fn (array $row): string => $row['@self']['id'] ?? $row['id'], $result['results']));
@@ -144,7 +147,7 @@ class RelationHandlerScalesWithRelationsTest extends TestCase {
 		$magic->expects($this->once())->method('findByRelationAcrossAllMagicTables')->with(self::LEAD)->willReturn([$product]);
 		$magic->expects($this->once())->method('findAllInRegisterSchemaTable')->willReturn([$product]);
 
-		$result = $this->handler($magic)->getUsedBy(self::LEAD);
+		$result = $this->handler($magic)->getUsedBy(lookup: new RelationLookup(objectId: self::LEAD));
 
 		$this->assertSame(1, $result['total']);
 	}//end testUsedByReadsOnlyTheTablesHoldingAReference()

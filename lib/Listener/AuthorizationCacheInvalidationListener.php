@@ -3,25 +3,25 @@
 /**
  * OpenRegister AuthorizationCacheInvalidationListener
  *
- * Enforces the invariant `PermissionHandler::clearInheritFromPublicCache()` has
+ * Enforces the invariant `PermissionHandlerInterface::clearInheritFromPublicCache()` has
  * always DOCUMENTED and nothing has ever CALLED:
  *
  *   "Any path that mutates authorization and then re-reads it within the same
  *    request must bust this cache to avoid serving a stale verdict."
  *
- * Both of PermissionHandler's per-request memos key on identity alone and carry
+ * Both of PermissionHandlerInterface's per-request memos key on identity alone and carry
  * no fingerprint of the policy they memoised:
  *
  *   - `cachedInheritFromPublic` keys purely on schema id.
  *   - `permissionCache` keys on `s<schemaId>|a<action>|u<user>|o<owner>|i<uuid>`.
  *
- * PermissionHandler already refuses to cache the two cases where the AUTHORS saw
+ * PermissionHandlerInterface already refuses to cache the two cases where the AUTHORS saw
  * mid-request mutation coming — a schema carrying `match` rules, and an object
  * carrying its own `_authorization` override. The case left open is the one this
  * listener closes: an administrator edits a SCHEMA's or a REGISTER's
  * authorization block, and anything later in that same request re-reads the
  * verdict computed against the policy that no longer exists. Because
- * PermissionHandler is autowired, the container hands the listener the very
+ * PermissionHandlerInterface is autowired, the container hands the listener the very
  * instance holding those memos, so evicting here evicts for the whole request.
  *
  * Register events clear the WHOLE inheritFromPublic map rather than one entry.
@@ -60,12 +60,12 @@ use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionCacheInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
 /**
- * Evicts PermissionHandler's per-request authorization memos when the policy
+ * Evicts PermissionHandlerInterface's per-request authorization memos when the policy
  * behind them is rewritten.
  *
  * @template-implements IEventListener<SchemaUpdatedEvent|SchemaDeletedEvent|RegisterUpdatedEvent|RegisterDeletedEvent>
@@ -74,14 +74,14 @@ class AuthorizationCacheInvalidationListener implements IEventListener {
 	/**
 	 * Wire the RBAC evaluator whose memos are evicted.
 	 *
-	 * @param PermissionHandler $permissionHandler The evaluator holding the per-request memos.
+	 * @param PermissionCacheInterface $permissionHandler The evaluator holding the per-request memos.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
 	 */
 	public function __construct(
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionCacheInterface $permissionHandler,
 	) {
 
 	}//end __construct()

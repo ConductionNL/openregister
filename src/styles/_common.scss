@@ -1,0 +1,143 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+// Style rules shared verbatim by components in more than one src directory.
+// Each mixin emits one complete rule; a component includes it where the rule belongs.
+
+@mixin config-badge-sync-success {
+	.configBadge--sync-success {
+		background-color: var(--color-success-light);
+		color: var(--color-success-dark);
+	}
+}
+
+@mixin config-badge-sync-failed {
+	.configBadge--sync-failed {
+		background-color: var(--color-error-light);
+		color: var(--color-error-dark);
+	}
+}
+
+@mixin config-badge-update {
+	.configBadge--update {
+		background-color: var(--color-warning);
+		color: var(--color-main-text);
+	}
+}
+
+@mixin managed-badge {
+	.managedBadge {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 8px;
+		border-radius: 12px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		margin-left: 8px;
+		vertical-align: middle;
+	}
+}
+
+@mixin managed-badge-external {
+	.managedBadge--external {
+		background: var(--color-success);
+		color: white;
+	}
+}
+
+@mixin managed-badge-local {
+	.managedBadge--local {
+		background: var(--color-warning);
+		color: var(--color-main-text);
+	}
+}
+
+@mixin status-pill {
+	.statusPill {
+		display: inline-block;
+		padding: 2px 8px;
+		border-radius: 12px;
+		font-size: 0.75em;
+		font-weight: 600;
+		text-transform: uppercase;
+		margin-left: 8px;
+		white-space: nowrap;
+	}
+}
+
+@mixin status-pill-alert {
+	.statusPill--alert {
+		background-color: var(--color-warning);
+		color: var(--color-main-background);
+	}
+}
+
+@mixin status-pill-success {
+	.statusPill--success {
+		background-color: var(--color-success);
+		color: white;
+	}
+}
+
+@mixin loading-section-p {
+	.loading-section p {
+		color: var(--color-text-maxcontrast);
+		font-size: 14px;
+	}
+}
+
+@mixin section-field-label {
+	.section__field label {
+		display: block;
+		margin-bottom: 4px;
+		font-weight: bold;
+	}
+}
+
+@mixin field-group {
+	.field-group {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+}
+
+@mixin status-success {
+	.status-success {
+		color: var(--color-success);
+		font-weight: 600;
+	}
+}
+
+@mixin status-failed {
+	.status-failed {
+		color: var(--color-error);
+		font-weight: 600;
+	}
+}
+
+@mixin status-pill-rules {
+	@include status-pill;
+	@include status-pill-alert;
+	@include status-pill-success;
+}
+
+@mixin config-badge-sync-success-rules {
+	@include config-badge-sync-success;
+	@include config-badge-sync-failed;
+}
+
+@mixin status-success-rules {
+	@include status-success;
+	@include status-failed;
+}
+
+// Hidden on screen, still read by screen readers.
+@mixin visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}

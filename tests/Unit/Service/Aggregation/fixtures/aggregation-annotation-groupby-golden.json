@@ -1,0 +1,182 @@
+{
+    "groupBy mixed members": [
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy members must be non-empty field-name strings."
+        },
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy members must be non-empty field-name strings."
+        },
+        {
+            "code": "aggregation-groupby-duplicate-field",
+            "message": "Aggregation \"g\" groupBy names \"status\" more than once."
+        },
+        {
+            "code": "aggregation-groupby-field-unknown",
+            "message": "Aggregation \"g\" groupBy.field \"colour\" is not declared in the schema properties."
+        },
+        {
+            "code": "aggregation-groupby-duplicate-field",
+            "message": "Aggregation \"g\" groupBy names \"colour\" more than once."
+        },
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy members must be non-empty field-name strings."
+        }
+    ],
+    "groupBy fields empty": [
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names."
+        }
+    ],
+    "groupBy empty list": [
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names."
+        }
+    ],
+    "groupBy bucket only": [
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names."
+        }
+    ],
+    "groupBy field null": [
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy members must be non-empty field-name strings."
+        }
+    ],
+    "groupBy field empty": [
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy members must be non-empty field-name strings."
+        }
+    ],
+    "groupBy fields not list, field wins": [],
+    "groupBy fields assoc": [
+        {
+            "code": "aggregation-groupby-duplicate-field",
+            "message": "Aggregation \"g\" groupBy names \"kind\" more than once."
+        },
+        {
+            "code": "aggregation-groupby-field-unknown",
+            "message": "Aggregation \"g\" groupBy.field \"size\" is not declared in the schema properties."
+        }
+    ],
+    "groupBy explicit null": [],
+    "groupBy integer": [
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names."
+        }
+    ],
+    "groupBy false": [
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names."
+        }
+    ],
+    "metrics entry groupBy members": [
+        {
+            "code": "aggregation-groupby-duplicate-field",
+            "message": "Aggregation \"m\" groupBy names \"owner\" more than once."
+        },
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"m\" groupBy members must be non-empty field-name strings."
+        }
+    ],
+    "cross from integer": [
+        {
+            "code": "aggregation-from-empty",
+            "message": "Cross-schema aggregation \"c\" must have a non-empty `from` string."
+        }
+    ],
+    "cross from false": [
+        {
+            "code": "aggregation-from-empty",
+            "message": "Cross-schema aggregation \"c\" must have a non-empty `from` string."
+        }
+    ],
+    "cross metric null falls to select": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Cross-schema aggregation \"c\" metric \"median\" is not in [count, sum, avg, min, max, count_distinct]."
+        }
+    ],
+    "cross metric integer": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Cross-schema aggregation \"c\" metric \"7\" is not in [count, sum, avg, min, max, count_distinct]."
+        }
+    ],
+    "cross metric true": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Cross-schema aggregation \"c\" metric \"1\" is not in [count, sum, avg, min, max, count_distinct]."
+        }
+    ],
+    "cross metric empty string": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Cross-schema aggregation \"c\" metric \"\" is not in [count, sum, avg, min, max, count_distinct]."
+        }
+    ],
+    "cross where null, filter bad": [
+        {
+            "code": "aggregation-filter-malformed",
+            "message": "Cross-schema aggregation \"c\" where/filter must be a map."
+        }
+    ],
+    "cross filter empty map": [],
+    "cross join": [],
+    "cross join set": [
+        {
+            "code": "aggregation-join-with-from",
+            "message": "Cross-schema aggregation \"c\" must not combine `from` with `join` — join is intra-schema only."
+        }
+    ],
+    "cross everything wrong": [
+        {
+            "code": "aggregation-from-empty",
+            "message": "Cross-schema aggregation \"c\" must have a non-empty `from` string."
+        },
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Cross-schema aggregation \"c\" metric \"avg2\" is not in [count, sum, avg, min, max, count_distinct]."
+        },
+        {
+            "code": "aggregation-filter-malformed",
+            "message": "Cross-schema aggregation \"c\" where/filter must be a map."
+        },
+        {
+            "code": "aggregation-join-with-from",
+            "message": "Cross-schema aggregation \"c\" must not combine `from` with `join` — join is intra-schema only."
+        }
+    ],
+    "list of entries": [
+        {
+            "code": "aggregation-bad-name",
+            "message": "Aggregation names must be non-empty strings."
+        },
+        {
+            "code": "aggregation-bad-name",
+            "message": "Aggregation names must be non-empty strings."
+        },
+        {
+            "code": "aggregation-malformed",
+            "message": "Aggregation \"bad\" must be an object."
+        },
+        {
+            "code": "aggregation-field-missing",
+            "message": "Aggregation \"tail\" with metric \"max\" requires a field."
+        },
+        {
+            "code": "aggregation-groupby-field-unknown",
+            "message": "Aggregation \"tail\" groupBy.field \"nope\" is not declared in the schema properties."
+        }
+    ]
+}

@@ -1,0 +1,241 @@
+{
+    "no composition": {
+        "result": {
+            "properties": {
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "own"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "all of one parent": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "own"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "all of two parents": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                },
+                "age": {
+                    "type": "integer"
+                },
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "age",
+                "own"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "all of parents sharing a property": {
+        "result": {
+            "properties": {
+                "a": {
+                    "title": "A",
+                    "enum": [
+                        3
+                    ],
+                    "properties": {
+                        "x": {
+                            "title": "X"
+                        },
+                        "y": {
+                            "title": "Y"
+                        }
+                    },
+                    "items": {
+                        "p": 1,
+                        "q": 2
+                    },
+                    "description": "D"
+                },
+                "s": {
+                    "now": "array"
+                },
+                "n": "scalar"
+            },
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "all of a parent with parents": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "all of an override": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Full name"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "all of an empty entry": {
+        "result": {
+            "properties": [],
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "all of an inline entry": {
+        "result": {
+            "properties": {
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "own"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "all of a ref entry": {
+        "result": {
+            "properties": {
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "own"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "all of itself by slug": {
+        "thrown": "Exception: Schema '1' cannot reference itself in allOf",
+        "rowsLeft": 0
+    },
+    "all of itself by uuid": {
+        "thrown": "Exception: Schema '1' cannot reference itself in allOf",
+        "rowsLeft": 0
+    },
+    "all of itself by id": {
+        "thrown": "Exception: Schema '1' cannot reference itself in allOf",
+        "rowsLeft": 0
+    },
+    "all of a missing parent": {
+        "thrown": "Exception: Schema 'gone' not found",
+        "rowsLeft": 0
+    },
+    "all of a loop": {
+        "thrown": "Exception: Circular schema composition detected: schema '1' creates a loop",
+        "rowsLeft": 0
+    },
+    "one of": {
+        "result": {
+            "properties": {
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "own"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "one of itself": {
+        "thrown": "Exception: Schema '1' cannot reference itself in oneOf",
+        "rowsLeft": 0
+    },
+    "one of missing": {
+        "thrown": "Exception: Schema 'gone' not found",
+        "rowsLeft": 0
+    },
+    "one of a loop": {
+        "thrown": "Exception: Circular schema composition detected: schema '1' creates a loop",
+        "rowsLeft": 0
+    },
+    "any of": {
+        "result": {
+            "properties": {
+                "own": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "own"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "any of itself": {
+        "thrown": "Exception: Schema '1' cannot reference itself in anyOf",
+        "rowsLeft": 0
+    },
+    "any of missing": {
+        "thrown": "Exception: Schema 'gone' not found",
+        "rowsLeft": 0
+    },
+    "all of before one of": {
+        "result": {
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "rowsLeft": 0
+    },
+    "one of before any of": {
+        "result": {
+            "properties": [],
+            "required": []
+        },
+        "rowsLeft": 0
+    },
+    "empty lists": {
+        "result": {
+            "properties": [],
+            "required": []
+        },
+        "rowsLeft": 0
+    }
+}

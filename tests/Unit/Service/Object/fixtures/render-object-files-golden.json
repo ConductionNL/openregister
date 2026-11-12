@@ -1,0 +1,288 @@
+{
+    "renderFiles": {
+        "none": {
+            "files": [],
+            "calls": []
+        },
+        "all": {
+            "files": [
+                {
+                    "id": "11",
+                    "path": "/a/report.pdf",
+                    "title": "report.pdf",
+                    "accessUrl": "https://x/a",
+                    "downloadUrl": "https://x/d",
+                    "type": "application/pdf",
+                    "extension": "pdf",
+                    "size": 2048,
+                    "hash": "e1",
+                    "published": "2026-01-01",
+                    "modified": 1700000000,
+                    "labels": [
+                        "Public"
+                    ]
+                },
+                {
+                    "id": "12",
+                    "path": "/a/photo",
+                    "title": "photo",
+                    "accessUrl": null,
+                    "downloadUrl": null,
+                    "type": "application/octet-stream",
+                    "extension": "",
+                    "size": 7,
+                    "hash": "",
+                    "published": null,
+                    "modified": null,
+                    "labels": [
+                        "Draft",
+                        "Public"
+                    ]
+                },
+                {
+                    "id": "13",
+                    "path": "/a/notes.tar.gz",
+                    "title": "notes.tar.gz",
+                    "accessUrl": null,
+                    "downloadUrl": null,
+                    "type": "application/octet-stream",
+                    "extension": "gz",
+                    "size": 0,
+                    "hash": "",
+                    "published": null,
+                    "modified": null,
+                    "labels": []
+                },
+                {
+                    "id": "14",
+                    "path": "/a/x",
+                    "title": "x",
+                    "accessUrl": null,
+                    "downloadUrl": null,
+                    "type": "application/octet-stream",
+                    "extension": "",
+                    "size": 1,
+                    "hash": "",
+                    "published": null,
+                    "modified": null,
+                    "labels": [
+                        "Draft"
+                    ]
+                }
+            ],
+            "calls": [
+                [
+                    "getTagIdsForObjects",
+                    [
+                        "11",
+                        "12",
+                        "13",
+                        "14"
+                    ],
+                    "files"
+                ],
+                [
+                    "getTagsByIds",
+                    [
+                        1,
+                        2,
+                        9,
+                        3
+                    ]
+                ]
+            ]
+        },
+        "untagged": {
+            "files": [
+                {
+                    "id": "13",
+                    "path": "/a/notes.tar.gz",
+                    "title": "notes.tar.gz",
+                    "accessUrl": null,
+                    "downloadUrl": null,
+                    "type": "application/octet-stream",
+                    "extension": "gz",
+                    "size": 0,
+                    "hash": "",
+                    "published": null,
+                    "modified": null,
+                    "labels": []
+                }
+            ],
+            "calls": [
+                [
+                    "getTagIdsForObjects",
+                    [
+                        "13"
+                    ],
+                    "files"
+                ]
+            ]
+        }
+    },
+    "formatFileRecord": {
+        "11": {
+            "file": {
+                "id": "11",
+                "path": "/a/report.pdf",
+                "title": "report.pdf",
+                "accessUrl": "https://x/a",
+                "downloadUrl": "https://x/d",
+                "type": "application/pdf",
+                "extension": "pdf",
+                "size": 2048,
+                "hash": "e1",
+                "published": "2026-01-01",
+                "modified": 1700000000,
+                "labels": [
+                    "Public"
+                ]
+            },
+            "calls": [
+                [
+                    "getTagIdsForObjects",
+                    [
+                        "11"
+                    ],
+                    "files"
+                ],
+                [
+                    "getTagsByIds",
+                    [
+                        "1",
+                        "2",
+                        "9"
+                    ]
+                ]
+            ]
+        },
+        "12": {
+            "file": {
+                "id": "12",
+                "path": "/a/photo",
+                "title": "photo",
+                "accessUrl": null,
+                "downloadUrl": null,
+                "type": "application/octet-stream",
+                "extension": "",
+                "size": 7,
+                "hash": "",
+                "published": null,
+                "modified": null,
+                "labels": [
+                    "Draft",
+                    "Public"
+                ]
+            },
+            "calls": [
+                [
+                    "getTagIdsForObjects",
+                    [
+                        "12"
+                    ],
+                    "files"
+                ],
+                [
+                    "getTagsByIds",
+                    [
+                        "3",
+                        "1"
+                    ]
+                ]
+            ]
+        },
+        "13": {
+            "file": {
+                "id": "13",
+                "path": "/a/notes.tar.gz",
+                "title": "notes.tar.gz",
+                "accessUrl": null,
+                "downloadUrl": null,
+                "type": "application/octet-stream",
+                "extension": "gz",
+                "size": 0,
+                "hash": "",
+                "published": null,
+                "modified": null,
+                "labels": []
+            },
+            "calls": [
+                [
+                    "getTagIdsForObjects",
+                    [
+                        "13"
+                    ],
+                    "files"
+                ]
+            ]
+        },
+        "14": {
+            "file": {
+                "id": "14",
+                "path": "/a/x",
+                "title": "x",
+                "accessUrl": null,
+                "downloadUrl": null,
+                "type": "application/octet-stream",
+                "extension": "",
+                "size": 1,
+                "hash": "",
+                "published": null,
+                "modified": null,
+                "labels": [
+                    "Draft"
+                ]
+            },
+            "calls": [
+                [
+                    "getTagIdsForObjects",
+                    [
+                        "14"
+                    ],
+                    "files"
+                ],
+                [
+                    "getTagsByIds",
+                    [
+                        "2",
+                        "3"
+                    ]
+                ]
+            ]
+        }
+    },
+    "cacheFileTags": {
+        "cache": {
+            "11": [
+                "Public"
+            ],
+            "12": [
+                "Draft",
+                "Public"
+            ],
+            "13": [],
+            "99": []
+        },
+        "calls": [
+            [
+                "getTagIdsForObjects",
+                [
+                    "11",
+                    "12",
+                    "13",
+                    "99"
+                ],
+                "files"
+            ],
+            [
+                "getTagsByIds",
+                [
+                    1,
+                    2,
+                    9,
+                    3
+                ]
+            ]
+        ]
+    }
+}

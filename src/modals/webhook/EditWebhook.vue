@@ -7,9 +7,8 @@
 				: t('openregister', 'Create Webhook')
 		"
 		size="large"
-		:canClose="true"
 		:open="true"
-		@update:open="handleDialogClose">
+		@update:open="closeModal">
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
@@ -50,57 +49,31 @@
 							</template>
 						</NcTextField>
 
-						<div class="selectField">
-							<label class="dialog-label">{{
-								t('openregister', 'HTTP Method')
-							}}</label>
-							<NcSelect
-								v-model="selectedMethod"
-								inputLabel="Selected Method"
-								:options="httpMethodOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select HTTP method')
-								"
-								@update:modelValue="updateMethod">
-								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'HTTP method used to send webhook requests',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							v-model="selectedMethod"
+							:title="t('openregister', 'HTTP Method')"
+							:hint="
+								t(
+									'openregister',
+									'HTTP method used to send webhook requests',
+								)
+							"
+							inputLabel="Selected Method"
+							:options="httpMethodOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="t('openregister', 'Select HTTP method')"
+							@update:modelValue="updateMethod" />
 
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="webhookItem?.enabled !== false"
-								@update:modelValue="updateEnabled">
-								{{ t('openregister', 'Enabled') }}
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Enable or disable this webhook',
-									)
-								}}
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="webhookItem?.enabled !== false"
+							:hint="
+								t('openregister', 'Enable or disable this webhook')
+							"
+							@update:modelValue="updateEnabled">
+							{{ t('openregister', 'Enabled') }}
+						</FormCheckboxField>
 					</div>
 				</AppTab>
 
@@ -112,99 +85,73 @@
 					</template>
 
 					<div class="form-editor">
-						<div class="selectField">
-							<label class="dialog-label">{{
-								t('openregister', 'Event')
-							}}</label>
-							<NcSelect
-								v-model="selectedEvent"
-								inputLabel="Selected Event"
-								:options="eventOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:filterable="true"
-								:placeholder="
-									t('openregister', 'Select event to listen to...')
-								"
-								@searchChange="searchEvents"
-								@update:modelValue="updateEvent">
-								<template
-									#option="{ label, description, category, type }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-										<span class="option-meta">
-											{{ category }} •
-											{{
-												type === 'before'
-													? t('openregister', 'Before')
-													: t('openregister', 'After')
-											}}
-										</span>
-									</div>
-								</template>
-								<template #no-options>
-									<span v-if="loadingEvents">{{
-										t('openregister', 'Loading events...')
-									}}</span>
-									<span v-else>{{
-										t('openregister', 'No events found')
-									}}</span>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Select the event this webhook should listen to',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							v-model="selectedEvent"
+							:title="t('openregister', 'Event')"
+							:hint="
+								t(
+									'openregister',
+									'Select the event this webhook should listen to',
+								)
+							"
+							inputLabel="Selected Event"
+							:options="eventOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:filterable="true"
+							:placeholder="
+								t('openregister', 'Select event to listen to...')
+							"
+							@searchChange="searchEvents"
+							@update:modelValue="updateEvent">
+							<template
+								#option="{ label, description, category, type }">
+								<SelectOption
+									:title="label"
+									:description="description">
+									<span class="option-meta">
+										{{ category }} •
+										{{
+											type === 'before'
+												? t('openregister', 'Before')
+												: t('openregister', 'After')
+										}}
+									</span>
+								</SelectOption>
+							</template>
+							<template #noOptions>
+								<span v-if="loadingEvents">{{
+									t('openregister', 'Loading events...')
+								}}</span>
+								<span v-else>{{
+									t('openregister', 'No events found')
+								}}</span>
+							</template>
+						</FormSelectField>
 
-						<div v-if="selectedEvent" class="selectField">
-							<label class="dialog-label">{{
-								t('openregister', 'Event Property for Payload')
-							}}</label>
-							<NcSelect
-								v-model="selectedEventProperty"
-								inputLabel="Selected Event Property"
-								:options="eventPropertyOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t(
-										'openregister',
-										'Select property to send as payload',
-									)
-								"
-								@update:modelValue="updateEventProperty">
-								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Select which property from the event should be used as the webhook payload data',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							v-if="selectedEvent"
+							v-model="selectedEventProperty"
+							:title="t('openregister', 'Event Property for Payload')"
+							:hint="
+								t(
+									'openregister',
+									'Select which property from the event should be used as the webhook payload data',
+								)
+							"
+							inputLabel="Selected Event Property"
+							:options="eventPropertyOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="
+								t(
+									'openregister',
+									'Select property to send as payload',
+								)
+							"
+							@update:modelValue="updateEventProperty" />
 					</div>
 				</AppTab>
 
@@ -216,96 +163,58 @@
 					</template>
 
 					<div class="form-editor">
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="configuration.sendCloudEvent !== false"
-								@update:modelValue="updateSendCloudEvent">
-								{{ t('openregister', 'Send as CloudEvent') }}
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Wrap webhook payload in CloudEvents format for better interoperability',
-									)
-								}}
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="configuration.sendCloudEvent !== false"
+							:hint="
+								t(
+									'openregister',
+									'Wrap webhook payload in CloudEvents format for better interoperability',
+								)
+							"
+							@update:modelValue="updateSendCloudEvent">
+							{{ t('openregister', 'Send as CloudEvent') }}
+						</FormCheckboxField>
 
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="configuration.waitForResponse === true"
-								@update:modelValue="updateWaitForResponse">
-								{{ t('openregister', 'Wait for Response') }}
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Wait for webhook response before continuing (required for request/response flows)',
-									)
-								}}
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="configuration.waitForResponse === true"
+							:hint="
+								t(
+									'openregister',
+									'Wait for webhook response before continuing (required for request/response flows)',
+								)
+							"
+							@update:modelValue="updateWaitForResponse">
+							{{ t('openregister', 'Wait for Response') }}
+						</FormCheckboxField>
 
-						<div class="checkboxField">
-							<NcCheckboxRadioSwitch
-								:modelValue="
-									configuration.allowPrivateTargets === true
-								"
-								@update:modelValue="updateAllowPrivateTargets">
-								{{
-									t(
-										'openregister',
-										'Allow private/loopback targets',
-									)
-								}}
-							</NcCheckboxRadioSwitch>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'Disable the SSRF guard for this webhook so it can deliver to private, loopback or link-local addresses (e.g. http://localhost:8000). Only enable this for local testing.',
-									)
-								}}
-							</p>
-						</div>
+						<FormCheckboxField
+							:modelValue="configuration.allowPrivateTargets === true"
+							:hint="
+								t(
+									'openregister',
+									'Disable the SSRF guard for this webhook so it can deliver to private, loopback or link-local addresses (e.g. http://localhost:8000). Only enable this for local testing.',
+								)
+							"
+							@update:modelValue="updateAllowPrivateTargets">
+							{{ t('openregister', 'Allow private/loopback targets') }}
+						</FormCheckboxField>
 
-						<div class="selectField">
-							<label class="dialog-label">{{
-								t('openregister', 'Retry Policy')
-							}}</label>
-							<NcSelect
-								v-model="selectedRetryPolicy"
-								inputLabel="Selected Retry Policy"
-								:options="retryPolicyOptions"
-								label="label"
-								trackBy="value"
-								:labelOutside="true"
-								:placeholder="
-									t('openregister', 'Select retry policy')
-								"
-								@update:modelValue="updateRetryPolicy">
-								<template #option="{ label, description }">
-									<div class="option-content">
-										<span class="option-title">{{ label }}</span>
-										<span
-											v-if="description"
-											class="option-description"
-											>{{ description }}</span
-										>
-									</div>
-								</template>
-							</NcSelect>
-							<p class="field-hint">
-								{{
-									t(
-										'openregister',
-										'How to handle retries for failed webhook deliveries',
-									)
-								}}
-							</p>
-						</div>
+						<FormSelectField
+							v-model="selectedRetryPolicy"
+							:title="t('openregister', 'Retry Policy')"
+							:hint="
+								t(
+									'openregister',
+									'How to handle retries for failed webhook deliveries',
+								)
+							"
+							inputLabel="Selected Retry Policy"
+							:options="retryPolicyOptions"
+							label="label"
+							trackBy="value"
+							:labelOutside="true"
+							:placeholder="t('openregister', 'Select retry policy')"
+							@update:modelValue="updateRetryPolicy" />
 
 						<div class="selectField">
 							<label class="dialog-label">{{
@@ -466,12 +375,7 @@
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton @click="closeModal" />
 			<NcButton
 				:disabled="loading || !isValid"
 				variant="primary"
@@ -493,7 +397,6 @@ import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
-	NcCheckboxRadioSwitch,
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
@@ -501,30 +404,49 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Tune from 'vue-material-design-icons/Tune.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import FormCheckboxField from '../../components/shared/FormCheckboxField.vue'
+import FormSelectField from '../../components/shared/FormSelectField.vue'
+import SelectOption from '../../components/shared/SelectOption.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import {
+	defaultMethodOption,
+	storedSelections,
+	webhookPayload,
+} from '../../services/webhookForm.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
+import {
+	defaultWebhookConfiguration,
+	defaultWebhookItem,
+	emptyEventCatalogue,
+	emptyWebhookSelections,
+	httpMethodOptions,
+	idleMappingPreview,
+	retryPolicyOptions,
+} from './webhookDefaults.js'
 
 export default {
 	name: 'EditWebhook',
 	components: {
 		NcDialog,
 		NcButton,
-		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
 		NcTextField,
 		NcTextArea,
 		AppTabs,
+		FormCheckboxField,
+		FormSelectField,
+		SelectOption,
 		AppTab,
-		Cancel,
+		CloseCancelButton,
 		ContentSave,
 		Cog,
 		Database,
@@ -538,69 +460,12 @@ export default {
 			error: null,
 			activeTab: 0,
 			webhookItem: null,
-			selectedMethod: null,
-			selectedEvent: null,
-			selectedEventProperty: null,
-			selectedRetryPolicy: null,
-			selectedMapping: null,
-			mappingOptions: [],
-			loadingMappings: false,
-			preview: null,
-			previewError: null,
-			previewing: false,
-			configuration: {
-				sendCloudEvent: true,
-				waitForResponse: false,
-				allowPrivateTargets: false,
-				eventProperty: null,
-				responseMapping: {},
-			},
-
-			availableEvents: [],
-			eventOptions: [],
-			loadingEvents: false,
-			httpMethodOptions: [
-				{ value: 'GET', label: 'GET', description: 'HTTP GET method' },
-				{
-					value: 'POST',
-					label: 'POST',
-					description: 'Standard HTTP POST method',
-				},
-				{ value: 'PUT', label: 'PUT', description: 'HTTP PUT method' },
-				{ value: 'PATCH', label: 'PATCH', description: 'HTTP PATCH method' },
-				{
-					value: 'DELETE',
-					label: 'DELETE',
-					description: 'HTTP DELETE method',
-				},
-			],
-
-			retryPolicyOptions: [
-				{
-					value: 'exponential',
-					label: t('openregister', 'Exponential'),
-					description: t(
-						'openregister',
-						'Delays double with each attempt (2, 4, 8 minutes...)',
-					),
-				},
-				{
-					value: 'linear',
-					label: t('openregister', 'Linear'),
-					description: t(
-						'openregister',
-						'Delays increase linearly (5, 10, 15 minutes...)',
-					),
-				},
-				{
-					value: 'fixed',
-					label: t('openregister', 'Fixed'),
-					description: t(
-						'openregister',
-						'Constant delay between retries (5 minutes)',
-					),
-				},
-			],
+			...emptyWebhookSelections(),
+			...idleMappingPreview(),
+			configuration: defaultWebhookConfiguration(),
+			...emptyEventCatalogue(),
+			httpMethodOptions: httpMethodOptions(),
+			retryPolicyOptions: retryPolicyOptions(),
 		}
 	},
 
@@ -723,30 +588,9 @@ export default {
 				this.webhookItem = { ...transferData.webhook }
 				this.loadExistingSelections()
 			} else {
-				this.webhookItem = {
-					name: '',
-					url: '',
-					method: 'POST',
-					enabled: true,
-					events: [],
-					maxRetries: 3,
-					timeout: 30,
-					retryPolicy: 'exponential',
-					secret: null,
-					headers: {},
-					filters: {},
-					configuration: {
-						sendCloudEvent: true,
-						waitForResponse: false,
-						allowPrivateTargets: false,
-						eventProperty: null,
-						responseMapping: {},
-					},
-				}
+				this.webhookItem = defaultWebhookItem()
 				// Default to POST (find it in options since GET is now first).
-				this.selectedMethod =
-					this.httpMethodOptions.find((m) => m.value === 'POST')
-					|| this.httpMethodOptions[0]
+				this.selectedMethod = defaultMethodOption(this.httpMethodOptions)
 				this.selectedRetryPolicy = this.retryPolicyOptions[0] // 'exponential'
 				this.selectedEvent = null
 				this.selectedEventProperty = null
@@ -754,7 +598,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — sets the webhook name.
 		 */
 		updateName(value) {
@@ -765,7 +609,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — sets the webhook URL.
 		 */
 		updateUrl(value) {
@@ -776,7 +620,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Form-field binding — sets the HTTP method.
 		 */
 		updateMethod(value) {
@@ -788,7 +632,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the enabled flag.
 		 */
 		updateEnabled(value) {
@@ -799,7 +643,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|string|null} value
 		 * @spec exclude Form-field binding — sets the subscribed event and resets event property.
 		 */
 		updateEvent(value) {
@@ -823,63 +667,62 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Form-field binding — sets the selected event property.
 		 */
 		updateEventProperty(value) {
-			if (!this.webhookItem) {
-				this.webhookItem = {}
-			}
-			if (!this.webhookItem.configuration) {
-				this.webhookItem.configuration = {}
-			}
-			this.webhookItem.configuration.eventProperty = value ? value.value : null
+			this.ensureConfiguration().eventProperty = value ? value.value : null
 			this.selectedEventProperty = value
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the sendCloudEvent configuration flag.
 		 */
 		updateSendCloudEvent(value) {
-			if (!this.webhookItem) {
-				this.webhookItem = {}
-			}
-			if (!this.webhookItem.configuration) {
-				this.webhookItem.configuration = {}
-			}
-			this.configuration.sendCloudEvent = value
-			this.webhookItem.configuration.sendCloudEvent = value
+			this.setConfigurationFlag('sendCloudEvent', value)
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the waitForResponse configuration flag.
 		 */
 		updateWaitForResponse(value) {
-			if (!this.webhookItem) {
-				this.webhookItem = {}
-			}
-			if (!this.webhookItem.configuration) {
-				this.webhookItem.configuration = {}
-			}
-			this.configuration.waitForResponse = value
-			this.webhookItem.configuration.waitForResponse = value
+			this.setConfigurationFlag('waitForResponse', value)
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Form-field binding — sets the allowPrivateTargets configuration flag.
 		 */
 		updateAllowPrivateTargets(value) {
+			this.setConfigurationFlag('allowPrivateTargets', value)
+		},
+
+		/**
+		 * @param {string} key The configuration flag.
+		 * @param {boolean} value Its new value.
+		 * @spec exclude Form-field binding — sets one flag on both copies of the configuration.
+		 */
+		setConfigurationFlag(key, value) {
+			this.configuration[key] = value
+			this.ensureConfiguration()[key] = value
+		},
+
+		/**
+		 * The stored webhook's configuration, created when the form has none yet.
+		 *
+		 * @return {object} The webhook item's configuration.
+		 * @spec exclude Form-field binding — makes sure the webhook item has a configuration.
+		 */
+		ensureConfiguration() {
 			if (!this.webhookItem) {
 				this.webhookItem = {}
 			}
 			if (!this.webhookItem.configuration) {
 				this.webhookItem.configuration = {}
 			}
-			this.configuration.allowPrivateTargets = value
-			this.webhookItem.configuration.allowPrivateTargets = value
+			return this.webhookItem.configuration
 		},
 
 		/**
@@ -925,27 +768,20 @@ export default {
 			this.previewing = true
 			this.previewError = null
 			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/webhooks/preview'),
-					{
-						mapping: this.webhookItem.mapping ?? null,
-						configuration: this.webhookItem.configuration || {},
-						event: this.selectedEvent || undefined,
-					},
+				const response = await requestPreview(
+					this.webhookItem,
+					this.selectedEvent,
 				)
 				this.preview = response.data
 			} catch {
-				this.previewError = t(
-					'openregister',
-					'Could not preview the payload',
-				)
+				this.previewError = previewFailedText()
 			} finally {
 				this.previewing = false
 			}
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Form-field binding — sets the retry policy.
 		 */
 		updateRetryPolicy(value) {
@@ -957,7 +793,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string|number} value
 		 * @spec exclude Form-field binding — sets the max-retries count.
 		 */
 		updateMaxRetries(value) {
@@ -968,7 +804,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string|number} value
 		 * @spec exclude Form-field binding — sets the request timeout.
 		 */
 		updateTimeout(value) {
@@ -979,7 +815,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — sets the webhook secret.
 		 */
 		updateSecret(value) {
@@ -990,7 +826,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — parses header text into a headers object.
 		 */
 		updateHeaders(value) {
@@ -1010,7 +846,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Form-field binding — parses filter text into a filters object.
 		 */
 		updateFilters(value) {
@@ -1064,7 +900,7 @@ export default {
 		},
 
 		/**
-		 * @param _query
+		 * @param {string} _query
 		 * @spec exclude UI event handler — no-op search hook (NcSelect filters internally).
 		 */
 		searchEvents(_query) {
@@ -1077,55 +913,16 @@ export default {
 		 * @spec exclude Modal hydration plumbing — maps stored webhook values onto select inputs.
 		 */
 		loadExistingSelections() {
-			const item = this.webhookItem
-			if (item) {
-				// Load the payload mapping.
-				this.selectedMapping =
-					this.mappingOptions.find((m) => m.value === item.mapping) || null
-				// Load method.
-				if (item.method) {
-					this.selectedMethod =
-						this.httpMethodOptions.find((m) => m.value === item.method)
-						|| this.httpMethodOptions.find((m) => m.value === 'POST')
-						|| this.httpMethodOptions[0]
-				}
-
-				// Load retry policy.
-				if (item.retryPolicy) {
-					this.selectedRetryPolicy =
-						this.retryPolicyOptions.find(
-							(p) => p.value === item.retryPolicy,
-						) || this.retryPolicyOptions[0]
-				}
-
-				// Load event (take first event if multiple exist for backward compatibility).
-				if (
-					item.events
-					&& Array.isArray(item.events)
-					&& item.events.length > 0
-				) {
-					const eventClass = item.events[0]
-					this.selectedEvent = eventClass
-				}
-
-				// Load configuration.
-				if (item.configuration) {
-					this.configuration = { ...item.configuration }
-					if (item.configuration.eventProperty) {
-						this.selectedEventProperty = {
-							value: item.configuration.eventProperty,
-							label: item.configuration.eventProperty,
-						}
-					}
-				}
+			if (this.webhookItem) {
+				Object.assign(
+					this,
+					storedSelections(this.webhookItem, {
+						mappings: this.mappingOptions,
+						methods: this.httpMethodOptions,
+						retryPolicies: this.retryPolicyOptions,
+					}),
+				)
 			}
-		},
-
-		/**
-		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
-		 */
-		handleDialogClose() {
-			this.closeModal()
 		},
 
 		/**
@@ -1140,13 +937,7 @@ export default {
 			this.selectedEvent = null
 			this.selectedEventProperty = null
 			this.selectedRetryPolicy = null
-			this.configuration = {
-				sendCloudEvent: true,
-				waitForResponse: false,
-				allowPrivateTargets: false,
-				eventProperty: null,
-				responseMapping: {},
-			}
+			this.configuration = defaultWebhookConfiguration()
 		},
 
 		/**
@@ -1157,39 +948,7 @@ export default {
 			this.error = null
 
 			try {
-				const payload = {
-					name: this.webhookItem.name,
-					url: this.webhookItem.url,
-					method: this.webhookItem.method,
-					enabled: this.webhookItem.enabled !== false,
-					events: this.selectedEvent ? [this.selectedEvent] : [],
-					maxRetries: this.webhookItem.maxRetries || 3,
-					timeout: this.webhookItem.timeout || 30,
-					retryPolicy: this.webhookItem.retryPolicy || 'exponential',
-					secret: this.webhookItem.secret || null,
-					headers: this.webhookItem.headers || {},
-					filters: this.webhookItem.filters || {},
-					configuration: this.webhookItem.configuration || {},
-					mapping: this.webhookItem.mapping ?? null,
-				}
-
-				const isUpdate = Boolean(this.webhookItem.id)
-				if (isUpdate) {
-					payload.id = this.webhookItem.id
-				}
-
-				// The store refreshes webhookStore.webhookList after persisting, so
-				// every mounted view picks the change up reactively — no page reload.
-				const { data } = await webhookStore.saveWebhook(payload)
-
-				if (data) {
-					showSuccess(
-						isUpdate
-							? t('openregister', 'Webhook updated successfully')
-							: t('openregister', 'Webhook created successfully'),
-					)
-					this.closeModal()
-				}
+				await this.storeWebhook()
 			} catch (error) {
 				console.error('Failed to save webhook:', error)
 				this.error =
@@ -1199,44 +958,70 @@ export default {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * Send the form to the store, say whether the webhook was created or
+		 * updated, and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async storeWebhook() {
+			const payload = webhookPayload(this.webhookItem, this.selectedEvent)
+			const isUpdate = Boolean(payload.id)
+
+			// The store refreshes webhookStore.webhookList after persisting, so
+			// every mounted view picks the change up reactively — no page reload.
+			const { data } = await webhookStore.saveWebhook(payload)
+
+			if (data) {
+				showSuccess(savedText(isUpdate))
+				this.closeModal()
+			}
+		},
 	},
+}
+
+/**
+ * The notice for a saved webhook.
+ *
+ * @param {boolean} isUpdate Whether an existing webhook was updated
+ * @return {string} The notice
+ */
+function savedText(isUpdate) {
+	return isUpdate
+		? t('openregister', 'Webhook updated successfully')
+		: t('openregister', 'Webhook created successfully')
+}
+
+/**
+ * What the form says when the payload cannot be previewed.
+ *
+ * @return {string} The message
+ */
+function previewFailedText() {
+	return t('openregister', 'Could not preview the payload')
+}
+
+/**
+ * Ask the server what the webhook would send for its mapping, configuration
+ * and event.
+ *
+ * @param {object} webhookItem The webhook being edited
+ * @param {string|null} selectedEvent The chosen event
+ * @return {Promise<object>} The axios response
+ */
+function requestPreview(webhookItem, selectedEvent) {
+	return axios.post(generateUrl('/apps/openregister/api/webhooks/preview'), {
+		mapping: webhookItem.mapping ?? null,
+		configuration: webhookItem.configuration || {},
+		event: selectedEvent || undefined,
+	})
 }
 </script>
 
-<style scoped>
-.tabContainer {
-	width: 100%;
-}
-
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-	padding: 1rem 0;
-}
-
-.selectField {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.selectField label {
-	font-weight: 500;
-	color: var(--color-text-maxcontrast);
-}
-
-.checkboxField {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.field-hint {
-	font-size: 0.875rem;
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
+<style lang="scss" scoped>
+@use '../../styles/modals.scss' as *;
+@include tab-container-column;
 
 .payload-preview {
 	max-height: 240px;
@@ -1248,24 +1033,6 @@ export default {
 	font-size: 0.8125rem;
 }
 
-.option-content {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-}
-
-.option-title {
-	font-weight: 500;
-}
-
-.option-description {
-	font-size: 0.875rem;
-	color: var(--color-text-maxcontrast);
-	max-width: 100%;
-	white-space: normal;
-	overflow-wrap: break-word;
-}
-
 .option-meta {
 	font-size: 0.75rem;
 	color: var(--color-text-maxcontrast);
@@ -1273,17 +1040,9 @@ export default {
 }
 </style>
 
-<style>
-/* Tab styling - must be unscoped to affect Bootstrap Vue components */
-.nav-tabs .nav-link {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-}
+<style lang="scss">
+@use '../../styles/modals.scss' as *;
 
-.nav-tabs .nav-link span {
-	display: inline-flex;
-	align-items: center;
-}
+/* Tab styling - must be unscoped to affect Bootstrap Vue components */
+@include nav-tabs-link;
 </style>

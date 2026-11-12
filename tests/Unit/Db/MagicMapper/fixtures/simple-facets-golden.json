@@ -1,0 +1,336 @@
+{
+    "empty config": {
+        "events": [],
+        "facets": []
+    },
+    "no facets key": {
+        "events": [],
+        "facets": []
+    },
+    "metadata terms and dates": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicFacetHandler] Column does not exist for facet",
+                "context": {
+                    "tableName": "openregister_table_3_7",
+                    "field": "_register"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicFacetHandler] Column does not exist for facet",
+                "context": {
+                    "tableName": "openregister_table_3_7",
+                    "field": "_owner"
+                }
+            }
+        ],
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms",
+                    "buckets": [],
+                    "missing": {
+                        "results": 0
+                    }
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "year",
+                    "buckets": []
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month",
+                    "buckets": []
+                },
+                "owner": {
+                    "type": "terms",
+                    "buckets": [],
+                    "missing": {
+                        "results": 0
+                    }
+                }
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "per_facet_ms": [
+                    "@self.register",
+                    "@self.created",
+                    "@self.updated",
+                    "@self.owner",
+                    "@self.odd"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "metadata config not an array": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicFacetHandler] Column does not exist for facet",
+                "context": {
+                    "tableName": "openregister_table_3_7",
+                    "field": "name"
+                }
+            }
+        ],
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "per_facet_ms": [
+                    "name"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "property facets": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicFacetHandler] Column does not exist for facet",
+                "context": {
+                    "tableName": "openregister_table_3_7",
+                    "field": "name"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicFacetHandler] Column does not exist for facet",
+                "context": {
+                    "tableName": "openregister_table_3_7",
+                    "field": "plain"
+                }
+            }
+        ],
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [],
+                "missing": {
+                    "results": 0
+                },
+                "title": "Naam"
+            },
+            "birthDate": {
+                "type": "date_histogram",
+                "interval": "month",
+                "buckets": [],
+                "title": "Born"
+            },
+            "odd": {
+                "title": "Odd"
+            },
+            "plain": {
+                "type": "terms",
+                "buckets": [],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "per_facet_ms": [
+                    "name",
+                    "birthDate",
+                    "odd",
+                    "plain",
+                    "weird"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "withheld property": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicFacetHandler] Column does not exist for facet",
+                "context": {
+                    "tableName": "openregister_table_3_7",
+                    "field": "name"
+                }
+            }
+        ],
+        "facets": {
+            "name": {
+                "type": "terms",
+                "buckets": [],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "per_facet_ms": [
+                    "name"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "string config": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicFacetHandler] Column does not exist for facet",
+                "context": {
+                    "tableName": "openregister_table_3_7",
+                    "field": "name"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicFacetHandler] Column does not exist for facet",
+                "context": {
+                    "tableName": "openregister_table_3_7",
+                    "field": "birth_date"
+                }
+            }
+        ],
+        "facets": {
+            "@self": [],
+            "name": {
+                "type": "terms",
+                "buckets": [],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "birthDate": {
+                "type": "terms",
+                "buckets": [],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "per_facet_ms": [
+                    "name",
+                    "birthDate"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "list config": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicFacetHandler] Column does not exist for facet",
+                "context": {
+                    "tableName": "openregister_table_3_7",
+                    "field": "name"
+                }
+            }
+        ],
+        "facets": {
+            "@self": [],
+            "name": {
+                "type": "terms",
+                "buckets": [],
+                "missing": {
+                    "results": 0
+                }
+            },
+            "_metrics": {
+                "total_ms": "T",
+                "per_facet_ms": [
+                    "name"
+                ],
+                "label_cache": {
+                    "field_cache_hits": 0,
+                    "distributed_cache_hits": 0,
+                    "cache_handler_calls": 0,
+                    "total_uuids_resolved": 0
+                }
+            }
+        }
+    },
+    "metadata date on an existing column": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            }
+        ],
+        "exception": "LogicException"
+    },
+    "property date on an existing column": {
+        "events": [
+            {
+                "columns of": [
+                    "oc_openregister_table_3_7"
+                ]
+            }
+        ],
+        "exception": "LogicException"
+    }
+}

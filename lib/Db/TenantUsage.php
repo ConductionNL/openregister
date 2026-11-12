@@ -54,6 +54,22 @@ use OCP\AppFramework\Db\Entity;
 class TenantUsage extends Entity implements JsonSerializable {
 
 	/**
+	 * The serialised fields, in response order; dates are served as ISO 8601.
+	 *
+	 * @var list<string>
+	 */
+	private const JSON_FIELDS = [
+		'id',
+		'organisationUuid',
+		'period',
+		'requestCount',
+		'bandwidthBytes',
+		'storageBytes',
+		'created',
+		'updated',
+	];
+
+	/**
 	 * Organisation UUID.
 	 *
 	 * @var string Organisation UUID
@@ -121,30 +137,6 @@ class TenantUsage extends Entity implements JsonSerializable {
 	 * @return array Serialized usage data
 	 */
 	public function jsonSerialize(): array {
-		$period = null;
-		if ($this->period instanceof DateTime) {
-			$period = $this->period->format('c');
-		}
-
-		$created = null;
-		if ($this->created instanceof DateTime) {
-			$created = $this->created->format('c');
-		}
-
-		$updated = null;
-		if ($this->updated instanceof DateTime) {
-			$updated = $this->updated->format('c');
-		}
-
-		return [
-			'id' => $this->id,
-			'organisationUuid' => $this->organisationUuid,
-			'period' => $period,
-			'requestCount' => $this->requestCount,
-			'bandwidthBytes' => $this->bandwidthBytes,
-			'storageBytes' => $this->storageBytes,
-			'created' => $created,
-			'updated' => $updated,
-		];
+		return (new TypedFieldsJson())->pick(values: get_object_vars($this), names: self::JSON_FIELDS);
 	}//end jsonSerialize()
 }//end class

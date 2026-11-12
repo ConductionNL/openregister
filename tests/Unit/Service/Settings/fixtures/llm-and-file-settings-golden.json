@@ -1,0 +1,1702 @@
+{
+    "empty file get": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 10,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "openAnonymiserPasswordSet": false,
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto"
+        },
+        "writes": []
+    },
+    "empty file update batch low": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 1,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": false
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":1,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "deleteKey",
+                "openAnonymiserPassword"
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "empty file update batch text": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 25,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":25,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "setValueString",
+                "openAnonymiserPassword",
+                "new-secret",
+                true
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "empty file update nothing": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 10,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": false
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "empty file update null values": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 10,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": false
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "empty file update password not string": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 10,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": false
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "empty file update values": {
+        "result": {
+            "vectorizationEnabled": true,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 50,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "pdf"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 500,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "d",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "user",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": false
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":true,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":50,\"chunkOverlap\":200,\"enabledFileTypes\":[\"pdf\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":500,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"d\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"user\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "empty llm get": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": null,
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": []
+    },
+    "empty llm update extra keys": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": null,
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":false,\"embeddingProvider\":null,\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"\",\"model\":null,\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"php\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "empty llm update nested": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": null,
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "new",
+                "model": null,
+                "chatModel": null,
+                "organizationId": "o"
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": "c",
+                "baseUrl": "http://f"
+            },
+            "vectorConfig": {
+                "backend": "solr"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":false,\"embeddingProvider\":null,\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"new\",\"model\":null,\"chatModel\":null,\"organizationId\":\"o\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":\"c\",\"baseUrl\":\"http:\\/\\/f\"},\"vectorConfig\":{\"backend\":\"solr\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "empty llm update nothing": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": null,
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":false,\"embeddingProvider\":null,\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"\",\"model\":null,\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"php\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "empty llm update top level": {
+        "result": {
+            "enabled": true,
+            "embeddingProvider": "fireworks",
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":true,\"embeddingProvider\":\"fireworks\",\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"\",\"model\":null,\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"php\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "no vector backend file get": {
+        "result": {
+            "chunkSize": 5,
+            "openAnonymiserUsername": "",
+            "openAnonymiserPasswordSet": false
+        },
+        "writes": []
+    },
+    "no vector backend llm get": {
+        "result": {
+            "enabled": false,
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": []
+    },
+    "null json file get": {
+        "result": {
+            "thrown": "TypeError",
+            "message": "OCA\\OpenRegister\\Service\\Settings\\FileSettingsHandler::getFileSettingsOnly(): Return value must be of type array, null returned"
+        },
+        "writes": []
+    },
+    "null json llm get": {
+        "result": {
+            "enabled": false,
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": []
+    },
+    "null json llm update extra keys": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": null,
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":false,\"embeddingProvider\":null,\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"\",\"model\":null,\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"php\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "null json llm update nested": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": null,
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "new",
+                "model": null,
+                "chatModel": null,
+                "organizationId": "o"
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": "c",
+                "baseUrl": "http://f"
+            },
+            "vectorConfig": {
+                "backend": "solr"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":false,\"embeddingProvider\":null,\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"new\",\"model\":null,\"chatModel\":null,\"organizationId\":\"o\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":\"c\",\"baseUrl\":\"http:\\/\\/f\"},\"vectorConfig\":{\"backend\":\"solr\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "null json llm update nothing": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": null,
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":false,\"embeddingProvider\":null,\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"\",\"model\":null,\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"php\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "null json llm update top level": {
+        "result": {
+            "enabled": true,
+            "embeddingProvider": "fireworks",
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":true,\"embeddingProvider\":\"fireworks\",\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"\",\"model\":null,\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"php\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "password only file get": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 10,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "openAnonymiserPasswordSet": true,
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto"
+        },
+        "writes": []
+    },
+    "password only llm get": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": null,
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": []
+    },
+    "stored file get": {
+        "result": {
+            "batchSize": 1,
+            "provider": "x",
+            "reviewDefault": {
+                "owner": "reviewer"
+            },
+            "openAnonymiserUsername": "",
+            "openAnonymiserPasswordSet": true
+        },
+        "writes": []
+    },
+    "stored file update batch low": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 1,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": false
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":1,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "deleteKey",
+                "openAnonymiserPassword"
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "stored file update batch text": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 25,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":25,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "setValueString",
+                "openAnonymiserPassword",
+                "new-secret",
+                true
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "stored file update nothing": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 10,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "stored file update null values": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 10,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "stored file update password not string": {
+        "result": {
+            "vectorizationEnabled": false,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 1000,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "txt",
+                "md",
+                "html",
+                "json",
+                "xml",
+                "csv",
+                "pdf",
+                "docx",
+                "doc",
+                "xlsx",
+                "xls"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 10,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "stored file update values": {
+        "result": {
+            "vectorizationEnabled": true,
+            "provider": null,
+            "chunkingStrategy": "RECURSIVE_CHARACTER",
+            "chunkSize": 50,
+            "chunkOverlap": 200,
+            "enabledFileTypes": [
+                "pdf"
+            ],
+            "ocrEnabled": false,
+            "maxFileSizeMB": 100,
+            "extractionScope": "objects",
+            "textExtractor": "llphant",
+            "extractionMode": "background",
+            "maxFileSize": 100,
+            "batchSize": 500,
+            "dolphinApiEndpoint": "",
+            "dolphinApiKey": "d",
+            "presidioApiEndpoint": "",
+            "openAnonymiserApiEndpoint": "",
+            "openAnonymiserSource": "internal",
+            "openAnonymiserUsername": "user",
+            "entityRecognitionEnabled": false,
+            "entityRecognitionMethod": "auto",
+            "anonymisationReview": null,
+            "openAnonymiserPasswordSet": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ],
+            [
+                "setValueString",
+                "fileManagement",
+                "{\"vectorizationEnabled\":true,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":50,\"chunkOverlap\":200,\"enabledFileTypes\":[\"pdf\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":500,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"d\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"user\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisationReview\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "fileManagement",
+                    "@openAnonymiserPassword"
+                ]
+            ]
+        ]
+    },
+    "stored full file get": {
+        "result": {
+            "batchSize": 500,
+            "openAnonymiserUsername": "5",
+            "openAnonymiserPasswordSet": false
+        },
+        "writes": []
+    },
+    "stored full llm get": {
+        "result": {
+            "enabled": true,
+            "chatProvider": "ollama",
+            "ollamaConfig": {
+                "url": "http://o"
+            },
+            "fireworksConfig": "text",
+            "vectorConfig": {
+                "backend": "db"
+            }
+        },
+        "writes": []
+    },
+    "stored full llm update extra keys": {
+        "result": {
+            "enabled": true,
+            "embeddingProvider": null,
+            "chatProvider": "ollama",
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://o",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "db"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":true,\"embeddingProvider\":null,\"chatProvider\":\"ollama\",\"openaiConfig\":{\"apiKey\":\"\",\"model\":null,\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/o\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"db\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "stored full llm update nested": {
+        "result": {
+            "enabled": true,
+            "embeddingProvider": null,
+            "chatProvider": "ollama",
+            "openaiConfig": {
+                "apiKey": "new",
+                "model": null,
+                "chatModel": null,
+                "organizationId": "o"
+            },
+            "ollamaConfig": {
+                "url": "http://o",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": "c",
+                "baseUrl": "http://f"
+            },
+            "vectorConfig": {
+                "backend": "solr"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":true,\"embeddingProvider\":null,\"chatProvider\":\"ollama\",\"openaiConfig\":{\"apiKey\":\"new\",\"model\":null,\"chatModel\":null,\"organizationId\":\"o\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/o\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":\"c\",\"baseUrl\":\"http:\\/\\/f\"},\"vectorConfig\":{\"backend\":\"solr\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "stored full llm update nothing": {
+        "result": {
+            "enabled": true,
+            "embeddingProvider": null,
+            "chatProvider": "ollama",
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://o",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "db"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":true,\"embeddingProvider\":null,\"chatProvider\":\"ollama\",\"openaiConfig\":{\"apiKey\":\"\",\"model\":null,\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/o\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"db\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "stored full llm update top level": {
+        "result": {
+            "enabled": true,
+            "embeddingProvider": "fireworks",
+            "chatProvider": "ollama",
+            "openaiConfig": {
+                "apiKey": "",
+                "model": null,
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://o",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "db"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":true,\"embeddingProvider\":\"fireworks\",\"chatProvider\":\"ollama\",\"openaiConfig\":{\"apiKey\":\"\",\"model\":null,\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/o\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"db\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "stored llm get": {
+        "result": {
+            "embeddingProvider": "openai",
+            "openaiConfig": {
+                "apiKey": "k-1",
+                "model": "m"
+            },
+            "vectorConfig": {
+                "dims": 3,
+                "backend": "php"
+            },
+            "enabled": false
+        },
+        "writes": []
+    },
+    "stored llm update extra keys": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": "openai",
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "k-1",
+                "model": "m",
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":false,\"embeddingProvider\":\"openai\",\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"k-1\",\"model\":\"m\",\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"php\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "stored llm update nested": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": "openai",
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "new",
+                "model": "m",
+                "chatModel": null,
+                "organizationId": "o"
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": "c",
+                "baseUrl": "http://f"
+            },
+            "vectorConfig": {
+                "backend": "solr"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":false,\"embeddingProvider\":\"openai\",\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"new\",\"model\":\"m\",\"chatModel\":null,\"organizationId\":\"o\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":\"c\",\"baseUrl\":\"http:\\/\\/f\"},\"vectorConfig\":{\"backend\":\"solr\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "stored llm update nothing": {
+        "result": {
+            "enabled": false,
+            "embeddingProvider": "openai",
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "k-1",
+                "model": "m",
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":false,\"embeddingProvider\":\"openai\",\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"k-1\",\"model\":\"m\",\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"php\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    },
+    "stored llm update top level": {
+        "result": {
+            "enabled": true,
+            "embeddingProvider": "fireworks",
+            "chatProvider": null,
+            "openaiConfig": {
+                "apiKey": "k-1",
+                "model": "m",
+                "chatModel": null,
+                "organizationId": ""
+            },
+            "ollamaConfig": {
+                "url": "http://localhost:11434",
+                "model": null,
+                "chatModel": null
+            },
+            "fireworksConfig": {
+                "apiKey": "",
+                "embeddingModel": null,
+                "chatModel": null,
+                "baseUrl": "https://api.fireworks.ai/inference/v1"
+            },
+            "vectorConfig": {
+                "backend": "php"
+            }
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "llm"
+                ]
+            ],
+            [
+                "setValueString",
+                "llm",
+                "{\"enabled\":true,\"embeddingProvider\":\"fireworks\",\"chatProvider\":null,\"openaiConfig\":{\"apiKey\":\"k-1\",\"model\":\"m\",\"chatModel\":null,\"organizationId\":\"\"},\"ollamaConfig\":{\"url\":\"http:\\/\\/localhost:11434\",\"model\":null,\"chatModel\":null},\"fireworksConfig\":{\"apiKey\":\"\",\"embeddingModel\":null,\"chatModel\":null,\"baseUrl\":\"https:\\/\\/api.fireworks.ai\\/inference\\/v1\"},\"vectorConfig\":{\"backend\":\"php\"}}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "llm"
+                ]
+            ]
+        ]
+    }
+}

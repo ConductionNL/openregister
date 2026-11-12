@@ -60,7 +60,7 @@ use OCP\EventDispatcher\IEventDispatcher;
  *
  * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
  */
-class ObjectEventGate {
+class ObjectEventGate implements ObjectEventGateInterface {
 
 	/**
 	 * Constructor.

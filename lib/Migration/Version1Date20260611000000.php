@@ -9,7 +9,7 @@
  * report (as JSON), the engine used, and basic timing data.
  *
  * The `sanitization` column is the JSON payload produced by
- * {@see \OCA\OpenRegister\Service\File\SanitizationReport::jsonSerialize}. It
+ * {@see \OCA\OpenRegister\Files\Service\File\SanitizationReport::jsonSerialize}. It
  * is NULL for non-Office anonymisations (PDF, plain text) and pre-sanitisation
  * legacy runs.
  *

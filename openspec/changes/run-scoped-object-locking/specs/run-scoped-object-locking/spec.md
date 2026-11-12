@@ -84,8 +84,11 @@ and no audited displacement.
 ### Requirement: A lock refuses a write and names its holder
 
 While a live lock is held against the caller, the system SHALL refuse to
-update, patch or revert that object, and the refusal SHALL name the holder.
-When a run holds the lock the message SHALL name the run.
+update, patch, revert or delete that object, and the refusal SHALL name the
+holder. When a run holds the lock the message SHALL name the run. A delete is
+refused on the single and the bulk path, and for a cascade that reaches the
+object. The retention machinery destroying the object on its date is not
+refused.
 
 The refusal SHALL apply on the service write path, not only at the HTTP
 controller: a lock that only the controller enforces is not a lock.
@@ -103,6 +106,12 @@ lock is meant to outlive every write the run makes.
 - **WHEN** a person updates it over the API
 - **THEN** the write MUST be refused, and the message MUST name the holding run
 - @e2e tests/e2e/api-direct/flow-object-locking.spec.ts — a person's write is refused with 423 while a run holds the lock, the run's own runAs user included
+
+#### Scenario: A locked object is not deleted
+- **GIVEN** an object locked by a person
+- **WHEN** another person deletes it, alone, in a bulk delete, or through a cascade from its parent
+- **THEN** the delete MUST be refused, the message MUST name the holder, and a cascade MUST delete nothing
+- @e2e exclude guard-internal, covered by ObjectStateDeleteGuardListenerTest
 
 #### Scenario: The holder writes freely
 - **GIVEN** an object locked by a person

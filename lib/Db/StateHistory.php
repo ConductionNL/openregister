@@ -61,6 +61,7 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLeftAt(?DateTime $leftAt)
  */
 class StateHistory extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The object whose state this is.
@@ -123,22 +124,4 @@ class StateHistory extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'enteredAt', type: 'datetime');
 		$this->addType(fieldName: 'leftAt', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * Serialise the interval.
-	 *
-	 * @return array<string, mixed> The interval.
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'property' => $this->property,
-			'value' => $this->value,
-			'enteredAt' => $this->enteredAt?->format('c'),
-			'leftAt' => $this->leftAt?->format('c'),
-		];
-	}//end jsonSerialize()
 }//end class

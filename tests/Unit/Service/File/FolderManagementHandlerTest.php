@@ -19,7 +19,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -270,31 +270,6 @@ class FolderManagementHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// getNodeTypeFromFolder tests
-	// =========================================================================
-
-	#[Test]
-	public function testGetNodeTypeFromFolderReturnsFolder(): void {
-		$folderNode = $this->createMock(Folder::class);
-		$result = $this->handler->getNodeTypeFromFolder($folderNode);
-		$this->assertEquals('folder', $result);
-	}
-
-	#[Test]
-	public function testGetNodeTypeFromFolderReturnsFile(): void {
-		$fileNode = $this->createMock(\OCP\Files\File::class);
-		$result = $this->handler->getNodeTypeFromFolder($fileNode);
-		$this->assertEquals('file', $result);
-	}
-
-	#[Test]
-	public function testGetNodeTypeFromFolderReturnsUnknown(): void {
-		$node = $this->createMock(Node::class);
-		$result = $this->handler->getNodeTypeFromFolder($node);
-		$this->assertEquals('unknown', $result);
-	}
-
-	// =========================================================================
 	// getOpenRegisterUserFolder tests
 	// =========================================================================
 
@@ -521,7 +496,8 @@ class FolderManagementHandlerTest extends TestCase {
 	public function testSetFileServiceDoesNotThrow(): void {
 		$fileService = $this->createMock(FileService::class);
 		$this->handler->setFileService($fileService);
-		$this->assertTrue(true);
+
+		$this->assertSame($fileService, (new \ReflectionProperty($this->handler, 'fileService'))->getValue($this->handler));
 	}
 
 	// =========================================================================

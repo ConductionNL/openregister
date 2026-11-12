@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -37,6 +37,8 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceHelpers;
+use OCA\OpenRegister\Service\RegisterServiceStorage;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
 use OCP\Files\Config\IUserMountCache;
 use OCP\Files\Folder;
@@ -128,20 +130,17 @@ class RegisterServiceDeleteFolderTest extends TestCase {
 		// Managed folders are held by the openregister account, as in production.
 		$systemAccount = $this->createMock(IUser::class);
 		$systemAccount->method('getUID')->willReturn('openregister');
-		$ownership = $this->createMock(\OCA\OpenRegister\Service\File\FileOwnershipHandler::class);
+		$ownership = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileOwnershipHandler::class);
 		$ownership->method('getUser')->willReturn($systemAccount);
 		(new ReflectionProperty(FileService::class, 'fileOwnershipHandler'))->setValue($fileService, $ownership);
 		$handler->setFileService($fileService);
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->service = new RegisterService(
-			registerMapper: $this->registerMapper,
-			schemaMapper: $schemaMapper,
-			db: $this->createMock(IDBConnection::class),
-			fileService: $fileService,
+			storage: new RegisterServiceStorage(db: $this->createMock(IDBConnection::class), catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			helpers: new RegisterServiceHelpers($fileService, new RegisterSerializer($schemaMapper, $this->logger)),
 			organisationService: $this->createMock(OrganisationService::class),
-			logger: $this->logger,
-			registerSerializer: new RegisterSerializer($schemaMapper, $this->logger)
+			logger: $this->logger
 		);
 	}//end setUp()
 

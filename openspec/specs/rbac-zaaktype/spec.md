@@ -141,6 +141,14 @@ Individual users MUST be grantable permissions independent of group membership t
 - **THEN** access MUST be granted
 - **AND** after `2026-04-01`, the delegation MUST automatically expire and access MUST be denied
 
+#### Scenario: A delegation ending on `_expires` reads the record's own expiry
+- **GIVEN** a user override `{ "user": "vervanger-1", "match": { "_expires": { "$gt": "$now" } } }`
+- **WHEN** it is evaluated against a record
+- **THEN** `_expires` MUST be read from the record's own `expires`, which the match envelope carries (the rendered `@self` does not)
+- **AND** a record that expired, or has no expiry, MUST NOT be admitted by it
+- **AND** a body key `_expires` or a data `@self.expires` MUST NOT answer it
+- **AND** saving such a rule MUST NOT be refused as a condition on unknown record metadata
+
 #### Scenario: Delegation does not affect group permissions
 - **GIVEN** user `jan` is in group `kcc-team` which has `read` on schema `meldingen`
 - **AND** `jan` is individually granted `update` on `meldingen` via delegation

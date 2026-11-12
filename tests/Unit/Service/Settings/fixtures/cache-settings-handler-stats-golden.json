@@ -1,0 +1,846 @@
+{
+    "container fails": {
+        "result": {
+            "overview": {
+                "totalCacheSize": 0,
+                "totalCacheEntries": 0,
+                "overallHitRate": 0.0,
+                "averageResponseTime": 2.5,
+                "cacheEfficiency": 0.0
+            },
+            "services": {
+                "object": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "schema": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "facet": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                }
+            },
+            "names": {
+                "cache_size": 0,
+                "hit_rate": 0.0,
+                "hits": 0,
+                "misses": 0,
+                "warmups": 0,
+                "enabled": true
+            },
+            "distributed": {
+                "type": "distributed",
+                "backend": "normalised",
+                "available": true,
+                "keyCount": "Unknown",
+                "size": "Unknown"
+            },
+            "performance": {
+                "averageHitTime": 2.5,
+                "averageMissTime": 850.0,
+                "performanceGain": 340.0,
+                "optimalHitRate": 85.0,
+                "currentTrend": "improving"
+            },
+            "lastUpdated": "normalised"
+        },
+        "types": {
+            "overview": {
+                "totalCacheSize": "int",
+                "totalCacheEntries": "int",
+                "overallHitRate": "float",
+                "averageResponseTime": "float",
+                "cacheEfficiency": "float"
+            },
+            "services": {
+                "object": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "schema": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "facet": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                }
+            },
+            "names": {
+                "cache_size": "int",
+                "hit_rate": "float",
+                "hits": "int",
+                "misses": "int",
+                "warmups": "int",
+                "enabled": "bool"
+            },
+            "distributed": {
+                "type": "string",
+                "backend": "string",
+                "available": "bool",
+                "keyCount": "string",
+                "size": "string"
+            },
+            "performance": {
+                "averageHitTime": "float",
+                "averageMissTime": "float",
+                "performanceGain": "float",
+                "optimalHitRate": "float",
+                "currentTrend": "string"
+            },
+            "lastUpdated": "string"
+        }
+    },
+    "direct full stats": {
+        "result": {
+            "overview": {
+                "totalCacheSize": 120,
+                "totalCacheEntries": 3,
+                "overallHitRate": 25.0,
+                "averageResponseTime": 2.5,
+                "cacheEfficiency": 25.0
+            },
+            "services": {
+                "object": {
+                    "entries": 3,
+                    "hits": 2,
+                    "requests": 8,
+                    "memoryUsage": 120
+                },
+                "schema": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "facet": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                }
+            },
+            "names": {
+                "cache_size": 4,
+                "hit_rate": 50.5,
+                "hits": 6,
+                "misses": 7,
+                "warmups": 1,
+                "enabled": true
+            },
+            "distributed": {
+                "type": "distributed",
+                "backend": "normalised",
+                "available": true,
+                "keyCount": "Unknown",
+                "size": "Unknown"
+            },
+            "performance": {
+                "averageHitTime": 2.5,
+                "averageMissTime": 850.0,
+                "performanceGain": 340.0,
+                "optimalHitRate": 85.0,
+                "currentTrend": "improving"
+            },
+            "lastUpdated": "normalised"
+        },
+        "types": {
+            "overview": {
+                "totalCacheSize": "int",
+                "totalCacheEntries": "int",
+                "overallHitRate": "float",
+                "averageResponseTime": "float",
+                "cacheEfficiency": "float"
+            },
+            "services": {
+                "object": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "schema": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "facet": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                }
+            },
+            "names": {
+                "cache_size": "int",
+                "hit_rate": "float",
+                "hits": "int",
+                "misses": "int",
+                "warmups": "int",
+                "enabled": "bool"
+            },
+            "distributed": {
+                "type": "string",
+                "backend": "string",
+                "available": "bool",
+                "keyCount": "string",
+                "size": "string"
+            },
+            "performance": {
+                "averageHitTime": "float",
+                "averageMissTime": "float",
+                "performanceGain": "float",
+                "optimalHitRate": "float",
+                "currentTrend": "string"
+            },
+            "lastUpdated": "string"
+        }
+    },
+    "direct partial stats": {
+        "result": {
+            "overview": {
+                "totalCacheSize": 0,
+                "totalCacheEntries": 0,
+                "overallHitRate": 0.0,
+                "averageResponseTime": 2.5,
+                "cacheEfficiency": 0.0
+            },
+            "services": {
+                "object": {
+                    "entries": 0,
+                    "hits": 5,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "schema": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "facet": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                }
+            },
+            "names": {
+                "cache_size": 0,
+                "hit_rate": 0.0,
+                "hits": 2,
+                "misses": 0,
+                "warmups": 0,
+                "enabled": true
+            },
+            "distributed": {
+                "type": "none",
+                "backend": "fallback",
+                "available": false,
+                "error": "no backend"
+            },
+            "performance": {
+                "averageHitTime": 2.5,
+                "averageMissTime": 850.0,
+                "performanceGain": 340.0,
+                "optimalHitRate": 85.0,
+                "currentTrend": "improving"
+            },
+            "lastUpdated": "normalised"
+        },
+        "types": {
+            "overview": {
+                "totalCacheSize": "int",
+                "totalCacheEntries": "int",
+                "overallHitRate": "float",
+                "averageResponseTime": "float",
+                "cacheEfficiency": "float"
+            },
+            "services": {
+                "object": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "schema": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "facet": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                }
+            },
+            "names": {
+                "cache_size": "int",
+                "hit_rate": "float",
+                "hits": "int",
+                "misses": "int",
+                "warmups": "int",
+                "enabled": "bool"
+            },
+            "distributed": {
+                "type": "string",
+                "backend": "string",
+                "available": "bool",
+                "error": "string"
+            },
+            "performance": {
+                "averageHitTime": "float",
+                "averageMissTime": "float",
+                "performanceGain": "float",
+                "optimalHitRate": "float",
+                "currentTrend": "string"
+            },
+            "lastUpdated": "string"
+        }
+    },
+    "direct zero requests": {
+        "result": {
+            "overview": {
+                "totalCacheSize": 0,
+                "totalCacheEntries": 0,
+                "overallHitRate": 0.0,
+                "averageResponseTime": 2.5,
+                "cacheEfficiency": 0.0
+            },
+            "services": {
+                "object": {
+                    "entries": 0,
+                    "hits": 5,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "schema": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "facet": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                }
+            },
+            "names": {
+                "cache_size": 0,
+                "hit_rate": 0.0,
+                "hits": 0,
+                "misses": 0,
+                "warmups": 0,
+                "enabled": true
+            },
+            "distributed": {
+                "type": "distributed",
+                "backend": "normalised",
+                "available": true,
+                "keyCount": "Unknown",
+                "size": "Unknown"
+            },
+            "performance": {
+                "averageHitTime": 2.5,
+                "averageMissTime": 850.0,
+                "performanceGain": 340.0,
+                "optimalHitRate": 85.0,
+                "currentTrend": "improving"
+            },
+            "lastUpdated": "normalised"
+        },
+        "types": {
+            "overview": {
+                "totalCacheSize": "int",
+                "totalCacheEntries": "int",
+                "overallHitRate": "float",
+                "averageResponseTime": "float",
+                "cacheEfficiency": "float"
+            },
+            "services": {
+                "object": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "schema": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "facet": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                }
+            },
+            "names": {
+                "cache_size": "int",
+                "hit_rate": "float",
+                "hits": "int",
+                "misses": "int",
+                "warmups": "int",
+                "enabled": "bool"
+            },
+            "distributed": {
+                "type": "string",
+                "backend": "string",
+                "available": "bool",
+                "keyCount": "string",
+                "size": "string"
+            },
+            "performance": {
+                "averageHitTime": "float",
+                "averageMissTime": "float",
+                "performanceGain": "float",
+                "optimalHitRate": "float",
+                "currentTrend": "string"
+            },
+            "lastUpdated": "string"
+        }
+    },
+    "from container": {
+        "result": {
+            "overview": {
+                "totalCacheSize": 120,
+                "totalCacheEntries": 3,
+                "overallHitRate": 25.0,
+                "averageResponseTime": 2.5,
+                "cacheEfficiency": 25.0
+            },
+            "services": {
+                "object": {
+                    "entries": 3,
+                    "hits": 2,
+                    "requests": 8,
+                    "memoryUsage": 120
+                },
+                "schema": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "facet": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                }
+            },
+            "names": {
+                "cache_size": 4,
+                "hit_rate": 50.5,
+                "hits": 6,
+                "misses": 7,
+                "warmups": 1,
+                "enabled": true
+            },
+            "distributed": {
+                "type": "distributed",
+                "backend": "normalised",
+                "available": true,
+                "keyCount": "Unknown",
+                "size": "Unknown"
+            },
+            "performance": {
+                "averageHitTime": 2.5,
+                "averageMissTime": 850.0,
+                "performanceGain": 340.0,
+                "optimalHitRate": 85.0,
+                "currentTrend": "improving"
+            },
+            "lastUpdated": "normalised"
+        },
+        "types": {
+            "overview": {
+                "totalCacheSize": "int",
+                "totalCacheEntries": "int",
+                "overallHitRate": "float",
+                "averageResponseTime": "float",
+                "cacheEfficiency": "float"
+            },
+            "services": {
+                "object": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "schema": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "facet": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                }
+            },
+            "names": {
+                "cache_size": "int",
+                "hit_rate": "float",
+                "hits": "int",
+                "misses": "int",
+                "warmups": "int",
+                "enabled": "bool"
+            },
+            "distributed": {
+                "type": "string",
+                "backend": "string",
+                "available": "bool",
+                "keyCount": "string",
+                "size": "string"
+            },
+            "performance": {
+                "averageHitTime": "float",
+                "averageMissTime": "float",
+                "performanceGain": "float",
+                "optimalHitRate": "float",
+                "currentTrend": "string"
+            },
+            "lastUpdated": "string"
+        }
+    },
+    "handler throws": {
+        "result": {
+            "overview": {
+                "totalCacheSize": 0,
+                "totalCacheEntries": 0,
+                "overallHitRate": 0.0,
+                "averageResponseTime": 2.5,
+                "cacheEfficiency": 0.0
+            },
+            "services": {
+                "object": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "schema": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "facet": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                }
+            },
+            "names": {
+                "cache_size": 0,
+                "hit_rate": 0.0,
+                "hits": 0,
+                "misses": 0,
+                "warmups": 0,
+                "enabled": true
+            },
+            "distributed": {
+                "type": "distributed",
+                "backend": "normalised",
+                "available": true,
+                "keyCount": "Unknown",
+                "size": "Unknown"
+            },
+            "performance": {
+                "averageHitTime": 2.5,
+                "averageMissTime": 850.0,
+                "performanceGain": 340.0,
+                "optimalHitRate": 85.0,
+                "currentTrend": "improving"
+            },
+            "lastUpdated": "normalised"
+        },
+        "types": {
+            "overview": {
+                "totalCacheSize": "int",
+                "totalCacheEntries": "int",
+                "overallHitRate": "float",
+                "averageResponseTime": "float",
+                "cacheEfficiency": "float"
+            },
+            "services": {
+                "object": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "schema": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "facet": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                }
+            },
+            "names": {
+                "cache_size": "int",
+                "hit_rate": "float",
+                "hits": "int",
+                "misses": "int",
+                "warmups": "int",
+                "enabled": "bool"
+            },
+            "distributed": {
+                "type": "string",
+                "backend": "string",
+                "available": "bool",
+                "keyCount": "string",
+                "size": "string"
+            },
+            "performance": {
+                "averageHitTime": "float",
+                "averageMissTime": "float",
+                "performanceGain": "float",
+                "optimalHitRate": "float",
+                "currentTrend": "string"
+            },
+            "lastUpdated": "string"
+        }
+    },
+    "no handler": {
+        "result": {
+            "overview": {
+                "totalCacheSize": 0,
+                "totalCacheEntries": 0,
+                "overallHitRate": 0.0,
+                "averageResponseTime": 2.5,
+                "cacheEfficiency": 0.0
+            },
+            "services": {
+                "object": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "schema": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "facet": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                }
+            },
+            "names": {
+                "cache_size": 0,
+                "hit_rate": 0.0,
+                "hits": 0,
+                "misses": 0,
+                "warmups": 0,
+                "enabled": true
+            },
+            "distributed": {
+                "type": "distributed",
+                "backend": "normalised",
+                "available": true,
+                "keyCount": "Unknown",
+                "size": "Unknown"
+            },
+            "performance": {
+                "averageHitTime": 2.5,
+                "averageMissTime": 850.0,
+                "performanceGain": 340.0,
+                "optimalHitRate": 85.0,
+                "currentTrend": "improving"
+            },
+            "lastUpdated": "normalised"
+        },
+        "types": {
+            "overview": {
+                "totalCacheSize": "int",
+                "totalCacheEntries": "int",
+                "overallHitRate": "float",
+                "averageResponseTime": "float",
+                "cacheEfficiency": "float"
+            },
+            "services": {
+                "object": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "schema": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "facet": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                }
+            },
+            "names": {
+                "cache_size": "int",
+                "hit_rate": "float",
+                "hits": "int",
+                "misses": "int",
+                "warmups": "int",
+                "enabled": "bool"
+            },
+            "distributed": {
+                "type": "string",
+                "backend": "string",
+                "available": "bool",
+                "keyCount": "string",
+                "size": "string"
+            },
+            "performance": {
+                "averageHitTime": "float",
+                "averageMissTime": "float",
+                "performanceGain": "float",
+                "optimalHitRate": "float",
+                "currentTrend": "string"
+            },
+            "lastUpdated": "string"
+        }
+    },
+    "no handler, no distributed": {
+        "result": {
+            "overview": {
+                "totalCacheSize": 0,
+                "totalCacheEntries": 0,
+                "overallHitRate": 0.0,
+                "averageResponseTime": 2.5,
+                "cacheEfficiency": 0.0
+            },
+            "services": {
+                "object": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "schema": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                },
+                "facet": {
+                    "entries": 0,
+                    "hits": 0,
+                    "requests": 0,
+                    "memoryUsage": 0
+                }
+            },
+            "names": {
+                "cache_size": 0,
+                "hit_rate": 0.0,
+                "hits": 0,
+                "misses": 0,
+                "warmups": 0,
+                "enabled": true
+            },
+            "distributed": {
+                "type": "none",
+                "backend": "fallback",
+                "available": false,
+                "error": "no backend"
+            },
+            "performance": {
+                "averageHitTime": 2.5,
+                "averageMissTime": 850.0,
+                "performanceGain": 340.0,
+                "optimalHitRate": 85.0,
+                "currentTrend": "improving"
+            },
+            "lastUpdated": "normalised"
+        },
+        "types": {
+            "overview": {
+                "totalCacheSize": "int",
+                "totalCacheEntries": "int",
+                "overallHitRate": "float",
+                "averageResponseTime": "float",
+                "cacheEfficiency": "float"
+            },
+            "services": {
+                "object": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "schema": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                },
+                "facet": {
+                    "entries": "int",
+                    "hits": "int",
+                    "requests": "int",
+                    "memoryUsage": "int"
+                }
+            },
+            "names": {
+                "cache_size": "int",
+                "hit_rate": "float",
+                "hits": "int",
+                "misses": "int",
+                "warmups": "int",
+                "enabled": "bool"
+            },
+            "distributed": {
+                "type": "string",
+                "backend": "string",
+                "available": "bool",
+                "error": "string"
+            },
+            "performance": {
+                "averageHitTime": "float",
+                "averageMissTime": "float",
+                "performanceGain": "float",
+                "optimalHitRate": "float",
+                "currentTrend": "string"
+            },
+            "lastUpdated": "string"
+        }
+    }
+}

@@ -1,0 +1,68 @@
+{
+    "countAll / rows": {
+        "result": 7,
+        "queries": [
+            "#1 func.count(id, )",
+            "#1 select(count(id, ))",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "countAll / empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(id, )",
+            "#1 select(count(id, ))",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "countIndexed / rows": {
+        "result": 7,
+        "queries": [
+            "#1 func.count(id, )",
+            "#1 select(count(id, ))",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(indexed, :p1, NULL)",
+            "#1 where(eq(indexed, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countIndexed / empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(id, )",
+            "#1 select(count(id, ))",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(indexed, :p1, NULL)",
+            "#1 where(eq(indexed, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countVectorized / rows": {
+        "result": 7,
+        "queries": [
+            "#1 func.count(id, )",
+            "#1 select(count(id, ))",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(vectorized, :p1, NULL)",
+            "#1 where(eq(vectorized, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countVectorized / empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(id, )",
+            "#1 select(count(id, ))",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(vectorized, :p1, NULL)",
+            "#1 where(eq(vectorized, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    }
+}

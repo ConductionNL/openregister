@@ -31,9 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
-use OCA\OpenRegister\Service\Task\TaskProjectionService;
-use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Listener\Support\TaskVtodoWriteBackServices;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCP\Calendar\Events\CalendarObjectDeletedEvent;
 use OCP\Calendar\Events\CalendarObjectUpdatedEvent;
 use OCP\EventDispatcher\Event;
@@ -48,9 +47,6 @@ use Throwable;
  *
  * @template-implements IEventListener<CalendarObjectUpdatedEvent|CalendarObjectDeletedEvent>
  *
- * @SuppressWarnings(PHPMD.StaticAccess) The identity reader is a stateless
- * parser published by the projector.
- *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
  */
 class TaskVtodoWriteBackListener implements IEventListener {
@@ -58,14 +54,14 @@ class TaskVtodoWriteBackListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskVtodoWriteBackGate $gate The one gate.
-	 * @param TaskProjectionService $projections Failure-isolated reconciliation.
+	 * @param TaskVtodoWriteBackGateInterface $gate The one gate.
+	 * @param TaskVtodoWriteBackServices $services The projection side: reconciliation and the document reader.
 	 * @param IUserSession $userSession Names the acting identity, when there is one.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskVtodoWriteBackGate $gate,
-		private readonly TaskProjectionService $projections,
+		private readonly TaskVtodoWriteBackGateInterface $gate,
+		private readonly TaskVtodoWriteBackServices $services,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -104,15 +100,23 @@ class TaskVtodoWriteBackListener implements IEventListener {
 	 */
 	private function onUpdated(CalendarObjectUpdatedEvent $event): void {
 		$body = $this->bodyOf(event: $event);
-		if ($body === null) {
-			return;
+		$taskUuid = $this->projectedTaskOf(body: $body);
+		if ($taskUuid !== null) {
+			$this->writeBack(body: (string)$body, taskUuid: $taskUuid);
 		}
+	}//end onUpdated()
 
-		$taskUuid = TaskCalendarProjector::taskUuidOf(calendarData: $body);
-		if ($taskUuid === null) {
-			return;
-		}
-
+	/**
+	 * Put a committed edit of a projected VTODO through the gate.
+	 *
+	 * @param string $body     The calendar document as written.
+	 * @param string $taskUuid The task it projects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-an-unauthorized-write-back-is-undone-and-explained
+	 */
+	private function writeBack(string $body, string $taskUuid): void {
 		try {
 			$replacement = $this->gate->handleWrite(calendarData: $body, actor: $this->actor());
 		} catch (Throwable $refused) {
@@ -129,9 +133,9 @@ class TaskVtodoWriteBackListener implements IEventListener {
 		if ($replacement !== null) {
 			// Accepted verb or projection-owned edit: the stored document is
 			// the user's; make it the engine's.
-			$this->projections->reconcile(taskUuid: $taskUuid);
+			$this->services->projections->reconcile(taskUuid: $taskUuid);
 		}
-	}//end onUpdated()
+	}//end writeBack()
 
 	/**
 	 * A projected VTODO was deleted in the backend: rebuild it, task untouched.
@@ -143,12 +147,7 @@ class TaskVtodoWriteBackListener implements IEventListener {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-truth-flows-one-way-and-the-one-path-back-is-a-gate
 	 */
 	private function onDeleted(CalendarObjectDeletedEvent $event): void {
-		$body = $this->bodyOf(event: $event);
-		if ($body === null) {
-			return;
-		}
-
-		$taskUuid = TaskCalendarProjector::taskUuidOf(calendarData: $body);
+		$taskUuid = $this->projectedTaskOf(body: $this->bodyOf(event: $event));
 		if ($taskUuid === null) {
 			return;
 		}
@@ -157,8 +156,23 @@ class TaskVtodoWriteBackListener implements IEventListener {
 			'[TaskVtodoWriteBackListener] A projected calendar entry was deleted; rebuilding it, the task is unchanged.',
 			['task' => $taskUuid]
 		);
-		$this->projections->reconcile(taskUuid: $taskUuid);
+		$this->services->projections->reconcile(taskUuid: $taskUuid);
 	}//end onDeleted()
+
+	/**
+	 * The task a calendar document projects, or null when it projects none.
+	 *
+	 * @param string|null $body The calendar document, or null when absent.
+	 *
+	 * @return string|null The task uuid.
+	 */
+	private function projectedTaskOf(?string $body): ?string {
+		if ($body === null) {
+			return null;
+		}
+
+		return $this->services->documents->taskUuidOf(calendarData: $body);
+	}//end projectedTaskOf()
 
 	/**
 	 * The calendar document the event carries.

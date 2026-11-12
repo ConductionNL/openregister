@@ -19,11 +19,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
-use OCA\OpenRegister\Db\AbstractObjectMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\PortalPartyNotFoundException;
+use OCA\OpenRegister\Service\Portal\PortalCase;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
+use OCA\OpenRegister\Service\Portal\PortalSubjectClaims;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -73,7 +75,7 @@ class PortalPartyResolverTest extends TestCase {
 	 */
 	#[DataProvider('caseShapes')]
 	public function testTheCaseShapesResolve(array $case, string $role, string $expected): void {
-		$this->assertSame($expected, (new PortalPartyResolver())->resolve(case: $case, role: $role, caseUuid: 'c-1'));
+		$this->assertSame($expected, (new PortalPartyResolver())->resolve(case: new PortalCase(data: $case, uuid: 'c-1'), role: $role));
 	}//end testTheCaseShapesResolve()
 
 	/**
@@ -85,7 +87,7 @@ class PortalPartyResolverTest extends TestCase {
 		$resolver = new PortalPartyResolver();
 		foreach ([[], ['initiator' => ''], ['initiator' => ['name' => 'nobody']], ['rollen' => [['roltype' => 'behandelaar', 'bsn' => '1']]]] as $case) {
 			try {
-				$resolver->resolve(case: $case, role: 'initiator', caseUuid: 'case-7');
+				$resolver->resolve(case: new PortalCase(data: $case, uuid: 'case-7'), role: 'initiator');
 				$this->fail('Expected a refusal for ' . json_encode($case));
 			} catch (PortalPartyNotFoundException $refused) {
 				$this->assertStringContainsString("role 'initiator'", $refused->getMessage());
@@ -103,7 +105,7 @@ class PortalPartyResolverTest extends TestCase {
 	public function testResolutionByUuidReadsTheCaseFromTheStore(): void {
 		$object = $this->createMock(ObjectEntity::class);
 		$object->method('getObject')->willReturn(['initiator' => ['subjectRef' => 'sub-9']]);
-		$objects = $this->createMock(AbstractObjectMapper::class);
+		$objects = $this->createMock(MagicMapperInterface::class);
 		$objects->expects($this->once())
 			->method('find')
 			->with('case-7', null, null, false, false, false)
@@ -118,7 +120,7 @@ class PortalPartyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableCaseOrAbsentStoreRefuses(): void {
-		$objects = $this->createMock(AbstractObjectMapper::class);
+		$objects = $this->createMock(MagicMapperInterface::class);
 		$objects->method('find')->willThrowException(new DoesNotExistException('gone'));
 		try {
 			(new PortalPartyResolver(objects: $objects))->resolveFromObject(objectUuid: 'case-7', role: 'initiator');
@@ -138,7 +140,7 @@ class PortalPartyResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSubjectValueBuildsThePartyReference(): void {
-		$subject = new PortalSubject(subjectRef: 'sub-1', audience: 'client', organisation: 'org', trust: 'substantial', jti: 'j');
+		$subject = new PortalSubject(subjectRef: 'sub-1', claims: new PortalSubjectClaims(audience: 'client', organisation: 'org', trust: 'substantial', jti: 'j'));
 		$this->assertSame('party:sub-1', $subject->partyReference());
 		$this->assertSame('party:sub-1', $subject->actor());
 		$this->assertSame('party:sub-1', PortalSubject::partyReferenceFor(reference: ' sub-1 '));

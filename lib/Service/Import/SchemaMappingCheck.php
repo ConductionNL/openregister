@@ -75,24 +75,32 @@ final class SchemaMappingCheck {
 		$unknown = [];
 
 		foreach ($targets as $target) {
-			if (in_array($target, self::RESERVED_TARGETS, true) === true) {
-				continue;
-			}
-
-			if (str_starts_with($target, '@') === true) {
-				continue;
-			}
-
-			// A nested target names the property it lands in.
-			$root = explode('.', $target)[0];
-
-			if (array_key_exists($root, $properties) === false) {
+			if (self::isUnknown(target: $target, properties: $properties) === true) {
 				$unknown[] = $target;
 			}
 		}
 
 		return array_values(array_unique($unknown));
 	}//end unknownTargets()
+
+	/**
+	 * Whether a target names a property the schema does not have.
+	 *
+	 * @param string $target The target name.
+	 * @param array<string, mixed> $properties The schema's properties.
+	 *
+	 * @return bool True when the target is unknown.
+	 */
+	private static function isUnknown(string $target, array $properties): bool {
+		if (in_array($target, self::RESERVED_TARGETS, true) === true || str_starts_with($target, '@') === true) {
+			return false;
+		}
+
+		// A nested target names the property it lands in.
+		$root = explode('.', $target)[0];
+
+		return array_key_exists($root, $properties) === false;
+	}//end isUnknown()
 
 	/**
 	 * Every target a mapping names, from its field mappings and its defaults.
@@ -102,30 +110,67 @@ final class SchemaMappingCheck {
 	 * @return array<int, string> The target names.
 	 */
 	private static function targets(array $definition): array {
+		return array_merge(
+			self::mappingTargets(fieldMappings: ($definition['fieldMappings'] ?? [])),
+			self::defaultTargets(defaults: ($definition['defaults'] ?? []))
+		);
+	}//end targets()
+
+	/**
+	 * Every target the field mappings name.
+	 *
+	 * @param mixed $fieldMappings The definition's field mappings.
+	 *
+	 * @return array<int, string> The target names, in order.
+	 */
+	private static function mappingTargets(mixed $fieldMappings): array {
 		$targets = [];
 
-		foreach (($definition['fieldMappings'] ?? []) as $mapping) {
+		foreach ($fieldMappings as $mapping) {
 			if (is_array($mapping) === false) {
 				continue;
 			}
 
 			$target = ($mapping['target'] ?? null);
 
-			if (is_string($target) === true && $target !== '') {
+			if (self::isTargetName(target: $target) === true) {
 				$targets[] = $target;
 			}
 		}
 
-		$defaults = ($definition['defaults'] ?? []);
+		return $targets;
+	}//end mappingTargets()
 
-		if (is_array($defaults) === true) {
-			foreach (array_keys($defaults) as $target) {
-				if (is_string($target) === true && $target !== '') {
-					$targets[] = $target;
-				}
+	/**
+	 * Every target the defaults name.
+	 *
+	 * @param mixed $defaults The definition's defaults.
+	 *
+	 * @return array<int, string> The target names, in order.
+	 */
+	private static function defaultTargets(mixed $defaults): array {
+		if (is_array($defaults) === false) {
+			return [];
+		}
+
+		$targets = [];
+		foreach (array_keys($defaults) as $target) {
+			if (self::isTargetName(target: $target) === true) {
+				$targets[] = $target;
 			}
 		}
 
 		return $targets;
-	}//end targets()
+	}//end defaultTargets()
+
+	/**
+	 * Whether a value is a usable target name: a non-empty string.
+	 *
+	 * @param mixed $target The value.
+	 *
+	 * @return bool True when it names a target.
+	 */
+	private static function isTargetName(mixed $target): bool {
+		return is_string($target) === true && $target !== '';
+	}//end isTargetName()
 }//end class

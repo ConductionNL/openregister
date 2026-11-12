@@ -23,8 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ShippedBaseline;
 
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
+use OCA\OpenRegister\Service\ShippedBaseline\DescriptorRevisions;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -89,7 +91,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming['properties']['zaaknummer']['title'] = 'Zaak-ID';
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$states = $this->comparator->states(baseline: $baseline, live: $live, incoming: $incoming);
+		$states = $this->comparator->states(descriptors: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame(
 			DivergenceComparator::UNCHANGED,
@@ -127,7 +129,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		$incoming['properties']['zaaknummer']['title'] = 'Zaak-ID';
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertArrayHasKey(
 			'wijk',
@@ -156,7 +158,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame(
 			2000,
@@ -183,10 +185,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$result = $this->merge->merge(
-			baseline: $baseline,
-			live: $live,
-			incoming: $incoming,
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming),
 			decisions: ['properties.toelichting.maxLength']
 		);
 
@@ -214,10 +214,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 		$incoming['properties']['zaaknummer']['title'] = 'Zaak-ID';
 
-		$result = $this->merge->merge(
-			baseline: $baseline,
-			live: $live,
-			incoming: $incoming,
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming),
 			decisions: ['properties.toelichting.maxLength']
 		);
 
@@ -241,7 +239,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		unset($incoming['properties']['toelichting']);
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertArrayNotHasKey(
 			'toelichting',
@@ -265,7 +263,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		unset($incoming['properties']['toelichting']);
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame(
 			4000,
@@ -289,7 +287,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming = $baseline;
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame([], $result['conflicts'], 'there is nothing to resolve');
 		$this->assertSame(1000, $result['merged']['properties']['toelichting']['maxLength']);
@@ -312,7 +310,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$incoming['properties']['zaaknummer']['title'] = 'Zaak-ID';
 		$incoming['properties']['toelichting']['maxLength'] = 1000;
 
-		$result = $this->merge->merge(baseline: $baseline, live: $live, incoming: $incoming);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $baseline, live: $live, incoming: $incoming));
 
 		$this->assertSame(
 			'Zaak-ID',
@@ -436,7 +434,7 @@ class GuardedDescriptorMergeTest extends TestCase {
 	 */
 	public function testAnAuthorizationBlockIsNeverMergedKeyByKey(): void {
 		$case = $this->portaliqUpgrade();
-		$result = $this->merge->merge(baseline: $case['baseline'], live: $case['live'], incoming: $case['incoming']);
+		$result = $this->merge->mergeRevisions(revisions: new DescriptorRevisions(baseline: $case['baseline'], live: $case['live'], incoming: $case['incoming']));
 
 		$this->assertEquals(
 			['read' => ['authenticated'], 'export' => ['authenticated']],
@@ -460,10 +458,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 	 */
 	public function testADecisionOnTheBlockTakesTheShippedPolicyWhole(): void {
 		$case = $this->portaliqUpgrade();
-		$result = $this->merge->merge(
-			baseline: $case['baseline'],
-			live: $case['live'],
-			incoming: $case['incoming'],
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: $case['baseline'], live: $case['live'], incoming: $case['incoming']),
 			decisions: ['authorization']
 		);
 
@@ -482,10 +478,8 @@ class GuardedDescriptorMergeTest extends TestCase {
 	 */
 	public function testAnUpstreamOnlyBlockChangeIsTakenWhole(): void {
 		$block = ['read' => ['authenticated'], 'export' => ['authenticated']];
-		$result = $this->merge->merge(
-			baseline: ['authorization' => $block],
-			live: ['authorization' => $block],
-			incoming: ['authorization' => ['read' => ['staff']]]
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: ['authorization' => $block], live: ['authorization' => $block], incoming: ['authorization' => ['read' => ['staff']]])
 		);
 
 		$this->assertSame(['read' => ['staff']], $result['merged']['authorization']);
@@ -503,14 +497,37 @@ class GuardedDescriptorMergeTest extends TestCase {
 	public function testAPropertyAuthorizationIsItsOwnBlock(): void {
 		$property = static fn (array $auth): array => ['properties' => ['bsn' => ['type' => 'string', 'authorization' => $auth]]];
 
-		$result = $this->merge->merge(
-			baseline: $property(['read' => ['a']]),
-			live: $property(['read' => ['a'], 'update' => ['b']]),
-			incoming: $property(['read' => ['c'], 'update' => ['c']])
+		$result = $this->merge->mergeRevisions(
+			revisions: new DescriptorRevisions(baseline: $property(['read' => ['a']]), live: $property(['read' => ['a'], 'update' => ['b']]), incoming: $property(['read' => ['c'], 'update' => ['c']]))
 		);
 
 		$this->assertEquals(['read' => ['a'], 'update' => ['b']], $result['merged']['properties']['bsn']['authorization']);
 		$this->assertSame(['properties.bsn.authorization'], array_column($result['conflicts'], 'path'));
 		$this->assertSame('string', $result['merged']['properties']['bsn']['type']);
 	}//end testAPropertyAuthorizationIsItsOwnBlock()
+
+	/**
+	 * Under an administrator's decision, a local block the shipped definition does not declare is kept, not dropped.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testADecisionKeepsALocalBlockTheShippedDefinitionLacks(): void {
+		$parts = new DescriptorParts();
+		$decision = new ShippedAuthorizationDecision();
+		$merge = new GuardedDescriptorMerge(parts: $parts, comparator: new DivergenceComparator(parts: $parts), decision: $decision);
+		$local = ['read' => ['staff'], 'update' => ['staff']];
+
+		$result = $decision->run(
+			via: 'import',
+			operation: static fn (): array => $merge->mergeRevisions(
+				revisions: new DescriptorRevisions(baseline: ['title' => 'T'], live: ['title' => 'T', 'authorization' => $local], incoming: ['title' => 'T2'])
+			)
+		);
+
+		$this->assertSame('T2', $result['merged']['title']);
+		$this->assertEquals($local, $result['merged']['authorization']);
+		$this->assertSame([], $result['replacedLocal']);
+	}//end testADecisionKeepsALocalBlockTheShippedDefinitionLacks()
 }//end class

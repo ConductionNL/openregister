@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ErasurePreview>
  */
-class ErasurePreviewMapper extends QBMapper {
+class ErasurePreviewMapper extends QBMapper implements ErasurePreviewMapperInterface {
 	/**
 	 * Constructor.
 	 *

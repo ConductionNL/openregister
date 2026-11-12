@@ -108,20 +108,9 @@ class ActivityFeedMerge {
 		$counts = [];
 
 		foreach (self::KINDS as $kind) {
-			$counts[$kind] = 0;
-			foreach (($bySource[$kind] ?? []) as $row) {
-				if (is_array($row) === false) {
-					continue;
-				}
-
-				$normalised = $this->normalise(row: $row, kind: $kind);
-				if ($this->admits(row: $normalised, options: $options) === false) {
-					continue;
-				}
-
-				$rows[] = $normalised;
-				$counts[$kind]++;
-			}
+			$admitted = $this->admitted(rows: $this->normalisedRows(rows: ($bySource[$kind] ?? []), kind: $kind), options: $options);
+			$counts[$kind] = count($admitted);
+			array_push($rows, ...$admitted);
 		}
 
 		$rows = $this->newestFirst(rows: $rows);
@@ -130,13 +119,60 @@ class ActivityFeedMerge {
 		// that was merged: a cursor taken from a row the reader never saw
 		// skips the rows between it and the last one on screen.
 		$page = array_slice($rows, 0, $pageSize);
-		$nextCursor = null;
-		if (count($rows) > $pageSize && $page !== []) {
-			$nextCursor = (int)$page[(count($page) - 1)]['timestamp'];
-		}
+		$nextCursor = self::nextCursor(merged: count($rows), page: $page);
 
 		return ['rows' => $page, 'nextCursor' => $nextCursor, 'counts' => $counts];
 	}//end page()
+
+	/**
+	 * One source's rows in the feed's own shape; non-array rows are skipped.
+	 *
+	 * @param mixed  $rows The source's rows.
+	 * @param string $kind Which source they came from.
+	 *
+	 * @return array<int,array<string,mixed>> The normalised rows, in source order.
+	 */
+	private function normalisedRows(mixed $rows, string $kind): array {
+		$normalised = [];
+		foreach ($rows as $row) {
+			if (is_array($row) === true) {
+				$normalised[] = $this->normalise(row: $row, kind: $kind);
+			}
+		}
+
+		return $normalised;
+	}//end normalisedRows()
+
+	/**
+	 * The normalised rows the options admit.
+	 *
+	 * @param array<int,array<string,mixed>> $rows    The normalised rows of one source.
+	 * @param array<string,mixed>            $options The caller's options.
+	 *
+	 * @return array<int,array<string,mixed>> The admitted rows, in source order.
+	 */
+	private function admitted(array $rows, array $options): array {
+		return array_values(array_filter($rows, fn (array $row): bool => $this->admits(row: $row, options: $options)));
+	}//end admitted()
+
+	/**
+	 * The cursor for the next page: the last returned row's time, when rows were held back.
+	 *
+	 * The page is the head of the merged rows, so rows were held back exactly
+	 * when more rows were merged than the page returns.
+	 *
+	 * @param int                            $merged How many rows were merged.
+	 * @param array<int,array<string,mixed>> $page   The returned page.
+	 *
+	 * @return int|null The cursor, or null when this page is the last.
+	 */
+	private static function nextCursor(int $merged, array $page): ?int {
+		if ($merged > count($page) && $page !== []) {
+			return (int)$page[(count($page) - 1)]['timestamp'];
+		}
+
+		return null;
+	}//end nextCursor()
 
 	/**
 	 * One row in the feed's own shape, whatever shape its source speaks.
@@ -154,19 +190,10 @@ class ActivityFeedMerge {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
 	public function normalise(array $row, string $kind): array {
-		$timestamp = $row['timestamp'] ?? ($row['created'] ?? ($row['date'] ?? 0));
-		if (is_string($timestamp) === true) {
-			// A source that writes an ISO moment is not wrong; it just speaks
-			// the other spelling. An unparseable one sorts as 0, which puts it
-			// at the bottom rather than at the top: a row with no time must
-			// never head a feed that is read as a sequence.
-			$timestamp = (int)max(0, (int)strtotime($timestamp));
-		}
-
 		return [
 			'id' => (string)($row['id'] ?? ''),
 			'kind' => $kind,
-			'timestamp' => (int)$timestamp,
+			'timestamp' => self::timestampOf(row: $row),
 			'actor' => (string)($row['actor'] ?? ($row['actor_id'] ?? ($row['user'] ?? ($row['affecteduser'] ?? '')))),
 			'summary' => (string)($row['summary'] ?? ($row['title'] ?? ($row['subject'] ?? ''))),
 			'action' => (string)($row['action'] ?? ($row['type'] ?? '')),
@@ -177,6 +204,26 @@ class ActivityFeedMerge {
 			'visibility' => (string)($row['visibility'] ?? ''),
 		];
 	}//end normalise()
+
+	/**
+	 * When a source row happened, as an epoch.
+	 *
+	 * @param array<string, mixed> $row The source row.
+	 *
+	 * @return int
+	 */
+	private static function timestampOf(array $row): int {
+		$timestamp = $row['timestamp'] ?? ($row['created'] ?? ($row['date'] ?? 0));
+		if (is_string($timestamp) === true) {
+			// A source that writes an ISO moment is not wrong; it just speaks
+			// the other spelling. An unparseable one sorts as 0, which puts it
+			// at the bottom rather than at the top: a row with no time must
+			// never head a feed that is read as a sequence.
+			$timestamp = (int)max(0, (int)strtotime($timestamp));
+		}
+
+		return (int)$timestamp;
+	}//end timestampOf()
 
 	/**
 	 * Whether a normalised row belongs on this page.
@@ -252,23 +299,48 @@ class ActivityFeedMerge {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-reads-are-hidden-unless-asked-for
 	 */
 	private function admitsWindow(array $row, array $options): bool {
-		$before = ($options['before'] ?? null);
-		if (is_int($before) === true && $row['timestamp'] >= $before) {
-			return false;
-		}
+		$timestamp = $row['timestamp'];
 
-		$from = ($options['from'] ?? null);
-		if (is_int($from) === true && $row['timestamp'] < $from) {
-			return false;
-		}
-
-		$until = ($options['until'] ?? null);
-		if (is_int($until) === true && $row['timestamp'] > $until) {
-			return false;
-		}
-
-		return true;
+		return self::isBeforeCursor(timestamp: $timestamp, before: ($options['before'] ?? null))
+			&& self::isFromOnwards(timestamp: $timestamp, from: ($options['from'] ?? null))
+			&& self::isUntilAtMost(timestamp: $timestamp, until: ($options['until'] ?? null));
 	}//end admitsWindow()
+
+	/**
+	 * Whether a time is older than the paging cursor (no integer cursor admits all).
+	 *
+	 * @param mixed $timestamp The row's time.
+	 * @param mixed $before    The `before` option.
+	 *
+	 * @return bool
+	 */
+	private static function isBeforeCursor(mixed $timestamp, mixed $before): bool {
+		return is_int($before) === false || $timestamp < $before;
+	}//end isBeforeCursor()
+
+	/**
+	 * Whether a time is at or after `from` (no integer bound admits all).
+	 *
+	 * @param mixed $timestamp The row's time.
+	 * @param mixed $from      The `from` option.
+	 *
+	 * @return bool
+	 */
+	private static function isFromOnwards(mixed $timestamp, mixed $from): bool {
+		return is_int($from) === false || $timestamp >= $from;
+	}//end isFromOnwards()
+
+	/**
+	 * Whether a time is at or before `until` (no integer bound admits all).
+	 *
+	 * @param mixed $timestamp The row's time.
+	 * @param mixed $until     The `until` option.
+	 *
+	 * @return bool
+	 */
+	private static function isUntilAtMost(mixed $timestamp, mixed $until): bool {
+		return is_int($until) === false || $timestamp <= $until;
+	}//end isUntilAtMost()
 
 	/**
 	 * The rows in the order a history is read.
@@ -286,25 +358,32 @@ class ActivityFeedMerge {
 	 * @spec openspec/changes/activity-leaf/specs/integration-activity/spec.md#requirement-the-activity-leaf-merges-an-objects-feed-from-five-sources
 	 */
 	private function newestFirst(array $rows): array {
-		usort(
-			$rows,
-			static function (array $left, array $right): int {
-				$byTime = ($right['timestamp'] <=> $left['timestamp']);
-				if ($byTime !== 0) {
-					return $byTime;
-				}
-
-				$byKind = (array_search($left['kind'], self::KINDS, true) <=> array_search($right['kind'], self::KINDS, true));
-				if ($byKind !== 0) {
-					return $byKind;
-				}
-
-				return ($left['id'] <=> $right['id']);
-			}
-		);
+		usort($rows, self::compareNewestFirst(...));
 
 		return $rows;
 	}//end newestFirst()
+
+	/**
+	 * Order two feed rows: newest first, then by the order of KINDS, then by id.
+	 *
+	 * @param array<string, mixed> $left  One row.
+	 * @param array<string, mixed> $right The other row.
+	 *
+	 * @return int
+	 */
+	private static function compareNewestFirst(array $left, array $right): int {
+		$byTime = ($right['timestamp'] <=> $left['timestamp']);
+		if ($byTime !== 0) {
+			return $byTime;
+		}
+
+		$byKind = (array_search($left['kind'], self::KINDS, true) <=> array_search($right['kind'], self::KINDS, true));
+		if ($byKind !== 0) {
+			return $byKind;
+		}
+
+		return ($left['id'] <=> $right['id']);
+	}//end compareNewestFirst()
 
 	/**
 	 * How many rows this page holds.

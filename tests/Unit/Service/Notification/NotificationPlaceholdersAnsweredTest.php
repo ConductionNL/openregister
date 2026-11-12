@@ -40,15 +40,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
-use OCA\OpenRegister\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 
 /**
  * The evaluator's rule, and the shipped templates held to it.
  *
- * @covers \OCA\OpenRegister\Service\Notification\NotificationTemplating
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  */
 class NotificationPlaceholdersAnsweredTest extends TestCase {
 
@@ -67,11 +69,7 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnansweredKeyIsLeftInTheText(): void {
-		$rendered = $this->templating()->interpolate(
-			template: 'Bewaartermijn: {{skippedCount}} records overgeslagen',
-			data: [],
-			context: []
-		);
+		$rendered = $this->templating()->render(template: 'Bewaartermijn: {{skippedCount}} records overgeslagen', values: new PlaceholderValues(data: [], context: []));
 
 		// 🔴 THE ASSERTION THIS FILE EXISTS FOR. The old behaviour produced
 		// "Bewaartermijn:  records overgeslagen", which reads as a typo.
@@ -96,21 +94,17 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 
 		$this->assertSame(
 			'Bewaartermijn: 12 records overgeslagen',
-			$templating->interpolate(
-				template: 'Bewaartermijn: {{skippedCount}} records overgeslagen',
-				data: ['skippedCount' => 12],
-				context: []
-			)
+			$templating->render(template: 'Bewaartermijn: {{skippedCount}} records overgeslagen', values: new PlaceholderValues(data: ['skippedCount' => 12], context: []))
 		);
 
 		// Context answers too, and data wins over context.
 		$this->assertSame(
 			'a',
-			$templating->interpolate(template: '{{k}}', data: ['k' => 'a'], context: ['k' => 'b'])
+			$templating->render(template: '{{k}}', values: new PlaceholderValues(data: ['k' => 'a'], context: ['k' => 'b']))
 		);
 		$this->assertSame(
 			'b',
-			$templating->interpolate(template: '{{k}}', data: [], context: ['k' => 'b'])
+			$templating->render(template: '{{k}}', values: new PlaceholderValues(data: [], context: ['k' => 'b']))
 		);
 	}//end testAnAnsweredKeyStillRenders()
 
@@ -122,11 +116,7 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 	public function testANonScalarIsUnansweredRatherThanBlank(): void {
 		$this->assertSame(
 			'{{k}}',
-			$this->templating()->interpolate(
-				template: '{{k}}',
-				data: ['k' => ['not', 'scalar']],
-				context: []
-			)
+			$this->templating()->render(template: '{{k}}', values: new PlaceholderValues(data: ['k' => ['not', 'scalar']], context: []))
 		);
 	}//end testANonScalarIsUnansweredRatherThanBlank()
 
@@ -142,17 +132,13 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 		// a reader fixing them would work through.
 		$this->assertSame(
 			['target', 'reason'],
-			$templating->unanswered(
-				template: 'De overdracht naar {{target}} stopte: {{reason}}. Zaak {{known}}.',
-				data: ['known' => '2026-0042'],
-				context: []
-			)
+			$templating->unanswered(template: 'De overdracht naar {{target}} stopte: {{reason}}. Zaak {{known}}.', values: new PlaceholderValues(data: ['known' => '2026-0042'], context: []))
 		);
 
 		// The control: a template everything answers reports nothing.
 		$this->assertSame(
 			[],
-			$templating->unanswered(template: 'Zaak {{known}}.', data: ['known' => 'x'], context: [])
+			$templating->unanswered(template: 'Zaak {{known}}.', values: new PlaceholderValues(data: ['known' => 'x'], context: []))
 		);
 	}//end testItCanSayWhatItCouldNotAnswer()
 
@@ -170,9 +156,9 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 		$data = ['scalar' => 'a', 'nonScalar' => ['x']];
 		$context = ['fromContext' => 'c'];
 
-		$rendered = $templating->interpolate(template: $template, data: $data, context: $context);
+		$rendered = $templating->render(template: $template, values: new PlaceholderValues(data: $data, context: $context));
 
-		foreach ($templating->unanswered(template: $template, data: $data, context: $context) as $key) {
+		foreach ($templating->unanswered(template: $template, values: new PlaceholderValues(data: $data, context: $context)) as $key) {
 			$this->assertStringContainsString(
 				'{{' . $key . '}}',
 				$rendered,
@@ -183,7 +169,7 @@ class NotificationPlaceholdersAnsweredTest extends TestCase {
 		// And the other direction: nothing it left is absent from the list.
 		preg_match_all('/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/', $rendered, $left);
 		$this->assertSame(
-			$templating->unanswered(template: $template, data: $data, context: $context),
+			$templating->unanswered(template: $template, values: new PlaceholderValues(data: $data, context: $context)),
 			array_values(array_unique($left[1]))
 		);
 	}//end testTheGuardAgreesWithTheRenderer()

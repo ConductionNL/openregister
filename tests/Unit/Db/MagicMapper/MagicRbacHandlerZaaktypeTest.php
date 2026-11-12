@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCP\IAppConfig;
@@ -28,6 +29,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * User-override parity tests for the MagicRbacHandler PHP path.
@@ -55,13 +59,19 @@ class MagicRbacHandlerZaaktypeTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$userManager,
-			$appConfig,
-			$this->conditionMatcher,
-			$container,
-			$logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->conditionMatcher,
+				container: $container,
+				logger: $logger
+			)
 		);
 	}
 
@@ -89,21 +99,21 @@ class MagicRbacHandlerZaaktypeTest extends TestCase {
 		$this->mockUser('extern-adviseur', []);
 		$schema = $this->schema(['read' => ['hr-team', 'user:extern-adviseur']]);
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testUserOverrideDeniesOtherUser(): void {
 		$this->mockUser('random', ['externals']);
 		$schema = $this->schema(['read' => ['hr-team', 'user:extern-adviseur']]);
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
+		$this->assertFalse($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testUserOverrideNeverGrantsAnonymous(): void {
 		$this->mockUser(null, []);
 		$schema = $this->schema(['read' => ['user:extern-adviseur']]);
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
+		$this->assertFalse($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testUserOverrideComplexFormDelegatesMatch(): void {
@@ -117,7 +127,7 @@ class MagicRbacHandlerZaaktypeTest extends TestCase {
 			->willReturn(true);
 
 		$this->assertTrue(
-			$this->handler->hasPermission($schema, 'read', null, ['status' => 'open'])
+			$this->handler->hasPermission(new RbacPermissionAsk($schema, 'read', null, ['status' => 'open']))
 		);
 	}
 
@@ -130,7 +140,7 @@ class MagicRbacHandlerZaaktypeTest extends TestCase {
 		$this->conditionMatcher->expects($this->never())->method('objectMatchesConditions');
 
 		$this->assertFalse(
-			$this->handler->hasPermission($schema, 'read', null, ['status' => 'open'])
+			$this->handler->hasPermission(new RbacPermissionAsk($schema, 'read', null, ['status' => 'open']))
 		);
 	}
 }

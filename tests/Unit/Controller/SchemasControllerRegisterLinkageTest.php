@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -37,10 +38,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -86,7 +87,7 @@ class SchemasControllerRegisterLinkageTest extends TestCase {
 			}
 		);
 
-		$this->controller = new SchemasController(
+		$this->controller = SchemasControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -97,7 +98,7 @@ class SchemasControllerRegisterLinkageTest extends TestCase {
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(OrganisationService::class),
 			$this->createMock(SchemaCacheHandler::class),
-			$this->createMock(FacetCacheHandler::class),
+			$this->createMock(FacetResultCacheClearer::class),
 			$this->createMock(SchemaService::class),
 			$this->createMock(LoggerInterface::class),
 			$container,

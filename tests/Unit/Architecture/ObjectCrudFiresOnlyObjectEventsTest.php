@@ -115,7 +115,7 @@ class ObjectCrudFiresOnlyObjectEventsTest extends TestCase {
 	 */
 	private function objectListeners(): array {
 		$listeners = [];
-		foreach ($this->phpFiles(['lib/Listener']) as $file) {
+		foreach ($this->phpFiles(['lib/Listener', 'lib/Search/Listener', 'lib/Notifications/Listener']) as $file) {
 			if (preg_match('/instanceof\s+Object(?:Created|Updated|Deleted|Creating|Updating|Deleting)Event/', (string)file_get_contents($file)) === 1) {
 				$listeners[] = $file;
 			}
@@ -159,7 +159,7 @@ class ObjectCrudFiresOnlyObjectEventsTest extends TestCase {
 	public function testTheScanIsNotEmptyAndItsPatternsBite(): void {
 		$this->assertGreaterThan(20, count($this->phpFiles(self::OBJECT_PATH)));
 		$this->assertGreaterThan(3, count($this->objectListeners()));
-		$this->assertContains($this->root() . '/lib/Listener/ActivityEventListener.php', $this->objectListeners());
+		$this->assertContains($this->root() . '/lib/Notifications/Listener/ActivityEventListener.php', $this->objectListeners());
 
 		// The schema and register mappers themselves must trip the patterns.
 		$this->assertNotSame([], $this->hits($this->root() . '/lib/Db/SchemaMapper.php'));

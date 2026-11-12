@@ -33,15 +33,17 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\PhotoLink;
-use OCA\OpenRegister\Db\PhotoLinkMapper;
+use OCA\OpenRegister\Db\PhotoLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 class PhotosProvider extends AbstractIntegrationProvider {
+
+	use NcAppLinkTableProvider;
+	use MarkerSourceFallback;
 	use MarkerLookupTrait;
 
 	private const REQUIRED_APP = 'photos';
@@ -49,21 +51,61 @@ class PhotosProvider extends AbstractIntegrationProvider {
 	private const MARKER_PREFIX = '[or:';
 
 	/**
+	 * Where the legacy `[or:{uuid}]` marker lives: table, marker column, extra
+	 * columns, id column, and the app URL a row's id is appended to.
+	 *
+	 * @var array{table: string, column: string, extra: list<string>, id: string, url: string}
+	 */
+	private const MARKER_SOURCE = [
+		'table' => 'photos_albums',
+		'column' => 'name',
+		'extra' => ['user', 'created'],
+		'id' => 'album_id',
+		'url' => '/index.php/apps/photos/albums/',
+	];
+
+	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param PhotoLinkMapper $photoLinkMapper Photo-link mapper (Tier-2 link table).
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafMarkerScanning       $leaf            The DB connection, app manager, localisation and marker-scan logger.
+	 * @param PhotoLinkMapperInterface $photoLinkMapper Photo-link mapper (Tier-2 link table).
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private PhotoLinkMapper $photoLinkMapper,
-		private LoggerInterface $logger,
+		LeafMarkerScanning $leaf,
+		private PhotoLinkMapperInterface $photoLinkMapper,
 	) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	public function getId(): string {
@@ -82,77 +124,14 @@ class PhotosProvider extends AbstractIntegrationProvider {
 		return 'docs';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
 	/**
-	 * List linked Photos albums for an OR object.
+	 * The link mapper this provider reads first.
 	 *
-	 * Reads the Tier-2 link table first; if no link rows exist it falls
-	 * back to the legacy `[or:{uuid}]` marker scan in `photos_albums.name`
-	 * so albums that pre-date the link table still surface.
-	 *
-	 * @param string $register Register slug for the parent object.
-	 * @param string $schema Schema slug for the parent object.
-	 * @param string $objectId UUID of the OR object whose rows we want.
-	 * @param array $filters Optional registry filters (unused).
-	 *
-	 * @return array<int,array<string,mixed>> List of registry leaf rows.
-	 *
-	 * @spec openspec/specs/integration-photos/spec.md
+	 * @return PhotoLinkMapperInterface
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
-
-		// Tier-2 path: read from the link table.
-		try {
-			$linkRows = $this->photoLinkMapper->findByObjectUuid($objectId);
-		} catch (Throwable $e) {
-			$linkRows = [];
-		}
-
-		if (count($linkRows) > 0) {
-			return array_map(
-				fn (PhotoLink $link): array => $this->rowFromLink(link: $link),
-				$linkRows
-			);
-		}
-
-		// Backwards-compat fallback: scan the legacy `[or:{uuid}]`
-		// marker in `photos_albums.name`.
-		$marker = self::MARKER_PREFIX . $objectId . ']';
-		$rows = $this->findByMarker(
-			db: $this->db,
-			table: 'photos_albums',
-			markerColumn: 'name',
-			marker: $marker,
-			extraColumns: ['user', 'created'],
-			idColumn: 'album_id',
-		);
-
-		return array_map(
-			static function (array $row): array {
-				return [
-					'id' => (string)($row['album_id'] ?? ''),
-					'title' => (string)($row['name'] ?? ''),
-					'url' => '/index.php/apps/photos/albums/' . (string)($row['album_id'] ?? ''),
-					'data' => $row,
-				];
-			},
-			$rows
-		);
-	}//end list()
+	protected function linkMapper(): PhotoLinkMapperInterface {
+		return $this->photoLinkMapper;
+	}//end linkMapper()
 
 	/**
 	 * Convert a PhotoLink row into the registry leaf-row shape.
@@ -161,7 +140,7 @@ class PhotosProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function rowFromLink(PhotoLink $link): array {
+	protected function rowFromLink(PhotoLink $link): array {
 		$albumId = (int)$link->getAlbumId();
 		$data = $link->jsonSerialize();
 
@@ -184,18 +163,6 @@ class PhotosProvider extends AbstractIntegrationProvider {
 	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$available = $this->isEnabled();
-		$status = 'unavailable';
-		$message = 'NC Photos app is not installed';
-		if ($available === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->isEnabled(), missing: 'NC Photos app is not installed');
 	}//end health()
 }//end class

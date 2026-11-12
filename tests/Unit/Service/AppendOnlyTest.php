@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -70,6 +70,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests for the appendOnly schema flag enforcement in ObjectService.
@@ -152,7 +157,7 @@ class AppendOnlyTest extends TestCase {
 			}
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -191,7 +196,7 @@ class AppendOnlyTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}//end setUp()
@@ -271,7 +276,7 @@ class AppendOnlyTest extends TestCase {
 		// Should NOT throw — INSERT is permitted even on append-only schemas.
 		$result = $this->service->saveObject(
 			object: ['name' => 'entry'],
-			uuid: null
+			options: new ObjectSaveOptions(uuid: null)
 		);
 
 		$this->assertSame($savedEntity, $result);
@@ -301,7 +306,7 @@ class AppendOnlyTest extends TestCase {
 
 		$this->service->saveObject(
 			object: ['name' => 'updated-entry'],
-			uuid: 'existing-uuid-abc'
+			options: new ObjectSaveOptions(uuid: 'existing-uuid-abc')
 		);
 	}//end testSaveObjectUpdateRejectedOnAppendOnlySchema()
 
@@ -321,7 +326,7 @@ class AppendOnlyTest extends TestCase {
 		$this->expectException(AppendOnlyException::class);
 		$this->expectExceptionCode(405);
 
-		$this->service->deleteObject(uuid: 'some-uuid-xyz');
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'some-uuid-xyz'));
 	}//end testDeleteObjectRejectedOnAppendOnlySchema()
 
 	// =========================================================================
@@ -354,7 +359,7 @@ class AppendOnlyTest extends TestCase {
 		// Must not throw.
 		$result = $this->service->saveObject(
 			object: ['name' => 'updated'],
-			uuid: 'ordinary-uuid-456'
+			options: new ObjectSaveOptions(uuid: 'ordinary-uuid-456')
 		);
 
 		$this->assertSame($savedEntity, $result);
@@ -386,7 +391,7 @@ class AppendOnlyTest extends TestCase {
 			->method('deleteObject')
 			->willReturn(true);
 
-		$result = $this->service->deleteObject(uuid: 'del-uuid-789');
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'del-uuid-789'));
 
 		$this->assertTrue($result);
 	}//end testDeleteObjectAllowedOnOrdinarySchema()
@@ -498,15 +503,15 @@ class AppendOnlyTest extends TestCase {
 		$this->saveHandler->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (mixed ...$args) use ($savedEntity): ObjectEntity {
+				SaveObjectArgs::callback(callback: function (mixed ...$args) use ($savedEntity): ObjectEntity {
 					$this->assertSame('3f2c6a3e-1111-4222-8333-444455556666', ($args[3] ?? null));
-					$this->assertTrue(($args[12] ?? false), 'an append-only insert must be insert-only down to the mapper');
+					$this->assertTrue(($args[11] ?? false), 'an append-only insert must be insert-only down to the mapper');
 					return $savedEntity;
-				}
+				})
 			);
 
 		$result = $this->service->saveObject(
-			object: ['id' => '3f2c6a3e-1111-4222-8333-444455556666', 'verb' => 'completed'],
+			object: ['id' => '3f2c6a3e-1111-4222-8333-444455556666', 'verb' => 'completed']
 		);
 
 		$this->assertSame($savedEntity, $result);
@@ -530,10 +535,29 @@ class AppendOnlyTest extends TestCase {
 	}//end testInsertWithExistingUuidRefusedOnAppendOnlySchema()
 
 	/**
-	 * A uuid held by a row the caller cannot see (another tenant) is refused
-	 * exactly like a visible one: the existence question is asked unfiltered,
-	 * so the invisible row can never be overwritten, and the refusal carries
-	 * the same message either way.
+	 * A uuid held by a row the caller cannot see inside their own organisations
+	 * is refused exactly like a visible one: the existence question is asked
+	 * unfiltered, so the invisible row can never be overwritten, and the
+	 * refusal carries the same message either way.
+	 *
+	 * @return void
+	 */
+	public function testInsertWithUuidHeldByAHiddenRowOfTheSameTenantIsRefused(): void {
+		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
+		$this->setProperty('currentRegister', null);
+		$this->stubFind(existingUuid: 'hidden-uuid', onlyUnfiltered: true);
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
+		$this->saveHandler->expects($this->never())->method('saveObject');
+
+		$this->expectException(AppendOnlyException::class);
+		$this->expectExceptionMessage('SCHEMA_APPEND_ONLY: Schema "xapi-statement" is append-only; update operations are not permitted.');
+
+		$this->service->saveObject(object: ['id' => 'hidden-uuid']);
+	}//end testInsertWithUuidHeldByAHiddenRowOfTheSameTenantIsRefused()
+
+	/**
+	 * A uuid held by a row in another tenant gets the same refusal as any other
+	 * stored row, so the answer does not tell another tenant's rows apart.
 	 *
 	 * @return void
 	 */
@@ -541,6 +565,7 @@ class AppendOnlyTest extends TestCase {
 		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: true, slug: 'xapi-statement'));
 		$this->setProperty('currentRegister', null);
 		$this->stubFind(existingUuid: 'other-tenant-uuid', onlyUnfiltered: true);
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(false);
 		$this->saveHandler->expects($this->never())->method('saveObject');
 
 		$this->expectException(AppendOnlyException::class);
@@ -562,7 +587,7 @@ class AppendOnlyTest extends TestCase {
 
 		$this->expectException(AppendOnlyException::class);
 
-		$this->service->patchObject(objectId: 'stored-uuid', data: ['name' => 'changed']);
+		$this->service->patchObject(patch: new ObjectPatch(objectId: 'stored-uuid', data: ['name' => 'changed']));
 	}//end testPatchOfExistingObjectRefusedOnAppendOnlySchema()
 
 	/**
@@ -578,31 +603,55 @@ class AppendOnlyTest extends TestCase {
 		$this->expectException(AppendOnlyException::class);
 		$this->expectExceptionCode(405);
 
-		$this->service->deleteObject(uuid: 'stored-uuid');
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'stored-uuid'));
 	}//end testDeleteOfExistingObjectRefusedOnAppendOnlySchema()
 
 	/**
-	 * On an ordinary schema a caller-chosen uuid that does not exist yet keeps
-	 * today's upsert semantics: no insert-only flag is forced on it.
+	 * On an ordinary schema, a caller-chosen uuid that nothing the caller may see
+	 * answers to is written insert-only: a stored row of that identifier the
+	 * caller cannot see is refused, not updated.
 	 *
 	 * @return void
 	 */
-	public function testOrdinarySchemaInsertWithUuidKeepsUpsertSemantics(): void {
+	public function testOrdinarySchemaInsertWithAFreshUuidIsInsertOnly(): void {
+		$this->assertSame(true, $this->ordinaryInsertFailIfExists(rbac: true));
+	}//end testOrdinarySchemaInsertWithAFreshUuidIsInsertOnly()
+
+	/**
+	 * With RBAC off (an administrator, a job) the same insert keeps its upsert semantics.
+	 *
+	 * @return void
+	 */
+	public function testOrdinarySchemaInsertWithUuidKeepsUpsertSemanticsWithRbacOff(): void {
+		$this->assertSame(false, $this->ordinaryInsertFailIfExists(rbac: false));
+	}//end testOrdinarySchemaInsertWithUuidKeepsUpsertSemanticsWithRbacOff()
+
+	/**
+	 * The failIfExists flag the save handler gets for an insert by a fresh uuid on an ordinary schema.
+	 *
+	 * @param bool $rbac Whether the save is judged for the signed-in caller.
+	 *
+	 * @return bool|null
+	 */
+	private function ordinaryInsertFailIfExists(bool $rbac): ?bool {
 		$this->setProperty('currentSchema', $this->makeSchema(appendOnly: false, slug: 'ordinary'));
 		$this->setProperty('currentRegister', null);
 		$this->stubFind(existingUuid: null);
 
 		$savedEntity = new ObjectEntity();
+		$failIfExists = null;
 		$this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
 		$this->saveHandler->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (mixed ...$args) use ($savedEntity): ObjectEntity {
-					$this->assertFalse(($args[12] ?? false));
+				SaveObjectArgs::callback(callback: function (mixed ...$args) use ($savedEntity, &$failIfExists): ObjectEntity {
+					$failIfExists = ($args[11] ?? null);
 					return $savedEntity;
-				}
+				})
 			);
 
-		$this->assertSame($savedEntity, $this->service->saveObject(object: ['id' => 'fresh-uuid']));
-	}//end testOrdinarySchemaInsertWithUuidKeepsUpsertSemantics()
+		$this->assertSame($savedEntity, $this->service->saveObject(object: ['id' => 'fresh-uuid'], _rbac: $rbac));
+
+		return $failIfExists;
+	}//end ordinaryInsertFailIfExists()
 }//end class

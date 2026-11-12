@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
@@ -69,21 +70,41 @@ class ConfigurationValueMapper extends QBMapper {
 			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
 			->andWhere($qb->expr()->eq('config_key', $qb->createNamedParameter($configKey)))
 			->setMaxResults(1);
+		$qb->andWhere($this->layerRefMatch(qb: $qb, layerRef: $layerRef));
 
-		$layerRefClause = $qb->expr()->isNull('layer_ref');
-		if ($layerRef !== null) {
-			$layerRefClause = $qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef));
-		}
+		return $this->findOneOrNull(qb: $qb);
+	}//end findAtAddress()
 
-		$qb->andWhere($layerRefClause);
-
+	/**
+	 * The one value a query finds, or null when it finds none.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return ConfigurationValue|null The value.
+	 */
+	private function findOneOrNull(IQueryBuilder $qb): ?ConfigurationValue {
 		try {
 			return $this->findEntity(query: $qb);
 		} catch (DoesNotExistException $exception) {
 			return null;
 		}
+	}//end findOneOrNull()
 
-	}//end findAtAddress()
+	/**
+	 * The condition on the layer reference: equal to it, or none when there is none.
+	 *
+	 * @param IQueryBuilder $qb       The query.
+	 * @param string|null   $layerRef The layer reference.
+	 *
+	 * @return string The condition.
+	 */
+	private function layerRefMatch(IQueryBuilder $qb, ?string $layerRef): string {
+		if ($layerRef === null) {
+			return $qb->expr()->isNull('layer_ref');
+		}
+
+		return $qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef));
+	}//end layerRefMatch()
 
 	/**
 	 * Every recorded value for one key, across layers.

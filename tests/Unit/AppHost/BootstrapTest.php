@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\AppHost\LeafAdoption;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/RecordingRegistrationContext.php';
@@ -31,11 +32,11 @@ class BootstrapTest extends TestCase {
 	public function testRegistersLeafControllerServiceNames(): void {
 		$context = new RecordingRegistrationContext();
 
-		Bootstrap::register($context, 'petstore', [
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: [
 			'namespace' => 'OCA\\PetStoreFixture',
 			'dashboardWidgets' => ['OCA\\PetStoreFixture\\Dashboard\\ExampleWidget'],
 			'mcpProvider' => 'OCA\\PetStoreFixture\\Mcp\\ExampleToolProvider',
-		]);
+		]));
 		$services = $context->services;
 
 		// Leaf conventional controller class names are aliased.
@@ -78,8 +79,7 @@ class BootstrapTest extends TestCase {
 
 		Bootstrap::aliasStoreController(
 			context: $context,
-			appId: 'petstore',
-			controllerNs: 'OCA\\PetStoreFixture\\Controller'
+			adoption: new LeafAdoption(appId: 'petstore', options: ['namespace' => 'OCA\\PetStoreFixture'])
 		);
 
 		$this->assertContains('OCA\\PetStoreFixture\\Controller\\StoreController', $context->services);
@@ -95,8 +95,7 @@ class BootstrapTest extends TestCase {
 
 		Bootstrap::aliasStoreController(
 			context: $context,
-			appId: 'petstore',
-			controllerNs: 'OCA\\PetStoreFixture\\Controller\\'
+			adoption: new LeafAdoption(appId: 'petstore', options: ['controllerNamespace' => 'OCA\\PetStoreFixture\\Controller\\'])
 		);
 
 		$this->assertContains('OCA\\PetStoreFixture\\Controller\\StoreController', $context->services);
@@ -111,13 +110,13 @@ class BootstrapTest extends TestCase {
 		// the assertion depend on which apps happen to be present, passing in CI
 		// and failing on a developer's instance.
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'pet_store_fixture');
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'pet_store_fixture'));
 		$this->assertContains('OCA\\PetStoreFixture\\Controller\\SettingsController', $context->services);
 	}//end testStudlyCaseFallbackFromMultiWordAppId()
 
 	public function testExplicitNamespaceOptionDrivesAllSubNamespaces(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'opencatalogi', ['namespace' => 'OCA\\OpenCatalogiFixture']);
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'opencatalogi', options: ['namespace' => 'OCA\\OpenCatalogiFixture']));
 
 		$this->assertContains('OCA\\OpenCatalogiFixture\\Controller\\SettingsController', $context->services);
 		$this->assertContains('OCA\\OpenCatalogiFixture\\Repair\\InitializeSettings', $context->services);
@@ -145,7 +144,7 @@ class BootstrapTest extends TestCase {
 		// The whole point: bootstrap a leaf with OpenRegister "disabled" — the
 		// generic classes must not be loaded merely by registering, so NC
 		// bootstrap survives a missing/disabled OR.
-		Bootstrap::register($context, 'pet_store_fixture');
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'pet_store_fixture'));
 
 		// Laziness is asserted as "the factory was REGISTERED and never
 		// INVOKED", not as "the generic class is not loaded".
@@ -182,7 +181,7 @@ class BootstrapTest extends TestCase {
 		// registrations — load-order contract) under both the generic name
 		// and, for the resolver, the leaf's conventional service name.
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: ['namespace' => 'OCA\\PetStoreFixture']));
 		$services = $context->services;
 
 		$this->assertContains('OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService', $services);
@@ -204,7 +203,7 @@ class BootstrapTest extends TestCase {
 	 */
 	public function testSettingsPlaneRegistrationIsLazy(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore');
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore'));
 
 		$this->assertFalse(
 			class_exists('OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService', false),
@@ -218,7 +217,7 @@ class BootstrapTest extends TestCase {
 
 	public function testObservabilityOptOutSkipsHealthMetrics(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture', 'observability' => false]);
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: ['namespace' => 'OCA\\PetStoreFixture', 'observability' => false]));
 		$services = $context->services;
 
 		$this->assertNotContains('OCA\\PetStoreFixture\\Controller\\HealthController', $services);
@@ -238,7 +237,7 @@ class BootstrapTest extends TestCase {
 	 */
 	public function testDoesNotShadowAControllerTheLeafAppDefinesItself(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'leafwithowndashboard', ['namespace' => 'OCA\\LeafWithOwnDashboard']);
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'leafwithowndashboard', options: ['namespace' => 'OCA\\LeafWithOwnDashboard']));
 		$services = $context->services;
 
 		// Positive control: the fixture class really is loadable, so a false

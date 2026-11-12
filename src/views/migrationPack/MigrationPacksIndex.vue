@@ -12,6 +12,7 @@
   SPDX-FileCopyrightText: 2026 Conduction B.V.
 -->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="migration-packs">
 			<div class="migration-packs__header">
@@ -71,102 +72,82 @@
 			<NcEmptyContent
 				v-else-if="packs.length === 0"
 				:name="t('openregister', 'No migration packs yet')" />
-			<table v-else class="migration-packs__table">
-				<thead>
-					<tr>
-						<th scope="col">
-							{{ t('openregister', 'Name') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Slug') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Source format') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Version') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Built-in') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Updated') }}
-						</th>
-						<th scope="col">
-							<span class="hidden-visually">{{
-								t('openregister', 'Actions')
-							}}</span>
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="pack in packs" :key="pack.id">
-						<td>
-							<router-link :to="editRoute(pack)">
-								{{ pack.name || pack.packSlug }}
-							</router-link>
-						</td>
-						<td>
-							<code>{{ pack.packSlug }}</code>
-						</td>
-						<td>{{ pack.sourceFormat }}</td>
-						<td>{{ pack.version }}</td>
-						<td>
-							{{
-								pack.builtin
-									? t('openregister', 'Yes')
-									: t('openregister', 'No')
-							}}
-						</td>
-						<td>{{ formatDate(pack.updatedAt) }}</td>
-						<td class="migration-packs__actions">
-							<NcButton
-								variant="tertiary"
-								:aria-label="
-									isAdmin
-										? t('openregister', 'Edit {name}', {
-												name: pack.name || pack.packSlug,
-											})
-										: t('openregister', 'View {name}', {
-												name: pack.name || pack.packSlug,
-											})
-								"
-								@click="$router.push(editRoute(pack))">
-								<template #icon>
-									<Pencil v-if="isAdmin" :size="20" />
-									<Eye v-else :size="20" />
-								</template>
-							</NcButton>
-							<NcButton
-								variant="tertiary"
-								:href="exportHref(pack)"
-								download
-								:aria-label="
-									t('openregister', 'Export {name}', {
-										name: pack.name || pack.packSlug,
-									})
-								">
-								<template #icon>
-									<Download :size="20" />
-								</template>
-							</NcButton>
-							<NcButton
-								v-if="isAdmin"
-								variant="tertiary"
-								:aria-label="
-									t('openregister', 'Delete {name}', {
-										name: pack.name || pack.packSlug,
-									})
-								"
-								@click="deleting = pack">
-								<template #icon>
-									<TrashCanOutline :size="20" />
-								</template>
-							</NcButton>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+			<CnDataTable
+				v-else
+				class="migration-packs__table"
+				:columns="columns"
+				:rows="packs">
+				<template #column-name="{ row: pack }">
+					<router-link :to="editRoute(pack)">
+						{{ pack.name || pack.packSlug }}
+					</router-link>
+				</template>
+				<template #column-packSlug="{ value }">
+					<code>{{ value }}</code>
+				</template>
+				<template #column-sourceFormat="{ value }">
+					{{ value }}
+				</template>
+				<template #column-version="{ value }">
+					{{ value }}
+				</template>
+				<template #column-builtin="{ value }">
+					{{ value ? t('openregister', 'Yes') : t('openregister', 'No') }}
+				</template>
+				<template #column-updatedAt="{ value }">
+					{{ formatDate(value) }}
+				</template>
+				<template #actions-header>
+					<span class="hidden-visually">{{ t('openregister', 'Actions') }}</span>
+				</template>
+				<template #row-actions="{ row: pack }">
+					<div class="migration-packs__actions">
+						<NcButton
+							variant="tertiary"
+							:aria-label="
+								isAdmin
+									? t('openregister', 'Edit {name}', {
+											name: pack.name || pack.packSlug,
+										})
+									: t('openregister', 'View {name}', {
+											name: pack.name || pack.packSlug,
+										})
+							"
+							@click="$router.push(editRoute(pack))">
+							<template #icon>
+								<Pencil v-if="isAdmin" :size="20" />
+								<Eye v-else :size="20" />
+							</template>
+						</NcButton>
+						<NcButton
+							variant="tertiary"
+							:href="exportHref(pack)"
+							download
+							:aria-label="
+								t('openregister', 'Export {name}', {
+									name: pack.name || pack.packSlug,
+								})
+							">
+							<template #icon>
+								<Download :size="20" />
+							</template>
+						</NcButton>
+						<NcButton
+							v-if="isAdmin"
+							variant="tertiary"
+							:aria-label="
+								t('openregister', 'Delete {name}', {
+									name: pack.name || pack.packSlug,
+								})
+							"
+							@click="deleting = pack">
+							<template #icon>
+								<TrashCanOutline :size="20" />
+							</template>
+						</NcButton>
+					</div>
+				</template>
+			</CnDataTable>
 		</div>
 
 		<DeleteMigrationPackDialog
@@ -180,14 +161,8 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { getCanonicalLocale } from '@nextcloud/l10n'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -202,19 +177,99 @@ import {
 	importPack,
 	listPacks,
 } from '../../services/migrationPacks.js'
+import { pageShellComponents } from '../pageShell.js'
 import { t } from './l10n.js'
+
+/**
+ * The packs sorted by name (or slug, for a pack without one).
+ *
+ * @param {Array<object>} packs The packs.
+ * @return {Array<object>} A sorted copy.
+ */
+function sortedByName(packs) {
+	return packs
+		.slice()
+		.sort((a, b) =>
+			String(a.name || a.packSlug).localeCompare(String(b.name || b.packSlug)),
+		)
+}
+
+/**
+ * The notice for a deleted pack.
+ *
+ * @param {object} pack The pack.
+ * @return {object} The notice.
+ */
+function deletedNotice(pack) {
+	return {
+		type: 'success',
+		message: t('openregister', 'Deleted "{name}".', {
+			name: pack.name || pack.packSlug,
+		}),
+	}
+}
+
+/**
+ * The notice for a delete the server refused or that failed.
+ *
+ * @param {Error} error What went wrong.
+ * @return {object} The notice.
+ */
+function deleteFailedNotice(error) {
+	return {
+		type: 'error',
+		...explainError(
+			error,
+			t('openregister', 'Could not delete the migration pack.'),
+		),
+	}
+}
+
+/**
+ * The notice for an imported pack. A pack with the file's id was already
+ * stored (and may have been edited on this instance): it says the pack was
+ * overwritten, not that a new one arrived.
+ *
+ * @param {{pack: object, replaced: boolean}} imported What the import answered.
+ * @param {string} fileName The file's name, for a pack without a name or slug.
+ * @return {object} The notice.
+ */
+function importedNotice({ pack, replaced }, fileName) {
+	const name = pack?.name || pack?.packSlug || fileName
+	return {
+		type: 'success',
+		message: replaced
+			? t('openregister', 'Replaced "{name}".', { name })
+			: t('openregister', 'Imported "{name}".', { name }),
+	}
+}
+
+/**
+ * The notice for an import the server refused or that failed.
+ *
+ * @param {Error} error What went wrong.
+ * @return {object} The notice.
+ */
+function importFailedNotice(error) {
+	return {
+		type: 'error',
+		...explainError(error, t('openregister', 'Could not import the file.'), {
+			'invalid-request': t(
+				'openregister',
+				'The file is not a migration pack. Choose a JSON file that holds one pack definition.',
+			),
+		}),
+	}
+}
 
 export default {
 	name: 'MigrationPacksIndex',
 	components: {
+		CnDataTable,
 		DeleteMigrationPackDialog,
 		Download,
 		Eye,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 		Pencil,
 		TrashCanOutline,
 		Upload,
@@ -231,6 +286,24 @@ export default {
 			importing: false,
 			isAdmin: canEditPacks(),
 		}
+	},
+
+	computed: {
+		/**
+		 * The list's columns; the row buttons add the last one.
+		 *
+		 * @return {Array<object>} The CnDataTable columns.
+		 */
+		columns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Name'), cellClass: 'cn-cell--wrap' },
+				{ key: 'packSlug', label: t('openregister', 'Slug'), cellClass: 'cn-cell--wrap' },
+				{ key: 'sourceFormat', label: t('openregister', 'Source format') },
+				{ key: 'version', label: t('openregister', 'Version') },
+				{ key: 'builtin', label: t('openregister', 'Built-in') },
+				{ key: 'updatedAt', label: t('openregister', 'Updated') },
+			]
+		},
 	},
 
 	async mounted() {
@@ -251,13 +324,7 @@ export default {
 			this.error = ''
 			try {
 				const packs = await listPacks()
-				this.packs = packs
-					.slice()
-					.sort((a, b) =>
-						String(a.name || a.packSlug).localeCompare(
-							String(b.name || b.packSlug),
-						),
-					)
+				this.packs = sortedByName(packs)
 			} catch {
 				this.error = t('openregister', 'Could not load the migration packs.')
 			} finally {
@@ -320,28 +387,26 @@ export default {
 			try {
 				await deletePack(pack.id)
 				this.packs = this.packs.filter((p) => p.id !== pack.id)
-				this.notice = {
-					type: 'success',
-					message: t('openregister', 'Deleted "{name}".', {
-						name: pack.name || pack.packSlug,
-					}),
-				}
+				this.notice = deletedNotice(pack)
 			} catch (error) {
-				this.notice = {
-					type: 'error',
-					...explainError(
-						error,
-						t('openregister', 'Could not delete the migration pack.'),
-					),
-				}
+				this.notice = deleteFailedNotice(error)
 			} finally {
 				this.busy = false
 				this.deleting = null
-				// The focused delete button is gone with its row or dialog.
-				this.$nextTick(() => {
-					this.$refs.heading?.focus()
-				})
+				this.focusHeading()
 			}
+		},
+
+		/**
+		 * Move the focus to the heading once the page has re-rendered: the
+		 * focused delete button is gone with its row or dialog.
+		 *
+		 * @return {void}
+		 */
+		focusHeading() {
+			this.$nextTick(() => {
+				this.$refs.heading?.focus()
+			})
 		},
 
 		/**
@@ -358,30 +423,23 @@ export default {
 			if (!file) {
 				return
 			}
+			await this.importFile(file)
+		},
+
+		/**
+		 * Import a pack file, say how it went and reload the list.
+		 *
+		 * @param {File} file The chosen file.
+		 * @return {Promise<void>}
+		 */
+		async importFile(file) {
 			this.importing = true
 			try {
-				const pack = await importPack(file)
-				this.notice = {
-					type: 'success',
-					message: t('openregister', 'Imported "{name}".', {
-						name: pack?.name || pack?.packSlug || file.name,
-					}),
-				}
+				const imported = await importPack(file)
+				this.notice = importedNotice(imported, file.name)
 				await this.load()
 			} catch (error) {
-				this.notice = {
-					type: 'error',
-					...explainError(
-						error,
-						t('openregister', 'Could not import the file.'),
-						{
-							'invalid-request': t(
-								'openregister',
-								'The file is not a migration pack. Choose a JSON file that holds one pack definition.',
-							),
-						},
-					),
-				}
+				this.notice = importFailedNotice(error)
 			} finally {
 				this.importing = false
 			}
@@ -406,18 +464,6 @@ export default {
 .migration-packs__intro {
 	color: var(--color-text-maxcontrast);
 	margin-block-end: 16px;
-}
-
-.migration-packs__table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.migration-packs__table th,
-.migration-packs__table td {
-	padding: 8px;
-	text-align: start;
-	border-bottom: 1px solid var(--color-border);
 }
 
 .migration-packs__actions {

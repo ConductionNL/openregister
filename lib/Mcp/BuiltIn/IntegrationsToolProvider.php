@@ -38,23 +38,23 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 
 /**
  * IntegrationsToolProvider
  *
  * Built-in IMcpToolProvider exposing the integration registry as an
  * AI-agent discovery + invocation surface. Registered alongside the other
- * built-ins in Application::registerMcpToolProviders().
+ * built-ins in McpProviderDiscovery::register().
  *
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp\BuiltIn
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class IntegrationsToolProvider implements IMcpToolProvider {
+class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the integrations tool.
@@ -64,82 +64,71 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param IntegrationRegistry $registry Integration registry.
+	 * @param IntegrationCatalogueInterface $registry Integration registry.
 	 */
 	public function __construct(
-		private readonly IntegrationRegistry $registry,
+		private readonly IntegrationCatalogueInterface $registry,
 	) {
 	}//end __construct()
 
 	/**
-	 * Returns the owning app id.
+	 * The tool definitions.
 	 *
-	 * @return string Always "openregister"
+	 * @var array<int, array<string, mixed>>
 	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return [
-			[
-				'id' => self::TOOL_ID,
-				'name' => 'integrations',
-				'description' => 'Discover and query pluggable integrations linked to OpenRegister objects '
-					. '(e.g. files, calendar, contacts, xwiki). Use action "list-integrations" to enumerate '
-					. 'which integrations exist on this instance, then "list"/"get" to read linked things for '
-					. 'a specific object, and "link"/"create" to attach a new linked thing where the '
-					. 'integration supports it.',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'action' => [
-							'type' => 'string',
-							'enum' => ['list-integrations', 'list', 'get', 'link', 'create'],
-							'description' => 'list-integrations enumerates available integrations; '
-								. 'list/get/link/create operate on linked things for one object.',
-						],
-						'integrationId' => [
-							'type' => 'string',
-							'description' => 'Stable integration id (e.g. "files", "calendar"). '
-								. 'Required for list/get/link/create.',
-						],
-						'register' => [
-							'type' => 'string',
-							'description' => 'Register slug or numeric id (required for list/get/link/create).',
-						],
-						'schema' => [
-							'type' => 'string',
-							'description' => 'Schema slug or numeric id (required for list/get/link/create).',
-						],
-						'objectId' => [
-							'type' => 'string',
-							'description' => 'Object uuid that owns the linked things (required for '
-								. 'list/get/link/create).',
-						],
-						'entityId' => [
-							'type' => 'string',
-							'description' => 'Linked-thing id (required for get).',
-						],
-						'filters' => [
-							'type' => 'object',
-							'description' => 'Optional list filters (_limit, _page, _search).',
-						],
-						'payload' => [
-							'type' => 'object',
-							'description' => 'New linked-thing fields (for link/create).',
-						],
+	protected const TOOLS = [
+		[
+			'id' => self::TOOL_ID,
+			'name' => 'integrations',
+			'description' => 'Discover and query pluggable integrations linked to OpenRegister objects '
+				. '(e.g. files, calendar, contacts, xwiki). Use action "list-integrations" to enumerate '
+				. 'which integrations exist on this instance, then "list"/"get" to read linked things for '
+				. 'a specific object, and "link"/"create" to attach a new linked thing where the '
+				. 'integration supports it.',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					'action' => [
+						'type' => 'string',
+						'enum' => ['list-integrations', 'list', 'get', 'link', 'create'],
+						'description' => 'list-integrations enumerates available integrations; '
+							. 'list/get/link/create operate on linked things for one object.',
 					],
-					'required' => ['action'],
+					'integrationId' => [
+						'type' => 'string',
+						'description' => 'Stable integration id (e.g. "files", "calendar"). '
+							. 'Required for list/get/link/create.',
+					],
+					'register' => [
+						'type' => 'string',
+						'description' => 'Register slug or numeric id (required for list/get/link/create).',
+					],
+					'schema' => [
+						'type' => 'string',
+						'description' => 'Schema slug or numeric id (required for list/get/link/create).',
+					],
+					'objectId' => [
+						'type' => 'string',
+						'description' => 'Object uuid that owns the linked things (required for '
+							. 'list/get/link/create).',
+					],
+					'entityId' => [
+						'type' => 'string',
+						'description' => 'Linked-thing id (required for get).',
+					],
+					'filters' => [
+						'type' => 'object',
+						'description' => 'Optional list filters (_limit, _page, _search).',
+					],
+					'payload' => [
+						'type' => 'object',
+						'description' => 'New linked-thing fields (for link/create).',
+					],
 				],
+				'required' => ['action'],
 			],
-		];
-	}//end getTools()
+		],
+	];
 
 	/**
 	 * Invoke the integrations tool.
@@ -206,9 +195,11 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 		}
 
 		$items = $provider->list(
-			$this->requireParam(arguments: $arguments, param: 'register'),
-			$this->requireParam(arguments: $arguments, param: 'schema'),
-			$this->requireParam(arguments: $arguments, param: 'objectId'),
+			new ObjectRef(
+				register: $this->requireText(arguments: $arguments, param: 'register'),
+				schema: $this->requireText(arguments: $arguments, param: 'schema'),
+				id: $this->requireText(arguments: $arguments, param: 'objectId')
+			),
 			$filters
 		);
 
@@ -226,10 +217,12 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 		$provider = $this->resolveProvider(arguments: $arguments);
 
 		return $provider->get(
-			$this->requireParam(arguments: $arguments, param: 'register'),
-			$this->requireParam(arguments: $arguments, param: 'schema'),
-			$this->requireParam(arguments: $arguments, param: 'objectId'),
-			$this->requireParam(arguments: $arguments, param: 'entityId')
+			new ObjectRef(
+				register: $this->requireText(arguments: $arguments, param: 'register'),
+				schema: $this->requireText(arguments: $arguments, param: 'schema'),
+				id: $this->requireText(arguments: $arguments, param: 'objectId')
+			),
+			$this->requireText(arguments: $arguments, param: 'entityId')
 		);
 	}//end getLinked()
 
@@ -252,9 +245,11 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 		}
 
 		return $provider->create(
-			$this->requireParam(arguments: $arguments, param: 'register'),
-			$this->requireParam(arguments: $arguments, param: 'schema'),
-			$this->requireParam(arguments: $arguments, param: 'objectId'),
+			new ObjectRef(
+				register: $this->requireText(arguments: $arguments, param: 'register'),
+				schema: $this->requireText(arguments: $arguments, param: 'schema'),
+				id: $this->requireText(arguments: $arguments, param: 'objectId')
+			),
 			$payload
 		);
 	}//end createLinked()
@@ -269,7 +264,7 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 	 * @throws InvalidArgumentException When integrationId is missing, unknown, or disabled
 	 */
 	private function resolveProvider(array $arguments): IntegrationProvider {
-		$integrationId = $this->requireParam(arguments: $arguments, param: 'integrationId');
+		$integrationId = $this->requireText(arguments: $arguments, param: 'integrationId');
 		$provider = $this->registry->get(id: $integrationId);
 
 		if ($provider === null) {
@@ -295,11 +290,11 @@ class IntegrationsToolProvider implements IMcpToolProvider {
 	 *
 	 * @throws InvalidArgumentException If parameter is missing
 	 */
-	private function requireParam(array $arguments, string $param): string {
+	private function requireText(array $arguments, string $param): string {
 		if (isset($arguments[$param]) === false || $arguments[$param] === '') {
 			throw new InvalidArgumentException('Missing required parameter: ' . $param);
 		}
 
 		return (string)$arguments[$param];
-	}//end requireParam()
+	}//end requireText()
 }//end class

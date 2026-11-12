@@ -61,59 +61,7 @@ namespace OCA\OpenRegister\Service\Capability;
  *
  * @spec openspec/specs/agent-capability-reach/spec.md#requirement-an-undeclared-or-unrecognised-reach-resolves-to-external
  */
-class ToolReachResolver {
-
-	/**
-	 * The agent's own state — memory, its own tool catalogue. Invisible to
-	 * anyone else and undoable by the agent itself.
-	 *
-	 * @var string
-	 */
-	public const REACH_SELF = 'self';
-
-	/**
-	 * Data the ACTING USER could already reach themselves. The agent is acting
-	 * as them, so nothing crosses a boundary the user does not already stand on.
-	 *
-	 * @var string
-	 */
-	public const REACH_USER = 'user';
-
-	/**
-	 * Other users on this Nextcloud can observe or be affected. Still inside the
-	 * instance, still administrable, still auditable here.
-	 *
-	 * @var string
-	 */
-	public const REACH_INSTANCE = 'instance';
-
-	/**
-	 * Leaves the building. Outbound mail, calendar invitations to third parties,
-	 * public share links, webhooks, fetching a caller-supplied URL. Nothing
-	 * downstream of this is recallable by Nextcloud.
-	 *
-	 * @var string
-	 */
-	public const REACH_EXTERNAL = 'external';
-
-	/**
-	 * The total order, least to most far-reaching. Index IS the rank.
-	 *
-	 * @var array<int, string>
-	 */
-	public const ORDER = [
-		self::REACH_SELF,
-		self::REACH_USER,
-		self::REACH_INSTANCE,
-		self::REACH_EXTERNAL,
-	];
-
-	/**
-	 * Descriptor key carrying a declared reach.
-	 *
-	 * @var string
-	 */
-	public const REACH_KEY = 'reach';
+class ToolReachResolver implements ToolReachLevels {
 
 	/**
 	 * Read verbs on a `{app}.{schema}.{verb}` derived tool id.

@@ -1,0 +1,510 @@
+<?php
+
+/**
+ * OpenRegister View Mapper
+ *
+ * This file contains the class for handling view mapper related operations
+ * in the OpenRegister application.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+namespace OCA\OpenRegister\Search\Db;
+
+use DateTime;
+use OCA\OpenRegister\Event\ViewCreatedEvent;
+use OCA\OpenRegister\Event\ViewDeletedEvent;
+use OCA\OpenRegister\Event\ViewUpdatedEvent;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
+use OCP\AppFramework\Db\Entity;
+use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserSession;
+use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Db\MultiTenancyTrait;
+use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
+
+/**
+ * ViewMapper handles database operations for View entities
+ *
+ * Mapper for View entities with multi-tenancy and RBAC support.
+ * Extends QBMapper to provide standard CRUD operations with access control.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @method View insert(Entity $entity)
+ * @method View update(Entity $entity)
+ * @method View insertOrUpdate(Entity $entity)
+ * @method View delete(Entity $entity)
+ * @method View findEntity(IQueryBuilder $query)
+ * @method list<View> findEntities(IQueryBuilder $query)
+ *
+ * @template-extends QBMapper<View>
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ */
+class ViewMapper extends QBMapper implements ViewMapperInterface {
+	use MultiTenancyTrait;
+
+	/**
+	 * Organisation mapper for multi-tenancy (from trait)
+	 *
+	 * Used to get active organisation UUID and apply organisation filters.
+	 *
+	 * @var OrganisationMapperInterface Organisation mapper instance
+	 */
+	protected OrganisationMapperInterface $organisationMapper;
+
+	/**
+	 * App configuration for multitenancy settings (from trait)
+	 *
+	 * Used by MultiTenancyTrait to check multitenancy configuration and
+	 * resolve the default organisation UUID when no session org is set.
+	 *
+	 * @var IAppConfig App configuration instance
+	 */
+	protected IAppConfig $appConfig;
+
+	/**
+	 * User session for current user
+	 *
+	 * Used to determine current user context for RBAC filtering.
+	 *
+	 * @var IUserSession User session instance
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for RBAC
+	 *
+	 * Used to check user group memberships for access control.
+	 *
+	 * @var IGroupManager Group manager instance
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Event dispatcher for dispatching view events
+	 *
+	 * Used to dispatch ViewCreatedEvent, ViewUpdatedEvent, and ViewDeletedEvent.
+	 *
+	 * @var IEventDispatcher Event dispatcher instance
+	 */
+	private readonly IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Constructor
+	 *
+	 * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
+	 * Calls parent constructor to set up base mapper functionality.
+	 *
+	 * @param IDBConnection $db Database connection
+	 * @param ViewMapperAccess $access The organisation mapper, app config, user session and group manager for multi-tenancy and RBAC
+	 * @param IEventDispatcher $eventDispatcher Event dispatcher for view lifecycle events
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		IDBConnection $db,
+		ViewMapperAccess $access,
+		IEventDispatcher $eventDispatcher,
+	) {
+		// Call parent constructor to initialize base mapper with table name and entity class.
+		parent::__construct(db: $db, tableName: 'openregister_views', entityClass: View::class);
+
+		// Store dependencies for use in mapper methods.
+		$this->organisationMapper = $access->tenancy->organisationMapper;
+		$this->appConfig = $access->appConfig;
+		$this->userSession = $access->tenancy->userSession;
+		$this->groupManager = $access->tenancy->groupManager;
+		$this->eventDispatcher = $eventDispatcher;
+	}//end __construct()
+
+	/**
+	 * Views carrying an alert, oldest evaluation first.
+	 *
+	 * 🔑 THE ORDER IS THE WATERMARK. Taking the least recently evaluated views
+	 * means a bounded pass walks the whole set over several ticks instead of
+	 * re-counting the same busy ones, so no view starves behind a neighbour.
+	 * A view never evaluated sorts first, which is what makes an alert somebody
+	 * set a minute ago run on the next pass.
+	 *
+	 * @param int $limit Most views to return.
+	 *
+	 * @return View[] The views.
+	 *
+	 * @psalm-return array<int, View>
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-the-alert-sweep-is-bounded
+	 */
+	public function findWithAlerts(int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('alert'))
+			->orderBy('alert_evaluated_at', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findWithAlerts()
+
+
+	/**
+	 * Find a view by its ID
+	 *
+	 * Retrieves view by ID (supports both integer ID and UUID) with RBAC and
+	 * organisation filtering. Verifies user has read permission before querying.
+	 *
+	 * The `$_rbac` / `$_multitenancy` flags mirror the pair every other mapper in
+	 * this app carries (see SchemaMapper::find()): they mean "trusted internal
+	 * read", never "public read". They exist so a caller that has ALREADY
+	 * established its own authorization - a published access link, which IS the
+	 * authorization - can resolve the one view it is entitled to serve even
+	 * though there is no session to judge. Left at their defaults the ordinary
+	 * behaviour stands: the session's own permissions and organisation decide.
+	 *
+	 * @param int|string $id The ID (integer) or UUID (string) of the view to find
+	 * @param bool $_rbac Whether to apply the RBAC read check (default: true)
+	 * @param bool $_multitenancy Whether to apply the organisation filter (default: true)
+	 *
+	 * @return View The found view entity
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If view not found or not accessible
+	 * @throws \Exception If user doesn't have read permission for views
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags mirror the mapper-wide
+	 * `_rbac` / `_multitenancy` convention.
+	 *
+	 * @spec openspec/specs/mariadb-ci-matrix/spec.md#requirement-a-text-identifier-is-never-bound-as-an-integer
+	 */
+	public function find($id, bool $_rbac = true, bool $_multitenancy = true): View {
+		// Step 1: Verify RBAC permission to read views.
+		// Throws exception if user doesn't have required permissions.
+		if ($_rbac === true) {
+			$this->verifyRbacPermission(action: 'read', entityType: 'view');
+		}
+
+		// Steps 2 and 3: SELECT the view by its ID or UUID.
+		$qb = $this->selectByIdOrUuid(id: $id);
+
+		// Step 4: Apply organisation filter for multi-tenancy.
+		// All users including admins must have active organisation.
+		$this->applyOrganisationFilter(qb: $qb, multiTenancyEnabled: $_multitenancy);
+
+		$entity = $this->findEntity(query: $qb);
+
+		// Enrich with configuration management info.
+		$this->enrichWithConfigurationInfo(view: $entity);
+
+		return $entity;
+	}//end find()
+
+	/**
+	 * A SELECT of this table's row with the given ID or UUID.
+	 *
+	 * Compares `id` only when the value IS an integer: PostgreSQL refuses a
+	 * uuid bound as an integer for the whole query, so `id = :uuid OR
+	 * uuid = :uuid` answered 500 there (live pass O4, 5 Oct).
+	 *
+	 * @param int|string $id The ID (integer) or UUID (string) of the view.
+	 *
+	 * @return IQueryBuilder The query, without the organisation filter.
+	 *
+	 * @spec openspec/specs/mariadb-ci-matrix/spec.md#requirement-a-text-identifier-is-never-bound-as-an-integer
+	 */
+	private function selectByIdOrUuid($id): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$match = $qb->expr()->eq('uuid', $qb->createNamedParameter((string) $id, IQueryBuilder::PARAM_STR));
+		if (is_int($id) === true || (is_string($id) === true && ctype_digit($id) === true)) {
+			$match = $qb->expr()->orX(
+				$qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT)),
+				$match
+			);
+		}
+
+		$qb->select('*')->from($this->getTableName())->where($match);
+
+		return $qb;
+	}//end selectByIdOrUuid()
+
+	/**
+	 * Find all views for a specific owner
+	 *
+	 * @param string $owner The owner user ID
+	 *
+	 * @return View[]
+	 *
+	 * @throws \Exception If user doesn't have read permission
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Search\Db\View>
+	 */
+	public function findAll(?string $owner = null): array {
+		// Verify RBAC permission to read.
+		$this->verifyRbacPermission(action: 'read', entityType: 'view');
+
+		$qb = $this->selectViewsOf(owner: $owner);
+
+		// Apply organisation filter (all users including admins must have active org).
+		$this->applyOrganisationFilter(qb: $qb);
+
+		$entities = $this->findEntities(query: $qb);
+
+		// Enrich all entities with configuration management info.
+		foreach ($entities as $entity) {
+			$this->enrichWithConfigurationInfo(view: $entity);
+		}
+
+		return $entities;
+	}//end findAll()
+
+	/**
+	 * Every view, newest first; for an owner, only theirs and the public ones.
+	 *
+	 * @param string|null $owner The owner, or null for every view.
+	 *
+	 * @return IQueryBuilder The query, before the organisation filter.
+	 */
+	private function selectViewsOf(?string $owner): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName());
+
+		if ($owner !== null) {
+			$qb->where(
+				$qb->expr()->orX(
+					$qb->expr()->eq('owner', $qb->createNamedParameter($owner, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('is_public', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+				)
+			);
+		}
+
+		$qb->orderBy('created', 'DESC');
+
+		return $qb;
+	}//end selectViewsOf()
+
+	/**
+	 * Every view this caller may see, each carrying the access they hold.
+	 *
+	 * The union `view-group-share` asks for: the caller's own views, the views
+	 * shared with a group they are in, and the public ones.
+	 *
+	 * 🔑 THE GROUP MATCH IS DONE IN PHP AND THAT IS DELIBERATE. `shared_with`
+	 * is JSON in a TEXT column, and the portable ways to match inside it are a
+	 * `LIKE '%"group":"x"%'` — which matches a group whose name is a substring
+	 * of another, and breaks the day the encoder emits a space after the colon
+	 * — or a backend-specific JSON operator, which is four spellings that have
+	 * to agree forever on a question about authorization. The row count makes
+	 * the choice free: a view list is tens of rows per organisation, not
+	 * millions, so the SQL narrows to "mine, public, or shared with anybody"
+	 * and this walks what comes back.
+	 *
+	 * A view the caller may not see is DROPPED rather than returned without an
+	 * access: a row with a null access reaching a client is a row somebody
+	 * renders.
+	 *
+	 * @param ViewerReach $reach The caller, their groups and whether they administer the instance.
+	 *
+	 * @return View[] The views, each with its `access` set.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function findAllFor(ViewerReach $reach): array {
+		$this->verifyRbacPermission(action: 'read', entityType: 'view');
+
+		$qb = $this->selectViewsReachableBy(reach: $reach);
+		$this->applyOrganisationFilter(qb: $qb);
+
+		return $this->grantedViews(views: $this->findEntities(query: $qb), reach: $reach);
+	}//end findAllFor()
+
+	/**
+	 * The caller's own views, the public ones and every shared one, newest first.
+	 *
+	 * @param ViewerReach $reach The caller.
+	 *
+	 * @return IQueryBuilder The query, before the organisation filter.
+	 */
+	private function selectViewsReachableBy(ViewerReach $reach): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->orX(
+					$qb->expr()->eq('owner', $qb->createNamedParameter($reach->userId, IQueryBuilder::PARAM_STR)),
+					$qb->expr()->eq('is_public', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)),
+					$qb->expr()->isNotNull('shared_with')
+				)
+			)
+			->orderBy('created', 'DESC');
+
+		return $qb;
+	}//end selectViewsReachableBy()
+
+	/**
+	 * The views that grant the caller something, each carrying that access.
+	 *
+	 * @param View[]      $views The candidate views.
+	 * @param ViewerReach $reach The caller.
+	 *
+	 * @return View[] The views, each with its `access` set.
+	 */
+	private function grantedViews(array $views, ViewerReach $reach): array {
+		$resolver = RbacChecks::viewShares();
+		$visible = [];
+		foreach ($views as $entity) {
+			$access = $resolver->accessOf(view: $entity->jsonSerialize(), reach: $reach);
+
+			// A list holds what the view grants the caller: their own, the ones
+			// shared with them and the public ones. Another user's private view
+			// is left out for an administrator too; their reach to it is for
+			// opening or managing it by id, not for their own lists.
+			if ($access === null) {
+				continue;
+			}
+
+			$entity->setAccess($access);
+			$this->enrichWithConfigurationInfo(view: $entity);
+			$visible[] = $entity;
+		}
+
+		return $visible;
+	}//end grantedViews()
+
+	/**
+	 * Create a new view from an Entity
+	 *
+	 * @param Entity $entity The view entity to create
+	 *
+	 * @return View The created view
+	 * @throws \Exception If user doesn't have create permission
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
+	 */
+	public function insert(Entity $entity): View {
+		// Verify RBAC permission to create.
+		$this->verifyRbacPermission(action: 'create', entityType: 'view');
+
+		// Generate UUID if not present.
+		if (empty($entity->getUuid()) === true) {
+			$entity->setUuid((string)Uuid::v4());
+		}
+
+		// Set timestamps.
+		$entity->setCreated(new DateTime());
+		$entity->setUpdated(new DateTime());
+
+		// Auto-set organisation from active session.
+		$this->setOrganisationOnCreate(entity: $entity);
+
+		$entity = parent::insert(entity: $entity);
+
+		// Dispatch creation event.
+		$this->eventDispatcher->dispatchTyped(new ViewCreatedEvent(view: $entity));
+
+		return $entity;
+	}//end insert()
+
+	/**
+	 * Update an existing view
+	 *
+	 * @param Entity $entity The view entity to update
+	 *
+	 * @return View The updated view
+	 * @throws \Exception If user doesn't have update permission or access to this organisation
+	 */
+	public function update(Entity $entity): View {
+		// Verify RBAC permission to update.
+		$this->verifyRbacPermission(action: 'update', entityType: 'view');
+
+		// Verify user has access to this organisation.
+		$this->verifyOrganisationAccess(entity: $entity);
+
+		// Get old state before update.
+		$oldEntity = $this->find(id: $entity->getId());
+
+		// Update timestamp.
+		$entity->setUpdated(new DateTime());
+
+		$entity = parent::update(entity: $entity);
+
+		// Dispatch update event.
+		$this->eventDispatcher->dispatchTyped(new ViewUpdatedEvent(newView: $entity, oldView: $oldEntity));
+
+		return $entity;
+	}//end update()
+
+	/**
+	 * Delete a view
+	 *
+	 * @param Entity $entity The view entity to delete
+	 *
+	 * @return View The deleted view
+	 * @throws \Exception If user doesn't have delete permission or access to this organisation
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 */
+	public function delete(Entity $entity): View {
+		// Verify RBAC permission to delete.
+		$this->verifyRbacPermission(action: 'delete', entityType: 'view');
+
+		// Verify user has access to this organisation.
+		$this->verifyOrganisationAccess(entity: $entity);
+
+		$entity = parent::delete(entity: $entity);
+
+		// Dispatch deletion event.
+		$this->eventDispatcher->dispatchTyped(new ViewDeletedEvent(view: $entity));
+
+		return $entity;
+	}//end delete()
+
+	/**
+	 * Enrich a view entity with configuration management information
+	 *
+	 * This method fetches configurations for the active organisation and checks
+	 * if this view is managed by any configuration. If so, it sets the managedByConfiguration
+	 * property on the entity.
+	 *
+	 * @param View $view The view entity to enrich
+	 *
+	 * @psalm-suppress UnusedParam Method is kept as no-op for API compatibility
+	 *
+	 * @return void
+	 */
+	private function enrichWithConfigurationInfo(View $view): void {
+		// NOTE: Configuration enrichment disabled - configurationCacheService was removed from mapper.
+		// Services should not be in mappers. Configuration enrichment should be done at the service layer.
+		// This method is kept as a no-op to avoid breaking existing code that calls it.
+	}//end enrichWithConfigurationInfo()
+}//end class

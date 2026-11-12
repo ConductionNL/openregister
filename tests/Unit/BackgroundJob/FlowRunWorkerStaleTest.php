@@ -19,7 +19,9 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\BackgroundJob\FlowRunRecoveryServices;
 use OCA\OpenRegister\BackgroundJob\FlowRunWorker;
+use OCA\OpenRegister\BackgroundJob\FlowRunWorkerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
@@ -52,10 +54,8 @@ class FlowRunWorkerStaleTest extends TestCase {
 
 		$this->worker = new FlowRunWorker(
 			$this->createMock(ITimeFactory::class),
-			$this->mapper,
-			$this->advancer,
-			$this->appConfig,
-			new NullLogger()
+			new FlowRunWorkerServices($this->mapper, $this->advancer, $this->appConfig, new NullLogger()),
+			new FlowRunRecoveryServices()
 		);
 	}
 

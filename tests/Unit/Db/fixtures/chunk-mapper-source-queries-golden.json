@@ -1,0 +1,35 @@
+{
+    "findBySource": [
+        "#1 select(*)",
+        "#1 from(openregister_chunks, NULL)",
+        "#1 param :p1 = file, 2",
+        "#1 expr.eq(source_type, :p1, NULL)",
+        "#1 param :p2 = 42, 1",
+        "#1 expr.eq(source_id, :p2, NULL)",
+        "#1 expr.andX(eq(source_type, :p1, NULL), eq(source_id, :p2, NULL))",
+        "#1 where(andX(eq(source_type, :p1, NULL), eq(source_id, :p2, NULL)))",
+        "#1 orderBy(chunk_index, ASC)",
+        "#1 executeQuery()"
+    ],
+    "deleteBySource": [
+        "#1 delete(openregister_chunks, NULL)",
+        "#1 param :p1 = file, 2",
+        "#1 expr.eq(source_type, :p1, NULL)",
+        "#1 param :p2 = 42, 1",
+        "#1 expr.eq(source_id, :p2, NULL)",
+        "#1 expr.andX(eq(source_type, :p1, NULL), eq(source_id, :p2, NULL))",
+        "#1 where(andX(eq(source_type, :p1, NULL), eq(source_id, :p2, NULL)))",
+        "#1 executeStatement()"
+    ],
+    "getLatestUpdatedTimestamp": [
+        "#1 selectAlias(MAX(updated_at), max_updated_at)",
+        "#1 from(openregister_chunks, NULL)",
+        "#1 param :p1 = file, 2",
+        "#1 expr.eq(source_type, :p1, NULL)",
+        "#1 param :p2 = 42, 1",
+        "#1 expr.eq(source_id, :p2, NULL)",
+        "#1 expr.andX(eq(source_type, :p1, NULL), eq(source_id, :p2, NULL))",
+        "#1 where(andX(eq(source_type, :p1, NULL), eq(source_id, :p2, NULL)))",
+        "#1 executeQuery()"
+    ]
+}

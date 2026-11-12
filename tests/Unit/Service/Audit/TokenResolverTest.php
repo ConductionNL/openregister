@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -223,12 +223,9 @@ final class TokenResolverTest extends TestCase {
 		$context->claim(
 			new \OCA\OpenRegister\Service\Audit\TokenIdentity(
 				'jwt',
-				'jti-1',
-				'Leverancier BV',
-				'svc-leverancier',
-				null,
-				'consumer-uuid',
-				'Leverancier BV'
+				new \OCA\OpenRegister\Service\Audit\NamedIdentifier('jti-1', 'Leverancier BV'),
+				new \OCA\OpenRegister\Service\Audit\NamedIdentifier('svc-leverancier', null),
+				new \OCA\OpenRegister\Service\Audit\NamedIdentifier('consumer-uuid', 'Leverancier BV')
 			)
 		);
 

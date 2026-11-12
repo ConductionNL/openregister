@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace Unit\Service\Survey;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Survey\FatigueLimit;
+use OCA\OpenRegister\Service\Survey\InvitationVisit;
+use OCA\OpenRegister\Service\Survey\SurveyExport;
 use OCA\OpenRegister\Service\Survey\SurveyExportShaper;
 use OCA\OpenRegister\Service\Survey\SurveyRules;
 use PHPUnit\Framework\TestCase;
@@ -141,11 +144,11 @@ class SurveyRulesTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnExpiredInvitationIsRefused(): void {
-		$refusal = $this->rules->refuseInvitation(
+		$refusal = $this->rules->refuseInvitation(new InvitationVisit(
 			invitation: ['state' => SurveyRules::SENT, 'expiresAt' => '2026-09-01T00:00:00+00:00'],
 			survey: ['allowReopening' => false],
 			now: new DateTimeImmutable('2026-09-02T00:00:00+00:00')
-		);
+		));
 
 		$this->assertNotNull($refusal);
 		$this->assertStringContainsString('expired', $refusal);
@@ -159,11 +162,11 @@ class SurveyRulesTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnparseableExpiryIsTreatedAsExpired(): void {
-		$refusal = $this->rules->refuseInvitation(
+		$refusal = $this->rules->refuseInvitation(new InvitationVisit(
 			invitation: ['state' => SurveyRules::SENT, 'expiresAt' => 'volgende maand'],
 			survey: ['allowReopening' => false],
 			now: new DateTimeImmutable('2026-09-02T00:00:00+00:00')
-		);
+		));
 
 		$this->assertNotNull($refusal);
 	}//end testAnUnparseableExpiryIsTreatedAsExpired()
@@ -178,8 +181,8 @@ class SurveyRulesTest extends TestCase {
 		$invitation = ['state' => SurveyRules::ANSWERED, 'expiresAt' => '2026-12-01T00:00:00+00:00'];
 		$now = new DateTimeImmutable('2026-09-02T00:00:00+00:00');
 
-		$this->assertNotNull($this->rules->refuseInvitation(invitation: $invitation, survey: ['allowReopening' => false], now: $now));
-		$this->assertNull($this->rules->refuseInvitation(invitation: $invitation, survey: ['allowReopening' => true], now: $now));
+		$this->assertNotNull($this->rules->refuseInvitation(new InvitationVisit(invitation: $invitation, survey: ['allowReopening' => false], now: $now)));
+		$this->assertNull($this->rules->refuseInvitation(new InvitationVisit(invitation: $invitation, survey: ['allowReopening' => true], now: $now)));
 	}//end testAnAnsweredInvitationIsRefusedUnlessReopeningIsAllowed()
 
 	/**
@@ -190,11 +193,11 @@ class SurveyRulesTest extends TestCase {
 	 */
 	public function testALiveInvitationIsAccepted(): void {
 		$this->assertNull(
-			$this->rules->refuseInvitation(
+			$this->rules->refuseInvitation(new InvitationVisit(
 				invitation: ['state' => SurveyRules::SENT, 'expiresAt' => '2026-12-01T00:00:00+00:00'],
 				survey: ['allowReopening' => false],
 				now: new DateTimeImmutable('2026-09-02T00:00:00+00:00')
-			)
+			))
 		);
 	}//end testALiveInvitationIsAccepted()
 
@@ -205,11 +208,11 @@ class SurveyRulesTest extends TestCase {
 	 * @return void
 	 */
 	public function testABlockedInvitationCarriesItsReason(): void {
-		$refusal = $this->rules->refuseInvitation(
+		$refusal = $this->rules->refuseInvitation(new InvitationVisit(
 			invitation: ['state' => SurveyRules::BLOCKED, 'blockedReason' => 'already sent 3 of a maximum 3 surveys in the last 90 days'],
 			survey: [],
 			now: new DateTimeImmutable('2026-09-02T00:00:00+00:00')
-		);
+		));
 
 		$this->assertStringContainsString('90 days', (string)$refusal);
 	}//end testABlockedInvitationCarriesItsReason()
@@ -299,11 +302,11 @@ class SurveyRulesTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnOverSurveyedPersonIsBlockedWithAReason(): void {
-		$reason = $this->rules->refuseForFatigue(recentInvitations: 3, maximum: 3, periodDays: 90);
+		$reason = $this->rules->refuseForFatigue(recentInvitations: 3, limit: new FatigueLimit(maximum: 3, periodDays: 90));
 
 		$this->assertNotNull($reason);
 		$this->assertStringContainsString('90 days', $reason);
-		$this->assertNull($this->rules->refuseForFatigue(recentInvitations: 2, maximum: 3, periodDays: 90));
+		$this->assertNull($this->rules->refuseForFatigue(recentInvitations: 2, limit: new FatigueLimit(maximum: 3, periodDays: 90)));
 	}//end testAnOverSurveyedPersonIsBlockedWithAReason()
 
 	/**
@@ -342,7 +345,7 @@ class SurveyRulesTest extends TestCase {
 		$sets = array_fill(0, 5, $this->rules->scrubRespondent(answerSet: $this->answerSet(), survey: $survey));
 
 		$headers = $this->shaper->headers(survey: $survey, questions: $this->questions());
-		$rows = $this->shaper->rows(survey: $survey, questions: $this->questions(), answerSets: $sets);
+		$rows = $this->shaper->rows(new SurveyExport(survey: $survey, questions: $this->questions(), answerSets: $sets));
 
 		$this->assertNotContains('respondent', $headers);
 		$this->assertArrayNotHasKey('respondent', $rows[0]);
@@ -358,7 +361,7 @@ class SurveyRulesTest extends TestCase {
 		$survey = ['anonymity' => SurveyRules::ATTRIBUTED];
 
 		$headers = $this->shaper->headers(survey: $survey, questions: $this->questions());
-		$rows = $this->shaper->rows(survey: $survey, questions: $this->questions(), answerSets: [$this->answerSet()]);
+		$rows = $this->shaper->rows(new SurveyExport(survey: $survey, questions: $this->questions(), answerSets: [$this->answerSet()]));
 
 		$this->assertContains('respondent', $headers);
 		$this->assertSame(['surveyVersion', 'submittedAt', 'subjectObject', 'respondent', 'Hoe tevreden bent u?', 'Wat kon beter?'], $headers);
@@ -375,10 +378,10 @@ class SurveyRulesTest extends TestCase {
 	public function testAnAnonymousExportBelowTheMinimumIsRefused(): void {
 		$this->expectException(RuntimeException::class);
 
-		$this->shaper->rows(
+		$this->shaper->rows(new SurveyExport(
 			survey: $this->anonymousSurvey(),
 			questions: $this->questions(),
 			answerSets: [$this->answerSet(), $this->answerSet()]
-		);
+		));
 	}//end testAnAnonymousExportBelowTheMinimumIsRefused()
 }//end class

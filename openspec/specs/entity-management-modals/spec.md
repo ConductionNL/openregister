@@ -27,7 +27,7 @@ Every `Edit{Entity}.vue` modal (e.g. `EditApplication.vue`, `EditConfiguration.v
 #### Scenario: Open edit modal hydrates from store
 - **GIVEN** `sourceStore.sourceItem` is set and `navigationStore.dialog === 'editSource'`
 - **WHEN** `EditSource.vue` mounts
-- **THEN** `initializeSourceItem()` MUST copy the store item into the modal's local form state
+- **THEN** `initializeSourceItem()` MUST copy the marketplace item into the modal's local form state
 - **AND** related collections MUST be hydrated as arrays
 
 #### Scenario: Save success closes the dialog

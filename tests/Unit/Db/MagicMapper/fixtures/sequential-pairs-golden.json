@@ -1,0 +1,415 @@
+{
+    "all-bad/all": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "all-bad/negative": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "all-bad/p1": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "all-bad/p2": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "all-bad/tail": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "empty-table/all": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||629|",
+            "debug [MagicMapper] Table search completed ||629|0",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||2"
+        ]
+    },
+    "empty-table/negative": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||629|",
+            "debug [MagicMapper] Table search completed ||629|0",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||2"
+        ]
+    },
+    "empty-table/p1": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||629|",
+            "debug [MagicMapper] Table search completed ||629|0",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||2"
+        ]
+    },
+    "empty-table/p2": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||629|",
+            "debug [MagicMapper] Table search completed ||629|0",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "empty-table/tail": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||629|",
+            "debug [MagicMapper] Table search completed ||629|0",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "failing-middle/all": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62",
+            "z1@7/709",
+            "z3@7/709",
+            "z5@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||5"
+        ]
+    },
+    "failing-middle/negative": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62",
+            "z1@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||3"
+        ]
+    },
+    "failing-middle/p1": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|2",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||2"
+        ]
+    },
+    "failing-middle/p2": {
+        "rows": [
+            "z1@7/709",
+            "z3@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||2"
+        ]
+    },
+    "failing-middle/tail": {
+        "rows": [
+            "z5@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||602|",
+            "error [MagicMapper] Failed to search in register+schema table table missing|9|602|",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||1"
+        ]
+    },
+    "invalid-first/all": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62",
+            "z1@7/709",
+            "z3@7/709",
+            "z5@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||5"
+        ]
+    },
+    "invalid-first/negative": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62",
+            "z1@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||3"
+        ]
+    },
+    "invalid-first/p1": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|2",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||2"
+        ]
+    },
+    "invalid-first/p2": {
+        "rows": [
+            "z1@7/709",
+            "z3@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||2"
+        ]
+    },
+    "invalid-first/tail": {
+        "rows": [
+            "z5@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "warning [MagicMapper] Invalid register+schema pair in cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||1"
+        ]
+    },
+    "none/all": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "none/negative": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "none/p1": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "none/p2": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "none/tail": {
+        "rows": [],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||0"
+        ]
+    },
+    "valid/all": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62",
+            "z1@7/709",
+            "z3@7/709",
+            "z5@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||5"
+        ]
+    },
+    "valid/negative": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62",
+            "z1@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||3"
+        ]
+    },
+    "valid/p1": {
+        "rows": [
+            "t2@8/62",
+            "t4@8/62"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|2",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||2"
+        ]
+    },
+    "valid/p2": {
+        "rows": [
+            "z1@7/709",
+            "z3@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||2"
+        ]
+    },
+    "valid/tail": {
+        "rows": [
+            "z5@7/709"
+        ],
+        "log": [
+            "debug [MagicMapper] Starting cross-table search |||",
+            "debug [MagicMapper] Searching table (sequential) ||709|",
+            "debug [MagicMapper] Table search completed ||709|3",
+            "debug [MagicMapper] Searching table (sequential) ||62|",
+            "debug [MagicMapper] Table search completed ||62|2",
+            "debug [MagicMapper] Sequential search completed |||",
+            "debug [MagicMapper] Cross-table search completed |||1"
+        ]
+    }
+}

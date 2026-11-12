@@ -1,0 +1,317 @@
+{
+    "mixed": {
+        "deletable": false,
+        "cascadeTargets": [
+            {
+                "objectUuid": "contact-uuid",
+                "register": "1",
+                "schema": "2",
+                "property": "person",
+                "chain": [
+                    "person-uuid → contact-uuid (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "phone-uuid",
+                "register": "1",
+                "schema": "6",
+                "property": "contact",
+                "chain": [
+                    "person-uuid → contact-uuid (CASCADE)",
+                    "contact-uuid → phone-uuid (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "contact2-uuid",
+                "register": "1",
+                "schema": "2",
+                "property": "person",
+                "chain": [
+                    "person-uuid → contact2-uuid (CASCADE)"
+                ]
+            }
+        ],
+        "nullifyTargets": [
+            {
+                "objectUuid": "order-uuid",
+                "schema": "3",
+                "property": "assignee",
+                "isArray": false,
+                "sourceUuid": "person-uuid"
+            },
+            {
+                "objectUuid": "item-uuid",
+                "schema": "5",
+                "property": "loose",
+                "isArray": false,
+                "sourceUuid": "person-uuid"
+            },
+            {
+                "objectUuid": "phone-uuid",
+                "schema": "6",
+                "property": "tags",
+                "isArray": true,
+                "sourceUuid": "person-uuid"
+            }
+        ],
+        "defaultTargets": [
+            {
+                "objectUuid": "item-uuid",
+                "schema": "5",
+                "property": "fallback",
+                "defaultValue": "fallback-uuid"
+            }
+        ],
+        "blockers": [
+            {
+                "objectUuid": "audit-uuid",
+                "schema": "7",
+                "property": "contact",
+                "action": "RESTRICT",
+                "chain": [
+                    "person-uuid → contact2-uuid (CASCADE)",
+                    "contact2-uuid → audit-uuid (RESTRICT)"
+                ]
+            },
+            {
+                "objectUuid": "order-uuid",
+                "schema": "3",
+                "property": "owner",
+                "action": "RESTRICT",
+                "chain": [
+                    "person-uuid → order-uuid (SET_NULL)",
+                    "(SET_NULL on required → RESTRICT)"
+                ]
+            },
+            {
+                "objectUuid": "service-uuid",
+                "schema": "4",
+                "property": "manager",
+                "action": "RESTRICT",
+                "chain": [
+                    "person-uuid → service-uuid (RESTRICT)"
+                ]
+            },
+            {
+                "objectUuid": "item-uuid",
+                "schema": "5",
+                "property": "strict",
+                "action": "RESTRICT",
+                "chain": [
+                    "person-uuid → item-uuid (SET_DEFAULT)",
+                    "(SET_DEFAULT no default + required → RESTRICT)"
+                ]
+            }
+        ],
+        "chainPaths": []
+    },
+    "contact": {
+        "deletable": true,
+        "cascadeTargets": [
+            {
+                "objectUuid": "phone-uuid",
+                "register": "1",
+                "schema": "6",
+                "property": "contact",
+                "chain": [
+                    "contact-uuid → phone-uuid (CASCADE)"
+                ]
+            }
+        ],
+        "nullifyTargets": [],
+        "defaultTargets": [],
+        "blockers": [],
+        "chainPaths": []
+    },
+    "cycle": {
+        "deletable": true,
+        "cascadeTargets": [
+            {
+                "objectUuid": "b-uuid",
+                "register": "1",
+                "schema": "9",
+                "property": "peer",
+                "chain": [
+                    "a-uuid → b-uuid (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "a-uuid",
+                "register": "1",
+                "schema": "8",
+                "property": "peer",
+                "chain": [
+                    "a-uuid → b-uuid (CASCADE)",
+                    "b-uuid → a-uuid (CASCADE)"
+                ]
+            }
+        ],
+        "nullifyTargets": [],
+        "defaultTargets": [],
+        "blockers": [],
+        "chainPaths": []
+    },
+    "unverified": {
+        "deletable": false,
+        "cascadeTargets": [],
+        "nullifyTargets": [],
+        "defaultTargets": [],
+        "blockers": [
+            {
+                "objectUuid": "",
+                "schema": "10",
+                "property": "parent",
+                "action": "RESTRICT",
+                "reason": "unverifiable",
+                "chain": [
+                    "broken-uuid → parent (not verifiable)"
+                ]
+            }
+        ],
+        "chainPaths": []
+    },
+    "deep": {
+        "deletable": true,
+        "cascadeTargets": [
+            {
+                "objectUuid": "chain-1",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "chain-2",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)",
+                    "chain-1 → chain-2 (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "chain-3",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)",
+                    "chain-1 → chain-2 (CASCADE)",
+                    "chain-2 → chain-3 (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "chain-4",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)",
+                    "chain-1 → chain-2 (CASCADE)",
+                    "chain-2 → chain-3 (CASCADE)",
+                    "chain-3 → chain-4 (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "chain-5",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)",
+                    "chain-1 → chain-2 (CASCADE)",
+                    "chain-2 → chain-3 (CASCADE)",
+                    "chain-3 → chain-4 (CASCADE)",
+                    "chain-4 → chain-5 (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "chain-6",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)",
+                    "chain-1 → chain-2 (CASCADE)",
+                    "chain-2 → chain-3 (CASCADE)",
+                    "chain-3 → chain-4 (CASCADE)",
+                    "chain-4 → chain-5 (CASCADE)",
+                    "chain-5 → chain-6 (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "chain-7",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)",
+                    "chain-1 → chain-2 (CASCADE)",
+                    "chain-2 → chain-3 (CASCADE)",
+                    "chain-3 → chain-4 (CASCADE)",
+                    "chain-4 → chain-5 (CASCADE)",
+                    "chain-5 → chain-6 (CASCADE)",
+                    "chain-6 → chain-7 (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "chain-8",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)",
+                    "chain-1 → chain-2 (CASCADE)",
+                    "chain-2 → chain-3 (CASCADE)",
+                    "chain-3 → chain-4 (CASCADE)",
+                    "chain-4 → chain-5 (CASCADE)",
+                    "chain-5 → chain-6 (CASCADE)",
+                    "chain-6 → chain-7 (CASCADE)",
+                    "chain-7 → chain-8 (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "chain-9",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)",
+                    "chain-1 → chain-2 (CASCADE)",
+                    "chain-2 → chain-3 (CASCADE)",
+                    "chain-3 → chain-4 (CASCADE)",
+                    "chain-4 → chain-5 (CASCADE)",
+                    "chain-5 → chain-6 (CASCADE)",
+                    "chain-6 → chain-7 (CASCADE)",
+                    "chain-7 → chain-8 (CASCADE)",
+                    "chain-8 → chain-9 (CASCADE)"
+                ]
+            },
+            {
+                "objectUuid": "chain-10",
+                "register": "1",
+                "schema": "12",
+                "property": "parent",
+                "chain": [
+                    "chain-0 → chain-1 (CASCADE)",
+                    "chain-1 → chain-2 (CASCADE)",
+                    "chain-2 → chain-3 (CASCADE)",
+                    "chain-3 → chain-4 (CASCADE)",
+                    "chain-4 → chain-5 (CASCADE)",
+                    "chain-5 → chain-6 (CASCADE)",
+                    "chain-6 → chain-7 (CASCADE)",
+                    "chain-7 → chain-8 (CASCADE)",
+                    "chain-8 → chain-9 (CASCADE)",
+                    "chain-9 → chain-10 (CASCADE)"
+                ]
+            }
+        ],
+        "nullifyTargets": [],
+        "defaultTargets": [],
+        "blockers": [],
+        "chainPaths": []
+    }
+}

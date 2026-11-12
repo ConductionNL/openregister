@@ -96,44 +96,88 @@ class DialectDetector {
 	 * @return string|null The detected dialect, or null when undetectable.
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each marker check adds one conservative branch.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Each marker check adds one conservative branch.
 	 */
 	public function detect(array $document): ?string {
-		// OpenAPI: unambiguous `openapi` version + `components`.
+		return ($this->openApiMarker(document: $document)
+			?? $this->schemaOrgMarker(document: $document)
+			?? $this->ggmMarker(document: $document)
+			?? $this->jsonSchemaMarker(document: $document));
+	}//end detect()
+
+	/**
+	 * OpenAPI: an unambiguous `openapi` version plus `components`.
+	 *
+	 * @param array<string, mixed> $document The decoded document.
+	 *
+	 * @return string|null The OpenAPI dialect, or null when not marked.
+	 */
+	private function openApiMarker(array $document): ?string {
 		if (isset($document['openapi']) === true && isset($document['components']) === true) {
 			return self::DIALECT_OPENAPI;
 		}
 
-		// Schema.org JSON-LD: a @context referencing schema.org.
-		if ($this->referencesSchemaOrg(context: ($document['@context'] ?? null)) === true) {
-			return self::DIALECT_SCHEMA_ORG;
-		}
+		return null;
+	}//end openApiMarker()
 
-		if (isset($document['@type']) === true
-			&& is_string($document['@type']) === true
-			&& str_contains($document['@type'], 'schema.org') === true
+	/**
+	 * Schema.org JSON-LD: a @context referencing schema.org, or a schema.org `@type`.
+	 *
+	 * @param array<string, mixed> $document The decoded document.
+	 *
+	 * @return string|null The Schema.org dialect, or null when not marked.
+	 */
+	private function schemaOrgMarker(array $document): ?string {
+		if ($this->referencesSchemaOrg(context: ($document['@context'] ?? null)) === true
+			|| $this->typeReferencesSchemaOrg(document: $document) === true
 		) {
 			return self::DIALECT_SCHEMA_ORG;
 		}
 
-		// GGM export root markers.
+		return null;
+	}//end schemaOrgMarker()
+
+	/**
+	 * Whether the document's `@type` is a string referencing schema.org.
+	 *
+	 * @param array<string, mixed> $document The decoded document.
+	 *
+	 * @return bool True when the type references schema.org.
+	 */
+	private function typeReferencesSchemaOrg(array $document): bool {
+		return isset($document['@type']) === true
+			&& is_string($document['@type']) === true
+			&& str_contains($document['@type'], 'schema.org') === true;
+	}//end typeReferencesSchemaOrg()
+
+	/**
+	 * GGM: export root markers.
+	 *
+	 * @param array<string, mixed> $document The decoded document.
+	 *
+	 * @return string|null The GGM dialect, or null when not marked.
+	 */
+	private function ggmMarker(array $document): ?string {
 		if ($this->looksLikeGgm(document: $document) === true) {
 			return self::DIALECT_GGM;
 		}
 
-		// JSON Schema: explicit $schema, or a recognisable JSON-Schema shape.
-		if (isset($document['$schema']) === true) {
-			return self::DIALECT_JSON_SCHEMA;
-		}
+		return null;
+	}//end ggmMarker()
 
-		if ($this->looksLikeJsonSchema(document: $document) === true) {
+	/**
+	 * JSON Schema: explicit $schema, or a recognisable JSON-Schema shape.
+	 *
+	 * @param array<string, mixed> $document The decoded document.
+	 *
+	 * @return string|null The JSON Schema dialect, or null when not marked.
+	 */
+	private function jsonSchemaMarker(array $document): ?string {
+		if (isset($document['$schema']) === true || $this->looksLikeJsonSchema(document: $document) === true) {
 			return self::DIALECT_JSON_SCHEMA;
 		}
 
 		return null;
-	}//end detect()
+	}//end jsonSchemaMarker()
 
 	/**
 	 * Whether a value is a `@context` that references schema.org.
@@ -151,15 +195,28 @@ class DialectDetector {
 		}
 
 		if (is_array($context) === true) {
-			foreach ($context as $value) {
-				if (is_string($value) === true && str_contains($value, 'schema.org') === true) {
-					return true;
-				}
-			}
+			return $this->anyValueReferencesSchemaOrg(context: $context);
 		}
 
 		return false;
 	}//end referencesSchemaOrg()
+
+	/**
+	 * Whether any string value of an array/object `@context` references schema.org.
+	 *
+	 * @param array<int|string, mixed> $context The `@context` array.
+	 *
+	 * @return bool True when one of its string values references schema.org.
+	 */
+	private function anyValueReferencesSchemaOrg(array $context): bool {
+		foreach ($context as $value) {
+			if (is_string($value) === true && str_contains($value, 'schema.org') === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyValueReferencesSchemaOrg()
 
 	/**
 	 * Whether a decoded document carries GGM export root markers.
@@ -178,17 +235,24 @@ class DialectDetector {
 			return true;
 		}
 
+		return $this->hasGgmCollection(document: $document);
+	}//end looksLikeGgm()
+
+	/**
+	 * Whether a document carries an `objecttypen` collection, or — for a
+	 * single objecttype export — the `attribuutsoorten` a GGM objecttype carries.
+	 *
+	 * @param array<string, mixed> $document The decoded document.
+	 *
+	 * @return bool True when a GGM collection is present.
+	 */
+	private function hasGgmCollection(array $document): bool {
 		if (isset($document['objecttypen']) === true && is_array($document['objecttypen']) === true) {
 			return true;
 		}
 
-		// A single objecttype export: a GGM objecttype carries `attribuutsoorten`.
-		if (isset($document['attribuutsoorten']) === true) {
-			return true;
-		}
-
-		return false;
-	}//end looksLikeGgm()
+		return isset($document['attribuutsoorten']) === true;
+	}//end hasGgmCollection()
 
 	/**
 	 * Whether a decoded document looks like a JSON Schema even without an

@@ -48,8 +48,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -296,10 +297,12 @@ class ChunkMapperLiveQueryTest extends TestCase {
 	 */
 	public function testSearchByKeywordRunsRealSqlAndReturnsTheMatchingChunk(): void {
 		$results = $this->mapper->searchByKeyword(
-			query: self::PROBE_TERM,
-			limit: 25,
-			filters: ['source_type' => self::PROBE_SOURCE_TYPE],
-			allowUnrankedFallback: true
+			search: new KeywordChunkSearch(
+				query: self::PROBE_TERM,
+				limit: 25,
+				filters: ['source_type' => self::PROBE_SOURCE_TYPE],
+				allowUnrankedFallback: true
+			)
 		);
 
 		$this->assertCount(
@@ -336,10 +339,12 @@ class ChunkMapperLiveQueryTest extends TestCase {
 	 */
 	public function testSearchByKeywordDoesNotReturnNonMatchingChunks(): void {
 		$results = $this->mapper->searchByKeyword(
-			query: self::PROBE_TERM,
-			limit: 25,
-			filters: ['source_type' => self::PROBE_SOURCE_TYPE],
-			allowUnrankedFallback: true
+			search: new KeywordChunkSearch(
+				query: self::PROBE_TERM,
+				limit: 25,
+				filters: ['source_type' => self::PROBE_SOURCE_TYPE],
+				allowUnrankedFallback: true
+			)
 		);
 
 		$ids = array_column($results, 'entity_id');
@@ -359,20 +364,23 @@ class ChunkMapperLiveQueryTest extends TestCase {
 	 */
 	public function testSearchByKeywordSourceTypeFilterIsAppliedBySql(): void {
 		$unfiltered = $this->mapper->searchByKeyword(
-			query: self::PROBE_TERM,
-			limit: 25,
-			filters: [],
-			allowUnrankedFallback: true
+			search: new KeywordChunkSearch(
+				query: self::PROBE_TERM,
+				limit: 25,
+				allowUnrankedFallback: true
+			)
 		);
 		$unfilteredIds = array_column($unfiltered, 'entity_id');
 		$this->assertContains('909001', $unfilteredIds);
 		$this->assertContains('909003', $unfilteredIds);
 
 		$filtered = $this->mapper->searchByKeyword(
-			query: self::PROBE_TERM,
-			limit: 25,
-			filters: ['source_type' => self::PROBE_OTHER_SOURCE_TYPE],
-			allowUnrankedFallback: true
+			search: new KeywordChunkSearch(
+				query: self::PROBE_TERM,
+				limit: 25,
+				filters: ['source_type' => self::PROBE_OTHER_SOURCE_TYPE],
+				allowUnrankedFallback: true
+			)
 		);
 		$filteredIds = array_column($filtered, 'entity_id');
 		$this->assertSame(['909003'], $filteredIds);
@@ -401,9 +409,7 @@ class ChunkMapperLiveQueryTest extends TestCase {
 
 		$results = $method->invoke(
 			$this->mapper,
-			self::PROBE_TERM,
-			25,
-			['source_type' => self::PROBE_SOURCE_TYPE]
+			new KeywordChunkSearch(self::PROBE_TERM, 25, ['source_type' => self::PROBE_SOURCE_TYPE])
 		);
 
 		$this->assertCount(

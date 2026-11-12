@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Handlers;
 
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-use OCA\OpenRegister\Service\Vectorization\Handlers\PgVectorPlatform;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\PgVectorPlatform;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;

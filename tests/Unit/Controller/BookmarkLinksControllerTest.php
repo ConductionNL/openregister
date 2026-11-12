@@ -25,6 +25,8 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\BookmarkLinksController;
+use OCA\OpenRegister\Controller\Support\BookmarkLinksControllerServices;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Db\BookmarkLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\BookmarkLinkService;
@@ -37,6 +39,8 @@ use PHPUnit\Framework\TestCase;
  * BookmarkLinksControllerTest.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Service\BookmarkDraft
  */
 class BookmarkLinksControllerTest extends TestCase {
 	private IRequest&MockObject $request;
@@ -52,10 +56,11 @@ class BookmarkLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new BookmarkLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->objectService,
+			new BookmarkLinksControllerServices(
+				bookmarkLinkService: $this->service,
+				objectService: $this->objectService,
+			),
 		);
 	}
 
@@ -123,7 +128,7 @@ class BookmarkLinksControllerTest extends TestCase {
 		$link->setBookmarkId(99);
 
 		$this->service->method('linkBookmark')
-			->with('abc-123', 1, 2, 99)
+			->with($this->equalTo((new LinkTarget('abc-123', 1))->inSchema(2)), 99)
 			->willReturn($link);
 
 		$response = $this->controller->link('reg', 'sch', 'obj');

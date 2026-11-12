@@ -76,6 +76,14 @@ emitting schema never names a concrete target property.
 - **WHEN** a schema declares `implements` for a kind but its `handoffContract` binding omits a mandatory field of that kind's contract
 - **THEN** schema-save validation SHALL reject the schema with a `handoff-contract-incomplete` error listing the missing fields
 
+#### Scenario: A case handoff can name the case type
+
+@e2e exclude contract field set — covered by PHPUnit tests/Unit/Service/Handoff/HandoffKindContractsTest.php
+
+- **GIVEN** the `ns#Case` contract lists `caseType` as an optional field, next to `requester` and `priority`
+- **WHEN** an emitting schema maps a source property to `caseType` and the implementer binds `caseType` to its own case-type property
+- **THEN** the created case SHALL carry that case type, and an implementer that does not bind `caseType` SHALL still accept the handoff
+
 ### Requirement: HandoffService executes conversions on top of SemanticTypeResolver
 
 OpenRegister SHALL provide a `HandoffService` that executes a declared
@@ -184,7 +192,7 @@ posture and per-object authorization (ADR-005, ADR-016, ADR-029).
 
 #### Scenario: Execute endpoint on an object whose schema declares no handoffs
 
-@e2e exclude API error-shape case — covered by the Newman collection tests/newman/openregister-handoff.postman_collection.json + PHPUnit HandoffServiceTest::testExecuteNotDeclared
+@e2e exclude API error-shape case — covered by the Newman collection tests/integration/openregister-handoff.postman_collection.json + PHPUnit HandoffServiceTest::testExecuteNotDeclared
 
 - **WHEN** the execute endpoint is called with a handoff id on an object whose schema declares no `x-openregister-handoff` entries
 - **THEN** the endpoint returns a `handoff-not-declared` client error and performs no writes

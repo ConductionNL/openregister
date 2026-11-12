@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -60,7 +60,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleRun extends Entity implements JsonSerializable {
 
@@ -156,22 +156,9 @@ class RuleRun extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The run.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'ruleId' => $this->ruleId,
-			'schema' => $this->schemaSlug,
-			'register' => $this->registerSlug,
-			'objectUuid' => $this->objectUuid,
-			'verdict' => $this->verdict,
-			'operand' => $this->operand,
-			'operandValue' => $this->operandValue,
-			'message' => $this->message,
-			'actor' => $this->actor,
-			'created' => $this->created?->format(DateTime::ATOM),
-		];
-
+		return (new TypedFieldsJson())->renamed(json: (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)), names: ['schemaSlug' => 'schema', 'registerSlug' => 'register']);
 	}//end jsonSerialize()
 }//end class

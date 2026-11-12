@@ -1,0 +1,1231 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering brokenJson, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Unexpected token",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Unexpected token",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering brokenJson, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Unexpected token",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Unexpected token",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering refused, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Not allowed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Not allowed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering refused, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Not allowed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Not allowed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering refusedSilent, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Deletion failed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Deletion failed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering refusedSilent, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Deletion failed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Deletion failed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering silentThrow, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "An error occurred while clearing audit trails",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering silentThrow, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "An error occurred while clearing audit trails",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering success, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "Cleared 9",
+    "timer": true,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering success, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: refresh down",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "loading": false,
+    "success": false,
+    "successMessage": "Cleared 9",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering successUnnamed, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "{count} audit trails cleared successfully {"count":4}",
+    "timer": true,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters empty, answering successUnnamed, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: refresh down",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "loading": false,
+    "success": false,
+    "successMessage": "{count} audit trails cleared successfully {"count":4}",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering brokenJson, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Unexpected token",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Unexpected token",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering brokenJson, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Unexpected token",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Unexpected token",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering refused, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Not allowed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Not allowed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering refused, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Not allowed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Not allowed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering refusedSilent, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Deletion failed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Deletion failed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering refusedSilent, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Deletion failed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Deletion failed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering silentThrow, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "An error occurred while clearing audit trails",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering silentThrow, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "An error occurred while clearing audit trails",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering success, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "Cleared 9",
+    "timer": true,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering success, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: refresh down",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "loading": false,
+    "success": false,
+    "successMessage": "Cleared 9",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering successUnnamed, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "{count} audit trails cleared successfully {"count":4}",
+    "timer": true,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters mixed, answering successUnnamed, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?action=delete&register=0&date=2026-01-01%2C2026-02-01&flag=false&odd+key=a%26b%3Dc",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: refresh down",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "loading": false,
+    "success": false,
+    "successMessage": "{count} audit trails cleared successfully {"count":4}",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering brokenJson, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Unexpected token",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Unexpected token",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering brokenJson, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Unexpected token",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Unexpected token",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering refused, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Not allowed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Not allowed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering refused, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Not allowed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Not allowed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering refusedSilent, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Deletion failed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Deletion failed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering refusedSilent, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: Deletion failed",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Deletion failed",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering silentThrow, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "An error occurred while clearing audit trails",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering silentThrow, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "An error occurred while clearing audit trails",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering success, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "Cleared 9",
+    "timer": true,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering success, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: refresh down",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "loading": false,
+    "success": false,
+    "successMessage": "Cleared 9",
+    "timer": false,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering successUnnamed, refresh fails false 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "{count} audit trails cleared successfully {"count":4}",
+    "timer": true,
+  },
+}
+`;
+
+exports[`ClearAuditTrails.clearAuditTrails clears with filters none, answering successUnnamed, refresh fails true 1`] = `
+{
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/audit-trails?",
+      {
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+      true,
+    ],
+    [
+      "refresh",
+      true,
+    ],
+    [
+      "console.error",
+      "Error clearing audit trails:",
+      "Error: refresh down",
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "refresh down",
+    "loading": false,
+    "success": false,
+    "successMessage": "{count} audit trails cleared successfully {"count":4}",
+    "timer": false,
+  },
+}
+`;

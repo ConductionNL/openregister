@@ -1,0 +1,1181 @@
+{
+    "resolveLadder / inline rules win": {
+        "rungs": [
+            {
+                "key": "preBreach:1:hours",
+                "trigger": "preBreach",
+                "offset": 1,
+                "offsetUnit": "hours",
+                "notifyRole": [],
+                "escalateToRole": [],
+                "priority": "medium",
+                "message": null,
+                "consequence": null,
+                "openIncident": false
+            }
+        ],
+        "roleBindings": []
+    },
+    "resolveLadder / named ladder": {
+        "rungs": [
+            {
+                "key": "preBreach:14:calendarDays",
+                "trigger": "preBreach",
+                "offset": 14,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler"
+                ],
+                "escalateToRole": [],
+                "priority": "low",
+                "message": "termijn-14d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "preBreach:7:calendarDays",
+                "trigger": "preBreach",
+                "offset": 7,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader"
+                ],
+                "escalateToRole": [
+                    "teamleader"
+                ],
+                "priority": "medium",
+                "message": "termijn-7d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "slaBreached:0",
+                "trigger": "slaBreached",
+                "offset": 0,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "critical",
+                "message": "termijn-overschreden",
+                "consequence": null,
+                "openIncident": true
+            }
+        ],
+        "roleBindings": []
+    },
+    "resolveLadder / named ladder padded": {
+        "rungs": [
+            {
+                "key": "preBreach:14:calendarDays",
+                "trigger": "preBreach",
+                "offset": 14,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler"
+                ],
+                "escalateToRole": [],
+                "priority": "low",
+                "message": "termijn-14d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "preBreach:7:calendarDays",
+                "trigger": "preBreach",
+                "offset": 7,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader"
+                ],
+                "escalateToRole": [
+                    "teamleader"
+                ],
+                "priority": "medium",
+                "message": "termijn-7d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "slaBreached:0",
+                "trigger": "slaBreached",
+                "offset": 0,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "critical",
+                "message": "termijn-overschreden",
+                "consequence": null,
+                "openIncident": true
+            }
+        ],
+        "roleBindings": {
+            "teamleader": "group:teamleaders"
+        }
+    },
+    "resolveLadder / organisation default": {
+        "rungs": [
+            {
+                "key": "preBreach:14:calendarDays",
+                "trigger": "preBreach",
+                "offset": 14,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler"
+                ],
+                "escalateToRole": [],
+                "priority": "low",
+                "message": "termijn-14d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "preBreach:7:calendarDays",
+                "trigger": "preBreach",
+                "offset": 7,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader"
+                ],
+                "escalateToRole": [
+                    "teamleader"
+                ],
+                "priority": "medium",
+                "message": "termijn-7d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "slaBreached:0",
+                "trigger": "slaBreached",
+                "offset": 0,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "critical",
+                "message": "termijn-overschreden",
+                "consequence": null,
+                "openIncident": true
+            }
+        ],
+        "roleBindings": {
+            "teamleader": "group:teamleaders"
+        }
+    },
+    "resolveLadder / organisation unknown": {
+        "rungs": [],
+        "roleBindings": []
+    },
+    "resolveLadder / nothing named": {
+        "rungs": [],
+        "roleBindings": []
+    },
+    "resolveLadder / unknown ladder": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation ladder 'nope' does not exist; known ladders: nl-termijn-default, org-ladder, bad-bindings, no-rungs."
+    },
+    "resolveLadder / bindings not array": {
+        "rungs": [
+            {
+                "key": "preBreach:14:calendarDays",
+                "trigger": "preBreach",
+                "offset": 14,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler"
+                ],
+                "escalateToRole": [],
+                "priority": "low",
+                "message": "termijn-14d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "preBreach:7:calendarDays",
+                "trigger": "preBreach",
+                "offset": 7,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader"
+                ],
+                "escalateToRole": [
+                    "teamleader"
+                ],
+                "priority": "medium",
+                "message": "termijn-7d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            {
+                "key": "slaBreached:0",
+                "trigger": "slaBreached",
+                "offset": 0,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "critical",
+                "message": "termijn-overschreden",
+                "consequence": null,
+                "openIncident": true
+            }
+        ],
+        "roleBindings": []
+    },
+    "resolveLadder / ladder without rungs": {
+        "rungs": [],
+        "roleBindings": []
+    },
+    "resolveLadder / inline rules not array": {
+        "rungs": [],
+        "roleBindings": []
+    },
+    "normaliseRules / not array": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rules must be an array of rules."
+    },
+    "normaliseRules / empty": [],
+    "normaliseRules / no sla": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "An escalation rule is refused without an SLA: a warning before a breach is meaningless without the term it warns about."
+    },
+    "normaliseRules / rule not object": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #1 is not an object."
+    },
+    "normaliseRules / rule string key": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 is not an object."
+    },
+    "normaliseRules / minimal": [
+        {
+            "key": "preBreach:2:businessDays",
+            "trigger": "preBreach",
+            "offset": 2,
+            "offsetUnit": "businessDays",
+            "notifyRole": [],
+            "escalateToRole": [],
+            "priority": "medium",
+            "message": null,
+            "consequence": null,
+            "openIncident": false
+        }
+    ],
+    "normaliseRules / full": [
+        {
+            "key": "k1",
+            "trigger": "slaBreached",
+            "offset": 0,
+            "offsetUnit": "hours",
+            "notifyRole": [
+                "handler"
+            ],
+            "escalateToRole": [
+                "manager",
+                "boss"
+            ],
+            "priority": "critical",
+            "message": "hi",
+            "consequence": null,
+            "openIncident": true
+        }
+    ],
+    "normaliseRules / postBreach": [
+        {
+            "key": "postBreach:3:calendarDays",
+            "trigger": "postBreach",
+            "offset": 3,
+            "offsetUnit": "calendarDays",
+            "notifyRole": [],
+            "escalateToRole": [],
+            "priority": "medium",
+            "message": null,
+            "consequence": null,
+            "openIncident": false
+        }
+    ],
+    "normaliseRules / bad trigger": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has trigger 'soon'; use one of preBreach, slaBreached, postBreach."
+    },
+    "normaliseRules / no trigger": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has trigger ''; use one of preBreach, slaBreached, postBreach."
+    },
+    "normaliseRules / negative offset": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has offset '-1'; it must be an integer >= 0."
+    },
+    "normaliseRules / string offset": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has offset ''1''; it must be an integer >= 0."
+    },
+    "normaliseRules / float offset": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has offset '1.5'; it must be an integer >= 0."
+    },
+    "normaliseRules / bad unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has offsetUnit ''weeks''; use one of hours, businessDays, calendarDays (the same units the SLA accepts)."
+    },
+    "normaliseRules / no unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has offsetUnit 'NULL'; use one of hours, businessDays, calendarDays (the same units the SLA accepts)."
+    },
+    "normaliseRules / bad priority": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has priority 'urgent'; use one of low, medium, high, critical."
+    },
+    "normaliseRules / role not list": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0: notifyRole must be a role name or a list of role names."
+    },
+    "normaliseRules / role empty entry": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0: escalateToRole contains an empty or non-string role."
+    },
+    "normaliseRules / role non-string entry": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0: notifyRole contains an empty or non-string role."
+    },
+    "normaliseRules / second rule bad": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #1 has offsetUnit ''x''; use one of hours, businessDays, calendarDays (the same units the SLA accepts)."
+    },
+    "normaliseRules / fault order: trigger before offset": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has trigger 'x'; use one of preBreach, slaBreached, postBreach."
+    },
+    "normaliseRules / fault order: offset before unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has offset '-1'; it must be an integer >= 0."
+    },
+    "normaliseRules / fault order: unit before priority": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has offsetUnit ''x''; use one of hours, businessDays, calendarDays (the same units the SLA accepts)."
+    },
+    "normaliseRules / fault order: priority before roles": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0 has priority 'x'; use one of low, medium, high, critical."
+    },
+    "normaliseRules / fault order: notify before escalate": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule #0: notifyRole must be a role name or a list of role names."
+    },
+    "validateAgainstTimeline / anchor early": "passed",
+    "validateAgainstTimeline / anchor late": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule 'preBreach:14:calendarDays': the preBreach offset of 14 calendarDays exceeds the SLA — it resolves to 2026-06-16T17:00:00+02:00, before the anchor 2026-06-25T09:00:00+02:00 (calendar 'nl-national')."
+    },
+    "validateAgainstTimeline / anchor exact": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Escalation rule 'preBreach:14:calendarDays': the preBreach offset of 14 calendarDays exceeds the SLA — it resolves to 2026-06-16T17:00:00+02:00, before the anchor 2026-06-30T17:00:00+02:00 (calendar 'nl-national')."
+    },
+    "rungInstant / preBreach:14:calendarDays": "2026-06-16 17:00:00 CEST",
+    "rungInstant / preBreach:7:calendarDays": "2026-06-23 17:00:00 CEST",
+    "rungInstant / preBreach:2:calendarDays": "2026-06-28 17:00:00 CEST",
+    "rungInstant / slaBreached:0": "2026-06-30 17:00:00 CEST",
+    "rungInstant / tie": "2026-06-30 17:00:00 CEST",
+    "nextRungAt / none": "2026-06-16 17:00:00 CEST",
+    "dueRungs / none / 2026-06-01 00:00:00": [],
+    "dueRungs / none / 2026-06-29 12:00:00": [
+        {
+            "rung": {
+                "key": "preBreach:14:calendarDays",
+                "trigger": "preBreach",
+                "offset": 14,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler"
+                ],
+                "escalateToRole": [],
+                "priority": "low",
+                "message": "termijn-14d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-16 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "preBreach:7:calendarDays",
+                "trigger": "preBreach",
+                "offset": 7,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader"
+                ],
+                "escalateToRole": [
+                    "teamleader"
+                ],
+                "priority": "medium",
+                "message": "termijn-7d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-23 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-28 17:00:00 CEST"
+        }
+    ],
+    "dueRungs / none / 2026-06-30 17:00:00": [
+        {
+            "rung": {
+                "key": "preBreach:14:calendarDays",
+                "trigger": "preBreach",
+                "offset": 14,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler"
+                ],
+                "escalateToRole": [],
+                "priority": "low",
+                "message": "termijn-14d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-16 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "preBreach:7:calendarDays",
+                "trigger": "preBreach",
+                "offset": 7,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader"
+                ],
+                "escalateToRole": [
+                    "teamleader"
+                ],
+                "priority": "medium",
+                "message": "termijn-7d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-23 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-28 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "slaBreached:0",
+                "trigger": "slaBreached",
+                "offset": 0,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "critical",
+                "message": "termijn-overschreden",
+                "consequence": null,
+                "openIncident": true
+            },
+            "at": "2026-06-30 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "tie",
+                "trigger": "postBreach",
+                "offset": 0,
+                "offsetUnit": "hours",
+                "notifyRole": [],
+                "escalateToRole": []
+            },
+            "at": "2026-06-30 17:00:00 CEST"
+        }
+    ],
+    "dueRungs / none / 2026-08-01 00:00:00": [
+        {
+            "rung": {
+                "key": "preBreach:14:calendarDays",
+                "trigger": "preBreach",
+                "offset": 14,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler"
+                ],
+                "escalateToRole": [],
+                "priority": "low",
+                "message": "termijn-14d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-16 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "preBreach:7:calendarDays",
+                "trigger": "preBreach",
+                "offset": 7,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader"
+                ],
+                "escalateToRole": [
+                    "teamleader"
+                ],
+                "priority": "medium",
+                "message": "termijn-7d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-23 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-28 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "slaBreached:0",
+                "trigger": "slaBreached",
+                "offset": 0,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "critical",
+                "message": "termijn-overschreden",
+                "consequence": null,
+                "openIncident": true
+            },
+            "at": "2026-06-30 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "tie",
+                "trigger": "postBreach",
+                "offset": 0,
+                "offsetUnit": "hours",
+                "notifyRole": [],
+                "escalateToRole": []
+            },
+            "at": "2026-06-30 17:00:00 CEST"
+        }
+    ],
+    "nextRungAt / first two": "2026-06-28 17:00:00 CEST",
+    "dueRungs / first two / 2026-06-01 00:00:00": [],
+    "dueRungs / first two / 2026-06-29 12:00:00": [
+        {
+            "rung": {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-28 17:00:00 CEST"
+        }
+    ],
+    "dueRungs / first two / 2026-06-30 17:00:00": [
+        {
+            "rung": {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-28 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "slaBreached:0",
+                "trigger": "slaBreached",
+                "offset": 0,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "critical",
+                "message": "termijn-overschreden",
+                "consequence": null,
+                "openIncident": true
+            },
+            "at": "2026-06-30 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "tie",
+                "trigger": "postBreach",
+                "offset": 0,
+                "offsetUnit": "hours",
+                "notifyRole": [],
+                "escalateToRole": []
+            },
+            "at": "2026-06-30 17:00:00 CEST"
+        }
+    ],
+    "dueRungs / first two / 2026-08-01 00:00:00": [
+        {
+            "rung": {
+                "key": "preBreach:2:calendarDays",
+                "trigger": "preBreach",
+                "offset": 2,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "high",
+                "message": "termijn-2d",
+                "consequence": null,
+                "openIncident": false
+            },
+            "at": "2026-06-28 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "slaBreached:0",
+                "trigger": "slaBreached",
+                "offset": 0,
+                "offsetUnit": "calendarDays",
+                "notifyRole": [
+                    "handler",
+                    "teamleader",
+                    "manager"
+                ],
+                "escalateToRole": [
+                    "manager"
+                ],
+                "priority": "critical",
+                "message": "termijn-overschreden",
+                "consequence": null,
+                "openIncident": true
+            },
+            "at": "2026-06-30 17:00:00 CEST"
+        },
+        {
+            "rung": {
+                "key": "tie",
+                "trigger": "postBreach",
+                "offset": 0,
+                "offsetUnit": "hours",
+                "notifyRole": [],
+                "escalateToRole": []
+            },
+            "at": "2026-06-30 17:00:00 CEST"
+        }
+    ],
+    "nextRungAt / all": null,
+    "dueRungs / all / 2026-06-01 00:00:00": [],
+    "dueRungs / all / 2026-06-29 12:00:00": [],
+    "dueRungs / all / 2026-06-30 17:00:00": [],
+    "dueRungs / all / 2026-08-01 00:00:00": [],
+    "resolveRecipients / no subject": [
+        {
+            "type": "role",
+            "id": "handler",
+            "role": "handler"
+        },
+        {
+            "type": "group",
+            "id": "leads",
+            "role": "teamleader"
+        },
+        {
+            "type": "user",
+            "id": "boss:x",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / no subject / bound handler": [
+        {
+            "type": "group",
+            "id": "desk",
+            "role": "handler"
+        },
+        {
+            "type": "role",
+            "id": "teamleader",
+            "role": "teamleader"
+        },
+        {
+            "type": "role",
+            "id": "manager",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / assignee user": [
+        {
+            "type": "user",
+            "id": "alice",
+            "role": "handler"
+        },
+        {
+            "type": "group",
+            "id": "leads",
+            "role": "teamleader"
+        },
+        {
+            "type": "user",
+            "id": "boss:x",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / assignee user / bound handler": [
+        {
+            "type": "group",
+            "id": "desk",
+            "role": "handler"
+        },
+        {
+            "type": "role",
+            "id": "teamleader",
+            "role": "teamleader"
+        },
+        {
+            "type": "role",
+            "id": "manager",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / assignee group performer": [
+        {
+            "type": "group",
+            "id": "team",
+            "role": "handler"
+        },
+        {
+            "type": "group",
+            "id": "leads",
+            "role": "teamleader"
+        },
+        {
+            "type": "user",
+            "id": "boss:x",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / assignee group performer / bound handler": [
+        {
+            "type": "group",
+            "id": "desk",
+            "role": "handler"
+        },
+        {
+            "type": "role",
+            "id": "teamleader",
+            "role": "teamleader"
+        },
+        {
+            "type": "role",
+            "id": "manager",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / assignee no performer type": [
+        {
+            "type": "",
+            "id": "bob",
+            "role": "handler"
+        },
+        {
+            "type": "group",
+            "id": "leads",
+            "role": "teamleader"
+        },
+        {
+            "type": "user",
+            "id": "boss:x",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / assignee no performer type / bound handler": [
+        {
+            "type": "group",
+            "id": "desk",
+            "role": "handler"
+        },
+        {
+            "type": "role",
+            "id": "teamleader",
+            "role": "teamleader"
+        },
+        {
+            "type": "role",
+            "id": "manager",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / candidate groups": [
+        {
+            "type": "group",
+            "id": "g1",
+            "role": "handler"
+        },
+        {
+            "type": "group",
+            "id": "g2",
+            "role": "handler"
+        },
+        {
+            "type": "group",
+            "id": "leads",
+            "role": "teamleader"
+        },
+        {
+            "type": "user",
+            "id": "boss:x",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / candidate groups / bound handler": [
+        {
+            "type": "group",
+            "id": "desk",
+            "role": "handler"
+        },
+        {
+            "type": "role",
+            "id": "teamleader",
+            "role": "teamleader"
+        },
+        {
+            "type": "role",
+            "id": "manager",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / candidate users": [
+        {
+            "type": "user",
+            "id": "u1",
+            "role": "handler"
+        },
+        {
+            "type": "user",
+            "id": "u2",
+            "role": "handler"
+        },
+        {
+            "type": "group",
+            "id": "leads",
+            "role": "teamleader"
+        },
+        {
+            "type": "user",
+            "id": "boss:x",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / candidate users / bound handler": [
+        {
+            "type": "group",
+            "id": "desk",
+            "role": "handler"
+        },
+        {
+            "type": "role",
+            "id": "teamleader",
+            "role": "teamleader"
+        },
+        {
+            "type": "role",
+            "id": "manager",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / nobody": [
+        {
+            "type": "role",
+            "id": "handler",
+            "role": "handler"
+        },
+        {
+            "type": "group",
+            "id": "leads",
+            "role": "teamleader"
+        },
+        {
+            "type": "user",
+            "id": "boss:x",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ],
+    "resolveRecipients / nobody / bound handler": [
+        {
+            "type": "group",
+            "id": "desk",
+            "role": "handler"
+        },
+        {
+            "type": "role",
+            "id": "teamleader",
+            "role": "teamleader"
+        },
+        {
+            "type": "role",
+            "id": "manager",
+            "role": "manager"
+        },
+        {
+            "type": "role",
+            "id": "odd",
+            "role": "odd"
+        }
+    ]
+}

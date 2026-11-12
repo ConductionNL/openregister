@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -81,19 +81,32 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that a save cannot reach a draft its caller cannot read.
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
+ * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSaveRun
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectCacheInvalidator
+ * @uses   \OCA\OpenRegister\Service\Object\ReferencePreviewInvalidation
+ * @uses   \OCA\OpenRegister\Service\Object\SavedObjectScope
+ * @uses   \OCA\OpenRegister\Service\Object\SavedScopeIds
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
- * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
+ * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
+ * @uses   \OCA\OpenRegister\Service\Object\SaveAccessRequest
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
  * @uses \OCA\OpenRegister\Service\Object\RepeatingGroupValidator
@@ -101,6 +114,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Hinge\LensResolver
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectDateValues
  */
 class ObjectServiceDraftWriteTest extends TestCase {
 
@@ -177,7 +195,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willReturn(new ValidationResult(null));
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -216,7 +234,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end setUp()
 
 	/**
@@ -267,6 +285,8 @@ class ObjectServiceDraftWriteTest extends TestCase {
 	 * @return void
 	 */
 	private function hiddenFromTheCaller(?string $status, bool $exists = true): void {
+		// The stored row lies inside the caller's organisations; only the read rules hide it.
+		$this->objectMapper->method('callerOrganisationsHold')->willReturn(true);
 		$this->objectMapper->method('find')->willReturnCallback(
 			static function (
 				string|int $identifier,
@@ -314,9 +334,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		[$register, $schema] = $this->scope(draftsVisible: $draftsVisible);
 		$this->service->saveObject(
 			object: ['subject' => 'changed by somebody else'],
-			register: $register,
-			schema: $schema,
-			uuid: 'draft-1',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: 'draft-1'),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -336,7 +354,9 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		$this->hiddenFromTheCaller(status: 'draft');
 
 		try {
-			$this->saveOver();
+			// Nobody signed in is judged as an anonymous web caller here: on the command line
+			// (where PHPUnit runs) a userless caller is the system, which no draft is kept from.
+			\OCA\OpenRegister\Service\AnonymousEvaluationContext::run(fn () => $this->saveOver());
 			$this->fail('A save over somebody else\'s draft was let through.');
 		} catch (NotAuthorizedException $refused) {
 			$this->assertSame('Only the person who started this draft can change it.', $refused->getMessage());

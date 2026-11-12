@@ -43,20 +43,23 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\MigrationPacksControllerServices;
+use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
-use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
-use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader;
-use OCA\OpenRegister\Service\MigrationPackService;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponderInterface;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReaderInterface;
+use OCA\OpenRegister\Service\MigrationPack\PackRevision;
+use OCA\OpenRegister\Service\MigrationPackServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -70,33 +73,53 @@ class MigrationPacksController extends Controller {
 	 *
 	 * @var int
 	 */
-	public const MAX_PREVIEW_ROWS = MigrationPackRequestReader::MAX_PREVIEW_ROWS;
+	public const MAX_PREVIEW_ROWS = MigrationPackRequestReaderInterface::MAX_PREVIEW_ROWS;
+
+	/**
+	 * Business logic.
+	 *
+	 * @var MigrationPackServiceInterface
+	 */
+	private readonly MigrationPackServiceInterface $service;
+
+	/**
+	 * Session, group manager and logger.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
+	 * Reads definitions, uploads and preview input.
+	 *
+	 * @var MigrationPackRequestReaderInterface
+	 */
+	private readonly MigrationPackRequestReaderInterface $requestReader;
+
+	/**
+	 * Builds every error response.
+	 *
+	 * @var MigrationPackErrorResponderInterface
+	 */
+	private readonly MigrationPackErrorResponderInterface $errors;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param MigrationPackService $service Business logic.
-	 * @param IUserSession $userSession Current-user session.
-	 * @param IGroupManager $groupManager Group manager (admin check).
-	 * @param LoggerInterface $logger Logger for the audit lines.
-	 * @param MigrationPackRequestReader $requestReader Reads definitions, uploads and preview input.
-	 * @param MigrationPackErrorResponder $errors Builds every error response.
+	 * @param MigrationPacksControllerServices $services The controller's collaborators.
 	 *
 	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly MigrationPackService $service,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
-		private readonly MigrationPackRequestReader $requestReader,
-		private readonly MigrationPackErrorResponder $errors,
+		MigrationPacksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->service = $services->service;
+		$this->session = $services->session;
+		$this->requestReader = $services->requestReader;
+		$this->errors = $services->errors;
 	}//end __construct()
 
 	/**
@@ -105,13 +128,32 @@ class MigrationPacksController extends Controller {
 	 * @return ?string
 	 */
 	private function resolveUserId(): ?string {
-		$user = $this->userSession->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
 			return null;
 		}
 
 		return $user->getUID();
 	}//end resolveUserId()
+
+	/**
+	 * The pack a signed-in caller asked for, or the 401 or 404 that answers instead.
+	 *
+	 * @param int $id The migration pack id.
+	 *
+	 * @return MigrationPack|JSONResponse
+	 */
+	private function readablePack(int $id): MigrationPack|JSONResponse {
+		if ($this->resolveUserId() === null) {
+			return $this->errors->notAuthenticated();
+		}
+
+		try {
+			return $this->service->find(id: $id);
+		} catch (DoesNotExistException $e) {
+			return $this->errors->notFound();
+		}
+	}//end readablePack()
 
 	/**
 	 * The refusal for a caller who may not change packs, or null for an administrator.
@@ -126,7 +168,7 @@ class MigrationPacksController extends Controller {
 			return $this->errors->notAuthenticated();
 		}
 
-		if ($this->groupManager->isAdmin($userId) === false) {
+		if ($this->session->groupManager->isAdmin($userId) === false) {
 			return $this->errors->adminRequired();
 		}
 
@@ -191,14 +233,9 @@ class MigrationPacksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(int $id): JSONResponse {
-		if ($this->resolveUserId() === null) {
-			return $this->errors->notAuthenticated();
-		}
-
-		try {
-			$pack = $this->service->find(id: $id);
-		} catch (DoesNotExistException $e) {
-			return $this->errors->notFound();
+		$pack = $this->readablePack(id: $id);
+		if ($pack instanceof JSONResponse) {
+			return $pack;
 		}
 
 		return new JSONResponse(data: $pack->jsonSerialize());
@@ -227,14 +264,9 @@ class MigrationPacksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function export(int $id): JSONResponse|DataDownloadResponse {
-		if ($this->resolveUserId() === null) {
-			return $this->errors->notAuthenticated();
-		}
-
-		try {
-			$pack = $this->service->find(id: $id);
-		} catch (DoesNotExistException $e) {
-			return $this->errors->notFound();
+		$pack = $this->readablePack(id: $id);
+		if ($pack instanceof JSONResponse) {
+			return $pack;
 		}
 
 		$json = json_encode($pack->getDefinitionArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -247,7 +279,10 @@ class MigrationPacksController extends Controller {
 	 * Import a migration pack definition from an uploaded JSON file. Admin only.
 	 * Upserts by the document's own `id` — re-importing an updated pack
 	 * updates the existing row. The log line says whether the import created
-	 * or replaced a pack, as reported by the write itself.
+	 * or replaced a pack, as reported by the write itself, and so does the
+	 * status: 201 for a pack created, 200 for one replaced, so the caller can
+	 * tell an administrator that a stored pack (possibly edited on this
+	 * instance) was overwritten.
 	 *
 	 * @return JSONResponse
 	 *
@@ -273,13 +308,32 @@ class MigrationPacksController extends Controller {
 			return $this->errors->unexpected(action: 'import', exception: $e);
 		}
 
+		$this->logImport(result: $result, userId: $userId);
+
+		$status = 200;
+		if ($result->created === true) {
+			$status = 201;
+		}
+
+		return new JSONResponse(data: $result->pack->jsonSerialize(), statusCode: $status);
+	}//end import()
+
+	/**
+	 * Record who imported which pack, and whether it was created or replaced.
+	 *
+	 * @param MigrationPackImportResult $result The import result
+	 * @param string                    $userId Who imported it
+	 *
+	 * @return void
+	 */
+	private function logImport(MigrationPackImportResult $result, string $userId): void {
 		$outcome = 'replaced';
 		if ($result->created === true) {
 			$outcome = 'created';
 		}
 
 		$pack = $result->pack;
-		$this->logger->info(
+		$this->session->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) imported by {userId}: {outcome}',
 			context: [
 				'packSlug' => $pack->getPackSlug(),
@@ -289,15 +343,13 @@ class MigrationPacksController extends Controller {
 				'builtin' => $pack->getBuiltin(),
 			]
 		);
-
-		return new JSONResponse(data: $pack->jsonSerialize(), statusCode: 201);
-	}//end import()
+	}//end logImport()
 
 	/**
 	 * Create a migration pack. Admin only.
 	 *
 	 * The body is either `{"definition": {...}}` or the pack document itself;
-	 * see MigrationPackRequestReader::definition() for how the two differ.
+	 * see MigrationPackRequestReaderInterface::definition() for how the two differ.
 	 *
 	 * @return JSONResponse
 	 *
@@ -323,7 +375,21 @@ class MigrationPacksController extends Controller {
 			return $this->errors->unexpected(action: 'create', exception: $e);
 		}
 
-		$this->logger->info(
+		$this->logCreated(pack: $pack, userId: $userId);
+
+		return new JSONResponse(data: $pack->jsonSerialize(), statusCode: 201);
+	}//end create()
+
+	/**
+	 * Record who created which pack.
+	 *
+	 * @param MigrationPack $pack   The created pack
+	 * @param string        $userId Who created it
+	 *
+	 * @return void
+	 */
+	private function logCreated(MigrationPack $pack, string $userId): void {
+		$this->session->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) created by {userId}',
 			context: [
 				'packSlug' => $pack->getPackSlug(),
@@ -332,9 +398,7 @@ class MigrationPacksController extends Controller {
 				'builtin' => $pack->getBuiltin(),
 			]
 		);
-
-		return new JSONResponse(data: $pack->jsonSerialize(), statusCode: 201);
-	}//end create()
+	}//end logCreated()
 
 	/**
 	 * Update an existing migration pack. Admin only.
@@ -363,13 +427,7 @@ class MigrationPacksController extends Controller {
 		$id = $this->requestReader->routeId(request: $this->request, dispatchedId: $id);
 
 		try {
-			$definition = $this->requestReader->definition(request: $this->request);
-			$expected   = $this->requestReader->expectedUpdatedAt(request: $this->request);
-			$pack       = $this->service->update(
-				id: $id,
-				definition: $definition,
-				expectedUpdatedAt: $expected?->getTimestamp()
-			);
+			$pack = $this->revisedPack(id: $id);
 		} catch (DoesNotExistException $e) {
 			return $this->errors->notFound();
 		} catch (MigrationPackRefusedException $e) {
@@ -378,13 +436,33 @@ class MigrationPacksController extends Controller {
 			return $this->errors->unexpected(action: 'update', exception: $e, context: ['id' => $id]);
 		}
 
-		$this->logger->info(
+		$this->session->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) updated by {userId}',
 			context: ['packSlug' => $pack->getPackSlug(), 'packId' => $id, 'userId' => $this->resolveUserId()]
 		);
 
 		return new JSONResponse(data: $pack->jsonSerialize());
 	}//end update()
+
+	/**
+	 * Revise a pack with the request's definition, guarded by the updated-at the caller last saw.
+	 *
+	 * @param int $id The pack
+	 *
+	 * @return MigrationPack The revised pack
+	 *
+	 * @throws DoesNotExistException When the pack does not exist
+	 * @throws MigrationPackRefusedException When the definition or the expected updated-at is refused
+	 */
+	private function revisedPack(int $id): MigrationPack {
+		$definition = $this->requestReader->definition(request: $this->request);
+		$expected   = $this->requestReader->expectedUpdatedAt(request: $this->request);
+
+		return $this->service->revise(
+			id: $id,
+			revision: new PackRevision(definition: $definition, expectedUpdatedAt: $expected?->getTimestamp())
+		);
+	}//end revisedPack()
 
 	/**
 	 * Delete a migration pack. Admin only. The pack row is always the one
@@ -415,7 +493,7 @@ class MigrationPacksController extends Controller {
 			return $this->errors->unexpected(action: 'delete', exception: $e, context: ['id' => $id]);
 		}
 
-		$this->logger->info(
+		$this->session->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) deleted by {userId}',
 			context: ['packSlug' => $pack->getPackSlug(), 'packId' => $id, 'userId' => $this->resolveUserId()]
 		);
@@ -428,7 +506,7 @@ class MigrationPacksController extends Controller {
 	 *
 	 * Body: `{"definition": {...}, "rows": [{"<column>": "<value>"}, ...]}`
 	 * with at most MAX_PREVIEW_ROWS rows and at most
-	 * MigrationPackRequestReader::MAX_PREVIEW_BYTES in all. Returns
+	 * MigrationPackRequestReaderInterface::MAX_PREVIEW_BYTES in all. Returns
 	 * `{"rows": [{"rowNumber", "data", "errors"}]}` from the same mapping
 	 * engine an import uses. Nothing is stored.
 	 *

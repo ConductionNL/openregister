@@ -18,6 +18,7 @@
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -31,7 +32,10 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends                     QBMapper<Consumer>
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class ConsumerMapper extends QBMapper {
+class ConsumerMapper extends QBMapper implements ConsumerMapperInterface {
+
+	use ColumnFiltersTrait;
+
 	/**
 	 * ConsumerMapper constructor.
 	 *
@@ -67,48 +71,36 @@ class ConsumerMapper extends QBMapper {
 	 * @param int|null $limit Maximum number of results to return
 	 * @param int|null $offset Number of results to skip
 	 * @param array|null $filters Associative array of filters
-	 * @param array|null $searchConditions Array of search conditions
-	 * @param array|null $searchParams Array of search parameters
 	 *
 	 * @return array An array of Consumer entities
+	 *
+	 * @spec exclude Persistence primitive: builds the ListQuery and delegates to findPage().
 	 */
-	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
-	): array {
+	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array {
+		return $this->findPage(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? [])));
+	}//end findAll()
+
+	/**
+	 * One page of Consumers, narrowed by column filters.
+	 *
+	 * @param ListQuery $query The page (unbounded for every row) and the column filters.
+	 *
+	 * @return Consumer[] The matching Consumer entities.
+	 *
+	 * @spec exclude Persistence primitive: a paged column-filter read with no behaviour of its own.
+	 */
+	public function findPage(ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_consumers')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset);
 
-		foreach ($filters as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
-
-		if (empty($searchConditions) === false) {
-			$qb->andWhere('(' . implode(separator: ' OR ', array: $searchConditions) . ')');
-			foreach ($searchParams as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $query->filters);
 
 		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end findPage()
 
 	/**
 	 * Create a new Consumer from an array of data.

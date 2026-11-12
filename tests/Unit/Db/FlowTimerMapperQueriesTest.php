@@ -28,6 +28,8 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
+use OCA\OpenRegister\Db\IdCursor;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 
@@ -127,7 +129,7 @@ class FlowTimerMapperQueriesTest extends TestCase {
 
 	public function testSubjectRunSuccessorAndPagedReadsFilterWhatTheyClaim(): void {
 		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: [$this->row()]));
-		$mapper->findBySubject(subjectType: 'task', subjectUuid: 'task-1', states: [FlowTimer::STATE_ARMED]);
+		$mapper->findBySubject(subject: new TimerSubject(type: 'task', uuid: 'task-1'), states: [FlowTimer::STATE_ARMED]);
 		self::assertTrue($this->saw('expr.eq', 'subject_type'));
 		self::assertTrue($this->saw('expr.eq', 'subject_uuid'));
 		self::assertTrue($this->saw('expr.in', 'state'));
@@ -137,18 +139,27 @@ class FlowTimerMapperQueriesTest extends TestCase {
 		self::assertTrue($this->saw('expr.in', 'state'), 'a run read only reaches open timers');
 
 		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
-		$mapper->findSuccessors(uuid: 'timer-11');
-		self::assertTrue($this->saw('expr.eq', 'supersedes_uuid'));
-
-		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
-		$mapper->findByStatePaged(state: FlowTimer::STATE_ARMED, afterId: 40, limit: 500);
+		$mapper->findByStatePaged(state: FlowTimer::STATE_ARMED, cursor: new IdCursor(afterId: 40, limit: 500));
 		self::assertTrue($this->saw('expr.gt', 'id'));
 		self::assertTrue($this->saw('setMaxResults', 500));
 	}//end testSubjectRunSuccessorAndPagedReadsFilterWhatTheyClaim()
 
+	public function testTheCalendarReadsOnlyReachOpenTimersOfThatCalendar(): void {
+		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
+		$mapper->findOpenByCalendarSlug(calendarSlug: 'office', limit: 10);
+		self::assertTrue($this->saw('expr.eq', 'calendar_slug'));
+		self::assertTrue($this->saw('expr.in', 'state'));
+		self::assertTrue($this->saw('setMaxResults', 10));
+
+		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
+		$mapper->countOpenByCalendarSlug(calendarSlug: 'office');
+		self::assertTrue($this->saw('expr.eq', 'calendar_slug'));
+		self::assertTrue($this->saw('expr.in', 'state'));
+	}//end testTheCalendarReadsOnlyReachOpenTimersOfThatCalendar()
+
 	public function testAnUnrestrictedSubjectReadCarriesNoStatePredicate(): void {
 		$mapper = new FlowTimerMapper(db: $this->connectionWith(rows: []));
-		$mapper->findBySubject(subjectType: 'task', subjectUuid: 'task-1');
+		$mapper->findBySubject(subject: new TimerSubject(type: 'task', uuid: 'task-1'));
 		self::assertTrue($this->saw('expr.eq', 'subject_type'));
 		self::assertFalse($this->saw('expr.in', 'state'), 'no state restriction when none is asked');
 	}//end testAnUnrestrictedSubjectReadCarriesNoStatePredicate()

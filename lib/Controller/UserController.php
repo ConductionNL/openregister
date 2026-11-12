@@ -26,17 +26,29 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Service\SecurityService;
-use OCA\OpenRegister\Service\UserService;
+use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\UserControllerServices;
+use OCA\OpenRegister\Controller\Support\UserResponses;
+use OCA\OpenRegister\Service\FailedAttempt;
+use OCA\OpenRegister\Service\LoginSecurityInterface;
+use OCA\OpenRegister\Service\User\ActivityPeriod;
+use OCA\OpenRegister\Service\User\ActivityQuery;
+use OCA\OpenRegister\Service\User\ApiTokenRequest;
+use OCA\OpenRegister\Service\User\AvatarUpload;
+use OCA\OpenRegister\Service\User\PasswordChange;
+use OCA\OpenRegister\Service\UserServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * UserController handles user-related API endpoints
@@ -66,32 +78,76 @@ use Psr\Log\LoggerInterface;
  */
 class UserController extends Controller {
 	/**
+	 * User service for user operations
+	 *
+	 * @var UserServiceInterface
+	 */
+	private readonly UserServiceInterface $userService;
+
+	/**
+	 * Security service for input sanitization
+	 *
+	 * @var LoginSecurityInterface
+	 */
+	private readonly LoginSecurityInterface $securityService;
+
+	/**
+	 * User manager for authentication
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * User session manager
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger for error tracking
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Localization service
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Builds the security-headed responses
+	 *
+	 * @var UserResponses
+	 */
+	private readonly UserResponses $responses;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param UserService $userService User service for user operations
-	 * @param SecurityService $securityService Security service for input sanitization
-	 * @param IUserManager $userManager User manager for authentication
-	 * @param IUserSession $userSession User session manager
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param IL10N $l10n Localization service
+	 * @param UserControllerServices $services The user controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly UserService $userService,
-		private readonly SecurityService $securityService,
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
-		private readonly IL10N $l10n,
+		UserControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->userService = $services->domain->userService;
+		$this->securityService = $services->domain->securityService;
+		$this->userManager = $services->domain->userManager;
+		$this->userSession = $services->domain->userSession;
+		$this->logger = $services->platform->logger;
+		$this->l10n = $services->platform->l10n;
+		$this->responses = new UserResponses(securityService: $this->securityService);
 	}//end __construct()
 
 	/**
@@ -110,35 +166,12 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function me(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-
-			if ($currentUser === null) {
-				return new JSONResponse(
-					data: ['error' => 'Not authenticated'],
-					statusCode: 401
-				);
-			}
-
-			$userProfile = $this->userService->buildUserDataArray(user: $currentUser);
-
-			return new JSONResponse(data: $userProfile);
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[UserController] Failed to get user profile',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error_message' => $e->getMessage(),
-					'error_code' => $e->getCode(),
-				]
-			);
-
-			return new JSONResponse(
-				data: ['error' => 'Failed to retrieve user profile'],
-				statusCode: 500
-			);
-		}//end try
+		return $this->forProfileUser(
+			action: fn (IUser $user): JSONResponse => new JSONResponse(
+				data: $this->userService->buildUserDataArray(user: $user)
+			),
+			messages: ['log' => 'Failed to get user profile', 'failure' => 'Failed to retrieve user profile']
+		);
 	}//end me()
 
 	/**
@@ -155,59 +188,32 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function updateMe(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-
-			if ($currentUser === null) {
-				return new JSONResponse(
-					data: ['error' => 'Not authenticated'],
-					statusCode: 401
-				);
-			}
-
-			// Get request parameters.
-			$data = $this->request->getParams();
-
-			// Remove internal parameters.
-			foreach (array_keys($data) as $key) {
-				if (str_starts_with(haystack: $key, needle: '_') === true) {
-					unset($data[$key]);
-				}
-			}
-
-			// Remove immutable fields.
-			unset($data['id'], $data['uid'], $data['created']);
-
-			// Sanitize input data.
-			$sanitizedData = [];
-			foreach ($data as $key => $value) {
-				$sanitizedData[$key] = $this->securityService->sanitizeInput(input: $value);
-			}
-
-			// Update user properties.
-			$updatedProfile = $this->userService->updateUserProperties(
-				user: $currentUser,
-				data: $sanitizedData
-			);
-
-			return new JSONResponse(data: $updatedProfile);
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[UserController] Failed to update user profile',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error_message' => $e->getMessage(),
-					'error_code' => $e->getCode(),
-				]
-			);
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 500
-			);
-		}//end try
+		return $this->forProfileUser(
+			action: fn (IUser $user): JSONResponse => new JSONResponse(
+				data: $this->userService->updateUserProperties(user: $user, data: $this->profileUpdates())
+			),
+			messages: ['log' => 'Failed to update user profile']
+		);
 	}//end updateMe()
+
+	/**
+	 * The profile changes of the request: internal and immutable fields removed, values sanitized.
+	 *
+	 * @return array The sanitized profile changes.
+	 */
+	private function profileUpdates(): array {
+		$data = $this->withoutInternalParams(data: $this->request->getParams());
+
+		// Remove immutable fields.
+		unset($data['id'], $data['uid'], $data['created']);
+
+		$sanitizedData = [];
+		foreach ($data as $key => $value) {
+			$sanitizedData[$key] = $this->securityService->sanitizeInput(input: $value);
+		}
+
+		return $sanitizedData;
+	}//end profileUpdates()
 
 	/**
 	 * Login a user based on username and password
@@ -241,132 +247,7 @@ class UserController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	public function login(): JSONResponse {
 		try {
-			// Memory monitoring: Check initial memory usage to prevent OOM.
-			$initialMemoryUsage = memory_get_usage(true);
-			$memoryLimit = ini_get('memory_limit');
-			$memoryLimitBytes = $this->convertToBytes(memoryLimit: $memoryLimit);
-
-			// If we're already using more than 80% of memory limit, return error.
-			if ($memoryLimitBytes > 0 && $initialMemoryUsage > ($memoryLimitBytes * 0.8)) {
-				$response = new JSONResponse(
-					data: ['error' => 'Server memory usage too high, please try again later'],
-					statusCode: 503
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
-			}
-
-			// Get client IP address for rate limiting.
-			$clientIp = $this->securityService->getClientIpAddress(request: $this->request);
-
-			// Get and validate login credentials from request.
-			$data = $this->request->getParams();
-			$credentialValidation = $this->securityService->validateLoginCredentials(credentials: $data);
-
-			if ($credentialValidation['valid'] === false) {
-				$response = new JSONResponse(
-					data: ['error' => $credentialValidation['error']],
-					statusCode: 400
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
-			}
-
-			$credentials = $credentialValidation['credentials'];
-			$username = $credentials['username'];
-			$password = $credentials['password'];
-
-			// Check rate limiting before attempting authentication.
-			$rateLimitCheck = $this->securityService->checkLoginRateLimit(username: $username, ipAddress: $clientIp);
-			if ($rateLimitCheck['allowed'] === false) {
-				// Apply progressive delay if specified.
-				if (isset($rateLimitCheck['delay']) === true) {
-					sleep($rateLimitCheck['delay']);
-				}
-
-				$response = new JSONResponse(
-					data: [
-						'error' => $rateLimitCheck['reason'],
-						'retry_after' => $rateLimitCheck['delay'] ?? null,
-						'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
-					],
-					statusCode: 429
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
-			}
-
-			// Attempt to authenticate the user.
-			$user = $this->userManager->checkPassword($username, $password);
-
-			// Check if authentication was successful.
-			if ($user === false) {
-				// Record failed login attempt for rate limiting.
-				$this->securityService->recordFailedLoginAttempt(
-					username: $username,
-					ipAddress: $clientIp,
-					reason: 'invalid_credentials'
-				);
-
-				// Return generic error message to prevent username enumeration.
-				$response = new JSONResponse(
-					data: ['error' => 'Invalid username or password'],
-					statusCode: 401
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
-			}
-
-			// Check if user account is enabled.
-			if ($user->isEnabled() === false) {
-				// Record failed login attempt for disabled account.
-				$this->securityService->recordFailedLoginAttempt(
-					username: $username,
-					ipAddress: $clientIp,
-					reason: 'account_disabled'
-				);
-
-				$response = new JSONResponse(
-					data: ['error' => 'Account is disabled'],
-					statusCode: 401
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
-			}
-
-			// Authentication successful - record success and clear rate limits.
-			$this->securityService->recordSuccessfulLogin(username: $username, ipAddress: $clientIp);
-
-			// Set the user in the session to create login session.
-			$this->userSession->setUser($user);
-
-			// Build user data array for response (sanitized).
-			$userData = $this->userService->buildUserDataArray(user: $user);
-
-			// Memory monitoring: Log high memory usage.
-			$finalMemoryUsage = memory_get_usage(true);
-			$memoryIncreaseBytes = $finalMemoryUsage - $initialMemoryUsage;
-
-			if ($memoryIncreaseBytes > 10 * 1024 * 1024) {
-				$this->logger->warning(
-					message: '[UserController] High memory usage during login',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'user' => $user->getUID(),
-						'initial_memory' => $initialMemoryUsage,
-						'final_memory' => $finalMemoryUsage,
-						'increase_bytes' => $memoryIncreaseBytes,
-						'increase_mb' => round($memoryIncreaseBytes / (1024 * 1024), 2),
-					]
-				);
-			}
-
-			// Create successful response with security headers.
-			$response = new JSONResponse(
-				data: [
-					'message' => 'Login successful',
-					'user' => $userData,
-					'session_created' => true,
-				]
-			);
-
-			return $this->securityService->addSecurityHeaders(response: $response);
+			return $this->authenticate(initialMemoryUsage: memory_get_usage(true));
 		} catch (Exception $e) {
 			// Log the error securely without exposing sensitive information.
 			$this->logger->error(
@@ -374,13 +255,166 @@ class UserController extends Controller {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error_message' => $e->getMessage()]
 			);
 
-			$response = new JSONResponse(
-				data: ['error' => 'Login failed due to a system error'],
-				statusCode: 500
-			);
-			return $this->securityService->addSecurityHeaders(response: $response);
+			return $this->responses->error(message: 'Login failed due to a system error', statusCode: 500);
 		}//end try
 	}//end login()
+
+	/**
+	 * Refuse under memory pressure, then validate the credentials and check them.
+	 *
+	 * @param int $initialMemoryUsage Memory usage when the login started.
+	 *
+	 * @return JSONResponse The login outcome.
+	 */
+	private function authenticate(int $initialMemoryUsage): JSONResponse {
+		if ($this->memoryTooHigh(initialMemoryUsage: $initialMemoryUsage) === true) {
+			return $this->responses->error(message: 'Server memory usage too high, please try again later', statusCode: 503);
+		}
+
+		$clientIp             = $this->securityService->getClientIpAddress(request: $this->request);
+		$credentialValidation = $this->securityService->validateLoginCredentials(credentials: $this->request->getParams());
+		if ($credentialValidation['valid'] === false) {
+			return $this->responses->error(message: $credentialValidation['error'], statusCode: 400);
+		}
+
+		$credentials = $credentialValidation['credentials'];
+
+		return $this->checkCredentials(
+			credentials: $credentials,
+			attempt: ['username' => $credentials['username'], 'ipAddress' => $clientIp, 'initialMemoryUsage' => $initialMemoryUsage]
+		);
+	}//end authenticate()
+
+	/**
+	 * Whether memory usage is already above 80% of the memory limit (refused to prevent OOM).
+	 *
+	 * @param int $initialMemoryUsage Memory usage when the login started.
+	 *
+	 * @return bool True when the login must be refused.
+	 */
+	private function memoryTooHigh(int $initialMemoryUsage): bool {
+		$memoryLimitBytes = $this->convertToBytes(memoryLimit: ini_get('memory_limit'));
+		return $memoryLimitBytes > 0 && $initialMemoryUsage > ($memoryLimitBytes * 0.8);
+	}//end memoryTooHigh()
+
+	/**
+	 * Apply the rate limit, check the password and start the session.
+	 *
+	 * @param array{username: string, password: string}                           $credentials The validated credentials.
+	 * @param array{username: string, ipAddress: string, initialMemoryUsage: int} $attempt     The login attempt: the username, the client
+	 *                                                                                         IP address and the memory usage when the
+	 *                                                                                         login started.
+	 *
+	 * @return JSONResponse The login outcome.
+	 */
+	private function checkCredentials(array $credentials, array $attempt): JSONResponse {
+		// Rate limiting is checked before attempting authentication.
+		$rateLimitCheck = $this->securityService->checkLoginRateLimit(username: $attempt['username'], ipAddress: $attempt['ipAddress']);
+		if ($rateLimitCheck['allowed'] === false) {
+			return $this->rateLimitedLoginResponse(rateLimitCheck: $rateLimitCheck);
+		}
+
+		$user    = $this->userManager->checkPassword($attempt['username'], $credentials['password']);
+		$refusal = $this->refusedLogin(user: $user, attempt: $attempt);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->startSession(user: $user, attempt: $attempt);
+	}//end checkCredentials()
+
+	/**
+	 * Record the successful login (clears rate limits) and create the login session.
+	 *
+	 * @param IUser                                                               $user    The authenticated user.
+	 * @param array{username: string, ipAddress: string, initialMemoryUsage: int} $attempt The login attempt, with the memory usage when
+	 *                                                                                     the login started.
+	 *
+	 * @return JSONResponse The successful login response.
+	 */
+	private function startSession(IUser $user, array $attempt): JSONResponse {
+		$this->securityService->recordSuccessfulLogin(username: $attempt['username'], ipAddress: $attempt['ipAddress']);
+		$this->userSession->setUser($user);
+		$userData = $this->userService->buildUserDataArray(user: $user);
+		$this->logLoginMemoryIncrease(user: $user, initialMemoryUsage: $attempt['initialMemoryUsage']);
+
+		return $this->responses->secured(
+			data: ['message' => 'Login successful', 'user' => $userData, 'session_created' => true]
+		);
+	}//end startSession()
+
+	/**
+	 * The 429 response of a rate-limited login, after its progressive delay.
+	 *
+	 * @param array $rateLimitCheck The rate limit verdict (reason, delay, lockout_until).
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function rateLimitedLoginResponse(array $rateLimitCheck): JSONResponse {
+		if (isset($rateLimitCheck['delay']) === true) {
+			sleep($rateLimitCheck['delay']);
+		}
+
+		return $this->responses->secured(
+			data: [
+				'error'         => $rateLimitCheck['reason'],
+				'retry_after'   => $rateLimitCheck['delay'] ?? null,
+				'lockout_until' => $rateLimitCheck['lockout_until'] ?? null,
+			],
+			statusCode: 429
+		);
+	}//end rateLimitedLoginResponse()
+
+	/**
+	 * The 401 response for wrong credentials or a disabled account, recorded as a failed attempt.
+	 *
+	 * Wrong credentials get a generic message to prevent username enumeration.
+	 *
+	 * @param IUser|false                                 $user    The authenticated user, false on wrong credentials.
+	 * @param array{username: string, ipAddress: string} $attempt The login attempt.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the user may log in.
+	 */
+	private function refusedLogin(IUser|false $user, array $attempt): ?JSONResponse {
+		$reason  = 'account_disabled';
+		$message = 'Account is disabled';
+		if ($user === false) {
+			$reason  = 'invalid_credentials';
+			$message = 'Invalid username or password';
+		} else if ($user->isEnabled() !== false) {
+			return null;
+		}
+
+		$this->securityService->recordFailedLoginAttempt(
+			attempt: new FailedAttempt(subject: $attempt['username'], ipAddress: $attempt['ipAddress'], reason: $reason)
+		);
+		return $this->responses->error(message: $message, statusCode: 401);
+	}//end refusedLogin()
+
+	/**
+	 * Log a login that raised memory usage by more than 10 MB.
+	 *
+	 * @param IUser $user               The user who logged in.
+	 * @param int   $initialMemoryUsage Memory usage when the login started.
+	 *
+	 * @return void
+	 */
+	private function logLoginMemoryIncrease(IUser $user, int $initialMemoryUsage): void {
+		$finalMemoryUsage    = memory_get_usage(true);
+		$memoryIncreaseBytes = $finalMemoryUsage - $initialMemoryUsage;
+		if ($memoryIncreaseBytes <= 10 * 1024 * 1024) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[UserController] High memory usage during login',
+			context: [
+				'file' => __FILE__, 'line' => __LINE__, 'user' => $user->getUID(),
+				'initial_memory' => $initialMemoryUsage, 'final_memory' => $finalMemoryUsage,
+				'increase_bytes' => $memoryIncreaseBytes, 'increase_mb' => round($memoryIncreaseBytes / (1024 * 1024), 2),
+			]
+		);
+	}//end logLoginMemoryIncrease()
 
 	/**
 	 * Logout the current user session
@@ -402,8 +436,7 @@ class UserController extends Controller {
 	public function logout(): JSONResponse {
 		$this->userSession->logout();
 
-		$response = new JSONResponse(data: ['logout' => true]);
-		return $this->securityService->addSecurityHeaders(response: $response);
+		return $this->responses->secured(data: ['logout' => true]);
 	}//end logout()
 
 	/**
@@ -418,58 +451,73 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function changePassword(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			// Rate limiting.
-			$clientIp = $this->securityService->getClientIpAddress(request: $this->request);
-			$rateLimitCheck = $this->securityService->checkLoginRateLimit(
-				username: $currentUser->getUID(),
-				ipAddress: $clientIp
-			);
-			if ($rateLimitCheck['allowed'] === false) {
-				$response = new JSONResponse(
-					data: ['error' => $rateLimitCheck['reason'], 'retry_after' => $rateLimitCheck['delay'] ?? null],
-					statusCode: 429
-				);
-				return $this->securityService->addSecurityHeaders(response: $response);
-			}
-
-			$data = $this->request->getParams();
-			$currentPassword = $this->securityService->sanitizeInput(input: $data['currentPassword'] ?? '');
-			$newPassword = $data['newPassword'] ?? '';
-
-			if ($currentPassword === '' || $newPassword === '') {
-				return $this->errorResponse(message: 'Both currentPassword and newPassword are required', statusCode: 400);
-			}
-
-			$result = $this->userService->changePassword($currentUser, $currentPassword, $newPassword);
-			$response = new JSONResponse(data: $result);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (\RuntimeException $e) {
-			$code = 500;
-			if ($e->getCode() !== 0) {
-				$code = $e->getCode();
-			}
-
-			if ($code === 403) {
-				$clientIp = $this->securityService->getClientIpAddress(request: $this->request);
-				$this->securityService->recordFailedLoginAttempt(
-					username: $currentUser->getUID(),
-					ipAddress: $clientIp,
-					reason: 'password_change_incorrect'
-				);
-			}
-
-			return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to change password', exception: $e);
-			return $this->errorResponse(message: 'Failed to change password', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->changePasswordFor(user: $user),
+			onFailure: fn (Exception $e, ?IUser $user): JSONResponse => $this->passwordChangeFailure(exception: $e, user: $user)
+		);
 	}//end changePassword()
+
+	/**
+	 * Change the password of the session user, rate limited like a login.
+	 *
+	 * @param IUser $user The session user.
+	 *
+	 * @return JSONResponse The result.
+	 */
+	private function changePasswordFor(IUser $user): JSONResponse {
+		$clientIp       = $this->securityService->getClientIpAddress(request: $this->request);
+		$rateLimitCheck = $this->securityService->checkLoginRateLimit(username: $user->getUID(), ipAddress: $clientIp);
+		if ($rateLimitCheck['allowed'] === false) {
+			$refusal = ['error' => $rateLimitCheck['reason'], 'retry_after' => $rateLimitCheck['delay'] ?? null];
+			return $this->responses->secured(data: $refusal, statusCode: 429);
+		}
+
+		return $this->applyPasswordChange(user: $user, data: $this->request->getParams());
+	}//end changePasswordFor()
+
+	/**
+	 * Change the password with the current and new password of the request.
+	 *
+	 * Only the current password is sanitized; the new one is passed on as given.
+	 *
+	 * @param IUser $user The session user.
+	 * @param array $data The request parameters.
+	 *
+	 * @return JSONResponse The result.
+	 */
+	private function applyPasswordChange(IUser $user, array $data): JSONResponse {
+		$currentPassword = $this->securityService->sanitizeInput(input: $data['currentPassword'] ?? '');
+		$newPassword     = $data['newPassword'] ?? '';
+		if ($currentPassword === '' || $newPassword === '') {
+			return $this->responses->error(message: 'Both currentPassword and newPassword are required', statusCode: 400);
+		}
+
+		$change = new PasswordChange(currentPassword: $currentPassword, newPassword: $newPassword);
+		return $this->responses->secured(data: $this->userService->applyPasswordChange(user: $user, change: $change));
+	}//end changePasswordFor()
+
+	/**
+	 * The response for a failed password change; a wrong current password (403) counts as a failed login attempt.
+	 *
+	 * @param Exception  $exception The failure.
+	 * @param IUser|null $user      The session user.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function passwordChangeFailure(Exception $exception, ?IUser $user): JSONResponse {
+		if (($exception instanceof RuntimeException) === false) {
+			return $this->unexpected(exception: $exception, message: 'Failed to change password');
+		}
+
+		if ($this->responses->runtimeStatus(exception: $exception) === 403) {
+			$clientIp = $this->securityService->getClientIpAddress(request: $this->request);
+			$this->securityService->recordFailedLoginAttempt(
+				attempt: new FailedAttempt(subject: $user->getUID(), ipAddress: $clientIp, reason: 'password_change_incorrect')
+			);
+		}
+
+		return $this->responses->runtimeError(exception: $exception);
+	}//end passwordChangeFailure()
 
 	/**
 	 * Upload a new avatar for the current user
@@ -483,36 +531,31 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function uploadAvatar(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			// Read the uploaded file data from the request body.
-			$data = file_get_contents('php://input');
-			$mimeType = $this->request->getHeader('Content-Type');
-			$size = strlen($data);
-
-			if ($size === 0) {
-				return $this->errorResponse(message: 'No image data provided', statusCode: 400);
-			}
-
-			$result = $this->userService->uploadAvatar($currentUser, $data, $mimeType, $size);
-			$response = new JSONResponse(data: $result);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (\RuntimeException $e) {
-			$code = 500;
-			if ($e->getCode() !== 0) {
-				$code = $e->getCode();
-			}
-
-			return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to upload avatar', exception: $e);
-			return $this->errorResponse(message: 'Failed to upload avatar', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->uploadAvatarFor(user: $user),
+			onFailure: fn (Exception $e): JSONResponse => $this->runtimeFailure(exception: $e, message: 'Failed to upload avatar')
+		);
 	}//end uploadAvatar()
+
+	/**
+	 * Store the image in the request body as the avatar of the session user.
+	 *
+	 * @param IUser $user The session user.
+	 *
+	 * @return JSONResponse The result.
+	 */
+	private function uploadAvatarFor(IUser $user): JSONResponse {
+		// Read the uploaded file data from the request body.
+		$data     = file_get_contents('php://input');
+		$mimeType = $this->request->getHeader('Content-Type');
+		$size     = strlen($data);
+		if ($size === 0) {
+			return $this->responses->error(message: 'No image data provided', statusCode: 400);
+		}
+
+		$upload = new AvatarUpload(data: $data, mimeType: $mimeType, size: $size);
+		return $this->responses->secured(data: $this->userService->setAvatar(user: $user, upload: $upload));
+	}//end uploadAvatarFor()
 
 	/**
 	 * Delete the current user's avatar
@@ -526,26 +569,10 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function deleteAvatar(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$result = $this->userService->deleteAvatar($currentUser);
-			$response = new JSONResponse(data: $result);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (\RuntimeException $e) {
-			$code = 500;
-			if ($e->getCode() !== 0) {
-				$code = $e->getCode();
-			}
-
-			return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to delete avatar', exception: $e);
-			return $this->errorResponse(message: 'Failed to delete avatar', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->responses->secured(data: $this->userService->deleteAvatar($user)),
+			onFailure: fn (Exception $e): JSONResponse => $this->runtimeFailure(exception: $e, message: 'Failed to delete avatar')
+		);
 	}//end deleteAvatar()
 
 	/**
@@ -560,36 +587,27 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function exportData(): JSONResponse|DataDownloadResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$exportData = $this->userService->exportPersonalData($currentUser);
-
-			$filename = 'openregister-export-' . $currentUser->getUID() . '-' . date('Y-m-d') . '.json';
-			$json = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-			return new DataDownloadResponse($json, $filename, 'application/json');
-		} catch (\RuntimeException $e) {
-			$code = 500;
-			if ($e->getCode() !== 0) {
-				$code = $e->getCode();
-			}
-
-			if ($code === 429) {
-				$errorData = json_decode($e->getMessage(), true);
-				$response = new JSONResponse(data: $errorData ?? ['error' => $e->getMessage()], statusCode: 429);
-				return $this->securityService->addSecurityHeaders(response: $response);
-			}
-
-			return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to export data', exception: $e);
-			return $this->errorResponse(message: 'Failed to export data', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): DataDownloadResponse => $this->exportFor(user: $user),
+			onFailure: fn (Exception $e): JSONResponse => $this->exportFailure(exception: $e)
+		);
 	}//end exportData()
+
+	/**
+	 * The personal data of the session user as a JSON download.
+	 *
+	 * @param IUser $user The session user.
+	 *
+	 * @return DataDownloadResponse The download.
+	 */
+	private function exportFor(IUser $user): DataDownloadResponse {
+		$exportData = $this->userService->exportPersonalData($user);
+
+		$filename = 'openregister-export-' . $user->getUID() . '-' . date('Y-m-d') . '.json';
+		$json     = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+		return new DataDownloadResponse($json, $filename, 'application/json');
+	}//end exportFor()
 
 	/**
 	 * Get notification preferences for the current user
@@ -603,19 +621,15 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function getNotificationPreferences(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$prefs = $this->userService->getNotificationPreferences($currentUser);
-			$response = new JSONResponse(data: $prefs);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to get notification preferences', exception: $e);
-			return $this->errorResponse(message: 'Failed to get notification preferences', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->responses->secured(
+				data: $this->userService->getNotificationPreferences($user)
+			),
+			onFailure: fn (Exception $e): JSONResponse => $this->unexpected(
+				exception: $e,
+				message: 'Failed to get notification preferences'
+			)
+		);
 	}//end getNotificationPreferences()
 
 	/**
@@ -630,31 +644,31 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function updateNotificationPreferences(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$data = $this->request->getParams();
-
-			// Remove internal parameters.
-			foreach (array_keys($data) as $key) {
-				if (str_starts_with($key, '_') === true) {
-					unset($data[$key]);
-				}
-			}
-
-			$prefs = $this->userService->setNotificationPreferences($currentUser, $data);
-			$response = new JSONResponse(data: $prefs);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (\InvalidArgumentException $e) {
-			return $this->errorResponse(message: $e->getMessage(), statusCode: 400);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to update notification preferences', exception: $e);
-			return $this->errorResponse(message: 'Failed to update notification preferences', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->responses->secured(
+				data: $this->userService->setNotificationPreferences(
+					$user,
+					$this->withoutInternalParams(data: $this->request->getParams())
+				)
+			),
+			onFailure: fn (Exception $e): JSONResponse => $this->notificationPreferencesFailure(exception: $e)
+		);
 	}//end updateNotificationPreferences()
+
+	/**
+	 * The response for a failed preferences update: invalid preferences are a 400.
+	 *
+	 * @param Exception $exception The failure.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function notificationPreferencesFailure(Exception $exception): JSONResponse {
+		if ($exception instanceof InvalidArgumentException) {
+			return $this->responses->error(message: $exception->getMessage(), statusCode: 400);
+		}
+
+		return $this->unexpected(exception: $exception, message: 'Failed to update notification preferences');
+	}//end notificationPreferencesFailure()
 
 	/**
 	 * Get personal activity history for the current user
@@ -668,26 +682,33 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function getActivity(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$limit = (int)($this->request->getParam('_limit', '25'));
-			$offset = (int)($this->request->getParam('_offset', '0'));
-			$type = $this->request->getParam('type');
-			$from = $this->request->getParam('_from');
-			$to = $this->request->getParam('_to');
-
-			$activity = $this->userService->getUserActivity($currentUser, $limit, $offset, $type, $from, $to);
-			$response = new JSONResponse(data: $activity);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to get activity', exception: $e);
-			return $this->errorResponse(message: 'Failed to get activity history', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->activityFor(user: $user),
+			onFailure: fn (Exception $e): JSONResponse => $this->activityFailure(exception: $e)
+		);
 	}//end getActivity()
+
+	/**
+	 * The activity of the session user, filtered by the request's paging and filter parameters.
+	 *
+	 * @param IUser $user The session user.
+	 *
+	 * @return JSONResponse The activity list.
+	 */
+	private function activityFor(IUser $user): JSONResponse {
+		$limit  = (int) ($this->request->getParam('_limit', '25'));
+		$offset = (int) ($this->request->getParam('_offset', '0'));
+		$type   = $this->request->getParam('type');
+		$from   = $this->request->getParam('_from');
+		$to     = $this->request->getParam('_to');
+
+		return $this->responses->secured(
+			data: $this->userService->activity(
+				user: $user,
+				query: new ActivityQuery(limit: $limit, offset: $offset, type: $type, period: new ActivityPeriod(from: $from, to: $to))
+			)
+		);
+	}//end activityFor()
 
 	/**
 	 * List API tokens for the current user
@@ -701,19 +722,10 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function listTokens(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$tokens = $this->userService->listApiTokens($currentUser);
-			$response = new JSONResponse(data: $tokens);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to list tokens', exception: $e);
-			return $this->errorResponse(message: 'Failed to list tokens', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->responses->secured(data: $this->userService->listApiTokens($user)),
+			onFailure: fn (Exception $e): JSONResponse => $this->unexpected(exception: $e, message: 'Failed to list tokens')
+		);
 	}//end listTokens()
 
 	/**
@@ -728,35 +740,30 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function createToken(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$data = $this->request->getParams();
-			$name = $this->securityService->sanitizeInput(input: $data['name'] ?? '');
-			$expiresIn = $data['expiresIn'] ?? null;
-
-			if ($name === '') {
-				return $this->errorResponse(message: 'Token name is required', statusCode: 400);
-			}
-
-			$token = $this->userService->createApiToken($currentUser, $name, $expiresIn);
-			$response = new JSONResponse(data: $token, statusCode: 201);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (\RuntimeException $e) {
-			$code = 500;
-			if ($e->getCode() !== 0) {
-				$code = $e->getCode();
-			}
-
-			return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to create token', exception: $e);
-			return $this->errorResponse(message: 'Failed to create token', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->createTokenFor(user: $user),
+			onFailure: fn (Exception $e): JSONResponse => $this->runtimeFailure(exception: $e, message: 'Failed to create token')
+		);
 	}//end createToken()
+
+	/**
+	 * Create the API token the request names for the session user.
+	 *
+	 * @param IUser $user The session user.
+	 *
+	 * @return JSONResponse The created token (201).
+	 */
+	private function createTokenFor(IUser $user): JSONResponse {
+		$data      = $this->request->getParams();
+		$name      = $this->securityService->sanitizeInput(input: $data['name'] ?? '');
+		$expiresIn = $data['expiresIn'] ?? null;
+		if ($name === '') {
+			return $this->responses->error(message: 'Token name is required', statusCode: 400);
+		}
+
+		$token = $this->userService->issueApiToken(user: $user, request: new ApiTokenRequest(name: $name, expiresIn: $expiresIn));
+		return $this->responses->secured(data: $token, statusCode: 201);
+	}//end createTokenFor()
 
 	/**
 	 * Revoke an API token for the current user
@@ -771,26 +778,10 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function revokeToken(string $id): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$result = $this->userService->revokeApiToken($currentUser, $id);
-			$response = new JSONResponse(data: $result);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (\RuntimeException $e) {
-			$code = 500;
-			if ($e->getCode() !== 0) {
-				$code = $e->getCode();
-			}
-
-			return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to revoke token', exception: $e);
-			return $this->errorResponse(message: 'Failed to revoke token', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->responses->secured(data: $this->userService->revokeApiToken($user, $id)),
+			onFailure: fn (Exception $e): JSONResponse => $this->runtimeFailure(exception: $e, message: 'Failed to revoke token')
+		);
 	}//end revokeToken()
 
 	/**
@@ -805,35 +796,15 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function requestDeactivation(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$data = $this->request->getParams();
-			$reason = $this->securityService->sanitizeInput(input: $data['reason'] ?? '');
-
-			$result = $this->userService->requestDeactivation($currentUser, $reason);
-			$response = new JSONResponse(data: $result);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (\RuntimeException $e) {
-			$code = 500;
-			if ($e->getCode() !== 0) {
-				$code = $e->getCode();
-			}
-
-			if ($code === 409) {
-				$errorData = json_decode($e->getMessage(), true);
-				$response = new JSONResponse(data: $errorData ?? ['error' => $e->getMessage()], statusCode: 409);
-				return $this->securityService->addSecurityHeaders(response: $response);
-			}
-
-			return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to request deactivation', exception: $e);
-			return $this->errorResponse(message: 'Failed to request deactivation', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->responses->secured(
+				data: $this->userService->requestDeactivation(
+					$user,
+					$this->securityService->sanitizeInput(input: $this->request->getParams()['reason'] ?? '')
+				)
+			),
+			onFailure: fn (Exception $e): JSONResponse => $this->deactivationRequestFailure(exception: $e)
+		);
 	}//end requestDeactivation()
 
 	/**
@@ -848,19 +819,15 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function getDeactivationStatus(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$status = $this->userService->getDeactivationStatus($currentUser);
-			$response = new JSONResponse(data: $status);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to get deactivation status', exception: $e);
-			return $this->errorResponse(message: 'Failed to get deactivation status', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->responses->secured(
+				data: $this->userService->getDeactivationStatus($user)
+			),
+			onFailure: fn (Exception $e): JSONResponse => $this->unexpected(
+				exception: $e,
+				message: 'Failed to get deactivation status'
+			)
+		);
 	}//end getDeactivationStatus()
 
 	/**
@@ -875,43 +842,148 @@ class UserController extends Controller {
 	 * @spec openspec/specs/auth-system/spec.md
 	 */
 	public function cancelDeactivation(): JSONResponse {
-		try {
-			$currentUser = $this->userService->getCurrentUser();
-			if ($currentUser === null) {
-				return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
-			}
-
-			$result = $this->userService->cancelDeactivation($currentUser);
-			$response = new JSONResponse(data: $result);
-			return $this->securityService->addSecurityHeaders(response: $response);
-		} catch (\RuntimeException $e) {
-			$code = 500;
-			if ($e->getCode() !== 0) {
-				$code = $e->getCode();
-			}
-
-			return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
-		} catch (Exception $e) {
-			$this->logError(message: 'Failed to cancel deactivation', exception: $e);
-			return $this->errorResponse(message: 'Failed to cancel deactivation', statusCode: 500);
-		}//end try
+		return $this->forCurrentUser(
+			action: fn (IUser $user): JSONResponse => $this->responses->secured(data: $this->userService->cancelDeactivation($user)),
+			onFailure: fn (Exception $e): JSONResponse => $this->runtimeFailure(exception: $e, message: 'Failed to cancel deactivation')
+		);
 	}//end cancelDeactivation()
 
 	/**
-	 * Create a standardized error response with security headers
+	 * Run a profile action for the session user: 401 without a session, the failure logged as a 500.
 	 *
-	 * @param string $message The error message
-	 * @param int $statusCode The HTTP status code
+	 * Profile responses carry no security headers.
 	 *
-	 * @return JSONResponse The error response
+	 * @param callable(IUser): JSONResponse        $action   The action.
+	 * @param array{log: string, failure?: string} $messages The logged failure message, and the failure response
+	 *                                                       message; without one the exception message is exposed.
+	 *
+	 * @return JSONResponse The response.
 	 */
-	private function errorResponse(string $message, int $statusCode): JSONResponse {
-		$response = new JSONResponse(
-			data: ['error' => $message],
-			statusCode: $statusCode
-		);
-		return $this->securityService->addSecurityHeaders(response: $response);
-	}//end errorResponse()
+	private function forProfileUser(callable $action, array $messages): JSONResponse {
+		try {
+			$currentUser = $this->userService->getCurrentUser();
+			if ($currentUser === null) {
+				return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
+			}
+
+			return $action($currentUser);
+		} catch (Exception $e) {
+			$this->logError(message: $messages['log'], exception: $e);
+			return new JSONResponse(data: ['error' => ($messages['failure'] ?? $e->getMessage())], statusCode: 500);
+		}//end try
+	}//end forProfileUser()
+
+	/**
+	 * Run an action for the session user: 401 without a session, any failure handed to $onFailure.
+	 *
+	 * @param callable(IUser): T                            $action    The action.
+	 * @param callable(Exception, IUser|null): JSONResponse $onFailure The failure response; it gets the session user when known.
+	 *
+	 * @return T|JSONResponse The response.
+	 *
+	 * @template T of JSONResponse|DataDownloadResponse
+	 */
+	private function forCurrentUser(callable $action, callable $onFailure): JSONResponse|DataDownloadResponse {
+		$currentUser = null;
+		try {
+			$currentUser = $this->userService->getCurrentUser();
+			if ($currentUser === null) {
+				return $this->responses->error(message: 'Not authenticated', statusCode: 401);
+			}
+
+			return $action($currentUser);
+		} catch (Exception $e) {
+			return $onFailure($e, $currentUser);
+		}//end try
+	}//end forCurrentUser()
+
+	/**
+	 * The response for a failure: a RuntimeException under its code's status, anything else a logged 500.
+	 *
+	 * @param Exception $exception The failure.
+	 * @param string    $message   The 500 response and log message.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function runtimeFailure(Exception $exception, string $message): JSONResponse {
+		if ($exception instanceof RuntimeException) {
+			return $this->responses->runtimeError(exception: $exception);
+		}
+
+		return $this->unexpected(exception: $exception, message: $message);
+	}//end runtimeFailure()
+
+	/**
+	 * The response for a failed export: a throttle (429) carries a JSON payload in its message.
+	 *
+	 * @param Exception $exception The failure.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function exportFailure(Exception $exception): JSONResponse {
+		if ($exception instanceof RuntimeException) {
+			return $this->responses->runtimeError(exception: $exception, payloadStatus: 429);
+		}
+
+		return $this->unexpected(exception: $exception, message: 'Failed to export data');
+	}//end exportFailure()
+
+	/**
+	 * The response for a failed deactivation request: a duplicate (409) carries a JSON payload in its message.
+	 *
+	 * @param Exception $exception The failure.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function deactivationRequestFailure(Exception $exception): JSONResponse {
+		if ($exception instanceof RuntimeException) {
+			return $this->responses->runtimeError(exception: $exception, payloadStatus: 409);
+		}
+
+		return $this->unexpected(exception: $exception, message: 'Failed to request deactivation');
+	}//end deactivationRequestFailure()
+
+	/**
+	 * The response for a failed activity read; the log names the read, the response the history.
+	 *
+	 * @param Exception $exception The failure.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function activityFailure(Exception $exception): JSONResponse {
+		$this->logError(message: 'Failed to get activity', exception: $exception);
+		return $this->responses->error(message: 'Failed to get activity history', statusCode: 500);
+	}//end activityFailure()
+
+	/**
+	 * Log an unexpected failure and hide it behind a 500.
+	 *
+	 * @param Exception $exception The failure.
+	 * @param string    $message   The response and log message.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function unexpected(Exception $exception, string $message): JSONResponse {
+		$this->logError(message: $message, exception: $exception);
+		return $this->responses->error(message: $message, statusCode: 500);
+	}//end unexpected()
+
+	/**
+	 * The request parameters without the internal (underscore-prefixed) ones.
+	 *
+	 * @param array $data The request parameters.
+	 *
+	 * @return array The parameters without the internal ones.
+	 */
+	private function withoutInternalParams(array $data): array {
+		foreach (array_keys($data) as $key) {
+			if (str_starts_with(haystack: $key, needle: '_') === true) {
+				unset($data[$key]);
+			}
+		}
+
+		return $data;
+	}//end withoutInternalParams()
 
 	/**
 	 * Log an error with standard context
@@ -949,24 +1021,10 @@ class UserController extends Controller {
 			return 0;
 		}
 
-		// Convert the memory limit to bytes.
 		$memoryLimit = trim($memoryLimit);
-		$last = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
-		$value = (int)$memoryLimit;
+		$suffix      = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
+		$exponent    = ['k' => 1, 'm' => 2, 'g' => 3][$suffix] ?? 0;
 
-		switch ($last) {
-			case 'g':
-				$value *= 1024;
-				// Fall through.
-				// no break
-			case 'm':
-				$value *= 1024;
-				// Fall through.
-				// no break
-			case 'k':
-				$value *= 1024;
-		}
-
-		return $value;
+		return (int) $memoryLimit * (1024 ** $exponent);
 	}//end convertToBytes()
 }//end class

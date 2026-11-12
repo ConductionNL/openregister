@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator}.
+ * Unit tests for {@see \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator}.
  *
  * Accept/reject matrix for the `x-openregister-mcp` dialect: valid full
  * block acceptance, `enabled` type/presence, unknown verb rejection,
@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Mcp;
 
-use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
 /**

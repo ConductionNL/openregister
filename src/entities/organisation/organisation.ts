@@ -1,12 +1,97 @@
 import type { ZodSafeParseResult } from 'zod'
+import type { TQuota, TUsage } from '../quotaUsage.types'
 import type { TOrganisation } from './organisation.types'
 
 import { z } from 'zod'
+import { COPY, NO_QUOTA, NO_USAGE, withFallbacks } from '../withFallbacks.js'
+
+const FALLBACKS = {
+	id: COPY,
+	uuid: '',
+	name: '',
+	slug: '',
+	description: '',
+	users: [],
+	groups: [],
+	isDefault: false,
+	active: COPY,
+	owner: '',
+	parent: null,
+	children: [],
+	quota: NO_QUOTA,
+	usage: NO_USAGE,
+	authorization: {
+		register: { create: [], read: [], update: [], delete: [] },
+		schema: { create: [], read: [], update: [], delete: [] },
+		object: { create: [], read: [], update: [], delete: [] },
+		view: { create: [], read: [], update: [], delete: [] },
+		agent: { create: [], read: [], update: [], delete: [] },
+		configuration: { create: [], read: [], update: [], delete: [] },
+		application: { create: [], read: [], update: [], delete: [] },
+		agent_use: ['*'],
+		llm_use: ['*'],
+	},
+	created: '',
+	updated: '',
+}
+
+const CRUD_SCHEMA = z.object({
+	create: z.array(z.string()).optional(),
+	read: z.array(z.string()).optional(),
+	update: z.array(z.string()).optional(),
+	delete: z.array(z.string()).optional(),
+})
+
+const ORGANISATION_SCHEMA = z.object({
+	id: z.number().optional(),
+	uuid: z.string().optional(),
+	name: z.string().min(1, 'Organisation name is required'),
+	slug: z.string().optional(),
+	description: z.string().optional(),
+	users: z.array(z.string()).optional(),
+	groups: z.array(z.string()).optional(),
+	isDefault: z.boolean().optional(),
+	active: z.boolean().optional(),
+	owner: z.string().optional(),
+	quota: z
+		.object({
+			storage: z.number().nullable().optional(),
+			bandwidth: z.number().nullable().optional(),
+			requests: z.number().nullable().optional(),
+			users: z.number().nullable().optional(),
+			groups: z.number().nullable().optional(),
+		})
+		.optional(),
+	usage: z
+		.object({
+			storage: z.number().optional(),
+			bandwidth: z.number().optional(),
+			requests: z.number().optional(),
+			users: z.number().optional(),
+			groups: z.number().optional(),
+		})
+		.optional(),
+	authorization: z
+		.object({
+			register: CRUD_SCHEMA.optional(),
+			schema: CRUD_SCHEMA.optional(),
+			object: CRUD_SCHEMA.optional(),
+			view: CRUD_SCHEMA.optional(),
+			agent: CRUD_SCHEMA.optional(),
+			configuration: CRUD_SCHEMA.optional(),
+			application: CRUD_SCHEMA.optional(),
+			agent_use: z.array(z.string()).optional(),
+			llm_use: z.array(z.string()).optional(),
+		})
+		.optional(),
+	created: z.string().optional(),
+	updated: z.string().optional(),
+})
 
 export class Organisation implements TOrganisation {
 	public id?: number
 	public uuid?: string
-	public name: string
+	public name!: string
 	public slug?: string
 	public description?: string
 	public users?: string[]
@@ -16,21 +101,8 @@ export class Organisation implements TOrganisation {
 	public owner?: string
 	public parent?: string | null
 	public children?: string[]
-	public quota?: {
-		storage?: number | null
-		bandwidth?: number | null
-		requests?: number | null
-		users?: number | null
-		groups?: number | null
-	}
-
-	public usage?: {
-		storage?: number
-		bandwidth?: number
-		requests?: number
-		users?: number
-		groups?: number
-	}
+	public quota?: TQuota
+	public usage?: TUsage
 
 	public authorization?: TOrganisation['authorization']
 	public created?: string
@@ -41,101 +113,11 @@ export class Organisation implements TOrganisation {
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(organisation: TOrganisation) {
-		this.id = organisation.id
-		this.uuid = organisation.uuid || ''
-		this.name = organisation.name || ''
-		this.slug = organisation.slug || ''
-		this.description = organisation.description || ''
-		this.users = organisation.users || []
-		this.groups = organisation.groups || []
-		this.isDefault = organisation.isDefault || false
+		Object.assign(this, withFallbacks(organisation, FALLBACKS))
 		this.active = organisation.active !== false
-		this.owner = organisation.owner || ''
-		this.parent = organisation.parent || null
-		this.children = organisation.children || []
-		this.quota = organisation.quota || {
-			storage: null,
-			bandwidth: null,
-			requests: null,
-			users: null,
-			groups: null,
-		}
-		this.usage = organisation.usage || {
-			storage: 0,
-			bandwidth: 0,
-			requests: 0,
-			users: 0,
-			groups: 0,
-		}
-		this.authorization = organisation.authorization || {
-			register: { create: [], read: [], update: [], delete: [] },
-			schema: { create: [], read: [], update: [], delete: [] },
-			object: { create: [], read: [], update: [], delete: [] },
-			view: { create: [], read: [], update: [], delete: [] },
-			agent: { create: [], read: [], update: [], delete: [] },
-			configuration: { create: [], read: [], update: [], delete: [] },
-			application: { create: [], read: [], update: [], delete: [] },
-			agent_use: ['*'],
-			llm_use: ['*'],
-		}
-		this.created = organisation.created || ''
-		this.updated = organisation.updated || ''
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {
-		const crudSchema = z.object({
-			create: z.array(z.string()).optional(),
-			read: z.array(z.string()).optional(),
-			update: z.array(z.string()).optional(),
-			delete: z.array(z.string()).optional(),
-		})
-
-		const schema = z.object({
-			id: z.number().optional(),
-			uuid: z.string().optional(),
-			name: z.string().min(1, 'Organisation name is required'),
-			slug: z.string().optional(),
-			description: z.string().optional(),
-			users: z.array(z.string()).optional(),
-			groups: z.array(z.string()).optional(),
-			isDefault: z.boolean().optional(),
-			active: z.boolean().optional(),
-			owner: z.string().optional(),
-			quota: z
-				.object({
-					storage: z.number().nullable().optional(),
-					bandwidth: z.number().nullable().optional(),
-					requests: z.number().nullable().optional(),
-					users: z.number().nullable().optional(),
-					groups: z.number().nullable().optional(),
-				})
-				.optional(),
-			usage: z
-				.object({
-					storage: z.number().optional(),
-					bandwidth: z.number().optional(),
-					requests: z.number().optional(),
-					users: z.number().optional(),
-					groups: z.number().optional(),
-				})
-				.optional(),
-			authorization: z
-				.object({
-					register: crudSchema.optional(),
-					schema: crudSchema.optional(),
-					object: crudSchema.optional(),
-					view: crudSchema.optional(),
-					agent: crudSchema.optional(),
-					configuration: crudSchema.optional(),
-					application: crudSchema.optional(),
-					agent_use: z.array(z.string()).optional(),
-					llm_use: z.array(z.string()).optional(),
-				})
-				.optional(),
-			created: z.string().optional(),
-			updated: z.string().optional(),
-		})
-
-		return schema.safeParse(this)
+		return ORGANISATION_SCHEMA.safeParse(this)
 	}
 }

@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -138,17 +140,17 @@ class RowFieldLevelSecurityNonAdminIntegrationTest extends TestCase {
 		$object = ['title' => 'visible', 'salary' => '95000', 'ssn' => '123-45-6789'];
 
 		$this->assertTrue(
-			$this->propertyRbacHandler->canReadProperty($this->authedSchema, 'title', $object),
+			$this->propertyRbacHandler->canReadProperty(new SchemaProperty($this->authedSchema, 'title'), new PropertyAccessRequest($object)),
 			'unrestricted field MUST be readable by anyone'
 		);
 
 		$this->assertFalse(
-			$this->propertyRbacHandler->canReadProperty($this->authedSchema, 'salary', $object),
+			$this->propertyRbacHandler->canReadProperty(new SchemaProperty($this->authedSchema, 'salary'), new PropertyAccessRequest($object)),
 			'salary requires admin; non-admin MUST be denied'
 		);
 
 		$this->assertFalse(
-			$this->propertyRbacHandler->canReadProperty($this->authedSchema, 'ssn', $object),
+			$this->propertyRbacHandler->canReadProperty(new SchemaProperty($this->authedSchema, 'ssn'), new PropertyAccessRequest($object)),
 			'ssn requires hr; non-admin MUST be denied'
 		);
 

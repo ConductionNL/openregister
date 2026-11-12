@@ -30,9 +30,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
-use OCP\IServerContainer;
-use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -42,8 +39,11 @@ use RuntimeException;
  * guard cannot proceed. The runtime exception is mapped to HTTP 500 in the
  * controller; install-time `occ openregister:check-guards` (future) catches
  * the same problem before it reaches a request.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class LifecycleGuardRegistry {
+final class LifecycleGuardRegistry implements LifecycleGuardRegistryInterface {
+	use ResolvesThroughContainers;
 
 	/**
 	 * Per-request cache.
@@ -51,22 +51,6 @@ final class LifecycleGuardRegistry {
 	 * @var array<string, LifecycleGuardInterface>
 	 */
 	private array $cache = [];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param ContainerInterface $container OR app container used to resolve guard services first.
-	 * @param IServerContainer $serverContainer NC server container used as fallback for FQCN-tagged guards (F06).
-	 * @param LoggerInterface $logger Logger for guard resolution diagnostics.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly IServerContainer $serverContainer,
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
 
 	/**
 	 * Resolve a guard tag to its registered implementation.
@@ -80,48 +64,43 @@ final class LifecycleGuardRegistry {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function resolve(string $tag): LifecycleGuardInterface {
-		if (isset($this->cache[$tag]) === true) {
-			return $this->cache[$tag];
+		if (isset($this->cache[$tag]) === false) {
+			$this->cache[$tag] = $this->load(tag: $tag);
 		}
 
-		$instance = null;
-		$errors = [];
-		// Try OR's app container first (covers OR-internal guards) and
-		// fall back to the injected server container (covers FQCN-based
-		// references to guards in other apps that Nextcloud can autowire).
-		// The server container is injected via OCP\IServerContainer rather
-		// than reached through the static \OC::$server accessor — the
-		// ADR added in this PR (docs/development-notes/AUDIT_2026-05-01.md)
-		// bans \OC::$server in lib/.
-		foreach ([$this->container, $this->serverContainer] as $candidate) {
-			try {
-				$instance = $candidate->get($tag);
-				break;
-			} catch (\Throwable $e) {
-				$errors[] = $e->getMessage();
-			}
-		}
+		return $this->cache[$tag];
+	}//end resolve()
 
+	/**
+	 * Resolve a guard tag through the containers, refusing a miss or a wrong type.
+	 *
+	 * OR's app container is tried first (OR-internal guards), then the injected
+	 * server container (FQCN-based references to guards in other apps that
+	 * Nextcloud can autowire). The server container is injected via
+	 * OCP\IServerContainer rather than reached through the static \OC::$server
+	 * accessor, which lib/ bans (docs/development-notes/AUDIT_2026-05-01.md).
+	 *
+	 * @param string $tag DI service tag.
+	 *
+	 * @return LifecycleGuardInterface
+	 *
+	 * @throws RuntimeException When the tag is not registered or has the wrong type.
+	 */
+	private function load(string $tag): LifecycleGuardInterface {
+		$instance = $this->lookUp(
+			id: $tag,
+			logPrefix: sprintf('Lifecycle guard tag "%s" could not be resolved: ', $tag)
+		);
 		if ($instance === null) {
-			$this->logger->error(
-				sprintf('Lifecycle guard tag "%s" could not be resolved: %s', $tag, implode(' | ', $errors))
-			);
-			throw new RuntimeException(
-				message: sprintf('Lifecycle guard "%s" is not registered.', $tag)
-			);
+			throw new RuntimeException(message: sprintf('Lifecycle guard "%s" is not registered.', $tag));
 		}
 
 		if (($instance instanceof LifecycleGuardInterface) === false) {
 			throw new RuntimeException(
-				sprintf(
-					'Service "%s" does not implement %s.',
-					$tag,
-					LifecycleGuardInterface::class
-				)
+				message: sprintf('Service "%s" does not implement %s.', $tag, LifecycleGuardInterface::class)
 			);
 		}
 
-		$this->cache[$tag] = $instance;
 		return $instance;
-	}//end resolve()
+	}//end load()
 }//end class

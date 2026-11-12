@@ -24,7 +24,7 @@
  * session — no impersonation, no system account, RBAC/IDOR unchanged from
  * the REST path (REQ-DERIVED-005). Every invocation — read, write, or
  * failed — writes exactly one immutable, hash-chained audit record via
- * `AuditTrailMapper::createToolInvocationEntry()` (REQ-DERIVED-006).
+ * `AuditTrailMapper::recordToolInvocation()` (REQ-DERIVED-006).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -48,15 +48,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
-use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * SchemaDerivedToolProvider
@@ -67,7 +70,7 @@ use Throwable;
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp\BuiltIn
  *
- * @psalm-suppress UnusedClass - Instantiated by Application::registerMcpToolProviders()
+ * @psalm-suppress UnusedClass - Instantiated by McpProviderDiscovery::register()
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength) One IMcpToolProvider implementation: the ABI's id/verb contract, the
  *      two collision rules (hand-written > derived, first-definition > duplicate) and the JSON-Schema sanitiser are one
@@ -96,6 +99,81 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	private const TRUNCATE_LENGTH = 500;
 
 	/**
+	 * The `id` input property of the verbs that address one object.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ID_INPUT_PROPERTY = ['type' => 'string', 'description' => 'Object id or uuid.'];
+
+	/**
+	 * The input schema of a verb that takes only an object id (`get`, `delete`).
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const ID_INPUT_SCHEMA = [
+		'type' => 'object',
+		'properties' => ['id' => self::ID_INPUT_PROPERTY],
+		'required' => ['id'],
+	];
+
+	/**
+	 * The `fields` input property of the `search` verb.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const FIELDS_INPUT_PROPERTY = [
+		'type' => 'array',
+		'items' => ['type' => 'string'],
+		'description' => 'Optional field projection.',
+	];
+
+	/**
+	 * JSON Schema keywords a published property may carry (an allow-list, see jsonSchemaSafe())
+	 *
+	 * @var list<string>
+	 */
+	private const JSON_SCHEMA_KEYWORDS = [
+		'type',
+		'title',
+		'description',
+		'enum',
+		'const',
+		'default',
+		'format',
+		'pattern',
+		'minimum',
+		'maximum',
+		'exclusiveMinimum',
+		'exclusiveMaximum',
+		'minLength',
+		'maxLength',
+		'minItems',
+		'maxItems',
+		'uniqueItems',
+	];
+
+	/**
+	 * RBAC-enforcing object read/write facade.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Immutable hash-chained audit-trail writer.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * `$schemaEntries` is a `list<array{schema: Schema, register: Register|null}>`
@@ -104,21 +182,20 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * already claimed by a hand-written provider for this app; the derived
 	 * duplicates are self-suppressed (REQ-DERIVED-003).
 	 *
-	 * @param string $appId The owning app id; `getAppId()` and every id prefix.
-	 * @param array $schemaEntries The app's opted-in schema entries (see above).
-	 * @param array $suppressedIds Hand-written tool ids to self-suppress (see above).
-	 * @param ObjectService $objectService RBAC-enforcing object read/write facade.
-	 * @param AuditTrailMapper $auditTrailMapper Immutable hash-chained audit-trail writer.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param string                    $appId         The owning app id; `getAppId()` and every id prefix.
+	 * @param array                     $schemaEntries The app's opted-in schema entries (see above).
+	 * @param array                     $suppressedIds Hand-written tool ids to self-suppress (see above).
+	 * @param SchemaDerivedToolServices $services      The object facade, audit-trail writer and logger.
 	 */
 	public function __construct(
 		private readonly string $appId,
 		private readonly array $schemaEntries,
 		private readonly array $suppressedIds,
-		private readonly ObjectService $objectService,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly LoggerInterface $logger,
+		SchemaDerivedToolServices $services,
 	) {
+		$this->objectService = $services->objectService;
+		$this->auditTrailMapper = $services->auditTrailMapper;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -172,63 +249,130 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		$emittedIds = [];
 
 		foreach ($this->schemaEntries as $entry) {
-			$schema = $entry['schema'];
-			$annotation = $this->mcpAnnotation(schema: $schema);
-			if (($annotation['enabled'] ?? false) !== true) {
-				continue;
-			}
-
-			$slug = $this->schemaSlug(schema: $schema);
-			$toolsConfig = ($annotation['tools'] ?? null);
-			$verbs = McpAnnotationValidator::VERBS;
-			if (is_array($toolsConfig) === true) {
-				$verbs = array_values(array_intersect(McpAnnotationValidator::VERBS, array_keys($toolsConfig)));
-			}
-
-			foreach ($verbs as $verb) {
-				$id = $this->appId . '.' . $slug . '.' . $verb;
-
-				// Self-suppression (REQ-DERIVED-003): a hand-written per-app
-				// provider already claims this id — omit the derived
-				// duplicate entirely rather than merely shadowing it.
-				if (in_array($id, $this->suppressedIds, true) === true) {
-					continue;
-				}
-
-				// A second schema row claiming the same id — see $emittedIds.
-				if (array_key_exists($id, $emittedIds) === true) {
-					$this->logger->warning(
-						message: '[SchemaDerivedToolProvider] duplicate tool id suppressed — two schema rows share one slug',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'toolId' => $id,
-							'keptSchemaId' => $emittedIds[$id],
-							'droppedSchemaId' => $schema->getId(),
-						]
-					);
-					continue;
-				}
-
-				$emittedIds[$id] = $schema->getId();
-
-				$verbConfig = [];
-				if (is_array($toolsConfig) === true && is_array($toolsConfig[$verb] ?? null) === true) {
-					$verbConfig = $toolsConfig[$verb];
-				}
-
-				$descriptors[] = $this->buildDescriptor(
-					schema: $schema,
-					slug: $slug,
-					verb: $verb,
-					verbConfig: $verbConfig,
-					id: $id
-				);
-			}//end foreach
-		}//end foreach
+			$descriptors = array_merge(
+				$descriptors,
+				$this->descriptorsForSchema(schema: $entry['schema'], emittedIds: $emittedIds)
+			);
+		}
 
 		return $descriptors;
 	}//end getTools()
+
+	/**
+	 * The descriptors one MCP-enabled schema contributes.
+	 *
+	 * @param Schema               $schema     The schema being derived.
+	 * @param array<string, mixed> $emittedIds Ids already emitted, mapped to their schema id (updated).
+	 *
+	 * @return list<array<string, mixed>> The schema's descriptors; none when MCP is not enabled.
+	 */
+	private function descriptorsForSchema(Schema $schema, array &$emittedIds): array {
+		$annotation = $this->mcpAnnotation(schema: $schema);
+		if (($annotation['enabled'] ?? false) !== true) {
+			return [];
+		}
+
+		$slug = $this->schemaSlug(schema: $schema);
+		$toolsConfig = ($annotation['tools'] ?? null);
+
+		$descriptors = [];
+		foreach ($this->enabledVerbs(toolsConfig: $toolsConfig) as $verb) {
+			$tool = new DerivedToolDefinition(
+				schema: $schema,
+				slug: $slug,
+				verb: $verb,
+				verbConfig: $this->verbConfig(toolsConfig: $toolsConfig, verb: $verb)
+			);
+			if ($this->claimToolId(tool: $tool, emittedIds: $emittedIds) === false) {
+				continue;
+			}
+
+			$descriptors[] = $this->buildDescriptor(tool: $tool);
+		}
+
+		return $descriptors;
+	}//end descriptorsForSchema()
+
+	/**
+	 * The verbs a schema exposes: all of them, or those its `tools` block names.
+	 *
+	 * @param mixed $toolsConfig The annotation's `tools` block.
+	 *
+	 * @return list<string> The verbs, in canonical order.
+	 */
+	private function enabledVerbs(mixed $toolsConfig): array {
+		if (is_array($toolsConfig) === true) {
+			return array_values(array_intersect(McpAnnotationValidator::VERBS, array_keys($toolsConfig)));
+		}
+
+		return McpAnnotationValidator::VERBS;
+	}//end enabledVerbs()
+
+	/**
+	 * One verb's dialect config, or an empty array when it declares none.
+	 *
+	 * @param mixed  $toolsConfig The annotation's `tools` block.
+	 * @param string $verb        The verb.
+	 *
+	 * @return array<string, mixed> The verb config.
+	 */
+	private function verbConfig(mixed $toolsConfig, string $verb): array {
+		if (is_array($toolsConfig) === true && is_array($toolsConfig[$verb] ?? null) === true) {
+			return $toolsConfig[$verb];
+		}
+
+		return [];
+	}//end verbConfig()
+
+	/**
+	 * The fully-namespaced id of a derived tool: `{appId}.{slug}.{verb}`.
+	 *
+	 * @param DerivedToolDefinition $tool The tool being described.
+	 *
+	 * @return string The tool id.
+	 */
+	private function toolId(DerivedToolDefinition $tool): string {
+		return $this->appId . '.' . $tool->slug . '.' . $tool->verb;
+	}//end toolId()
+
+	/**
+	 * Claim a tool id for a schema, refusing suppressed and already-emitted ids.
+	 *
+	 * @param DerivedToolDefinition $tool       The tool whose id the schema claims.
+	 * @param array<string, mixed>  $emittedIds Ids already emitted, mapped to their schema id (updated).
+	 *
+	 * @return bool Whether the id may be emitted for this schema.
+	 */
+	private function claimToolId(DerivedToolDefinition $tool, array &$emittedIds): bool {
+		$id = $this->toolId(tool: $tool);
+		$schema = $tool->schema;
+
+		// Self-suppression (REQ-DERIVED-003): a hand-written per-app
+		// provider already claims this id — omit the derived
+		// duplicate entirely rather than merely shadowing it.
+		if (in_array($id, $this->suppressedIds, true) === true) {
+			return false;
+		}
+
+		// A second schema row claiming the same id — see getTools().
+		if (array_key_exists($id, $emittedIds) === true) {
+			$this->logger->warning(
+				message: '[SchemaDerivedToolProvider] duplicate tool id suppressed — two schema rows share one slug',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'toolId' => $id,
+					'keptSchemaId' => $emittedIds[$id],
+					'droppedSchemaId' => $schema->getId(),
+				]
+			);
+			return false;
+		}
+
+		$emittedIds[$id] = $schema->getId();
+
+		return true;
+	}//end claimToolId()
 
 	/**
 	 * Dispatch a tool invocation by its parsed `{appId}.{schema}.{verb}` id.
@@ -258,53 +402,54 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		$register = $resolved['register'];
 		$verb = $resolved['verb'];
 
-		$paramsDigest = hash('sha256', $this->canonicalArguments(arguments: $arguments));
-
-		try {
-			$result = match ($verb) {
-				'search' => $this->search(schema: $schema, register: $register, arguments: $arguments),
-				'get' => $this->get(schema: $schema, register: $register, arguments: $arguments),
-				'create' => $this->create(schema: $schema, register: $register, arguments: $arguments),
-				'update' => $this->update(schema: $schema, register: $register, arguments: $arguments),
-				'delete' => $this->delete(schema: $schema, register: $register, arguments: $arguments),
-				default => throw new InvalidArgumentException('Unknown verb: ' . $verb),
-			};
-
-			$this->writeAudit(
-				toolId: $toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: $this->resultSummary(verb: $verb, result: $result),
-				schema: $schema,
-				register: $register,
-				result: $result
-			);
-
-			return $result;
-		} catch (Throwable $e) {
-			$this->writeAudit(
-				toolId: $toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: [
-					'isError' => true,
-					'errorClass' => get_class($e),
-					'message' => substr($e->getMessage(), 0, 300),
-				],
-				schema: $schema,
-				register: $register,
-				result: null
-			);
-
-			throw $e;
-		}//end try
+		return $this->audit()->run(
+			target: new ToolAuditTarget(toolId: $toolId, register: $register?->getId(), schema: $schema->getId()),
+			invocation: new AuditedInvocation(
+				arguments: $arguments,
+				call: fn (): array => $this->runVerb(
+					verb: $verb,
+					call: new DerivedToolCall(schema: $schema, register: $register, arguments: $arguments)
+				),
+				summarise: fn (array $result): array => $this->resultSummary(verb: $verb, result: $result)
+			)
+		);
 	}//end invokeTool()
+
+	/**
+	 * Run one verb of a schema-derived tool.
+	 *
+	 * @param string          $verb The verb.
+	 * @param DerivedToolCall $call The target schema, its register and the tool arguments.
+	 *
+	 * @return array<string, mixed> The verb's result.
+	 *
+	 * @throws InvalidArgumentException On an unknown verb.
+	 */
+	private function runVerb(string $verb, DerivedToolCall $call): array {
+		return match ($verb) {
+			'search' => $this->search(call: $call),
+			'get' => $this->get(call: $call),
+			'create' => $this->create(call: $call),
+			'update' => $this->update(call: $call),
+			'delete' => $this->delete(call: $call),
+			default => throw new InvalidArgumentException('Unknown verb: ' . $verb),
+		};
+	}//end runVerb()
+
+	/**
+	 * The audit runner of this provider.
+	 *
+	 * @return ToolInvocationAudit The runner.
+	 */
+	private function audit(): ToolInvocationAudit {
+		return new ToolInvocationAudit(auditTrailMapper: $this->auditTrailMapper, logger: $this->logger, source: 'SchemaDerivedToolProvider');
+	}//end audit()
 
 	/**
 	 * Search verb: declared-filter-only, bounded/clamped pagination,
 	 * optional field projection, string truncation, has-more/total metadata.
 	 *
-	 * @param Schema $schema The target schema.
-	 * @param Register|null $register The schema's owning register, when resolvable.
-	 * @param array<string, mixed> $arguments Tool arguments.
+	 * @param DerivedToolCall $call The target schema, its register and the tool arguments.
 	 *
 	 * @return array<string, mixed> `{results, page, pageSize, total, hasMore}`.
 	 *
@@ -313,7 +458,96 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-DERIVED-004 — Search verb: filters, pagination, projection, truncation)
 	 */
-	private function search(Schema $schema, ?Register $register, array $arguments): array {
+	private function search(DerivedToolCall $call): array {
+		$filters = $this->declaredFilters(schema: $call->schema, arguments: $call->arguments);
+		$window = $this->searchPage(arguments: $call->arguments);
+		$config = ($this->windowConfig(window: $window, filters: $filters) + $this->fieldsProjection(arguments: $call->arguments));
+
+		$this->anchorObjectService(schema: $call->schema, register: $call->register);
+
+		$results = $this->truncatedResults(objects: $this->objectService->findAll(config: $config));
+		$total = $this->objectService->count(config: ['filters' => $filters]);
+
+		return [
+			'results' => $results,
+			'page' => $window->page,
+			'pageSize' => $window->pageSize,
+			'total' => $total,
+			'hasMore' => (($window->offset() + count($results)) < $total),
+		];
+	}//end search()
+
+	/**
+	 * The page window a `search` call asks for.
+	 *
+	 * @param array<string, mixed> $arguments The tool arguments, for `page` and `pageSize`.
+	 *
+	 * @return DerivedSearchPage
+	 */
+	private function searchPage(array $arguments): DerivedSearchPage {
+		return new DerivedSearchPage(
+			page: $this->pageNumber(arguments: $arguments),
+			pageSize: $this->pageSize(arguments: $arguments)
+		);
+	}//end searchPage()
+
+	/**
+	 * The ObjectService query config of a page of filtered results.
+	 *
+	 * @param DerivedSearchPage    $window  The page window.
+	 * @param array<string, mixed> $filters The declared filters asked for.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function windowConfig(DerivedSearchPage $window, array $filters): array {
+		return [
+			'limit' => $window->pageSize,
+			'offset' => $window->offset(),
+			'filters' => $filters,
+		];
+	}//end windowConfig()
+
+	/**
+	 * The optional field projection of a search: `fields` when it is a non-empty list, else nothing.
+	 *
+	 * @param array<string, mixed> $arguments The tool arguments, for `fields`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function fieldsProjection(array $arguments): array {
+		$fields = ($arguments['fields'] ?? null);
+		if (is_array($fields) === true && count($fields) > 0) {
+			return ['fields' => $fields];
+		}
+
+		return [];
+	}//end fieldsProjection()
+
+	/**
+	 * The found objects serialised, with long strings truncated.
+	 *
+	 * @param array $objects The found objects.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function truncatedResults(array $objects): array {
+		return array_map(
+			callback: fn ($object) => $this->truncateStrings(data: $object->jsonSerialize()),
+			array: $objects
+		);
+	}//end truncatedResults()
+
+	/**
+	 * The requested search filters, refused when one is not declared by the schema.
+	 *
+	 * @param Schema               $schema    The target schema.
+	 * @param array<string, mixed> $arguments Tool arguments.
+	 *
+	 * @return array<string, mixed> The filters.
+	 *
+	 * @throws InvalidArgumentException If `filters` is not an object or names an undeclared property.
+	 */
+	private function declaredFilters(Schema $schema, array $arguments): array {
 		$annotation = $this->mcpAnnotation(schema: $schema);
 		$declaredFilters = ($annotation['tools']['search']['filters'] ?? []);
 		if (is_array($declaredFilters) === false) {
@@ -337,70 +571,63 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			}
 		}
 
+		return $filters;
+	}//end declaredFilters()
+
+	/**
+	 * The requested page, at least 1.
+	 *
+	 * @param array<string, mixed> $arguments Tool arguments.
+	 *
+	 * @return int The page.
+	 */
+	private function pageNumber(array $arguments): int {
 		$page = (int)($arguments['page'] ?? 1);
 		if ($page < 1) {
 			$page = 1;
 		}
 
+		return $page;
+	}//end pageNumber()
+
+	/**
+	 * The requested page size: the default when below 1, clamped to the maximum.
+	 *
+	 * @param array<string, mixed> $arguments Tool arguments.
+	 *
+	 * @return int The page size.
+	 */
+	private function pageSize(array $arguments): int {
 		$pageSize = (int)($arguments['pageSize'] ?? self::DEFAULT_PAGE_SIZE);
 		if ($pageSize < 1) {
 			$pageSize = self::DEFAULT_PAGE_SIZE;
 		}
 
-		$pageSize = min($pageSize, self::MAX_PAGE_SIZE);
-		$offset = (($page - 1) * $pageSize);
-
-		$config = [
-			'limit' => $pageSize,
-			'offset' => $offset,
-			'filters' => $filters,
-		];
-
-		$fields = ($arguments['fields'] ?? null);
-		if (is_array($fields) === true && count($fields) > 0) {
-			$config['fields'] = $fields;
-		}
-
-		$this->anchorObjectService(schema: $schema, register: $register);
-
-		$objects = $this->objectService->findAll(config: $config);
-		$total = $this->objectService->count(config: ['filters' => $filters]);
-
-		$results = array_map(
-			callback: fn ($object) => $this->truncateStrings(data: $object->jsonSerialize()),
-			array: $objects
-		);
-
-		return [
-			'results' => $results,
-			'page' => $page,
-			'pageSize' => $pageSize,
-			'total' => $total,
-			'hasMore' => (($offset + count($results)) < $total),
-		];
-	}//end search()
+		return min($pageSize, self::MAX_PAGE_SIZE);
+	}//end pageSize()
 
 	/**
 	 * Get verb: fetch a single object by id/uuid via `ObjectService`.
 	 *
-	 * @param Schema $schema The target schema.
-	 * @param Register|null $register The schema's owning register, when resolvable.
-	 * @param array<string, mixed> $arguments Must contain `id`.
+	 * @param DerivedToolCall $call The target schema, its register and the tool arguments; arguments: must contain `id`.
 	 *
 	 * @return array<string, mixed> Serialized object.
 	 *
 	 * @throws InvalidArgumentException If `id` is missing.
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function get(Schema $schema, ?Register $register, array $arguments): array {
+	private function get(DerivedToolCall $call): array {
+		$schema = $call->schema;
+		$register = $call->register;
+		$arguments = $call->arguments;
+
 		$this->requireParam(arguments: $arguments, param: 'id');
 
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $arguments['id'],
-			register: $register,
-			schema: $schema
+			options: new ObjectFindOptions(register: $register, schema: $schema)
 		));
 
 		return $object->jsonSerialize();
@@ -409,20 +636,21 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	/**
 	 * Create verb: write a new object through `ObjectService` (RBAC intact).
 	 *
-	 * @param Schema $schema The target schema.
-	 * @param Register|null $register The schema's owning register, when resolvable.
-	 * @param array<string, mixed> $arguments The object payload (schema-shaped).
+	 * @param DerivedToolCall $call The target schema, its register and the tool arguments; arguments: the object payload (schema-shaped).
 	 *
 	 * @return array<string, mixed> Serialized created object.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-DERIVED-005 — Write is authorized exactly as the REST path)
 	 */
-	private function create(Schema $schema, ?Register $register, array $arguments): array {
+	private function create(DerivedToolCall $call): array {
+		$schema = $call->schema;
+		$register = $call->register;
+		$arguments = $call->arguments;
+
 		$object = $this->objectService->saveObject(
 			object: $arguments,
-			register: $register,
-			schema: $schema
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		return $object->jsonSerialize();
@@ -431,15 +659,17 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	/**
 	 * Update verb: write an existing object through `ObjectService` (RBAC intact).
 	 *
-	 * @param Schema $schema The target schema.
-	 * @param Register|null $register The schema's owning register, when resolvable.
-	 * @param array<string, mixed> $arguments Must contain `id`; the rest is the object payload.
+	 * @param DerivedToolCall $call The target schema, its register and the tool arguments; arguments: must contain `id`; the rest is the object payload.
 	 *
 	 * @return array<string, mixed> Serialized updated object.
 	 *
 	 * @throws InvalidArgumentException If `id` is missing.
 	 */
-	private function update(Schema $schema, ?Register $register, array $arguments): array {
+	private function update(DerivedToolCall $call): array {
+		$schema = $call->schema;
+		$register = $call->register;
+		$arguments = $call->arguments;
+
 		$this->requireParam(arguments: $arguments, param: 'id');
 
 		$id = $arguments['id'];
@@ -448,9 +678,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$object = $this->objectService->saveObject(
 			object: $data,
-			register: $register,
-			schema: $schema,
-			uuid: $id
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
 		);
 
 		return $object->jsonSerialize();
@@ -461,9 +689,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * unauthorized delete raises the same error the REST path returns,
 	 * which `invokeTool()` audits and rethrows for the isError envelope).
 	 *
-	 * @param Schema $schema The target schema.
-	 * @param Register|null $register The schema's owning register, when resolvable.
-	 * @param array<string, mixed> $arguments Must contain `id`.
+	 * @param DerivedToolCall $call The target schema, its register and the tool arguments; arguments: must contain `id`.
 	 *
 	 * @return array<string, mixed> Success confirmation.
 	 *
@@ -472,14 +698,19 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-DERIVED-005 — Unauthorized write fails, no bypass)
 	 */
-	private function delete(Schema $schema, ?Register $register, array $arguments): array {
+	private function delete(DerivedToolCall $call): array {
+		$schema = $call->schema;
+		$register = $call->register;
+		$arguments = $call->arguments;
+
 		$this->requireParam(arguments: $arguments, param: 'id');
 
 		$id = $arguments['id'];
 		$this->objectService->deleteObject(
-			uuid: $id,
-			register: $register,
-			schema: $schema
+			deletion: new ObjectDeletion(
+				uuid: $id,
+				target: new ObjectFindTarget(register: $register, schema: $schema)
+			)
 		);
 
 		return ['deleted' => true, 'id' => $id];
@@ -505,23 +736,22 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	/**
 	 * Build one tool descriptor for a schema+verb pair.
 	 *
-	 * @param Schema $schema The schema being derived.
-	 * @param string $slug The schema's slug (id-tail).
-	 * @param string $verb One of {@see McpAnnotationValidator::VERBS}.
-	 * @param array<string, mixed> $verbConfig That verb's dialect config (description/scope/filters/hints).
-	 * @param string $id The fully-namespaced tool id.
+	 * @param DerivedToolDefinition $tool The schema, slug, verb and verb config.
 	 *
 	 * @return array{id: string, name: string, description: string, inputSchema: array,
 	 *         app: string, subject: string, action: string,
 	 *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
 	 *         idempotentHint?: bool, scope?: string}
 	 */
-	private function buildDescriptor(Schema $schema, string $slug, string $verb, array $verbConfig, string $id): array {
+	private function buildDescriptor(DerivedToolDefinition $tool): array {
+		$slug = $tool->slug;
+		$verb = $tool->verb;
+		$verbConfig = $tool->verbConfig;
 		$descriptor = [
-			'id' => $id,
+			'id' => $this->toolId(tool: $tool),
 			'name' => $slug . '_' . $verb,
-			'description' => $this->description(slug: $slug, verb: $verbConfig['description'] ?? null, verbName: $verb),
-			'inputSchema' => $this->buildInputSchema(schema: $schema, verb: $verb, verbConfig: $verbConfig),
+			'description' => $this->description(tool: $tool, override: $verbConfig['description'] ?? null),
+			'inputSchema' => $this->buildInputSchema(tool: $tool),
 
 			// The id's three parts, carried as FIELDS rather than only joined
 			// into a string.
@@ -570,16 +800,18 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * Resolve a verb's description: the declared override, else a generated
 	 * default naming the schema and owning app.
 	 *
-	 * @param string $slug Schema slug.
-	 * @param string|null $verb Declared description override, or null.
-	 * @param string $verbName The verb name.
+	 * @param DerivedToolDefinition $tool     The tool: its schema slug and verb name.
+	 * @param string|null           $override Declared description override, or null.
 	 *
 	 * @return string The resolved description.
 	 */
-	private function description(string $slug, ?string $verb, string $verbName): string {
-		if (is_string($verb) === true && $verb !== '') {
-			return $verb;
+	private function description(DerivedToolDefinition $tool, ?string $override): string {
+		if (is_string($override) === true && $override !== '') {
+			return $override;
 		}
+
+		$slug = $tool->slug;
+		$verbName = $tool->verb;
 
 		return match ($verbName) {
 			'search' => sprintf('Search %s objects in %s.', $slug, $this->appId),
@@ -595,68 +827,93 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * Build the `inputSchema` for a verb, reusing the schema JSON per
 	 * design.md's derivation table.
 	 *
-	 * @param Schema $schema The schema being derived.
-	 * @param string $verb One of {@see McpAnnotationValidator::VERBS}.
-	 * @param array<string, mixed> $verbConfig That verb's dialect config.
+	 * @param DerivedToolDefinition $tool The schema being derived, the verb and that verb's dialect config.
 	 *
 	 * @return array<string, mixed> JSON-Schema-shaped input schema.
 	 */
-	private function buildInputSchema(Schema $schema, string $verb, array $verbConfig): array {
-		$properties = ($schema->getProperties() ?? []);
-		$required = ($schema->getRequired() ?? []);
-		$idProperty = ['type' => 'string', 'description' => 'Object id or uuid.'];
-
-		return match ($verb) {
-			'search' => [
-				'type' => 'object',
-				'properties' => [
-					'filters' => [
-						'type' => 'object',
-						'properties' => $this->filterProperties(properties: $properties, verbConfig: $verbConfig),
-						'additionalProperties' => false,
-					],
-					'page' => ['type' => 'integer', 'description' => 'Page number (default 1).'],
-					'pageSize' => [
-						'type' => 'integer',
-						'description' => sprintf(
-							'Results per page (default %d, max %d).',
-							self::DEFAULT_PAGE_SIZE,
-							self::MAX_PAGE_SIZE
-						),
-					],
-					'fields' => [
-						'type' => 'array',
-						'items' => ['type' => 'string'],
-						'description' => 'Optional field projection.',
-					],
-				],
-			],
-			'get' => [
-				'type' => 'object',
-				'properties' => ['id' => $idProperty],
-				'required' => ['id'],
-			],
-			'create' => [
-				'type' => 'object',
-				'properties' => $this->jsonSchemaSafeMap(properties: $properties),
-				'required' => $required,
-			],
-			'update' => [
-				'type' => 'object',
-				'properties' => array_merge(
-					['id' => $idProperty],
-					$this->jsonSchemaSafeMap(properties: $properties)
-				),
-				'required' => ['id'],
-			],
-			'delete' => [
-				'type' => 'object',
-				'properties' => ['id' => $idProperty],
-				'required' => ['id'],
-			],
+	private function buildInputSchema(DerivedToolDefinition $tool): array {
+		return match ($tool->verb) {
+			'search' => $this->searchInputSchema(tool: $tool),
+			'get' => self::ID_INPUT_SCHEMA,
+			'create' => $this->createInputSchema(tool: $tool),
+			'update' => $this->updateInputSchema(tool: $tool),
+			'delete' => self::ID_INPUT_SCHEMA,
 			default => ['type' => 'object', 'properties' => []],
-		};//end match
+		};
 	}//end buildInputSchema()
+
+	/**
+	 * The `search` input schema: the declared filters, the page window and a field projection.
+	 *
+	 * @param DerivedToolDefinition $tool The schema being derived and the `search` verb's dialect config.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function searchInputSchema(DerivedToolDefinition $tool): array {
+		$filters = [
+			'type' => 'object',
+			'properties' => $this->filterProperties(properties: ($tool->schema->getProperties() ?? []), verbConfig: $tool->verbConfig),
+			'additionalProperties' => false,
+		];
+
+		return [
+			'type' => 'object',
+			'properties' => array_merge(['filters' => $filters], $this->pagingInputProperties()),
+		];
+	}//end searchInputSchema()
+
+	/**
+	 * The `page`, `pageSize` and `fields` input properties of the `search` verb.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function pagingInputProperties(): array {
+		return [
+			'page' => ['type' => 'integer', 'description' => 'Page number (default 1).'],
+			'pageSize' => [
+				'type' => 'integer',
+				'description' => sprintf(
+					'Results per page (default %d, max %d).',
+					self::DEFAULT_PAGE_SIZE,
+					self::MAX_PAGE_SIZE
+				),
+			],
+			'fields' => self::FIELDS_INPUT_PROPERTY,
+		];
+	}//end pagingInputProperties()
+
+	/**
+	 * The `create` input schema: every published property, with the schema's required list.
+	 *
+	 * @param DerivedToolDefinition $tool The schema being derived.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function createInputSchema(DerivedToolDefinition $tool): array {
+		return [
+			'type' => 'object',
+			'properties' => $this->jsonSchemaSafeMap(properties: ($tool->schema->getProperties() ?? [])),
+			'required' => ($tool->schema->getRequired() ?? []),
+		];
+	}//end createInputSchema()
+
+	/**
+	 * The `update` input schema: the object id followed by every published property.
+	 *
+	 * @param DerivedToolDefinition $tool The schema being derived.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function updateInputSchema(DerivedToolDefinition $tool): array {
+		return [
+			'type' => 'object',
+			'properties' => array_merge(
+				['id' => self::ID_INPUT_PROPERTY],
+				$this->jsonSchemaSafeMap(properties: ($tool->schema->getProperties() ?? []))
+			),
+			'required' => ['id'],
+		];
+	}//end updateInputSchema()
 
 	/**
 	 * Build the `outputSchema` for read verbs (MCP 2025-06-18
@@ -781,32 +1038,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			return ['type' => 'string'];
 		}
 
-		$allowed = [
-			'type',
-			'title',
-			'description',
-			'enum',
-			'const',
-			'default',
-			'format',
-			'pattern',
-			'minimum',
-			'maximum',
-			'exclusiveMinimum',
-			'exclusiveMaximum',
-			'minLength',
-			'maxLength',
-			'minItems',
-			'maxItems',
-			'uniqueItems',
-		];
-
-		$safe = [];
-		foreach ($allowed as $keyword) {
-			if (array_key_exists($keyword, $property) === true) {
-				$safe[$keyword] = $property[$keyword];
-			}
-		}
+		$safe = $this->allowedKeywords(property: $property);
 
 		$safe = $this->jsonSchemaSafeNested(property: $property, safe: $safe);
 
@@ -817,6 +1049,24 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		return $safe;
 	}//end jsonSchemaSafe()
+
+	/**
+	 * The allow-listed JSON Schema keywords of a property, in allow-list order.
+	 *
+	 * @param array<string, mixed> $property The declared property.
+	 *
+	 * @return array<string, mixed> The accepted keywords.
+	 */
+	private function allowedKeywords(array $property): array {
+		$safe = [];
+		foreach (self::JSON_SCHEMA_KEYWORDS as $keyword) {
+			if (array_key_exists($keyword, $property) === true) {
+				$safe[$keyword] = $property[$keyword];
+			}
+		}
+
+		return $safe;
+	}//end allowedKeywords()
 
 	/**
 	 * Sanitise the nested shapes of a property.
@@ -912,6 +1162,31 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @return array{schema: Schema, register: Register|null, verb: string}|null
 	 */
 	private function resolveEntry(string $toolId): ?array {
+		$parsed = $this->parseToolId(toolId: $toolId);
+		if ($parsed === null) {
+			return null;
+		}
+
+		$entry = $this->entryForSlug(slug: $parsed['slug']);
+		if ($entry === null) {
+			return null;
+		}
+
+		return [
+			'schema' => $entry['schema'],
+			'register' => $entry['register'],
+			'verb' => $parsed['verb'],
+		];
+	}//end resolveEntry()
+
+	/**
+	 * Split a tool id of this app into its slug and a known verb.
+	 *
+	 * @param string $toolId Namespaced tool id.
+	 *
+	 * @return array{slug: string, verb: string}|null Null for another app's id or an unknown verb.
+	 */
+	private function parseToolId(string $toolId): ?array {
 		$parts = explode('.', $toolId);
 		if (count($parts) < 3) {
 			return null;
@@ -925,18 +1200,25 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			return null;
 		}
 
+		return ['slug' => $slug, 'verb' => $verb];
+	}//end parseToolId()
+
+	/**
+	 * The first schema entry whose slug matches.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return array{schema: Schema, register: Register|null}|null The entry, or null.
+	 */
+	private function entryForSlug(string $slug): ?array {
 		foreach ($this->schemaEntries as $entry) {
 			if ($this->schemaSlug(schema: $entry['schema']) === $slug) {
-				return [
-					'schema' => $entry['schema'],
-					'register' => $entry['register'],
-					'verb' => $verb,
-				];
+				return $entry;
 			}
 		}
 
 		return null;
-	}//end resolveEntry()
+	}//end entryForSlug()
 
 	/**
 	 * Build a small structured outcome summary for a successful invocation
@@ -957,109 +1239,9 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 			];
 		}
 
-		$id = null;
-		if (is_string($result['id'] ?? null) === true) {
-			$id = $result['id'];
-		}
-
-		return [
-			'isError' => false,
-			'id' => $id,
-		];
+		return ToolInvocationDigest::idSummary(result: $result);
 	}//end resultSummary()
 
-	/**
-	 * Write exactly one immutable, hash-chained audit record for this
-	 * invocation. Fail-soft: a broken audit write is logged and MUST NOT
-	 * mask (or replace) the invocation's real result/error — losing an
-	 * audit row is bad, losing the invocation outcome to an audit hiccup is
-	 * worse (mirrors {@see \OCA\OpenRegister\Service\ObjectService::logProcessingRead()}).
-	 *
-	 * @param string $toolId Full namespaced tool id.
-	 * @param string $paramsDigest SHA-256 hex digest of the invocation arguments.
-	 * @param array<string, mixed> $resultSummary Structured outcome summary.
-	 * @param Schema $schema The invoked tool's schema.
-	 * @param Register|null $register The schema's owning register, when resolvable.
-	 * @param array<string, mixed>|null $result The verb's return value, or null on failure.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
-	 */
-	private function writeAudit(
-		string $toolId,
-		string $paramsDigest,
-		array $resultSummary,
-		Schema $schema,
-		?Register $register,
-		?array $result,
-	): void {
-		try {
-			$objectUuid = null;
-			if ($result !== null && is_string($result['id'] ?? null) === true) {
-				$objectUuid = $result['id'];
-			}
-
-			$registerId = null;
-			if ($register !== null) {
-				$registerId = $register->getId();
-			}
-
-			$this->auditTrailMapper->createToolInvocationEntry(
-				toolId: $toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: $resultSummary,
-				register: $registerId,
-				schema: $schema->getId(),
-				objectUuid: $objectUuid
-			);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'[SchemaDerivedToolProvider] Failed to write invocation audit record',
-				['toolId' => $toolId, 'error' => $e->getMessage()]
-			);
-		}//end try
-	}//end writeAudit()
-
-	/**
-	 * Deterministically canonicalise arguments (recursive key-sort) so the
-	 * params digest is stable regardless of argument-array key order.
-	 *
-	 * @param array<string, mixed> $arguments Tool arguments.
-	 *
-	 * @return string Canonical JSON representation.
-	 */
-	private function canonicalArguments(array $arguments): string {
-		$encoded = json_encode(
-			$this->deepKsort(value: $arguments),
-			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-		);
-
-		if ($encoded === false) {
-			return '';
-		}
-
-		return $encoded;
-	}//end canonicalArguments()
-
-	/**
-	 * Recursively sort an array by key for deterministic serialisation.
-	 *
-	 * @param array<array-key, mixed> $value The array to sort.
-	 *
-	 * @return array<array-key, mixed> The sorted array.
-	 */
-	private function deepKsort(array $value): array {
-		ksort($value);
-		foreach ($value as $key => $item) {
-			if (is_array($item) === true) {
-				$value[$key] = $this->deepKsort(value: $item);
-			}
-		}
-
-		return $value;
-	}//end deepKsort()
 
 	/**
 	 * Truncate long top-level string values in a serialized object so a

@@ -33,10 +33,13 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveEngine;
+use OCA\OpenRegister\Listener\Support\CalculationOnSaveLookups;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -117,13 +120,9 @@ class CalculationOnSaveListenerSequenceTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn($register);
 
 		$this->listener = new CalculationOnSaveListener(
-			$this->schemaMapper,
-			$this->registerMapper,
-			new CalculationEvaluator(new PlaceholderResolver($userSession)),
-			$this->payloadBuilder,
-			$this->sequences,
-			$this->createMock(originalClassName: RuleRunRecorder::class),
-			$this->createMock(LoggerInterface::class)
+			new CalculationOnSaveLookups($this->schemaMapper, $this->registerMapper, $this->sequences, $this->createMock(LoggerInterface::class)),
+			new CalculationOnSaveEngine(new CalculationEvaluator(new PlaceholderResolver($userSession)), $this->payloadBuilder),
+			$this->createMock(originalClassName: RuleRunRecorder::class)
 		);
 
 	}//end setUp()
@@ -223,7 +222,7 @@ class CalculationOnSaveListenerSequenceTest extends TestCase {
 		$this->schemaWith(['identifier' => self::IDENTIFIER_CALC]);
 		$this->sequences->expects($this->once())
 			->method('reserveNext')
-			->with(16, 26, date('Y'))
+			->with(new SequenceScope(16, 26, date('Y')))
 			->willReturn(13);
 
 		$object = $this->objectWith(['title' => 'New case', 'startDate' => '2026-08-29']);

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ContentReport\ContentReportFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -82,9 +83,11 @@ use OCP\AppFramework\Db\Entity;
  *   the removal that names it; each is a column the requirement asks for, and splitting them would put
  *   the evidence and the record of its removal in different tables.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class ContentReport extends Entity implements JsonSerializable {
+	use StatusVocabularyTrait;
+
 	/**
 	 * Filed and waiting for a reviewer.
 	 *
@@ -245,48 +248,17 @@ class ContentReport extends Entity implements JsonSerializable {
 	 * Register the entity's typed columns.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'register', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'string');
-		$this->addType(fieldName: 'reason', type: 'string');
-		$this->addType(fieldName: 'reportedBy', type: 'string');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'copy', type: 'json');
-		$this->addType(fieldName: 'copyHash', type: 'string');
-		$this->addType(fieldName: 'reviewerGroup', type: 'string');
-		$this->addType(fieldName: 'retentionPeriod', type: 'string');
-		$this->addType(fieldName: 'expires', type: 'datetime');
-		$this->addType(fieldName: 'removedAt', type: 'datetime');
-		$this->addType(fieldName: 'removalAudit', type: 'string');
-		$this->addType(fieldName: 'organisationId', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-	}//end __construct()
-
-	/**
-	 * Whether the supplied status string is in the review vocabulary.
-	 *
-	 * @param string|null $status Candidate status string.
-	 *
-	 * @return bool True when the status is one this entity recognises.
-	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
-	 */
-	public static function isValidStatus(?string $status): bool {
-		if ($status === null || $status === '') {
-			return false;
+		foreach (ContentReportFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
 		}
-
-		return in_array(needle: $status, haystack: self::STATUS_VOCABULARY, strict: true);
-	}//end isValidStatus()
+	}//end __construct()
 
 	/**
 	 * Whether the reported content has since been removed.
 	 *
 	 * @return bool True when a removal has been recorded against this report.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isRemoved(): bool {
 		return $this->removedAt !== null;
@@ -297,7 +269,7 @@ class ContentReport extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the copy hashes to what was recorded.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function copyIsIntact(): bool {
 		if ($this->copyHash === null || $this->copyHash === '') {
@@ -314,7 +286,7 @@ class ContentReport extends Entity implements JsonSerializable {
 	 *
 	 * @return string The SHA-256 hex digest.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function hashCopy(array $copy): string {
 		return hash('sha256', (string)json_encode($copy, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
@@ -332,29 +304,13 @@ class ContentReport extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The serialized report.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'objectUuid' => $this->objectUuid,
-			'register' => $this->register,
-			'schema' => $this->schema,
-			'reason' => $this->reason,
-			'reportedBy' => $this->reportedBy,
-			'status' => $this->status,
-			'copyHash' => $this->copyHash,
-			'copyIntact' => $this->copyIsIntact(),
-			'reviewerGroup' => $this->reviewerGroup,
-			'retentionPeriod' => $this->retentionPeriod,
-			'expires' => $this->expires?->format('c'),
-			'removed' => $this->isRemoved(),
-			'removedAt' => $this->removedAt?->format('c'),
-			'removalAudit' => $this->removalAudit,
-			'organisationId' => $this->organisationId,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-		];
+		$typed = new TypedFieldsJson();
+		$json = $typed->pick(values: get_object_vars($this), names: array_diff(array_keys($this->getFieldTypes()), ['copy']));
+		$derived = ['copyHash' => ['copyIntact' => $this->copyIsIntact()], 'expires' => ['removed' => $this->isRemoved()]];
+
+		return $typed->inserted(json: $json, entriesAfter: $derived);
 	}//end jsonSerialize()
 }//end class

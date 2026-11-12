@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Quality;
  *
  * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
  */
-class UniqueHintWarnings {
+class UniqueHintWarnings implements UniqueHintWarningsInterface {
 
 	/**
 	 * Warnings collected since the last drain.
@@ -51,29 +51,34 @@ class UniqueHintWarnings {
 	private array $warnings = [];
 
 	/**
-	 * Record that a nominated property's value already exists elsewhere.
+	 * Record a collision the caller may see: the objects already holding the value, named.
 	 *
-	 * @param string $property The nominated property.
-	 * @param array<int, string> $matches Uuids of the objects already holding the value, as far as the caller may see them.
-	 * @param bool $visible Whether the caller may see WHICH objects; false means a match exists but is not theirs to name.
+	 * @param string             $property The nominated property.
+	 * @param array<int, string> $matches  Uuids of the objects already holding the value, as far as the caller may see them.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `$visible` is part of the
-	 *   warning, not a switch over how to record it: the spec asks for a
-	 *   collision the caller may not see to be reported WITHOUT naming the
-	 *   object, and the reader has to be able to tell that from an empty match
-	 *   list that means something else.
 	 */
-	public function record(string $property, array $matches, bool $visible = true): void {
-		$this->warnings[] = [
-			'property' => $property,
-			'matches' => array_values($matches),
-			'visible' => $visible,
-		];
-	}//end record()
+	public function recordVisible(string $property, array $matches): void {
+		$this->warnings[] = ['property' => $property, 'matches' => array_values($matches), 'visible' => true];
+	}//end recordVisible()
+
+	/**
+	 * Record a collision the caller may not see: that one exists, without naming the object.
+	 *
+	 * Reported with an empty match list and `visible: false`, so a reader can
+	 * tell it from an empty match list that means something else.
+	 *
+	 * @param string $property The nominated property.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 */
+	public function recordHidden(string $property): void {
+		$this->warnings[] = ['property' => $property, 'matches' => [], 'visible' => false];
+	}//end recordHidden()
 
 	/**
 	 * Take everything collected so far and forget it.

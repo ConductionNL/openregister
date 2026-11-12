@@ -1,0 +1,116 @@
+{
+    "empty": [],
+    "reserved only": [],
+    "scalar": [
+        "param \"Hallo\" 2",
+        "where eq(title,\":p1\")"
+    ],
+    "camel case": [
+        "param \"Jan\" 2",
+        "where eq(first_name,\":p1\")"
+    ],
+    "list": [
+        "param [\"open\",\"closed\"] 102",
+        "where in(status,\":p1\")"
+    ],
+    "boolean": [
+        "param \"1\" 2",
+        "where eq(flag,\":p1\")",
+        "param \"0\" 2",
+        "where eq(other,\":p3\")"
+    ],
+    "number": [
+        "param 12.5 2",
+        "where eq(amount,\":p1\")",
+        "param 3 2",
+        "where eq(count,\":p3\")"
+    ],
+    "array property": [
+        "param \"[\\\"a\\\"]\" 2",
+        "where tags::jsonb @> :p1"
+    ],
+    "array property list": [
+        "param \"[\\\"a\\\"]\" 2",
+        "where tags::jsonb @> :p1",
+        "param \"[\\\"b\\\"]\" 2",
+        "where tags::jsonb @> :p3"
+    ],
+    "missing column first": [
+        "where 1 = 0"
+    ],
+    "missing column later": [
+        "param \"x\" 2",
+        "where eq(title,\":p1\")",
+        "where 1 = 0"
+    ],
+    "mixed": [
+        "param \"a\" 2",
+        "where eq(title,\":p1\")",
+        "param \"0\" 2",
+        "where eq(flag,\":p3\")",
+        "param \"[\\\"z\\\"]\" 2",
+        "where tags::jsonb @> :p5",
+        "param [\"open\"] 102",
+        "where in(status,\":p7\")"
+    ],
+    "null value": [
+        "param null 2",
+        "where eq(title,\":p1\")"
+    ],
+    "empty / no schema": [],
+    "reserved only / no schema": [],
+    "scalar / no schema": [
+        "param \"Hallo\" 2",
+        "where eq(title,\":p1\")"
+    ],
+    "camel case / no schema": [
+        "param \"Jan\" 2",
+        "where eq(first_name,\":p1\")"
+    ],
+    "list / no schema": [
+        "param [\"open\",\"closed\"] 102",
+        "where in(status,\":p1\")"
+    ],
+    "boolean / no schema": [
+        "param \"true\" 2",
+        "where eq(flag,\":p1\")",
+        "param \"false\" 2",
+        "where eq(other,\":p3\")"
+    ],
+    "number / no schema": [
+        "param 12.5 2",
+        "where eq(amount,\":p1\")",
+        "param 3 2",
+        "where eq(count,\":p3\")"
+    ],
+    "array property / no schema": [
+        "param \"a\" 2",
+        "where eq(tags,\":p1\")"
+    ],
+    "array property list / no schema": [
+        "param [\"a\",\"b\"] 102",
+        "where in(tags,\":p1\")"
+    ],
+    "missing column first / no schema": [
+        "where 1 = 0"
+    ],
+    "missing column later / no schema": [
+        "param \"x\" 2",
+        "where eq(title,\":p1\")",
+        "where 1 = 0"
+    ],
+    "mixed / no schema": [
+        "param \"a\" 2",
+        "where eq(title,\":p1\")",
+        "param \"false\" 2",
+        "where eq(flag,\":p3\")",
+        "param [\"z\"] 102",
+        "where in(tags,\":p5\")",
+        "param [\"open\"] 102",
+        "where in(status,\":p7\")"
+    ],
+    "null value / no schema": [
+        "param null 2",
+        "where eq(title,\":p1\")"
+    ]
+}

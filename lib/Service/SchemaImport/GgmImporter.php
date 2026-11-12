@@ -40,6 +40,20 @@ use OCA\OpenRegister\Exception\SchemaImportException;
  */
 class GgmImporter implements SchemaDialectImporter {
 	/**
+	 * JSON Schema fragments for the scalar GGM attribute types.
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	private const TYPE_FRAGMENTS = [
+		'tekst' => ['type' => 'string'],
+		'geheel getal' => ['type' => 'integer'],
+		'decimaal' => ['type' => 'number'],
+		'boolean' => ['type' => 'boolean'],
+		'datum' => ['type' => 'string', 'format' => 'date'],
+		'datumtijd' => ['type' => 'string', 'format' => 'date-time'],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param GgmSnapshot $snapshot The indexed GGM snapshot.
@@ -116,16 +130,82 @@ class GgmImporter implements SchemaDialectImporter {
 			throw SchemaImportException::unknownReference($reference, $this->dialect());
 		}
 
+		[$attributes, $unknownRequested] = $this->requestedAttributes(objecttype: $objecttype, options: $options);
+
+		$properties = $this->mapAttributes(attributes: $attributes);
+
+		$importSource = $this->importSource(objecttype: $objecttype, properties: $properties);
+
+		return new ImportedSchema(
+			heading: new ImportedSchemaHeading(title: (string)$objecttype['naam'], description: (string)($objecttype['definitie'] ?? '')),
+			definition: new ImportedSchemaDefinition(properties: $properties, jsonld: []),
+			importSource: $importSource,
+			unknownRequested: $unknownRequested
+		);
+	}//end import()
+
+	/**
+	 * The objecttype's attributes the import asked for, and the requested names it lacks.
+	 *
+	 * @param array<string, mixed> $objecttype The snapshot objecttype.
+	 * @param ImportOptions        $options    Import options: an optional property subset.
+	 *
+	 * @return array{0: array<int|string, mixed>, 1: array<int, string>} The attributes and the unknown names.
+	 */
+	private function requestedAttributes(array $objecttype, ImportOptions $options): array {
+		$attributes = $this->attributesOf(objecttype: $objecttype);
+		if ($options->hasSubset() === false) {
+			return [$attributes, []];
+		}
+
+		return $this->applySubset(attributes: $attributes, subset: $options->propertySubset);
+	}//end requestedAttributes()
+
+	/**
+	 * Where the imported schema came from, with the mapped properties as the merge baseline.
+	 *
+	 * @param array<string, mixed>                $objecttype The snapshot objecttype.
+	 * @param array<string, array<string, mixed>> $properties The mapped properties.
+	 *
+	 * @return array<string, mixed> The import source.
+	 */
+	private function importSource(array $objecttype, array $properties): array {
+		return [
+			'dialect' => $this->dialect(),
+			'reference' => (string)$objecttype['id'],
+			'snapshotVersion' => $this->snapshot->version(),
+			'source' => ($this->sourceLabel ?? 'snapshot'),
+			'importedAt' => gmdate('c'),
+			'baseline' => $properties,
+		];
+	}//end importSource()
+
+	/**
+	 * The objecttype's attribuutsoorten, or an empty list when malformed.
+	 *
+	 * @param array<string, mixed> $objecttype The objecttype record.
+	 *
+	 * @return array<int|string, mixed> The attribute records.
+	 */
+	private function attributesOf(array $objecttype): array {
 		$attributes = ($objecttype['attribuutsoorten'] ?? []);
 		if (is_array($attributes) === false) {
-			$attributes = [];
+			return [];
 		}
 
-		$unknownRequested = [];
-		if ($options->hasSubset() === true) {
-			[$attributes, $unknownRequested] = $this->applySubset(attributes: $attributes, subset: $options->propertySubset);
-		}
+		return $attributes;
+	}//end attributesOf()
 
+	/**
+	 * Map the named attributes to JSON Schema property definitions.
+	 *
+	 * Entries that are not records or carry no `naam` are skipped.
+	 *
+	 * @param array<int|string, mixed> $attributes The attribute records.
+	 *
+	 * @return array<string, array<string, mixed>> Property definitions keyed by name.
+	 */
+	private function mapAttributes(array $attributes): array {
 		$properties = [];
 		foreach ($attributes as $attribute) {
 			if (is_array($attribute) === false || isset($attribute['naam']) === false) {
@@ -135,24 +215,26 @@ class GgmImporter implements SchemaDialectImporter {
 			$properties[(string)$attribute['naam']] = $this->mapAttribute(attribute: $attribute);
 		}
 
-		$importSource = [
-			'dialect' => $this->dialect(),
-			'reference' => (string)$objecttype['id'],
-			'snapshotVersion' => $this->snapshot->version(),
-			'source' => ($this->sourceLabel ?? 'snapshot'),
-			'importedAt' => gmdate('c'),
-			'baseline' => $properties,
-		];
+		return $properties;
+	}//end mapAttributes()
 
-		return new ImportedSchema(
-			title: (string)$objecttype['naam'],
-			description: (string)($objecttype['definitie'] ?? ''),
-			properties: $properties,
-			jsonld: [],
-			importSource: $importSource,
-			unknownRequested: $unknownRequested
-		);
-	}//end import()
+	/**
+	 * Index the named attributes by name; later duplicates win.
+	 *
+	 * @param array<int|string, mixed> $attributes The attribute records.
+	 *
+	 * @return array<string, array<string, mixed>> Attributes keyed by name.
+	 */
+	private function indexByName(array $attributes): array {
+		$byName = [];
+		foreach ($attributes as $attribute) {
+			if (is_array($attribute) === true && isset($attribute['naam']) === true) {
+				$byName[(string)$attribute['naam']] = $attribute;
+			}
+		}
+
+		return $byName;
+	}//end indexByName()
 
 	/**
 	 * Restrict the attributes to a requested subset, tracking unknown requests.
@@ -163,12 +245,7 @@ class GgmImporter implements SchemaDialectImporter {
 	 * @return array{0: array<int, array<string, mixed>>, 1: array<int, string>} Selected attributes + unknown names.
 	 */
 	private function applySubset(array $attributes, array $subset): array {
-		$byName = [];
-		foreach ($attributes as $attribute) {
-			if (is_array($attribute) === true && isset($attribute['naam']) === true) {
-				$byName[(string)$attribute['naam']] = $attribute;
-			}
-		}
+		$byName = $this->indexByName(attributes: $attributes);
 
 		$selected = [];
 		$unknown = [];
@@ -217,31 +294,29 @@ class GgmImporter implements SchemaDialectImporter {
 	 * @return array<string, mixed> The JSON Schema type fragment.
 	 */
 	private function mapType(string $type, array $attribute): array {
-		switch ($type) {
-			case 'tekst':
-				return ['type' => 'string'];
-			case 'geheel getal':
-				return ['type' => 'integer'];
-			case 'decimaal':
-				return ['type' => 'number'];
-			case 'boolean':
-				return ['type' => 'boolean'];
-			case 'datum':
-				return ['type' => 'string', 'format' => 'date'];
-			case 'datumtijd':
-				return ['type' => 'string', 'format' => 'date-time'];
-			case 'relatie':
-				// Relations become a single reference property (string id),
-				// never a recursive import of the target objecttype.
-				$target = (string)($attribute['doelObjecttype'] ?? '');
-				$fragment = ['type' => 'string', 'format' => 'uri'];
-				if ($target !== '') {
-					$fragment['description'] = 'Reference to GGM objecttype ' . $target . '.';
-				}
-				return $fragment;
-			default:
-				// Unknown GGM type → safest mapping is free-text string.
-				return ['type' => 'string'];
-		}//end switch
+		if ($type === 'relatie') {
+			return $this->relationFragment(attribute: $attribute);
+		}
+
+		// Unknown GGM type → safest mapping is free-text string.
+		return (self::TYPE_FRAGMENTS[$type] ?? ['type' => 'string']);
 	}//end mapType()
+
+	/**
+	 * Map a GGM relation to a single reference property (string id), never
+	 * a recursive import of the target objecttype.
+	 *
+	 * @param array<string, mixed> $attribute The relation attribute record.
+	 *
+	 * @return array<string, mixed> The JSON Schema reference fragment.
+	 */
+	private function relationFragment(array $attribute): array {
+		$target = (string)($attribute['doelObjecttype'] ?? '');
+		$fragment = ['type' => 'string', 'format' => 'uri'];
+		if ($target !== '') {
+			$fragment['description'] = 'Reference to GGM objecttype ' . $target . '.';
+		}
+
+		return $fragment;
+	}//end relationFragment()
 }//end class

@@ -21,14 +21,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\DecisionConflictException;
+use OCA\OpenRegister\Files\Db\EntityMention;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RelationDecisionUpdate;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
-use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -46,7 +49,42 @@ use Psr\Log\LoggerInterface;
  *
  * @template-extends QBMapper<EntityRelation>
  */
-class EntityRelationMapper extends QBMapper {
+class EntityRelationMapper extends QBMapper implements EntityRelationMapperInterface {
+
+	/**
+	 * The relation and entity columns a per-file entity read returns.
+	 */
+	private const FILE_ENTITY_COLUMNS = [
+		'r.id as relation_id',
+		'r.entity_id',
+		'r.position_start',
+		'r.position_end',
+		'r.confidence',
+		'e.type as entity_type',
+		'e.value as entity_value',
+		'e.category',
+	];
+
+	/**
+	 * The optional fields buildRelationFromRow() sets from a row, in order:
+	 * [setter, cast, whether a null value leaves the field unset].
+	 */
+	private const ROW_FIELDS = [
+		'fileId' => ['setFileId', 'int', true],
+		'chunkId' => ['setChunkId', 'int', true],
+		'objectId' => ['setObjectId', 'int', true],
+		'emailId' => ['setEmailId', 'int', true],
+		'positionStart' => ['setPositionStart', 'int', false],
+		'positionEnd' => ['setPositionEnd', 'int', false],
+		'confidence' => ['setConfidence', 'float', false],
+		'detectionMethod' => ['setDetectionMethod', 'string', true],
+		'context' => ['setContext', '?string', false],
+		'role' => ['setRole', '?string', false],
+		'anonymized' => ['setAnonymized', 'bool', false],
+		'skipAnonymization' => ['setSkipAnonymization', 'bool', false],
+		'bases' => ['setBases', 'raw', false],
+	];
+
 	/**
 	 * Maximum number of expressions allowed in a single SQL IN() list.
 	 *
@@ -62,17 +100,17 @@ class EntityRelationMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
-	 * @param AuditTrailMapper $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit-trail persistence (used by updateDecisionMetadata).
 	 * @param IUserSession $userSession Session user lookup for audit-trail actor.
-	 * @param IEventDispatcher $eventDispatcher Symfony event dispatcher (used by updateDecisionMetadata
-	 *                                          to notify listeners after a decision-metadata write).
+	 * @param EntityEventsInterface $entityEvents Announces the decision-metadata write to listeners
+	 *                                           (used by updateDecisionMetadata).
 	 * @param LoggerInterface $logger Structured log sink.
 	 */
 	public function __construct(
 		IDBConnection $db,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserSession $userSession,
-		private readonly IEventDispatcher $eventDispatcher,
+		private readonly EntityEventsInterface $entityEvents,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_entity_relations', entityClass: EntityRelation::class);
@@ -147,21 +185,8 @@ class EntityRelationMapper extends QBMapper {
 	 * @return array Array of entity data with type, value, and relation info.
 	 */
 	public function findEntitiesForFile(int $fileId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(
-			'r.id as relation_id',
-			'r.entity_id',
-			'r.position_start',
-			'r.position_end',
-			'r.confidence',
-			'e.type as entity_type',
-			'e.value as entity_value',
-			'e.category'
-		)
-			->from($this->getTableName(), 'r')
-			->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
-			->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-			->orderBy('r.position_start', 'ASC');
+		$qb = $this->selectFileEntities(fileId: $fileId);
+		$qb->orderBy('r.position_start', 'ASC');
 
 		$result = $qb->executeQuery();
 		$entities = $result->fetchAll();
@@ -223,31 +248,54 @@ class EntityRelationMapper extends QBMapper {
 		$rows = $result->fetchAll();
 		$result->closeCursor();
 
-		// Decode the JSON `bases` column. Doctrine returns it as a string;
-		// callers expect an array (or null when no bases were recorded).
-		foreach ($rows as &$row) {
-			if (isset($row['bases']) === true && is_string($row['bases']) === true) {
-				$decoded = json_decode($row['bases'], associative: true);
-				$row['bases'] = null;
-				if (is_array($decoded) === true) {
-					$row['bases'] = $decoded;
-				}
-			}
-
-			// Normalise boolean-as-int values returned by some DB drivers.
-			if (isset($row['skip_anonymization']) === true) {
-				$row['skip_anonymization'] = (bool)$row['skip_anonymization'];
-			}
-
-			if (isset($row['anonymized']) === true) {
-				$row['anonymized'] = (bool)$row['anonymized'];
-			}
+		foreach ($rows as $index => $row) {
+			$rows[$index] = $this->normaliseAnonymisedRow(row: $row);
 		}
-
-		unset($row);
 
 		return $rows;
 	}//end findAnonymisedEntitiesWithBasesForFile()
+
+	/**
+	 * Decode the `bases` column and the boolean flags of one anonymised-entity row.
+	 *
+	 * Doctrine returns `bases` as a JSON string; callers expect an array, or null
+	 * when no bases were recorded or the value does not decode to an array. Some
+	 * DB drivers return the flags as integers or strings.
+	 *
+	 * @param array<string, mixed> $row The raw row.
+	 *
+	 * @return array<string, mixed> The normalised row.
+	 */
+	private function normaliseAnonymisedRow(array $row): array {
+		if (isset($row['bases']) === true && is_string($row['bases']) === true) {
+			$row['bases'] = $this->decodeBasesColumn(json: $row['bases']);
+		}
+
+		// Normalise boolean-as-int values returned by some DB drivers.
+		foreach (['skip_anonymization', 'anonymized'] as $flag) {
+			if (isset($row[$flag]) === true) {
+				$row[$flag] = (bool)$row[$flag];
+			}
+		}
+
+		return $row;
+	}//end normaliseAnonymisedRow()
+
+	/**
+	 * The decoded `bases` column, or null when it is not a JSON array or object.
+	 *
+	 * @param string $json The stored column value.
+	 *
+	 * @return array|null The decoded bases.
+	 */
+	private function decodeBasesColumn(string $json): ?array {
+		$decoded = json_decode($json, associative: true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return null;
+	}//end decodeBasesColumn()
 
 	/**
 	 * Build a `(entity_value → {id, type})` map for every entity relation on a file.
@@ -355,30 +403,6 @@ class EntityRelationMapper extends QBMapper {
 	}//end findEntityIdsByValueForFiles()
 
 	/**
-	 * Mark entity relations as anonymized.
-	 *
-	 * Skip-aware: rows where `skip_anonymization = true` are excluded
-	 * (those reflect an operator decision NOT to redact the occurrence).
-	 * Per the `entity-relation-grondslagen` change, skipped rows retain
-	 * `anonymized = false` after the file's anonymise pass.
-	 *
-	 * @param int $fileId The file ID.
-	 * @param string $anonymizedValue The placeholder value used.
-	 *
-	 * @return int Number of relations updated.
-	 */
-	public function markAsAnonymized(int $fileId, string $anonymizedValue): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableName())
-			->set('anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
-			->set('anonymized_value', $qb->createNamedParameter($anonymizedValue))
-			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
-
-		return $qb->executeStatement();
-	}//end markAsAnonymized()
-
-	/**
 	 * Probe whether a relation already exists at a specific position
 	 * for a (file, entity) pair.
 	 *
@@ -390,36 +414,27 @@ class EntityRelationMapper extends QBMapper {
 	 * 142 has both `"Jan Jansen"` PERSON and `"Jansen"` PERSON entities)
 	 * are legitimately distinct rows.
 	 *
-	 * @param int $fileId Nextcloud file id.
-	 * @param int $entityId Catalogue entity id.
-	 * @param int $chunkId Chunk row id the position is relative to.
-	 * @param int $positionStart Position of the first byte of the match within the chunk.
-	 * @param int $positionEnd Position one past the last byte of the match within the chunk.
+	 * @param int           $fileId  Nextcloud file id.
+	 * @param EntityMention $mention The entity, chunk and span within the chunk.
 	 *
 	 * @return bool True when a row with exactly these five values exists.
 	 */
-	public function existsForFileAtPosition(
-		int $fileId,
-		int $entityId,
-		int $chunkId,
-		int $positionStart,
-		int $positionEnd,
-	): bool {
+	public function existsForFileAtPosition(int $fileId, EntityMention $mention): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('id')
 			->from($this->getTableName())
 			->where(
 				$qb->expr()->andX(
 					$qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('entity_id', $qb->createNamedParameter($entityId, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('chunk_id', $qb->createNamedParameter($chunkId, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('entity_id', $qb->createNamedParameter($mention->entityId, IQueryBuilder::PARAM_INT)),
+					$qb->expr()->eq('chunk_id', $qb->createNamedParameter($mention->chunkId, IQueryBuilder::PARAM_INT)),
 					$qb->expr()->eq(
 						'position_start',
-						$qb->createNamedParameter($positionStart, IQueryBuilder::PARAM_INT)
+						$qb->createNamedParameter($mention->positionStart, IQueryBuilder::PARAM_INT)
 					),
 					$qb->expr()->eq(
 						'position_end',
-						$qb->createNamedParameter($positionEnd, IQueryBuilder::PARAM_INT)
+						$qb->createNamedParameter($mention->positionEnd, IQueryBuilder::PARAM_INT)
 					)
 				)
 			)
@@ -493,78 +508,62 @@ class EntityRelationMapper extends QBMapper {
 	 */
 	private function buildRelationFromRow(array $row): EntityRelation {
 		$relation = new EntityRelation();
-
 		$relation->setEntityId((int)$row['entityId']);
-
-		if (array_key_exists('fileId', $row) === true && $row['fileId'] !== null) {
-			$relation->setFileId((int)$row['fileId']);
-		}
-
-		if (array_key_exists('chunkId', $row) === true && $row['chunkId'] !== null) {
-			$relation->setChunkId((int)$row['chunkId']);
-		}
-
-		if (array_key_exists('objectId', $row) === true && $row['objectId'] !== null) {
-			$relation->setObjectId((int)$row['objectId']);
-		}
-
-		if (array_key_exists('emailId', $row) === true && $row['emailId'] !== null) {
-			$relation->setEmailId((int)$row['emailId']);
-		}
-
-		if (array_key_exists('positionStart', $row) === true) {
-			$relation->setPositionStart((int)$row['positionStart']);
-		}
-
-		if (array_key_exists('positionEnd', $row) === true) {
-			$relation->setPositionEnd((int)$row['positionEnd']);
-		}
-
-		if (array_key_exists('confidence', $row) === true) {
-			$relation->setConfidence((float)$row['confidence']);
-		}
-
-		if (array_key_exists('detectionMethod', $row) === true && $row['detectionMethod'] !== null) {
-			$relation->setDetectionMethod((string)$row['detectionMethod']);
-		}
-
-		if (array_key_exists('context', $row) === true) {
-			$contextValue = null;
-			if ($row['context'] !== null) {
-				$contextValue = (string)$row['context'];
+		// phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
+		foreach (self::ROW_FIELDS as $field => [$setter, $cast]) {
+			if ($this->rowFieldIsSkipped(row: $row, field: $field) === true) {
+				continue;
 			}
 
-			$relation->setContext($contextValue);
+			$relation->$setter($this->castRowValue(value: $row[$field], cast: $cast));
 		}
 
-		if (array_key_exists('role', $row) === true) {
-			$roleValue = null;
-			if ($row['role'] !== null) {
-				$roleValue = (string)$row['role'];
-			}
-
-			$relation->setRole($roleValue);
-		}
-
-		if (array_key_exists('anonymized', $row) === true) {
-			$relation->setAnonymized((bool)$row['anonymized']);
-		}
-
-		if (array_key_exists('skipAnonymization', $row) === true) {
-			$relation->setSkipAnonymization((bool)$row['skipAnonymization']);
-		}
-
-		if (array_key_exists('bases', $row) === true) {
-			$relation->setBases($row['bases']);
-		}
-
+		// phpcs:enable
 		$relation->setCreatedAt(new DateTime());
-		if (array_key_exists('createdAt', $row) === true && $row['createdAt'] !== null) {
+		if (($row['createdAt'] ?? null) !== null) {
 			$relation->setCreatedAt($row['createdAt']);
 		}
 
 		return $relation;
 	}//end buildRelationFromRow()
+
+	/**
+	 * Whether a row field is left unset: it is absent, or null where ROW_FIELDS says null means "skip".
+	 *
+	 * @param array<string, mixed> $row Field values keyed by camelCase setter name.
+	 * @param string $field A ROW_FIELDS key.
+	 *
+	 * @return bool True when the setter is not called.
+	 */
+	private function rowFieldIsSkipped(array $row, string $field): bool {
+		return array_key_exists($field, $row) === false || (self::ROW_FIELDS[$field][2] === true && $row[$field] === null);
+	}//end rowFieldIsSkipped()
+
+	/**
+	 * A row value cast for its field.
+	 *
+	 * @param mixed $value The value.
+	 * @param string $cast One of int, float, string, ?string, bool or raw.
+	 *
+	 * @return mixed
+	 */
+	private function castRowValue(mixed $value, string $cast): mixed {
+		if ($value === null && $cast === '?string') {
+			return null;
+		}
+
+		if ($cast === '?string') {
+			return (string)$value;
+		}
+
+		return match ($cast) {
+			'int' => (int)$value,
+			'float' => (float)$value,
+			'string' => (string)$value,
+			'bool' => (bool)$value,
+			default => $value,
+		};
+	}//end castRowValue()
 
 	/**
 	 * Mark entity relations as anonymized, persisting each entity's EXACT
@@ -580,7 +579,7 @@ class EntityRelationMapper extends QBMapper {
 	 * clean up.
 	 *
 	 * ONLY the entities actually redacted are marked: each `entity_id` present
-	 * in `$placeholderByEntityId` (i.e. the entities that were substituted into
+	 * in `$placeholders` (i.e. the entities that were substituted into
 	 * the document) has all its non-skipped relations on the file set to
 	 * `anonymized = true` with `anonymized_value` = its exact placeholder.
 	 *
@@ -593,20 +592,20 @@ class EntityRelationMapper extends QBMapper {
 	 * honoured (skipped rows untouched).
 	 *
 	 * @param int $fileId The file ID.
-	 * @param array<int|string, string> $placeholderByEntityId Keys are int|string,
-	 *        not string: a stringified entity id is a canonical numeric string,
-	 *        which PHP coerces to an int array key. Map of entity id → the
-	 *                                                     exact placeholder emitted for it
-	 *                                                     (e.g. "7" => "[PERSOON: 1]").
+	 * @param array<int|string, string> $placeholders Keys are int|string,
+	 *                                                not string: a stringified entity id is a canonical numeric string,
+	 *                                                which PHP coerces to an int array key. Map of entity id → the
+	 *                                                exact placeholder emitted for it
+	 *                                                (e.g. "7" => "[PERSOON: 1]").
 	 *
 	 * @return int Number of relation rows marked anonymized.
 	 */
 	public function markAsAnonymizedWithPlaceholders(
 		int $fileId,
-		array $placeholderByEntityId,
+		array $placeholders,
 	): int {
 		$total = 0;
-		foreach ($placeholderByEntityId as $entityId => $placeholder) {
+		foreach ($placeholders as $entityId => $placeholder) {
 			$qb = $this->db->getQueryBuilder();
 			$qb->update($this->getTableName())
 				->set('anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
@@ -635,21 +634,8 @@ class EntityRelationMapper extends QBMapper {
 	 * @return array<int, array<string, mixed>> Array of entity rows joined with their Entity record.
 	 */
 	public function findEntitiesForAnonymization(int $fileId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(
-			'r.id as relation_id',
-			'r.entity_id',
-			'r.position_start',
-			'r.position_end',
-			'r.confidence',
-			'e.type as entity_type',
-			'e.value as entity_value',
-			'e.category'
-		)
-			->from($this->getTableName(), 'r')
-			->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
-			->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('r.skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
+		$qb = $this->selectFileEntities(fileId: $fileId);
+		$qb->andWhere($qb->expr()->eq('r.skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
 			->orderBy('r.position_start', 'ASC');
 
 		$result = $qb->executeQuery();
@@ -658,6 +644,23 @@ class EntityRelationMapper extends QBMapper {
 
 		return $entities;
 	}//end findEntitiesForAnonymization()
+
+	/**
+	 * A select of a file's entity relations joined with their entity's type, value and category.
+	 *
+	 * @param int $fileId The file ID.
+	 *
+	 * @return IQueryBuilder The select, open for more conditions and an order.
+	 */
+	private function selectFileEntities(int $fileId): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select(...self::FILE_ENTITY_COLUMNS)
+			->from($this->getTableName(), 'r')
+			->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
+			->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+		return $qb;
+	}//end selectFileEntities()
 
 	/**
 	 * Collect distinct `Entity.value` strings for relations on a file flagged
@@ -716,21 +719,117 @@ class EntityRelationMapper extends QBMapper {
 	 * timestamp, the subject (table + row id), and only the fields that
 	 * actually changed.
 	 *
-	 * @param EntityRelation $relation Pre-loaded relation row (callers handle find/404).
-	 * @param array $fields Subset of whitelist keys with new values.
-	 * @param IUser|null $actingUser Optional explicit acting user; falls back
-	 *                               to the session user. If null and no
-	 *                               session user, the audit entry records the
-	 *                               actor as 'system'.
+	 * @param DecisionMetadataEdit $edit The pre-loaded relation row (callers handle find/404), the
+	 *                                   whitelist keys with new values and the optional explicit acting
+	 *                                   user; without one it falls back to the session user, and without
+	 *                                   a session user the audit entry records the actor as 'system'.
 	 *
 	 * @return EntityRelation The (possibly unchanged) row.
 	 *
 	 * @throws CustomValidationException When a whitelist or shape violation
 	 *                                   is detected.
 	 */
-	public function updateDecisionMetadata(EntityRelation $relation, array $fields, ?IUser $actingUser = null): EntityRelation {
-		$allowed = ['bases', 'skipAnonymization'];
-		$unknown = array_diff(array_keys($fields), $allowed);
+	public function updateDecisionMetadata(DecisionMetadataEdit $edit): EntityRelation {
+		self::assertDecisionFieldsValid(fields: $edit->fields);
+		$changedFields = self::applyDecisionChanges(relation: $edit->relation, fields: $edit->fields);
+		if (count($changedFields) === 0) {
+			return $edit->relation;
+		}
+
+		$actingUser = ($edit->actingUser ?? $this->userSession->getUser());
+		$change     = new DecisionMetadataChange(relation: $edit->relation, changedFields: $changedFields, actingUser: $actingUser);
+		return $this->recordDecisionChange(change: $change);
+	}//end updateDecisionMetadata()
+
+	/**
+	 * Store a decision-metadata change with its audit entry, then notify listeners.
+	 *
+	 * Audit-invariant: every persisted state change MUST have an audit-trail
+	 * entry. Both writes go in a single transaction so a failed audit INSERT
+	 * rolls back the row UPDATE: clients see HTTP 500 instead of an
+	 * undetectable audit gap. The event dispatch stays OUTSIDE the
+	 * transaction (post-commit, informational; listener failures must not
+	 * roll back).
+	 *
+	 * @param DecisionMetadataChange $change The relation, its changed fields and the acting user.
+	 *
+	 * @return EntityRelation The stored relation.
+	 */
+	private function recordDecisionChange(DecisionMetadataChange $change): EntityRelation {
+		$this->db->beginTransaction();
+		try {
+			$relation = $this->update(entity: $change->relation);
+			$this->emitDecisionMetadataAuditEntry(relation: $relation, change: $change);
+			$this->db->commit();
+		} catch (\Throwable $writeError) {
+			$this->db->rollBack();
+			$message = '[EntityRelationMapper] Transactional decision-metadata write failed, rolled back';
+			$this->logDecisionFailure(message: $message, change: $change, error: $writeError);
+			throw $writeError;
+		}
+
+		$this->notifyDecisionUpdated(relation: $relation, change: $change);
+		return $relation;
+	}//end recordDecisionChange()
+
+	/**
+	 * Tell listeners a relation's decision metadata changed.
+	 *
+	 * Downstream apps subscribe here (DocuDesk's publication-clearance-via-
+	 * anonymise change creates a publicationConsent record whenever
+	 * skipAnonymization flips false to true, so the 28-day Woo clock starts at
+	 * decision time). A dispatch or listener failure MUST NOT roll back the
+	 * persisted change: it is logged and the write stands, same contract as audit.
+	 *
+	 * @param EntityRelation         $relation The stored relation.
+	 * @param DecisionMetadataChange $change   The change that was stored.
+	 *
+	 * @return void
+	 */
+	private function notifyDecisionUpdated(EntityRelation $relation, DecisionMetadataChange $change): void {
+		try {
+			$this->entityEvents->entityRelationDecisionUpdated(
+				update: new RelationDecisionUpdate(relation: $relation, changedFields: $change->changedFields, actingUser: $change->actingUser)
+			);
+		} catch (\Throwable $dispatchError) {
+			$message = '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent';
+			$this->logDecisionFailure(message: $message, change: $change, error: $dispatchError);
+		}
+	}//end notifyDecisionUpdated()
+
+	/**
+	 * Log a failed decision-metadata write or dispatch with the relation and the changed keys.
+	 *
+	 * @param string                 $message The log message.
+	 * @param DecisionMetadataChange $change  The change being stored.
+	 * @param \Throwable             $error   The failure.
+	 *
+	 * @return void
+	 */
+	private function logDecisionFailure(string $message, DecisionMetadataChange $change, \Throwable $error): void {
+		$this->logger->error(
+			message: $message,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'relation_id' => (int)$change->relation->getId(),
+				'changedKeys' => array_keys($change->changedFields),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logDecisionFailure()
+
+	/**
+	 * Reject decision-metadata fields outside the whitelist or of the wrong shape.
+	 *
+	 * @param array $fields Subset of whitelist keys with new values.
+	 *
+	 * @return void
+	 *
+	 * @throws CustomValidationException When a whitelist or shape violation is detected.
+	 */
+	private static function assertDecisionFieldsValid(array $fields): void {
+		$unknown = array_diff(array_keys($fields), ['bases', 'skipAnonymization']);
 		if (count($unknown) > 0) {
 			$first = (string)reset($unknown);
 			throw new CustomValidationException(
@@ -740,24 +839,7 @@ class EntityRelationMapper extends QBMapper {
 		}
 
 		if (array_key_exists('bases', $fields) === true) {
-			$bases = $fields['bases'];
-			if ($bases !== null && is_array($bases) === false) {
-				throw new CustomValidationException(
-					message: 'Invalid bases shape: must be null or array of strings',
-					errors: ['field' => 'bases', 'reason' => 'must_be_null_or_array_of_strings']
-				);
-			}
-
-			if (is_array($bases) === true) {
-				foreach ($bases as $element) {
-					if (is_string($element) === false) {
-						throw new CustomValidationException(
-							message: 'Invalid bases shape: array elements must be strings',
-							errors: ['field' => 'bases', 'reason' => 'must_be_null_or_array_of_strings']
-						);
-					}
-				}
-			}
+			self::assertBasesShape(bases: $fields['bases']);
 		}
 
 		if (array_key_exists('skipAnonymization', $fields) === true
@@ -768,99 +850,68 @@ class EntityRelationMapper extends QBMapper {
 				errors: ['field' => 'skipAnonymization', 'reason' => 'must_be_boolean']
 			);
 		}
+	}//end assertDecisionFieldsValid()
 
+	/**
+	 * Reject a `bases` value that is neither null nor an array of strings.
+	 *
+	 * @param mixed $bases The supplied bases.
+	 *
+	 * @return void
+	 *
+	 * @throws CustomValidationException When the shape is wrong.
+	 */
+	private static function assertBasesShape(mixed $bases): void {
+		if ($bases !== null && is_array($bases) === false) {
+			throw new CustomValidationException(
+				message: 'Invalid bases shape: must be null or array of strings',
+				errors: ['field' => 'bases', 'reason' => 'must_be_null_or_array_of_strings']
+			);
+		}
+
+		foreach ($bases ?? [] as $element) {
+			if (is_string($element) === false) {
+				throw new CustomValidationException(
+					message: 'Invalid bases shape: array elements must be strings',
+					errors: ['field' => 'bases', 'reason' => 'must_be_null_or_array_of_strings']
+				);
+			}
+		}
+	}//end assertBasesShape()
+
+	/**
+	 * Apply the supplied decision metadata to the relation and list what changed.
+	 *
+	 * @param EntityRelation $relation The relation row, updated in place.
+	 * @param array $fields Validated decision-metadata fields.
+	 *
+	 * @return array<string, array{previous: mixed, new: mixed}> The changed fields.
+	 */
+	private static function applyDecisionChanges(EntityRelation $relation, array $fields): array {
 		$changedFields = [];
 
-		if (array_key_exists('bases', $fields) === true) {
-			$previousBases = $relation->getBases();
-			// Compare as multiset — same UUIDs in different order is a
-			// semantic no-op for redaction policy. Storage preserves
-			// operator-supplied order; only the diff check normalises.
-			if (self::basesAreEqual(a: $previousBases, b: $fields['bases']) === false) {
-				$changedFields['bases'] = [
-					'previous' => $previousBases,
-					'new' => $fields['bases'],
-				];
-				$relation->setBases($fields['bases']);
-			}
+		// Compare as multiset — same UUIDs in different order is a
+		// semantic no-op for redaction policy. Storage preserves
+		// operator-supplied order; only the diff check normalises.
+		if (array_key_exists('bases', $fields) === true
+			&& self::basesAreEqual(a: $relation->getBases(), b: $fields['bases']) === false
+		) {
+			$changedFields['bases'] = ['previous' => $relation->getBases(), 'new' => $fields['bases']];
+			$relation->setBases($fields['bases']);
 		}
 
-		if (array_key_exists('skipAnonymization', $fields) === true) {
-			$previousSkip = $relation->getSkipAnonymization();
-			if ($previousSkip !== $fields['skipAnonymization']) {
-				$changedFields['skipAnonymization'] = [
-					'previous' => $previousSkip,
-					'new' => $fields['skipAnonymization'],
-				];
-				$relation->setSkipAnonymization($fields['skipAnonymization']);
-			}
+		if (array_key_exists('skipAnonymization', $fields) === true
+			&& $relation->getSkipAnonymization() !== $fields['skipAnonymization']
+		) {
+			$changedFields['skipAnonymization'] = [
+				'previous' => $relation->getSkipAnonymization(),
+				'new' => $fields['skipAnonymization'],
+			];
+			$relation->setSkipAnonymization($fields['skipAnonymization']);
 		}
 
-		if (count($changedFields) === 0) {
-			return $relation;
-		}
-
-		// Audit-invariant: every persisted state change MUST have an
-		// audit-trail entry. Both writes go in a single transaction so a
-		// failed audit-INSERT rolls back the row UPDATE — clients see
-		// HTTP 500 instead of an undetectable audit gap. The downstream
-		// event dispatch stays OUTSIDE the transaction (post-commit,
-		// informational; listener failures must not roll back).
-		$this->db->beginTransaction();
-		try {
-			$relation = $this->update(entity: $relation);
-			$relationId = (int)$relation->getId();
-			$this->emitDecisionMetadataAuditEntry(
-				relationId: $relationId,
-				changedFields: $changedFields,
-				actingUser: $actingUser
-			);
-			$this->db->commit();
-		} catch (\Throwable $writeError) {
-			$this->db->rollBack();
-			$this->logger->error(
-				message: '[EntityRelationMapper] Transactional decision-metadata write failed, rolled back',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'relation_id' => (int)$relation->getId(),
-					'changedKeys' => array_keys($changedFields),
-					'error' => $writeError->getMessage(),
-				]
-			);
-			throw $writeError;
-		}//end try
-
-		// Notify listeners (downstream apps — e.g. DocuDesk's
-		// publication-clearance-via-anonymise change subscribes here to
-		// create a publicationConsent record whenever skipAnonymization
-		// flips false → true, so the 28-day Woo clock starts ticking at
-		// decision time rather than at anonymise time). Failure to
-		// dispatch / listener failure MUST NOT roll back the persisted
-		// state change — log and continue, same contract as audit.
-		try {
-			$this->eventDispatcher->dispatchTyped(
-				new EntityRelationDecisionUpdatedEvent(
-					relation: $relation,
-					changedFields: $changedFields,
-					actingUser: ($actingUser ?? $this->userSession->getUser())
-				)
-			);
-		} catch (\Throwable $dispatchError) {
-			$this->logger->error(
-				message: '[EntityRelationMapper] Failed to dispatch EntityRelationDecisionUpdatedEvent',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'relation_id' => $relationId,
-					'changedKeys' => array_keys($changedFields),
-					'error' => $dispatchError->getMessage(),
-				]
-			);
-		}//end try
-
-		return $relation;
-	}//end updateDecisionMetadata()
+		return $changedFields;
+	}//end applyDecisionChanges()
 
 	/**
 	 * Multiset-equality on two `bases` values.
@@ -881,12 +932,9 @@ class EntityRelationMapper extends QBMapper {
 	 * @return bool True when the two values represent the same redaction policy.
 	 */
 	private static function basesAreEqual(?array $a, ?array $b): bool {
-		if ($a === null && $b === null) {
-			return true;
-		}
-
+		// Both null is equal; exactly one null is not.
 		if ($a === null || $b === null) {
-			return false;
+			return $a === $b;
 		}
 
 		$normA = array_values(array_unique($a, SORT_STRING));
@@ -905,18 +953,13 @@ class EntityRelationMapper extends QBMapper {
 	 * encode the subject (table + row id) inside the `changed` JSON
 	 * payload alongside the per-field diff.
 	 *
-	 * @param int $relationId The EntityRelation row id.
-	 * @param array $changedFields Map of field name → { previous, new }.
-	 * @param IUser|null $actingUser Optional explicit acting user.
+	 * @param EntityRelation         $relation The relation as stored now.
+	 * @param DecisionMetadataChange $change   The changed fields and the acting user (already resolved to the session user).
 	 *
 	 * @return void
 	 */
-	private function emitDecisionMetadataAuditEntry(
-		int $relationId,
-		array $changedFields,
-		?IUser $actingUser = null,
-	): void {
-		$user = $actingUser ?? $this->userSession->getUser();
+	private function emitDecisionMetadataAuditEntry(EntityRelation $relation, DecisionMetadataChange $change): void {
+		$user = $change->actingUser;
 		$userId = 'system';
 		if ($user !== null) {
 			$userId = $user->getUID();
@@ -933,8 +976,8 @@ class EntityRelationMapper extends QBMapper {
 		$auditTrail->setChanged(
 			[
 				'subjectType' => 'openregister_entity_relations',
-				'subjectId' => $relationId,
-				'fields' => $changedFields,
+				'subjectId' => (int)$relation->getId(),
+				'fields' => $change->changedFields,
 			]
 		);
 
@@ -948,16 +991,87 @@ class EntityRelationMapper extends QBMapper {
 	 * `openregister_decisions` (decision 197); the relation only points at it.
 	 * The audit trail of the verdict stays with `updateDecisionMetadata()`.
 	 *
-	 * @param EntityRelation $relation     The relation.
-	 * @param string         $decisionUuid The decision's uuid.
+	 * With `$guarded`, the link is a compare-and-swap: it is written only while
+	 * the stored link is still `$expectedUuid` (null: none), so two reviewers
+	 * taking a first decision at once cannot both link theirs.
+	 *
+	 * @param EntityRelation $relation The relation.
+	 * @param string $decisionUuid The decision's uuid.
+	 * @param string|null $expectedUuid The link the caller read before deciding; only read when guarded.
+	 * @param bool $guarded Whether to write only while the stored link is still `$expectedUuid`.
 	 *
 	 * @return EntityRelation The stored relation.
 	 *
+	 * @throws DecisionConflictException When guarded and the stored link changed in the meantime.
+	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every unguarded caller unchanged; the guard is one
+	 * extra statement, not a second behaviour.
 	 */
-	public function linkDecision(EntityRelation $relation, string $decisionUuid): EntityRelation {
+	public function linkDecision(
+		EntityRelation $relation,
+		string $decisionUuid,
+		?string $expectedUuid = null,
+		bool $guarded = false,
+	): EntityRelation {
+		if ($guarded === true) {
+			$this->swapStoredLink(qb: $this->decisionLinkUpdate(relation: $relation, decisionUuid: $decisionUuid), expectedUuid: $expectedUuid);
+		}
+
 		$relation->setDecisionUuid($decisionUuid);
 
 		return $this->update(entity: $relation);
 	}//end linkDecision()
+
+	/**
+	 * The update that points one relation at a decision, before its guard.
+	 *
+	 * @param EntityRelation $relation     The relation.
+	 * @param string         $decisionUuid The decision's uuid.
+	 *
+	 * @return IQueryBuilder The update.
+	 */
+	private function decisionLinkUpdate(EntityRelation $relation, string $decisionUuid): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('decision_uuid', $qb->createNamedParameter($decisionUuid))
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($relation->getId(), IQueryBuilder::PARAM_INT)));
+
+		return $qb;
+	}//end decisionLinkUpdate()
+
+	/**
+	 * Run a link update only while the stored link is still the expected one.
+	 *
+	 * @param IQueryBuilder $qb           The link update.
+	 * @param string|null   $expectedUuid The link the caller read before deciding (null: none).
+	 *
+	 * @return void
+	 *
+	 * @throws DecisionConflictException When the stored link changed in the meantime.
+	 */
+	private function swapStoredLink(IQueryBuilder $qb, ?string $expectedUuid): void {
+		$qb->andWhere($this->storedLinkIs(qb: $qb, expectedUuid: $expectedUuid));
+
+		if ($qb->executeStatement() === 0) {
+			throw new DecisionConflictException(message: 'The relation was decided by somebody else in the meantime.');
+		}
+	}//end swapStoredLink()
+
+	/**
+	 * The condition "the stored decision link is still what the caller read".
+	 *
+	 * @param IQueryBuilder $qb The query builder the condition is for.
+	 * @param string|null $expectedUuid The link the caller read; null or empty means none.
+	 *
+	 * @return ICompositeExpression|string The condition for `andWhere()`.
+	 */
+	private function storedLinkIs(IQueryBuilder $qb, ?string $expectedUuid): ICompositeExpression|string {
+		if ($expectedUuid !== null && $expectedUuid !== '') {
+			return $qb->expr()->eq('decision_uuid', $qb->createNamedParameter($expectedUuid));
+		}
+
+		return $qb->expr()->orX($qb->expr()->isNull('decision_uuid'), $qb->expr()->eq('decision_uuid', $qb->createNamedParameter('')));
+	}//end storedLinkIs()
 }//end class

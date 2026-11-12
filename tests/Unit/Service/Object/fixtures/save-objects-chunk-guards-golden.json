@@ -1,0 +1,1069 @@
+{
+    "guards off": {
+        "asked": [],
+        "validated": [],
+        "allowed": [
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "a"
+                }
+            },
+            {
+                "owner": "bob",
+                "object": {
+                    "name": "no schema key"
+                }
+            },
+            {
+                "schema": 99,
+                "object": {
+                    "name": "unknown schema"
+                }
+            },
+            {
+                "schema": "odd",
+                "object": {
+                    "name": "cache holds no schema"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "eve",
+                "object": {
+                    "name": "refused owner"
+                }
+            },
+            {
+                "schema": 2,
+                "object": {
+                    "name": "refused schema"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "bad",
+                    "bad": true
+                }
+            },
+            {
+                "schema": 3,
+                "owner": null
+            },
+            {
+                "schema": "1",
+                "object": {
+                    "name": "string id"
+                }
+            },
+            {
+                "schema": null,
+                "object": {
+                    "name": "null schema"
+                }
+            }
+        ],
+        "result": {
+            "invalid": [
+                {
+                    "object": [
+                        "earlier"
+                    ],
+                    "error": "earlier failure",
+                    "type": "EarlierException"
+                }
+            ],
+            "statistics": {
+                "invalid": 1,
+                "errors": 1,
+                "saved": 0
+            }
+        }
+    },
+    "rbac only": {
+        "asked": [
+            "getUser",
+            [
+                1,
+                "create",
+                "bob",
+                "bob",
+                true
+            ],
+            [
+                1,
+                "create",
+                "bob",
+                "eve",
+                true
+            ],
+            [
+                2,
+                "create",
+                "bob",
+                null,
+                true
+            ],
+            [
+                1,
+                "create",
+                "bob",
+                "bob",
+                true
+            ],
+            [
+                3,
+                "create",
+                "bob",
+                null,
+                true
+            ],
+            [
+                1,
+                "create",
+                "bob",
+                null,
+                true
+            ]
+        ],
+        "validated": [],
+        "allowed": [
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "a"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "bad",
+                    "bad": true
+                }
+            },
+            {
+                "schema": 3,
+                "owner": null
+            },
+            {
+                "schema": "1",
+                "object": {
+                    "name": "string id"
+                }
+            }
+        ],
+        "result": {
+            "invalid": [
+                {
+                    "object": [
+                        "earlier"
+                    ],
+                    "error": "earlier failure",
+                    "type": "EarlierException"
+                },
+                {
+                    "object": {
+                        "owner": "bob",
+                        "object": {
+                            "name": "no schema key"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 99,
+                        "object": {
+                            "name": "unknown schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": "odd",
+                        "object": {
+                            "name": "cache holds no schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 1,
+                        "owner": "eve",
+                        "object": {
+                            "name": "refused owner"
+                        }
+                    },
+                    "error": "You do not have permission to create objects in this schema",
+                    "type": "PermissionDeniedException"
+                },
+                {
+                    "object": {
+                        "schema": 2,
+                        "object": {
+                            "name": "refused schema"
+                        }
+                    },
+                    "error": "You do not have permission to create objects in this schema",
+                    "type": "PermissionDeniedException"
+                },
+                {
+                    "object": {
+                        "schema": null,
+                        "object": {
+                            "name": "null schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                }
+            ],
+            "statistics": {
+                "invalid": 7,
+                "errors": 7,
+                "saved": 0
+            }
+        }
+    },
+    "validation only": {
+        "asked": [
+            "getUser"
+        ],
+        "validated": [
+            [
+                {
+                    "name": "a"
+                },
+                1
+            ],
+            [
+                {
+                    "name": "refused owner"
+                },
+                1
+            ],
+            [
+                {
+                    "name": "refused schema"
+                },
+                2
+            ],
+            [
+                {
+                    "name": "bad",
+                    "bad": true
+                },
+                1
+            ],
+            [
+                [],
+                3
+            ],
+            [
+                {
+                    "name": "string id"
+                },
+                1
+            ]
+        ],
+        "allowed": [
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "a"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "eve",
+                "object": {
+                    "name": "refused owner"
+                }
+            },
+            {
+                "schema": 2,
+                "object": {
+                    "name": "refused schema"
+                }
+            },
+            {
+                "schema": 3,
+                "owner": null
+            },
+            {
+                "schema": "1",
+                "object": {
+                    "name": "string id"
+                }
+            }
+        ],
+        "result": {
+            "invalid": [
+                {
+                    "object": [
+                        "earlier"
+                    ],
+                    "error": "earlier failure",
+                    "type": "EarlierException"
+                },
+                {
+                    "object": {
+                        "owner": "bob",
+                        "object": {
+                            "name": "no schema key"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 99,
+                        "object": {
+                            "name": "unknown schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": "odd",
+                        "object": {
+                            "name": "cache holds no schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 1,
+                        "owner": "bob",
+                        "object": {
+                            "name": "bad",
+                            "bad": true
+                        }
+                    },
+                    "error": "the name is bad",
+                    "type": "ValidationException"
+                },
+                {
+                    "object": {
+                        "schema": null,
+                        "object": {
+                            "name": "null schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                }
+            ],
+            "statistics": {
+                "invalid": 6,
+                "errors": 6,
+                "saved": 0
+            }
+        }
+    },
+    "both": {
+        "asked": [
+            "getUser",
+            [
+                1,
+                "create",
+                "bob",
+                "bob",
+                true
+            ],
+            [
+                1,
+                "create",
+                "bob",
+                "eve",
+                true
+            ],
+            [
+                2,
+                "create",
+                "bob",
+                null,
+                true
+            ],
+            [
+                1,
+                "create",
+                "bob",
+                "bob",
+                true
+            ],
+            [
+                3,
+                "create",
+                "bob",
+                null,
+                true
+            ],
+            [
+                1,
+                "create",
+                "bob",
+                null,
+                true
+            ]
+        ],
+        "validated": [
+            [
+                {
+                    "name": "a"
+                },
+                1
+            ],
+            [
+                {
+                    "name": "bad",
+                    "bad": true
+                },
+                1
+            ],
+            [
+                [],
+                3
+            ],
+            [
+                {
+                    "name": "string id"
+                },
+                1
+            ]
+        ],
+        "allowed": [
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "a"
+                }
+            },
+            {
+                "schema": 3,
+                "owner": null
+            },
+            {
+                "schema": "1",
+                "object": {
+                    "name": "string id"
+                }
+            }
+        ],
+        "result": {
+            "invalid": [
+                {
+                    "object": [
+                        "earlier"
+                    ],
+                    "error": "earlier failure",
+                    "type": "EarlierException"
+                },
+                {
+                    "object": {
+                        "owner": "bob",
+                        "object": {
+                            "name": "no schema key"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 99,
+                        "object": {
+                            "name": "unknown schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": "odd",
+                        "object": {
+                            "name": "cache holds no schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 1,
+                        "owner": "eve",
+                        "object": {
+                            "name": "refused owner"
+                        }
+                    },
+                    "error": "You do not have permission to create objects in this schema",
+                    "type": "PermissionDeniedException"
+                },
+                {
+                    "object": {
+                        "schema": 2,
+                        "object": {
+                            "name": "refused schema"
+                        }
+                    },
+                    "error": "You do not have permission to create objects in this schema",
+                    "type": "PermissionDeniedException"
+                },
+                {
+                    "object": {
+                        "schema": 1,
+                        "owner": "bob",
+                        "object": {
+                            "name": "bad",
+                            "bad": true
+                        }
+                    },
+                    "error": "the name is bad",
+                    "type": "ValidationException"
+                },
+                {
+                    "object": {
+                        "schema": null,
+                        "object": {
+                            "name": "null schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                }
+            ],
+            "statistics": {
+                "invalid": 8,
+                "errors": 8,
+                "saved": 0
+            }
+        }
+    },
+    "both, no user": {
+        "asked": [
+            "getUser",
+            [
+                1,
+                "create",
+                null,
+                "bob",
+                true
+            ],
+            [
+                1,
+                "create",
+                null,
+                "eve",
+                true
+            ],
+            [
+                2,
+                "create",
+                null,
+                null,
+                true
+            ],
+            [
+                1,
+                "create",
+                null,
+                "bob",
+                true
+            ],
+            [
+                3,
+                "create",
+                null,
+                null,
+                true
+            ],
+            [
+                1,
+                "create",
+                null,
+                null,
+                true
+            ]
+        ],
+        "validated": [
+            [
+                {
+                    "name": "a"
+                },
+                1
+            ],
+            [
+                {
+                    "name": "bad",
+                    "bad": true
+                },
+                1
+            ],
+            [
+                [],
+                3
+            ],
+            [
+                {
+                    "name": "string id"
+                },
+                1
+            ]
+        ],
+        "allowed": [
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "a"
+                }
+            },
+            {
+                "schema": 3,
+                "owner": null
+            },
+            {
+                "schema": "1",
+                "object": {
+                    "name": "string id"
+                }
+            }
+        ],
+        "result": {
+            "invalid": [
+                {
+                    "object": [
+                        "earlier"
+                    ],
+                    "error": "earlier failure",
+                    "type": "EarlierException"
+                },
+                {
+                    "object": {
+                        "owner": "bob",
+                        "object": {
+                            "name": "no schema key"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 99,
+                        "object": {
+                            "name": "unknown schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": "odd",
+                        "object": {
+                            "name": "cache holds no schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 1,
+                        "owner": "eve",
+                        "object": {
+                            "name": "refused owner"
+                        }
+                    },
+                    "error": "You do not have permission to create objects in this schema",
+                    "type": "PermissionDeniedException"
+                },
+                {
+                    "object": {
+                        "schema": 2,
+                        "object": {
+                            "name": "refused schema"
+                        }
+                    },
+                    "error": "You do not have permission to create objects in this schema",
+                    "type": "PermissionDeniedException"
+                },
+                {
+                    "object": {
+                        "schema": 1,
+                        "owner": "bob",
+                        "object": {
+                            "name": "bad",
+                            "bad": true
+                        }
+                    },
+                    "error": "the name is bad",
+                    "type": "ValidationException"
+                },
+                {
+                    "object": {
+                        "schema": null,
+                        "object": {
+                            "name": "null schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                }
+            ],
+            "statistics": {
+                "invalid": 8,
+                "errors": 8,
+                "saved": 0
+            }
+        }
+    },
+    "both, no services": {
+        "asked": [
+            "getUser"
+        ],
+        "validated": [],
+        "allowed": [
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "a"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "eve",
+                "object": {
+                    "name": "refused owner"
+                }
+            },
+            {
+                "schema": 2,
+                "object": {
+                    "name": "refused schema"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "bad",
+                    "bad": true
+                }
+            },
+            {
+                "schema": 3,
+                "owner": null
+            },
+            {
+                "schema": "1",
+                "object": {
+                    "name": "string id"
+                }
+            }
+        ],
+        "result": {
+            "invalid": [
+                {
+                    "object": [
+                        "earlier"
+                    ],
+                    "error": "earlier failure",
+                    "type": "EarlierException"
+                },
+                {
+                    "object": {
+                        "owner": "bob",
+                        "object": {
+                            "name": "no schema key"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 99,
+                        "object": {
+                            "name": "unknown schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": "odd",
+                        "object": {
+                            "name": "cache holds no schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": null,
+                        "object": {
+                            "name": "null schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                }
+            ],
+            "statistics": {
+                "invalid": 5,
+                "errors": 5,
+                "saved": 0
+            }
+        }
+    },
+    "rbac, no permission service": {
+        "asked": [
+            "getUser"
+        ],
+        "validated": [],
+        "allowed": [
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "a"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "eve",
+                "object": {
+                    "name": "refused owner"
+                }
+            },
+            {
+                "schema": 2,
+                "object": {
+                    "name": "refused schema"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "bad",
+                    "bad": true
+                }
+            },
+            {
+                "schema": 3,
+                "owner": null
+            },
+            {
+                "schema": "1",
+                "object": {
+                    "name": "string id"
+                }
+            }
+        ],
+        "result": {
+            "invalid": [
+                {
+                    "object": [
+                        "earlier"
+                    ],
+                    "error": "earlier failure",
+                    "type": "EarlierException"
+                },
+                {
+                    "object": {
+                        "owner": "bob",
+                        "object": {
+                            "name": "no schema key"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 99,
+                        "object": {
+                            "name": "unknown schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": "odd",
+                        "object": {
+                            "name": "cache holds no schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": null,
+                        "object": {
+                            "name": "null schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                }
+            ],
+            "statistics": {
+                "invalid": 5,
+                "errors": 5,
+                "saved": 0
+            }
+        }
+    },
+    "validation, no validator": {
+        "asked": [
+            "getUser"
+        ],
+        "validated": [],
+        "allowed": [
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "a"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "eve",
+                "object": {
+                    "name": "refused owner"
+                }
+            },
+            {
+                "schema": 2,
+                "object": {
+                    "name": "refused schema"
+                }
+            },
+            {
+                "schema": 1,
+                "owner": "bob",
+                "object": {
+                    "name": "bad",
+                    "bad": true
+                }
+            },
+            {
+                "schema": 3,
+                "owner": null
+            },
+            {
+                "schema": "1",
+                "object": {
+                    "name": "string id"
+                }
+            }
+        ],
+        "result": {
+            "invalid": [
+                {
+                    "object": [
+                        "earlier"
+                    ],
+                    "error": "earlier failure",
+                    "type": "EarlierException"
+                },
+                {
+                    "object": {
+                        "owner": "bob",
+                        "object": {
+                            "name": "no schema key"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": 99,
+                        "object": {
+                            "name": "unknown schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": "odd",
+                        "object": {
+                            "name": "cache holds no schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                },
+                {
+                    "object": {
+                        "schema": null,
+                        "object": {
+                            "name": "null schema"
+                        }
+                    },
+                    "error": "Schema could not be resolved for RBAC/validation enforcement",
+                    "type": "InvalidSchemaException"
+                }
+            ],
+            "statistics": {
+                "invalid": 5,
+                "errors": 5,
+                "saved": 0
+            }
+        }
+    },
+    "empty chunk": {
+        "asked": [
+            "getUser"
+        ],
+        "validated": [],
+        "allowed": [],
+        "result": {
+            "invalid": [
+                {
+                    "object": [
+                        "earlier"
+                    ],
+                    "error": "earlier failure",
+                    "type": "EarlierException"
+                }
+            ],
+            "statistics": {
+                "invalid": 1,
+                "errors": 1,
+                "saved": 0
+            }
+        }
+    }
+}

@@ -314,6 +314,28 @@ class AdoptLeafOrganisationsCommandTest extends TestCase {
 	}//end testANonScalarValueIsNotWrittenToAStringColumn()
 
 	/**
+	 * The command reads every leaf row, not a first page of them.
+	 *
+	 * @return void
+	 */
+	public function testEveryLeafRowIsRead(): void {
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->expects($this->once())
+			->method('searchObjectsBySlug')
+			->with('register', 'schema', ['_limit' => false], false, false)
+			->willReturn([]);
+
+		$command = new AdoptLeafOrganisationsCommand(
+			organisationMapper: $this->createMock(OrganisationMapper::class),
+			objectService: $objectService,
+			logger: $this->createMock(LoggerInterface::class)
+		);
+
+		(new CommandTester($command))->execute(['--register' => 'register', '--schema' => 'schema']);
+
+	}//end testEveryLeafRowIsRead()
+
+	/**
 	 * Build a command over mocked collaborators.
 	 *
 	 * @param array<int, array<string, mixed>> $rows     The leaf rows the reader returns.

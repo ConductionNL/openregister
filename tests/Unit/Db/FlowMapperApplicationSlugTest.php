@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -174,7 +175,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 	public function testFindAllFlowsAppliesTheApplicationSlugPredicateWhenGiven(): void {
 		$mapper = new TestableFlowMapperForApplicationSlug($this->db());
 
-		$mapper->findAllFlows(applicationSlug: 'hydra');
+		$mapper->findAllFlows(selection: new FlowSelection(applicationSlug: 'hydra'));
 
 		$this->assertContains(['application_slug', 'hydra'], $this->eqCalls);
 
@@ -206,7 +207,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 	public function testFindAllFlowsComposesTheAppAndApplicationSlugPredicates(): void {
 		$mapper = new TestableFlowMapperForApplicationSlug($this->db());
 
-		$mapper->findAllFlows(app: 'hermiq', applicationSlug: 'hydra');
+		$mapper->findAllFlows(selection: new FlowSelection(app: 'hermiq', applicationSlug: 'hydra'));
 
 		$this->assertContains(['app', 'hermiq'], $this->eqCalls);
 		$this->assertContains(['application_slug', 'hydra'], $this->eqCalls);
@@ -222,7 +223,7 @@ class FlowMapperApplicationSlugTest extends TestCase {
 	public function testCountFlowsAppliesTheApplicationSlugPredicateWhenGiven(): void {
 		$mapper = new FlowMapper($this->db(['total' => 2]));
 
-		$total = $mapper->countFlows(applicationSlug: 'hydra');
+		$total = $mapper->countFlows(new FlowSelection(applicationSlug: 'hydra'));
 
 		$this->assertSame(2, $total);
 		$this->assertContains(['application_slug', 'hydra'], $this->eqCalls);

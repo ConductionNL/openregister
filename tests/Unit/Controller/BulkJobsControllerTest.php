@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -27,6 +27,7 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkJobsControllerFactory;
 use OCA\OpenRegister\Controller\BulkJobsController;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
@@ -34,6 +35,8 @@ use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -43,6 +46,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\BulkJob\ReversalRequest;
 
 final class BulkJobsControllerTest extends TestCase {
 
@@ -107,6 +111,12 @@ final class BulkJobsControllerTest extends TestCase {
 
 		$this->params = [];
 		$this->service = $this->createMock(BulkJobService::class);
+		$this->service->method('actionCall')->willReturnCallback(
+			static fn (string $actionId, array $parameters): BulkJobActionCall => new BulkJobActionCall($actionId, $parameters)
+		);
+		$this->service->method('selection')->willReturnCallback(
+			static fn (array $criteria, ?int $registerId, ?int $schemaId): BulkJobSelection => new BulkJobSelection($criteria, $registerId, $schemaId)
+		);
 		$this->reversal = $this->createMock(BulkJobReversal::class);
 		$this->jobMapper = $this->createMock(BulkJobMapper::class);
 		$this->registry = $this->createMock(BulkActionRegistry::class);
@@ -135,7 +145,7 @@ final class BulkJobsControllerTest extends TestCase {
 	}
 
 	private function controller(): BulkJobsController {
-		return new BulkJobsController(
+		return BulkJobsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
@@ -205,7 +215,7 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->jobMapper->expects($this->once())
 			->method('findByActor')
 			->willReturn([$this->job()]);
-		$this->jobMapper->expects($this->never())->method('findAllJobs');
+		$this->jobMapper->expects($this->never())->method('findJobs');
 
 		$data = $this->controller()->index()->getData();
 
@@ -217,7 +227,7 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->signIn('root', true);
 		$this->params['all'] = 'true';
 		$this->jobMapper->expects($this->once())
-			->method('findAllJobs')
+			->method('findJobs')
 			->willReturn([$this->job()]);
 
 		$this->assertCount(1, $this->controller()->index()->getData()['results']);
@@ -309,7 +319,7 @@ final class BulkJobsControllerTest extends TestCase {
 	public function testAMalformedCreateAnswersFourHundred(): void {
 		$this->signIn('coordinator');
 		$this->params['action'] = 'openregister:assign';
-		$this->service->method('create')->willThrowException(
+		$this->service->method('createFromRequest')->willThrowException(
 			new \InvalidArgumentException('A bulk job needs both a register and a schema.')
 		);
 
@@ -334,7 +344,7 @@ final class BulkJobsControllerTest extends TestCase {
 	/**
 	 * The console's two new verbs reach the service and answer the wire.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -356,7 +366,7 @@ final class BulkJobsControllerTest extends TestCase {
 	 * The interesting half is that it never reaches the service: an
 	 * ownership check that ran after the act would stop nothing.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -373,7 +383,7 @@ final class BulkJobsControllerTest extends TestCase {
 	/**
 	 * An administrator drives the console over anybody's job.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -389,7 +399,7 @@ final class BulkJobsControllerTest extends TestCase {
 	/**
 	 * A refusal from the state machine reaches the caller as a 422 with its code.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -424,8 +434,8 @@ final class BulkJobsControllerTest extends TestCase {
 		$this->reversal->expects($this->once())
 			->method('reverse')
 			->willReturnCallback(
-				function (BulkJob $job, string $actorUid, ?string $justification) use (&$seen): BulkJob {
-					$seen = ['actor' => $actorUid, 'reason' => $justification];
+				function (ReversalRequest $request) use (&$seen): BulkJob {
+					$seen = ['actor' => $request->actorUid, 'reason' => $request->justification];
 
 					return $this->job('fatima');
 				}

@@ -1,0 +1,170 @@
+{
+    "empty annotation": [
+        {
+            "code": "mcp-missing-enabled",
+            "message": "x-openregister-mcp requires an `enabled` boolean (the opt-in gate)."
+        }
+    ],
+    "enabled int": [
+        {
+            "code": "mcp-bad-enabled",
+            "message": "x-openregister-mcp `enabled` must be a boolean, got int."
+        },
+        {
+            "code": "mcp-bad-tools",
+            "message": "x-openregister-mcp `tools` must be an object."
+        }
+    ],
+    "enabled null": [
+        {
+            "code": "mcp-bad-enabled",
+            "message": "x-openregister-mcp `enabled` must be a boolean, got null."
+        }
+    ],
+    "enabled only": [],
+    "enabled string": [
+        {
+            "code": "mcp-bad-enabled",
+            "message": "x-openregister-mcp `enabled` must be a boolean, got string."
+        }
+    ],
+    "every key error": [
+        {
+            "code": "mcp-bad-enabled",
+            "message": "x-openregister-mcp `enabled` must be a boolean, got string."
+        },
+        {
+            "code": "mcp-unknown-key",
+            "message": "x-openregister-mcp: verb \"search\" has an unrecognised key \"extra\"."
+        },
+        {
+            "code": "mcp-unknown-key",
+            "message": "x-openregister-mcp: verb \"search\" has an unrecognised key \"3\"."
+        },
+        {
+            "code": "mcp-bad-description",
+            "message": "x-openregister-mcp: verb \"search\" `description` must be a string."
+        },
+        {
+            "code": "mcp-bad-scope",
+            "message": "x-openregister-mcp: verb \"search\" `scope` must be one of [read, create, update, delete]."
+        },
+        {
+            "code": "mcp-bad-hint",
+            "message": "x-openregister-mcp: verb \"search\" `readOnlyHint` must be a boolean."
+        },
+        {
+            "code": "mcp-bad-hint",
+            "message": "x-openregister-mcp: verb \"search\" `destructiveHint` must be a boolean."
+        },
+        {
+            "code": "mcp-bad-hint",
+            "message": "x-openregister-mcp: verb \"search\" `idempotentHint` must be a boolean."
+        },
+        {
+            "code": "mcp-bad-filters",
+            "message": "x-openregister-mcp: `search.filters` entries must be strings."
+        },
+        {
+            "code": "mcp-unknown-filter-property",
+            "message": "x-openregister-mcp: `search.filters` names \"missing\" which is not a property on this schema."
+        },
+        {
+            "code": "mcp-bad-filters",
+            "message": "x-openregister-mcp: `search.filters` entries must be strings."
+        },
+        {
+            "code": "mcp-bad-filters",
+            "message": "x-openregister-mcp: `search.filters` entries must be strings."
+        },
+        {
+            "code": "mcp-bad-description",
+            "message": "x-openregister-mcp: verb \"get\" `description` must be a string."
+        },
+        {
+            "code": "mcp-bad-scope",
+            "message": "x-openregister-mcp: verb \"get\" `scope` must be one of [read, create, update, delete]."
+        },
+        {
+            "code": "mcp-filters-not-search",
+            "message": "x-openregister-mcp: `filters` is valid on the \"search\" verb only (found on \"get\")."
+        },
+        {
+            "code": "mcp-unknown-key",
+            "message": "x-openregister-mcp: verb \"update\" has an unrecognised key \"title\"."
+        },
+        {
+            "code": "mcp-filters-not-search",
+            "message": "x-openregister-mcp: `filters` is valid on the \"search\" verb only (found on \"update\")."
+        },
+        {
+            "code": "mcp-bad-scope",
+            "message": "x-openregister-mcp: verb \"delete\" `scope` must be one of [read, create, update, delete]."
+        }
+    ],
+    "full valid": [],
+    "no annotation": [],
+    "null annotation": [],
+    "properties not array": [
+        {
+            "code": "mcp-unknown-filter-property",
+            "message": "x-openregister-mcp: `search.filters` names \"title\" which is not a property on this schema."
+        }
+    ],
+    "search filters keyed": [
+        {
+            "code": "mcp-unknown-filter-property",
+            "message": "x-openregister-mcp: `search.filters` names \"nope\" which is not a property on this schema."
+        },
+        {
+            "code": "mcp-bad-filters",
+            "message": "x-openregister-mcp: `search.filters` entries must be strings."
+        }
+    ],
+    "search filters null": [
+        {
+            "code": "mcp-bad-filters",
+            "message": "x-openregister-mcp: `search.filters` must be a list of property names."
+        }
+    ],
+    "search filters scalar": [
+        {
+            "code": "mcp-bad-filters",
+            "message": "x-openregister-mcp: `search.filters` must be a list of property names."
+        }
+    ],
+    "string annotation": [
+        {
+            "code": "mcp-bad-annotation",
+            "message": "x-openregister-mcp must be an object."
+        }
+    ],
+    "tools string": [
+        {
+            "code": "mcp-bad-tools",
+            "message": "x-openregister-mcp `tools` must be an object."
+        }
+    ],
+    "unknown verbs and bad configs": [
+        {
+            "code": "mcp-missing-enabled",
+            "message": "x-openregister-mcp requires an `enabled` boolean (the opt-in gate)."
+        },
+        {
+            "code": "mcp-unknown-verb",
+            "message": "x-openregister-mcp: unrecognised verb \"list\". Allowed verbs: search, get, create, update, delete."
+        },
+        {
+            "code": "mcp-unknown-verb",
+            "message": "x-openregister-mcp: unrecognised verb \"0\". Allowed verbs: search, get, create, update, delete."
+        },
+        {
+            "code": "mcp-bad-verb-config",
+            "message": "x-openregister-mcp: verb \"get\" config must be an object."
+        },
+        {
+            "code": "mcp-bad-verb-config",
+            "message": "x-openregister-mcp: verb \"create\" config must be an object."
+        }
+    ]
+}

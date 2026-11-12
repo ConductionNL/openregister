@@ -2,41 +2,22 @@
 	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Webhooks') }}
-					</h1>
-					<NcButton
-						variant="tertiary"
-						:aria-label="t('openregister', 'Toggle search sidebar')"
-						@click="toggleSidebar">
-						<template #icon>
-							<FilterVariant :size="20" />
-						</template>
-						{{
-							sidebarOpen
-								? t('openregister', 'Hide Filters')
-								: t('openregister', 'Show Filters')
-						}}
-					</NcButton>
-				</div>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Manage webhooks for event-driven integrations',
-						)
-					}}
-				</p>
-			</div>
+			<FilterToggleHeader
+				:title="t('openregister', 'Webhooks')"
+				:description="
+					t(
+						'openregister',
+						'Manage webhooks for event-driven integrations',
+					)
+				"
+				:sidebarOpen="sidebarOpen"
+				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="webhooksList.length" class="viewTotalCount">
-						{{
-							t(
+			<ListActionsBar
+				:summary="
+					webhooksList.length
+						? t(
 								'openregister',
 								'Showing {showing} of {total} webhooks',
 								{
@@ -44,185 +25,77 @@
 									total: totalWebhooks,
 								},
 							)
-						}}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcButton variant="primary" @click="openCreateDialog">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						{{ t('openregister', 'Create Webhook') }}
-					</NcButton>
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshWebhooks">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						: ''
+				"
+				:actions="[refreshAction(refreshWebhooks)]">
+				<NcButton variant="primary" @click="openCreateDialog">
+					<template #icon>
+						<Plus :size="20" />
+					</template>
+					{{ t('openregister', 'Create Webhook') }}
+				</NcButton>
+			</ListActionsBar>
 
 			<!-- Webhooks Table -->
-			<div class="tableContainer" :class="{ 'is-loading': loading }">
-				<div v-if="loading" class="loadingWrapper">
-					<NcLoadingIcon :size="64" />
-				</div>
+			<ListTableStates
+				:loading="loading"
+				:empty="!webhooksList.length"
+				:emptyName="t('openregister', 'No webhooks found')"
+				:emptyDescription="
+					t('openregister', 'No webhooks have been configured yet')
+				">
+				<template #emptyIcon>
+					<Webhook :size="64" />
+				</template>
 
-				<NcEmptyContent
-					v-else-if="!webhooksList.length"
-					:name="t('openregister', 'No webhooks found')"
-					:description="
-						t('openregister', 'No webhooks have been configured yet')
-					">
-					<template #icon>
-						<Webhook :size="64" />
+				<CnDataTable :columns="webhookColumns" :rows="webhooksList">
+					<template #column-name="{ row }">
+						<div class="webhook-name-cell">
+							<Webhook :size="20" class="webhook-icon" />
+							<span class="webhook-name">{{ row.name }}</span>
+						</div>
 					</template>
-				</NcEmptyContent>
+					<template #column-url="{ row }">
+						<span class="webhook-url">{{ truncateUrl(row.url) }}</span>
+					</template>
+					<template #column-method="{ row }">
+						<span class="badge badge-method">{{ row.method }}</span>
+					</template>
+					<template #column-enabled="{ row }">
+						<span
+							class="badge"
+							:class="'badge-status-' + (row.enabled ? 'enabled' : 'disabled')">
+							{{
+								row.enabled
+									? t('openregister', 'Enabled')
+									: t('openregister', 'Disabled')
+							}}
+						</span>
+					</template>
+					<template #column-lastTriggeredAt="{ row }">
+						{{ formatDate(row.lastTriggeredAt) }}
+					</template>
+					<template #column-successRate="{ row }">
+						{{ formatSuccessRate(row) }}
+					</template>
+					<template #actions-header>
+						{{ t('openregister', 'Actions') }}
+					</template>
+					<template #row-actions="{ row }">
+						<ActionMenu :actions="webhookActions(row)" />
+					</template>
+				</CnDataTable>
 
-				<table v-else class="webhooksTable">
-					<thead>
-						<tr>
-							<th scope="col" class="column-name">
-								{{ t('openregister', 'Name') }}
-							</th>
-							<th scope="col" class="column-url">
-								{{ t('openregister', 'URL') }}
-							</th>
-							<th scope="col" class="column-method">
-								{{ t('openregister', 'Method') }}
-							</th>
-							<th scope="col" class="column-status">
-								{{ t('openregister', 'Status') }}
-							</th>
-							<th scope="col" class="column-last-triggered">
-								{{ t('openregister', 'Last Triggered') }}
-							</th>
-							<th scope="col" class="column-success-rate">
-								{{ t('openregister', 'Success Rate') }}
-							</th>
-							<th scope="col" class="column-actions">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="webhook in webhooksList" :key="webhook.id">
-							<td class="column-name">
-								<div class="webhook-name-cell">
-									<Webhook :size="20" class="webhook-icon" />
-									<span class="webhook-name">{{
-										webhook.name
-									}}</span>
-								</div>
-							</td>
-							<td class="column-url">
-								<span class="webhook-url">{{
-									truncateUrl(webhook.url)
-								}}</span>
-							</td>
-							<td class="column-method">
-								<span class="badge badge-method">{{
-									webhook.method
-								}}</span>
-							</td>
-							<td class="column-status">
-								<span
-									class="badge"
-									:class="
-										'badge-status-'
-										+ (webhook.enabled ? 'enabled' : 'disabled')
-									">
-									{{
-										webhook.enabled
-											? t('openregister', 'Enabled')
-											: t('openregister', 'Disabled')
-									}}
-								</span>
-							</td>
-							<td class="column-last-triggered">
-								{{ formatDate(webhook.lastTriggeredAt) }}
-							</td>
-							<td class="column-success-rate">
-								{{ formatSuccessRate(webhook) }}
-							</td>
-							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										closeAfterClick
-										@click="editWebhook(webhook)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										{{ t('openregister', 'Edit') }}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										@click="testWebhook(webhook.id)">
-										<template #icon>
-											<PlayOutline :size="20" />
-										</template>
-										{{ t('openregister', 'Test') }}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										@click="viewLogs(webhook.id)">
-										<template #icon>
-											<FileDocumentOutline :size="20" />
-										</template>
-										{{ t('openregister', 'View Logs') }}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										@click="toggleWebhook(webhook)">
-										<template #icon>
-											<PauseCircleOutline
-												v-if="webhook.enabled"
-												:size="20" />
-											<PlayOutline v-else :size="20" />
-										</template>
-										{{
-											webhook.enabled
-												? t('openregister', 'Disable')
-												: t('openregister', 'Enable')
-										}}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										@click="deleteWebhook(webhook.id)">
-										<template #icon>
-											<DeleteOutline :size="20" />
-										</template>
-										{{ t('openregister', 'Delete') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-
-				<!-- Pagination -->
-				<div v-if="totalWebhooks > limit" class="pagination">
-					<NcButton :disabled="offset === 0" @click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{
-							t('openregister', 'Page {current} of {total}', {
-								current: currentPage,
-								total: totalPages,
-							})
-						}}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalWebhooks"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
-			</div>
+				<template #footer>
+					<!-- Pagination -->
+					<OffsetPager
+						:offset="offset"
+						:limit="limit"
+						:total="totalWebhooks"
+						@previous="previousPage"
+						@next="nextPage" />
+				</template>
+			</ListTableStates>
 		</div>
 
 		<!-- Search Sidebar -->
@@ -237,6 +110,7 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 /**
@@ -245,24 +119,26 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
-	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
 } from '@nextcloud/vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import OffsetPager from '../../components/shared/OffsetPager.vue'
 import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
+import ListTableStates from '../ListTableStates.vue'
+import { sidebarToggle } from '../../composables/sidebarToggle.js'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { editAction, refreshAction } from '../../services/menuActions.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
+import { offsetPaging } from '../offsetPaging.js'
 
 /**
  * Main view for managing webhooks
@@ -270,23 +146,20 @@ import { navigationStore, webhookStore } from '../../store/store.js'
 export default {
 	name: 'WebhooksIndex',
 	components: {
+		ActionMenu,
+		CnDataTable,
+		ListActionsBar,
+		OffsetPager,
+		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
 		NcButton,
-		NcLoadingIcon,
-		NcEmptyContent,
+		ListTableStates,
 		Webhook,
-		Refresh,
-		FilterVariant,
-		PlayOutline,
-		PauseCircleOutline,
-		Pencil,
-		DeleteOutline,
 		Plus,
-		FileDocumentOutline,
 		WebhooksSidebar,
 	},
+
+	mixins: [offsetPaging('totalWebhooks')],
 
 	data() {
 		return {
@@ -299,6 +172,21 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude UI plumbing — static column definitions for the webhooks table
+		 * @return {Array<object>}
+		 */
+		webhookColumns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Name'), class: 'column-name', cellClass: 'cn-cell--wrap' },
+				{ key: 'url', label: t('openregister', 'URL'), class: 'column-url' },
+				{ key: 'method', label: t('openregister', 'Method'), class: 'column-method' },
+				{ key: 'enabled', label: t('openregister', 'Status'), class: 'column-status' },
+				{ key: 'lastTriggeredAt', label: t('openregister', 'Last Triggered'), class: 'column-last-triggered' },
+				{ key: 'successRate', label: t('openregister', 'Success Rate'), class: 'column-success-rate' },
+			]
+		},
+
 		/**
 		 * Whether the webhook list is being fetched.
 		 *
@@ -357,26 +245,6 @@ export default {
 		},
 
 		/**
-		 * Get current page number
-		 *
-		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
-		 * @return {number} Current page
-		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
-		},
-
-		/**
-		 * Get total number of pages
-		 *
-		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
-		 * @return {number} Total pages
-		 */
-		totalPages() {
-			return Math.ceil(this.totalWebhooks / this.limit)
-		},
-
-		/**
 		 * Get properties for selected events
 		 *
 		 * @return {Array} Array of property options
@@ -411,17 +279,47 @@ export default {
 	},
 
 	methods: {
-		t,
+		refreshAction,
 
 		/**
-		 * Toggle sidebar visibility
+		 * The row menu of a webhook.
 		 *
-		 * @spec openspec/specs/admin-list-views/spec.md
-		 * @return {void}
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} webhook The webhook
+		 * @return {Array<object>} The ActionMenu entries
 		 */
-		toggleSidebar() {
-			this.sidebarOpen = !this.sidebarOpen
+		webhookActions(webhook) {
+			return [
+				editAction(() => this.editWebhook(webhook)),
+				{
+					label: t('openregister', 'Test'),
+					icon: PlayOutline,
+					run: () => this.testWebhook(webhook.id),
+				},
+				{
+					label: t('openregister', 'View Logs'),
+					icon: FileDocumentOutline,
+					run: () => this.viewLogs(webhook.id),
+				},
+				{
+					label: webhook.enabled
+						? t('openregister', 'Disable')
+						: t('openregister', 'Enable'),
+
+					icon: webhook.enabled ? PauseCircleOutline : PlayOutline,
+					run: () => this.toggleWebhook(webhook),
+				},
+				{
+					label: t('openregister', 'Delete'),
+					icon: DeleteOutline,
+					run: () => this.deleteWebhook(webhook.id),
+				},
+			]
 		},
+
+		t,
+
+		...sidebarToggle,
 
 		/**
 		 * Handle search query update
@@ -472,32 +370,6 @@ export default {
 		 */
 		refreshWebhooks() {
 			this.loadWebhooks()
-		},
-
-		/**
-		 * Go to previous page
-		 *
-		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
-		 * @return {void}
-		 */
-		previousPage() {
-			if (this.offset > 0) {
-				// Paging is a computed slice over the store list — no refetch needed.
-				this.offset = Math.max(0, this.offset - this.limit)
-			}
-		},
-
-		/**
-		 * Go to next page
-		 *
-		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
-		 * @return {void}
-		 */
-		nextPage() {
-			if (this.offset + this.limit < this.totalWebhooks) {
-				// Paging is a computed slice over the store list — no refetch needed.
-				this.offset += this.limit
-			}
 		},
 
 		/**
@@ -634,147 +506,17 @@ export default {
 			return url.substring(0, 37) + '...'
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	margin-bottom: 20px;
-}
+@include view-container-2;
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
-
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
-
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
-
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow-x: auto;
-	overflow-y: visible;
-	min-height: 200px;
-}
-
-.tableContainer.is-loading {
-	overflow: hidden;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.loadingWrapper {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	padding: 40px;
-}
-
-.webhooksTable {
-	width: 100%;
-	border-collapse: collapse;
-	min-width: 100%;
-}
-
-.webhooksTable thead {
-	background: var(--color-background-hover);
-	border-bottom: 2px solid var(--color-border);
-}
-
-.webhooksTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: 600;
-	white-space: nowrap;
-}
-
-.webhooksTable td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.webhooksTable tbody tr:hover {
-	background: var(--color-background-hover);
-}
-
-.webhooksTable thead .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-background-hover);
-	z-index: 10;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable tbody .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-main-background);
-	z-index: 5;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable tbody tr:hover .column-actions {
-	background: var(--color-background-hover);
-}
+@include table-container-2-rules;
 
 .webhook-name-cell {
 	display: flex;
@@ -789,9 +531,6 @@ export default {
 
 .webhook-name {
 	font-weight: 500;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 }
 
 .webhook-url {
@@ -800,14 +539,7 @@ export default {
 	font-size: 12px;
 }
 
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
+@include badge;
 
 .badge-method {
 	background: var(--color-background-dark);
@@ -824,52 +556,25 @@ export default {
 	color: var(--color-warning);
 }
 
-.column-name {
+:deep(.column-name),
+:deep(.column-url) {
 	min-width: 200px;
 }
 
-.column-url {
-	min-width: 200px;
-}
-
-.column-method {
+:deep(.column-method) {
 	width: 100px;
 }
 
-.column-status {
+:deep(.column-status) {
 	width: 120px;
 }
 
-.column-last-triggered {
+:deep(.column-last-triggered) {
 	width: 180px;
 }
 
-.column-success-rate {
+:deep(.column-success-rate) {
 	width: 120px;
 	text-align: center;
-}
-
-.column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-main-background);
-	z-index: 10;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 16px;
-	padding: 20px;
-	border-top: 1px solid var(--color-border);
-}
-
-.pagination-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
 }
 </style>

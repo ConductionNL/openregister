@@ -237,15 +237,16 @@ $context->registerEventListener(
     AcmeLeafListener::class,
 );
 
-// AcmeLeafListener::handle():
+// AcmeLeafListener::handle(). `identity` and `kinds` are required;
+// `availability` (requiredApp, requiresPermission) and `rendering` (surfaces,
+// referenceType, renderMode, loadStrategy) default to always-available and an
+// SFC render surface with no surfaces.
 $event->registerLeaf(
     new LeafDescriptor(
-        id: 'acme-notes',
-        label: $this->l10n->t('Notes'),
-        icon: 'NoteText',
+        identity: new LeafIdentity(id: 'acme-notes', label: $this->l10n->t('Notes'), icon: 'NoteText'),
         kinds: [LeafDescriptor::KIND_DATA_PROVIDER, LeafDescriptor::KIND_RENDER_SURFACE],
-        requiredApp: 'acme',
-        surfaces: ['detail-page'],
+        availability: new LeafAvailability(requiredApp: 'acme'),
+        rendering: new LeafRendering(surfaces: ['detail-page']),
     ),
     // A provider whose getStorageStrategy() returns 'app-local'.
     // list() reads the app's notes for the object; create() appends one.

@@ -25,6 +25,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(SchemaMapper::class)]
 #[UsesClass(\OCA\OpenRegister\Db\Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch::class)]
 class SchemaMapperGetRelatedTenancyTest extends TestCase {
 
 	/**

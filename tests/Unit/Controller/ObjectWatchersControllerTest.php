@@ -14,17 +14,19 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\ObjectWatchersController;
+use OCA\OpenRegister\Notifications\Controller\ObjectWatchersController;
+use OCA\OpenRegister\Notifications\Controller\Support\ObjectWatchersControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
@@ -36,8 +38,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Controller\ObjectWatchersController
- * @uses \OCA\OpenRegister\Db\Watcher
+ * @covers \OCA\OpenRegister\Notifications\Controller\ObjectWatchersController
+ * @uses \OCA\OpenRegister\Notifications\Db\Watcher
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  */
 class ObjectWatchersControllerTest extends TestCase {
@@ -103,12 +105,13 @@ class ObjectWatchersControllerTest extends TestCase {
 		}
 
 		return new ObjectWatchersController(
-			'openregister',
 			$request,
-			$this->objects,
-			$this->watchers,
-			$this->users,
-			$this->logger
+			new ObjectWatchersControllerServices(
+				objectService: $this->objects,
+				watchers: $this->watchers,
+				userManager: $this->users,
+				logger: $this->logger
+			)
 		);
 	}//end controller()
 
@@ -120,6 +123,29 @@ class ObjectWatchersControllerTest extends TestCase {
 	 *
 	 * @return Watcher The row.
 	 */
+	/**
+	 * An object that does not exist is a 404 even when the lookup throws while
+	 * the object is being set, which is where ObjectService looks it up.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownObjectIsA404WhenItsLookupThrows(): void {
+		$this->objects->method('setObject')->willThrowException(new RuntimeException('not found in magic table'));
+		$this->watchers->expects($this->never())->method('watch');
+		$controller = new ObjectWatchersController(
+			$this->createMock(IRequest::class),
+			new ObjectWatchersControllerServices(
+				objectService: $this->objects,
+				watchers: $this->watchers,
+				userManager: $this->users,
+				logger: $this->logger
+			)
+		);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->watch('reg', 'sch', 'uuid-unknown')->getStatus());
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->unwatch('reg', 'sch', 'uuid-unknown')->getStatus());
+	}//end testAnUnknownObjectIsA404WhenItsLookupThrows()
+
 	private function row(string $userId, bool $notify = true): Watcher {
 		$watcher = new Watcher();
 		$watcher->setUserId($userId);
@@ -139,7 +165,7 @@ class ObjectWatchersControllerTest extends TestCase {
 	 */
 	public function testWatchWithoutNotifyLeavesTheSwitchToTheService(): void {
 		$this->watchers->expects($this->once())->method('watch')
-			->with($this->isInstanceOf(ObjectEntity::class), 'r', 's', null)
+			->with($this->callback(static fn (AddressedObject $target): bool => $target->register === 'r' && $target->schema === 's'), null)
 			->willReturn($this->row('alice'));
 
 		$response = $this->controller()->watch('r', 's', 'uuid-a');
@@ -158,7 +184,7 @@ class ObjectWatchersControllerTest extends TestCase {
 	public function testWatchReadsTheNotifySwitch(): void {
 		$seen = [];
 		$this->watchers->method('watch')->willReturnCallback(
-			function (ObjectEntity $object, ?string $register, ?string $schema, ?bool $notify) use (&$seen): Watcher {
+			function (AddressedObject $target, ?bool $notify) use (&$seen): Watcher {
 				$seen[] = $notify;
 				return $this->row('alice', ($notify ?? true));
 			}
@@ -195,7 +221,13 @@ class ObjectWatchersControllerTest extends TestCase {
 	public function testANonEntityIsNotFound(): void {
 		$request = $this->createMock(IRequest::class);
 		$this->objects->method('getObject')->willReturn(null);
-		$controller = new ObjectWatchersController('openregister', $request, $this->objects, $this->watchers, $this->users, $this->logger);
+		$services   = new ObjectWatchersControllerServices(
+			objectService: $this->objects,
+			watchers: $this->watchers,
+			userManager: $this->users,
+			logger: $this->logger
+		);
+		$controller = new ObjectWatchersController($request, $services);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->watch('r', 's', 'x')->getStatus());
 	}//end testANonEntityIsNotFound()
@@ -295,7 +327,7 @@ class ObjectWatchersControllerTest extends TestCase {
 	public function testAddRefusesAnUnknownUserAndAddsAKnownOne(): void {
 		$this->users->method('userExists')->willReturnMap([['ghost', false], ['bob', true]]);
 		$this->watchers->expects($this->once())->method('addWatcher')
-			->with($this->isInstanceOf(ObjectEntity::class), 'bob', 'r', 's')
+			->with($this->callback(static fn (AddressedObject $target): bool => $target->register === 'r' && $target->schema === 's'), 'bob')
 			->willReturn($this->row('bob'));
 		$controller = $this->controller();
 

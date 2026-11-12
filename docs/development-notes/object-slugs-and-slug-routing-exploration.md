@@ -1,8 +1,11 @@
 # Exploration: object slugs & slug-based routing (OpenRegister + OpenCatalogi)
 
 **Date:** 2026-06-17
-**Status:** Exploration only — nothing implemented. Captures findings + the two
-changes that would make object-slug URLs work, so they're ready to pick up.
+**Status:** Superseded (2026-11-04). Both changes below have been built: OpenRegister
+generates slugs per schema via `objectSlugField` (openregister#4037, see "Object slugs"
+in `docs/technical/schemas.md`) and OpenCatalogi resolves a publication by its slug
+within the catalogue (opencatalogi#1592, see `docs/features/publication-slugs.md` in
+that repository). The findings below describe the state before that work.
 
 ## Questions
 

@@ -13,9 +13,9 @@ Achieve 100% API route coverage with Newman integration tests and measure server
   - `tests/integration/openregister-crud.postman_collection.json` (5837 lines, ~199 tests per storage mode)
   - `tests/integration/openregister-referential-integrity.postman_collection.json` (818 lines)
   - `tests/integration/magic-mapper-import.postman_collection.json` (295 lines)
-  - `tests/postman/openregister-crud-tests.postman_collection.json` (605 lines)
-  - `tests/postman/openregister-relations-tests.postman_collection.json` (1772 lines)
-  - `tests/postman/openregister-graphql-tests.postman_collection.json` (505 lines)
+  - `tests/integration/openregister-crud-tests.postman_collection.json` (605 lines)
+  - `tests/integration/openregister-relations-tests.postman_collection.json` (1772 lines)
+  - `tests/integration/openregister-graphql-tests.postman_collection.json` (505 lines)
   - `tests/newman/agent-cms-testing.postman_collection.json` (469 lines)
   - `tests/performance/performance-test-collection.json` (274 lines)
 - **Dual-storage testing** in CI: `run-dual-storage-tests.sh` runs collections against both Normal (JSON blob) and Magic Mapper (SQL) storage modes

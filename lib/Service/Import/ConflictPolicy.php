@@ -45,56 +45,7 @@ use OCA\OpenRegister\Db\ImportPreviewRow;
  *
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
-final class ConflictPolicy {
-
-	/**
-	 * Every row creates. A row that matches an existing object is refused,
-	 * because on a first migration a match means the key is wrong.
-	 *
-	 * @var string
-	 */
-	public const CREATE_ONLY = 'create-only';
-
-	/**
-	 * Only matched rows are written. A row that matches nothing is skipped.
-	 *
-	 * @var string
-	 */
-	public const UPDATE_ONLY = 'update-only';
-
-	/**
-	 * A matched row updates, an unmatched row creates.
-	 *
-	 * @var string
-	 */
-	public const UPSERT = 'upsert';
-
-	/**
-	 * A matched row is refused. Unmatched rows create.
-	 *
-	 * @var string
-	 */
-	public const REFUSE_ON_CONFLICT = 'refuse-on-conflict';
-
-	/**
-	 * The policy an import that declares none runs under, which is what the
-	 * import path did before this change.
-	 *
-	 * @var string
-	 */
-	public const DEFAULT_POLICY = self::UPSERT;
-
-	/**
-	 * Every policy, for validation and for the catalogue a client reads.
-	 *
-	 * @var array<int, string>
-	 */
-	public const POLICIES = [
-		self::CREATE_ONLY,
-		self::UPDATE_ONLY,
-		self::UPSERT,
-		self::REFUSE_ON_CONFLICT,
-	];
+final class ConflictPolicy implements ConflictPolicyNames {
 
 	/**
 	 * Resolve a declared policy, falling back to the default.
@@ -185,20 +136,8 @@ final class ConflictPolicy {
 	 * @return array{decision: string, reason: string|null, targetUuid: string|null} The decision.
 	 */
 	private static function decideMatched(string $policy, string $candidate): array {
-		if ($policy === self::CREATE_ONLY) {
-			return [
-				'decision' => ImportPreviewRow::DECISION_REFUSE,
-				'reason' => 'Policy create-only, and the match key hits existing object '.$candidate.'.',
-				'targetUuid' => null,
-			];
-		}
-
-		if ($policy === self::REFUSE_ON_CONFLICT) {
-			return [
-				'decision' => ImportPreviewRow::DECISION_REFUSE,
-				'reason' => 'Policy refuse-on-conflict, and the match key hits existing object '.$candidate.'.',
-				'targetUuid' => null,
-			];
+		if ($policy === self::CREATE_ONLY || $policy === self::REFUSE_ON_CONFLICT) {
+			return self::refusedMatch(policy: $policy, candidate: $candidate);
 		}
 
 		return [
@@ -207,4 +146,20 @@ final class ConflictPolicy {
 			'targetUuid' => $candidate,
 		];
 	}//end decideMatched()
+
+	/**
+	 * The refusal of a row whose match key hits an existing object under a policy that does not update.
+	 *
+	 * @param string $policy    The policy: create-only or refuse-on-conflict.
+	 * @param string $candidate The uuid of the existing object.
+	 *
+	 * @return array{decision: string, reason: string, targetUuid: null} The decision.
+	 */
+	private static function refusedMatch(string $policy, string $candidate): array {
+		return [
+			'decision' => ImportPreviewRow::DECISION_REFUSE,
+			'reason' => 'Policy '.$policy.', and the match key hits existing object '.$candidate.'.',
+			'targetUuid' => null,
+		];
+	}//end refusedMatch()
 }//end class

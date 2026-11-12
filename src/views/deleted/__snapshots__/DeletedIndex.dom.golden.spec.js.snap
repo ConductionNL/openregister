@@ -1,0 +1,56 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DeletedIndex table shows every deleted item with its window and menu 1`] = `
+[
+  {
+    "headers": [
+      "",
+      "t:Title",
+      "t:Register",
+      "t:Schema",
+      "t:Deleted Date",
+      "t:Deleted By",
+      "t:Destroyable from",
+      "t:Days left",
+      "t:Actions",
+    ],
+    "rows": [
+      [
+        "",
+        "FirstGone by mistake",
+        "Zaken",
+        "Zaak",
+        "2026:11:01 10:05",
+        "admin",
+        "2026:12:01 10:05",
+        "n:23:%n days left",
+        "t:Restoret:Permanently Delete",
+      ],
+      [
+        "",
+        "Second",
+        "Register 9",
+        "t:Unknown Schema",
+        "t:Unknown",
+        "t:Unknown",
+        "2026:11:08 00:00",
+        "t:Destroyable now",
+        "t:Restoret:Permanently Delete",
+      ],
+      [
+        "",
+        "d3",
+        "t:Unknown Register",
+        "t:Unknown Schema",
+        "t:Unknown",
+        "t:Unknown",
+        "t:No purge date set",
+        "t:Unknown",
+        "t:Restoret:Permanently Delete",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`DeletedIndex table shows the empty state without items 1`] = `"t:No deleted items found | t:There are no deleted items matching your current filters."`;

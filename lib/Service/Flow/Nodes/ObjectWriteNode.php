@@ -123,28 +123,37 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
-use Symfony\Component\Uid\Uuid;
 use Throwable;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Writes one OpenRegister object per flow item, as the run's owner.
@@ -154,7 +163,9 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One branch per named configuration key and one per operation; collapsing it hides the guards.
  * @SuppressWarnings(PHPMD.TooManyMethods)           One small, named method per guard and per operation; merging them would bury the delete guards.
  */
-class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNodeInterface,
+	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview
+{
 
 	/**
 	 * Insert a new object; never look for an existing one.
@@ -185,103 +196,29 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	public const OP_DELETE = 'delete';
 
 	/**
-	 * The complete operation vocabulary. Exactly four values, deliberately.
+	 * The config vocabulary of an object-write step, across all four operations.
 	 *
 	 * @var string[]
 	 */
-	private const OPERATIONS = [
-		self::OP_CREATE,
-		self::OP_UPDATE,
-		self::OP_UPSERT,
-		self::OP_DELETE,
+	private const CONFIG_KEYS = [
+		'register',
+		'schema',
+		'operation',
+		'fields',
+		'payloadFrom',
+		'match',
+		'replace',
+		'bulk',
+		'skipWhen',
+		'output',
+		'confirmDelete',
+		'permanent',
+		'maxWrites',
+		'onConflict',
+		'onMissing',
+		'onNoMatch',
+		'subjectRole',
 	];
-
-	/**
-	 * Drop a mapped key whose template resolves to nothing (the default).
-	 *
-	 * @var string
-	 */
-	private const ON_MISSING_OMIT = 'omit';
-
-	/**
-	 * Fail the item when a mapped key's template resolves to nothing.
-	 *
-	 * @var string
-	 */
-	private const ON_MISSING_FAIL = 'fail';
-
-	/**
-	 * Accepted `onMissing` values.
-	 *
-	 * @var string[]
-	 */
-	private const ON_MISSING = [self::ON_MISSING_OMIT, self::ON_MISSING_FAIL];
-
-	/**
-	 * A delete that matched nothing fails the item (the default).
-	 *
-	 * @var string
-	 */
-	private const ON_NO_MATCH_ERROR = 'error';
-
-	/**
-	 * A delete that matched nothing is a no-op emitting `deleted: false`.
-	 *
-	 * @var string
-	 */
-	private const ON_NO_MATCH_SKIP = 'skip';
-
-	/**
-	 * Accepted `onNoMatch` values.
-	 *
-	 * @var string[]
-	 */
-	private const ON_NO_MATCH = [self::ON_NO_MATCH_ERROR, self::ON_NO_MATCH_SKIP];
-
-	/**
-	 * A create whose identifier is already taken overwrites it (the default).
-	 *
-	 * This is `saveObject()`'s long-standing upsert behaviour and stays the
-	 * default: it is silent, so there is no way to enumerate which existing
-	 * flows depend on it.
-	 *
-	 * @var string
-	 */
-	private const ON_CONFLICT_OVERWRITE = 'overwrite';
-
-	/**
-	 * A create whose identifier is already taken FAILS the item.
-	 *
-	 * Opt in with `onConflict: fail` when the write is a CLAIM — a lock, a
-	 * slot, a lease, a queue position. There, "it already existed" is the whole
-	 * answer, and overwriting it means two flow runs both believe they won
-	 * while the loser is never told. See openregister#2210.
-	 *
-	 * ✅ SAFE FOR MUTUAL EXCLUSION since openregister#2215. This warning used to
-	 * read "NOT YET SAFE — the underlying guard is a check followed by a write,
-	 * so concurrent flow runs can all pass the check and several succeed". That
-	 * was true of #2212 and is no longer true: the database arbitrates through
-	 * the `_uuid` unique constraint, and the losing writer is told.
-	 *
-	 * Re-measured through THIS node on 2026-07-31, not inherited from the fix's
-	 * own PR: twelve simultaneous flow runs claiming one identifier produced
-	 * `1 completed / 11 stopped`, each loser carrying `An object with identifier
-	 * "…" already exists`, and exactly ONE row in the table.
-	 *
-	 * The stale warning mattered more than a stale comment usually does: it sat
-	 * on the one primitive hydra's per-issue lock needs, and it said the thing
-	 * that would stop somebody building it.
-	 *
-	 * @var string
-	 */
-	private const ON_CONFLICT_FAIL = 'fail';
-
-	/**
-	 * Accepted `onConflict` values.
-	 *
-	 * @var string[]
-	 */
-	private const ON_CONFLICT = [self::ON_CONFLICT_OVERWRITE, self::ON_CONFLICT_FAIL];
 
 	/**
 	 * Writes one step execution may perform when it declares no `maxWrites`.
@@ -312,68 +249,77 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	private const MAX_WRITES_KEY = 'flowObjectWriteMaxWrites';
 
 	/**
-	 * How many candidates a match lookup reads before it stops counting.
+	 * Performs every write, with all its ordinary semantics.
 	 *
-	 * A match is required to resolve to exactly one object, so anything past a
-	 * handful is already a failure; this only bounds how much a badly-authored
-	 * match can pull into memory before the node says so.
-	 *
-	 * @var integer
+	 * @var ObjectOperationsInterface
 	 */
-	private const MATCH_SCAN_LIMIT = 100;
+	private readonly ObjectOperationsInterface $objects;
 
 	/**
-	 * Prefix that addresses a match pair to object metadata rather than a property.
+	 * Resolves the configured register (id, uuid or slug).
 	 *
-	 * @var string
+	 * @var RegisterMapperInterface
 	 */
-	private const SELF_PREFIX = '@self.';
+	private readonly RegisterMapperInterface $registers;
 
 	/**
-	 * Metadata fields a match pair may name.
+	 * Resolves the configured schema (id, uuid or slug).
 	 *
-	 * Deliberately narrower than the full metadata column set: these are the
-	 * fields that identify or scope a row and are stable enough to match on.
-	 * `uuid` is the one that matters most — it is what `ObjectReadNode` puts on
-	 * every item it emits so a follow-up write can name the row.
-	 *
-	 * @var string[]
+	 * @var SchemaMapperInterface
 	 */
-	private const MATCHABLE_METADATA_FIELDS = [
-		'uuid',
-		'slug',
-		'uri',
-		'version',
-		'owner',
-		'organisation',
-		'application',
-		'name',
-		'created',
-		'updated',
-	];
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * Resolves the run owner to an account.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Holds the instance-wide write-cap default.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Resolves the palette icon.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urls;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects Performs every write, with all its ordinary semantics.
-	 * @param RegisterMapper $registers Resolves the configured register (id, uuid or slug).
-	 * @param SchemaMapper $schemas Resolves the configured schema (id, uuid or slug).
-	 * @param IUserManager $userManager Resolves the run owner to an account.
-	 * @param IAppConfig $appConfig Holds the instance-wide write-cap default.
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
+	 * @param ObjectWriteStores    $stores       Performs every write, and resolves the configured
+	 *                                          register and schema (id, uuid or slug).
+	 * @param ObjectWritePlatform  $platform     Resolves the run owner to an account, and holds
+	 *                                          the instance-wide write-cap default.
+	 * @param FlowNodePresentation $presentation Translations and the palette icon.
 	 * @param FlowRunSubjectRecorder|null $subjects Records a written object under the declared role.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
-		private readonly IUserManager $userManager,
-		private readonly IAppConfig $appConfig,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		ObjectWriteStores $stores,
+		ObjectWritePlatform $platform,
+		FlowNodePresentation $presentation,
 		private readonly ?FlowRunSubjectRecorder $subjects = null,
 	) {
+		$this->objects     = $stores->objects;
+		$this->registers   = $stores->registers;
+		$this->schemas     = $stores->schemas;
+		$this->userManager = $platform->userManager;
+		$this->appConfig   = $platform->appConfig;
+		$this->l10n        = $presentation->l10n;
+		$this->urls        = $presentation->urls;
 
 	}//end __construct()
 
@@ -425,21 +371,43 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	}//end getIcon()
 
 	/**
-	 * Offered in both scopes.
+	 * What this write would do, without writing (flow dry-run).
 	 *
-	 * The node grants no privilege of its own — every write it performs is
-	 * bounded by the run owner's own permissions — so restricting it by scope
-	 * would restrict AUTHORING, not access.
+	 * The operation, where it would write, and the fields it would set as the
+	 * step configures them.
 	 *
-	 * @param int $scope The scope constant.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
-	 * @return boolean Whether it is available.
+	 * @return array `summary` and `changes` (`[{field, value}]`).
 	 *
-	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
+	public function preview(FlowNodeCall $call): array {
+		$config = $call->config;
+		return $this->previewOf(config: $config);
+	}//end preview()
+
+	/**
+	 * The preview of a write: one summary sentence and the configured field changes.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return array{summary: string, changes: array<int, array{field: string, value: mixed}>} The preview.
+	 */
+	private function previewOf(array $config): array {
+		$operation = trim((string)($config['operation'] ?? 'create'));
+		$where = trim((string)($config['register'] ?? '') . ' / ' . (string)($config['schema'] ?? ''), ' /');
+
+		$changes = [];
+		foreach ((array)($config['fields'] ?? []) as $field => $value) {
+			$changes[] = ['field' => (string)$field, 'value' => $value];
+		}
+
+		return [
+			'summary' => sprintf('%s an object in %s', $operation, $where),
+			'changes' => $changes,
+		];
+	}//end previewOf()
 
 	/**
 	 * The config vocabulary of an object-write step, across all four operations.
@@ -454,26 +422,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
 	 */
 	public function configKeys(): array {
-		return [
-			'register',
-			'schema',
-			'operation',
-			'fields',
-			'payloadFrom',
-			'match',
-			'replace',
-			'bulk',
-			'skipWhen',
-			'output',
-			'confirmDelete',
-			'permanent',
-			'maxWrites',
-			'onConflict',
-			'onMissing',
-			'onNoMatch',
-			'subjectRole',
-		];
-
+		return self::CONFIG_KEYS;
 	}//end configKeys()
 
 	/**
@@ -488,168 +437,14 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @spec openspec/specs/flow-object-write-bulk/spec.md
 	 */
 	public function configForm(): array {
-		return array_merge($this->targetConfigForm(), $this->policyConfigForm());
+		return (new ObjectWriteConfigForm(l10n: $this->l10n))->fields();
 	}//end configForm()
-
-	/**
-	 * The form fields naming WHAT is written and where.
-	 *
-	 * @return array<int, array<string, mixed>> The field descriptions.
-	 *
-	 * @spec openspec/specs/flow-object-write-bulk/spec.md
-	 */
-	private function targetConfigForm(): array {
-		return [
-			[
-				'key' => 'register',
-				'label' => $this->l10n->t('Register'),
-				'type' => 'select',
-				'help' => $this->l10n->t('The register the objects are written into.'),
-				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/registers',
-			],
-			[
-				'key' => 'schema',
-				'label' => $this->l10n->t('Schema'),
-				'type' => 'select',
-				'help' => $this->l10n->t(
-					'The schema the objects are validated against. A slug is resolved within the chosen register only.'
-				),
-				'required' => true,
-				'optionsFrom' => '/apps/openregister/api/schemas',
-			],
-			[
-				'key' => 'operation',
-				'label' => $this->l10n->t('Operation'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'One of: create, update, upsert, delete. Update, upsert and delete need at least one match pair.'
-				),
-				'required' => true,
-			],
-			[
-				'key' => 'payloadFrom',
-				'label' => $this->l10n->t('Write object at path'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'Write the object found at this path WHOLE, instead of listing properties in "fields". '
-					. 'Use it when the properties are not known up front — a synchronization with no mapping, '
-					. 'for example. Configure this or "fields", never both.'
-				),
-				'required' => false,
-			],
-			[
-				'key' => 'bulk',
-				'label' => $this->l10n->t('Write the whole page in one call'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t(
-					'Create and upsert only. One bulk save covers every item — much faster for large pages, '
-					.'but per-object lifecycle events are not dispatched, and a bulk upsert must match on "uuid" alone with "replace" on.'
-				),
-			],
-			[
-				'key' => 'skipWhen',
-				'label' => $this->l10n->t('Skip an item when this field says so'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'A field on the item. When it holds true, or the word "skip", that item passes through '
-					.'UNWRITTEN and still travels on to later steps. Use it to leave unchanged objects alone. '
-					.'Filtering those items out instead would remove them from what a synchronization sweep '
-					.'counts as reached, and the sweep would then delete them.'
-				),
-			],
-			[
-				'key' => 'replace',
-				'label' => $this->l10n->t('Replace instead of patch'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t(
-					'An update normally patches only the fields named. '
-					.'Replacing writes the payload as the whole object — fields it does not name are gone.'
-				),
-			],
-			[
-				'key' => 'output',
-				'label' => $this->l10n->t('Field to store the written object in'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'With a field name, the incoming item is preserved and the written object is added under it. '
-					.'Empty means the written object replaces the item.'
-				),
-			],
-			[
-				'key' => 'subjectRole',
-				'label' => $this->l10n->t('Record the written object as'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'Your own word for what this object is to this flow, such as "case" or "besluit". '
-					.'A later step can then attach its task to it by that name. '
-					.'Leave it empty and the step records nothing.'
-				),
-			],
-		];
-	}//end targetConfigForm()
-
-	/**
-	 * The form fields naming HOW capping, conflict and deletion behave.
-	 *
-	 * @return array<int, array<string, mixed>> The field descriptions.
-	 *
-	 * @spec openspec/specs/flow-object-write-bulk/spec.md
-	 */
-	private function policyConfigForm(): array {
-		return [
-			[
-				'key' => 'maxWrites',
-				'label' => $this->l10n->t('Write cap'),
-				'type' => 'number',
-				'help' => $this->l10n->t('The most writes one step execution may perform. The instance default applies when empty.'),
-			],
-			[
-				'key' => 'onMissing',
-				'label' => $this->l10n->t('When a field value is missing'),
-				'type' => 'text',
-				'help' => $this->l10n->t('"omit" (default) drops the field from the payload; "fail" fails the item.'),
-			],
-			[
-				'key' => 'onConflict',
-				'label' => $this->l10n->t('When a created identifier is taken'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'"overwrite" (default) keeps the historical upsert behaviour; '
-					.'"fail" refuses, for writes that are claims — locks, slots, leases. Not available in bulk.'
-				),
-			],
-			[
-				'key' => 'onNoMatch',
-				'label' => $this->l10n->t('When a delete matches nothing'),
-				'type' => 'text',
-				'help' => $this->l10n->t('"error" (default) fails the item; "skip" passes it through with "deleted": false.'),
-			],
-			[
-				'key' => 'confirmDelete',
-				'label' => $this->l10n->t('Confirm deletion'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t('A delete step will not save without this deliberate second acknowledgement.'),
-			],
-			[
-				'key' => 'permanent',
-				'label' => $this->l10n->t('Destroy instead of tombstone'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t(
-					'Deletes are soft by default, which is what makes a mistaken flow recoverable. '
-					.'Turn this on only for rows that are claims whose identifier must become claimable again.'
-				),
-			],
-		];
-	}//end policyConfigForm()
 
 	/**
 	 * Refuse a configuration the author cannot have meant.
 	 *
-	 * Two of the four delete guards live here rather than in `execute()`: a flow
-	 * that could delete without a match, or without an explicit acknowledgement,
-	 * must not be PERSISTABLE. Catching that when the schedule fires at 3am is
-	 * too late to be called a guard.
+	 * The rules are {@see ObjectWriteConfigValidator}'s; a flow that breaks one must
+	 * not be persistable.
 	 *
 	 * @param array $config The step configuration.
 	 *
@@ -657,134 +452,11 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @throws UnexpectedValueException When the configuration is unusable.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per named key, by design.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same.
-	 *
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
 	public function validateConfig(array $config): void {
-		if ($this->identifierFrom(value: ($config['register'] ?? null)) === '') {
-			throw new UnexpectedValueException($this->l10n->t('An object-write step needs a register.'));
-		}
-
-		if ($this->identifierFrom(value: ($config['schema'] ?? null)) === '') {
-			throw new UnexpectedValueException($this->l10n->t('An object-write step needs a schema.'));
-		}
-
-		$operation = $this->operationFrom(config: $config);
-		if ($operation === '') {
-			throw new UnexpectedValueException(
-				$this->l10n->t('An object-write step needs an operation: create, update, upsert or delete.')
-			);
-		}
-
-		if (in_array($operation, self::OPERATIONS, true) === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('Unknown operation "%s"; choose create, update, upsert or delete.', [$operation])
-			);
-		}
-
-		// Guard 1 of the delete guards, and the same rule for update / upsert:
-		// without a match there is nothing to act on but everything in scope.
-		$pairs = $this->matchPairs(config: $config);
-		if (in_array($operation, [self::OP_UPDATE, self::OP_UPSERT, self::OP_DELETE], true) === true
-			&& $pairs === []
-		) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('An object-write step with operation "%s" needs at least one match property and value.', [$operation])
-			);
-		}
-
-		$this->validateOperationKeys(config: $config, operation: $operation);
-		$this->validateOptionKeys(config: $config);
-
-		if (array_key_exists('bulk', $config) === true) {
-			$this->validateBulkKeys(config: $config, operation: $operation);
-		}
-
+		$this->validator()->validate(config: $config);
 	}//end validateConfig()
-
-	/**
-	 * The save-time half of the bulk guards.
-	 *
-	 * Bulk mode swaps the per-item service round-trip for one
-	 * `saveObjects()` call, and that path genuinely has fewer semantics than
-	 * the single-object one: it replaces rather than patches, it cannot
-	 * arbitrate a per-row claim, and it decides create-versus-update by row
-	 * uuid rather than by a composite match. Every one of those gaps is
-	 * refused HERE, at save time, rather than silently absorbed at 3am —
-	 * the same rule the delete guards follow.
-	 *
-	 * @param array $config The step configuration.
-	 * @param string $operation The configured operation.
-	 *
-	 * @return void
-	 *
-	 * @throws UnexpectedValueException When bulk is combined with semantics the bulk path does not have.
-	 *
-	 * @spec openspec/specs/flow-object-write-bulk/spec.md
-	 */
-	private function validateBulkKeys(array $config, string $operation): void {
-		// A boolean, strictly — the string "false" is truthy, and this switch
-		// changes which write path a whole page of items goes down.
-		if (is_bool($config['bulk']) === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('"bulk" must be true or false, as a boolean.')
-			);
-		}
-
-		if ($config['bulk'] === false) {
-			return;
-		}
-
-		if (in_array($operation, [self::OP_CREATE, self::OP_UPSERT], true) === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('"bulk" supports create and upsert only; a "%s" step writes one object at a time, keeping its per-item guards.', [$operation])
-			);
-		}
-
-		// `saveObjects()` upserts silently; there is no per-row failIfExists.
-		// Offering `fail` here would accept the claim semantics and not
-		// deliver them, which is the exact defect ON_CONFLICT_FAIL exists
-		// to prevent.
-		if (($config['onConflict'] ?? null) === self::ON_CONFLICT_FAIL) {
-			throw new UnexpectedValueException(
-				$this->l10n->t(
-					'"onConflict": "fail" is not available in bulk; the bulk path cannot arbitrate per-row claims. '
-					.'Use the single-object path for writes that are claims.'
-				)
-			);
-		}
-
-		if ($operation !== self::OP_UPSERT) {
-			return;
-		}
-
-		// The bulk path is PUT-semantic — MagicMapper writes whole rows and
-		// never consults the stored object first — so a bulk upsert without
-		// `replace: true` would silently null every field the mapping did not
-		// mention. Rule 2 of this node forbids exactly that, so the author
-		// must say the word.
-		if (($config['replace'] ?? null) !== true) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('A bulk upsert must carry "replace": true — the bulk path replaces whole objects and cannot patch.')
-			);
-		}
-
-		// `saveObjects()` decides create-versus-update by the row's uuid, so
-		// the uuid is the ONLY match a bulk upsert can honour. A composite
-		// match accepted here would be evaluated by nothing.
-		$pairs = $this->matchPairs(config: $config);
-		$property = ($pairs[0]['property'] ?? '');
-		if (count($pairs) !== 1
-			|| in_array($property, ['uuid', self::SELF_PREFIX.'uuid'], true) === false
-		) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('A bulk upsert must match on exactly one property, "uuid" (or "@self.uuid"); a composite match needs the single-object path.')
-			);
-		}
-
-	}//end validateBulkKeys()
 
 	/**
 	 * Write one object per item, as the run's owner.
@@ -794,9 +466,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * exception, and a run that reports success having written nothing is a
 	 * worse outcome than a run that fails loudly.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata; carries `triggeredBy`.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array One output item per input item.
 	 *
@@ -804,98 +474,83 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @throws RuntimeException When the run has no owner, a match is ambiguous or absent,
 	 *                          or the write cap is exceeded.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per operation.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same.
-	 *
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		// Re-run the save-time validation. A flow document can be written into
-		// the store by something other than the editor, and the delete guards
-		// must not depend on which door the document came through.
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
 		$this->validateConfig(config: $config);
 
 		if ($items === []) {
 			return [];
 		}
 
-		$operation = $this->operationFrom(config: $config);
+		return $this->writeAs(items: $items, plan: $this->writePlan(config: $config, context: $context));
+	}//end execute()
+
+	/**
+	 * Write every item as the plan's owner, then record what was written as the run's subject.
+	 *
+	 * @param array          $items The input items, at least one.
+	 * @param ObjectWritePlan $plan  The resolved write plan.
+	 *
+	 * @return array The written items.
+	 */
+	private function writeAs(array $items, ObjectWritePlan $plan): array {
+		$written = $this->objects->runAs($plan->owner, fn (): array => $this->writeAll(items: $items, plan: $plan));
+		$this->recordSubject(written: $written, plan: $plan);
+
+		return $written;
+	}//end writeAs()
+
+	/**
+	 * Write the items down the path the step configures.
+	 *
+	 * @param array           $items The input items.
+	 * @param ObjectWritePlan $plan  The step's resolved plan.
+	 *
+	 * @return array One output item per input item.
+	 */
+	private function writeAll(array $items, ObjectWritePlan $plan): array {
+		if (($plan->config['bulk'] ?? false) !== true) {
+			return $this->writeItems(items: $items, plan: $plan);
+		}
+
+		return array_map(
+			static fn (array $item): array => FlowItems::item(
+				json: $item['json'],
+				options: new FlowItemOptions(binary: $item['binary'], fromItemIndex: $item['fromItemIndex'])
+			),
+			$this->bulk()->write(items: $items, plan: $plan)
+		);
+	}//end writeAll()
+
+	/**
+	 * Resolve what a write step needs before its first write, in the order the checks fail.
+	 *
+	 * @param array $config  The step configuration.
+	 * @param array $context The run context.
+	 *
+	 * @return ObjectWritePlan The resolved plan.
+	 *
+	 * @throws RuntimeException When the owner, register, schema or match pairs cannot be resolved.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+	 */
+	private function writePlan(array $config, array $context): ObjectWritePlan {
+		$operation = $this->validator()->operation(config: $config);
 		$owner = $this->resolveOwner(context: $context);
 		$register = $this->resolveRegister(config: $config);
 		$schema = $this->resolveSchema(config: $config, register: $register);
-
-		// `onNoMatch` is deliberately absent here: it is read inside
-		// executeDelete(), the only path that acts on it, rather than resolved
-		// here and passed down as an eleventh parameter.
-		$pairs = $this->matchPairs(config: $config);
-		$fields = (array)($config['fields'] ?? []);
-		$onMissing = $this->optionFrom(config: $config, key: 'onMissing', allowed: self::ON_MISSING, default: self::ON_MISSING_OMIT);
-		$onConflict = $this->optionFrom(config: $config, key: 'onConflict', allowed: self::ON_CONFLICT, default: self::ON_CONFLICT_OVERWRITE);
-		$replace = (($config['replace'] ?? false) === true);
-		$cap = $this->writeCap(config: $config);
-
-		// The whole loop runs as the owner, not merely attributed to them.
-		// See "The writes run as the owner" in the class docblock.
-		if (($config['bulk'] ?? false) === true) {
-			$written = $this->objects->runAs(
-				$owner,
-				fn (): array => $this->writeBulk(
-					items: $items,
-					config: $config,
-					operation: $operation,
-					register: $register,
-					schema: $schema,
-					pairs: $pairs,
-					fields: $fields,
-					onMissing: $onMissing,
-					cap: $cap
-				)
-			);
-
-			$this->recordSubject(
-				written: $written,
-				config: $config,
-				context: $context,
-				operation: $operation,
-				register: $register,
-				schema: $schema
-			);
-
-			return $written;
-		}
-
-		$written = $this->objects->runAs(
-			$owner,
-			fn (): array => $this->writeItems(
-				items: $items,
-				config: $config,
-				operation: $operation,
-				owner: $owner,
-				register: $register,
-				schema: $schema,
-				pairs: $pairs,
-				fields: $fields,
-				onMissing: $onMissing,
-				onConflict: $onConflict,
-				replace: $replace,
-				cap: $cap
-			)
-		);
-
-		// AFTER the write, and never in a position to undo it. See
-		// recordSubject(): a failure to record is logged, not raised.
-		$this->recordSubject(
-			written: $written,
-			config: $config,
-			context: $context,
-			operation: $operation,
-			register: $register,
-			schema: $schema
-		);
-
-		return $written;
-
-	}//end execute()
+		$plan = new ObjectWritePlan(config: $config, owner: $owner, register: $register, schema: $schema);
+		$plan->context = $context;
+		$plan->operation = $operation;
+		$plan->pairs = $this->validator()->matchPairs(config: $config);
+		$plan->cap = $this->writeCap(config: $config);
+		$plan->readPolicies();
+		return $plan;
+	}//end writePlan()
 
 	/**
 	 * Record what this step wrote under the role its author named.
@@ -917,37 +572,28 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * would attach a task to a record that no longer exists, which is precisely
 	 * the "attached to nothing" state `attachTo` refuses to create.
 	 *
-	 * @param array<int, array<string, mixed>> $written   The step's output items.
-	 * @param array<string, mixed>             $config    The step configuration.
-	 * @param array<string, mixed>             $context   The run context.
-	 * @param string                           $operation The resolved operation.
-	 * @param Register                         $register  The resolved register.
-	 * @param Schema                           $schema    The resolved schema.
+	 * @param array<int, array<string, mixed>> $written The step's output items.
+	 * @param ObjectWritePlan                  $plan    The step's resolved plan.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function recordSubject(
-		array $written,
-		array $config,
-		array $context,
-		string $operation,
-		Register $register,
-		Schema $schema
-	): void {
-		$role = trim((string)($config['subjectRole'] ?? ''));
-		if ($role === '' || $operation === self::OP_DELETE) {
+	private function recordSubject(array $written, ObjectWritePlan $plan): void {
+		$role = trim((string)($plan->config['subjectRole'] ?? ''));
+		if ($role === '' || $plan->operation === self::OP_DELETE) {
 			// Recording is opt-in, and a deleted object is not a subject.
 			return;
 		}
 
 		$this->subjects?->recordOne(
-			context: $context,
-			role: $role,
-			uuids: $this->writtenUuids(written: $written, config: $config),
-			register: (string)$register->getId(),
-			schema: (string)$schema->getId()
+			context: $plan->context,
+			candidates: new FlowSubjectCandidates(
+				role: $role,
+				uuids: $this->writtenUuids(written: $written, config: $plan->config),
+				register: (string)$plan->register->getId(),
+				schema: (string)$plan->schema->getId()
+			)
 		);
 
 	}//end recordSubject()
@@ -991,515 +637,228 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * `ObjectService::runAs()` as one callable — the match and the write it
 	 * feeds must share a subject.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param string $operation The resolved operation.
-	 * @param IUser $owner The run owner, as the acting user.
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param array $pairs The match pairs.
-	 * @param array $fields The configured fields.
-	 * @param string $onMissing The missing-field policy.
-	 * @param string $onConflict The conflict policy.
-	 * @param bool $replace Whether the write replaces.
-	 * @param int|null $cap The write cap.
+	 * @param array           $items The input items.
+	 * @param ObjectWritePlan $plan  The step's resolved plan.
 	 *
 	 * @return array One output item per input item.
 	 *
 	 * @throws RuntimeException When a match is ambiguous or absent, or the cap is exceeded.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   One branch per operation.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)        Same.
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters execute() already resolved.
-	 *
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
-	private function writeItems(
-		array $items,
-		array $config,
-		string $operation,
-		IUser $owner,
-		Register $register,
-		Schema $schema,
-		array $pairs,
-		array $fields,
-		string $onMissing,
-		string $onConflict,
-		bool $replace,
-		?int $cap,
-	): array {
-		$writes = 0;
+	private function writeItems(array $items, ObjectWritePlan $plan): array {
 		$out = [];
-
-		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
-		$payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
-
 		foreach ($items as $index => $item) {
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			$binary = (array)($item[FlowItems::BINARY] ?? []);
+			$out[] = $this->writeItem(plan: $plan, item: new ObjectWriteItem(item: $item, index: (int)$index));
+		}
 
-			// PASS THROUGH, DO NOT DROP. An item the author marked as
-			// already-current is emitted unchanged and costs no write and no
-			// cap. It must still be EMITTED: `openregister.filter` would
-			// remove it, and a synchronisation's sweep decides what to delete
-			// from the target ids its items carry — so dropping an unchanged
-			// item is what makes the next sweep delete the very object that
-			// was fine.
-			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
-				$out[] = FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index);
-				continue;
-			}
-
-			if ($operation === self::OP_DELETE) {
-				$out[] = $this->executeDelete(
-					item: [FlowItems::JSON => $json, FlowItems::BINARY => $binary],
-					index: (int)$index,
-					pairs: $pairs,
-					register: $register,
-					schema: $schema,
-					owner: $owner,
-					cap: $cap,
-					config: $config,
-					writes: $writes
-				);
-				continue;
-			}
-
-			$payload = $this->buildPayload(
-				fields: $fields,
-				json: $json,
-				onMissing: $onMissing,
-				payloadFrom: $payloadFrom
-			);
-			$matched = null;
-			if ($operation !== self::OP_CREATE) {
-				$matched = $this->findMatch(pairs: $pairs, json: $json, register: $register, schema: $schema, owner: $owner);
-			}
-
-			if ($operation === self::OP_UPDATE && $matched === null) {
-				throw new RuntimeException(
-					$this->l10n->t('An update matched no object; an update never silently inserts one.')
-				);
-			}
-
-			$this->guardCap(writes: $writes, cap: $cap);
-			$saved = $this->persist(
-				payload: $payload,
-				matched: $matched,
-				register: $register,
-				schema: $schema,
-				owner: $owner,
-				replace: $replace,
-				onConflict: $onConflict
-			);
-			$writes++;
-
-			$out[] = FlowItems::item(
-				json: $this->outputJson(
-					incoming: (array)($item[FlowItems::JSON] ?? []),
-					written: $this->writtenJson(saved: $saved, register: $register, schema: $schema),
-					config: $config
-				),
-				binary: $binary,
-				fromItemIndex: (int)$index
-			);
-		}//end foreach
-
+		$plan->report(report: $plan->itemCounts());
 		return $out;
 	}//end writeItems()
 
 	/**
-	 * Write the whole page of items through ONE `saveObjects()` call.
+	 * Write one item: skipped items pass through, a delete deletes, any other operation saves.
 	 *
-	 * Every row's uuid is decided CLIENT-SIDE before the call — generated for
-	 * a create, taken from the item's match value for an upsert — because the
-	 * bulk result comes back categorised (`saved` / `updated` / `unchanged`),
-	 * not in input order. Owning the uuid is what lets each output item name
-	 * the row it produced without guessing at a correlation, and it is what a
-	 * downstream contract-commit step reads as the target id.
+	 * A skipped item is still emitted, its json untouched: dropping it is what
+	 * would make a later sweep delete it.
 	 *
-	 * The cap is enforced against the page size BEFORE anything is written.
-	 * The per-item path stops at the cap mid-page, which is recoverable
-	 * because each write already happened or did not; one bulk call has no
-	 * such midpoint, so the only honest cap is a refusal up front.
+	 * @param ObjectWritePlan $plan The step's resolved plan.
+	 * @param ObjectWriteItem $item The item.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param string $operation The resolved operation (create or upsert).
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param array $pairs The match pairs (one uuid pair for an upsert).
-	 * @param array $fields The configured fields.
-	 * @param string $onMissing The missing-field policy.
-	 * @param int $cap The write cap.
+	 * @return array The output item.
 	 *
-	 * @return array One output item per input item.
+	 * @throws RuntimeException When a match is ambiguous or absent, or the cap is exceeded.
 	 *
-	 * @throws RuntimeException When the page exceeds the cap, a match value cannot
-	 *                          be resolved, or the bulk save rejected rows.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters execute() already resolved, same as writeItems().
-	 *
-	 * @spec openspec/specs/flow-object-write-bulk/spec.md
+	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
-	private function writeBulk(
-		array $items,
-		array $config,
-		string $operation,
-		Register $register,
-		Schema $schema,
-		array $pairs,
-		array $fields,
-		string $onMissing,
-		int $cap,
-	): array {
-		if (count($items) > $cap) {
+	private function writeItem(ObjectWritePlan $plan, ObjectWriteItem $item): array {
+		if ($this->payloads()->template->isSkipped(path: $plan->skipWhen, json: $item->json) === true) {
+			return FlowItems::item(json: $item->json, options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index));
+		}
+
+		if ($plan->operation === self::OP_DELETE) {
+			$out = $this->executeDelete(item: $item, plan: $plan);
+			$plan->counts['deleted'] += $this->confirmedDelete(item: $out, config: $plan->config);
+			return $out;
+		}
+
+		return $this->saveItem(plan: $plan, item: $item);
+	}//end writeItem()
+
+	/**
+	 * Create, update or upsert one item's object.
+	 *
+	 * An update that matches nothing fails: it never silently inserts one.
+	 *
+	 * @param ObjectWritePlan $plan The step's resolved plan.
+	 * @param ObjectWriteItem $item The item.
+	 *
+	 * @return array The output item.
+	 *
+	 * @throws RuntimeException When an update matches nothing, a match is ambiguous, or the cap is exceeded.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+	 */
+	private function saveItem(ObjectWritePlan $plan, ObjectWriteItem $item): array {
+		$item->payload = $this->payloads()->build(plan: $plan, json: $item->json);
+		$item->matched = $this->saveTarget(plan: $plan, json: $item->json);
+
+		$this->guardCap(writes: $plan->writes, cap: $plan->cap);
+		$saved = $this->persist(plan: $plan, item: $item);
+		$plan->countSave(matched: $item->matched !== null);
+
+		return FlowItems::item(
+			json: $plan->shaped(incoming: $item->json, written: $this->writtenJson(saved: $saved, plan: $plan)),
+			options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index)
+		);
+	}//end saveItem()
+
+	/**
+	 * The object an item's save lands on, or null to insert.
+	 *
+	 * @param ObjectWritePlan $plan The step's resolved plan.
+	 * @param array           $json The item's record.
+	 *
+	 * @return ObjectEntity|null The match; always null for a create.
+	 *
+	 * @throws RuntimeException When an update matches nothing, or a match is ambiguous.
+	 */
+	private function saveTarget(ObjectWritePlan $plan, array $json): ?ObjectEntity {
+		if ($plan->operation === self::OP_CREATE) {
+			return null;
+		}
+
+		$matched = $this->matcher()->find(plan: $plan, json: $json);
+		if ($plan->operation === self::OP_UPDATE && $matched === null) {
 			throw new RuntimeException(
-				$this->l10n->t(
-					'This bulk write of %1$s items exceeds the step\'s write cap of %2$s; nothing was written.',
-					[(string)count($items), (string)$cap]
-				)
+				$this->l10n->t('An update matched no object; an update never silently inserts one.')
 			);
 		}
 
-		$plan = $this->planBulkRows(
-			items: $items,
-			config: $config,
-			operation: $operation,
-			pairs: $pairs,
-			fields: $fields,
-			onMissing: $onMissing
-		);
-		$rows = $plan['rows'];
-		$ids = $plan['ids'];
-		$skipped = $plan['skipped'];
-
-		// Nothing to write once the skips are removed: return the items as
-		// they arrived rather than calling saveObjects() with an empty payload.
-		if ($rows === []) {
-			return $this->passThrough(items: $items);
-		}
-
-		// Validation stays ON to keep parity with the single-object path;
-		// per-object lifecycle events stay OFF because dispatching thousands
-		// of them is precisely the cost bulk mode exists to shed — the
-		// palette help says so in as many words.
-		$result = $this->objects->saveObjects(
-			objects: $rows,
-			register: $register,
-			schema: $schema,
-			validation: true,
-			events: false
-		);
-
-		$this->guardBulkFailures(result: $result);
-		$written = $this->indexBulkResults(result: $result);
-
-		$out = [];
-		$position = 0;
-		foreach ($items as $index => $item) {
-			// Skipped items were never sent, so they have no row and no id.
-			// Emit them exactly as they arrived, in place.
-			if (array_key_exists($index, $skipped) === true) {
-				$out[] = FlowItems::item(
-					json: (array)($item[FlowItems::JSON] ?? []),
-					binary: (array)($item[FlowItems::BINARY] ?? []),
-					fromItemIndex: (int)$index
-				);
-				continue;
-			}
-
-			$id = (string)$ids[$index];
-			$saved = ($written[$id] ?? null);
-
-			// The bulk result carries the serialised row when the id came
-			// back; the sent payload is the fallback so the output never
-			// goes dark.
-			$json = $saved;
-			if (is_array($json) === false) {
-				$json = $rows[$position];
-			}
-
-			$position++;
-
-			unset($json['@self'], $json['id']);
-			$json['uuid'] = $id;
-			$json['register'] = $this->identifierOf(register: $register);
-			$json['schema'] = $this->labelOf(schema: $schema);
-
-			$out[] = FlowItems::item(
-				json: $this->outputJson(
-					incoming: (array)($item[FlowItems::JSON] ?? []),
-					written: $json,
-					config: $config
-				),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: (int)$index
-			);
-		}//end foreach
-
-		return $out;
-	}//end writeBulk()
+		return $matched;
+	}//end saveTarget()
 
 	/**
-	 * The uuid one bulk row is written under.
+	 * Whether an item {@see executeDelete()} returned records a confirmed
+	 * delete: 1 when its written record says `deleted: true`, else 0.
 	 *
-	 * A create generates one — the same v4 form `saveObjects()` itself would
-	 * assign — so the node knows every row's identity without re-reading. An
-	 * upsert resolves the single uuid match pair against the item; a value
-	 * that does not resolve fails the item rather than widening into a
-	 * create, because a match key is never omitted.
+	 * Only ever called on executeDelete()'s own output, where the `deleted`
+	 * flag is always the node's (it overwrites the record, or the `output`
+	 * key, on every branch), so an incoming `deleted` field from upstream can
+	 * never be counted here.
 	 *
-	 * @param string $operation The resolved operation.
-	 * @param array $pairs The match pairs.
-	 * @param array $json The item's record.
+	 * @param array $item The output item.
+	 * @param array $config The step configuration; `output` is read from it.
 	 *
-	 * @return string The row uuid.
-	 *
-	 * @throws RuntimeException When an upsert's match value cannot be resolved.
-	 *
-	 * @spec openspec/specs/flow-object-write-bulk/spec.md
+	 * @return int 1 for a confirmed delete, 0 otherwise.
 	 */
-	private function bulkRowId(string $operation, array $pairs, array $json): string {
-		if ($operation === self::OP_CREATE) {
-			return Uuid::v4()->toRfc4122();
-		}
-
-		$property = (string)($pairs[0]['property'] ?? 'uuid');
-		$resolved = $this->resolveTemplate(value: ($pairs[0]['value'] ?? null), json: $json);
-		$id = '';
-		if ($resolved['resolved'] === true && is_scalar($resolved['value']) === true) {
-			$id = trim((string)$resolved['value']);
-		}
-
-		if ($id === '') {
-			throw new RuntimeException(
-				$this->l10n->t('The match value for "%s" could not be resolved from the item; a match key is never omitted.', [$property])
-			);
-		}
-
-		return $id;
-	}//end bulkRowId()
-
-	/**
-	 * Refuse to report a bulk save that rejected rows as a success.
-	 *
-	 * `saveObjects()` never throws for a rejected row — refusals land in the
-	 * result's `invalid` and `errors` buckets while the accepted rows are
-	 * already written. Folding that into per-item output would be exactly the
-	 * hollow success this node's third rule forbids, so the step fails
-	 * loudly, naming the count, the first reason, and the fact that the
-	 * accepted writes were not rolled back.
-	 *
-	 * @param array $result The bulk save result.
-	 *
-	 * @return void
-	 *
-	 * @throws RuntimeException When any row was rejected.
-	 *
-	 * @spec openspec/specs/flow-object-write-bulk/spec.md
-	 */
-	private function guardBulkFailures(array $result): void {
-		$invalid = (array)($result['invalid'] ?? []);
-		$errors = (array)($result['errors'] ?? []);
-
-		// `invalid` and `errors` mirror each other for safeguard rejections;
-		// take the larger so a bucket populated by only one path still counts.
-		$failures = max(count($invalid), count($errors));
-		if ($failures === 0) {
-			return;
-		}
-
-		$first = '';
-		foreach (array_merge($invalid, $errors) as $entry) {
-			if (is_array($entry) === true && trim((string)($entry['error'] ?? '')) !== '') {
-				$first = trim((string)$entry['error']);
-				break;
-			}
-		}
-
-		throw new RuntimeException(
-			$this->l10n->t(
-				'The bulk write rejected %1$s of its rows (first reason: %2$s); accepted rows were written and were not rolled back.',
-				[(string)$failures, $first]
-			)
-		);
-
-	}//end guardBulkFailures()
-
-	/**
-	 * Index the bulk result's serialised rows by uuid.
-	 *
-	 * @param array $result The bulk save result.
-	 *
-	 * @return array<string, array<string, mixed>> Serialised rows keyed by uuid.
-	 */
-	private function indexBulkResults(array $result): array {
-		$written = [];
-		foreach (['saved', 'updated', 'unchanged'] as $bucket) {
-			foreach ((array)($result[$bucket] ?? []) as $row) {
-				if (is_array($row) === false) {
-					continue;
-				}
-
-				$self = (array)($row['@self'] ?? []);
-				$uuid = (string)($self['uuid'] ?? $self['id'] ?? $row['uuid'] ?? $row['id'] ?? '');
-				if ($uuid !== '') {
-					$written[$uuid] = $row;
-				}
-			}
-		}
-
-		return $written;
-	}//end indexBulkResults()
-
-	/**
-	 * The json a written item carries onward.
-	 *
-	 * With `output` set, the incoming record is PRESERVED and the written object
-	 * is added under that key — the convention every other node already follows
-	 * (`hermiq.agent-step`, `openconnector.source-call`,
-	 * `openregister.flow-state` all do this). Without it, the written object
-	 * REPLACES the record, which is the historical behaviour and stays the
-	 * default because changing it silently would rewrite what existing flows
-	 * see.
-	 *
-	 * Replacing is fine for a write that ends a branch and wrong for one in the
-	 * middle of a chain, because it discards everything the run was carrying. A
-	 * per-issue lock is exactly the second shape: hydra's sequencer claims a
-	 * lock and then still needs the repo, the issue and its slot number to do
-	 * the work the lock protects. Measured while building it — after the lock
-	 * write, `{{repo}}` rendered empty and the next call went to `/repos//issues`.
-	 *
-	 * @param array $incoming The item's json as it arrived.
-	 * @param array $written The written object's json.
-	 * @param array $config The step configuration.
-	 *
-	 * @return array The outgoing json.
-	 */
-	private function outputJson(array $incoming, array $written, array $config): array {
+	private function confirmedDelete(array $item, array $config): int {
+		$record = (array)($item[FlowItems::JSON] ?? []);
 		$key = trim((string)($config['output'] ?? ''));
-		if ($key === '') {
-			return $written;
+		if ($key !== '') {
+			$record = (array)($record[$key] ?? []);
 		}
 
-		$incoming[$key] = $written;
+		if (($record['deleted'] ?? null) === true) {
+			return 1;
+		}
 
-		return $incoming;
-	}//end outputJson()
+		return 0;
+	}//end confirmedDelete()
 
 	/**
 	 * Perform one guarded delete and build its output item.
 	 *
-	 * @param array $item The input item (`json` and `binary`).
-	 * @param int $index The input item's index, for provenance.
-	 * @param array $pairs The composite match pairs.
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param IUser $owner The run owner, as the acting user.
-	 * @param int $cap The step's write cap.
-	 * @param array $config The step configuration; `onNoMatch` and `output` are read from it.
-	 * @param int $writes Writes performed so far; incremented by reference.
+	 * Every delete ATTEMPT counts as a write towards the cap: a delete the
+	 * service reports as failed may already have cascaded into child deletes
+	 * before failing. Only a delete the service confirms (`deleteObject()`
+	 * returns true; it returns false for an exception it caught) is marked
+	 * `deleted: true` on the output item and counted in the `deleted` tally;
+	 * a failed one stays in the run marked `deleted: false`, like a skip.
+	 *
+	 * @param ObjectWriteItem $item The item.
+	 * @param ObjectWritePlan $plan The step's resolved plan; its write count is incremented.
 	 *
 	 * @return array The output item.
 	 *
 	 * @throws RuntimeException When the match is absent under `error`, or ambiguous, or the cap is hit.
 	 */
-	private function executeDelete(
-		array $item,
-		int $index,
-		array $pairs,
-		Register $register,
-		Schema $schema,
-		IUser $owner,
-		int $cap,
-		array $config,
-		int &$writes,
-	): array {
-		// Read from the config rather than taken as an eleventh parameter. The
-		// caller resolves it exactly this way; passing both it and the config
-		// would be two spellings of one fact, and the parameter list is already
-		// at its limit.
-		$onNoMatch = $this->optionFrom(
-			config: $config,
-			key: 'onNoMatch',
-			allowed: self::ON_NO_MATCH,
-			default: self::ON_NO_MATCH_ERROR
-		);
-
-		$json = (array)($item[FlowItems::JSON] ?? []);
-		$binary = (array)($item[FlowItems::BINARY] ?? []);
-
-		$matched = $this->findMatch(pairs: $pairs, json: $json, register: $register, schema: $schema, owner: $owner);
-
+	private function executeDelete(ObjectWriteItem $item, ObjectWritePlan $plan): array {
+		$matched = $this->matcher()->find(plan: $plan, json: $item->json);
 		if ($matched === null) {
-			if ($onNoMatch !== self::ON_NO_MATCH_SKIP) {
-				throw new RuntimeException(
-					$this->l10n->t('A delete matched no object; set "onNoMatch" to "skip" if that is intended.')
-				);
-			}
-
-			// A skip carries the input record through with `deleted: false`, so
-			// it is never indistinguishable from a removal in the run log.
-			$json['deleted'] = false;
-
-			// ...and it gets the `output` key too, when one is set. A step
-			// whose output key exists only on the branch that deleted
-			// something makes `{{removed.deleted}}` resolve on some items and
-			// not others, which is a downstream null nobody can explain.
-			//
-			// NOT via outputJson() here: on this branch the record IS the
-			// output, so an empty key must leave `$json` alone rather than
-			// replace it with the two-field written record.
-			$outputKey = trim((string)($config['output'] ?? ''));
-			if ($outputKey !== '') {
-				$json[$outputKey] = ['deleted' => false];
-			}
-
-			return FlowItems::item(json: $json, binary: $binary, fromItemIndex: $index);
-		}//end if
+			return $this->unmatchedDelete(item: $item, plan: $plan);
+		}
 
 		$uuid = (string)$matched->getUuid();
+		$this->guardCap(writes: $plan->writes, cap: $plan->cap);
 
-		$this->guardCap(writes: $writes, cap: $cap);
+		$deleted = $this->deleteMatched(plan: $plan, uuid: $uuid);
+		$plan->writes++;
 
-		// Guard 4: the ordinary delete path, with the run owner as the explicit
-		// acting user and the register / schema scope confining the lookup to
-		// one magic table. No `_retentionSweep`; see `permanenceOf()` for why
-		// the soft delete is the default and what opts out of it.
-		$this->objects->deleteObject(
-			uuid: $uuid,
-			register: $register,
-			schema: $schema,
-			currentUser: $owner,
-			permanent: $this->permanenceOf(config: $config)
-		);
-		$writes++;
-
-		// Through `outputJson()`, exactly like every non-delete write. Without
-		// it a delete was the one operation that could not carry its incoming
-		// record forward: `config.output` never reached this method, so the
-		// key the author set did nothing and everything the item was carrying
-		// — the issue number, the repo, the run id — was dropped at the delete.
-		//
-		// With no `output` set the returned record is unchanged, so this is not
-		// a behaviour change for any flow that does not ask for one.
+		// Through `shaped()`, exactly like every non-delete write, so a delete carries
+		// its incoming record forward under `output` like any other write.
 		return FlowItems::item(
-			json: $this->outputJson(
-				incoming: $json,
-				written: [
-					'uuid' => $uuid,
-					'register' => $this->identifierOf(register: $register),
-					'schema' => $this->labelOf(schema: $schema),
-					'deleted' => true,
-				],
-				config: $config
-			),
-			binary: $binary,
-			fromItemIndex: $index
+			json: $plan->shaped(incoming: $item->json, written: $plan->deleteRecord(uuid: $uuid, deleted: $deleted)),
+			options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index)
 		);
-
 	}//end executeDelete()
+
+	/**
+	 * Guard 4: the ordinary delete path, with the run owner as the explicit acting
+	 * user and the register / schema scope confining the lookup to one magic table.
+	 * No `_retentionSweep`; see `permanenceOf()` for why the soft delete is the
+	 * default and what opts out of it.
+	 *
+	 * @param ObjectWritePlan $plan The step's resolved plan.
+	 * @param string          $uuid The matched object.
+	 *
+	 * @return bool Whether the service confirmed the delete.
+	 */
+	private function deleteMatched(ObjectWritePlan $plan, string $uuid): bool {
+		return $this->objects->deleteObject(
+			deletion: new ObjectDeletion(
+				uuid: $uuid,
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				currentUser: $plan->owner,
+				permanent: $this->permanenceOf(config: $plan->config)
+			)
+		);
+	}//end deleteMatched()
+
+	/**
+	 * The output of a delete that matched nothing, or a refusal when `onNoMatch` says so.
+	 *
+	 * A skip carries the input record through with `deleted: false`, so it is never
+	 * indistinguishable from a removal in the run log. It gets the `output` key too,
+	 * when one is set: a step whose output key exists only on the branch that deleted
+	 * something makes `{{removed.deleted}}` resolve on some items and not others.
+	 *
+	 * NOT via `shaped()`: on this branch the record IS the output, so an empty key
+	 * must leave the record alone rather than replace it with the two-field record.
+	 *
+	 * @param ObjectWriteItem $item The item.
+	 * @param ObjectWritePlan $plan The step's resolved plan.
+	 *
+	 * @return array The output item.
+	 *
+	 * @throws RuntimeException When `onNoMatch` is not `skip`.
+	 */
+	private function unmatchedDelete(ObjectWriteItem $item, ObjectWritePlan $plan): array {
+		if ((new ObjectWriteOptions())->option(config: $plan->config, key: 'onNoMatch') !== ObjectWriteOptions::ON_NO_MATCH_SKIP) {
+			throw new RuntimeException(
+				$this->l10n->t('A delete matched no object; set "onNoMatch" to "skip" if that is intended.')
+			);
+		}
+
+		$json = $item->json;
+		$json['deleted'] = false;
+		$outputKey = trim((string)($plan->config['output'] ?? ''));
+		if ($outputKey !== '') {
+			$json[$outputKey] = ['deleted' => false];
+		}
+
+		return FlowItems::item(json: $json, options: new FlowItemOptions(binary: $item->binary, fromItemIndex: $item->index));
+	}//end unmatchedDelete()
 
 	/**
 	 * Route one non-delete write to the service method its operation calls for.
@@ -1508,60 +867,72 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * update-side write goes through `patchObject()` unless the author asked for
 	 * `replace: true`, which is the only way to reach PUT semantics from a flow.
 	 *
-	 * @param array $payload The templated field payload.
-	 * @param ObjectEntity|null $matched The matched object, when there is one.
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param IUser $owner The run owner, as the acting user.
-	 * @param bool $replace Whether to replace rather than patch.
-	 * @param string $onConflict What to do when a create's identifier is already taken.
+	 * @param ObjectWritePlan $plan The step's resolved plan: register, schema, owner, `replace` and `onConflict`.
+	 * @param ObjectWriteItem $item The item, its payload built and its match, when there is one, found.
 	 *
 	 * @return ObjectEntity The written object.
 	 */
-	private function persist(
-		array $payload,
-		?ObjectEntity $matched,
-		Register $register,
-		Schema $schema,
-		IUser $owner,
-		bool $replace,
-		string $onConflict = self::ON_CONFLICT_OVERWRITE,
-	): ObjectEntity {
-		if ($matched === null) {
-			// `matched === null` means the node's own lookup found nothing —
-			// but that lookup and this write are two separate calls, so another
-			// flow run can land in between. Passing failIfExists through is what
-			// closes that window: the database, not the node, arbitrates.
-			return $this->objects->saveObject(
-				object: $payload,
-				register: $register,
-				schema: $schema,
-				currentUser: $owner,
-				failIfExists: ($onConflict === self::ON_CONFLICT_FAIL)
-			);
+	private function persist(ObjectWritePlan $plan, ObjectWriteItem $item): ObjectEntity {
+		if ($item->matched === null) {
+			return $this->insert(plan: $plan, item: $item);
 		}
 
-		$uuid = (string)$matched->getUuid();
-
-		if ($replace === true) {
-			return $this->objects->saveObject(
-				object: $payload,
-				register: $register,
-				schema: $schema,
-				uuid: $uuid,
-				currentUser: $owner
-			);
+		if ($plan->replace === true) {
+			return $this->replaceMatched(plan: $plan, item: $item);
 		}
 
 		return $this->objects->patchObject(
-			objectId: $uuid,
-			data: $payload,
-			register: $register,
-			schema: $schema,
-			currentUser: $owner
+			patch: new ObjectPatch(
+				objectId: (string)$item->matched->getUuid(),
+				data: $item->payload,
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				currentUser: $plan->owner
+			)
 		);
-
 	}//end persist()
+
+	/**
+	 * Replace the matched object with an item's payload.
+	 *
+	 * @param ObjectWritePlan $plan The step's resolved plan.
+	 * @param ObjectWriteItem $item The item, its payload built and its match found.
+	 *
+	 * @return ObjectEntity The written object.
+	 */
+	private function replaceMatched(ObjectWritePlan $plan, ObjectWriteItem $item): ObjectEntity {
+		return $this->objects->saveObject(
+			object: $item->payload,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				uuid: (string)$item->matched->getUuid(),
+				actor: new SaveActor(currentUser: $plan->owner)
+			)
+		);
+	}//end replaceMatched()
+
+	/**
+	 * Insert an item's object.
+	 *
+	 * `matched === null` means the node's own lookup found nothing — but that lookup
+	 * and this write are two separate calls, so another flow run can land in between.
+	 * Passing failIfExists through is what closes that window: the database, not the
+	 * node, arbitrates.
+	 *
+	 * @param ObjectWritePlan $plan The step's resolved plan.
+	 * @param ObjectWriteItem $item The item, its payload built.
+	 *
+	 * @return ObjectEntity The written object.
+	 */
+	private function insert(ObjectWritePlan $plan, ObjectWriteItem $item): ObjectEntity {
+		return $this->objects->saveObject(
+			object: $item->payload,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				policy: new SavePolicy(failIfExists: ($plan->onConflict === ObjectWriteOptions::ON_CONFLICT_FAIL)),
+				actor: new SaveActor(currentUser: $plan->owner)
+			)
+		);
+	}//end insert()
 
 	/**
 	 * Build the output record for a performed write.
@@ -1569,18 +940,17 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * Carries the saved data plus the identifiers a downstream step needs to act
 	 * on what was just written without re-fetching it.
 	 *
-	 * @param ObjectEntity $saved The written object.
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
+	 * @param ObjectEntity    $saved The written object.
+	 * @param ObjectWritePlan $plan  The step's resolved plan.
 	 *
 	 * @return array The output record.
 	 */
-	private function writtenJson(ObjectEntity $saved, Register $register, Schema $schema): array {
+	private function writtenJson(ObjectEntity $saved, ObjectWritePlan $plan): array {
 		$json = (array)$saved->getObject();
 
 		$json['uuid'] = $saved->getUuid();
-		$json['register'] = $this->identifierOf(register: $register);
-		$json['schema'] = $this->labelOf(schema: $schema);
+		$json['register'] = $plan->registerLabel();
+		$json['schema'] = $plan->schemaLabel();
 
 		return $json;
 	}//end writtenJson()
@@ -1659,41 +1029,70 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// For a scheduled run they differ — the cause is a schedule, the acting
 		// identity is the user the trigger declares — and reading provenance here
 		// is what made a scheduled write execute as whoever authored the flow.
-		$uid = ($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? null);
+		$uid = $this->ownerUid(context: $context);
+		$user = $this->userManager->get($uid);
+		if ($user === null) {
+			throw new RuntimeException(
+				$this->l10n->t(
+					'This flow run\'s acting identity "%s" (runAs) is not a user account; an object write must be attributable.',
+					[$uid]
+				)
+			);
+		}
+
+		$this->refuseDisabled(user: $user, uid: $uid);
+
+		return $user;
+	}//end resolveOwner()
+
+	/**
+	 * Refuse an owner whose account is disabled.
+	 *
+	 * A DISABLED account is not an identity work may proceed under, and
+	 * `IUserManager::get()` still returns one. Rights are re-resolved at the
+	 * moment work runs precisely so that a departure takes effect: a run
+	 * parked for three weeks must not resume with the rights of somebody who
+	 * has since been offboarded. Checking only for existence would let the
+	 * most common revocation there is — disabling the account — pass
+	 * unnoticed for as long as the run lives.
+	 *
+	 * @param IUser  $user The acting account.
+	 * @param string $uid  The identity the run names.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the account is disabled.
+	 */
+	private function refuseDisabled(IUser $user, string $uid): void {
+		if ($user->isEnabled() === false) {
+			throw new RuntimeException(
+				$this->l10n->t(
+					'This flow run\'s acting identity "%s" (runAs) is a disabled account; an object write is refused rather than performed on their behalf.',
+					[$uid]
+				)
+			);
+		}
+	}//end refuseDisabled()
+
+	/**
+	 * The run's acting identity, trimmed.
+	 *
+	 * @param array $context The run context.
+	 *
+	 * @return string The uid.
+	 *
+	 * @throws RuntimeException When the context names none.
+	 */
+	private function ownerUid(array $context): string {
+		$uid = ($context[FlowRunServiceInterface::RUN_AS_CONTEXT_KEY] ?? null);
 		if (is_string($uid) === false || trim($uid) === '') {
 			throw new RuntimeException(
 				$this->l10n->t('This flow run has no acting identity (runAs); an object write must be attributable.')
 			);
 		}
 
-		$user = $this->userManager->get(trim($uid));
-		if ($user === null) {
-			throw new RuntimeException(
-				$this->l10n->t(
-					'This flow run\'s acting identity "%s" (runAs) is not a user account; an object write must be attributable.',
-					[trim($uid)]
-				)
-			);
-		}
-
-		// A DISABLED account is not an identity work may proceed under, and
-		// `IUserManager::get()` still returns one. Rights are re-resolved at the
-		// moment work runs precisely so that a departure takes effect: a run
-		// parked for three weeks must not resume with the rights of somebody who
-		// has since been offboarded. Checking only for existence would let the
-		// most common revocation there is — disabling the account — pass
-		// unnoticed for as long as the run lives.
-		if ($user->isEnabled() === false) {
-			throw new RuntimeException(
-				$this->l10n->t(
-					'This flow run\'s acting identity "%s" (runAs) is a disabled account; an object write is refused rather than performed on their behalf.',
-					[trim($uid)]
-				)
-			);
-		}
-
-		return $user;
-	}//end resolveOwner()
+		return trim($uid);
+	}//end ownerUid()
 
 	/**
 	 * Resolve the configured register from a slug, uuid or id.
@@ -1709,7 +1108,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @throws UnexpectedValueException When it does not resolve.
 	 */
 	private function resolveRegister(array $config): Register {
-		$identifier = $this->identifierFrom(value: ($config['register'] ?? null));
+		$identifier = $this->validator()->identifier(value: ($config['register'] ?? null));
 		if ($identifier === '') {
 			throw new UnexpectedValueException($this->l10n->t('An object-write step needs a register.'));
 		}
@@ -1742,7 +1141,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @throws UnexpectedValueException When it does not resolve.
 	 */
 	private function resolveSchema(array $config, Register $register): Schema {
-		$identifier = $this->identifierFrom(value: ($config['schema'] ?? null));
+		$identifier = $this->validator()->identifier(value: ($config['schema'] ?? null));
 		if ($identifier === '') {
 			throw new UnexpectedValueException($this->l10n->t('An object-write step needs a schema.'));
 		}
@@ -1754,24 +1153,22 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// looser `required` set on that foreign schema would accept the row
 		// silently.
 		if (is_numeric($identifier) === false) {
-			$registerSchemaIds = (array)($register->getSchemas() ?? []);
-			$scoped            = $this->schemas->findBySlugInIds(
-				slug: $identifier,
-				schemaIds: $registerSchemaIds
-			);
-			if ($scoped !== null) {
-				return $scoped;
-			}
-
-			throw new SchemaNotInRegisterException(
-				schemaSlug: $identifier,
-				registerId: $register->getId(),
-				registerSlug: $register->getSlug(),
-				candidatesElsewhere: $this->schemas->countBySlug(slug: $identifier),
-				registerSchemaCount: count($registerSchemaIds)
-			);
+			return $this->schemaInRegister(slug: $identifier, register: $register);
 		}
 
+		return $this->schemaById(identifier: $identifier);
+	}//end resolveSchema()
+
+	/**
+	 * Resolve a schema by id.
+	 *
+	 * @param string $identifier The configured id.
+	 *
+	 * @return Schema The resolved schema.
+	 *
+	 * @throws UnexpectedValueException When it does not resolve.
+	 */
+	private function schemaById(string $identifier): Schema {
 		try {
 			return $this->schemas->find(id: $identifier, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
@@ -1781,693 +1178,33 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				$e
 			);
 		}
-
-	}//end resolveSchema()
+	}//end schemaById()
 
 	/**
-	 * Resolve the composite match to exactly one object, or to none.
+	 * Resolve a slug among the register's own schemas, or refuse.
 	 *
-	 * Every pair must hold — the pairs are ANDed, never ORed. An OR would widen
-	 * the resolved set, and every consumer of a match treats a wider set as an
-	 * error, so an OR would only ever produce configurations that cannot succeed.
+	 * @param string   $slug     The configured slug.
+	 * @param Register $register The already-resolved register.
 	 *
-	 * More than one match fails, naming the count. Picking one would be
-	 * non-deterministic across instances, which is the defect class that only
-	 * ever appears on someone else's system.
+	 * @return Schema The resolved schema.
 	 *
-	 * The lookup runs AS the owner, so the object a match resolves to is one the
-	 * owner can actually see. Without that the node checked one subject and
-	 * chose another: the writes were attributed (`currentUser: $owner`) while
-	 * the scan that decided WHICH row to write ran under the ambient session.
-	 * Under CLI cron that session is empty, and both the RBAC and organisation
-	 * filters skip themselves for a sessionless CLI context — so the match
-	 * could resolve a row outside the owner's visibility, and `upsert` could
-	 * find one the owner could not see and therefore insert a duplicate.
-	 *
-	 * @param array $pairs The match pairs.
-	 * @param array $json The current item's record.
-	 * @param Register $register The resolved register.
-	 * @param Schema $schema The resolved schema.
-	 * @param IUser $owner The run owner, whose RBAC applies to the lookup.
-	 *
-	 * @return ObjectEntity|null The single match, or null when nothing matched.
-	 *
-	 * @throws RuntimeException When a match value cannot be templated, or the match is ambiguous.
+	 * @throws SchemaNotInRegisterException When the register does not carry it.
 	 */
-	private function findMatch(
-		array $pairs,
-		array $json,
-		Register $register,
-		Schema $schema,
-		IUser $owner,
-	): ?ObjectEntity {
-		$filters = [
-			'register' => $register->getId(),
-			'schema' => $schema->getId(),
-		];
-
-		$properties = ($schema->getProperties() ?? []);
-
-		foreach ($pairs as $pair) {
-			$property = (string)$pair['property'];
-			$resolved = $this->resolveTemplate(value: $pair['value'], json: $json);
-
-			// `onMissing` never applies here. Omitting a field narrows what is
-			// written; omitting a match pair WIDENS what is matched, and a guard
-			// that gets weaker when its input is missing is not a guard.
-			if ($resolved['resolved'] === false) {
-				throw new RuntimeException(
-					$this->l10n->t('The match value for "%s" could not be resolved from the item; a match key is never omitted.', [$property])
-				);
-			}
-
-			$this->assignMatchFilter(
-				filters: $filters,
-				property: $property,
-				value: $resolved['value'],
-				properties: $properties
-			);
+	private function schemaInRegister(string $slug, Register $register): Schema {
+		$registerSchemaIds = (array)($register->getSchemas() ?? []);
+		$scoped            = $this->schemas->findBySlugInIds(slug: $slug, schemaIds: $registerSchemaIds);
+		if ($scoped !== null) {
+			return $scoped;
 		}
 
-		$rows = $this->objects->runAs(
-			$owner,
-			fn (): array => $this->objects->findAll(
-				config: [
-					'filters' => $filters,
-					'limit' => self::MATCH_SCAN_LIMIT,
-				]
-			)
+		throw new SchemaNotInRegisterException(
+			schemaSlug: $slug,
+			registerId: $register->getId(),
+			registerSlug: $register->getSlug(),
+			candidatesElsewhere: $this->schemas->countBySlug(slug: $slug),
+			registerSchemaCount: count($registerSchemaIds)
 		);
-
-		$entities = [];
-		foreach ($rows as $row) {
-			if (($row instanceof ObjectEntity) === true) {
-				$entities[] = $row;
-			}
-		}
-
-		if ($entities === []) {
-			return null;
-		}
-
-		$count = count($entities);
-		if ($count > 1) {
-			$label = (string)$count;
-			if ($count >= self::MATCH_SCAN_LIMIT) {
-				$label = $this->l10n->t('%s or more', [(string)$count]);
-			}
-
-			throw new RuntimeException(
-				$this->l10n->t('The match resolved to %s objects; it must resolve to exactly one.', [$label])
-			);
-		}
-
-		return $entities[0];
-	}//end findMatch()
-
-	/**
-	 * Route one resolved match pair into the property bag or the `@self` bag.
-	 *
-	 * A schema property and an object's metadata live in different places: the
-	 * property in the row's JSON document, the metadata in the magic table's
-	 * underscore-prefixed columns. A filter therefore has to be addressed to the
-	 * right one. Every match pair used to go into the property bag
-	 * unconditionally, so `uuid` — which is metadata and never a document field —
-	 * was looked up as a property that does not exist and hit the
-	 * `WHERE 1 = 0` branch. Zero rows, no error: an update or delete matched
-	 * nothing while the run reported success, and an upsert inserted a duplicate.
-	 *
-	 * That `uuid` in particular is what `ObjectReadNode` puts on every item it
-	 * emits, expressly so a follow-up write or delete can name the row — so the
-	 * most natural way to chain a read into a write was the one way that could
-	 * not work.
-	 *
-	 * Routing rules, in order:
-	 *   1. An explicit `@self.<field>` prefix always addresses metadata.
-	 *   2. A name the schema declares as a property addresses the property. This
-	 *      keeps precedence with the schema, so a schema that genuinely has a
-	 *      `name` or `owner` property behaves exactly as before.
-	 *   3. A name that is a known metadata field addresses metadata.
-	 *   4. Anything else is refused, by name. It could only ever have produced
-	 *      `1 = 0`, and a guard that silently matches nothing is not a guard.
-	 *
-	 * @param array $filters The filter bag being built (by reference).
-	 * @param string $property The configured match property name.
-	 * @param mixed $value The resolved match value.
-	 * @param array<string,mixed> $properties The schema's declared properties.
-	 *
-	 * @return void
-	 *
-	 * @throws RuntimeException When the property is neither a schema property nor metadata.
-	 *
-	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
-	 */
-	private function assignMatchFilter(array &$filters, string $property, mixed $value, array $properties): void {
-		// 1. Explicit metadata addressing.
-		if (str_starts_with($property, self::SELF_PREFIX) === true) {
-			$field = substr($property, strlen(self::SELF_PREFIX));
-			if (in_array($field, self::MATCHABLE_METADATA_FIELDS, true) === false) {
-				throw new RuntimeException(
-					$this->l10n->t(
-						'The match names metadata field "%1$s", which does not exist. Matchable metadata fields are: %2$s.',
-						[$field, implode(', ', self::MATCHABLE_METADATA_FIELDS)]
-					)
-				);
-			}
-
-			$filters['@self'][$field] = $value;
-			return;
-		}
-
-		// 2. The schema wins for any name it declares.
-		if (array_key_exists($property, $properties) === true) {
-			$filters[$property] = $value;
-			return;
-		}
-
-		// 3. A metadata field the schema does not shadow.
-		if (in_array($property, self::MATCHABLE_METADATA_FIELDS, true) === true) {
-			$filters['@self'][$property] = $value;
-			return;
-		}
-
-		// 4. Neither a declared property nor metadata.
-		//
-		// Refuse only when the schema actually told us what it has. An empty
-		// property list cannot distinguish "this schema declares nothing" from
-		// "the declaration was not available here", and a guard that fires on
-		// missing information would break working flows rather than protect
-		// them. With no declaration to check against, keep the historical
-		// behaviour and let the query layer answer.
-		if ($properties !== []) {
-			throw new RuntimeException(
-				$this->l10n->t(
-					'The match names "%1$s", which is neither a property of this schema nor a metadata field, '
-					. 'so it could never match anything. Matchable metadata fields are: %2$s.',
-					[$property, implode(', ', self::MATCHABLE_METADATA_FIELDS)]
-				)
-			);
-		}
-
-		$filters[$property] = $value;
-	}//end assignMatchFilter()
-
-	/**
-	 * Template the configured field mapping against one item.
-	 *
-	 * @param array $fields The configured mapping.
-	 * @param array $json The item's record.
-	 * @param string $onMissing What an unresolvable value means.
-	 * @param string|null $payloadFrom Path whose resolved object IS the payload, when the
-	 *                                 properties are not known up front. Alternative to `$fields`.
-	 *
-	 * @return array The payload to write.
-	 *
-	 * @throws RuntimeException When a value is unresolvable and `onMissing` is `fail`.
-	 */
-	private function buildPayload(
-		array $fields,
-		array $json,
-		string $onMissing,
-		?string $payloadFrom = null
-	): array {
-		// WRITING AN ITEM WHOLE. `fields` enumerates the properties to write, which
-		// requires knowing them up front — a synchronization with no mapping has no
-		// such list, and that single gap refused 98 of 99 unmigratable
-		// synchronizations measured on the dev instance. `payloadFrom` names a path
-		// whose resolved value IS the payload.
-		//
-		// An unresolvable path THROWS regardless of `onMissing`, deliberately.
-		// `onMissing: omit` is a per-field rule — it drops one property and writes
-		// the rest. There is no "rest" here: omitting a whole payload would write a
-		// BLANK object, which is the same hazard the field loop's own comment warns
-		// about, one level up.
-		if ($payloadFrom !== null && trim($payloadFrom) !== '') {
-			$found = $this->lookupPath(path: trim($payloadFrom), json: $json);
-
-			if ($found['found'] === false || is_array($found['value']) === false) {
-				throw new RuntimeException(
-					$this->l10n->t(
-						'"payloadFrom" path "%s" did not resolve to an object on this item, so there is '
-						. 'nothing to write. Writing an empty object instead would create a blank record.',
-						[trim($payloadFrom)]
-					)
-				);
-			}
-
-			return $found['value'];
-		}
-
-		$payload = [];
-
-		foreach ($fields as $key => $value) {
-			$key = (string)$key;
-			$resolved = $this->resolveTemplate(value: $value, json: $json);
-
-			if ($resolved['resolved'] === false) {
-				if ($onMissing === self::ON_MISSING_FAIL) {
-					throw new RuntimeException(
-						$this->l10n->t('The value for field "%s" could not be resolved from the item.', [$key])
-					);
-				}
-
-				// Omission — not `""`, not `null`, not `{}`. OpenRegister's
-				// validator rejects both `{}` and `null` for an object property
-				// nested inside an array item, and an empty string is worse
-				// still: it passes validation and writes a wrong value.
-				continue;
-			}
-
-			$payload[$key] = $resolved['value'];
-		}//end foreach
-
-		return $payload;
-	}//end buildPayload()
-
-	/**
-	 * Resolve one configured value against the item.
-	 *
-	 * A non-string is passed through unchanged, so literals and nested
-	 * structures — including a deliberate `null`, which is how an author clears
-	 * a property — can be authored directly. A value that is exactly one
-	 * placeholder keeps the resolved value's TYPE: an array stays an array, a
-	 * number stays a number. Anything else is substituted inline and stringified.
-	 *
-	 * A placeholder resolves to nothing when its path is absent, or holds null,
-	 * or holds an empty array. That is reported rather than substituted.
-	 *
-	 * @param mixed $value The configured value.
-	 * @param array $json The item's record.
-	 *
-	 * @return array{resolved: bool, value: mixed} The verdict and the value.
-	 */
-	private function resolveTemplate(mixed $value, array $json): array {
-		if (is_string($value) === false) {
-			return ['resolved' => true, 'value' => $value];
-		}
-
-		$whole = [];
-		if (preg_match('/^\{\{\s*([^{}]+?)\s*\}\}$/', $value, $whole) === 1) {
-			$found = $this->lookupPath(path: $whole[1], json: $json);
-			if ($found['found'] === false) {
-				return ['resolved' => false, 'value' => null];
-			}
-
-			return ['resolved' => true, 'value' => $found['value']];
-		}
-
-		$missing = false;
-		$out = preg_replace_callback(
-			'/\{\{\s*([^{}]+?)\s*\}\}/',
-			function (array $matches) use ($json, &$missing): string {
-				$found = $this->lookupPath(path: $matches[1], json: $json);
-				if ($found['found'] === false) {
-					$missing = true;
-					return '';
-				}
-
-				return $this->stringify(value: $found['value']);
-			},
-			$value
-		);
-
-		if ($missing === true) {
-			return ['resolved' => false, 'value' => null];
-		}
-
-		return ['resolved' => true, 'value' => $out];
-	}//end resolveTemplate()
-
-	/**
-	 * Decide, for a bulk page, which items are written and under which ids.
-	 *
-	 * Split out of {@see writeBulk()} to keep that method inside phpmd's
-	 * length and complexity thresholds once `skipWhen` added a branch to it.
-	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param string $operation The resolved operation.
-	 * @param array $pairs The match pairs.
-	 * @param array $fields The configured fields.
-	 * @param string $onMissing The missing-field policy.
-	 *
-	 * @return array{rows: array, ids: array, skipped: array} The plan.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters writeBulk() already resolved.
-	 *
-	 * @spec openspec/specs/flow-object-write-skip-when/spec.md
-	 */
-	private function planBulkRows(
-		array $items,
-		array $config,
-		string $operation,
-		array $pairs,
-		array $fields,
-		string $onMissing,
-	): array {
-		// A skipped item contributes NO row, so it is not written — but it is
-		// still emitted by the caller, with its own json untouched. See the
-		// note in writeItems(): dropping it is what makes a later sweep
-		// delete it.
-		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
-		$payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
-
-		$rows = [];
-		$ids = [];
-		$skipped = [];
-		foreach ($items as $index => $item) {
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
-				$skipped[$index] = true;
-				continue;
-			}
-
-			$payload = $this->buildPayload(
-				fields: $fields,
-				json: $json,
-				onMissing: $onMissing,
-				payloadFrom: $payloadFrom
-			);
-			$id = $this->bulkRowId(operation: $operation, pairs: $pairs, json: $json);
-			$payload['id'] = $id;
-			$rows[] = $payload;
-			$ids[$index] = $id;
-		}
-
-		return ['rows' => $rows, 'ids' => $ids, 'skipped' => $skipped];
-	}//end planBulkRows()
-
-	/**
-	 * Emit every item exactly as it arrived.
-	 *
-	 * @param array $items The input items.
-	 *
-	 * @return array One output item per input item.
-	 *
-	 * @spec openspec/specs/flow-object-write-skip-when/spec.md
-	 */
-	private function passThrough(array $items): array {
-		$out = [];
-		foreach ($items as $index => $item) {
-			$out[] = FlowItems::item(
-				json: (array)($item[FlowItems::JSON] ?? []),
-				binary: (array)($item[FlowItems::BINARY] ?? []),
-				fromItemIndex: (int)$index
-			);
-		}
-
-		return $out;
-	}//end passThrough()
-
-	/**
-	 * Whether this item says it is already current, so no write is needed.
-	 *
-	 * Truthiness is deliberately narrow. A dot-path landing on the STRING
-	 * "skip" counts, because that is the vocabulary the synchronisation
-	 * pipeline's contract step stamps (`contract.outcome`), and the natural
-	 * thing to configure is `skipWhen: "contract.outcome"`. Booleans count for
-	 * a flow that computes its own flag. Everything else — including the
-	 * strings "false" and "0", which are truthy in PHP — does NOT, because a
-	 * value nobody meant as a skip must not silence a write.
-	 *
-	 * @param string $path The configured dot-path.
-	 * @param array $json The item's record.
-	 *
-	 * @return bool Whether the item is already current.
-	 *
-	 * @spec openspec/specs/flow-object-write-skip-when/spec.md
-	 */
-	private function isSkipped(string $path, array $json): bool {
-		$found = $this->lookupPath(path: $path, json: $json);
-		if ($found['found'] === false) {
-			return false;
-		}
-
-		$value = $found['value'];
-		if (is_bool($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === true) {
-			return (strtolower(trim($value)) === 'skip');
-		}
-
-		return false;
-	}//end isSkipped()
-
-	/**
-	 * Walk a dotted path through the item's record.
-	 *
-	 * A path that lands on null or an empty array counts as not found: those are
-	 * the two shapes OpenRegister's validator rejects for a nested object
-	 * property, so the node reports them rather than writing them.
-	 *
-	 * @param string $path The dotted path.
-	 * @param array $json The item's record.
-	 *
-	 * @return array{found: bool, value: mixed} The verdict and the value.
-	 */
-	private function lookupPath(string $path, array $json): array {
-		$path = trim($path);
-		if ($path === '') {
-			return ['found' => false, 'value' => null];
-		}
-
-		$cursor = $json;
-		foreach (explode('.', $path) as $segment) {
-			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
-				return ['found' => false, 'value' => null];
-			}
-
-			$cursor = $cursor[$segment];
-		}
-
-		if ($cursor === null || $cursor === []) {
-			return ['found' => false, 'value' => null];
-		}
-
-		return ['found' => true, 'value' => $cursor];
-	}//end lookupPath()
-
-	/**
-	 * Render a resolved value into an inline template.
-	 *
-	 * @param mixed $value The resolved value.
-	 *
-	 * @return string Its string form.
-	 */
-	private function stringify(mixed $value): string {
-		if (is_bool($value) === true) {
-			if ($value === true) {
-				return 'true';
-			}
-
-			return 'false';
-		}
-
-		if (is_scalar($value) === true) {
-			return (string)$value;
-		}
-
-		return (string)json_encode($value);
-	}//end stringify()
-
-	/**
-	 * Read and normalise the configured match pairs.
-	 *
-	 * Equality on named properties only. No operators, no ranges, no negation,
-	 * no raw store filters: the mandatory-match delete guard depends on a human
-	 * being able to look at a delete step and see what it can reach, and an
-	 * expression language would make that unauditable.
-	 *
-	 * @param array $config The step configuration.
-	 *
-	 * @return array<int, array{property: string, value: mixed}> The pairs.
-	 *
-	 * @throws UnexpectedValueException When a pair is malformed.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The branches are one per
-	 * REJECTED shape, each with its own message naming what the author wrote and
-	 * what to write instead. Collapsing them would trade a specific diagnostic
-	 * for a generic one on a config that is authored by hand.
-	 */
-	private function matchPairs(array $config): array {
-		$raw = ($config['match'] ?? []);
-		if (is_array($raw) === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('"match" must be a list of property and value pairs.')
-			);
-		}
-
-		// Accept the map shorthand — `{"status": "flagged"}` — alongside the
-		// canonical pair list. It is the shape every author reaches for first
-		// (it is how `fields` and `filters` are written on neighbouring nodes),
-		// and rejecting it bought nothing: the two are unambiguous, because a
-		// pair list is a LIST and a map is not.
-		//
-		// Detected by key shape rather than by inspecting the values: a list has
-		// sequential integer keys, so anything else is a map of property =>
-		// value. `[]` stays a pair list and means "no match", which is what an
-		// empty config should mean.
-		if ($raw !== [] && array_is_list($raw) === false) {
-			$shorthand = [];
-			foreach ($raw as $property => $value) {
-				$shorthand[] = ['property' => (string)$property, 'value' => $value];
-			}
-
-			$raw = $shorthand;
-		}
-
-		$pairs = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				throw new UnexpectedValueException(
-					$this->l10n->t(
-						'Every match entry must name a property and a value. '
-						. 'Write [{"property": "status", "value": "flagged"}] or {"status": "flagged"}.'
-					)
-				);
-			}
-
-			$property = ($entry['property'] ?? null);
-			if (is_string($property) === false || trim($property) === '') {
-				throw new UnexpectedValueException(
-					$this->l10n->t('Every match entry must name a property.')
-				);
-			}
-
-			if (array_key_exists('value', $entry) === false) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('The match on "%s" has no value.', [trim($property)])
-				);
-			}
-
-			$pairs[] = [
-				'property' => trim($property),
-				'value' => $entry['value'],
-			];
-		}//end foreach
-
-		return $pairs;
-	}//end matchPairs()
-
-	/**
-	 * Reject keys that have no meaning for the configured operation.
-	 *
-	 * @param array $config The step configuration.
-	 * @param string $operation The configured operation.
-	 *
-	 * @return void
-	 *
-	 * @throws UnexpectedValueException When a key is meaningless or an acknowledgement is missing.
-	 */
-	private function validateOperationKeys(array $config, string $operation): void {
-		if ($operation === self::OP_DELETE) {
-			$this->validateDeleteKeys(config: $config);
-
-			return;
-		}
-
-		if (array_key_exists('permanent', $config) === true) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('"permanent" has no meaning for a "%s" step; it only qualifies a delete.', [$operation])
-			);
-		}
-
-		if ($operation === self::OP_CREATE && array_key_exists('replace', $config) === true) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('"replace" has no meaning for a create step.')
-			);
-		}
-
-		$hasFields = ((array)($config['fields'] ?? []) !== []);
-		$hasPayloadFrom = (trim((string)($config['payloadFrom'] ?? '')) !== '');
-
-		// The two are alternatives, not layers: `fields` enumerates properties,
-		// `payloadFrom` writes an object whole. Accepting both would leave the
-		// author unable to tell which one produced the record that was written.
-		if ($hasFields === true && $hasPayloadFrom === true) {
-			throw new UnexpectedValueException(
-				$this->l10n->t(
-					'"fields" and "payloadFrom" are alternatives: "fields" lists the properties to write, '
-					. '"payloadFrom" writes the object at a path whole. Configure one, not both.'
-				)
-			);
-		}
-
-		if ($hasFields === false && $hasPayloadFrom === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t(
-					'An object-write step with operation "%s" needs either at least one field to write, '
-					. 'or a "payloadFrom" path naming the object to write whole.',
-					[$operation]
-				)
-			);
-		}
-
-	}//end validateOperationKeys()
-
-	/**
-	 * The save-time half of the delete guards.
-	 *
-	 * Split out of `validateOperationKeys()` rather than left inline: the delete
-	 * branch is the only one carrying four checks, and keeping it there put that
-	 * method at cyclomatic 11 / NPath 300 against thresholds of 10 and 200. The
-	 * guards are the part of this class most worth reading in one piece, so they
-	 * get a method whose whole subject is refusing a delete nobody meant.
-	 *
-	 * @param array<string, mixed> $config The step's configuration.
-	 *
-	 * @return void
-	 *
-	 * @throws UnexpectedValueException When a key is meaningless for a delete or an acknowledgement is missing.
-	 *
-	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
-	 */
-	private function validateDeleteKeys(array $config): void {
-		if (array_key_exists('fields', $config) === true) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('"fields" has no meaning for a delete step.')
-			);
-		}
-
-		// Same reasoning as `fields`: a delete names WHICH object goes, never what
-		// to write into it. Accepting the key would let an author believe the
-		// payload mattered.
-		if (array_key_exists('payloadFrom', $config) === true) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('"payloadFrom" has no meaning for a delete step.')
-			);
-		}
-
-		if (array_key_exists('replace', $config) === true) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('"replace" has no meaning for a delete step.')
-			);
-		}
-
-		// Guard 3: a second, deliberate key. Changing one enum value from
-		// "update" to "delete" is not enough to reach a deletion, and the
-		// flow will not save without it. The string "true" does not count.
-		if (($config['confirmDelete'] ?? null) !== true) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('A delete step must carry "confirmDelete": true, as a boolean.')
-			);
-		}
-
-		// Guard 5, and the only one that is about IRREVERSIBILITY rather than
-		// about aim. The four above stop a delete from touching the wrong rows;
-		// this one stops a delete from being unrecoverable without the author
-		// having said so in as many words. Same rule as `confirmDelete`: a
-		// boolean, because the string "false" is truthy and would turn a paste
-		// into a destruction.
-		if (array_key_exists('permanent', $config) === true && is_bool($config['permanent']) === false) {
-			throw new UnexpectedValueException(
-				$this->l10n->t('"permanent" must be true or false, as a boolean.')
-			);
-		}
-
-	}//end validateDeleteKeys()
+	}//end schemaInRegister()
 
 	/**
 	 * Whether this delete destroys the row or tombstones it.
@@ -2502,145 +1239,38 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	}//end permanenceOf()
 
 	/**
-	 * Reject an out-of-range option value.
+	 * The payload builder, bound to this node's translations.
 	 *
-	 * @param array $config The step configuration.
-	 *
-	 * @return void
-	 *
-	 * @throws UnexpectedValueException When an option is out of range.
+	 * @return ObjectWritePayload The builder.
 	 */
-	private function validateOptionKeys(array $config): void {
-		if (array_key_exists('maxWrites', $config) === true) {
-			$max = $config['maxWrites'];
-			if (is_int($max) === false || $max < 1) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('"maxWrites" must be a whole number of one or more.')
-				);
-			}
-		}
-
-		foreach (['onMissing' => self::ON_MISSING, 'onNoMatch' => self::ON_NO_MATCH] as $key => $allowed) {
-			if (array_key_exists($key, $config) === false) {
-				continue;
-			}
-
-			if (is_string($config[$key]) === false || in_array($config[$key], $allowed, true) === false) {
-				throw new UnexpectedValueException(
-					$this->l10n->t('"%1$s" must be one of: %2$s.', [$key, implode(', ', $allowed)])
-				);
-			}
-		}
-
-	}//end validateOptionKeys()
+	private function payloads(): ObjectWritePayload {
+		return new ObjectWritePayload(l10n: $this->l10n);
+	}//end payloads()
 
 	/**
-	 * Read an option, falling back to its default.
+	 * The match lookup, bound to this node's store.
 	 *
-	 * @param array $config The step configuration.
-	 * @param string $key The option key.
-	 * @param array $allowed The accepted values.
-	 * @param string $default The default.
-	 *
-	 * @return string The option value.
+	 * @return ObjectWriteMatcher The matcher.
 	 */
-	private function optionFrom(array $config, string $key, array $allowed, string $default): string {
-		$value = ($config[$key] ?? null);
-		if (is_string($value) === true && in_array($value, $allowed, true) === true) {
-			return $value;
-		}
-
-		return $default;
-	}//end optionFrom()
+	private function matcher(): ObjectWriteMatcher {
+		return new ObjectWriteMatcher(objects: $this->objects, template: $this->payloads()->template, l10n: $this->l10n);
+	}//end matcher()
 
 	/**
-	 * Read the configured operation, normalised.
+	 * The bulk write path, bound to this node's store.
 	 *
-	 * @param array $config The step configuration.
-	 *
-	 * @return string The operation, or an empty string when none is set.
+	 * @return ObjectWriteBulk The bulk path.
 	 */
-	private function operationFrom(array $config): string {
-		$operation = ($config['operation'] ?? null);
-		if (is_string($operation) === false) {
-			return '';
-		}
-
-		return strtolower(trim($operation));
-	}//end operationFrom()
+	private function bulk(): ObjectWriteBulk {
+		return new ObjectWriteBulk(objects: $this->objects, payloads: $this->payloads(), l10n: $this->l10n);
+	}//end bulk()
 
 	/**
-	 * Read a register / schema identifier from configuration.
+	 * The save-time rules, bound to this node's translations.
 	 *
-	 * @param mixed $value The configured value.
-	 *
-	 * @return string The identifier, or an empty string when unusable.
+	 * @return ObjectWriteConfigValidator The validator.
 	 */
-	private function identifierFrom(mixed $value): string {
-		if (is_string($value) === true) {
-			return trim($value);
-		}
-
-		if (is_int($value) === true) {
-			return (string)$value;
-		}
-
-		return '';
-	}//end identifierFrom()
-
-	/**
-	 * The register's most legible identifier, for an output item.
-	 *
-	 * @param Register $register The resolved register.
-	 *
-	 * @return string The slug, or the id when it has none.
-	 */
-	private function identifierOf(Register $register): string {
-		$slug = (string)($register->getSlug() ?? '');
-		if ($slug !== '') {
-			return $slug;
-		}
-
-		return (string)$register->getId();
-	}//end identifierOf()
-
-	/**
-	 * The schema's most legible identifier, for an output item.
-	 *
-	 * @param Schema $schema The resolved schema.
-	 *
-	 * @return string The slug, or the id when it has none.
-	 */
-	private function labelOf(Schema $schema): string {
-		$slug = (string)($schema->getSlug() ?? '');
-		if ($slug !== '') {
-			return $slug;
-		}
-
-		return (string)$schema->getId();
-	}//end labelOf()
-
-	/**
-	 * What kind of step this is. Calls the register to write.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
-
-	}//end getCategory()
+	private function validator(): ObjectWriteConfigValidator {
+		return new ObjectWriteConfigValidator(l10n: $this->l10n);
+	}//end validator()
 }//end class

@@ -33,174 +33,284 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\TranslationSlot;
+use OCA\OpenRegister\Db\TranslationEdit;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
-use OCA\OpenRegister\Db\TranslationMapper;
-use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\Translation\LanguagePair;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use Psr\Log\LoggerInterface;
 
-class BulkTranslationService {
+class BulkTranslationService implements BulkTranslationServiceInterface {
+
 	/**
 	 * Constructor.
 	 *
-	 * @param TranslationProviderInterface $provider The translation provider.
-	 * @param TranslationMapper $translationMapper The translation mapper.
-	 * @param TranslationHandler $translationHandler The translation handler.
-	 * @param SchemaMapper $schemaMapper The schema mapper.
-	 * @param LoggerInterface $logger The logger.
+	 * @param TranslationProviderInterface $provider     The translation provider.
+	 * @param TranslationStores            $stores       The translation mapper and translation handler.
+	 * @param SchemaMapperInterface        $schemaMapper The schema mapper.
+	 * @param LoggerInterface              $logger       The logger.
 	 */
 	public function __construct(
 		private readonly TranslationProviderInterface $provider,
-		private readonly TranslationMapper $translationMapper,
-		private readonly TranslationHandler $translationHandler,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly TranslationStores $stores,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
 	/**
-	 * Translate an object's translatable properties from one language to another.
+	 * Translate one object's translatable properties from one language to another.
 	 *
-	 * Fills only slots that are currently empty in the target language.
+	 * @param ObjectTranslationRequest $request    The object and the source and target language.
+	 * @param array|null               $properties Optional whitelist of property names; null means all translatable ones.
 	 *
-	 * Returns a per-property patch:
-	 *   `[propertyName => translatedValue]`
-	 * The caller merges this into the object's `{lang: value}` JSONB
-	 * map for `$toLong` and persists via the standard save path —
-	 * which triggers the projection listener to populate the sidecar.
-	 *
-	 * Note: this method also writes directly to the sidecar so the
-	 * translation is queryable immediately, even before the caller
-	 * persists the object. Callers who don't want that immediate
-	 * write should invoke the provider directly.
-	 *
-	 * @param ObjectEntity $object The object to translate.
-	 * @param string $fromLong Source language code.
-	 * @param string $toLong Target language code.
-	 * @param string[]|null $properties Optional whitelist of property
-	 *                                  names to translate; null = all.
-	 *
-	 * @return array{translated: array<string, string>, skipped: array<string, string>}
+	 * @return array{translated: array, skipped: array} What was translated and what was skipped, with why.
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
-	public function translateObject(
-		ObjectEntity $object,
-		string $fromLong,
-		string $toLong,
-		?array $properties = null,
-	): array {
-		$translated = [];
-		$skipped = [];
-
-		if ($fromLong === $toLong) {
+	public function translate(ObjectTranslationRequest $request, ?array $properties = null): array {
+		if ($request->fromLong === $request->toLong) {
 			return ['translated' => [], 'skipped' => ['_global' => 'fromLang === toLang']];
 		}
 
+		$translatableProps = $this->translatablePropertiesOf(object: $request->object);
+		if (is_string($translatableProps) === true) {
+			return ['translated' => [], 'skipped' => ['_global' => $translatableProps]];
+		}
+
+		return $this->translateProperties(
+			request: $request,
+			properties: $this->selectedProperties(translatable: $translatableProps, whitelist: $properties)
+		);
+	}//end translate()
+
+	/**
+	 * The translatable properties of the object's schema, or why there are none.
+	 *
+	 * @param ObjectEntity $object The object to translate.
+	 *
+	 * @return array<int|string,string>|string The properties; the skip reason when the
+	 *                                         schema cannot be resolved or has none.
+	 */
+	private function translatablePropertiesOf(ObjectEntity $object): array|string {
 		$schema = $this->loadSchema(object: $object);
 		if ($schema === null) {
-			return ['translated' => [], 'skipped' => ['_global' => 'schema-not-resolvable']];
+			return 'schema-not-resolvable';
 		}
 
-		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
+		$translatableProps = $this->stores->translationHandler->getTranslatableProperties($schema);
 		if (count($translatableProps) === 0) {
-			return ['translated' => [], 'skipped' => ['_global' => 'no-translatable-properties']];
+			return 'no-translatable-properties';
 		}
 
-		$data = (array)($object->getObject() ?? []);
-		$translator = 'provider:' . $this->provider->getIdentifier();
+		return $translatableProps;
+	}//end translatablePropertiesOf()
 
-		foreach ($translatableProps as $property) {
-			if (is_array($properties) === true && in_array($property, $properties, true) === false) {
+	/**
+	 * The translatable properties, narrowed to the whitelist when one is given, in schema order.
+	 *
+	 * @param array<int|string,string> $translatable The schema's translatable properties.
+	 * @param array<int,string>|null   $whitelist    Property names to limit to, or null for all.
+	 *
+	 * @return array<int|string,string>
+	 */
+	private function selectedProperties(array $translatable, ?array $whitelist): array {
+		if ($whitelist === null) {
+			return $translatable;
+		}
+
+		return array_filter(
+			$translatable,
+			static fn (mixed $property): bool => in_array($property, $whitelist, true) === true
+		);
+	}//end selectedProperties()
+
+	/**
+	 * Translate each property, collecting the translated texts and the skip reasons.
+	 *
+	 * @param ObjectTranslationRequest $request    The object and language pair.
+	 * @param array<int|string,string> $properties The properties to translate.
+	 *
+	 * @return array{translated: array<string,string>, skipped: array<string,string>}
+	 */
+	private function translateProperties(ObjectTranslationRequest $request, array $properties): array {
+		$result = ['translated' => [], 'skipped' => []];
+		foreach ($properties as $property) {
+			$value = $this->translateProperty(request: $request, property: $property);
+			if ($value['translated'] === true) {
+				$result['translated'][$property] = $value['text'];
 				continue;
 			}
 
-			$existing = $data[$property] ?? null;
+			$result['skipped'][$property] = $value['text'];
+		}
 
-			// Source value lookup.
-			$sourceValue = null;
-			if (is_array($existing) === true && isset($existing[$fromLong]) === true) {
-				$sourceValue = $existing[$fromLong];
-			} elseif (is_string($existing) === true && $fromLong === 'nl') {
-				// Legacy single-language fallback — treat plain string as NL.
-				$sourceValue = $existing;
-			}
+		return $result;
+	}//end translateProperties()
 
-			if (is_string($sourceValue) === false || $sourceValue === '') {
-				$skipped[$property] = 'no-source-value';
-				continue;
-			}
+	/**
+	 * Translate one property into its target-language slot and mirror it into the sidecar.
+	 *
+	 * A missing source value, a filled target slot (whatever its status: promotion is the
+	 * operator's job), a provider failure or an empty answer skips the property.
+	 *
+	 * @param ObjectTranslationRequest $request  The object and languages.
+	 * @param string                   $property The property name.
+	 *
+	 * @return array{translated: bool, text: string} The translation, or the reason it was skipped.
+	 */
+	private function translateProperty(ObjectTranslationRequest $request, string $property): array {
+		$existing = $request->data[$property] ?? null;
+		$sourceValue = $this->sourceValue(existing: $existing, fromLong: $request->fromLong);
+		if ($this->isText(value: $sourceValue) === false) {
+			return ['translated' => false, 'text' => 'no-source-value'];
+		}
 
-			// Don't overwrite an existing target translation. Skip if
-			// the slot is already filled (any non-empty value, regardless
-			// of status — promotion is the operator's job).
-			if (is_array($existing) === true
-				&& isset($existing[$toLong]) === true
-				&& is_string($existing[$toLong]) === true
-				&& $existing[$toLong] !== ''
-			) {
-				$skipped[$property] = 'target-slot-already-filled';
-				continue;
-			}
+		if ($this->targetSlotFilled(existing: $existing, toLong: $request->toLong) === true) {
+			return ['translated' => false, 'text' => 'target-slot-already-filled'];
+		}
 
-			try {
-				$translatedValue = $this->provider->translate($sourceValue, $fromLong, $toLong);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					sprintf(
-						'[BulkTranslationService] provider %s failed for %s/%s -> %s: %s',
-						$this->provider->getIdentifier(),
-						$object->getUuid(),
-						$property,
-						$toLong,
-						$e->getMessage()
-					)
-				);
-				$skipped[$property] = 'provider-error: ' . $e->getMessage();
-				continue;
-			}
+		return $this->providerTranslation(translation: new PropertyTranslation(request: $request, property: $property), sourceValue: $sourceValue);
+	}//end translateProperty()
 
-			if (is_string($translatedValue) === false || $translatedValue === '') {
-				$skipped[$property] = 'provider-returned-empty';
-				continue;
-			}
+	/**
+	 * Ask the provider to translate a property's source value, and mirror a usable answer into the sidecar.
+	 *
+	 * @param PropertyTranslation $translation The object, the languages and the property.
+	 * @param string              $sourceValue The text in the source language.
+	 *
+	 * @return array{translated: bool, text: string}
+	 */
+	private function providerTranslation(PropertyTranslation $translation, string $sourceValue): array {
+		try {
+			$translatedValue = $this->provider->translate($sourceValue, $translation->languages());
+		} catch (\Throwable $e) {
+			$this->logProviderFailure(translation: $translation, error: $e);
+			return ['translated' => false, 'text' => 'provider-error: ' . $e->getMessage()];
+		}
 
-			$translated[$property] = $translatedValue;
+		if ($this->isText(value: $translatedValue) === false) {
+			return ['translated' => false, 'text' => 'provider-returned-empty'];
+		}
 
-			// Mirror into the sidecar immediately so search/completeness
-			// queries see the new translation without waiting for the
-			// caller to persist the object.
-			try {
-				$this->translationMapper->upsert(
-					objectUuid: (string)$object->getUuid(),
-					property: $property,
-					language: $toLong,
-					value: $translatedValue,
+		$this->mirrorTranslation(translation: $translation, value: $translatedValue);
+		return ['translated' => true, 'text' => $translatedValue];
+	}//end providerTranslation()
+
+	/**
+	 * Log a provider that failed to translate a property.
+	 *
+	 * @param PropertyTranslation $translation The object, the languages and the property.
+	 * @param \Throwable          $error       The provider's failure.
+	 *
+	 * @return void
+	 */
+	private function logProviderFailure(PropertyTranslation $translation, \Throwable $error): void {
+		$this->logger->warning(
+			sprintf(
+				'[BulkTranslationService] provider %s failed for %s/%s -> %s: %s',
+				$this->provider->getIdentifier(),
+				$translation->request->object->getUuid(),
+				$translation->property,
+				$translation->request->toLong,
+				$error->getMessage()
+			)
+		);
+	}//end logProviderFailure()
+
+	/**
+	 * Whether a value is a non-empty string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private function isText(mixed $value): bool {
+		return is_string($value) === true && $value !== '';
+	}//end isText()
+
+	/**
+	 * The source-language value of a property: its `fromLong` slot, or a plain string as legacy
+	 * single-language Dutch.
+	 *
+	 * @param mixed  $existing The property's stored value.
+	 * @param string $fromLong Source language code.
+	 *
+	 * @return mixed The source value, null when there is none.
+	 */
+	private function sourceValue(mixed $existing, string $fromLong): mixed {
+		if (is_array($existing) === true && isset($existing[$fromLong]) === true) {
+			return $existing[$fromLong];
+		}
+
+		if (is_string($existing) === true && $fromLong === 'nl') {
+			return $existing;
+		}
+
+		return null;
+	}//end sourceValue()
+
+	/**
+	 * Whether a property already holds a non-empty target-language value.
+	 *
+	 * @param mixed  $existing The property's stored value.
+	 * @param string $toLong   Target language code.
+	 *
+	 * @return bool True when the target slot is filled.
+	 */
+	private function targetSlotFilled(mixed $existing, string $toLong): bool {
+		return is_array($existing) === true
+			&& isset($existing[$toLong]) === true
+			&& is_string($existing[$toLong]) === true
+			&& $existing[$toLong] !== '';
+	}//end targetSlotFilled()
+
+	/**
+	 * Write a machine translation into the sidecar, so search and completeness queries see it
+	 * before the caller persists the object. A failure is logged, not thrown.
+	 *
+	 * @param PropertyTranslation $translation The object, the languages and the property.
+	 * @param string              $value       The translated value.
+	 *
+	 * @return void
+	 */
+	private function mirrorTranslation(PropertyTranslation $translation, string $value): void {
+		try {
+			$this->stores->translationMapper->upsert(
+				slot: $translation->targetSlot(),
+				edit: new TranslationEdit(
+					value: $value,
 					status: Translation::STATUS_MACHINE_TRANSLATED,
-					translator: $translator
-				);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					sprintf(
-						'[BulkTranslationService] sidecar upsert failed for %s/%s/%s: %s',
-						$object->getUuid(),
-						$property,
-						$toLong,
-						$e->getMessage()
-					)
-				);
-			}
-		}//end foreach
+					translator: 'provider:' . $this->provider->getIdentifier()
+				)
+			);
+		} catch (\Throwable $e) {
+			$this->logMirrorFailure(translation: $translation, error: $e);
+		}
+	}//end mirrorTranslation()
 
-		return ['translated' => $translated, 'skipped' => $skipped];
-	}//end translateObject()
+	/**
+	 * Log a sidecar write that failed; the translation itself still counts.
+	 *
+	 * @param PropertyTranslation $translation The object, the languages and the property.
+	 * @param \Throwable          $error       The write's failure.
+	 *
+	 * @return void
+	 */
+	private function logMirrorFailure(PropertyTranslation $translation, \Throwable $error): void {
+		$this->logger->warning(
+			sprintf(
+				'[BulkTranslationService] sidecar upsert failed for %s/%s/%s: %s',
+				$translation->request->object->getUuid(),
+				$translation->property,
+				$translation->request->toLong,
+				$error->getMessage()
+			)
+		);
+	}//end logMirrorFailure()
 
 	/**
 	 * Resolve a schema entity from an object's schema reference.

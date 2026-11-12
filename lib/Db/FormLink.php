@@ -61,6 +61,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class FormLink extends Entity implements JsonSerializable {
+	use ObjectLinkTypesTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The OR object uuid.
@@ -144,9 +146,7 @@ class FormLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addObjectLinkTypes();
 		$this->addType(fieldName: 'formId', type: 'integer');
 		$this->addType(fieldName: 'formHash', type: 'string');
 		$this->addType(fieldName: 'submissionId', type: 'integer');
@@ -157,27 +157,4 @@ class FormLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'linkedAt', type: 'datetime');
 
 	}//end __construct()
-
-	/**
-	 * JSON serialization.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'formId' => $this->formId,
-			'formHash' => $this->formHash,
-			'submissionId' => $this->submissionId,
-			'title' => $this->title,
-			'status' => $this->status,
-			'expiresAt' => $this->expiresAt?->format(DateTime::ATOM),
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
-		];
-
-	}//end jsonSerialize()
 }//end class

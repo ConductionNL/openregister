@@ -16,7 +16,6 @@ import {
 		"
 		:open="true"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -63,47 +62,22 @@ import {
 
 							<!-- Organisation is automatically set to active organisation by backend -->
 
-							<div class="groups-select-container">
-								<label class="groups-label">Nextcloud Groups</label>
-								<NcSelect
-									v-model="selectedGroups"
-									inputLabel="Selected Groups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									trackBy="id"
-									:multiple="true"
-									:labelOutside="true"
-									:filterable="false"
-									:placeholder="
-										t('openregister', 'Search groups...')
-									"
-									@searchChange="searchGroups"
-									@update:modelValue="updateGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{
-												name
-											}}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">{{
-											t('openregister', 'Loading groups...')
-										}}</span>
-										<span v-else>{{
-											t(
-												'openregister',
-												'No groups found. Try a different search.',
-											)
-										}}</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									Only members of selected groups can access this
-									application
-								</p>
-							</div>
+							<GroupSelect
+								v-model="selectedGroups"
+								label="Nextcloud Groups"
+								:options="availableGroups"
+								:disabled="loading"
+								:loading="loadingGroups"
+								:placeholder="t('openregister', 'Search groups...')"
+								:emptyText="
+									t(
+										'openregister',
+										'No groups found. Try a different search.',
+									)
+								"
+								hint="Only members of selected groups can access this application"
+								@searchChange="searchGroups"
+								@update:modelValue="updateGroups" />
 						</div>
 					</AppTab>
 
@@ -189,12 +163,7 @@ import {
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
 			<NcButton
 				v-if="!success"
 				:disabled="loading || !applicationItem.name.trim()"
@@ -221,27 +190,29 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
 import RbacTable from '../../components/RbacTable.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { searchGroupsDebounced } from '../../services/groupSearch.js'
+import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
 
 export default {
 	name: 'EditApplication',
 	components: {
+		GroupSelect,
 		NcDialog,
 		NcTextField,
 		NcTextArea,
-		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
@@ -250,12 +221,14 @@ export default {
 		RbacTable,
 		// Icons
 		ContentSaveOutline,
-		Cancel,
+		CloseCancelButton,
 		Plus,
 		Cog,
 		Database,
 		Shield,
 	},
+
+	mixins: [quotaFields],
 
 	data() {
 		return {
@@ -264,13 +237,7 @@ export default {
 				name: '',
 				description: '',
 				// Organisation will be set automatically by backend based on active organisation
-				quota: {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				},
+				quota: unlimitedQuota(),
 
 				groups: [],
 				authorization: {
@@ -294,19 +261,10 @@ export default {
 
 	computed: {
 		/**
-		 * @spec exclude UI display helper — converts storage quota bytes to MB for the form.
+		 * @spec exclude Names the form item for the quota fields; UI plumbing.
 		 */
-		storageQuotaMB() {
-			if (!this.applicationItem.quota?.storage) return 0
-			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
-		},
-
-		/**
-		 * @spec exclude UI display helper — converts bandwidth quota bytes to MB for the form.
-		 */
-		bandwidthQuotaMB() {
-			if (!this.applicationItem.quota?.bandwidth) return 0
-			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
+		quotaItem() {
+			return this.applicationItem
 		},
 
 		/**
@@ -390,63 +348,12 @@ export default {
 		 * @spec exclude Modal data-load plumbing — debounced group search via OCS API.
 		 */
 		searchGroups(searchQuery) {
-			// Clear existing debounce timer
-			if (this.groupSearchDebounce) {
-				clearTimeout(this.groupSearchDebounce)
-			}
-
-			// If search is empty, load all cached groups
-			if (!searchQuery || searchQuery.trim() === '') {
-				this.loadNextcloudGroupsFromStore()
-				return
-			}
-
-			// Debounce the search by 300ms
-			this.groupSearchDebounce = setTimeout(async () => {
-				this.loadingGroups = true
-				try {
-					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(
-						`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`,
-						{
-							headers: {
-								'OCS-APIRequest': 'true',
-							},
-						},
-					)
-
-					if (response.ok) {
-						const data = await response.json()
-						if (data.ocs?.data?.groups) {
-							// Transform group IDs into objects
-							const searchResults = data.ocs.data.groups.map(
-								(groupId) => ({
-									id: groupId,
-									name: groupId,
-									userCount: 0,
-								}),
-							)
-
-							// Merge with already selected groups to ensure they remain visible
-							const selectedGroupIds = this.selectedGroups.map(
-								(g) => g.id,
-							)
-							const mergedGroups = [
-								...this.selectedGroups,
-								...searchResults.filter(
-									(g) => !selectedGroupIds.includes(g.id),
-								),
-							]
-
-							this.availableGroups = mergedGroups
-						}
-					}
-				} catch (error) {
-					console.error('Error searching Nextcloud groups:', error)
-				} finally {
-					this.loadingGroups = false
-				}
-			}, 300)
+			searchGroupsDebounced(this, {
+				query: searchQuery,
+				onEmpty: () => this.loadNextcloudGroupsFromStore(),
+				toGroup: (groupId) => ({ id: groupId, name: groupId, userCount: 0 }),
+				warnOnRefusal: false,
+			})
 		},
 
 		/**
@@ -508,23 +415,6 @@ export default {
 		},
 
 		/**
-		 * Remove a group from selection
-		 *
-		 * @param {object} groupToRemove - Group to remove
-		 * @return {void}
-		 * @spec exclude Form-field binding — removes a group from the selection.
-		 */
-		removeGroup(groupToRemove) {
-			this.selectedGroups = this.selectedGroups.filter(
-				(g) => g.id !== groupToRemove.id,
-			)
-			// Store only the group IDs, not the full objects
-			this.applicationItem.groups = this.selectedGroups.map(
-				(group) => group.id,
-			)
-		},
-
-		/**
 		 * Update CRUD permission for application
 		 *
 		 * @param {object} payload - Permission update payload
@@ -564,113 +454,6 @@ export default {
 			this.applicationItem.authorization = {
 				...this.applicationItem.authorization,
 			}
-		},
-
-		/**
-		 * Update storage quota (converts MB to bytes)
-		 *
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets storage quota (MB→bytes) in local state.
-		 */
-		updateStorageQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.storage = mbValue * 1024 * 1024
-		},
-
-		/**
-		 * Update bandwidth quota (converts MB to bytes)
-		 *
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets bandwidth quota (MB→bytes) in local state.
-		 */
-		updateBandwidthQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.bandwidth = mbValue * 1024 * 1024
-		},
-
-		/**
-		 * Update request quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets request quota in local state.
-		 */
-		updateRequestQuota(value) {
-			// 0 = unlimited
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.requests = value ? parseInt(value) : 0
-		},
-
-		/**
-		 * Update user quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets user quota in local state.
-		 */
-		updateUserQuota(value) {
-			// 0 = unlimited (not applicable for applications, but kept for consistency)
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.users = value ? parseInt(value) : 0
-		},
-
-		/**
-		 * Update group quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets group quota in local state.
-		 */
-		updateGroupQuota(value) {
-			// 0 = unlimited
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.groups = value ? parseInt(value) : 0
 		},
 
 		/**
@@ -743,26 +526,16 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 /* EditApplication-specific styles */
 .tabContainer {
 	margin-top: 20px;
 }
 
 /* Tab title styling with icons */
-.tabContainer :deep(.nav-link) {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	justify-content: center;
-}
-
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
+@include tab-container-deep-nav-link-rules;
 
 .option-content {
 	display: flex;
@@ -780,40 +553,7 @@ export default {
 	color: var(--color-text-lighter);
 }
 
-.groups-select-container {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.groups-label {
-	font-weight: 500;
-	color: var(--color-main-text);
-	font-size: 14px;
-}
-
-.field-hint {
-	font-size: 12px;
-	color: var(--color-text-lighter);
-	margin: 0;
-}
-
-.group-option {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.group-name {
-	font-weight: 500;
-}
-
-.security-section {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
+@include security-section;
 
 .rbac-container {
 	display: flex;
@@ -822,71 +562,11 @@ export default {
 	padding: 0;
 }
 
-.rbac-section {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
+@include rbac-section;
 
-.rbac-description {
-	font-size: 14px;
-	color: var(--color-text-lighter);
-	margin: 0 0 16px 0;
-}
+@include rbac-description;
 
-.loading-groups {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	color: var(--color-text-lighter);
-	padding: 16px;
-}
-
-.groups-list {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.groups-list h3 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.group-items {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.group-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 12px;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.group-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 4px 12px;
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	border-radius: 16px;
-	font-size: 13px;
-	font-weight: 500;
-}
-
-.no-groups {
-	padding: 16px;
-	text-align: center;
-	color: var(--color-text-lighter);
-	font-style: italic;
-}
+@include loading-groups-rules;
 
 .no-groups p {
 	margin: 0;

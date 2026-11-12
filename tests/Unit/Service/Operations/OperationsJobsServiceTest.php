@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -29,12 +29,15 @@ namespace Unit\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCA\OpenRegister\Db\JobRunMapper;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
+use OCA\OpenRegister\Service\Operations\JobRunFilter;
 use OCA\OpenRegister\Service\Operations\JobRunRecorder;
 use OCA\OpenRegister\Service\Operations\JobScheduleService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsService;
+use OCA\OpenRegister\Service\Operations\OperationsRunNowServices;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\TestCase;
@@ -126,16 +129,14 @@ final class OperationsJobsServiceTest extends TestCase {
 			$this->runs,
 			$this->createMock(JobScheduleService::class),
 			$this->createMock(JobAlertService::class),
-			$this->jobList,
-			$container,
-			$recorder
+			new OperationsRunNowServices($this->jobList, $container, $recorder)
 		);
 	}
 
 	/**
 	 * Starting a job by hand runs it once and records who asked.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -152,7 +153,7 @@ final class OperationsJobsServiceTest extends TestCase {
 	 * A job already running is refused, the job is not started, and the
 	 * refusal names the run that holds it.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -182,7 +183,7 @@ final class OperationsJobsServiceTest extends TestCase {
 	 * A job this instance does not have is refused rather than built from a
 	 * class name the browser supplied.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 *
 	 * @return void
 	 */
@@ -207,7 +208,7 @@ final class OperationsJobsServiceTest extends TestCase {
 	 * A maintenance action is startable by its own slug, and only by a slug
 	 * this app ships.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
 	 *
 	 * @return void
 	 */
@@ -228,17 +229,37 @@ final class OperationsJobsServiceTest extends TestCase {
 	 * The run history carries the filters it was asked for, so a reader can
 	 * tell a narrowed list from the whole one.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 *
 	 * @return void
 	 */
 	public function testTheRunHistoryReportsTheFiltersItApplied(): void {
 		$this->runs->method('countRecent')->willReturn(0);
 
-		$answer = $this->service()->runs('Acme\\NightlyJob', JobRun::OUTCOME_FAILED, 24);
+		$answer = $this->service()->runs(new JobRunFilter('Acme\\NightlyJob', JobRun::OUTCOME_FAILED, 24));
 
 		$this->assertSame('Acme\\NightlyJob', $answer['filters']['job']);
 		$this->assertSame(JobRun::OUTCOME_FAILED, $answer['filters']['outcome']);
 		$this->assertSame(24, $answer['filters']['windowHours']);
+	}
+
+	public function testTheRunHistoryPagesWithTheLimitAndOffsetItWasGiven(): void {
+		$row = new JobRun();
+		$row->setJobClass('Acme\\NightlyJob');
+		$this->written = [$row];
+		$this->runs->expects($this->once())->method('findRecent')->with($this->anything(), 5, 10);
+		$this->runs->method('countRecent')->willReturn(11);
+
+		$answer = $this->service()->runs(new JobRunFilter(), new \OCA\OpenRegister\Kernel\Contracts\ListQuery(limit: 5, offset: 10));
+
+		$this->assertSame(11, $answer['total']);
+		$this->assertCount(1, $answer['results']);
+		$this->assertSame(['results', 'total', 'filters'], array_keys($answer));
+	}
+
+	public function testTheRunHistoryStartsAtTheFirstRowByDefault(): void {
+		$this->runs->expects($this->once())->method('findRecent')->with($this->anything(), JobRunMapperInterface::DEFAULT_LIMIT, 0);
+
+		$this->assertSame([], $this->service()->runs()['results']);
 	}
 }

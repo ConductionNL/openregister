@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
 use OCA\OpenRegister\Controller\ChatController;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -55,8 +56,7 @@ class ChatControllerTest extends TestCase {
 			return $text;
 		});
 
-		$this->controller = new ChatController(
-			'openregister',
+		$this->controller = ChatControllerFactory::create(
 			$this->request,
 			$this->chatService,
 			$this->conversationMapper,
@@ -651,5 +651,68 @@ class ChatControllerTest extends TestCase {
 		$result = $this->controller->sendMessage();
 
 		$this->assertEquals(200, $result->getStatus());
+	}
+
+	// ── sendMessage — context snapshot and the 503 message ──
+
+	public function testSendMessagePassesAnArrayContextToTheChatService(): void {
+		$conv = new Conversation();
+		$conv->setId(1);
+		$conv->setUserId('testuser');
+
+		$this->request->method('getParam')
+			->willReturnMap([
+				['conversation', null, 'conv-uuid'],
+				['agentUuid', null, ''],
+				['message', null, 'Hello'],
+				['views', null, null],
+				['tools', null, null],
+				['includeObjects', null, true],
+				['includeFiles', null, true],
+				['numSourcesFiles', null, 5],
+				['numSourcesObjects', null, 5],
+				['context', null, ['register' => 'r1', 'objectId' => 'o1']],
+			]);
+
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$captured = null;
+		$this->chatService->method('processMessage')
+			->willReturnCallback(function (...$args) use (&$captured) {
+				$captured = $args;
+				return ['response' => 'Hi'];
+			});
+
+		$result = $this->controller->sendMessage();
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame(['register' => 'r1', 'objectId' => 'o1'], $captured[6] ?? ($captured['context'] ?? null));
+	}
+
+	public function testSendMessageReportsAnUnconfiguredAiServiceAs503(): void {
+		$conv = new Conversation();
+		$conv->setId(1);
+		$conv->setUserId('testuser');
+
+		$this->request->method('getParam')
+			->willReturnMap([
+				['conversation', null, 'conv-uuid'],
+				['agentUuid', null, ''],
+				['message', null, 'Hello'],
+				['views', null, null],
+				['tools', null, null],
+				['includeObjects', null, true],
+				['includeFiles', null, true],
+				['numSourcesFiles', null, 5],
+				['numSourcesObjects', null, 5],
+			]);
+
+		$this->conversationMapper->method('findByUuid')->willReturn($conv);
+		$this->chatService->method('processMessage')
+			->willThrowException(new \Exception('No LLM configured', 503));
+
+		$result = $this->controller->sendMessage();
+
+		$this->assertEquals(503, $result->getStatus());
+		$this->assertSame('AI service not configured', $result->getData()['error']);
 	}
 }

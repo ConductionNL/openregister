@@ -12,7 +12,7 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 				: t('openregister', 'Add Source')
 		"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'Source successfully updated') }}</p>
 		</NcNoteCard>
@@ -112,56 +112,45 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success
-						? t('openregister', 'Close')
-						: t('openregister', 'Cancel')
-				}}
-			</NcButton>
-			<NcButton
+			<CloseCancelButton :success="success" @click="closeModal" />
+			<BusyButton
 				v-if="!success && isDatabaseType && sourceItem.id"
+				:busy="actionLoading"
 				:disabled="loading || actionLoading"
 				@click="testConnection()">
 				<template #icon>
-					<NcLoadingIcon v-if="actionLoading" :size="20" />
-					<DatabaseCheckOutline v-else :size="20" />
+					<DatabaseCheckOutline :size="20" />
 				</template>
 				{{ t('openregister', 'Test connection') }}
-			</NcButton>
-			<NcButton
+			</BusyButton>
+			<BusyButton
 				v-if="!success && isDatabaseType && sourceItem.id"
+				:busy="actionLoading"
 				:disabled="loading || actionLoading"
 				@click="introspect()">
 				<template #icon>
-					<NcLoadingIcon v-if="actionLoading" :size="20" />
-					<DatabaseImportOutline v-else :size="20" />
+					<DatabaseImportOutline :size="20" />
 				</template>
 				{{ t('openregister', 'Create virtual register') }}
-			</NcButton>
-			<NcButton
+			</BusyButton>
+			<BusyButton
 				v-if="!success"
+				:busy="loading"
 				:disabled="loading || !sourceItem.title"
 				variant="primary"
 				@click="editSource()">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
 					<ContentSaveOutline
-						v-if="!loading && sourceStore.sourceItem?.id"
+						v-if="sourceStore.sourceItem?.id"
 						:size="20" />
-					<Plus
-						v-if="!loading && !sourceStore.sourceItem?.id"
-						:size="20" />
+					<Plus v-else :size="20" />
 				</template>
 				{{
 					sourceStore.sourceItem?.id
 						? t('openregister', 'Save')
 						: t('openregister', 'Create')
 				}}
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
@@ -169,20 +158,73 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 <script>
 import { generateUrl } from '@nextcloud/router'
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseCheckOutline from 'vue-material-design-icons/DatabaseCheckOutline.vue'
 import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import { freshState } from '../../services/initialState.js'
+import { authConfigOf, closedForm, connectionOf, optionOf } from './sourceForm.js'
+
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	sourceItem: {
+		title: '',
+		description: '',
+		databaseUrl: '',
+	},
+
+	connection: {
+		host: '',
+		port: '',
+		dbname: '',
+		user: '',
+		credential: '',
+		path: '',
+		writable: false,
+	},
+
+	typeOptions: {
+		clearable: false,
+		options: [
+			{ label: 'Internal', id: 'internal' },
+			{ label: 'MongoDB', id: 'mongodb' },
+			{ label: 'Database (virtual register)', id: 'database' },
+		],
+
+		value: { label: 'Internal', id: 'internal' },
+	},
+
+	driverOptions: {
+		clearable: false,
+		options: [
+			{ label: 'MySQL / MariaDB', id: 'pdo_mysql' },
+			{ label: 'PostgreSQL', id: 'pdo_pgsql' },
+			{ label: 'SQLite', id: 'pdo_sqlite' },
+		],
+
+		value: { label: 'MySQL / MariaDB', id: 'pdo_mysql' },
+	},
+
+	success: false,
+	loading: false,
+	actionLoading: false,
+	actionMessage: '',
+	actionMessageType: 'success',
+	error: false,
+	hasUpdated: false,
+	closeModalTimeout: null,
+}
 
 export default {
 	name: 'EditSource',
@@ -191,67 +233,19 @@ export default {
 		NcTextField,
 		NcTextArea,
 		NcSelect,
-		NcButton,
 		NcCheckboxRadioSwitch,
-		NcLoadingIcon,
 		NcNoteCard,
+		BusyButton,
+		CloseCancelButton,
 		// Icons
 		ContentSaveOutline,
-		Cancel,
 		Plus,
 		DatabaseCheckOutline,
 		DatabaseImportOutline,
 	},
 
 	data() {
-		return {
-			sourceItem: {
-				title: '',
-				description: '',
-				databaseUrl: '',
-			},
-
-			connection: {
-				host: '',
-				port: '',
-				dbname: '',
-				user: '',
-				credential: '',
-				path: '',
-				writable: false,
-			},
-
-			typeOptions: {
-				clearable: false,
-				options: [
-					{ label: 'Internal', id: 'internal' },
-					{ label: 'MongoDB', id: 'mongodb' },
-					{ label: 'Database (virtual register)', id: 'database' },
-				],
-
-				value: { label: 'Internal', id: 'internal' },
-			},
-
-			driverOptions: {
-				clearable: false,
-				options: [
-					{ label: 'MySQL / MariaDB', id: 'pdo_mysql' },
-					{ label: 'PostgreSQL', id: 'pdo_pgsql' },
-					{ label: 'SQLite', id: 'pdo_sqlite' },
-				],
-
-				value: { label: 'MySQL / MariaDB', id: 'pdo_mysql' },
-			},
-
-			success: false,
-			loading: false,
-			actionLoading: false,
-			actionMessage: '',
-			actionMessageType: 'success',
-			error: false,
-			hasUpdated: false,
-			closeModalTimeout: null,
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
@@ -285,39 +279,18 @@ export default {
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeSourceItem() {
-			if (sourceStore.sourceItem?.id) {
-				this.sourceItem = {
-					...sourceStore.sourceItem,
-				}
+			const source = sourceStore.sourceItem
+			if (!source?.id) return
 
-				// set typeOptions to the sourceItem type
-				this.typeOptions.value =
-					this.typeOptions.options.find(
-						(option) => option.id === this.sourceItem.type,
-					)
-					|| this.typeOptions.options.find(
-						(option) => option.id === 'internal',
-					)
-
-				// Restore non-secret database connection parts (the password is
-				// never on the source — it lives behind the credential store).
-				const authConfig = sourceStore.sourceItem.authConfig || {}
-				this.connection = {
-					host: authConfig.host || '',
-					port: authConfig.port || '',
-					dbname: authConfig.dbname || '',
-					user: authConfig.user || '',
-					credential: authConfig.credential || '',
-					path: authConfig.path || '',
-					writable: authConfig.writable === true,
-				}
-				if (authConfig.driver) {
-					this.driverOptions.value =
-						this.driverOptions.options.find(
-							(option) => option.id === authConfig.driver,
-						) || this.driverOptions.value
-				}
-			}
+			const authConfig = source.authConfig || {}
+			this.sourceItem = { ...source }
+			this.typeOptions.value =
+				optionOf(this.typeOptions, source.type)
+				|| optionOf(this.typeOptions, 'internal')
+			this.connection = connectionOf(authConfig)
+			this.driverOptions.value =
+				optionOf(this.driverOptions, authConfig.driver)
+				|| this.driverOptions.value
 		},
 
 		/**
@@ -326,31 +299,30 @@ export default {
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
-			this.success = null
-			this.loading = false
-			this.actionLoading = false
-			this.actionMessage = ''
-			this.error = false
-			this.hasUpdated = false
-			this.sourceItem = {
-				id: '',
-				title: '',
-				description: '',
-				databaseUrl: '',
+			Object.assign(this, closedForm())
+			this.typeOptions.value = optionOf(this.typeOptions, 'internal')
+		},
+
+		/**
+		 * The source to save. A database source carries its connection in
+		 * authConfig instead of a database URL.
+		 *
+		 * @spec exclude Modal save plumbing — builds the payload for sourceStore.saveSource.
+		 * @return {object} The source
+		 */
+		sourcePayload() {
+			const payload = {
+				...this.sourceItem,
+				type: this.typeOptions.value.id,
 			}
-			this.connection = {
-				host: '',
-				port: '',
-				dbname: '',
-				user: '',
-				credential: '',
-				path: '',
-				writable: false,
-			}
-			// reset typeOptions to the internal option
-			this.typeOptions.value = this.typeOptions.options.find(
-				(option) => option.id === 'internal',
+			if (!this.isDatabaseType) return payload
+
+			delete payload.databaseUrl
+			payload.authConfig = authConfigOf(
+				this.connection,
+				this.driverOptions.value.id,
 			)
+			return payload
 		},
 
 		/**
@@ -358,47 +330,40 @@ export default {
 		 */
 		async editSource() {
 			this.loading = true
-
-			const payload = {
-				...this.sourceItem,
-				type: this.typeOptions.value.id,
-			}
-
-			// Database sources carry only NON-SECRET connection parts in
-			// authConfig; the password stays behind the credential store.
-			if (this.isDatabaseType) {
-				delete payload.databaseUrl
-				payload.authConfig = {
-					driver: this.driverOptions.value.id,
-					host: this.connection.host,
-					port: this.connection.port,
-					dbname: this.connection.dbname,
-					user: this.connection.user,
-					credential: this.connection.credential,
-					path: this.connection.path,
-					writable: this.connection.writable === true,
-				}
-			}
-
 			sourceStore
-				.saveSource(payload)
-				.then(({ response }) => {
-					this.success = response.ok
-					this.error = false
-					response.ok
-						&& (this.closeModalTimeout = setTimeout(
-							this.closeModal,
-							2000,
-						))
-				})
-				.catch((error) => {
-					this.success = false
-					this.error =
-						error.message || 'An error occurred while saving the source'
-				})
+				.saveSource(this.sourcePayload())
+				.then(this.showSaved)
+				.catch(this.showSaveFailure)
 				.finally(() => {
 					this.loading = false
 				})
+		},
+
+		/**
+		 * Show the answer to a save, and close the modal soon after a success.
+		 *
+		 * @spec exclude Modal save plumbing — shows the outcome of a save.
+		 * @param {{response: Response}} answer The store's answer
+		 * @return {void}
+		 */
+		showSaved({ response }) {
+			this.success = response.ok
+			this.error = false
+			if (response.ok) {
+				this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+			}
+		},
+
+		/**
+		 * Show why a save failed.
+		 *
+		 * @spec exclude Modal save plumbing — shows the outcome of a save.
+		 * @param {Error} error The failure
+		 * @return {void}
+		 */
+		showSaveFailure(error) {
+			this.success = false
+			this.error = error.message || 'An error occurred while saving the source'
 		},
 
 		/**
@@ -437,42 +402,83 @@ export default {
 			this.actionMessage = ''
 
 			try {
-				const response = await fetch(
-					generateUrl(
-						`/apps/openregister/api/sources/${this.sourceItem.id}/${action}`,
-					),
-					{
-						method: 'POST',
-						headers: { requesttoken: window.OC?.requestToken || '' },
-					},
-				)
-				const data = await response.json()
-
-				if (response.ok) {
-					this.actionMessageType = 'success'
-					if (successMessage) {
-						this.actionMessage = successMessage
-					} else {
-						const created = (data.created || []).length
-						const updated = (data.updated || []).length
-						this.actionMessage = t(
-							'openregister',
-							'Virtual register created: {created} new and {updated} updated schemas',
-							{ created, updated },
-						)
-					}
-				} else {
-					this.actionMessageType = 'error'
-					this.actionMessage =
-						data.error || t('openregister', 'The action failed')
-				}
+				const answer = await this.postSourceAction(action)
+				this.showActionAnswer(answer, successMessage)
 			} catch (error) {
-				this.actionMessageType = 'error'
-				this.actionMessage =
-					error.message || t('openregister', 'The action failed')
+				this.showActionFailure(error.message)
 			} finally {
 				this.actionLoading = false
 			}
+		},
+
+		/**
+		 * POST a source action endpoint.
+		 *
+		 * @spec openspec/specs/dbal-virtual-registers/spec.md
+		 * @param {string} action The action path segment
+		 * @return {Promise<{ok: boolean, data: object}>} The outcome and response body
+		 */
+		async postSourceAction(action) {
+			const response = await fetch(
+				generateUrl(
+					`/apps/openregister/api/sources/${this.sourceItem.id}/${action}`,
+				),
+				{
+					method: 'POST',
+					headers: { requesttoken: window.OC?.requestToken || '' },
+				},
+			)
+			return { ok: response.ok, data: await response.json() }
+		},
+
+		/**
+		 * Show the answer to an action.
+		 *
+		 * @spec openspec/specs/dbal-virtual-registers/spec.md
+		 * @param {{ok: boolean, data: object}} answer The outcome and response body
+		 * @param {string|null} successMessage The message on success, if any
+		 * @return {void}
+		 */
+		showActionAnswer({ ok, data }, successMessage) {
+			if (ok) {
+				this.showActionSuccess(data, successMessage)
+			} else {
+				this.showActionFailure(data.error)
+			}
+		},
+
+		/**
+		 * Show a finished action: the given message, or else what it created.
+		 *
+		 * @spec openspec/specs/dbal-virtual-registers/spec.md
+		 * @param {object} data The response body
+		 * @param {string|null} successMessage The message, if any
+		 * @return {void}
+		 */
+		showActionSuccess(data, successMessage) {
+			this.actionMessageType = 'success'
+			this.actionMessage =
+				successMessage
+				|| t(
+					'openregister',
+					'Virtual register created: {created} new and {updated} updated schemas',
+					{
+						created: (data.created || []).length,
+						updated: (data.updated || []).length,
+					},
+				)
+		},
+
+		/**
+		 * Show a failed action.
+		 *
+		 * @spec openspec/specs/dbal-virtual-registers/spec.md
+		 * @param {string} [message] What went wrong, if known
+		 * @return {void}
+		 */
+		showActionFailure(message) {
+			this.actionMessageType = 'error'
+			this.actionMessage = message || t('openregister', 'The action failed')
 		},
 	},
 }

@@ -1,0 +1,149 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`edit modal select options DOM golden configuration 1`] = `
+[
+  "<x-select id="type-select" modelvalue="[object Object]" inputlabel="Selected Type" options="[object Object],[object Object],[object Object]" label="label" trackby="value" labeloutside="true" placeholder="Select configuration type...">
+  <x-option>
+    <div class="option-content"><span class="option-title">A label</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B label</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="registers-select" modelvalue="" inputlabel="Selected Registers" options="" loading="false" multiple="true" label="title" trackby="id" labeloutside="true" filterable="true" placeholder="Search registers..." closeonselect="false">
+  <x-option>
+    <div class="option-content"><span class="option-title">A title</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B title</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="schemas-select" modelvalue="" inputlabel="Selected Schemas" options="" loading="false" multiple="true" label="title" trackby="id" labeloutside="true" filterable="true" placeholder="Search schemas..." closeonselect="false">
+  <x-option>
+    <div class="option-content"><span class="option-title">A title</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B title</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="objects-select" modelvalue="" inputlabel="Selected Objects" options="" loading="false" multiple="true" label="title" trackby="id" labeloutside="true" filterable="true" placeholder="Search objects..." closeonselect="false" disabled="true">
+  <x-option>
+    <div class="option-content"><span class="option-title">A title</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B title</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="sources-select" modelvalue="" inputlabel="Selected Sources" options="" loading="false" multiple="true" label="title" trackby="id" labeloutside="true" filterable="true" placeholder="Search data sources..." closeonselect="false">
+  <x-option>
+    <div class="option-content"><span class="option-title">A title</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B title</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="agents-select" modelvalue="" inputlabel="Selected Agents" options="" loading="false" multiple="true" label="name" trackby="id" labeloutside="true" filterable="true" placeholder="Search agents..." closeonselect="false">
+  <x-option>
+    <div class="option-content"><span class="option-title">A name</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B name</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="views-select" modelvalue="" inputlabel="Selected Views" options="" loading="false" multiple="true" label="name" trackby="id" labeloutside="true" filterable="true" placeholder="Search views..." closeonselect="false">
+  <x-option>
+    <div class="option-content"><span class="option-title">A name</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B name</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="managed-applications-select" modelvalue="" inputlabel="Selected Managed Applications" options="" loading="false" multiple="true" label="name" trackby="id" labeloutside="true" filterable="true" placeholder="Search applications..." closeonselect="false">
+  <x-option>
+    <div class="option-content"><span class="option-title">A name</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B name</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="source-type-select" modelvalue="[object Object]" inputlabel="Selected Source Type" options="[object Object],[object Object],[object Object],[object Object]" label="label" trackby="value" labeloutside="true" placeholder="Select source type...">
+  <x-option>
+    <div class="option-content"><span class="option-title">A label</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B label</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="application-select" inputlabel="Selected Application" options="" label="name" trackby="id" labeloutside="true" placeholder="Select owner application (optional)...">
+  <x-option>
+    <div class="option-content"><span class="option-title">A name</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B name</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select id="notification-groups-select" modelvalue="" inputlabel="Selected Notification Groups" options="[object Object],[object Object]" multiple="true" label="label" trackby="value" labeloutside="true" placeholder="Select groups to notify..." closeonselect="false">
+  <x-option><span>A label</span></x-option>
+  <x-option><span>B label</span></x-option>
+</x-select>",
+]
+`;
+
+exports[`edit modal select options DOM golden webhook 1`] = `
+[
+  "<x-select inputlabel="Selected Method" options="[object Object],[object Object],[object Object],[object Object],[object Object]" label="label" trackby="value" labeloutside="true" placeholder="Select HTTP method" modelvalue="[object Object]">
+  <x-option>
+    <div class="option-content"><span class="option-title">A label</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B label</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select inputlabel="Selected Event" options="" label="label" trackby="value" labeloutside="true" filterable="true" placeholder="Select event to listen to...">
+  <x-option>
+    <div class="option-content"><span class="option-title">A label</span><span class="option-description">Told</span><span class="option-meta"> • After</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B label</span>
+      <!--v-if--><span class="option-meta"> • After</span>
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select inputlabel="Selected Retry Policy" options="[object Object],[object Object],[object Object]" label="label" trackby="value" labeloutside="true" placeholder="Select retry policy" modelvalue="[object Object]">
+  <x-option>
+    <div class="option-content"><span class="option-title">A label</span><span class="option-description">Told</span></div>
+  </x-option>
+  <x-option>
+    <div class="option-content"><span class="option-title">B label</span>
+      <!--v-if-->
+    </div>
+  </x-option>
+</x-select>",
+  "<x-select inputlabel="Payload mapping" options="" label="label" trackby="value" labeloutside="true" clearable="true" loading="false" placeholder="No mapping: send the standard payload">
+  <x-option></x-option>
+  <x-option></x-option>
+</x-select>",
+]
+`;

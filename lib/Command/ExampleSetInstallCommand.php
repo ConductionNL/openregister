@@ -26,16 +26,17 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogueInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyMarksInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -45,9 +46,61 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Install or check an example set.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
  */
 class ExampleSetInstallCommand extends Command {
+
+	/**
+	 * The options, in declaration order: name => [mode, description]. None has a shortcut.
+	 */
+	private const OPTIONS = [
+		'check' => [
+			InputOption::VALUE_NONE,
+			'Validate every object against its schema; writes no account, group or object '
+				.'(a missing required register is still imported, and a missing cast organisation created)',
+		],
+		'adopt' => [
+			(InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY),
+			'An existing account id the set may use although it did not create it; remove leaves it in place',
+		],
+		'refresh' => [
+			InputOption::VALUE_NONE,
+			'Rewrite every object the set declares and already holds to its current values '
+				.'(dates against today, cast, lookups); objects the set did not write are left alone',
+		],
+		'daily' => [
+			InputOption::VALUE_NONE,
+			'Also refresh the set once a day from now on, so its dates follow the day it is viewed (a demo instance)',
+		],
+		'no-daily' => [
+			InputOption::VALUE_NONE,
+			'Stop the daily refresh of the set',
+		],
+		'password-from-env' => [
+			InputOption::VALUE_NONE,
+			'Use the environment variable OC_PASS as the password of every new account instead of making one each',
+		],
+	];
+
+	/**
+	 * The report's parts, in print order, with the word each line starts with.
+	 */
+	private const REPORT_PARTS = [
+		'registers'   => 'Register',
+		'groups'      => 'Group',
+		'users'       => 'Account',
+		'memberships' => 'Membership',
+		'changes'     => 'Change',
+		'appConfig'   => 'App config',
+		'userPreferences' => 'User preference',
+		'tasks'       => 'Task',
+		'views'       => 'View',
+		'watchers'    => 'Watcher',
+		'parties'     => 'Party',
+		'notes'       => 'Note',
+		'readStates'  => 'Read state',
+		'flows'       => 'Flow',
+	];
 	/**
 	 * Exit code when something did not arrive.
 	 */
@@ -56,14 +109,16 @@ class ExampleSetInstallCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetCatalogue $catalogue Gathers the set.
-	 * @param ExampleSetInstaller $installer Checks, writes and proves.
+	 * @param ExampleSetCatalogueInterface $catalogue Gathers the set.
+	 * @param ExampleSetInstallerInterface $installer Checks, writes and proves.
+	 * @param ExampleSetDailyMarksInterface|null $daily Marks a set for the daily refresh.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExampleSetCatalogue $catalogue,
-		private readonly ExampleSetInstaller $installer,
+		private readonly ExampleSetCatalogueInterface $catalogue,
+		private readonly ExampleSetInstallerInterface $installer,
+		private readonly ?ExampleSetDailyMarksInterface $daily=null,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -73,30 +128,15 @@ class ExampleSetInstallCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:example-set:install')
 			->setDescription(description: 'Install a story example set across every enabled app, for a demo or test instance')
-			->addArgument(name: 'set', mode: InputArgument::REQUIRED, description: 'The set id; openregister:example-set:list shows them')
-			->addOption(
-				name: 'check',
-				shortcut: null,
-				mode: InputOption::VALUE_NONE,
-				description: 'Validate every object against its schema and write nothing'
-			)
-			->addOption(
-				name: 'adopt',
-				shortcut: null,
-				mode: (InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY),
-				description: 'An existing account id the set may use although it did not create it; remove leaves it in place'
-			)
-			->addOption(
-				name: 'password-from-env',
-				shortcut: null,
-				mode: InputOption::VALUE_NONE,
-				description: 'Use the environment variable OC_PASS as the password of every new account instead of making one each'
-			);
+			->addArgument(name: 'set', mode: InputArgument::REQUIRED, description: 'The set id; openregister:example-set:list shows them');
+		foreach (self::OPTIONS as $name => [$mode, $description]) {
+			$this->addOption(name: $name, shortcut: null, mode: $mode, description: $description);
+		}
 	}//end configure()
 
 	/**
@@ -107,7 +147,7 @@ class ExampleSetInstallCommand extends Command {
 	 *
 	 * @return int 0, 1 or 2; see the class.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		try {
@@ -123,9 +163,11 @@ class ExampleSetInstallCommand extends Command {
 			$output->writeln('<comment>Skipped: '.$app.' is not enabled on this instance.</comment>');
 		}
 
+		$output->writeln($this->markDaily(set: (string) $plan['set'], input: $input));
+
 		$adopt = array_values(array_filter(array_map('strval', (array) $input->getOption('adopt'))));
 		if ($input->getOption('check') === true) {
-			return $this->check(plan: $plan, adopt: $adopt, output: $output);
+			return $this->reportCheck(result: $this->installer->check(plan: $plan, adopt: $adopt), output: $output);
 		}
 
 		$password = '';
@@ -137,7 +179,8 @@ class ExampleSetInstallCommand extends Command {
 			}
 		}
 
-		$report = $this->installer->install(plan: $plan, adopt: $adopt, password: $password);
+		$plan['refresh'] = ($input->getOption('refresh') === true);
+		$report          = $this->installer->install(plan: $plan, adopt: $adopt, password: $password);
 		if ($report['refusals'] !== []) {
 			$this->printRefusals(refusals: $report['refusals'], output: $output);
 			$output->writeln('<error>The set was refused, so none of its accounts, groups or objects was written.</error>');
@@ -156,23 +199,39 @@ class ExampleSetInstallCommand extends Command {
 	}//end execute()
 
 	/**
-	 * Run only the check.
+	 * Mark or unmark the set for the daily refresh when `--daily` or `--no-daily` asks.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param array<int, string>   $adopt  Adoptable account ids.
+	 * @param string         $set   The set id.
+	 * @param InputInterface $input The command input.
+	 *
+	 * @return array<int, string> The line naming the daily sets, or none when nothing was asked.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 */
+	private function markDaily(string $set, InputInterface $input): array {
+		if ($this->daily === null || ($input->getOption('daily') !== true && $input->getOption('no-daily') !== true)) {
+			return [];
+		}
+
+		$this->daily->mark(set: $set, daily: ($input->getOption('daily') === true));
+		$sets = $this->daily->sets();
+		if ($sets === []) {
+			$sets = ['none'];
+		}
+
+		return ['Daily refresh: '.implode(', ', $sets)];
+	}//end markDaily()
+
+	/**
+	 * Report the outcome of a check-only run.
+	 *
+	 * @param array<string, mixed> $result What the installer's check found.
 	 * @param OutputInterface      $output The command output.
 	 *
 	 * @return int 0 when nothing is refused, 1 otherwise.
 	 */
-	private function check(array $plan, array $adopt, OutputInterface $output): int {
-		$result = $this->installer->check(plan: $plan, adopt: $adopt);
-		foreach ($result['registers'] as $slug => $outcome) {
-			$output->writeln('Register '.$slug.': '.self::word(outcome: $outcome));
-		}
-
-		foreach ($result['checked'] as $type => $count) {
-			$output->writeln($type.': '.$count.' checked');
-		}
+	private function reportCheck(array $result, OutputInterface $output): int {
+		$this->printChecked(result: $result, output: $output);
 
 		if ($result['refusals'] !== []) {
 			$this->printRefusals(refusals: $result['refusals'], output: $output);
@@ -181,9 +240,34 @@ class ExampleSetInstallCommand extends Command {
 		}
 
 		$output->writeln('<info>Every object passes its schema. No account, group or object of the set was written.</info>');
+		$output->writeln(
+			'A required register the instance lacked was imported, and a cast organisation it lacked was created, because the check needs them.'
+		);
 
 		return self::SUCCESS;
-	}//end check()
+	}//end reportCheck()
+
+	/**
+	 * Print what the check covered: each required register, and the objects and changes checked per type.
+	 *
+	 * @param array<string, mixed> $result The installer's check result.
+	 * @param OutputInterface      $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printChecked(array $result, OutputInterface $output): void {
+		foreach ($result['registers'] as $slug => $outcome) {
+			$output->writeln('Register '.$slug.': '.self::word(outcome: $outcome));
+		}
+
+		foreach ($result['checked'] as $type => $count) {
+			$output->writeln($type.': '.$count.' checked');
+		}
+
+		foreach ($result['checkedChanges'] as $type => $count) {
+			$output->writeln($type.': '.$count.' change(s) checked');
+		}
+	}//end printChecked()
 
 	/**
 	 * Print refusals, one per line.
@@ -208,36 +292,105 @@ class ExampleSetInstallCommand extends Command {
 	 * @return void
 	 */
 	private function printReport(array $report, OutputInterface $output): void {
-		$parts = [
-			'registers'   => 'Register',
-			'groups'      => 'Group',
-			'users'       => 'Account',
-			'memberships' => 'Membership',
-			'changes'     => 'Change',
-			'appConfig'   => 'App config',
-			'userPreferences' => 'User preference',
-		];
-		foreach ($parts as $part => $word) {
-			foreach ($report[$part] as $name => $outcome) {
+		$this->printParts(report: $report, output: $output);
+		$this->printTypes(types: $report['types'], output: $output);
+
+		if ($report['files'] > 0) {
+			$output->writeln('Files attached: '.$report['files']);
+		}
+
+		$this->printOutstanding(report: $report, output: $output);
+		$this->printPasswords(passwords: $report['passwords'], output: $output);
+	}//end printReport()
+
+	/**
+	 * Print the outcome of every register, group, account and other part the set wrote, part by part.
+	 *
+	 * @param array<string, mixed> $report The installer's report.
+	 * @param OutputInterface      $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printParts(array $report, OutputInterface $output): void {
+		foreach (self::REPORT_PARTS as $part => $word) {
+			foreach (($report[$part] ?? []) as $name => $outcome) {
 				$output->writeln($word.' '.$name.': '.self::word(outcome: $outcome));
 			}
 		}
+	}//end printParts()
 
-		foreach ($report['types'] as $type => $counts) {
+	/**
+	 * Print the passwords of the accounts this install made, once.
+	 *
+	 * @param array<string, string> $passwords The new passwords by uid.
+	 * @param OutputInterface       $output    The command output.
+	 *
+	 * @return void
+	 */
+	private function printPasswords(array $passwords, OutputInterface $output): void {
+		if ($passwords === []) {
+			return;
+		}
+
+		$output->writeln('New passwords, shown once and stored nowhere:');
+		foreach ($passwords as $uid => $password) {
+			$output->writeln('  '.$uid.': '.$password);
+		}
+	}//end printPasswords()
+
+	/**
+	 * Print the counts per register and schema.
+	 *
+	 * @param array<string, array<string, int>> $types  Counts by `<register> <schema>`.
+	 * @param OutputInterface                   $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printTypes(array $types, OutputInterface $output): void {
+		foreach ($types as $type => $counts) {
 			$output->writeln(
 				sprintf(
-					'%s: %d declared, %d created, %d already there, %d found afterwards',
+					'%s: %d declared, %d created, %d already there%s, %d found afterwards',
 					$type,
 					$counts['declared'],
 					$counts['created'],
 					$counts['kept'],
+					$this->refreshedNote(counts: $counts),
 					$counts['arrived']
 				)
 			);
 		}
+	}//end printTypes()
 
-		if ($report['files'] > 0) {
-			$output->writeln('Files attached: '.$report['files']);
+	/**
+	 * " (n refreshed, m unchanged)" after a `--refresh`, nothing otherwise.
+	 *
+	 * @param array<string, int> $counts The counts of one type.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-only-an-object-whose-values-differ
+	 */
+	private function refreshedNote(array $counts): string {
+		if (isset($counts['refreshed']) === false && isset($counts['unchanged']) === false) {
+			return '';
+		}
+
+		return sprintf(' (%d refreshed, %d unchanged)', ($counts['refreshed'] ?? 0), ($counts['unchanged'] ?? 0));
+	}//end refreshedNote()
+
+	/**
+	 * Print what was left as it is, and what is not written, not there or not kept.
+	 *
+	 * @param array<string, mixed> $report The installer's report.
+	 * @param OutputInterface      $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printOutstanding(array $report, OutputInterface $output): void {
+		foreach ($report['left'] as $line) {
+			$output->writeln('Left as it is: '.$line);
 		}
 
 		$problems = ['Not written: ' => $report['dropped'], 'Not on the instance: ' => $report['missing'], 'Written but not kept: ' => $report['lost']];
@@ -246,14 +399,7 @@ class ExampleSetInstallCommand extends Command {
 				$output->writeln('<error>'.$words.$line.'</error>');
 			}
 		}
-
-		if ($report['passwords'] !== []) {
-			$output->writeln('New passwords, shown once and stored nowhere:');
-			foreach ($report['passwords'] as $uid => $password) {
-				$output->writeln('  '.$uid.': '.$password);
-			}
-		}
-	}//end printReport()
+	}//end printOutstanding()
 
 	/**
 	 * The words for an outcome.

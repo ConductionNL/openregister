@@ -1,0 +1,1191 @@
+{
+    "entry: archival no actor no session": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "archival.destroyed",
+                "changed": "{\"k\":\"v\"}",
+                "user": "system",
+                "user_name": "System",
+                "register": 1,
+                "object_uuid": "u-7"
+            }
+        ]
+    },
+    "entry: archival no actor with session": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "archival.destroyed",
+                "changed": "[]",
+                "user": "alice",
+                "user_name": "Alice",
+                "register": 1,
+                "object_uuid": "u-7"
+            }
+        ]
+    },
+    "entry: archival actor and name": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "registry.update",
+                "changed": "[]",
+                "user": "registry:brp",
+                "user_name": "BRP",
+                "register": 1,
+                "object_uuid": "u-7"
+            }
+        ]
+    },
+    "entry: archival actor without name": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "registry.update",
+                "changed": "[]",
+                "user": "registry:brp",
+                "user_name": "registry:brp",
+                "register": 1,
+                "object_uuid": "u-7"
+            }
+        ]
+    },
+    "entry: archival name without actor with session": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "x",
+                "changed": "[]",
+                "user": "alice",
+                "user_name": "Alice",
+                "register": 1,
+                "object_uuid": "u-7"
+            }
+        ]
+    },
+    "entry: archival ip trimmed": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "link.opened",
+                "changed": "[]",
+                "user": "link:1",
+                "user_name": "link:1",
+                "ip_address": "10.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7"
+            }
+        ]
+    },
+    "entry: archival ip blank": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "link.opened",
+                "changed": "[]",
+                "user": "link:1",
+                "user_name": "link:1",
+                "register": 1,
+                "object_uuid": "u-7"
+            }
+        ]
+    },
+    "entry: archival ip empty": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "link.opened",
+                "changed": "[]",
+                "user": "link:1",
+                "user_name": "link:1",
+                "register": 1,
+                "object_uuid": "u-7"
+            }
+        ]
+    },
+    "entry: tool dotted no session": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "mcp.search",
+                "changed": "[]",
+                "user": "system",
+                "user_name": "System",
+                "tool_id": "keepiq.lead.search",
+                "params_digest": "d1",
+                "result_summary": "{\"count\":2}"
+            }
+        ]
+    },
+    "entry: tool undotted with session": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 3,
+                "action": "mcp.search",
+                "changed": "[]",
+                "user": "alice",
+                "user_name": "Alice",
+                "register": 1,
+                "object_uuid": "o-3",
+                "tool_id": "search",
+                "params_digest": "d2",
+                "result_summary": "[]"
+            }
+        ]
+    },
+    "entry: tool trailing dot with session": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "mcp.",
+                "changed": "[]",
+                "user": "alice",
+                "user_name": "Alice",
+                "tool_id": "keepiq.",
+                "params_digest": "d3",
+                "result_summary": "{\"isError\":true}"
+            }
+        ]
+    },
+    "entry: refusal minimal": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "shared_master_data_write_denied",
+                "changed": "[]",
+                "user": "system",
+                "user_name": "system",
+                "organisation_id": "org-s",
+                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"register\",\"outcome\":\"refused\"}"
+            }
+        ]
+    },
+    "entry: refusal empty actor and reference": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 5,
+                "action": "shared_master_data_write_denied",
+                "changed": "[]",
+                "user": "system",
+                "user_name": "system",
+                "register": 4,
+                "object_uuid": "o-1",
+                "organisation_id": "org-s",
+                "result_summary": "{\"a\":1,\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"schema\",\"outcome\":\"refused\"}"
+            }
+        ]
+    },
+    "entry: refusal actor no reference": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "shared_master_data_write_denied",
+                "changed": "[]",
+                "user": "bob",
+                "user_name": "bob",
+                "organisation_id": "org-s",
+                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"schema\",\"outcome\":\"refused\"}"
+            }
+        ]
+    },
+    "entry: refusal actor and reference": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "shared_master_data_write_denied",
+                "changed": "[]",
+                "user": "bob",
+                "user_name": "p-123",
+                "organisation_id": "org-s",
+                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"schema\",\"outcome\":\"refused\"}"
+            }
+        ]
+    },
+    "entry: refusal context cannot override outcome": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "shared_master_data_write_denied",
+                "changed": "[]",
+                "user": "system",
+                "user_name": "system",
+                "organisation_id": "org-s",
+                "result_summary": "{\"outcome\":\"refused\",\"holderOrganisation\":\"org-h\",\"extra\":\"x\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"register\"}"
+            }
+        ]
+    },
+    "entry: refusal reference without actor with session": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "shared_master_data_write_denied",
+                "changed": "[]",
+                "user": "system",
+                "user_name": "p-9",
+                "organisation_id": "org-s",
+                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"register\",\"outcome\":\"refused\"}"
+            }
+        ]
+    },
+    "entry: export no actor no session": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "export.completed",
+                "changed": "[]",
+                "user": "system",
+                "user_name": "System",
+                "result_summary": "{\"rows\":3}"
+            }
+        ]
+    },
+    "entry: export no actor with session": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "action": "export.refused",
+                "changed": "[]",
+                "user": "alice",
+                "user_name": "Alice",
+                "register": 1,
+                "result_summary": "{\"reason\":\"cap\"}"
+            }
+        ]
+    },
+    "entry: export actor": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "export.completed",
+                "changed": "[]",
+                "user": "svc-export",
+                "user_name": "svc-export",
+                "result_summary": "[]"
+            }
+        ]
+    },
+    "entry: export empty actor": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "export.completed",
+                "changed": "[]",
+                "user": "",
+                "user_name": "",
+                "result_summary": "[]"
+            }
+        ]
+    },
+    "entry: session user": {
+        "returnedId": 1,
+        "rows": [
+            {
+                "id": 1,
+                "action": "mcp.b",
+                "changed": "[]",
+                "user": "alice",
+                "user_name": "Alice",
+                "tool_id": "a.b",
+                "params_digest": "d4",
+                "result_summary": "[]"
+            }
+        ]
+    },
+    "merge: no window configured": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: window merges two updates": {
+        "returnedIds": [
+            1,
+            1
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"},\"aggregation\":{\"edits\":2}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 1022,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: window merges three updates": {
+        "returnedIds": [
+            1,
+            1,
+            1
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"A\"},\"note\":{\"old\":null,\"new\":null},\"aggregation\":{\"edits\":3}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 1017,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: create is never merged into": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "create",
+                "changed": "{\"title\":{\"old\":null,\"new\":\"B\"},\"@self\":{\"old\":null,\"new\":{\"id\":\"u-7\",\"slug\":null,\"name\":\"u-7\",\"description\":7,\"summary\":null,\"image\":null,\"uri\":null,\"version\":null,\"register\":\"1\",\"schema\":\"2\",\"schemaVersion\":null,\"files\":[],\"relations\":[],\"locked\":null,\"owner\":null,\"organisation\":null,\"groups\":[],\"authorization\":[],\"folder\":null,\"application\":null,\"validation\":[],\"quality\":[],\"geo\":[],\"retention\":[],\"tmlo\":[],\"size\":null,\"updated\":null,\"lastUserActivity\":null,\"created\":null,\"deleted\":[],\"archived\":[],\"frozen\":[],\"status\":null,\"source\":null,\"mail\":null,\"contacts\":null,\"notes\":null,\"todos\":null,\"calendar\":null,\"talk\":null,\"deck\":null}},\"id\":{\"old\":null,\"new\":\"u-7\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: delete is never merged": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "delete",
+                "changed": "[]",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: different actor": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "alice",
+                "user_name": "Alice",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "bob",
+                "user_name": "Bob",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: same actor": {
+        "returnedIds": [
+            1,
+            1
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"},\"aggregation\":{\"edits\":2}}",
+                "user": "alice",
+                "user_name": "Alice",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 1020,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: actor after no actor": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "alice",
+                "user_name": "Alice",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: previous too old": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: previous in the future": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: previous sealed": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "hash": "sealed",
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: previous for another object": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "other",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: object without uuid": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 764,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 783,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: app config not an app config": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "merge: app config unavailable": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Could not fold an edit into the aggregation window",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Could not fold an edit into the aggregation window"
+        ]
+    },
+    "merge: window clamped from negative": {
+        "returnedIds": [
+            1,
+            2
+        ],
+        "rows": [
+            {
+                "id": 1,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"A\",\"new\":\"B\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 799,
+                "cause": "person"
+            },
+            {
+                "id": 2,
+                "schema": 2,
+                "object": 7,
+                "action": "update",
+                "changed": "{\"title\":{\"old\":\"B\",\"new\":\"C\"},\"note\":{\"old\":null,\"new\":\"n\"}}",
+                "user": "System",
+                "user_name": "System",
+                "session": "",
+                "request": "req-1",
+                "ip_address": "127.0.0.1",
+                "register": 1,
+                "object_uuid": "u-7",
+                "retention_period": "resolver-unavailable:indefinite",
+                "size": 818,
+                "cause": "person"
+            }
+        ],
+        "warnings": [
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver",
+            "warning: [AuditTrailMapper] Retention resolution failed; retaining the audit row indefinitely: not registered: OCA\\OpenRegister\\Service\\AuditRetentionResolver"
+        ]
+    },
+    "bulk: empty": {
+        "ids": [],
+        "log": []
+    },
+    "bulk: one row": {
+        "ids": [
+            [
+                "b-1",
+                100
+            ]
+        ],
+        "log": [
+            {
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `changed`, `user`) VALUES (?,?,?,?)",
+                "params": [
+                    "b-1",
+                    "create",
+                    "{\"t\":1}",
+                    "u"
+                ]
+            },
+            {
+                "query": "SELECT id, uuid FROM *PREFIX*openregister_audit_trails WHERE uuid IN (?)",
+                "params": [
+                    "b-1"
+                ]
+            },
+            "closeCursor"
+        ]
+    },
+    "bulk: fields differ per row, chunked": {
+        "ids": [
+            [
+                "b-1",
+                100
+            ],
+            [
+                "b-2",
+                101
+            ],
+            [
+                "b-3",
+                100
+            ]
+        ],
+        "log": [
+            {
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `user`, `processing_activity_id`) VALUES (?,?,?,?), (?,?,?,?)",
+                "params": [
+                    "b-1",
+                    "create",
+                    "u",
+                    null,
+                    "b-2",
+                    "update",
+                    null,
+                    "pa-1"
+                ]
+            },
+            {
+                "query": "SELECT id, uuid FROM *PREFIX*openregister_audit_trails WHERE uuid IN (?,?)",
+                "params": [
+                    "b-1",
+                    "b-2"
+                ]
+            },
+            "closeCursor",
+            {
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `import_job_id`, `size`) VALUES (?,?,?,?)",
+                "params": [
+                    "b-3",
+                    "delete",
+                    "job-1",
+                    20
+                ]
+            },
+            {
+                "query": "SELECT id, uuid FROM *PREFIX*openregister_audit_trails WHERE uuid IN (?)",
+                "params": [
+                    "b-3"
+                ]
+            },
+            "closeCursor"
+        ]
+    },
+    "bulk: id set on a row is not a column": {
+        "ids": [
+            [
+                "b-1",
+                100
+            ]
+        ],
+        "log": [
+            {
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`) VALUES (?,?)",
+                "params": [
+                    "b-1",
+                    "create"
+                ]
+            },
+            {
+                "query": "SELECT id, uuid FROM *PREFIX*openregister_audit_trails WHERE uuid IN (?)",
+                "params": [
+                    "b-1"
+                ]
+            },
+            "closeCursor"
+        ]
+    },
+    "bulk: unknown uuid in the readback": {
+        "ids": [
+            [
+                "b-1",
+                100
+            ],
+            [
+                "b-ghost",
+                null
+            ]
+        ],
+        "log": [
+            {
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`) VALUES (?,?), (?,?)",
+                "params": [
+                    "b-1",
+                    "create",
+                    "b-ghost",
+                    "read"
+                ]
+            },
+            {
+                "query": "SELECT id, uuid FROM *PREFIX*openregister_audit_trails WHERE uuid IN (?,?)",
+                "params": [
+                    "b-1",
+                    "b-ghost"
+                ]
+            },
+            "closeCursor"
+        ]
+    },
+    "bulk: row without uuid is refused": {
+        "thrown": "InvalidArgumentException",
+        "message": "insertAuditTrails() requires every pre-built row to carry a uuid.",
+        "log": []
+    },
+    "bulk: row with empty uuid is refused": {
+        "thrown": "InvalidArgumentException",
+        "message": "insertAuditTrails() requires every pre-built row to carry a uuid.",
+        "log": []
+    },
+    "bulk: scalar entry is refused": {
+        "thrown": "InvalidArgumentException",
+        "message": "insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.",
+        "log": []
+    },
+    "bulk: null entry is refused": {
+        "thrown": "InvalidArgumentException",
+        "message": "insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.",
+        "log": []
+    },
+    "moment: datetime": "2026-03-04T05:06:07+00:00",
+    "moment: datetime with offset": "2026-03-04T05:06:07+02:00",
+    "moment: utc string": "2026-03-04T05:06:07+00:00",
+    "moment: empty string": null,
+    "moment: unreadable string": null,
+    "moment: integer": null,
+    "moment: null": null
+}

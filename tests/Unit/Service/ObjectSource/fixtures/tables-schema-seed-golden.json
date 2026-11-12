@@ -1,0 +1,89 @@
+{
+    "stats": {
+        "seeded": 2,
+        "retired": 0,
+        "skipped": 1
+    },
+    "log": [
+        [
+            "schemas.find",
+            "nc-new-t3"
+        ],
+        [
+            "schemas.createFromArray",
+            {
+                "title": "New",
+                "slug": "nc-new-t3",
+                "description": "Read-only virtual schema for Nextcloud Tables table #3.",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "configuration": {
+                    "x-schema-org": "schema:Thing",
+                    "x-openregister-object-source": {
+                        "provider": "tables",
+                        "readOnly": true,
+                        "config": {
+                            "tableId": 3,
+                            "managed": true
+                        }
+                    }
+                }
+            }
+        ],
+        [
+            "registers.update",
+            [
+                82,
+                81
+            ]
+        ],
+        [
+            "schemas.find",
+            "nc-orders-t4"
+        ],
+        [
+            "schemas.updateFromArray",
+            82,
+            {
+                "title": "Orders",
+                "slug": "nc-orders-t4",
+                "description": "Read-only virtual schema for Nextcloud Tables table #4.",
+                "properties": [],
+                "required": [],
+                "configuration": {
+                    "x-schema-org": "schema:Thing",
+                    "x-openregister-object-source": {
+                        "provider": "tables",
+                        "readOnly": true,
+                        "config": {
+                            "tableId": 4,
+                            "managed": true
+                        }
+                    }
+                }
+            }
+        ],
+        [
+            "schemas.find",
+            "nc-mine-t5"
+        ],
+        [
+            "warning",
+            "[ObjectSource:tables] schema \"nc-mine-t5\" is hand-authored \u2014 not overwriting during sync"
+        ],
+        [
+            "schemas.find",
+            82
+        ],
+        [
+            "schemas.find",
+            81
+        ]
+    ]
+}

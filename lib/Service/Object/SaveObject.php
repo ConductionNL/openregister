@@ -29,45 +29,107 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
+use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\ProtectedCarryForward;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
+use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Event\ReferenceValidatedEvent;
-use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
-use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
-use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeItem;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRules;
+use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\EmptyValues;
+use OCA\OpenRegister\Service\Object\SaveObject\InverseRelations;
+use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
+use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Object\SaveObject\PropertyDefaults;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileProperties;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectImage;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
+use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
+use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices;
+use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
+use OCA\OpenRegister\Service\Object\SaveObject\SharedWriteAttempt;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSourceChange;
+use OCA\OpenRegister\Service\Object\SaveObject\FolderBind;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScanner;
+use OCA\OpenRegister\Service\Object\SaveObject\StreamRun;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore;
+use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\Quality\DedupCreatePolicy;
+use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
+use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
+use OCA\OpenRegister\Service\Quality\UniqueHintScope;
+use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\File\FolderAccessCheck;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -75,16 +137,17 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
+use InvalidArgumentException;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration;
 use RuntimeException;
 use Throwable;
 use Symfony\Component\Uid\Uuid;
-use Twig\Environment;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Individual Object Save/Create/Update Handler
@@ -152,33 +215,8 @@ use Twig\Loader\ArrayLoader;
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-declared-initial-lifecycle-state-applied-on-create
  * @spec openspec/specs/objects-crud/spec.md#requirement-partial-object-updates-are-protected-against-lost-updates
  */
-class SaveObject {
+class SaveObject implements SaveObjectInterface {
 	private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
-
-	/**
-	 * App identifier used for `IAppConfig` lookups.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'openregister';
-
-	/**
-	 * App-config key controlling whether admins bypass reference
-	 * existence validation. When the stored value parses to `true`
-	 * (default), members of the `admin` group skip the check; when
-	 * `false`, admins are validated like any other user. Operators
-	 * can flip the flag at runtime via `occ config:app:set`.
-	 *
-	 * @var string
-	 */
-	private const CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS = 'reference_validation_admin_bypass';
-
-	/**
-	 * Twig template engine instance
-	 *
-	 * @var Environment
-	 */
-	private Environment $twig;
 
 	/**
 	 * Stamps `@self.version` on create and bumps it on update.
@@ -193,6 +231,27 @@ class SaveObject {
 	private ObjectVersionHandler $versionHandler;
 
 	/**
+	 * The saves in flight, for the cycle check on references; built on first use.
+	 *
+	 * @var SaveCallStack|null
+	 */
+	private ?SaveCallStack $saveCalls = null;
+
+	/**
+	 * Finds and keeps the schemas and registers of a save; built on first use.
+	 *
+	 * @var SaveLookups|null
+	 */
+	private ?SaveLookups $lookups = null;
+
+	/**
+	 * Decides object slugs (#4037), built from the mappers already passed in.
+	 *
+	 * @var ObjectSlugHandler
+	 */
+	private ObjectSlugHandler $slugHandler;
+
+	/**
 	 * Cache for sub-objects created during cascade operations.
 	 *
 	 * Stores created sub-objects indexed by their UUID for inclusion in @self.objects.
@@ -203,56 +262,18 @@ class SaveObject {
 	private array $createdSubObjects = [];
 
 	/**
-	 * Request-scoped cache for resolved schemas.
+	 * The reference existence check, built on first use.
 	 *
-	 * Caches Schema entities by their ID to avoid repeated database lookups
-	 * when creating multiple sub-objects of the same type during cascade operations.
-	 * This significantly improves POST performance for objects with many sub-objects.
-	 *
-	 * @var array<int|string, Schema>
+	 * @var ReferenceExistence|null
 	 */
-	private array $schemaCache = [];
+	private ?ReferenceExistence $referenceExistence = null;
 
 	/**
-	 * Request-scoped cache for resolved registers.
+	 * The reference validator, built on first use.
 	 *
-	 * Caches Register entities by their ID to avoid repeated database lookups
-	 * during cascade operations.
-	 *
-	 * @var array<int|string, Register>
+	 * @var ReferenceValidator|null
 	 */
-	private array $registerCache = [];
-
-	/**
-	 * Request-scoped cache for resolved schema references (slug -> ID).
-	 *
-	 * Caches the mapping from schema slugs/references to their numeric IDs
-	 * to avoid repeated findAll() calls during cascade operations.
-	 *
-	 * @var array<string, string|null>
-	 */
-	private array $schemaReferenceCache = [];
-
-	/**
-	 * Request-scoped cache for reference-existence verdicts.
-	 *
-	 * Caches the result of `validateReferenceExists()` keyed on
-	 * `{targetSchemaId}:{uuid}`. Stores `true` for "exists" and `false`
-	 * for "does not exist". Closes the spec's
-	 * "Validation results cached within a request scope" + bulk-import
-	 * batch optimisation requirements: a 1000-row import that points at
-	 * the same 50 organisations now hits the database 50 times instead
-	 * of 1000.
-	 *
-	 * The verdict is intentionally request-scoped (no distributed
-	 * cache): cross-request consistency is enforced by re-running
-	 * validation on every save, and an in-flight cascade can rely on
-	 * the cache covering the lifetime of the cascade. Listeners only
-	 * fire on cache misses to avoid duplicate event emission.
-	 *
-	 * @var array<string, bool>
-	 */
-	private array $referenceValidationCache = [];
+	private ?ReferenceValidator $referenceValidator = null;
 
 	/**
 	 * How the most recently completed `saveObject()` actually resolved.
@@ -280,105 +301,291 @@ class SaveObject {
 	private ?string $lastSaveOutcome = null;
 
 	/**
-	 * Stack of `(targetSchemaSlug, uuid)` entries currently being saved.
+	 * Permission mode of each save whose cascades are running, outermost first.
 	 *
-	 * Pushed when `saveObject()` enters, popped when it exits. Each
-	 * entry is keyed on `<targetSchemaSlug>:<uuid>` for fast O(1)
-	 * membership lookup. Used by `validateReferences()` to detect
-	 * circular reference chains (A->B->A) — when the value of a
-	 * `validateReference` property equals one of the in-flight
-	 * UUIDs, we throw `CircularReferenceException` instead of a
-	 * regular reference-existence check.
-	 *
-	 * Closes the `reference-existence-validation` spec's
-	 * "Circular reference chains detected during validation"
-	 * requirement.
-	 *
-	 * @var array<int, array{schemaSlug:string,uuid:string,register:string|null}>
+	 * @var list<bool>
 	 */
-	private array $saveCallStack = [];
+	private array $cascadeScopes = [];
 
 	/**
-	 * Fast membership index for `$saveCallStack`. Keys are
-	 * `<schemaSlug>:<uuid>`; values are integers (the depth at which
-	 * the entry was pushed) so we can detect re-entries without
-	 * iterating the stack.
+	 * Orphans found while a parent is prepared, per parent uuid, settled after its write.
 	 *
-	 * @var array<string, int>
+	 * @var array<string, list<array{0: string[], 1: array}>>
 	 */
-	private array $saveCallStackIndex = [];
+	private array $pendingOrphans = [];
+
+	/**
+	 * Finds the relations in object data; built on first use.
+	 *
+	 * @var RelationScanner|null
+	 */
+	private ?RelationScanner $relationScanner = null;
+
+	/**
+	 * Applies the schema's defaults; built on first use.
+	 *
+	 * @var PropertyDefaults|null
+	 */
+	private ?PropertyDefaults $propertyDefaults = null;
+
+	/**
+	 * Decides whether orphan cleanup may delete a row; built on first use.
+	 *
+	 * @var OrphanDeletionGuard|null
+	 */
+	private ?OrphanDeletionGuard $orphanGuard = null;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectEntityMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $unifiedObjectMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var MetadataHydrationHandler
+	 */
+	private readonly MetadataHydrationHandler $metaHydrationHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var FilePropertyHandler
+	 */
+	private readonly FilePropertyHandler $filePropertyHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var LinkedEntityPropertyHandler
+	 */
+	private readonly LinkedEntityPropertyHandler $linkedEntityHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var OrganisationServiceInterface
+	 */
+	private readonly OrganisationServiceInterface $organisationService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var CacheHandlerInterface
+	 */
+	private readonly CacheHandlerInterface $cacheHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var SettingsServiceInterface
+	 */
+	private readonly SettingsServiceInterface $settingsService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var ComputedFieldHandler
+	 */
+	private readonly ComputedFieldHandler $computedFieldHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var TranslationHandler
+	 */
+	private readonly TranslationHandler $translationHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var TranslationProjectionService
+	 */
+	private readonly TranslationProjectionService $translationProjectionService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var TranslationStatusService
+	 */
+	private readonly TranslationStatusService $translationStatusService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var TmloService
+	 */
+	private readonly TmloService $tmloService;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IGroupManager|null
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IAppConfig|null
+	 */
+	private readonly ?IAppConfig $appConfig;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var IEventDispatcher|null
+	 */
+	private readonly ?IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null
+	 */
+	private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var FieldEncryptionHandler|null
+	 */
+	private readonly ?FieldEncryptionHandler $fieldEncryptionHandler;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var \OCA\OpenRegister\Service\Flow\FlowRunContext|null
+	 */
+	private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var ContainerInterface|null
+	 */
+	private readonly ?ContainerInterface $container;
+
+	/**
+	 * Collaborator, taken from the services bundle.
+	 *
+	 * @var UserActivityStamper|null
+	 */
+	private readonly ?UserActivityStamper $userActivity;
 
 	/**
 	 * Constructor for SaveObject handler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Object entity mapper
-	 * @param MagicMapper $unifiedObjectMapper Unified object mapper
-	 * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
-	 * @param FilePropertyHandler $filePropertyHandler Handler for file property operations
-	 * @param LinkedEntityPropertyHandler $linkedEntityHandler Linked entity property handler
-	 * @param IUserSession $userSession User session service
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging changes
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
-	 * @param RegisterMapper $registerMapper Register mapper for register operations
-	 * @param IURLGenerator $urlGenerator URL generator service
-	 * @param OrganisationService $organisationService Service for organisation operations
-	 * @param CacheHandler $cacheHandler Object entity and query cache
-	 * @param SettingsService $settingsService Settings service for trail settings
-	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler
-	 * @param ComputedFieldHandler $computedFieldHandler Handler for computed field evaluation
-	 * @param TranslationHandler $translationHandler Handler for translation operations
-	 * @param TranslationProjectionService $translationProjectionService Translation projection service
-	 * @param TranslationStatusService $translationStatusService Translation status service
-	 * @param LoggerInterface $logger Logger interface for logging operations
-	 * @param TmloService $tmloService TMLO archival metadata service
-	 * @param \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler Folder access-control gateway
-	 * @param ArrayLoader $arrayLoader Twig array loader for template rendering
-	 * @param IGroupManager|null $groupManager Group manager for admin-bypass detection
-	 * @param IAppConfig|null $appConfig App-config reader (admin bypass)
-	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher (reference events)
-	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
-	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler
-	 * @param \OCA\OpenRegister\Service\Flow\FlowRunContext|null $runContext The ambient flow-run stack, so the lock guard can tell which run is writing
-	 * @param ContainerInterface|null $container App container, consulted lazily for the retention service (see resolveRetentionService)
+	 * The access guards are taken directly; every other collaborator comes in
+	 * the services bundle and is kept on its own typed property.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @param SaveObjectServices         $services                Mappers, records, runtime, handlers, platform and tenancy.
+	 * @param PropertyRbacHandler        $propertyRbacHandler     Property-level RBAC handler.
+	 * @param PermissionHandlerInterface $permissionHandler       Checks the caller's create rights for each nested object a cascade creates.
+	 * @param FolderManagementHandler    $folderManagementHandler Folder access-control gateway.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly MagicMapper $unifiedObjectMapper,
-		private readonly MetadataHydrationHandler $metaHydrationHandler,
-		private readonly FilePropertyHandler $filePropertyHandler,
-		private readonly LinkedEntityPropertyHandler $linkedEntityHandler,
-		private readonly IUserSession $userSession,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly OrganisationService $organisationService,
-		private readonly CacheHandler $cacheHandler,
-		private readonly SettingsService $settingsService,
+		SaveObjectServices $services,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
-		private readonly ComputedFieldHandler $computedFieldHandler,
-		private readonly TranslationHandler $translationHandler,
-		private readonly TranslationProjectionService $translationProjectionService,
-		private readonly TranslationStatusService $translationStatusService,
-		private readonly LoggerInterface $logger,
-		private readonly TmloService $tmloService,
-		private readonly \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler,
-		ArrayLoader $arrayLoader,
-		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?IAppConfig $appConfig = null,
-		private readonly ?IEventDispatcher $eventDispatcher = null,
-		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
-		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
-		private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext = null,
-		private readonly ?ContainerInterface $container = null,
+		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly FolderManagementHandler $folderManagementHandler,
 	) {
-		$this->twig = new Environment($arrayLoader);
+		$mappers = $services->persistence->mappers;
+		$records = $services->persistence->records;
+		$runtime = $services->persistence->runtime;
+		$properties = $services->handlers->properties;
+		$values = $services->handlers->values;
+		$platform = $services->platform;
+		$tenancy = $services->tenancy;
+		$this->objectEntityMapper = $mappers->catalog->tables();
+		$this->unifiedObjectMapper = $mappers->unifiedObjectMapper;
+		$this->schemaMapper = $mappers->catalog->schemas();
+		$this->registerMapper = $mappers->catalog->registers();
+		$this->auditTrailMapper = $records->auditTrailMapper;
+		$this->settingsService = $records->settingsService;
+		$this->tmloService = $records->tmloService;
+		$this->userActivity = $records->userActivity;
+		$this->cacheHandler = $runtime->cacheHandler;
+		$this->objectSourceRegistry = $runtime->objectSourceRegistry;
+		$this->runContext = $runtime->runContext;
+		$this->container = $runtime->container;
+		$this->metaHydrationHandler = $properties->metaHydrationHandler;
+		$this->filePropertyHandler = $properties->filePropertyHandler;
+		$this->linkedEntityHandler = $properties->linkedEntityHandler;
+		$this->computedFieldHandler = $properties->computedFieldHandler;
+		$this->translationHandler = $values->translationHandler;
+		$this->translationProjectionService = $values->translationProjectionService;
+		$this->translationStatusService = $values->translationStatusService;
+		$this->fieldEncryptionHandler = $values->fieldEncryptionHandler;
+		$this->userSession = $platform->userSession;
+		$this->urlGenerator = $platform->urlGenerator;
+		$this->logger = $platform->logger;
+		$this->eventDispatcher = $platform->eventDispatcher;
+		$this->organisationService = $tenancy->organisationService;
+		$this->groupManager = $tenancy->groupManager;
+		$this->appConfig = $tenancy->appConfig;
+
 		$this->versionHandler = new ObjectVersionHandler();
+		$slugLog = new ObjectSlugLog(logger: $this->logger);
+		$this->slugHandler = new ObjectSlugHandler(
+			store: new ObjectSlugStore(magicMapper: $this->objectEntityMapper, registerMapper: $this->registerMapper, log: $slugLog),
+			source: new ObjectSlugSource(hydrator: $this->metaHydrationHandler),
+			log: $slugLog
+		);
 	}//end __construct()
 
 	/**
@@ -401,9 +608,7 @@ class SaveObject {
 	 * fails still leaves the write refused. A refusal that could be turned off
 	 * by breaking the audit table would be no refusal at all.
 	 *
-	 * @param int|null $registerId The register being written.
-	 * @param int|null $schemaId The schema being written.
-	 * @param string|null $uuid The object's uuid, when the caller named one.
+	 * @param ObjectWriteTarget $target The register and schema being written, and the uuid when the caller named one.
 	 *
 	 * @return void
 	 *
@@ -412,7 +617,7 @@ class SaveObject {
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/saas-multi-tenant/spec.md#requirement-a-register-or-schema-may-be-shared-master-data-across-organisations-req-sle-001
 	 * @spec openspec/changes/several-legal-entities-in-one-instance/specs/tenant-isolation-audit/spec.md#requirement-a-log-line-names-the-tenant-pseudonymously-and-never-carries-a-secret-req-sle-003
 	 */
-	private function refuseSharedMasterDataWrite(?int $registerId, ?int $schemaId, ?string $uuid): void {
+	private function refuseSharedMasterDataWrite(ObjectWriteTarget $target): void {
 		$resolver = $this->resolveSharedMasterDataService();
 		if ($resolver === null) {
 			return;
@@ -434,22 +639,17 @@ class SaveObject {
 
 		try {
 			$resolver->assertWritable(
-				table: SharedMasterDataService::REGISTERS,
-				id: $registerId,
+				row: new DeclaredRow(table: SharedMasterDataService::REGISTERS, id: $target->registerId),
 				activeOrgUuids: $activeOrgUuids
 			);
 			$resolver->assertWritable(
-				table: SharedMasterDataService::SCHEMAS,
-				id: $schemaId,
+				row: new DeclaredRow(table: SharedMasterDataService::SCHEMAS, id: $target->schemaId),
 				activeOrgUuids: $activeOrgUuids
 			);
 		} catch (SharedMasterDataWriteException $refusal) {
 			$this->recordSharedMasterDataRefusal(
 				refusal: $refusal,
-				registerId: $registerId,
-				schemaId: $schemaId,
-				uuid: $uuid,
-				activeOrgUuid: ($activeOrgUuids[0] ?? null)
+				attempt: new SharedWriteAttempt(target: $target, sourceOrganisation: ($activeOrgUuids[0] ?? null))
 			);
 
 			throw $refusal;
@@ -460,10 +660,7 @@ class SaveObject {
 	 * Record one refused cross-entity write, on the audit trail and in the log.
 	 *
 	 * @param SharedMasterDataWriteException $refusal The refusal.
-	 * @param int|null $registerId The register being written.
-	 * @param int|null $schemaId The schema being written.
-	 * @param string|null $uuid The object uuid, when the caller named one.
-	 * @param string|null $activeOrgUuid The organisation that attempted the write.
+	 * @param SharedWriteAttempt             $attempt Where the write was aimed, and the organisation that attempted it.
 	 *
 	 * @return void
 	 *
@@ -471,11 +668,13 @@ class SaveObject {
 	 */
 	private function recordSharedMasterDataRefusal(
 		SharedMasterDataWriteException $refusal,
-		?int $registerId,
-		?int $schemaId,
-		?string $uuid,
-		?string $activeOrgUuid,
+		SharedWriteAttempt $attempt,
 	): void {
+		$target        = $attempt->target;
+		$activeOrgUuid = $attempt->sourceOrganisation;
+		$registerId = $target->registerId;
+		$schemaId   = $target->schemaId;
+		$uuid       = $target->uuid;
 		$redactor = new TenantLogRedactor(appConfig: $this->appConfig);
 
 		$actorId = null;
@@ -504,16 +703,18 @@ class SaveObject {
 		}
 
 		try {
-			$this->auditTrailMapper->createSharedMasterDataRefusalEntry(
-				holderOrganisation: $refusal->getHolderUuid(),
-				sourceOrganisation: ($activeOrgUuid ?? ''),
-				resourceType: $refusal->getResourceType(),
+			$options = new SharedMasterDataRefusalOptions(
 				context: $redactor->redact(context: $context),
-				register: $registerId,
-				schema: $schemaId,
-				objectUuid: $uuid,
-				actorId: $actorId,
-				actorReference: $redactor->pseudonym(userId: $actorId)
+				target: new AuditedObject(register: $registerId, schema: $schemaId, objectUuid: $uuid),
+				actor: new NamedActor(id: $actorId, name: $redactor->pseudonym(userId: $actorId))
+			);
+			$this->auditTrailMapper->recordSharedMasterDataRefusal(
+				refusal: new SharedMasterDataRefusal(
+					holderOrganisation: $refusal->getHolderUuid(),
+					sourceOrganisation: ($activeOrgUuid ?? ''),
+					resourceType: $refusal->getResourceType(),
+					options: $options
+				)
 			);
 		} catch (\Throwable $e) {
 			// Best effort by design: see the docblock on the caller. The write
@@ -527,6 +728,32 @@ class SaveObject {
 	}//end recordSharedMasterDataRefusal()
 
 	/**
+	 * A service from the injected app container, or null when there is no container,
+	 * it cannot provide the service (logged at debug), or it answers something else.
+	 *
+	 * @param class-string<T> $id    The class or interface to ask for.
+	 * @param string          $label The name the debug line gives the service.
+	 *
+	 * @return T|null
+	 *
+	 * @template T of object
+	 */
+	private function containerService(string $id, string $label): ?object {
+		try {
+			$service = $this->container?->get($id);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] ' . $label . ' not available: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($service instanceof $id) {
+			return $service;
+		}
+
+		return null;
+	}//end containerService()
+
+	/**
 	 * Resolve the shared master data service from the app container, or null.
 	 *
 	 * Lazily, through the INJECTED container and never the global server, for
@@ -536,22 +763,7 @@ class SaveObject {
 	 * @return SharedMasterDataService|null The resolver, or null when unavailable.
 	 */
 	private function resolveSharedMasterDataService(): ?SharedMasterDataService {
-		if ($this->container === null) {
-			return null;
-		}
-
-		try {
-			$service = $this->container->get(SharedMasterDataService::class);
-		} catch (\Throwable $e) {
-			$this->logger->debug('[SaveObject] SharedMasterDataService not available: ' . $e->getMessage());
-			return null;
-		}
-
-		if ($service instanceof SharedMasterDataService) {
-			return $service;
-		}
-
-		return null;
+		return $this->containerService(id: SharedMasterDataService::class, label: 'SharedMasterDataService');
 	}//end resolveSharedMasterDataService()
 
 	/**
@@ -565,28 +777,13 @@ class SaveObject {
 	 * MagicMapper -> SettingsService -> ValidationOperationsHandler -> ValidateObject
 	 * cycle. That cycle ate 19 GB in a unit-test run on 2026-09-08.
 	 *
-	 * @return \OCA\OpenRegister\Service\RetentionService|null The service, or null when unavailable
+	 * @return \OCA\OpenRegister\Service\RetentionServiceInterface|null The service, or null when unavailable
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-objects-must-carry-mdto-compliant-archival-metadata-in-the-retention-field
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
 	 */
-	private function resolveRetentionService(): ?\OCA\OpenRegister\Service\RetentionService {
-		if ($this->container === null) {
-			return null;
-		}
-
-		try {
-			$service = $this->container->get(\OCA\OpenRegister\Service\RetentionService::class);
-		} catch (\Throwable $e) {
-			$this->logger->debug('[SaveObject] RetentionService not available: ' . $e->getMessage());
-			return null;
-		}
-
-		if ($service instanceof \OCA\OpenRegister\Service\RetentionService) {
-			return $service;
-		}
-
-		return null;
+	private function resolveRetentionService(): ?\OCA\OpenRegister\Service\RetentionServiceInterface {
+		return $this->containerService(id: \OCA\OpenRegister\Service\RetentionServiceInterface::class, label: 'RetentionService');
 	}//end resolveRetentionService()
 
 	/**
@@ -633,10 +830,144 @@ class SaveObject {
 	 */
 	public function clearAllCaches(): void {
 		$this->createdSubObjects = [];
-		$this->schemaCache = [];
-		$this->registerCache = [];
-		$this->schemaReferenceCache = [];
+		$this->lookups()->clear();
 	}//end clearAllCaches()
+
+	/**
+	 * The saves in flight on this handler.
+	 *
+	 * @return SaveCallStack
+	 */
+	private function saveCalls(): SaveCallStack {
+		return $this->saveCalls ??= new SaveCallStack();
+	}//end saveCalls()
+
+	/**
+	 * The schema and register lookups of this save handler.
+	 *
+	 * @return SaveLookups
+	 */
+	private function lookups(): SaveLookups {
+		return $this->lookups ??= new SaveLookups(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper);
+	}//end lookups()
+
+	/**
+	 * The inverse relation writer of this save handler.
+	 *
+	 * @return InverseRelations
+	 */
+	private function inverseRelations(): InverseRelations {
+		return new InverseRelations(objects: $this->objectEntityMapper, schemas: $this->schemaMapper, logger: $this->logger);
+	}//end inverseRelations()
+
+	/**
+	 * The write-back of this save handler.
+	 *
+	 * @return InverseWriteBack
+	 */
+	private function inverseWriteBack(): InverseWriteBack {
+		return new InverseWriteBack(objects: $this->objectEntityMapper, saver: $this, lookups: $this->lookups(), urls: $this->urlGenerator);
+	}//end inverseWriteBack()
+
+	/**
+	 * What counts as empty for this save handler.
+	 *
+	 * @return EmptyValues
+	 */
+	private function emptyValues(): EmptyValues {
+		return new EmptyValues(urls: $this->urlGenerator);
+	}//end emptyValues()
+
+	/**
+	 * The outdated-translation check of this save handler.
+	 *
+	 * @return OutdatedTranslations
+	 */
+	private function outdatedTranslations(): OutdatedTranslations {
+		return new OutdatedTranslations(
+			translations: $this->translationHandler,
+			projection: $this->translationProjectionService,
+			status: $this->translationStatusService,
+			logger: $this->logger
+		);
+	}//end outdatedTranslations()
+
+	/**
+	 * The file properties of this save handler.
+	 *
+	 * @return ObjectFileProperties
+	 */
+	private function objectFiles(): ObjectFileProperties {
+		return new ObjectFileProperties(files: $this->filePropertyHandler, objects: $this->objectEntityMapper, logger: $this->logger);
+	}//end objectFiles()
+
+	/**
+	 * Store the file properties of a created object; the call's data gets the file ids.
+	 *
+	 * @param ObjectSaveCall $call        The save call.
+	 * @param ObjectEntity   $savedEntity The created object.
+	 *
+	 * @return ObjectEntity The object, updated when a file property was processed.
+	 */
+	private function storeCreatedFileProperties(ObjectSaveCall $call, ObjectEntity $savedEntity): ObjectEntity {
+		$write = new ObjectFileWrite();
+		$write->entity = $savedEntity;
+		$write->data = $call->data;
+		$write->register = $call->register;
+		$write->schema = $call->schema;
+
+		try {
+			return $this->objectFiles()->storeForCreate(write: $write);
+		} finally {
+			$call->data = $write->data;
+		}
+	}//end storeCreatedFileProperties()
+
+	/**
+	 * The relation scanner of this save handler.
+	 *
+	 * @return RelationScanner
+	 */
+	private function relationScanner(): RelationScanner {
+		return $this->relationScanner ??= new RelationScanner(urls: $this->urlGenerator);
+	}//end relationScanner()
+
+	/**
+	 * The schema defaults of this save handler.
+	 *
+	 * @return PropertyDefaults
+	 */
+	private function propertyDefaults(): PropertyDefaults {
+		return $this->propertyDefaults ??= new PropertyDefaults(hydration: $this->metaHydrationHandler, urls: $this->urlGenerator);
+	}//end propertyDefaults()
+
+	/**
+	 * The reference existence check of this save handler, with its request-long verdicts.
+	 *
+	 * @return ReferenceExistence
+	 */
+	private function referenceExistence(): ReferenceExistence {
+		return $this->referenceExistence ??= new ReferenceExistence(
+			lookups: $this->lookups(),
+			saveCalls: $this->saveCalls(),
+			mapper: $this->unifiedObjectMapper,
+			events: new ReferenceEvents(dispatcher: $this->eventDispatcher, logger: $this->logger)
+		);
+	}//end referenceExistence()
+
+	/**
+	 * The reference validator of this save handler.
+	 *
+	 * @return ReferenceValidator
+	 */
+	private function referenceValidator(): ReferenceValidator {
+		return $this->referenceValidator ??= new ReferenceValidator(
+			existence: $this->referenceExistence(),
+			filter: new ReferenceFilterGuard(lookups: $this->lookups(), mapper: $this->unifiedObjectMapper),
+			events: new ReferenceEvents(dispatcher: $this->eventDispatcher, logger: $this->logger),
+			logger: $this->logger
+		);
+	}//end referenceValidator()
 
 	/**
 	 * Get a cached schema by ID, or fetch and cache it.
@@ -650,12 +981,7 @@ class SaveObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function getCachedSchema(int|string $schemaId): Schema {
-		$cacheKey = (string)$schemaId;
-		if (isset($this->schemaCache[$cacheKey]) === false) {
-			$this->schemaCache[$cacheKey] = $this->schemaMapper->find(id: $schemaId);
-		}
-
-		return $this->schemaCache[$cacheKey];
+		return $this->lookups()->schema(schemaId: $schemaId);
 	}//end getCachedSchema()
 
 	/**
@@ -670,12 +996,7 @@ class SaveObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function getCachedRegister(int|string $registerId): Register {
-		$cacheKey = (string)$registerId;
-		if (isset($this->registerCache[$cacheKey]) === false) {
-			$this->registerCache[$cacheKey] = $this->registerMapper->find(id: $registerId);
-		}
-
-		return $this->registerCache[$cacheKey];
+		return $this->lookups()->register(registerId: $registerId);
 	}//end getCachedRegister()
 
 	/**
@@ -710,185 +1031,11 @@ class SaveObject {
 	 *
 	 * @return null|numeric-string The resolved schema ID or null if not found
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function resolveSchemaReference(string $reference): ?string {
-		if (empty($reference) === true) {
-			return null;
-		}
-
-		// Check the reference cache first (performance optimization for cascade operations).
-		// When creating many sub-objects of the same type, this avoids repeated lookups.
-		if (isset($this->schemaReferenceCache[$reference]) === true) {
-			return $this->schemaReferenceCache[$reference];
-		}
-
-		// Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-		$cleanReference = $this->removeQueryParameters(reference: $reference);
-
-		// Also check cache with cleaned reference.
-		if ($cleanReference !== $reference && isset($this->schemaReferenceCache[$cleanReference]) === true) {
-			$this->schemaReferenceCache[$reference] = $this->schemaReferenceCache[$cleanReference];
-			return $this->schemaReferenceCache[$reference];
-		}
-
-		// First, try direct ID lookup (numeric ID or UUID).
-		$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-		if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === 1) {
-			try {
-				$schema = $this->getCachedSchema(schemaId: $cleanReference);
-				$schemaId = (string)$schema->getId();
-				$this->schemaReferenceCache[$reference] = $schemaId;
-				return $schemaId;
-			} catch (DoesNotExistException $e) {
-				// Continue with other resolution methods.
-			}
-		}
-
-		// Extract the last part of path/URL references.
-		$slug = $cleanReference;
-		if (str_contains($cleanReference, '/') === true) {
-			// For references like "#/components/schemas/Contactgegevens" or "http://example.com/schemas/contactgegevens".
-			$slug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
-		}
-
-		// Try to find schema by slug (case-insensitive).
-		// Use findAll() once and cache the results for subsequent lookups.
-		try {
-			$schemas = $this->schemaMapper->findAll();
-			// Cache all schemas by slug for future lookups.
-			foreach ($schemas as $schema) {
-				// A schema with no slug cannot be found BY slug, and feeding
-				// the null on to strtolower()/strcasecmp() is deprecated in
-				// PHP 8.1 and a TypeError in PHP 9. Skipping it is what the
-				// loop was already doing in effect, just noisily.
-				if ($schema->getSlug() === null) {
-					continue;
-				}
-
-				$schemaSlug = strtolower($schema->getSlug());
-				$schemaId = (string)$schema->getId();
-				// Cache the schema entity.
-				$this->schemaCache[$schemaId] = $schema;
-				// Cache the slug -> ID mapping.
-				$this->schemaReferenceCache['#/components/schemas/' . $schema->getSlug()] = $schemaId;
-				$this->schemaReferenceCache[$schema->getSlug()] = $schemaId;
-				$this->schemaReferenceCache[$schemaSlug] = $schemaId;
-
-				if (strcasecmp($schema->getSlug(), $slug) === 0) {
-					$this->schemaReferenceCache[$reference] = $schemaId;
-					return $schemaId;
-				}
-			}
-		} catch (Exception $e) {
-			// Schema not found.
-		}//end try
-
-		// Try direct slug match as last resort.
-		try {
-			// SchemaMapper->find() supports id, uuid, and slug via orX().
-			// find() throws when there is no match; the catch below is the
-			// "not found" path, so no null test is needed here.
-			$schema = $this->schemaMapper->find(id: $slug, _rbac: false, _multitenancy: false);
-			$schemaId = (string)$schema->getId();
-			$this->schemaCache[$schemaId] = $schema;
-			$this->schemaReferenceCache[$reference] = $schemaId;
-			return $schemaId;
-		} catch (Exception $e) {
-			// Schema not found.
-		}
-
-		// Cache the null result too to avoid repeated lookups for invalid references.
-		$this->schemaReferenceCache[$reference] = null;
-		return null;
+		return $this->lookups()->schemaId(reference: $reference);
 	}//end resolveSchemaReference()
-
-	/**
-	 * Removes query parameters from a reference string.
-	 *
-	 * @param string $reference The reference string that may contain query parameters
-	 *
-	 * @return string The reference string without query parameters
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function removeQueryParameters(string $reference): string {
-		// Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-		if (str_contains($reference, '?') === true) {
-			return substr($reference, 0, strpos($reference, '?'));
-		}
-
-		return $reference;
-	}//end removeQueryParameters()
-
-	/**
-	 * Resolves a register reference to a register ID.
-	 *
-	 * This method handles various types of register references:
-	 * - Direct ID/UUID: "34", "21aab6e0-2177-4920-beb0-391492fed04b"
-	 * - Slug references: "publication", "voorzieningen"
-	 * - URL references: "http://example.com/api/registers/34"
-	 *
-	 * For path and URL references, it extracts the last part and matches against register slugs (case-insensitive).
-	 *
-	 * @param string $reference The register reference to resolve
-	 *
-	 * @return null|numeric-string The resolved register ID or null if not found
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function resolveRegisterReference(string $reference): ?string {
-		if (empty($reference) === true) {
-			return null;
-		}
-
-		// First, try direct ID lookup (numeric ID or UUID).
-		$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-		if (is_numeric($reference) === true || preg_match($uuidPattern, $reference) === 1) {
-			try {
-				$register = $this->registerMapper->find($reference);
-				return (string)$register->getId();
-			} catch (DoesNotExistException $e) {
-				// Continue with other resolution methods.
-			}
-		}
-
-		// Extract the last part of path/URL references.
-		$slug = $reference;
-		if (str_contains($reference, '/') === true) {
-			// For references like "http://example.com/registers/publication".
-			$slug = substr($reference, strrpos($reference, '/') + 1);
-		}
-
-		// Try to find register by slug (case-insensitive).
-		try {
-			$registers = $this->registerMapper->findAll();
-			foreach ($registers as $register) {
-				if (strcasecmp($register->getSlug(), $slug) === 0) {
-					return (string)$register->getId();
-				}
-			}
-		} catch (Exception $e) {
-			// Register not found.
-		}
-
-		// Try direct slug match as last resort.
-		try {
-			// RegisterMapper->find() supports id, uuid, and slug via orX().
-			$register = $this->registerMapper->find(id: $slug, _rbac: false, _multitenancy: false);
-			if ($register !== null) {
-				return (string)$register->getId();
-			}
-		} catch (Exception $e) {
-			// Register not found.
-		}
-
-		return null;
-	}//end resolveRegisterReference()
 
 	/**
 	 * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
@@ -904,406 +1051,11 @@ class SaveObject {
 	 *
 	 * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex relation detection logic
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple detection paths for different value types
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relation scanning requires extended logic
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
-		$relations = [];
-
-		try {
-			// Get schema properties if available.
-			$schemaProperties = null;
-			if ($schema !== null) {
-				try {
-					$schemaJson = json_encode($schema->getSchemaObject($this->urlGenerator));
-					$schemaObject = json_decode($schemaJson, associative: true);
-					$schemaProperties = $schemaObject['properties'] ?? [];
-				} catch (Exception $e) {
-					// Continue without schema properties if parsing fails.
-				}
-			}
-
-			foreach ($data as $key => $value) {
-				// Skip if key is not a string or is empty.
-				if (is_string($key) === false || empty($key) === true) {
-					continue;
-				}
-
-				$currentPath = $key;
-				if (($prefix !== '') === true) {
-					$currentPath = $prefix . '.' . $key;
-				}
-
-				if (is_array($value) === true && empty($value) === false) {
-					// Check if this is an array property in the schema.
-					$propertyConfig = $schemaProperties[$key] ?? null;
-					$isArrayOfObjects = $propertyConfig
-									  && ($propertyConfig['type'] ?? '') === 'array'
-									  && isset($propertyConfig['items']['type'])
-									  && $propertyConfig['items']['type'] === 'object';
-
-					if ($isArrayOfObjects === true) {
-						// For arrays of objects, scan each item for relations.
-						foreach ($value as $index => $item) {
-							if (is_array($item) === true) {
-								$itemRelations = $this->scanForRelations(
-									data: $item,
-									prefix: $currentPath . '.' . $index,
-									schema: $schema
-								);
-								$relations = array_merge($relations, $itemRelations);
-							} elseif (is_string($item) === true && empty($item) === false) {
-								// String values in object arrays are always treated as relations.
-								$relations[$currentPath . '.' . $index] = $item;
-							}
-						}
-					}
-
-					if ($isArrayOfObjects === false) {
-						// For non-object arrays, check each item.
-						foreach ($value as $index => $item) {
-							if (is_array($item) === true) {
-								// Recursively scan nested arrays/objects.
-								$itemRelations = $this->scanForRelations(
-									data: $item,
-									prefix: $currentPath . '.' . $index,
-									schema: $schema
-								);
-								$relations = array_merge($relations, $itemRelations);
-							} elseif (is_string($item) === true && empty($item) === false && trim($item) !== '') {
-								// Check if the string looks like a reference.
-								if ($this->isReference(value: $item) === true) {
-									$relations[$currentPath . '.' . $index] = $item;
-								}
-							}
-						}
-					}//end if
-				} elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
-					$treatAsRelation = false;
-
-					// Check schema property configuration first.
-					if (($schemaProperties !== null) === true && (($schemaProperties[$key] ?? null) !== null)) {
-						$propertyConfig = $schemaProperties[$key];
-						$propertyType = $propertyConfig['type'] ?? '';
-						$propertyFormat = $propertyConfig['format'] ?? '';
-
-						// Check for explicit relation types.
-						if ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url']) === true) {
-							$treatAsRelation = true;
-						} elseif ($propertyType === 'object') {
-							// Object properties with string values are always relations.
-							$treatAsRelation = true;
-						}
-					}
-
-					// If not determined by schema, check for reference patterns.
-					if ($treatAsRelation === false) {
-						$treatAsRelation = $this->isReference(value: $value);
-					}
-
-					if ($treatAsRelation === true) {
-						$relations[$currentPath] = $value;
-					}
-				}//end if
-			}//end foreach
-		} catch (Exception $e) {
-			// Error scanning for relations.
-		}//end try
-
-		return $relations;
+		return $this->relationScanner()->scan(data: $data, scan: new RelationScanRun(prefix: $prefix, schema: $schema));
 	}//end scanForRelations()
-
-	/**
-	 * Determines if a string value should be treated as a reference to another object
-	 *
-	 * This method checks for various reference patterns including:
-	 * - Standard UUIDs (e.g., "dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4")
-	 * - Prefixed IDs (e.g., "id-819c2fe5-db4e-4b6f-8071-6a63fd400e34")
-	 * - URLs
-	 * - Other identifier patterns
-	 *
-	 * @param string $value The string value to check
-	 *
-	 * @return bool True if the value should be treated as a reference
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference pattern checks required
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function isReference(string $value): bool {
-		$value = trim($value);
-
-		// Empty strings are not references.
-		if (empty($value) === true) {
-			return false;
-		}
-
-		// Check for standard UUID pattern (8-4-4-4-12 format).
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Check for UUID without dashes (32 hex chars).
-		if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.) - with dashes.
-		if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Check for prefixed UUID patterns without dashes (e.g., "id-32hexchars").
-		if (preg_match('/^[a-z]+-[0-9a-f]{32}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Check for numeric IDs.
-		if (preg_match('/^[0-9]+$/', $value) === 1) {
-			return true;
-		}
-
-		// Check for URLs.
-		if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-			return true;
-		}
-
-		// Check for other common ID patterns, but be more selective to avoid false positives.
-		// Only consider strings that look like identifiers, not regular text.
-		if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value) === 1) {
-			// Must contain at least one hyphen or underscore (indicating it's likely an ID).
-			// AND must not contain spaces or common text words.
-			$hasHyphenUndscr = (strpos($value, '-') !== false || strpos($value, '_') !== false);
-			$hasNoSpaces = preg_match('/\s/', $value) === 0;
-			$commonWords = ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'];
-			$isNotCommonWord = in_array(strtolower($value), $commonWords, true) === false;
-			if ($hasHyphenUndscr === true && $hasNoSpaces === true && $isNotCommonWord === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isReference()
-
-	/**
-	 * Updates the relations property of an object entity
-	 *
-	 * @param ObjectEntity $objectEntity The object entity to update
-	 * @param array $data The object data to scan for relations
-	 * @param Schema|null $schema The schema to check property definitions against
-	 *
-	 * @return ObjectEntity The updated object entity
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema = null): ObjectEntity {
-		// Scan for relations in the object data.
-		$relations = $this->scanForRelations(data: $data, prefix: '', schema: $schema);
-
-		// Set the relations on the object entity.
-		$objectEntity->setRelations($relations);
-
-		return $objectEntity;
-	}//end updateObjectRelations()
-
-	/**
-	 * Updates inverse relations on related objects (bidirectional relationship management).
-	 *
-	 * When an object references another object (e.g., contactpersoon references organisatie),
-	 * this method updates the referenced object's relations to include the referencing object.
-	 * This ensures bidirectional relationships are maintained.
-	 *
-	 * @param ObjectEntity $savedEntity The saved object that has relations
-	 * @param Register $register The register the saved entity belongs to
-	 * @param Schema $schema The schema the saved entity belongs to
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation handling requires per-type branching
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void {
-		$relations = $savedEntity->getRelations();
-		$savedUuid = $savedEntity->getUuid();
-
-		$relationsCount = 0;
-		if ($relations !== null) {
-			$relationsCount = count($relations);
-		}
-
-		$this->logger->debug(
-			message: '[SaveObject] updateInverseRelations called',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'savedObjectUuid' => $savedUuid,
-				'relationsCount' => $relationsCount,
-				'schemaId' => $schema->getId(),
-			]
-		);
-
-		if (empty($relations) === true) {
-			return;
-		}
-
-		// Get schema properties to determine target schemas for relations.
-		$schemaProperties = $schema->getProperties() ?? [];
-
-		// Process each relation (key = property path, value = related UUID).
-		foreach ($relations as $propertyPath => $relatedUuid) {
-			// Skip if not a valid UUID string.
-			if (is_string($relatedUuid) === false || empty($relatedUuid) === true) {
-				continue;
-			}
-
-			// Skip if doesn't look like a UUID.
-			if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $relatedUuid) !== 1) {
-				continue;
-			}
-
-			try {
-				// Get the base property name (e.g., "organisation" from "organisatie.0").
-				$baseProperty = explode('.', $propertyPath)[0];
-
-				// Look up the target schema from the property configuration.
-				$propertyConfig = $schemaProperties[$baseProperty] ?? null;
-				if ($propertyConfig === null) {
-					$this->logger->debug(
-						message: '[SaveObject] No property config for relation',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $baseProperty]
-					);
-					continue;
-				}
-
-				// Get the target schema from $ref field (format: #/components/schemas/schemaslug).
-				// For arrays, the $ref is in items.$ref instead of directly on the property.
-				$ref = $propertyConfig['$ref'] ?? '';
-				if (empty($ref) === true && isset($propertyConfig['items']['$ref']) === true) {
-					$ref = $propertyConfig['items']['$ref'];
-				}
-
-				// A property with no $ref is not a relation (`data`, `subject`,
-				// `payload` are free-form blobs). Skip it silently: it is the common
-				// case, and a warning for it would bury the one below that matters.
-				if (empty($ref) === true || is_string($ref) === false) {
-					continue;
-				}
-
-				// Parse the schema slug from the $ref. Both forms are in real use
-				// across the fleet's register definitions, so both are accepted:
-				// "#/components/schemas/organisation" (pointer) and "organisation"
-				// (bare slug). Only the pointer used to be recognised, so a bare slug
-				// was skipped and its inverse relation was never written.
-				$targetSchemaSlug = '';
-				if (preg_match('~^\#/components/schemas/(.+)$~', $ref, $matches) === 1) {
-					$targetSchemaSlug = $matches[1];
-				} elseif (preg_match('~^[A-Za-z][A-Za-z0-9_-]*$~', $ref) === 1) {
-					// Slug-shaped values only, so a URL or a malformed pointer still
-					// falls through and is reported instead of being looked up.
-					$targetSchemaSlug = $ref;
-				}
-
-				if (empty($targetSchemaSlug) === true) {
-					// Reachable only when a $ref was authored and cannot be read. The
-					// declared relation will then not be maintained, and the only
-					// symptom is data that quietly fails to relate, so it is a warning.
-					$this->logger->warning(
-						message: '[SaveObject] Relation skipped: $ref is neither a "#/components/schemas/<slug>" pointer nor a bare schema slug',
-						context: [
-							'file'     => __FILE__,
-							'line'     => __LINE__,
-							'property' => $baseProperty,
-							'ref'      => $ref,
-							'schema'   => $schema->getSlug(),
-						]
-					);
-					continue;
-				}
-
-				// Resolve the target schema by slug.
-				try {
-					$targetSchema = $this->schemaMapper->find(
-						id: $targetSchemaSlug,
-						_rbac: false,
-						_multitenancy: false
-					);
-				} catch (\Exception $e) {
-					$this->logger->warning(
-						message: '[SaveObject] Could not resolve target schema',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'targetSchemaSlug' => $targetSchemaSlug,
-							'error' => $e->getMessage(),
-						]
-					);
-					continue;
-				}
-
-				// Find the related object using the resolved target schema.
-				$relatedObject = $this->objectEntityMapper->find(
-					identifier: $relatedUuid,
-					register: $register,
-					schema: $targetSchema,
-					includeDeleted: false,
-					_rbac: false,
-					_multitenancy: false
-				);
-
-				// Get current relations of the related object.
-				$relatedRelations = $relatedObject->getRelations() ?? [];
-
-				// Check if this object's UUID is already in the related object's relations.
-				if (in_array($savedUuid, $relatedRelations, true) === true) {
-					$this->logger->debug(
-						message: '[SaveObject] Object already in related object\'s relations',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'savedUuid' => $savedUuid,
-							'relatedUuid' => $relatedUuid,
-						]
-					);
-					continue;
-				}
-
-				// Add this object's UUID to the related object's relations.
-				$relatedRelations[] = $savedUuid;
-				$relatedObject->setRelations($relatedRelations);
-				$relatedObject->setUpdated(new DateTime());
-
-				// Save the related object.
-				$this->objectEntityMapper->update($relatedObject);
-
-				$this->logger->debug(
-					message: '[SaveObject] Updated inverse relation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'savedUuid' => $savedUuid,
-						'relatedUuid' => $relatedUuid,
-						'newRelationsCount' => count($relatedRelations),
-					]
-				);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[SaveObject] Failed to update inverse relation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'savedUuid' => $savedUuid,
-						'relatedUuid' => $relatedUuid,
-						'error' => $e->getMessage(),
-					]
-				);
-				// Continue with other relations even if one fails.
-			}//end try
-		}//end foreach
-	}//end updateInverseRelations()
 
 	/**
 	 * Hydrates object metadata fields based on schema configuration.
@@ -1347,299 +1099,17 @@ class SaveObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void {
-		$config = $schema->getConfiguration();
+		$field = ($schema->getConfiguration()['objectImageField'] ?? null);
 		$objectData = $entity->getObject();
 
 		// Delegate simple metadata extraction (name, description, summary, slug) to handler.
 		$this->metaHydrationHandler->hydrateObjectMetadata(entity: $entity, schema: $schema);
 
-		// Image field mapping.
-		if (($config['objectImageField'] ?? null) !== null) {
-			// First check if the field points to a file object.
-			$imageValue = $this->metaHydrationHandler->getValueFromPath(
-				data: $objectData,
-				path: $config['objectImageField']
-			);
-
-			// Handle different value types:.
-			// 1. Array of file IDs: [123, 124].
-			// 2. Array of file objects: [{accessUrl: ...}, {accessUrl: ...}]
-			// 3. Single file ID: 123.
-			// 4. Single file object: {accessUrl: ...}
-			// 5. String URL.
-			if (is_array($imageValue) === true && empty($imageValue) === false) {
-				// Check if first element is a file ID or file object.
-				$firstElement = $imageValue[0] ?? null;
-
-				if (is_numeric($firstElement) === true) {
-					// Array of file IDs - load first file and get its download URL.
-					try {
-						// TODO: fileService->getFile(object: $entity, file: (int) $firstElement).
-						// When implemented, uncomment:
-						// If ($fileNode !== null) {
-						// $fileData = null;
-						// TODO: fileService->formatFile($fileNode);
-						// IMPORTANT: Object image requires public access.
-						// If file is not published, auto-publish it.
-						// If (empty($fileData['downloadUrl']) === true) {
-						// $this->logger->warning(
-						// 'File configured as objectImageField is not published. Auto-publishing file.',
-						// [
-						// 'app'      => 'openregister',
-						// 'fileId'   => $firstElement,
-						// 'objectId' => $entity->getId(),
-						// 'field'    => $config['objectImageField'],
-						// ]
-						// );
-						// Publish the file.
-						// Null;
-						// TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
-						// Re-fetch file data after publishing.
-						// $fileData = null;
-						// TODO: fileService->formatFile($fileNode).
-						// }
-						// .
-						// If (($fileData['downloadUrl'] ?? null) !== null) {
-						// $entity->setImage($fileData['downloadUrl']).
-						// }
-						// }//end if.
-					} catch (Exception $e) {
-						// File not found or error loading - skip.
-						$this->logger->error(
-							message: '[SaveObject] Failed to load file for objectImageField',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'app' => 'openregister',
-								'fileId' => $firstElement,
-								'error' => $e->getMessage(),
-							]
-						);
-					}//end try
-				} elseif (is_array($firstElement) === true && (($firstElement['downloadUrl'] ?? null) !== null)) {
-					// Array of file objects - use first file's downloadUrl.
-					$entity->setImage($firstElement['downloadUrl']);
-				} elseif (is_array($firstElement) === true && (($firstElement['accessUrl'] ?? null) !== null)) {
-					// Fallback to accessUrl if downloadUrl not available.
-					$entity->setImage($firstElement['accessUrl']);
-				}//end if
-			} elseif (is_numeric($imageValue) === true) {
-				// Single file ID - load file and get its download URL (not yet implemented).
-				$this->logger->debug(
-					message: '[SaveObject] File ID detected for objectImageField - file loading not yet implemented',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'fileId' => $imageValue,
-					]
-				);
-			} elseif (is_string($imageValue) === true && trim($imageValue) !== '') {
-				// Regular string URL.
-				$entity->setImage(trim($imageValue));
-			}//end if
-		}//end if
-
+		if ($field !== null) {
+			$value = $this->metaHydrationHandler->getValueFromPath(data: $objectData, path: $field);
+			(new ObjectImage(logger: $this->logger))->apply(object: $entity, value: $value);
+		}
 	}//end hydrateObjectMetadata()
-
-	/**
-	 * Gets a value from an object using dot notation path.
-	 *
-	 * @param array $data The object data
-	 * @param string $path The dot notation path (e.g., 'name', 'contact.email', 'address.street')
-	 *
-	 * @return string|null The value at the path, or null if not found
-	 *
-	 * @psalm-return   string|null
-	 * @phpstan-return string|null
-	 */
-
-	/**
-	 * Get value from nested array using dot notation path
-	 *
-	 * @param array $data The data array to search
-	 * @param string $path The dot notation path (e.g., 'user.profile.name')
-	 *
-	 * @return mixed The value at the path or null if not found
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function getValueFromPath(array $data, string $path) {
-		$keys = explode('.', $path);
-		$current = $data;
-
-		foreach ($keys as $key) {
-			if (is_array($current) === false || array_key_exists($key, $current) === false) {
-				return null;
-			}
-
-			$current = $current[$key];
-		}
-
-		// Convert to string if it's not null and not already a string.
-		if ($current !== null && is_string($current) === false) {
-			$current = (string)$current;
-		}
-
-		return $current;
-	}//end getValueFromPath()
-
-	/**
-	 * Set default values and constant values for properties based on the schema.
-	 *
-	 * This method now supports different default value behaviors:
-	 * - 'false' (default): Only apply defaults when property is missing or null
-	 * - 'falsy': Also apply defaults when property is empty string or empty array/object
-	 *
-	 * @param ObjectEntity $objectEntity The objectEntity for which to perform this action.
-	 * @param Schema $schema The schema the objectEntity belongs to.
-	 * @param array $data The data that is written to the object.
-	 *
-	 * @return array The data object updated with default values and constant values from the $schema.
-	 * @throws \Twig\Error\LoaderError
-	 * @throws \Twig\Error\SyntaxError
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex default value logic with multiple behaviors
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property types and behaviors require branching
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive default value handling
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function setDefaultValues(ObjectEntity $objectEntity, Schema $schema, array $data): array {
-		try {
-			$schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
-
-			if (isset($schemaObject['properties']) === false || is_array($schemaObject['properties']) === false) {
-				return $data;
-			}
-		} catch (Exception $e) {
-			return $data;
-		}
-
-		// Convert the properties array to a processable array.
-		$properties = array_map(
-			function (string $key, array $property) {
-				if (isset($property['default']) === false) {
-					$property['default'] = null;
-				}
-
-				$property['title'] = $key;
-				return $property;
-			},
-			array_keys($schemaObject['properties']),
-			$schemaObject['properties']
-		);
-
-		// Handle constant values - these should ALWAYS be set regardless of input data.
-		$constantValues = [];
-		foreach ($properties as $property) {
-			if (($property['const'] ?? null) !== null) {
-				$constantValues[$property['title']] = $property['const'];
-			}
-		}
-
-		// Handle default values with new behavior support.
-		$defaultValues = [];
-		foreach ($properties as $property) {
-			$key = $property['title'];
-			$defaultValue = $property['default'] ?? null;
-
-			// Skip if no default value is defined.
-			if ($defaultValue === null) {
-				continue;
-			}
-
-			$defaultBehavior = $property['defaultBehavior'] ?? 'false';
-
-			// Determine if default should be applied based on behavior.
-			$shouldApplyDefault = false;
-
-			// Default behavior: only apply if property is missing or null.
-			$shouldApplyDefault = isset($data[$key]) === false || $data[$key] === null;
-			if ($defaultBehavior === 'falsy') {
-				// Apply default if property is missing, null, empty string, or empty array/object.
-				$shouldApplyDefault = isset($data[$key]) === false
-					|| $data[$key] === null
-					|| $data[$key] === ''
-					|| (is_array($data[$key]) === true && empty($data[$key]));
-			} elseif ($defaultBehavior === 'always') {
-				// Always apply default value on every save (computed/derived property).
-				$shouldApplyDefault = true;
-			}
-
-			if ($shouldApplyDefault === true) {
-				$defaultValues[$key] = $defaultValue;
-			}
-		}//end foreach
-
-		// Render twig templated default values.
-		// Merge incoming $data with existing object data so Twig templates can reference
-		// both newly submitted values and existing object properties.
-		$twigContext = array_merge($objectEntity->getObjectArray(), $data);
-		$renderedDefaults = [];
-		foreach ($defaultValues as $key => $defaultValue) {
-			try {
-				if (is_string($defaultValue) === true
-					&& str_contains(haystack: $defaultValue, needle: '{{') === true
-					&& str_contains(haystack: $defaultValue, needle: '}}') === true
-				) {
-					// Check if this is a simple property reference like "{{ propertyName }}"
-					// to preserve array values instead of converting to string.
-					$simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
-					if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
-						$sourceProperty = $matches[1];
-						if (isset($twigContext[$sourceProperty]) === true) {
-							// Direct copy preserves arrays and other types.
-							$renderedDefaults[$key] = $twigContext[$sourceProperty];
-						}
-
-						if (isset($twigContext[$sourceProperty]) === false) {
-							// Source property not found, use empty value.
-							$renderedDefaults[$key] = null;
-						}
-					}
-
-					if (preg_match($simpleRefPattern, $defaultValue, $matches) !== 1) {
-						// Complex template, use MetadataHydrationHandler which supports
-						// pipe-based filters (| map:) and fallback syntax (| field2).
-						$rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
-							data: $twigContext,
-							template: $defaultValue,
-							schemaProperties: $schemaObject['properties'] ?? []
-						);
-						$renderedDefaults[$key] = $rendered;
-					}
-				}//end if
-
-				if (is_string($defaultValue) === false
-					|| str_contains(haystack: $defaultValue, needle: '{{') === false
-					|| str_contains(haystack: $defaultValue, needle: '}}') === false
-				) {
-					$renderedDefaults[$key] = $defaultValue;
-				}
-			} catch (Exception $e) {
-				$renderedDefaults[$key] = $defaultValue;
-				// Use original value if template fails.
-			}//end try
-		}//end foreach
-
-		// Merge in this order:.
-		// 1. Start with existing data.
-		// 2. Apply rendered default values (only for properties that should get defaults).
-		// 3. Override with constant values (constants always take precedence).
-		$mergedData = array_merge($data, $renderedDefaults, $constantValues);
-
-		// Generate slug if not present and schema has slug configuration.
-		if (isset($mergedData['slug']) === false && isset($mergedData['@self']['slug']) === false) {
-			$slug = $this->generateSlug(data: $mergedData, schema: $schema);
-			if ($slug !== null) {
-				// Set slug in the data (will be applied to entity in setSelfMetadata).
-				$mergedData['slug'] = $slug;
-			}
-		}
-
-		return $mergedData;
-	}//end setDefaultValues()
 
 	/**
 	 * Applies defaults with defaultBehavior: "always" BEFORE validation.
@@ -1654,51 +1124,10 @@ class SaveObject {
 	 *
 	 * @return array The transformed data with "always" defaults applied.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default value resolution requires template + type branching
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function applyAlwaysDefaults(Schema $schema, array $data): array {
-		try {
-			$schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
-
-			if (isset($schemaObject['properties']) === false || is_array($schemaObject['properties']) === false) {
-				return $data;
-			}
-		} catch (Exception $e) {
-			return $data;
-		}
-
-		// Find properties with defaultBehavior: "always" and a default value.
-		$alwaysDefaults = [];
-		foreach ($schemaObject['properties'] as $key => $property) {
-			$defaultBehavior = $property['defaultBehavior'] ?? null;
-			$defaultValue = $property['default'] ?? null;
-
-			if ($defaultBehavior === 'always' && $defaultValue !== null) {
-				$alwaysDefaults[$key] = $defaultValue;
-			}
-		}
-
-		// If no "always" defaults, return data unchanged.
-		if (empty($alwaysDefaults) === true) {
-			return $data;
-		}
-
-		// Render twig templated default values.
-		// Use the data itself as Twig context (no existing object at this point).
-		foreach ($alwaysDefaults as $key => $defaultValue) {
-			$resolved = $this->resolveDefaultTemplateValue(
-				defaultValue: $defaultValue,
-				context: $data,
-				schemaProperties: $schemaObject['properties'] ?? []
-			);
-			if ($resolved !== null) {
-				$data[$key] = $resolved;
-			}
-		}//end foreach
-
-		return $data;
+		return $this->propertyDefaults()->always(schema: $schema, data: $data);
 	}//end applyAlwaysDefaults()
 
 	/**
@@ -1724,7 +1153,7 @@ class SaveObject {
 	 *
 	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyExpressionDefaults(Schema $schema, array $data): array {
 		$properties = ($schema->getProperties() ?? []);
@@ -1734,7 +1163,7 @@ class SaveObject {
 
 		$resolver = new ExpressionDefaultResolver(
 			evaluator: new CalculationEvaluator(
-				placeholders: new PlaceholderResolver(userSession: $this->userSession)
+				placeholders: PlaceholderResolvers::forSession(userSession: $this->userSession)
 			)
 		);
 
@@ -1770,85 +1199,10 @@ class SaveObject {
 	 *
 	 * @return array The data, with the lifecycle field seeded when applicable.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each guard is a distinct fail-soft no-op branch required by the spec.
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function seedLifecycleFieldOnCreate(Schema $schema, array $data): array {
-		$config = ($schema->getConfiguration() ?? []);
-		$annotation = ($config['x-openregister-lifecycle'] ?? null);
-		if (is_array($annotation) === false) {
-			return $data;
-		}
-
-		// Auto-seed is driven exclusively by the object-form `initial`.
-		$initial = ($annotation['initial'] ?? null);
-		if (is_array($initial) === false) {
-			return $data;
-		}
-
-		$fromKey = (string)($initial['from'] ?? '');
-		$parentPath = (string)($initial['field'] ?? '');
-		$field = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
-		if ($fromKey === '' || $parentPath === '' || $field === '') {
-			return $data;
-		}
-
-		// Empty-field-only: never overwrite a client-supplied value.
-		$currentValue = ($data[$field] ?? null);
-		if ($currentValue !== null && $currentValue !== '') {
-			return $data;
-		}
-
-		// Resolve the parent reference off the create payload.
-		$parentRef = (string)($data[$fromKey] ?? '');
-		if ($parentRef === '') {
-			$this->logger->debug(
-				message: '[SaveObject] Lifecycle seed no-op: parent reference is empty',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'field' => $field,
-					'from' => $fromKey,
-				]
-			);
-			return $data;
-		}
-
-		// Load the parent through the standard read path (RBAC + multitenancy).
-		try {
-			$parent = $this->unifiedObjectMapper->find(identifier: $parentRef);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[SaveObject] Lifecycle seed no-op: parent could not be loaded: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'field' => $field,
-					'parentRef' => $parentRef,
-				]
-			);
-			return $data;
-		}
-
-		$parentData = ($parent->getObject() ?? []);
-		$seedValue = ($parentData[$parentPath] ?? null);
-		if ($seedValue === null || $seedValue === '') {
-			$this->logger->debug(
-				message: '[SaveObject] Lifecycle seed no-op: parent initial value is empty',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'field' => $field,
-					'parentPath' => $parentPath,
-				]
-			);
-			return $data;
-		}
-
-		$data[$field] = $seedValue;
-
-		return $data;
+		return (new LifecycleSeed(mapper: $this->unifiedObjectMapper, logger: $this->logger))->apply(schema: $schema, data: $data);
 	}//end seedLifecycleFieldOnCreate()
 
 	/**
@@ -1866,195 +1220,8 @@ class SaveObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function applyPropertyDefaults(Schema $schema, array $data): array {
-		try {
-			$schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
-
-			if (isset($schemaObject['properties']) === false || is_array($schemaObject['properties']) === false) {
-				return $data;
-			}
-		} catch (Exception $e) {
-			return $data;
-		}
-
-		foreach ($schemaObject['properties'] as $key => $property) {
-			$defaultValue = $property['default'] ?? null;
-			if ($defaultValue === null) {
-				continue;
-			}
-
-			$defaultBehavior = $property['defaultBehavior'] ?? 'false';
-
-			// Determine if default should be applied based on behavior setting.
-			if ($this->shouldApplyDefault(behavior: $defaultBehavior, data: $data, key: $key) === false) {
-				continue;
-			}
-
-			// Render templates using MetadataHydrationHandler (supports | map: syntax).
-			$resolved = $this->resolveDefaultTemplateValue(
-				defaultValue: $defaultValue,
-				context: $data,
-				schemaProperties: $schemaObject['properties'] ?? []
-			);
-			if ($resolved !== null) {
-				$data[$key] = $resolved;
-			}
-		}//end foreach
-
-		return $data;
+		return $this->propertyDefaults()->applying(schema: $schema, data: $data);
 	}//end applyPropertyDefaults()
-
-	/**
-	 * Determines whether a default value should be applied based on the behavior setting.
-	 *
-	 * Evaluates the defaultBehavior setting against the current data to decide
-	 * if the default should override or fill in the value:
-	 * - "always": always apply the default
-	 * - "falsy": apply when the value is missing, null, empty string, or empty array
-	 * - default: apply only when the value is missing or null
-	 *
-	 * @param string $behavior The defaultBehavior setting from the schema property.
-	 * @param array $data The current object data.
-	 * @param string $key The property key to check.
-	 *
-	 * @return bool True if the default should be applied.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function shouldApplyDefault(string $behavior, array $data, string $key): bool {
-		if ($behavior === 'always') {
-			return true;
-		}
-
-		if ($behavior === 'falsy') {
-			return isset($data[$key]) === false
-				|| $data[$key] === null
-				|| $data[$key] === ''
-				|| (is_array($data[$key]) === true && empty($data[$key]));
-		}
-
-		// Default behavior: apply only when missing or null.
-		return isset($data[$key]) === false || $data[$key] === null;
-	}//end shouldApplyDefault()
-
-	/**
-	 * Resolves a default value, rendering templates if the value contains Twig-like syntax.
-	 *
-	 * Handles three cases:
-	 * - Simple property reference (e.g., "{{ propertyName }}"): copies the value directly,
-	 *   preserving arrays and other non-string types.
-	 * - Complex template (e.g., "{{ items | map:name }}"): renders via MetadataHydrationHandler.
-	 * - Non-template value: returns the value as-is.
-	 *
-	 * @param mixed $defaultValue The default value to resolve (may contain templates).
-	 * @param array $context The data context for template rendering.
-	 * @param array $schemaProperties The schema properties for template rendering.
-	 *
-	 * @return mixed The resolved value, or null if resolution failed.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function resolveDefaultTemplateValue($defaultValue, array $context, array $schemaProperties) {
-		try {
-			if (is_string($defaultValue) === true
-				&& str_contains(haystack: $defaultValue, needle: '{{') === true
-				&& str_contains(haystack: $defaultValue, needle: '}}') === true
-			) {
-				// Check if this is a simple property reference like "{{ propertyName }}"
-				// to preserve array values instead of converting to string.
-				$simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
-				if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
-					$sourceProperty = $matches[1];
-					if (isset($context[$sourceProperty]) === true) {
-						// Direct copy preserves arrays and other types.
-						return $context[$sourceProperty];
-					}
-
-					// If source property not found, skip (don't overwrite with null).
-					return null;
-				}
-
-				// Complex template, use MetadataHydrationHandler which supports
-				// pipe-based filters (| map:) and fallback syntax (| field2).
-				return $this->metaHydrationHandler->processTwigLikeTemplate(
-					data: $context,
-					template: $defaultValue,
-					schemaProperties: $schemaProperties
-				);
-			}//end if
-
-			// Non-template value, use directly.
-			return $defaultValue;
-		} catch (Exception $e) {
-			// Template failed, return null to skip this default.
-			return null;
-		}//end try
-	}//end resolveDefaultTemplateValue()
-
-	/**
-	 * Generates a slug for an object based on its data and schema configuration.
-	 *
-	 * @param array $data The object data
-	 * @param Schema $schema The schema containing the configuration
-	 *
-	 * @return null|string The generated slug or null if no slug could be generated
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function generateSlug(array $data, Schema $schema): ?string {
-		try {
-			$config = $schema->getConfiguration();
-			$slugField = $config['objectSlugField'] ?? null;
-
-			if ($slugField === null) {
-				return null;
-			}
-
-			// Get the value from the specified field.
-			$value = $this->getValueFromPath(data: $data, path: $slugField);
-			if ($value === null || empty($value) === true) {
-				return null;
-			}
-
-			// Convert to string and generate slug.
-			$slug = $this->createSlug(text: $value);
-
-			// Ensure uniqueness by appending timestamp if needed.
-			$timestamp = time();
-			$uniqueSlug = $slug . '-' . $timestamp;
-
-			return $uniqueSlug;
-		} catch (Exception $e) {
-			return null;
-		}//end try
-	}//end generateSlug()
-
-	/**
-	 * Creates a URL-friendly slug from a string.
-	 *
-	 * @param string $text The text to convert to a slug
-	 *
-	 * @return string The generated slug
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function createSlug(string $text): string {
-		// Convert to lowercase.
-		$text = strtolower($text);
-
-		// Replace non-alphanumeric characters with hyphens.
-		$text = preg_replace('/[^a-z0-9]+/', '-', $text);
-
-		// Remove leading and trailing hyphens.
-		$text = trim($text, '-');
-
-		// Limit length.
-		if (strlen($text) > 50) {
-			$text = substr($text, 0, 50);
-			$text = rtrim($text, '-');
-		}
-
-		return $text;
-	}//end createSlug()
 
 	/**
 	 * Cascade objects from the data to separate objects.
@@ -2071,314 +1238,299 @@ class SaveObject {
 	 *
 	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity
-	 * @param Schema $schema The schema of the parent object
-	 * @param array $data The object data to process
+	 * @param CascadeRun $run    The cascade pass: the parent object entity, the object data to
+	 *                           process and the parent's stored data when its schema opted into
+	 *                           orphan cleanup, else empty.
+	 * @param Schema     $schema The schema of the parent object
 	 *
 	 * @return array The processed data with cascaded objects removed
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex cascading logic with multiple property types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple cascading paths and configurations
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive cascading for objects and arrays
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array {
+	private function cascadeObjects(CascadeRun $run, Schema $schema): array {
 		try {
 			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
 			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
 		} catch (Exception $e) {
-			return $data;
+			return $run->data;
 		}
 
-		// Cascade objects that have $ref with either:.
-		// 1. inversedBy (creates relation back to parent) - results in empty array/null in parent.
-		// 2. objectConfiguration.handling: "cascade" (stores IDs in parent) - results in IDs stored in parent.
-		// Objects with only $ref and nested-object handling remain in the data.
-		// BUT skip if they have writeBack enabled (those are handled by write-back method).
-		// TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
-		$objectProperties = array_filter(
-			$properties,
-			function (array $property) {
-				// Skip if writeBack is enabled (handled by write-back method).
-				$hasWriteBack = ($property['writeBack'] ?? null) !== null
-					&& $property['writeBack'] === true;
-				if ($hasWriteBack === true) {
-					return false;
-				}
-
-				$hasRef = ($property['$ref'] ?? null) !== null;
-				$hasInversedBy = isset($property['inversedBy']);
-				$hasCascadeHandling = isset($property['objectConfiguration']['handling'])
-					&& $property['objectConfiguration']['handling'] === 'cascade';
-
-				return $property['type'] === 'object' && $hasRef && ($hasInversedBy || $hasCascadeHandling);
-			}
-		);
-
-		// Same logic for array properties - cascade if they have inversedBy OR cascade handling.
-		// BUT skip if they have writeBack enabled (those are handled by write-back method).
-		// TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
-		$arrayObjProps = array_filter(
-			$properties,
-			function (array $property) {
-				// Skip if writeBack is enabled (handled by write-back method).
-				$propWriteBack = ($property['writeBack'] ?? null) !== null
-					&& $property['writeBack'] === true;
-				$itemsWriteBack = ($property['items']['writeBack'] ?? null) !== null
-					&& $property['items']['writeBack'] === true;
-				if ($propWriteBack === true || $itemsWriteBack === true) {
-					return false;
-				}
-
-				$hasRef = isset($property['$ref']) || (($property['items']['$ref'] ?? null) !== null);
-				$hasInversedBy = isset($property['inversedBy'])
-					|| (($property['items']['inversedBy'] ?? null) !== null);
-				$objHandling = $property['objectConfiguration']['handling'] ?? null;
-				$itemsHandling = $property['items']['objectConfiguration']['handling'] ?? null;
-				$hasCascade = $objHandling === 'cascade' || ObjectHandling::relates($objHandling) === true
-					|| $itemsHandling === 'cascade' || ObjectHandling::relates($itemsHandling) === true;
-
-				return $property['type'] === 'array' && $hasRef && ($hasInversedBy || $hasCascade);
-			}
-		);
-
-		// Process single object properties that need cascading.
+		// Single object properties first, then array properties, as each pass rewrites the data.
+		$objectProperties = array_filter($properties, fn (array $property) => CascadeRules::isObjectProperty(property: $property));
+		$arrayObjProps = array_filter($properties, fn (array $property) => CascadeRules::isArrayProperty(property: $property));
 		foreach ($objectProperties as $property => $definition) {
-			// Skip if property not present in data.
-			if (isset($data[$property]) === false) {
-				continue;
-			}
+			$run->property = $property;
+			$run->definition = $definition;
+			$this->cascadeObjectProperty(run: $run);
+		}
 
-			// Skip if the property is empty or not an array/object.
-			$propValue = $data[$property];
-			$isEmpty = empty($propValue) === true;
-			$isNotArrayOrObject = is_array($propValue) === false && is_object($propValue) === false;
-			if ($isEmpty === true || $isNotArrayOrObject === true) {
-				continue;
-			}
-
-			// Convert object to array if needed.
-			$objectData = $data[$property];
-			if (is_object($data[$property]) === true) {
-				$objectData = (array)$data[$property];
-			}
-
-			// Skip if the object is effectively empty (only contains empty values).
-			if ($this->isEffectivelyEmptyObject(object: $objectData) === true) {
-				continue;
-			}
-
-			try {
-				$createdUuid = $this->cascadeSingleObject(
-					objectEntity: $objectEntity,
-					definition: $definition,
-					object: $objectData
-				);
-
-				// Handle the result based on whether inversedBy is present.
-				if (($definition['inversedBy'] ?? null) !== null) {
-					// With inversedBy: check if writeBack is enabled.
-					if (($definition['writeBack'] ?? null) !== null && $definition['writeBack'] === true) {
-						// Keep the property for write-back processing.
-						$data[$property] = $createdUuid;
-					}
-
-					if (($definition['writeBack'] ?? null) === null || $definition['writeBack'] === false) {
-						// Remove the property (traditional cascading).
-						unset($data[$property]);
-					}
-				}
-
-				if (($definition['inversedBy'] ?? null) === null) {
-					// Without inversedBy: store the created object's UUID.
-					$data[$property] = $createdUuid;
-				}
-			} catch (Exception $e) {
-				// Continue with other properties even if one fails.
-			}//end try
-		}//end foreach
-
-		// Process array object properties that need cascading.
 		foreach ($arrayObjProps as $property => $definition) {
-			// Check if property is present and is an array.
-			if (isset($data[$property]) === false || is_array($data[$property] ?? null) === false) {
-				continue;
-			}
+			$run->property = $property;
+			$run->definition = $definition;
+			$this->cascadeArrayProperty(run: $run);
+		}
 
-			// Determine handling type for orphan cleanup.
-			$objHandling = $definition['objectConfiguration']['handling'] ?? null;
-			$itemsHandling = $definition['items']['objectConfiguration']['handling'] ?? null;
-			$isRelatedObject = ObjectHandling::relates($objHandling) === true || ObjectHandling::relates($itemsHandling) === true;
-			$isCascade = $objHandling === 'cascade' || $itemsHandling === 'cascade';
-
-			// Capture old UUIDs from the existing object for orphan detection.
-			// This must happen BEFORE cascading modifies anything.
-			$oldUuids = [];
-			if ($isRelatedObject === true || $isCascade === true) {
-				$oldObjectData = $objectEntity->getObject();
-				if (isset($oldObjectData[$property]) === true && is_array($oldObjectData[$property]) === true) {
-					$oldUuids = array_values(array_filter($oldObjectData[$property], 'is_string'));
-				}
-			}
-
-			// Handle empty array: clean up all related objects and continue.
-			$propIsEmpty = empty($data[$property]) === true;
-			if ($propIsEmpty === true) {
-				if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
-					// Resolve the sub-object's schema and register for magic-mapped lookups.
-					$subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-					$subSchemaId = null;
-					if ($subSchemaRef !== null) {
-						$subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-					}
-
-					$subSchema = null;
-					if ($subSchemaId !== null) {
-						$subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-					}
-
-					$subRegister = null;
-					if ($objectEntity->getRegister() !== null) {
-						$subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-					}
-
-					$this->deleteOrphanedRelatedObjects(
-						orphanedUuids: $oldUuids,
-						register: $subRegister,
-						schema: $subSchema
-					);
-				}//end if
-
-				$data[$property] = [];
-				continue;
-			}//end if
-
-			try {
-				$createdUuids = $this->cascadeMultipleObjects(
-					objectEntity: $objectEntity,
-					property: $definition,
-					propData: $data[$property]
-				);
-
-				// For related-object handling: always store UUIDs in parent property.
-				// This ensures the parent object contains references to the sub-objects.
-				// Note: cascadeMultipleObjects skips existing UUIDs and returns only newly created ones.
-				// So we need to preserve existing UUIDs from the original data.
-				if ($isRelatedObject === true) {
-					// Collect existing IDs that were passed through (not created, just referenced).
-					// Supports: standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
-					$existingUuids = array_filter(
-						$data[$property] ?? [],
-						function ($item) {
-							if (is_string($item) === false) {
-								return false;
-							}
-
-							// Standard UUID with dashes.
-							$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-							if (preg_match($uuidPattern, $item) === 1) {
-								return true;
-							}
-
-							// UUID without dashes (32 hex chars).
-							if (preg_match('/^[0-9a-f]{32}$/i', $item) === 1) {
-								return true;
-							}
-
-							// Prefixed UUID (e.g., "id-uuid" with or without dashes).
-							$prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}';
-							$prefixedPattern .= '-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-							if (preg_match($prefixedPattern, $item) === 1) {
-								return true;
-							}
-
-							// Numeric ID.
-							if (preg_match('/^[0-9]+$/', $item) === 1) {
-								return true;
-							}
-
-							return false;
-						}
-					);
-
-					// Merge existing UUIDs with newly created ones.
-					$data[$property] = array_values(array_unique(array_merge($existingUuids, $createdUuids)));
-
-					// Delete orphaned related objects (present in old data but not in new).
-					if (empty($oldUuids) === false) {
-						$orphanedUuids = array_diff($oldUuids, $data[$property]);
-						if (empty($orphanedUuids) === false) {
-							// Resolve the sub-object's schema and register for magic-mapped lookups.
-							$subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-							$subSchemaId = null;
-							if ($subSchemaRef !== null) {
-								$subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-							}
-
-							$subSchema = null;
-							if ($subSchemaId !== null) {
-								$subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-							}
-
-							$subRegister = null;
-							if ($objectEntity->getRegister() !== null) {
-								$subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-							}
-
-							$this->deleteOrphanedRelatedObjects(
-								orphanedUuids: array_values($orphanedUuids),
-								register: $subRegister,
-								schema: $subSchema
-							);
-						}//end if
-					}//end if
-				}//end if
-
-				if ($isRelatedObject !== true) {
-					// Handle the result based on whether inversedBy is present.
-					$hasInversedBy = ($definition['inversedBy'] ?? null) !== null;
-					$hasItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === true;
-					if ($hasInversedBy === true || $hasItemsInversedBy === true) {
-						// With inversedBy: check if writeBack is enabled.
-						$defWriteBack = ($definition['writeBack'] ?? null) !== null
-							&& $definition['writeBack'] === true;
-						$itemsWriteBack = isset($definition['items']['writeBack'])
-							&& $definition['items']['writeBack'] === true;
-						$hasWriteBack = $defWriteBack || $itemsWriteBack;
-
-						if ($hasWriteBack === true) {
-							// Keep the property for write-back processing.
-							$data[$property] = $createdUuids;
-						}
-
-						if ($hasWriteBack === false) {
-							// Remove the property (traditional cascading).
-							unset($data[$property]);
-						}
-					}
-
-					$noInversedBy = ($definition['inversedBy'] ?? null) === null;
-					$noItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === false;
-					if ($noInversedBy === true && $noItemsInversedBy === true) {
-						// Without inversedBy: store the created objects' UUIDs.
-						$data[$property] = $createdUuids;
-					}
-				}//end if
-			} catch (Exception $e) {
-				// Continue with other properties even if one fails.
-			}//end try
-		}//end foreach
-
-		return $data;
+		return $run->data;
 	}//end cascadeObjects()
+
+	/**
+	 * Cascade the single object of the run's property into its own object.
+	 *
+	 * A failing cascade leaves the property as it was, except when the caller
+	 * is not authorized, which is rethrown.
+	 *
+	 * @param CascadeRun $run The cascade pass, on the property to cascade.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not create the nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadeObjectProperty(CascadeRun $run): void {
+		$propValue = $run->data[$run->property] ?? null;
+		if (self::isCascadableObjectValue(value: $propValue) === false) {
+			return;
+		}
+
+		$objectData = self::objectDataOf(value: $propValue);
+
+		// Skip if the object is effectively empty (only contains empty values).
+		if ($this->emptyValues()->isEmptyObject(object: $objectData) === true) {
+			return;
+		}
+
+		$this->cascadePropertyObject(run: $run, objectData: $objectData);
+	}//end cascadeObjectProperty()
+
+	/**
+	 * Whether a property value can hold a nested object: set, not empty, an array or an object.
+	 *
+	 * @param mixed $value The property value.
+	 *
+	 * @return bool True when the value is worth cascading.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isCascadableObjectValue(mixed $value): bool {
+		return $value !== null && empty($value) === false
+			&& (is_array($value) === true || is_object($value) === true);
+	}//end isCascadableObjectValue()
+
+	/**
+	 * A nested object value as an array.
+	 *
+	 * @param array|object $value The property value.
+	 *
+	 * @return array The object data.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function objectDataOf(array|object $value): array {
+		if (is_object($value) === true) {
+			return (array)$value;
+		}
+
+		return $value;
+	}//end objectDataOf()
+
+	/**
+	 * Cascade the run's single nested object and store the result in the property.
+	 *
+	 * @param CascadeRun $run        The cascade pass, on the property to cascade.
+	 * @param array      $objectData The nested object.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not create the nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadePropertyObject(CascadeRun $run, array $objectData): void {
+		try {
+			$createdUuid = $this->cascadeSingleObject(
+				target: new NestedObjectTarget(parent: $run->parent, definition: $run->definition),
+				object: $objectData
+			);
+			CascadeRules::applySingleResult(run: $run, createdUuid: $createdUuid);
+		} catch (NotAuthorizedException $e) {
+			throw $e;
+		} catch (Exception $e) {
+			// Continue with other properties even if one fails.
+			$this->warnPropertyCascadeFailed(run: $run, error: $e);
+		}
+	}//end cascadePropertyObject()
+
+	/**
+	 * Log a failed cascade of an object property; the save continues with the other properties.
+	 *
+	 * @param CascadeRun $run   The cascade pass, on the failed property.
+	 * @param Exception  $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function warnPropertyCascadeFailed(CascadeRun $run, Exception $error): void {
+		$this->logger->warning(
+			message: '[SaveObject] Cascade of an object property failed, continuing with the other properties',
+			context: [
+				'property' => $run->property,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnPropertyCascadeFailed()
+
+	/**
+	 * Cascade the objects of the run's array property, and queue what the parent no longer references.
+	 *
+	 * @param CascadeRun $run The cascade pass, on the property to cascade.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not create a nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadeArrayProperty(CascadeRun $run): void {
+		if (is_array($run->data[$run->property] ?? null) === false) {
+			return;
+		}
+
+		CascadeRules::classifyArray(run: $run);
+
+		// Handle empty array: clean up all related objects and continue.
+		if (empty($run->data[$run->property]) === true) {
+			$this->queueOrphans(run: $run, uuids: $run->oldUuids);
+			$run->data[$run->property] = [];
+			return;
+		}
+
+		$this->cascadeArrayItems(run: $run);
+	}//end cascadeArrayProperty()
+
+	/**
+	 * Cascade the objects of the run's non-empty array property and store the result.
+	 *
+	 * @param CascadeRun $run The cascade pass, on the array property.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not create a nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadeArrayItems(CascadeRun $run): void {
+		try {
+			$createdUuids = $this->cascadeMultipleObjects(
+				target: new NestedObjectTarget(parent: $run->parent, definition: $run->definition),
+				propData: $run->data[$run->property]
+			);
+			$this->applyArrayCascadeResult(run: $run, createdUuids: $createdUuids);
+		} catch (NotAuthorizedException $e) {
+			throw $e;
+		} catch (Exception $e) {
+			// Continue with other properties even if one fails.
+			$this->warnArrayCascadeFailed(run: $run, error: $e);
+		}
+	}//end cascadeArrayItems()
+
+	/**
+	 * Store the created UUIDs in the array property: as related references, or in place of the inline objects.
+	 *
+	 * @param CascadeRun $run          The cascade pass, on the array property.
+	 * @param string[]   $createdUuids The UUIDs of the newly created objects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyArrayCascadeResult(CascadeRun $run, array $createdUuids): void {
+		if ($run->isRelated === true) {
+			$this->applyRelatedCascadeResult(run: $run, createdUuids: $createdUuids);
+			return;
+		}
+
+		CascadeRules::applyArrayResult(run: $run, createdUuids: $createdUuids);
+	}//end applyArrayCascadeResult()
+
+	/**
+	 * Log a failed cascade of an array property; the save continues with the other properties.
+	 *
+	 * @param CascadeRun $run   The cascade pass, on the failed property.
+	 * @param Exception  $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function warnArrayCascadeFailed(CascadeRun $run, Exception $error): void {
+		$this->logger->warning(
+			message: '[SaveObject] Cascade of an array property failed, continuing with the other properties',
+			context: [
+				'property' => $run->property,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end warnArrayCascadeFailed()
+
+	/**
+	 * Queue references of the run's property for orphan cleanup after the parent is saved.
+	 *
+	 * @param CascadeRun $run   The cascade pass, on the array property.
+	 * @param string[]   $uuids The references the parent no longer holds.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function queueOrphans(CascadeRun $run, array $uuids): void {
+		if (empty($uuids) === true) {
+			return;
+		}
+
+		$this->pendingOrphans[(string)$run->parent->getUuid()][] = [
+			$uuids,
+			$this->orphanScope(objectEntity: $run->parent, definition: $run->definition),
+		];
+	}//end queueOrphans()
+
+	/**
+	 * Store related-object references in the parent: the identifiers passed through plus the ones just created.
+	 *
+	 * The cascade of a list returns only newly created UUIDs, so existing
+	 * identifiers (standard, dashless, prefixed or numeric) are kept from the
+	 * incoming data. Stored references that are no longer held are queued as
+	 * orphans.
+	 *
+	 * @param CascadeRun $run          The cascade pass, on the array property.
+	 * @param string[]   $createdUuids The UUIDs of the newly created objects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyRelatedCascadeResult(CascadeRun $run, array $createdUuids): void {
+		$existingUuids = array_filter(
+			$run->data[$run->property] ?? [],
+			fn ($item) => is_string($item) === true && CascadeItem::isObjectIdentifier(value: $item) === true
+		);
+
+		$run->data[$run->property] = array_values(array_unique(array_merge($existingUuids, $createdUuids)));
+
+		if (empty($run->oldUuids) === false) {
+			$this->queueOrphans(
+				run: $run,
+				uuids: self::removedReferences(old: $run->oldUuids, kept: $run->data[$run->property])
+			);
+		}
+	}//end applyRelatedCascadeResult()
 
 	/**
 	 * Cascade multiple objects from an array of objects in the data.
 	 *
-	 * @param ObjectEntity $objectEntity The parent object.
-	 * @param array $property The property to add the objects to.
-	 * @param array $propData The data in the property.
+	 * @param NestedObjectTarget $target   The parent object and the definition of the property to add the objects to.
+	 * @param array              $propData The data in the property.
 	 *
 	 * @return string[] Array of UUIDs of created objects
 	 *
@@ -2387,119 +1539,23 @@ class SaveObject {
 	 * @psalm-return list<string>
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex array object cascading logic
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation and processing paths
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array {
-		if (array_is_list($propData) === false) {
+	private function cascadeMultipleObjects(NestedObjectTarget $target, array $propData): array {
+		$objectsToCreate = self::nestedObjectsToCreate(propData: $propData);
+		$definition = CascadeRules::itemsDefinition(property: $target->definition);
+		if ($objectsToCreate === [] || $definition === null) {
 			return [];
 		}
 
-		// Filter out empty or invalid objects.
-		// Supports: standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
-		$validObjects = array_filter(
-			$propData,
-			function ($object) {
-				if (is_array($object) === true
-					&& empty($object) === false
-					&& (count($object) === 1
-					&& (($object['id'] ?? null) !== null)
-					&& empty($object['id']) === true) === false
-				) {
-					return true;
-				}
-
-				if (is_string($object) === true) {
-					// Standard UUID with dashes.
-					$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-					if (preg_match($uuidPattern, $object) === 1) {
-						return true;
-					}
-
-					// UUID without dashes (32 hex chars).
-					if (preg_match('/^[0-9a-f]{32}$/i', $object) === 1) {
-						return true;
-					}
-
-					// Prefixed UUID (e.g., "id-uuid" with or without dashes).
-					$prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}';
-					$prefixedPattern .= '-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-					if (preg_match($prefixedPattern, $object) === 1) {
-						return true;
-					}
-
-					// Numeric ID.
-					if (preg_match('/^[0-9]+$/', $object) === 1) {
-						return true;
-					}
-				}//end if
-
-				return false;
-			}
-		);
-
-		if (empty($validObjects) === true) {
-			return [];
-		}
-
-		if (($property['$ref'] ?? null) !== null) {
-			$property['items']['$ref'] = $property['$ref'];
-		}
-
-		if (($property['inversedBy'] ?? null) !== null) {
-			$property['items']['inversedBy'] = $property['inversedBy'];
-		}
-
-		if (($property['register'] ?? null) !== null) {
-			$property['items']['register'] = $property['register'];
-		}
-
-		if (($property['objectConfiguration'] ?? null) !== null) {
-			$property['items']['objectConfiguration'] = $property['objectConfiguration'];
-		}
-
-		// Validate that we have the necessary configuration.
-		if (isset($property['items']['$ref']) === false) {
-			return [];
-		}
-
-		// Collect objects that need to be created (filter out existing UUIDs).
-		$objectsToCreate = [];
-		foreach ($validObjects as $object) {
-			// Skip existing IDs (UUIDs, prefixed UUIDs, numeric IDs) - they don't need to be cascaded (created).
-			// Only arrays (nested objects) need to be created via cascading.
-			if (is_string($object) === true) {
-				continue;
-			}
-
-			$objectsToCreate[] = $object;
-		}
-
-		// If no objects need to be created, return empty array.
-		if (empty($objectsToCreate) === true) {
-			return [];
-		}
-
-		// Create each sub-object using optimized cascadeSingleObject().
-		// Performance optimizations applied:
-		// - Request-scoped schema/register caching (avoids repeated DB lookups)
-		// - Silent mode (skips audit trails for sub-objects)
-		// - Skipped inverse relation updates (handled via inversedBy property).
+		// Create each sub-object using optimized cascadeSingleObject(): request-scoped
+		// schema/register caching, silent mode, inverse relations via inversedBy.
 		$createdUuids = [];
 		foreach ($objectsToCreate as $object) {
-			try {
-				$uuid = $this->cascadeSingleObject(
-					objectEntity: $objectEntity,
-					definition: $property['items'],
-					object: $object
-				);
-				if ($uuid !== null) {
-					$createdUuids[] = $uuid;
-				}
-			} catch (Exception $e) {
-				// Continue with other objects even if one fails.
+			$uuid = $this->cascadeListItem(target: new NestedObjectTarget(parent: $target->parent, definition: $definition), object: $object);
+			if ($uuid !== null) {
+				$createdUuids[] = $uuid;
 			}
 		}
 
@@ -2507,197 +1563,527 @@ class SaveObject {
 	}//end cascadeMultipleObjects()
 
 	/**
+	 * The inline objects of a list property that are to be created.
+	 *
+	 * A map is no list and creates nothing; existing ids need no cascade.
+	 *
+	 * @param array $propData The data in the property.
+	 *
+	 * @return array The candidate objects that are not plain ids, keys kept.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function nestedObjectsToCreate(array $propData): array {
+		if (array_is_list($propData) === false) {
+			return [];
+		}
+
+		$validObjects = array_filter($propData, fn ($object): bool => CascadeItem::isCandidate(object: $object));
+
+		return array_filter($validObjects, fn ($object): bool => is_string($object) === false);
+	}//end nestedObjectsToCreate()
+
+	/**
+	 * Cascade one object of a list; a failure other than a refusal is logged and creates nothing.
+	 *
+	 * @param NestedObjectTarget $target The parent object and the items definition.
+	 * @param mixed              $object The nested object.
+	 *
+	 * @return string|null The created uuid, or null.
+	 *
+	 * @throws NotAuthorizedException When the caller may not create the nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadeListItem(NestedObjectTarget $target, mixed $object): string|null {
+		try {
+			return $this->cascadeSingleObject(target: $target, object: $object);
+		} catch (NotAuthorizedException $e) {
+			throw $e;
+		} catch (Exception $e) {
+			// Continue with other objects even if one fails.
+			$this->logger->warning(
+				message: '[SaveObject] Cascade of a nested object failed, continuing with the others',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
+			return null;
+		}
+	}//end cascadeListItem()
+
+	/**
+	 * Where the sub-objects of a cascading property live, and how one names its parent.
+	 *
+	 * @param ObjectEntity $objectEntity The parent object.
+	 * @param array        $definition   The property definition.
+	 *
+	 * @return array{register: Register|null, schema: Schema|null, inverse: string|null, parent: string|null} Null when unresolved.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function orphanScope(ObjectEntity $objectEntity, array $definition): array {
+		$subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
+		$subSchemaId = null;
+		if ($subSchemaRef !== null) {
+			$subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
+		}
+
+		$subSchema = null;
+		if ($subSchemaId !== null) {
+			$subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
+		}
+
+		$subRegister = null;
+		if ($objectEntity->getRegister() !== null) {
+			$subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
+		}
+
+		return [
+			'register' => $subRegister,
+			'schema' => $subSchema,
+			'inverse' => $definition['items']['inversedBy'] ?? $definition['inversedBy'] ?? null,
+			'parent' => $objectEntity->getUuid(),
+		];
+	}//end orphanScope()
+
+	/**
 	 * Cascade a single object form an object in the source data
 	 *
-	 * @param ObjectEntity $objectEntity The parent object
-	 * @param array $definition The definition of the property the cascaded object is found in
-	 * @param array $object The object to cascade
+	 * @param NestedObjectTarget $target The parent object and the definition of the property the cascaded object is found in
+	 * @param array              $object The object to cascade
 	 *
 	 * @return string|null The UUID of the created object, or null if no object was created
 	 *
 	 * @throws Exception
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex single object cascading with relation handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple configuration and validation paths
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cascadeSingleObject(NestedObjectTarget $target, array $object): string|null {
+		if ($this->isCascadableSingleObject(target: $target, object: $object) === false) {
+			return null;
+		}
+
+		$object = self::withParentReference(target: $target, object: $object);
+		$object = self::withoutNestedIdentity(definition: $target->definition, object: $object);
+		$savedObject = $this->saveNestedObject(target: $target, object: $object);
+
+		return $this->recordCreatedSubObject(savedObject: $savedObject);
+	}//end cascadeSingleObject()
+
+	/**
+	 * Whether a nested object can be cascaded: the property names a schema, the
+	 * object carries data, and the parent has a uuid to be referenced by.
+	 *
+	 * @param NestedObjectTarget $target The parent object and the property definition.
+	 * @param array              $object The object to cascade.
+	 *
+	 * @return bool True when the object is to be created.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string {
+	private function isCascadableSingleObject(NestedObjectTarget $target, array $object): bool {
 		// Validate that we have the necessary configuration.
-		if (isset($definition['$ref']) === false) {
-			return null;
+		if (isset($target->definition['$ref']) === false) {
+			return false;
 		}
 
 		// Skip if object is empty or doesn't contain actual data.
-		$hasOnlyEmptyId = count($object) === 1
-			&& (($object['id'] ?? null) !== null)
-			&& empty($object['id']) === true;
-		if (empty($object) === true || $hasOnlyEmptyId === true) {
-			return null;
+		if (empty($object) === true || CascadeItem::hasOnlyEmptyId(object: $object) === true) {
+			return false;
 		}
 
-		$objectId = $objectEntity->getUuid();
-		if (empty($objectId) === true) {
-			return null;
+		return empty($target->parent->getUuid()) === false;
+	}//end isCascadableSingleObject()
+
+	/**
+	 * Point the nested object back at its parent, when the property declares an inverse relation.
+	 *
+	 * Only set inversedBy if it's configured (for relation-based cascading).
+	 *
+	 * @param NestedObjectTarget $target The parent object and the property definition.
+	 * @param array              $object The object to cascade.
+	 *
+	 * @return array The object, with the parent reference when inversedBy is set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function withParentReference(NestedObjectTarget $target, array $object): array {
+		$inversedBy = $target->definition['inversedBy'] ?? null;
+		if ($inversedBy === null) {
+			return $object;
 		}
 
-		// Only set inversedBy if it's configured (for relation-based cascading).
-		if (($definition['inversedBy'] ?? null) !== null) {
-			$inversedByProperty = $definition['inversedBy'];
+		$object[$inversedBy] = CascadeItem::withParentReference(
+			current: $object[$inversedBy] ?? null,
+			parentId: $target->parent->getUuid()
+		);
 
-			// Check if the inversedBy property already exists and is an array.
-			if (($object[$inversedByProperty] ?? null) !== null && is_array($object[$inversedByProperty]) === true) {
-				// Add to existing array if not already present.
-				if (in_array($objectId, $object[$inversedByProperty], true) === false) {
-					$object[$inversedByProperty][] = $objectId;
-				}
-			}
+		return $object;
+	}//end withParentReference()
 
-			if (($object[$inversedByProperty] ?? null) === null || is_array($object[$inversedByProperty]) === false) {
-				// Set as single value or create new array.
-				$object[$inversedByProperty] = $objectId;
-			}
-		}
-
-		// Extract register ID from definition or use parent object's register.
-		$register = $definition['register'] ?? $objectEntity->getRegister();
-
-		// If register is an array, extract the ID.
-		if (is_array($register) === true) {
-			$register = $register['id'] ?? $register;
-		}
-
-		// For cascading with inversedBy, preserve existing UUID for updates.
-		// For cascading without inversedBy, always create new objects (no UUID).
-		$uuid = null;
-		if (($definition['inversedBy'] ?? null) !== null) {
-			$uuid = $object['id'] ?? $object['@self']['id'] ?? null;
+	/**
+	 * Strip every identity a nested inline object carries, so it is always created.
+	 *
+	 * The save would take its `id` or `@self.id` as the row to write onto, looked
+	 * up past the read filters. Without an inverse relation the whole `@self` goes.
+	 *
+	 * @param array $definition The property definition.
+	 * @param array $object     The object to cascade.
+	 *
+	 * @return array The object without `id`, `@self.id` and `@self.uuid`.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function withoutNestedIdentity(array $definition, array $object): array {
+		unset($object['id']);
+		if (is_array($object['@self'] ?? null) === true) {
+			unset($object['@self']['id'], $object['@self']['uuid']);
 		}
 
 		if (($definition['inversedBy'] ?? null) === null) {
-			// Remove any existing UUID/id fields to force new object creation.
-			unset($object['id']);
 			unset($object['@self']);
 		}
 
+		return $object;
+	}//end withoutNestedIdentity()
+
+	/**
+	 * Save a nested object in its register and schema, once the caller may create it there.
+	 *
+	 * Use silent mode for cascaded sub-objects to improve performance.
+	 * This skips audit trail creation for each sub-object, reducing database writes.
+	 * The parent object's audit trail still captures the overall operation.
+	 *
+	 * @param NestedObjectTarget $target The parent object and the property definition.
+	 * @param array              $object The prepared nested object.
+	 *
+	 * @return ObjectEntity The saved sub-object.
+	 *
+	 * @throws Exception When the schema reference does not resolve, or the caller may not create the object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function saveNestedObject(NestedObjectTarget $target, array $object): ObjectEntity {
+		$register = CascadeItem::register(definition: $target->definition, parentRegister: $target->parent->getRegister());
+		$schemaId = $this->authorizedCascadeSchemaId(definition: $target->definition, register: $register);
+		return $this->saveObject(
+			data: $object,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $register, schema: $schemaId),
+				policy: new SavePolicy(silent: true)
+			),
+			_rbac: true,
+			_multitenancy: true
+		);
+	}//end saveNestedObject()
+
+	/**
+	 * Resolve the property's schema reference and check the caller may create in it.
+	 *
+	 * @param array $definition The property definition.
+	 * @param mixed $register   The register the nested object is saved in.
+	 *
+	 * @return string The resolved schema id.
+	 *
+	 * @throws Exception When the schema reference does not resolve.
+	 * @throws NotAuthorizedException When the caller may not create the nested object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function authorizedCascadeSchemaId(array $definition, mixed $register): string {
 		// Resolve schema reference to actual schema ID.
 		$schemaId = $this->resolveSchemaReference(reference: $definition['$ref']);
 		if ($schemaId === null) {
 			throw new Exception("Invalid schema reference: {$definition['$ref']}");
 		}
 
-		// For updates (UUID present): fill in missing schema properties with null.
-		// This ensures the magic mapper explicitly sets removed properties to NULL
-		// instead of leaving old values intact (magic mapper does partial updates).
-		if ($uuid !== null) {
-			$object = $this->fillMissingSchemaPropertiesWithNull(data: $object, schemaId: $schemaId);
+		$this->assertMayCascadeCreate(schema: $this->getCachedSchema(schemaId: $schemaId), register: self::cascadeRegisterId(register: $register));
+
+		return $schemaId;
+	}//end authorizedCascadeSchemaId()
+
+	/**
+	 * The register id the create-rights check takes: a scalar register as a string, anything else null.
+	 *
+	 * @param mixed $register The resolved register.
+	 *
+	 * @return string|null The register id.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function cascadeRegisterId(mixed $register): string|null {
+		if (is_int($register) === true || is_string($register) === true) {
+			return (string)$register;
 		}
 
-		try {
-			// Use silent mode for cascaded sub-objects to improve performance.
-			// This skips audit trail creation for each sub-object, reducing database writes.
-			// The parent object's audit trail still captures the overall operation.
-			$savedObject = $this->saveObject(
-				register: $register,
-				schema: $schemaId,
-				data: $object,
-				uuid: $uuid,
-				folderId: null,
-				_rbac: true,
-				_multitenancy: true,
-				persist: true,
-				silent: true
-			);
-			$savedUuid = $savedObject->getUuid();
+		return null;
+	}//end cascadeRegisterId()
 
-			// Track the created sub-object for inclusion in @self.objects.
-			// This allows the parent response to include the full sub-object data.
-			if ($savedUuid !== null) {
-				$this->createdSubObjects[$savedUuid] = $savedObject->jsonSerialize();
-			}
+	/**
+	 * Track a created sub-object for inclusion in @self.objects.
+	 *
+	 * This allows the parent response to include the full sub-object data.
+	 *
+	 * @param ObjectEntity $savedObject The saved sub-object.
+	 *
+	 * @return string|null Its uuid.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recordCreatedSubObject(ObjectEntity $savedObject): string|null {
+		$savedUuid = $savedObject->getUuid();
+		if ($savedUuid !== null) {
+			$this->createdSubObjects[$savedUuid] = $savedObject->jsonSerialize();
+		}
 
-			return $savedUuid;
-		} catch (Exception $e) {
-			throw $e;
-		}//end try
-	}//end cascadeSingleObject()
+		return $savedUuid;
+	}//end recordCreatedSubObject()
 
 	/**
 	 * Deletes orphaned related objects that are no longer referenced by the parent.
 	 *
-	 * When a parent object's array property (with related-object or cascade handling)
-	 * is updated and some sub-objects are removed, those orphaned sub-objects should
-	 * be deleted from the database since they are "owned" by the parent.
+	 * When a schema sets `orphanCleanup` and a parent stops referencing some
+	 * sub-objects, the sub-objects the parent owns are soft-deleted. A property without
+	 * an inverse relation holds plain pointers, so nothing is deleted for it, and a
+	 * row that may not be deleted only loses the reference.
 	 *
-	 * @param string[] $orphanedUuids Array of UUIDs of orphaned objects to delete.
-	 * @param Register|null $register Optional register to scope the lookup.
-	 * @param Schema|null $schema Optional schema to scope the lookup.
+	 * @param string[] $orphanedUuids References the stored parent held and no longer holds.
+	 * @param array $scope The scope orphanScope() answers.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function deleteOrphanedRelatedObjects(
-		array $orphanedUuids,
-		?Register $register = null,
-		?Schema $schema = null,
-	): void {
+	private function deleteOrphanedRelatedObjects(array $orphanedUuids, array $scope): void {
+		$register = $scope['register'];
+		$schema = $scope['schema'];
+		if ($register === null || $schema === null || $scope['inverse'] === null) {
+			return;
+		}
+
 		foreach ($orphanedUuids as $uuid) {
-			try {
-				$orphanedObject = $this->objectEntityMapper->find(
-					identifier: $uuid,
-					register: $register,
-					schema: $schema,
-					includeDeleted: false,
-					_rbac: false,
-					_multitenancy: false
-				);
-
-				// Soft delete: set deletion metadata and update (consistent with DeleteObject).
-				$user = $this->userSession->getUser();
-				$userId = 'system';
-				if ($user !== null) {
-					$userId = $user->getUID();
-				}
-
-				$deletionData = [
-					'deletedBy' => $userId,
-					'deletedAt' => (new DateTime())->format(DateTime::ATOM),
-					'objectId' => $orphanedObject->getUuid(),
-					'reason' => 'orphaned-related-object',
-				];
-				$orphanedObject->setDeleted($deletionData);
-
-				$this->objectEntityMapper->update(
-					entity: $orphanedObject,
-					register: $register,
-					schema: $schema
-				);
-
-				$this->logger->info(
-					message: '[SaveObject] Soft-deleted orphaned related object',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-					]
-				);
-			} catch (DoesNotExistException $e) {
-				// Object already deleted or doesn't exist, nothing to clean up.
-			} catch (Exception $e) {
-				// Log but continue — don't let cleanup failures block the parent update.
-				$this->logger->warning(
-					message: '[SaveObject] Failed to delete orphaned related object',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
+			$this->deleteOrphanedRelatedObject(uuid: $uuid, scope: $scope);
+		}
 	}//end deleteOrphanedRelatedObjects()
+
+	/**
+	 * Soft-delete one orphaned related object; a missing row is skipped and a failure only logged.
+	 *
+	 * Log but continue: a cleanup failure must not block the parent update.
+	 *
+	 * @param string $uuid  The reference the parent no longer holds.
+	 * @param array  $scope The complete orphan scope.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function deleteOrphanedRelatedObject(string $uuid, array $scope): void {
+		try {
+			$this->softDeleteOrphanIfOwned(uuid: $uuid, scope: $scope);
+		} catch (DoesNotExistException $e) {
+			// Object already deleted or doesn't exist, nothing to clean up.
+		} catch (Exception $e) {
+			$this->warnOrphanDeleteFailed(uuid: $uuid, error: $e);
+		}
+	}//end deleteOrphanedRelatedObject()
+
+	/**
+	 * Log an orphan that could not be deleted; the parent update goes on.
+	 *
+	 * @param string    $uuid  The reference that was to be deleted.
+	 * @param Exception $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function warnOrphanDeleteFailed(string $uuid, Exception $error): void {
+		$this->logger->warning(
+			message: '[SaveObject] Failed to delete orphaned related object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end warnOrphanDeleteFailed()
+
+	/**
+	 * Find the orphan and soft-delete it when the guard lets it go.
+	 *
+	 * @param string $uuid  The reference the parent no longer holds.
+	 * @param array  $scope The complete orphan scope.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException When the row is gone.
+	 * @throws Exception When the lookup, the guard or the update fails otherwise.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function softDeleteOrphanIfOwned(string $uuid, array $scope): void {
+		$orphanedObject = $this->findOrphan(uuid: $uuid, scope: $scope);
+		if ($this->orphanMayBeDeleted(orphan: $orphanedObject, scope: $scope + ['uuid' => $uuid]) === false) {
+			return;
+		}
+
+		$this->softDeleteOrphan(orphan: $orphanedObject, scope: $scope);
+		$this->logOrphanDeleted(uuid: $uuid);
+	}//end softDeleteOrphanIfOwned()
+
+	/**
+	 * The orphaned row, looked up past the read filters and excluding deleted rows.
+	 *
+	 * @param string $uuid  The reference the parent no longer holds.
+	 * @param array  $scope The complete orphan scope.
+	 *
+	 * @return ObjectEntity The row.
+	 *
+	 * @throws DoesNotExistException When the row is gone.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function findOrphan(string $uuid, array $scope): ObjectEntity {
+		return $this->objectEntityMapper->find(
+			identifier: $uuid,
+			register: $scope['register'],
+			schema: $scope['schema'],
+			includeDeleted: false,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end findOrphan()
+
+	/**
+	 * Log a soft-deleted orphan.
+	 *
+	 * @param string $uuid The reference that was deleted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function logOrphanDeleted(string $uuid): void {
+		$this->logger->info(
+			message: '[SaveObject] Soft-deleted orphaned related object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+			]
+		);
+	}//end logOrphanDeleted()
+
+	/**
+	 * Soft delete: set deletion metadata and update (consistent with DeleteObject).
+	 *
+	 * The guard admits only a signed-in caller.
+	 *
+	 * @param ObjectEntity $orphan The orphan the guard let go.
+	 * @param array        $scope  The complete orphan scope.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function softDeleteOrphan(ObjectEntity $orphan, array $scope): void {
+		$deletionData = [
+			'deletedBy' => $this->userSession->getUser()?->getUID(),
+			'deletedAt' => (new DateTime())->format(DateTime::ATOM),
+			'objectId' => $orphan->getUuid(),
+			'reason' => 'orphaned-related-object',
+		];
+		$orphan->setDeleted($deletionData);
+
+		$this->objectEntityMapper->update(
+			entity: $orphan,
+			register: $scope['register'],
+			schema: $scope['schema']
+		);
+	}//end softDeleteOrphan()
+
+	/**
+	 * Soft-delete what a parent's save left orphaned, once the parent is saved.
+	 *
+	 * @param string $parent The parent's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function settleOrphans(string $parent): void {
+		foreach (($this->pendingOrphans[$parent] ?? []) as [$orphanedUuids, $scope]) {
+			$this->deleteOrphanedRelatedObjects(orphanedUuids: $orphanedUuids, scope: $scope);
+		}
+
+		unset($this->pendingOrphans[$parent]);
+	}//end settleOrphans()
+
+	/**
+	 * The stored references a save no longer keeps, compared in one normal form.
+	 *
+	 * @param string[] $old  The stored references.
+	 * @param array    $kept The references the save keeps.
+	 *
+	 * @return string[] The removed references.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function removedReferences(array $old, array $kept): array {
+		$keptKeys = array_map(self::referenceKey(...), array_filter($kept, 'is_string'));
+
+		return array_values(
+			array_filter($old, static fn (string $uuid): bool => in_array(self::referenceKey(reference: $uuid), $keptKeys, true) === false)
+		);
+	}//end removedReferences()
+
+	/**
+	 * One normal form of a uuid reference: lower case, no dashes, no `id-` style prefix.
+	 *
+	 * @param string $reference The reference.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function referenceKey(string $reference): string {
+		$pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/';
+
+		return str_replace('-', '', preg_replace($pattern, '$1', strtolower($reference)));
+	}//end referenceKey()
+
+	/**
+	 * Whether a row the parent stopped referencing is its own and may be deleted.
+	 *
+	 * The row must be the referenced uuid itself (the lookup also matches slugs and
+	 * uris) and must name the parent through the inverse property, otherwise the
+	 * reference was a plain pointer to a row with a life of its own.
+	 *
+	 * @param ObjectEntity $orphan The row that was found.
+	 * @param array        $scope  The orphan scope, plus the referenced `uuid`.
+	 *
+	 * @return bool True when the row may be soft-deleted.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function orphanMayBeDeleted(ObjectEntity $orphan, array $scope): bool {
+		$namesParent = (array)($orphan->getObject()[$scope['inverse']] ?? []);
+		if ($orphan->getUuid() !== $scope['uuid'] || in_array($scope['parent'], $namesParent, true) === false) {
+			return false;
+		}
+
+		$this->orphanGuard ??= new OrphanDeletionGuard(
+			objectMapper: $this->objectEntityMapper,
+			permissionHandler: $this->permissionHandler,
+			userSession: $this->userSession,
+			container: $this->container
+		);
+
+		return $this->orphanGuard->allows(row: $orphan, table: new RegisterSchema(register: $scope['register'], schema: $scope['schema']));
+	}//end orphanMayBeDeleted()
 
 	/**
 	 * Fills in missing schema properties with null for an object being updated.
@@ -2734,715 +2120,592 @@ class SaveObject {
 	}//end fillMissingSchemaPropertiesWithNull()
 
 	/**
-	 * Handles inverse relations write-back by updating target objects to include reference to current object
-	 *
-	 * This method extends the existing inverse relations functionality to handle write operations.
-	 * When a property has `inversedBy` configuration and `writeBack: true`, this method will
-	 * update the target objects to include a reference back to the current object.
-	 *
-	 * For example, when creating a community with a list of deelnemers (participant UUIDs),
-	 * this method will update each participant's deelnames array to include the community's UUID.
-	 *
-	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items property to configuration property
-	 *
-	 * @param ObjectEntity $objectEntity The current object being saved
-	 * @param Schema $schema The schema of the current object
-	 * @param array $data The data being saved
-	 *
-	 * @return array The data with write-back properties optionally removed
-	 * @throws Exception
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex write-back logic with multiple configurations
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property and item level configurations
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive write-back handling for all relation types
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array {
-
-		try {
-			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
-			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
-		} catch (Exception $e) {
-			return $data;
-		}
-
-		// Find properties that have inversedBy configuration with writeBack enabled.
-		// TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
-		$writeBackProperties = array_filter(
-			$properties,
-			function (array $property) {
-				// Check for inversedBy with writeBack at property level.
-				$hasInversedBy = ($property['inversedBy'] ?? null) !== null;
-				$hasWriteBack = (($property['writeBack'] ?? null) !== null)
-					&& $property['writeBack'] === true;
-				if ($hasInversedBy === true && $hasWriteBack === true) {
-					return true;
-				}
-
-				// Check for inversedBy with writeBack in array items.
-				if ($property['type'] === 'array'
-					&& (($property['items']['inversedBy'] ?? null) !== null)
-					&& (($property['items']['writeBack'] ?? null) !== null)
-					&& $property['items']['writeBack'] === true
-				) {
-					return true;
-				}
-
-				// Check for inversedBy with writeBack at array property level (for array of objects).
-				if ($property['type'] === 'array'
-					&& (($property['items']['inversedBy'] ?? null) !== null)
-					&& (($property['writeBack'] ?? null) !== null)
-					&& $property['writeBack'] === true
-				) {
-					return true;
-				}
-
-				return false;
-			}
-		);
-
-		foreach ($writeBackProperties as $propertyName => $definition) {
-			// Skip if property not present in data or is empty.
-			if (($data[$propertyName] ?? null) === null || empty($data[$propertyName]) === true) {
-				continue;
-			}
-
-			$targetUuids = $data[$propertyName];
-			$inverseProperty = null;
-			$targetSchema = null;
-			$targetRegister = null;
-			$removeFromSource = false;
-
-			// Extract configuration from property or array items.
-			$hasDefInversedBy = ($definition['inversedBy'] ?? null) !== null;
-			$hasDefWriteBack = (($definition['writeBack'] ?? null) !== null)
-				&& $definition['writeBack'] === true;
-			$hasItemsInversedBy = ($definition['items']['inversedBy'] ?? null) !== null;
-			$hasItemsWriteBack = (($definition['items']['writeBack'] ?? null) !== null)
-				&& $definition['items']['writeBack'] === true;
-
-			if ($hasDefInversedBy === true && $hasDefWriteBack === true) {
-				$inverseProperty = $definition['inversedBy'];
-				$targetSchema = $definition['$ref'] ?? null;
-				$targetRegister = $definition['register'] ?? $objectEntity->getRegister();
-				$removeFromSource = $definition['removeAfterWriteBack'] ?? false;
-			} elseif ($hasItemsInversedBy === true && $hasItemsWriteBack === true) {
-				$inverseProperty = $definition['items']['inversedBy'];
-				$targetSchema = $definition['items']['$ref'] ?? null;
-				$targetRegister = $definition['items']['register'] ?? $objectEntity->getRegister();
-				$removeFromSource = $definition['items']['removeAfterWriteBack'] ?? false;
-			} elseif ($hasItemsInversedBy === true && $hasDefWriteBack === true) {
-				// Handle array of objects with writeBack at array level.
-				$inverseProperty = $definition['items']['inversedBy'];
-				$targetSchema = $definition['items']['$ref'] ?? null;
-				$targetRegister = $definition['register'] ?? $objectEntity->getRegister();
-				$removeFromSource = $definition['removeAfterWriteBack'] ?? false;
-			}//end if
-
-			// Skip if we don't have the necessary configuration.
-			$noInverseProperty = $inverseProperty === false || $inverseProperty === null;
-			$noTargetSchema = $targetSchema === false || $targetSchema === null;
-			if ($noInverseProperty === true || $noTargetSchema === true) {
-				continue;
-			}
-
-			// Resolve schema reference to actual schema ID.
-			$resolvedSchemaId = $this->resolveSchemaReference(reference: $targetSchema);
-			if ($resolvedSchemaId === null) {
-				continue;
-			}
-
-			// Ensure targetUuids is an array.
-			if (is_array($targetUuids) === false) {
-				$targetUuids = [$targetUuids];
-			}
-
-			// Filter out empty or invalid IDs.
-			// Supports: standard UUIDs, UUIDs without dashes, prefixed UUIDs, and numeric IDs.
-			$validUuids = array_filter(
-				$targetUuids,
-				function ($uuid) {
-					if (empty($uuid) === true || is_string($uuid) === false || trim($uuid) === '') {
-						return false;
-					}
-
-					// Standard UUID with dashes.
-					if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) === 1) {
-						return true;
-					}
-
-					// UUID without dashes (32 hex chars).
-					if (preg_match('/^[0-9a-f]{32}$/i', $uuid) === 1) {
-						return true;
-					}
-
-					// Prefixed UUID (e.g., "id-uuid" with or without dashes).
-					$prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}';
-					$prefixedPattern .= '-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-					if (preg_match($prefixedPattern, $uuid) === 1) {
-						return true;
-					}
-
-					// Numeric ID.
-					if (preg_match('/^[0-9]+$/', $uuid) === 1) {
-						return true;
-					}
-
-					return false;
-				}
-			);
-
-			if (empty($validUuids) === true) {
-				continue;
-			}
-
-			// Update each target object.
-			foreach ($validUuids as $targetUuid) {
-				// Ensure targetUuid is string (filter already validated it is a valid UUID string).
-				$targetUuid = (string)$targetUuid;
-				try {
-					// Find the target object.
-					$targetObject = $this->objectEntityMapper->find($targetUuid);
-					// Find() throws DoesNotExistException, never returns null.
-					// Get current data from target object.
-					$targetData = $targetObject->getObject();
-
-					// Initialize inverse property as array if it doesn't exist.
-					if (isset($targetData[$inverseProperty]) === false) {
-						$targetData[$inverseProperty] = [];
-					}
-
-					// Ensure inverse property is an array.
-					if (is_array($targetData[$inverseProperty]) === false) {
-						$targetData[$inverseProperty] = [$targetData[$inverseProperty]];
-					}
-
-					// Add current object's UUID to the inverse property if not already present.
-					if (in_array($objectEntity->getUuid(), $targetData[$inverseProperty], true) === false) {
-						$targetData[$inverseProperty][] = $objectEntity->getUuid();
-					}
-
-					// Save the updated target object.
-					$this->saveObject(
-						register: $targetRegister,
-						schema: $resolvedSchemaId,
-						data: $targetData,
-						uuid: $targetUuid
-					);
-				} catch (Exception $e) {
-					// Continue with other targets even if one fails.
-				}//end try
-			}//end foreach
-
-			// Remove the property from source object if configured to do so.
-			if ($removeFromSource === true) {
-				unset($data[$propertyName]);
-			}
-		}//end foreach
-
-		return $data;
-	}//end handleInverseRelationsWriteBack()
-
-	/**
-	 * Sanitizes empty strings and handles empty objects/arrays based on schema definitions.
-	 *
-	 * This method prevents empty strings from causing issues in downstream processing by converting
-	 * them to appropriate values for properties based on their schema definitions.
-	 *
-	 * For object properties:
-	 * - If not required: empty objects {} become null (allows clearing the field)
-	 * - If required: empty objects {} remain as {} but will fail validation with clear error
-	 *
-	 * For array properties:
-	 * - If no minItems constraint: empty arrays [] are allowed
-	 * - If minItems > 0: empty arrays [] will fail validation with clear error
-	 * - Empty strings become null for array properties
-	 *
-	 * @param array $data The object data to sanitize
-	 * @param Schema $schema The schema to check property definitions against
-	 *
-	 * @return array The sanitized data with appropriate handling of empty values
-	 *
-	 * @throws \Exception If schema processing fails
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex sanitization logic for multiple property types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple property types and required states
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array {
-		try {
-			$schemaObject = $schema->getSchemaObject($this->urlGenerator);
-			$properties = json_decode(json_encode($schemaObject), associative: true)['properties'] ?? [];
-			$required = json_decode(json_encode($schemaObject), associative: true)['required'] ?? [];
-		} catch (Exception $e) {
-			return $data;
-		}
-
-		$sanitizedData = $data;
-
-		foreach ($properties as $propertyName => $propertyDefinition) {
-			// Skip if property is not in the data.
-			if (isset($sanitizedData[$propertyName]) === false) {
-				continue;
-			}
-
-			$value = $sanitizedData[$propertyName];
-			$propertyType = $propertyDefinition['type'] ?? null;
-			$isRequired = in_array($propertyName, $required) || ($propertyDefinition['required'] ?? false);
-
-			// Handle object properties.
-			if ($propertyType === 'object') {
-				if ($value === '') {
-					// Empty string to null for object properties.
-					$sanitizedData[$propertyName] = null;
-				} elseif (is_array($value) === true && empty($value) === true && ($isRequired === false)) {
-					// Empty object {} to null for non-required object properties.
-					$sanitizedData[$propertyName] = null;
-				} elseif (is_array($value) === true && empty($value) === true && ($isRequired === true)) {
-					// Keep empty object {} for required properties - will fail validation with clear error.
-				}
-			} elseif ($propertyType === 'array') {
-				// Handle array properties.
-				if ($value === '') {
-					// Empty string to null for array properties.
-					$sanitizedData[$propertyName] = null;
-				} elseif (is_array($value) === true) {
-					// Check minItems constraint.
-					$minItems = $propertyDefinition['minItems'] ?? 0;
-
-					if (empty($value) === true && $minItems > 0) {
-						// Keep empty array [] for arrays with minItems > 0 - will fail validation with clear error.
-					}
-
-					if (empty($value) === true && $minItems === 0) {
-						// Empty array is valid for arrays with no minItems constraint.
-					}
-
-					if (empty($value) === false) {
-						// Handle array items that might contain empty strings.
-						$sanitizedArray = [];
-						$hasChanges = false;
-						foreach ($value as $index => $item) {
-							$sanitizedArray[$index] = $item;
-							if ($item === '') {
-								$sanitizedArray[$index] = null;
-								$hasChanges = true;
-							}
-						}
-
-						if ($hasChanges === true) {
-							$sanitizedData[$propertyName] = $sanitizedArray;
-						}
-					}//end if
-				}//end if
-			} elseif ($value === '' && in_array($propertyType, ['string', 'number', 'integer', 'boolean']) === true) {
-				// Handle other property types with empty strings.
-				if ($isRequired === false) {
-					// Convert empty string to null for non-required scalar properties.
-					$sanitizedData[$propertyName] = null;
-				}
-
-				if ($isRequired === true) {
-					// Keep empty string for required properties - will fail validation with clear error.
-					// No action needed - property stays as is.
-				}
-			}//end if
-		}//end foreach
-
-		return $sanitizedData;
-	}//end sanitizeEmptyStringsForObjectProperties()
-
-	/**
 	 * Saves an object.
 	 *
-	 * @param Register|int|string|null $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
-	 * @param array $data The object data to save.
-	 * @param string|null $uuid The UUID of the object to update (if updating).
-	 * @param int|null $folderId The folder ID to set on the object (optional).
-	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering (default: true).
-	 * @param bool $persist Whether to persist the object to database (default: true).
-	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
-	 * @param bool $_validation Whether to validate the object (default: true).
-	 * @param array|null $uploadedFiles Uploaded files array (optional).
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks; falls back to the session user when null.
-	 * @param bool $failIfExists Insert-only: throw ObjectExistsException rather than update when taken (default: false).
-	 * @param bool $_unowned Stamp the system identity even when a session exists.
-	 * @param bool $_dedupOverride Save through a blocking duplicate match, when the caller is entitled to.
-	 * @param string|null $_owner An explicit owner for a new object, such as a draft's scope value (decision 195).
+	 * @param array             $data          The object data to save.
+	 * @param ObjectSaveOptions $options       The register and schema, the UUID of the object to update, the
+	 *                                         uploaded files, the save policy (silent, validation, insert-only,
+	 *                                         duplicate override) and the actor (acting user, owner, unowned).
+	 *                                         Its `extend` list and the policy's `validation` choice are not
+	 *                                         read here: this handler neither renders nor skips validation.
+	 * @param bool              $_rbac         Whether to apply RBAC checks (default: true).
+	 * @param bool              $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 * @param bool              $persist       Whether to persist the object to database (default: true).
 	 *
 	 * @return ObjectEntity The saved object entity.
 	 *
 	 * @throws Exception If there is an error during save.
-	 * @throws ObjectExistsException When $failIfExists is true and the identifier is already taken.
+	 * @throws InvalidArgumentException When the options name no schema.
+	 * @throws ObjectExistsException When the policy is insert-only and the identifier is already taken.
 	 * @throws DuplicateBlockedException When the schema declares `onCreate: "block"`, the candidate
 	 *         strongly matches a stored object, and the caller may not override.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The named guard flags and the persist switch default to a normal write.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function saveObject(
-		Register|int|string|null $register,
-		Schema|int|string $schema,
 		array $data,
-		?string $uuid = null,
-		?int $folderId = null,
+		ObjectSaveOptions $options,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $persist = true,
-		bool $silent = false,
-		bool $_validation = true,
-		?array $uploadedFiles = null,
-		?IUser $currentUser = null,
-		bool $failIfExists = false,
-		bool $_unowned = false,
-		bool $_dedupOverride = false,
-		?string $_owner = null,
 	): ObjectEntity {
-		// Extract UUID and @self metadata from data.
-		[$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
-			data: $data,
-			uuid: $uuid,
-			uploadedFiles: $uploadedFiles
-		);
-
-		// Take the duplicate-override flag off the body BEFORE anything reads
-		// it as data: it is an instruction about this write, not a property,
-		// and leaving it in would fail schema validation on every schema that
-		// never declared it. The policy it belongs to is enforced on the
-		// create branch further down.
-		// TWO WAYS IN, and both are needed.
-		//
-		// The PARAMETER is how the HTTP path gets here. `ObjectsController`
-		// strips every `_`-prefixed key from the body before it reaches this
-		// method — that is the convention for control parameters that must not
-		// be persisted onto the object — so a flag sent only in the body would
-		// have been silently gone by now, and an override by somebody entitled
-		// to make it would have been refused with no clue why. `_failIfExists`
-		// is threaded through for exactly this reason and is the precedent.
-		//
-		// The BODY KEY is how a service-layer caller gets here: an import, a
-		// migration or a background job hands `saveObject()` an array and has
-		// no request to read a parameter from.
-		$dedupOverrideRequested = $_dedupOverride;
-		if (array_key_exists(DedupCreatePolicy::OVERRIDE_KEY, $data) === true) {
-			if (filter_var($data[DedupCreatePolicy::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
-				$dedupOverrideRequested = true;
-			}
-
-			unset($data[DedupCreatePolicy::OVERRIDE_KEY]);
+		$schema = $options->target->schema;
+		if ($schema === null) {
+			throw new InvalidArgumentException('An object save names the schema it validates against');
 		}
+
+		// Extract UUID and @self metadata from data, then put the uploaded files in.
+		[$uuid, $selfData, $data] = self::splitSelfData(data: $data, uuid: $options->uuid);
+		$data = $this->injectUploadedFiles(data: $data, uploadedFiles: $options->uploadedFiles);
+
+		$call = new ObjectSaveCall();
+		$call->flags = new ObjectSaveFlags();
+		$call->data = $data;
+		$call->selfData = $selfData;
+		$call->uuid = $uuid;
+		$call->flags->rbac = $_rbac;
+		$call->flags->multitenancy = $_multitenancy;
+		$call->flags->persist = $persist;
+		$call->flags->silent = $options->policy->silent;
+		$call->flags->currentUser = $options->actor->currentUser;
+		$call->flags->failIfExists = $options->policy->failIfExists;
+		$call->flags->unowned = $options->actor->unowned;
+		$call->flags->dedupOverride = $options->policy->dedupOverride;
+		$call->flags->owner = $options->actor->owner;
+		$this->takeDedupOverrideFromBody(call: $call);
+		$this->readClientCauseAttempt(call: $call);
 
 		// Resolve schema and register to entity objects.
-		[$schema, $schemaId, $register, $registerId] = $this->resolveSchemaAndRegister(
+		[$call->schema, $call->schemaId, $call->register, $call->registerId] = $this->resolveSchemaAndRegister(
 			schema: $schema,
-			register: $register
+			register: $options->target->register
 		);
 
-		// Shared master data guard (REQ-SLE-001, design D-2): a register or
-		// schema this organisation only CONSUMES is read-only to it. The read
-		// side hands a consumer the holder's rows through the ordinary query
-		// path, so without this the consumer would be able to write into the
-		// holder's table and the share would silently become a second write
-		// path into somebody else's records.
-		//
-		// Placed here, beside the object-source guard, for the same reason that
-		// one is here: it is a property of the RESOURCE being written, decided
-		// before anything is prepared, validated or persisted.
-		if ($persist === true && $_multitenancy === true) {
-			$this->refuseSharedMasterDataWrite(registerId: $registerId, schemaId: $schemaId, uuid: $uuid);
+		return $this->saveResolvedObject(call: $call);
+	}//end saveObject()
+
+	/**
+	 * Take the duplicate-override flag off the body before anything reads it as data.
+	 *
+	 * It is an instruction about this write, not a property, and leaving it in
+	 * would fail schema validation on every schema that never declared it. The
+	 * policy it belongs to is enforced on the create branch.
+	 *
+	 * There are two ways in, and both are needed. The PARAMETER is how the HTTP
+	 * path gets here: `ObjectsController` strips every `_`-prefixed key from the
+	 * body before it reaches saveObject(), so a flag sent only in the body would
+	 * be gone by now. The BODY KEY is how a service-layer caller gets here: an
+	 * import, a migration or a background job hands saveObject() an array and
+	 * has no request to read a parameter from.
+	 *
+	 * @param ObjectSaveCall $call The save call; its data loses the key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function takeDedupOverrideFromBody(ObjectSaveCall $call): void {
+		if (array_key_exists(DedupCreatePolicyInterface::OVERRIDE_KEY, $call->data) === false) {
+			return;
 		}
+
+		if (filter_var($call->data[DedupCreatePolicyInterface::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
+			$call->flags->dedupOverride = true;
+		}
+
+		unset($call->data[DedupCreatePolicyInterface::OVERRIDE_KEY]);
+	}//end takeDedupOverrideFromBody()
+
+	/**
+	 * Read the client-cause mark from the object's `@self`.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function readClientCauseAttempt(ObjectSaveCall $call): void {
+		$call->flags->clientCauseAttempt = (($call->selfData[WriteCause::CLIENT_ATTEMPT_KEY] ?? false) === true);
+	}//end readClientCauseAttempt()
+
+	/**
+	 * Note a client-cause attempt against the object this save wrote.
+	 *
+	 * Runs before that object's audit row is built, and only for the save the
+	 * mark came in on: an object cascaded from it is a save of its own.
+	 *
+	 * @param ObjectSaveCall $call   The save call.
+	 * @param ObjectEntity   $object The object it wrote.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function noteClientCauseAttempt(ObjectSaveCall $call, ObjectEntity $object): void {
+		if ($call->flags->clientCauseAttempt === true) {
+			WriteCause::noteClientAttempt(objectUuid: (string)$object->getUuid());
+		}
+	}//end noteClientCauseAttempt()
+
+	/**
+	 * Save an object once its register and schema are resolved.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return ObjectEntity The saved object entity.
+	 *
+	 * @throws Exception If there is an error during save.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function saveResolvedObject(ObjectSaveCall $call): ObjectEntity {
+		$this->guardSharedMasterData(call: $call);
 
 		// Read-only projection guard: a schema served from an external source
-		// (x-openregister-object-source) is read-only — the external system stays
-		// authoritative and OpenRegister must never become a second write path.
-		$objectSource = $schema->getObjectSource();
-		if ($persist === true && $objectSource !== null) {
-			// Opt-in write-through (dbal-virtual-registers-crud): delegate to a
-			// WritableObjectSourceProvider when the schema annotation carries
-			// `readOnly: false` — the provider re-verifies its backing source's
-			// writable flag live and fails closed. Everything else keeps the
-			// v1 read-only rejection. RBAC (create/update) and schema
-			// validation already ran upstream in ObjectService before this
-			// dispatch, so the external system is only reached for an
-			// authorized, valid write.
-			return $this->delegateObjectSourceWrite(
-				register: $register,
-				schema: $schema,
-				objectSource: $objectSource,
-				data: $data,
-				uuid: $uuid,
-				silent: $silent
-			);
+		// (x-openregister-object-source) is read-only unless its provider opts
+		// in to write-through (dbal-virtual-registers-crud), which re-verifies
+		// its backing source's writable flag live and fails closed.
+		$objectSource = $call->schema->getObjectSource();
+		if ($call->flags->persist === true && $objectSource !== null) {
+			return $this->delegateObjectSourceWrite(call: $call, objectSource: $objectSource);
 		}
 
-		// Normalize translatable properties (wrap simple values under default language).
-		$data = $this->translationHandler->normalizeTranslationsForSave(
-			objectData: $data,
-			schema: $schema,
-			register: $register
+		$this->normalizeCallTranslations(call: $call);
+		$this->guardPropertyAuthorization(call: $call);
+
+		$existingObject = $this->existingObjectForSave(call: $call);
+		if ($existingObject !== null) {
+			return $this->updateExistingForSave(call: $call, existingObject: $existingObject);
+		}
+
+		return $this->createNewForSave(call: $call);
+	}//end saveResolvedObject()
+
+	/**
+	 * Refuse a persisting, multitenant write to a register or schema this organisation only consumes.
+	 *
+	 * Shared master data guard (REQ-SLE-001, design D-2): a register or
+	 * schema this organisation only CONSUMES is read-only to it. It is a
+	 * property of the RESOURCE being written, decided before anything is
+	 * prepared, validated or persisted.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function guardSharedMasterData(ObjectSaveCall $call): void {
+		if ($call->flags->persist === true && OrganisationContext::multitenancy(requested: $call->flags->multitenancy) === true) {
+			$this->refuseSharedMasterDataWrite(
+				target: new ObjectWriteTarget(registerId: $call->registerId, schemaId: $call->schemaId, uuid: $call->uuid)
+			);
+		}
+	}//end guardSharedMasterData()
+
+	/**
+	 * Normalize translatable properties (wrap simple values under default language).
+	 *
+	 * @param ObjectSaveCall $call The save call; its data is replaced.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function normalizeCallTranslations(ObjectSaveCall $call): void {
+		$call->data = $this->translationHandler->normalizeTranslationsForSave(
+			objectData: $call->data,
+			scope: new TranslationScope(schema: $call->schema, register: $call->register)
+		);
+	}//end normalizeCallTranslations()
+
+	/**
+	 * Refuse properties the caller may not write, when RBAC applies and the schema guards properties.
+	 *
+	 * Skip when _rbac is false (internal/system calls bypass all authorization).
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function guardPropertyAuthorization(ObjectSaveCall $call): void {
+		if ($call->flags->rbac === true && $call->schema->hasPropertyAuthorization() === true) {
+			$this->refuseUnauthorizedProperties(call: $call);
+		}
+	}//end guardPropertyAuthorization()
+
+	/**
+	 * Refuse a save that modifies properties the caller may not write.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the incoming data touches an unauthorized property.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function refuseUnauthorizedProperties(ObjectSaveCall $call): void {
+		$isCreate = ($call->uuid === null);
+		$existingObjectData = [];
+
+		// For updates, get existing object data for matching.
+		if ($isCreate === false) {
+			$envelope = $this->storedMatchEnvelope(call: $call);
+			$isCreate = ($envelope === null);
+			$existingObjectData = ($envelope ?? []);
+		}
+
+		$unauthorizedProps = $this->propertyRbacHandler->getUnauthorizedProperties(
+			write: new PropertyWriteCheck(schema: $call->schema, request: new PropertyAccessRequest(object: $existingObjectData, isCreate: $isCreate), incoming: $call->data)
 		);
 
-		// Check property-level authorization for incoming data.
-		// This throws a ValidationException if user tries to modify unauthorized properties.
-		// Skip when _rbac is false (internal/system calls should bypass all authorization).
-		if ($_rbac === true && $schema->hasPropertyAuthorization() === true) {
-			$isCreate = ($uuid === null);
-			$existingObjectData = [];
-
-			// For updates, get existing object data for matching.
-			if ($isCreate === false) {
-				try {
-					$tempExistingObject = $this->unifiedObjectMapper->find(
-						identifier: $uuid,
-						register: $register,
-						schema: $schema,
-						_rbac: false,
-						_multitenancy: false
-					);
-					// The find() call throws DoesNotExistException rather than returning
-					// null — that catch below is the real "missing" path.
-					$existingObjectData = $tempExistingObject->getObject();
-				} catch (DoesNotExistException $e) {
-					// Object doesn't exist, treat as create.
-					$isCreate = true;
-				}
-			}
-
-			$unauthorizedProps = $this->propertyRbacHandler->getUnauthorizedProperties(
-				schema: $schema,
-				object: $existingObjectData,
-				incomingData: $data,
-				isCreate: $isCreate
+		if (empty($unauthorizedProps) === false) {
+			throw new Exception(
+				'You are not authorized to modify the following properties: ' . implode(', ', $unauthorizedProps)
 			);
+		}
+	}//end refuseUnauthorizedProperties()
 
-			if (empty($unauthorizedProps) === false) {
-				throw new Exception(
-					'You are not authorized to modify the following properties: ' . implode(', ', $unauthorizedProps)
-				);
-			}
-		}//end if
-
-		// Check if UUID was auto-generated (indicates CREATE operation, not UPDATE).
-		$isAutoGeneratedUuid = ($selfData['_autoGeneratedUuid'] ?? false) === true;
-
-		// Try to update existing object if UUID provided AND it's not auto-generated.
-		// Auto-generated UUIDs are for new objects, so skip the lookup.
-		if ($uuid !== null && $isAutoGeneratedUuid === false) {
-			$debugMsg = '[SaveObject] UUID provided and not auto-generated,';
-			$debugMsg .= ' checking for existing object (UPDATE operation)';
-			$this->logger->debug(
-				message: $debugMsg,
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'register' => $register?->getId(),
-					'schema' => $schema?->getId(),
-				]
-			);
-
-			// Always disable RBAC and multitenancy for internal object lookup
-			// to avoid permission errors when validating existing objects.
-			$existingObject = $this->findAndValidateExistingObject(
-				uuid: $uuid,
-				register: $register,
-				schema: $schema,
+	/**
+	 * The match envelope of the stored object a save names, or null when there is none.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return array|null The stored object's match envelope.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function storedMatchEnvelope(ObjectSaveCall $call): ?array {
+		try {
+			// The mapper's find() throws DoesNotExistException rather than returning null.
+			return $this->unifiedObjectMapper->find(
+				identifier: $call->uuid,
+				register: $call->register,
+				schema: $call->schema,
 				_rbac: false,
 				_multitenancy: false
-			);
+			)->getMatchEnvelope();
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end storedMatchEnvelope()
 
-			if ($existingObject !== null) {
-				// INSERT-ONLY GUARD (openregister#2210).
-				//
-				// The default below is an upsert: an existing identifier is
-				// updated, silently and successfully. That is correct for the
-				// overwhelming majority of callers and is untouched.
-				//
-				// It is wrong for a caller that is CLAIMING something — a lock,
-				// a slot, a lease, a queue position. There "it already existed"
-				// is the entire answer, and swallowing it means two callers both
-				// believe they won and the loser is never told. Such a caller
-				// opts in with $failIfExists and gets a 409 instead.
-				//
-				// Deliberately opt-in rather than the default: the current
-				// upsert is silent, so there is no way to discover from the code
-				// which callers depend on it. Flipping the default would change
-				// behaviour fleet-wide with no way to enumerate the blast radius.
-				//
-				// This guard alone is NOT what makes the claim safe — it is a
-				// fast path. It and the write below are two separate
-				// operations, so under concurrency N callers can all reach here
-				// having found nothing. The arbitration that actually closes
-				// the race lives one layer down in
-				// MagicMapper::saveObjectToRegisterSchemaTable(), which refuses
-				// both the update branch and a losing INSERT when this flag is
-				// set (openregister#2215). Verified 6/6 races at 12 concurrent
-				// claimants: 1x201, 11x409. Do not remove that guard on the
-				// assumption that this one covers it.
-				if ($failIfExists === true) {
-					$this->logger->debug(
-						message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'uuid' => $uuid,
-							'objectId' => $existingObject->getId(),
-						]
-					);
+	/**
+	 * The stored object a save updates, or null when the save creates.
+	 *
+	 * Whether a write creates is decided here, by the stored row alone: nothing a
+	 * caller sends says so.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return ObjectEntity|null The object to update.
+	 *
+	 * @throws ObjectExistsException When failIfExists is set and the identifier is already taken.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function existingObjectForSave(ObjectSaveCall $call): ?ObjectEntity {
+		if ($call->uuid === null) {
+			return null;
+		}
 
-					throw new ObjectExistsException(
-						message: sprintf('An object with identifier "%s" already exists.', (string)$uuid),
-						uuid: (string)$uuid
-					);
-				}
+		$this->logSaveLookup(
+			call: $call,
+			message: '[SaveObject] UUID provided, checking for existing object'
+		);
 
-				$this->logger->debug(
-					message: '[SaveObject] Existing object found, proceeding with UPDATE',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-						'objectId' => $existingObject->getId(),
-					]
-				);
+		$existingObject = $this->findAndValidateExistingObject(call: $call);
 
-				// Push the in-flight save onto the call stack so
-				// cascade descendants can detect cycles back to
-				// ancestors via `validateReferences()`. Popped in
-				// finally regardless of success/failure.
-				$pushRegisterIdUpdate = null;
-				if ($register?->getId() !== null) {
-					$pushRegisterIdUpdate = (string)$register->getId();
-				}
+		if ($existingObject !== null) {
+			$this->refuseExistingWhenInsertOnly(call: $call, existingObject: $existingObject);
+		}
 
-				$frameKey = $this->pushSaveCallFrame(
-					schemaSlug: ((string)($schema->getSlug() ?? $schema->getId())),
-					uuid: (string)$uuid,
-					register: $pushRegisterIdUpdate
-				);
-				try {
-					return $this->handleObjectUpdate(
-						existingObject: $existingObject,
-						register: $register,
-						schema: $schema,
-						data: $data,
-						selfData: $selfData,
-						folderId: $folderId,
-						persist: $persist,
-						silent: $silent,
-						currentUser: $currentUser
-					);
-				} finally {
-					$this->popSaveCallFrame(key: $frameKey);
-				}
-			}//end if
-		} elseif ($isAutoGeneratedUuid === true) {
+		return $existingObject;
+	}//end existingObjectForSave()
+
+	/**
+	 * Log a step of the existing-object lookup of a save.
+	 *
+	 * @param ObjectSaveCall $call    The save call.
+	 * @param string         $message The log message.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function logSaveLookup(ObjectSaveCall $call, string $message): void {
+		$this->logger->debug(
+			message: $message,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $call->uuid,
+				'register' => $call->register?->getId(),
+				'schema' => $call->schema?->getId(),
+			]
+		);
+	}//end logSaveLookup()
+
+	/**
+	 * Refuse the write when the caller claims an identifier that already exists.
+	 *
+	 * INSERT-ONLY GUARD (openregister#2210). The default is an upsert: an
+	 * existing identifier is updated, silently and successfully. A caller that
+	 * is CLAIMING something (a lock, a slot, a lease, a queue position) opts in
+	 * with failIfExists and gets a 409 instead. Opt-in, because there is no way
+	 * to discover from the code which callers depend on the silent upsert.
+	 *
+	 * This guard is a fast path, not what makes the claim safe: under
+	 * concurrency N callers can all pass it having found nothing. The
+	 * arbitration that closes the race lives in
+	 * MagicMapper::saveObjectToRegisterSchemaTable(), which refuses both the
+	 * update branch and a losing INSERT when this flag is set
+	 * (openregister#2215). Do not remove that guard on the assumption that this
+	 * one covers it.
+	 *
+	 * @param ObjectSaveCall $call           The save call.
+	 * @param ObjectEntity   $existingObject The stored object the identifier names.
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectExistsException When failIfExists is set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function refuseExistingWhenInsertOnly(ObjectSaveCall $call, ObjectEntity $existingObject): void {
+		if ($call->flags->failIfExists === true) {
 			$this->logger->debug(
-				message: '[SaveObject] UUID is auto-generated, skipping existing object lookup (CREATE operation)',
+				message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'uuid' => $uuid,
-					'register' => $register?->getId(),
-					'schema' => $schema?->getId(),
+					'uuid' => $call->uuid,
+					'objectId' => $existingObject->getId(),
 				]
 			);
-		}//end if
 
-		// CREATE-TIME DUPLICATE POLICY (dedup-check-before-create).
-		//
-		// Everything above this line is either an update branch that returned,
-		// or a create, so this is the one place the policy can sit and see
-		// exactly the creates. It runs on the SAVE path and not only in the
-		// check endpoint on purpose: a client that never calls the endpoint —
-		// an import, a script, an integration — is stopped here all the same.
-		//
-		// NOT gated on $_rbac, and that is deliberate. $_rbac === false means
-		// "skip the permission checks" and the controller sets it for every
-		// ADMINISTRATOR, so gating on it would turn the declaration off for the
-		// one caller most likely to be doing a bulk create. This is a policy
-		// about the data, not about the caller's rights: an administrator is
-		// no more entitled to a second copy of a record than anyone else, which
-		// is the same reason `overrideGroups` has no implicit admin bypass.
-		//
-		// The opt-in that bounds the blast radius is the DECLARATION: nothing
-		// happens at all unless the schema asked for `onCreate: "block"`.
+			throw new ObjectExistsException(
+				message: sprintf('An object with identifier "%s" already exists.', (string)$call->uuid),
+				uuid: (string)$call->uuid
+			);
+		}
+
+		$this->logger->debug(
+			message: '[SaveObject] Existing object found, proceeding with UPDATE',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $call->uuid,
+				'objectId' => $existingObject->getId(),
+			]
+		);
+	}//end refuseExistingWhenInsertOnly()
+
+	/**
+	 * Push the in-flight save onto the call stack and enter the cascade scope.
+	 *
+	 * Cascade descendants detect cycles back to ancestors through the call
+	 * stack in `validateReferences()`. The caller pops the frame and leaves the
+	 * scope in a finally block.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return string|null The frame key to pop, or null when no frame was pushed.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function enterSaveFrame(ObjectSaveCall $call): ?string {
+		$frameKey = $this->saveCalls()->push(
+			frame: new SaveCallFrame(
+				schemaSlug: ((string)($call->schema->getSlug() ?? $call->schema->getId())),
+				uuid: (string)$call->uuid,
+				register: self::frameRegister(register: $call->register)
+			)
+		);
+		$this->enterCascadeScope(_rbac: $call->flags->rbac);
+
+		return $frameKey;
+	}//end enterSaveFrame()
+
+	/**
+	 * Update the stored object a save names, inside its save frame.
+	 *
+	 * @param ObjectSaveCall $call           The save call.
+	 * @param ObjectEntity   $existingObject The stored object.
+	 *
+	 * @return ObjectEntity The updated object entity.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function updateExistingForSave(ObjectSaveCall $call, ObjectEntity $existingObject): ObjectEntity {
+		$this->noteClientCauseAttempt(call: $call, object: $existingObject);
+		$frameKey = $this->enterSaveFrame(call: $call);
+		try {
+			$call->selfData = $this->selfDataForUpdate(selfData: $call->selfData, _rbac: $call->flags->rbac);
+			return $this->handleObjectUpdate(call: $call, existingObject: $existingObject);
+		} finally {
+			$this->leaveCascadeScope();
+			$this->saveCalls()->pop(key: $frameKey);
+		}
+	}//end updateExistingForSave()
+
+	/**
+	 * Create a new object, under the schema's create-time duplicate policy.
+	 *
+	 * CREATE-TIME DUPLICATE POLICY (dedup-check-before-create). It runs on the
+	 * SAVE path and not only in the check endpoint, so an import, a script or
+	 * an integration is stopped all the same. It is NOT gated on $_rbac: the
+	 * controller sets that off for every administrator, and an administrator is
+	 * no more entitled to a second copy of a record than anyone else. Nothing
+	 * happens unless the schema declares `onCreate: "block"`.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return ObjectEntity The created object entity.
+	 *
+	 * @throws DuplicateBlockedException When a blocking duplicate match stands.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function createNewForSave(ObjectSaveCall $call): ObjectEntity {
 		$dedupOverriddenMatches = [];
 		$dedupPolicy = $this->resolveDedupCreatePolicy();
-
 		if ($dedupPolicy !== null) {
 			$dedupOverriddenMatches = $dedupPolicy->guardCreate(
-				register: $registerId,
-				schema: $schemaId,
-				data: $data,
-				overrideRequested: $dedupOverrideRequested
+				candidate: new CreateCandidate(
+					register: $call->registerId,
+					schema: $call->schemaId,
+					data: $call->data,
+					overrideRequested: $call->flags->dedupOverride
+				)
 			);
 		}
 
-		// SOFT UNIQUENESS, the create half. Unlike the guard above it never
-		// refuses: it records a warning the controller puts on the response
-		// beside the created object. A schema that needs a refusal declares
-		// `onCreate: "block"` instead, which is the guard above.
-		$uniqueHints = $this->resolveUniqueHintChecker();
-		if ($uniqueHints !== null) {
-			$uniqueHints->check(
-				configuration: ($schema->getConfiguration() ?? []),
-				register: $registerId,
-				schema: $schemaId,
-				data: $data
-			);
-		}
+		$this->recordUniqueHints(call: $call);
 
-		// Push the in-flight save onto the call stack so cascade
-		// descendants can detect cycles via `validateReferences()`.
-		// Popped in finally regardless of success/failure.
-		$pushRegisterIdCreate = null;
-		if ($register?->getId() !== null) {
-			$pushRegisterIdCreate = (string)$register->getId();
-		}
-
-		$frameKey = $this->pushSaveCallFrame(
-			schemaSlug: ((string)($schema->getSlug() ?? $schema->getId())),
-			uuid: ($uuid ?? ''),
-			register: $pushRegisterIdCreate
-		);
+		$frameKey = $this->enterSaveFrame(call: $call);
 		try {
-			// Create new object if no existing object found.
-			$created = $this->handleObjectCreation(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				register: $register,
-				schema: $schema,
-				data: $data,
-				selfData: $selfData,
-				uuid: $uuid,
-				folderId: $folderId,
-				persist: $persist,
-				silent: $silent,
-				_multitenancy: $_multitenancy,
-				currentUser: $currentUser,
-				failIfExists: $failIfExists,
-				_unowned: $_unowned,
-				_owner: $_owner
-			);
+			$created = $this->handleObjectCreation(call: $call);
 
 			// An override is only on record once the object it overrode for
 			// exists, so this runs after the write and never before it.
-			if ($dedupPolicy !== null && count($dedupOverriddenMatches) > 0 && $persist === true) {
+			if ($dedupPolicy !== null && count($dedupOverriddenMatches) > 0 && $call->flags->persist === true) {
 				$dedupPolicy->recordOverride(object: $created, matches: $dedupOverriddenMatches);
 			}
 
 			return $created;
 		} finally {
-			$this->popSaveCallFrame(key: $frameKey);
+			$this->leaveCascadeScope();
+			$this->saveCalls()->pop(key: $frameKey);
 		}
-	}//end saveObject()
+	}//end createNewForSave()
+
+	/**
+	 * Record the soft-uniqueness warnings of a create.
+	 *
+	 * SOFT UNIQUENESS, the create half: it never refuses, it records a warning
+	 * the controller puts on the response beside the created object.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recordUniqueHints(ObjectSaveCall $call): void {
+		$uniqueHints = $this->resolveUniqueHintChecker();
+		if ($uniqueHints === null) {
+			return;
+		}
+
+		$uniqueHints->check(
+			configuration: ($call->schema->getConfiguration() ?? []),
+			candidate: new UniqueHintCandidate(
+				scope: new UniqueHintScope(register: $call->registerId, schema: $call->schemaId),
+				data: $call->data,
+				selfUuid: null
+			)
+		);
+	}//end recordUniqueHints()
+
+	/**
+	 * The register identifier a save call frame records.
+	 *
+	 * @param Register|null $register The register being written to.
+	 *
+	 * @return string|null The register id, or null when there is none.
+	 *
+	 * @spec openspec/specs/reference-existence-validation/spec.md
+	 */
+	private static function frameRegister(?Register $register): ?string {
+		if ($register?->getId() === null) {
+			return null;
+		}
+
+		return (string)$register->getId();
+	}//end frameRegister()
+
+	/**
+	 * Record the permission mode of a save whose cascades are about to run.
+	 *
+	 * Paired with leaveCascadeScope() in a finally. A nested object created
+	 * inside the scope is checked for create rights unless an enclosing save
+	 * runs with RBAC off.
+	 *
+	 * @param bool $_rbac Whether the enclosing save applies RBAC.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC flag follows the save API
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function enterCascadeScope(bool $_rbac): void {
+		$this->cascadeScopes[] = $_rbac;
+	}//end enterCascadeScope()
+
+	/**
+	 * Close the scope opened by the matching enterCascadeScope().
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function leaveCascadeScope(): void {
+		array_pop($this->cascadeScopes);
+	}//end leaveCascadeScope()
+
+	/**
+	 * Refuse a nested object the caller may not create.
+	 *
+	 * A cascade creates every nested inline object as a new row of the
+	 * property's target schema, so the caller needs create rights there,
+	 * just as for a direct create. Skipped only when an enclosing save runs
+	 * with RBAC off. With no enclosing save the check runs.
+	 *
+	 * @param Schema      $schema   The schema the nested object is created in.
+	 * @param string|null $register The register it is created in, when known.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the caller may not create objects in the schema.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function assertMayCascadeCreate(Schema $schema, ?string $register = null): void {
+		$this->permissionHandler->checkPermission(
+			schema: $schema,
+			action: 'create',
+			options: new PermissionCheckOptions(register: $register),
+			_rbac: in_array(needle: false, haystack: $this->cascadeScopes, strict: true) === false
+		);
+	}//end assertMayCascadeCreate()
 
 	/**
 	 * Resolve the soft-uniqueness checker from the app container, or null when
@@ -3458,22 +2721,7 @@ class SaveObject {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function resolveUniqueHintChecker(): ?UniqueHintChecker {
-		if ($this->container === null) {
-			return null;
-		}
-
-		try {
-			$checker = $this->container->get(UniqueHintChecker::class);
-		} catch (\Throwable $e) {
-			$this->logger->debug('[SaveObject] UniqueHintChecker not available: ' . $e->getMessage());
-			return null;
-		}
-
-		if ($checker instanceof UniqueHintChecker) {
-			return $checker;
-		}
-
-		return null;
+		return $this->containerService(id: UniqueHintChecker::class, label: 'UniqueHintChecker');
 	}//end resolveUniqueHintChecker()
 
 	/**
@@ -3489,54 +2737,31 @@ class SaveObject {
 	 * global container knows nothing of this app's registrations and would
 	 * autowire the cycle instead of failing.
 	 *
-	 * @return DedupCreatePolicy|null The policy, or null when unavailable.
+	 * @return DedupCreatePolicyInterface|null The policy, or null when unavailable.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
-	private function resolveDedupCreatePolicy(): ?DedupCreatePolicy {
-		if ($this->container === null) {
-			return null;
-		}
-
-		try {
-			$policy = $this->container->get(DedupCreatePolicy::class);
-		} catch (\Throwable $e) {
-			$this->logger->debug('[SaveObject] DedupCreatePolicy not available: ' . $e->getMessage());
-			return null;
-		}
-
-		if ($policy instanceof DedupCreatePolicy) {
-			return $policy;
-		}
-
-		return null;
+	private function resolveDedupCreatePolicy(): ?DedupCreatePolicyInterface {
+		return $this->containerService(id: DedupCreatePolicyInterface::class, label: 'DedupCreatePolicy');
 	}//end resolveDedupCreatePolicy()
 
 	/**
-	 * Extract UUID and @self metadata from data.
+	 * Takes `@self` and the identifier out of the data.
 	 *
-	 * @param array $data Object data
-	 * @param string|null $uuid Provided UUID
-	 * @param array|null $uploadedFiles Uploaded files
+	 * @param array       $data The object data.
+	 * @param string|null $uuid The UUID the caller gave, if any.
 	 *
-	 * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, cleanedData]
+	 * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, data without `@self` and `id`]
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function extractUuidAndSelfData(
-		array $data,
-		?string $uuid,
-		?array $uploadedFiles,
-	): array {
+	private static function splitSelfData(array $data, string|null $uuid): array {
 		// Extract @self metadata.
-		$selfData = [];
-		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
-			$selfData = $data['@self'];
-		}
+		$selfData = self::selfBlockOf(data: $data);
 
 		// Use @self.id as UUID if no UUID is provided.
-		if ($uuid === null && (($selfData['id'] ?? null) !== null || (($data['id'] ?? null) !== null) === true)) {
-			$uuid = $selfData['id'] ?? $data['id'];
+		if ($uuid === null) {
+			$uuid = self::embeddedIdentifier(selfData: $selfData, data: $data);
 		}
 
 		// Normalize empty string to null.
@@ -3548,16 +2773,60 @@ class SaveObject {
 		unset($data['@self']);
 		unset($data['id']);
 
-		// Process uploaded files and inject them into data.
-		if ($uploadedFiles !== null && empty($uploadedFiles) === false) {
-			$data = $this->filePropertyHandler->processUploadedFiles(
-				uploadedFiles: $uploadedFiles,
-				data: $data
-			);
+		return [$uuid, $selfData, $data];
+	}//end splitSelfData()
+
+	/**
+	 * The data's `@self` block when it is an array, else an empty block.
+	 *
+	 * @param array $data The object data.
+	 *
+	 * @return array The `@self` block.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function selfBlockOf(array $data): array {
+		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
+			return $data['@self'];
 		}
 
-		return [$uuid, $selfData, $data];
-	}//end extractUuidAndSelfData()
+		return [];
+	}//end selfBlockOf()
+
+	/**
+	 * The identifier the data carries: `@self.id`, else the top-level `id`, else null.
+	 *
+	 * @param array $selfData The `@self` block.
+	 * @param array $data     The object data.
+	 *
+	 * @return mixed The identifier, or null.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function embeddedIdentifier(array $selfData, array $data): mixed {
+		return $selfData['id'] ?? $data['id'] ?? null;
+	}//end embeddedIdentifier()
+
+	/**
+	 * Injects uploaded files into the object data.
+	 *
+	 * @param array      $data          The object data.
+	 * @param array|null $uploadedFiles The uploaded files, if any.
+	 *
+	 * @return array The data with the uploaded files in it.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function injectUploadedFiles(array $data, ?array $uploadedFiles): array {
+		if ($uploadedFiles === null || empty($uploadedFiles) === true) {
+			return $data;
+		}
+
+		return $this->filePropertyHandler->processUploadedFiles(
+			uploadedFiles: $uploadedFiles,
+			data: $data
+		);
+	}//end injectUploadedFiles()
 
 	/**
 	 * Resolve schema and register to entity objects with their IDs.
@@ -3569,62 +2838,14 @@ class SaveObject {
 	 *
 	 * @throws Exception If schema or register cannot be resolved
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple type resolution paths for schema and register
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function resolveSchemaAndRegister(
 		Schema|int|string $schema,
 		Register|int|string|null $register,
 	): array {
-		// Initialize IDs before conditional assignment.
-		$schemaId = null;
-		$registerId = null;
-
-		// Resolve schema using request-scoped cache for performance.
-		// This avoids repeated database lookups when creating multiple sub-objects of the same type.
-		if ($schema instanceof Schema === true) {
-			$schemaId = $schema->getId();
-			// Cache the schema entity for potential reuse.
-			$this->schemaCache[(string)$schemaId] = $schema;
-		} elseif (is_string($schema) === true) {
-			// Resolve schema reference if it's a string (uses cached reference lookup).
-			$schemaId = $this->resolveSchemaReference(reference: $schema);
-			if ($schemaId === null) {
-				throw new Exception("Could not resolve schema reference: $schema");
-			}
-
-			// Use cached schema lookup instead of direct mapper call.
-			$schema = $this->getCachedSchema(schemaId: $schemaId);
-		} else {
-			// Only the integer-ID case is left after the Schema and string arms
-			// above, so no is_int() re-test — use the cached lookup.
-			$schemaId = $schema;
-			$schema = $this->getCachedSchema(schemaId: $schema);
-		}
-
-		// Resolve register using request-scoped cache for performance.
-		if ($register instanceof Register === true) {
-			$registerId = $register->getId();
-			// Cache the register entity for potential reuse.
-			$this->registerCache[(string)$registerId] = $register;
-		} elseif (is_string($register) === true) {
-			// Resolve register reference if it's a string.
-			$registerId = $this->resolveRegisterReference(reference: $register);
-			if ($registerId === null) {
-				throw new Exception("Could not resolve register reference: $register");
-			}
-
-			// Use cached register lookup instead of direct mapper call.
-			$register = $this->getCachedRegister(registerId: $registerId);
-		} elseif (is_int($register) === true) {
-			// It's an integer ID - use cached lookup.
-			$registerId = $register;
-			$register = $this->getCachedRegister(registerId: $register);
-		} elseif ($register === null) {
-			// Register is NULL (e.g., for seedData objects) - leave as NULL.
-			$registerId = null;
-		}//end if
+		[$schema, $schemaId] = $this->lookups()->schemaWithId(schema: $schema);
+		[$register, $registerId] = $this->lookups()->registerWithId(register: $register);
 
 		return [$schema, $schemaId, $register, $registerId];
 	}//end resolveSchemaAndRegister()
@@ -3632,11 +2853,11 @@ class SaveObject {
 	/**
 	 * Find and validate existing object by UUID.
 	 *
-	 * @param string $uuid Object UUID.
-	 * @param Register|null $register Optional register for magic mapper routing.
-	 * @param Schema|null $schema Optional schema for magic mapper routing.
-	 * @param bool $_rbac Whether to apply RBAC checks.
-	 * @param bool $_multitenancy Whether to apply multitenancy checks.
+	 * RBAC and multitenancy are always off for this internal lookup, so that
+	 * validating the stored object never fails on the caller's permissions;
+	 * the caller's access to the write is decided elsewhere.
+	 *
+	 * @param ObjectSaveCall $call The save call: the object UUID, and the optional register and schema for magic mapper routing.
 	 *
 	 * @return ObjectEntity|null Existing object or null if not found.
 	 *
@@ -3644,78 +2865,20 @@ class SaveObject {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function findAndValidateExistingObject(
-		string $uuid,
-		?Register $register = null,
-		?Schema $schema = null,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-	): ?ObjectEntity {
+	private function findAndValidateExistingObject(ObjectSaveCall $call): ObjectEntity|null {
+		$uuid = (string)$call->uuid;
 		try {
-			$existingObject = $this->objectEntityMapper->find(
-				identifier: $uuid,
-				register: $register,
-				schema: $schema,
-				includeDeleted: false,
-				_rbac: $_rbac,
-				_multitenancy: $_multitenancy
-			);
+			$existingObject = $this->findStoredObject(call: $call);
 
-			// Check if object is locked - prevent updates on locked objects.
-			//
-			// This guard NEVER FIRED before the run-scoped-locking change. It
-			// read the holder from `$lockData['userId']`, and
-			// `ObjectEntity::lock()` has always written it under `user`, so
-			// `$lockOwner` was invariably null and the `!== null` test
-			// short-circuited every time. Every lock taken since the endpoint
-			// shipped was decorative on this path. It is fixed by delegating
-			// to the one production predicate instead of re-spelling the
-			// comparison here, which is what went wrong in the first place.
-			$currentUser = $this->userSession->getUser();
-			$currentUserId = null;
-			if ($currentUser !== null) {
-				$currentUserId = $currentUser->getUID();
+			// An explicit uuid names the row of that uuid only. The lookup also
+			// matches ids, slugs and uris; a row found that way is another row,
+			// so the write is a create under the given uuid.
+			if (strcasecmp((string) $existingObject->getUuid(), $uuid) !== 0) {
+				return null;
 			}
 
-			// WHICH RUN IS WRITING, not just which user. A run-scoped lock
-			// refuses every caller but the holding run, so a guard that omits
-			// the run identity refuses THE RUN THAT TOOK THE LOCK: a flow
-			// locks a case at one step and is turned away by its own lock at
-			// the next. Ambient rather than a parameter because the write is
-			// routinely several calls deep in code that has never heard of
-			// flows; absent, it reads as a person, which is the fail-closed
-			// answer a run lock already gives.
-			$callerRun = $this->runContext?->currentRunUuid();
-
-			// A TYPED refusal, not a plain `Exception`. The message is unchanged,
-			// but the type is what lets a caller answer 423 instead of falling
-			// into a generic 500 — which is what PATCH and POST-patch did for a
-			// payload that was otherwise valid. The holder travels on the
-			// exception rather than being re-derived at each catch site.
-			if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId, runUuid: $callerRun) === true) {
-				throw LockedException::forObject($existingObject);
-			}
-
-			// The archive and the freeze refuse the write here, at the one
-			// choke point every data write to an existing object already
-			// passes through. Put anywhere further out — in a controller, say —
-			// and a flow, an import or a cascade would each need its own copy
-			// of the check, which is how a guard ends up holding one door of
-			// four.
-			//
-			// Neither refusal applies to the reversal or to the retention
-			// machinery: `unarchive()`, `unfreeze()`, a destruction date and a
-			// legal hold are all written through the mapper's dedicated
-			// metadata paths and never reach `saveObject()`. That is deliberate.
-			// An archive that quietly disabled `retention-management` would be
-			// the opposite of what an archive is for.
-			if ($existingObject->isArchived() === true) {
-				throw ObjectStateWriteException::archived($existingObject);
-			}
-
-			if ($existingObject->isFrozen() === true) {
-				throw ObjectStateWriteException::frozen($existingObject);
-			}
+			$this->refuseLockedByAnother(existingObject: $existingObject);
+			$this->refuseArchivedOrFrozen(existingObject: $existingObject);
 
 			return $existingObject;
 		} catch (DoesNotExistException $e) {
@@ -3725,40 +2888,225 @@ class SaveObject {
 	}//end findAndValidateExistingObject()
 
 	/**
+	 * The stored object the save call's uuid names, looked up past RBAC and multitenancy.
+	 *
+	 * @param ObjectSaveCall $call The save call: the object UUID, register and schema.
+	 *
+	 * @return ObjectEntity The stored object.
+	 *
+	 * @throws DoesNotExistException When no object matches.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function findStoredObject(ObjectSaveCall $call): ObjectEntity {
+		// Always disable RBAC and multitenancy for internal object lookup
+		// to avoid permission errors when validating existing objects.
+		return $this->objectEntityMapper->find(
+			identifier: (string)$call->uuid,
+			register: $call->register,
+			schema: $call->schema,
+			includeDeleted: false,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end findStoredObject()
+
+	/**
+	 * Refuse a write to an object another user or run holds the lock on.
+	 *
+	 * Check if object is locked - prevent updates on locked objects.
+	 *
+	 * This guard NEVER FIRED before the run-scoped-locking change. It
+	 * read the holder from `$lockData['userId']`, and
+	 * `ObjectEntity::lock()` has always written it under `user`, so
+	 * `$lockOwner` was invariably null and the `!== null` test
+	 * short-circuited every time. Every lock taken since the endpoint
+	 * shipped was decorative on this path. It is fixed by delegating
+	 * to the one production predicate instead of re-spelling the
+	 * comparison here, which is what went wrong in the first place.
+	 *
+	 * WHICH RUN IS WRITING, not just which user. A run-scoped lock
+	 * refuses every caller but the holding run, so a guard that omits
+	 * the run identity refuses THE RUN THAT TOOK THE LOCK: a flow
+	 * locks a case at one step and is turned away by its own lock at
+	 * the next. Ambient rather than a parameter because the write is
+	 * routinely several calls deep in code that has never heard of
+	 * flows; absent, it reads as a person, which is the fail-closed
+	 * answer a run lock already gives.
+	 *
+	 * A TYPED refusal, not a plain `Exception`. The message is unchanged,
+	 * but the type is what lets a caller answer 423 instead of falling
+	 * into a generic 500 — which is what PATCH and POST-patch did for a
+	 * payload that was otherwise valid. The holder travels on the
+	 * exception rather than being re-derived at each catch site.
+	 *
+	 * @param ObjectEntity $existingObject The stored object.
+	 *
+	 * @return void
+	 *
+	 * @throws LockedException When someone else holds the lock.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function refuseLockedByAnother(ObjectEntity $existingObject): void {
+		$currentUser = $this->userSession->getUser();
+		$currentUserId = null;
+		if ($currentUser !== null) {
+			$currentUserId = $currentUser->getUID();
+		}
+
+		$callerRun = $this->runContext?->currentRunUuid();
+		if ($existingObject->isLockedBySomeoneElse(userId: $currentUserId, runUuid: $callerRun) === true) {
+			throw LockedException::forObject($existingObject);
+		}
+	}//end refuseLockedByAnother()
+
+	/**
+	 * Refuse a data write to an archived or frozen object.
+	 *
+	 * The archive and the freeze refuse the write here, at the one
+	 * choke point every data write to an existing object already
+	 * passes through. Put anywhere further out — in a controller, say —
+	 * and a flow, an import or a cascade would each need its own copy
+	 * of the check, which is how a guard ends up holding one door of
+	 * four.
+	 *
+	 * Neither refusal applies to the reversal or to the retention
+	 * machinery: `unarchive()`, `unfreeze()`, a destruction date and a
+	 * legal hold are all written through the mapper's dedicated
+	 * metadata paths and never reach `saveObject()`. That is deliberate.
+	 * An archive that quietly disabled `retention-management` would be
+	 * the opposite of what an archive is for.
+	 *
+	 * @param ObjectEntity $existingObject The stored object.
+	 *
+	 * @return void
+	 *
+	 * @throws ObjectStateWriteException When the object is archived or frozen.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function refuseArchivedOrFrozen(ObjectEntity $existingObject): void {
+		if ($existingObject->isArchived() === true) {
+			throw ObjectStateWriteException::archived($existingObject);
+		}
+
+		if ($existingObject->isFrozen() === true) {
+			throw ObjectStateWriteException::frozen($existingObject);
+		}
+	}//end refuseArchivedOrFrozen()
+
+	/**
+	 * The `@self` an update works from: a version the caller carries counts only for a trusted caller.
+	 *
+	 * An app's seed objects carry their shipped version in `@self.version`, and
+	 * an update takes it when it is higher than the stored one, so the next
+	 * import reads the seed as current (ObjectVersionHandler::advanceVersion()).
+	 * A caller judged by RBAC could send any higher version through the object
+	 * API, and a seed that reads as newer than every later shipped version
+	 * never receives the app's fix. So `@self.version` is dropped from the
+	 * update of a caller whose RBAC applies, and that update bumps the patch
+	 * like any other. The importer, an administrator and a system caller save
+	 * with RBAC off and keep it.
+	 *
+	 * @param array<string, mixed> $selfData The `@self` the caller sent.
+	 * @param bool                 $_rbac    Whether the save is judged for a signed-in caller.
+	 *
+	 * @return array<string, mixed> The `@self` the update uses.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors saveObject()'s own RBAC flag.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function selfDataForUpdate(array $selfData, bool $_rbac): array {
+		if ($_rbac === true) {
+			unset($selfData['version']);
+		}
+
+		return $selfData;
+	}//end selfDataForUpdate()
+
+	/**
 	 * Handle update of existing object.
 	 *
-	 * @param ObjectEntity $existingObject Existing object to update
-	 * @param Register $register Register entity
-	 * @param Schema $schema Schema entity
-	 * @param array $data Object data
-	 * @param array $selfData @self metadata
-	 * @param int|null $folderId Folder ID
-	 * @param bool $persist Whether to persist changes
-	 * @param bool $silent Whether to skip audit trail
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
+	 * @param ObjectSaveCall $call           The save call: register, schema, data, `@self` data and flags.
+	 * @param ObjectEntity   $existingObject Existing object to update
 	 *
 	 * @return ObjectEntity Updated object
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleObjectUpdate(
-		ObjectEntity $existingObject,
-		Register $register,
-		Schema $schema,
-		array $data,
-		array $selfData,
-		?int $folderId,
-		bool $persist,
-		bool $silent,
-		?IUser $currentUser = null,
-	): ObjectEntity {
-		// Check archival immutability: destroyed and transferred objects cannot be modified.
-		$retention = $existingObject->getRetention() ?? [];
-		$archStatus = $retention['archiefstatus'] ?? null;
-		// Both vocabularies. GAP A4 moved the stored spelling to English, and
-		// stored data is not migrated, so a guard that only knew `destroyed`
-		// would let every already-destroyed record in an existing install be
-		// modified again.
+	private function handleObjectUpdate(ObjectSaveCall $call, ObjectEntity $existingObject): ObjectEntity {
+		self::refuseArchivedUpdate(existingObject: $existingObject);
+		$this->recordUpdateUniqueHints(call: $call, existingObject: $existingObject);
+
+		// Capture the old state BEFORE prepareObjectForUpdate modifies the entity:
+		// event dispatching needs the old status, and the data array is copied to
+		// prevent reference issues.
+		$oldObjectData = $existingObject->getObject();
+		$oldObject = clone $existingObject;
+		$oldObject->setObject($oldObjectData);
+
+		$preparedObject = $this->prepareUpdatedObject(call: $call, existingObject: $existingObject);
+
+		// Decide the slug once, here: a stored one is frozen. updateObject() does
+		// not decide it again; `@self` is gone from the data there (#4037).
+		$sent = new ObjectPayload(data: $call->data, selfData: $call->selfData);
+		$this->decideSlug(
+			request: new SlugRequest(entity: $preparedObject, schema: $call->schema, clientSlug: $sent->clientSlug()),
+			stored: $oldObject->getSlug()
+		);
+
+		// A record that changes its own selectielijst category (DECISIONS row 48)
+		// is refused when that category has no row, re-derived while it is still
+		// active, and refused once it has been nominated.
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService !== null) {
+			$preparedObject = $retentionService->applyClassification(
+				update: new RecordUpdate(object: $preparedObject, schema: $call->schema, previousData: ($oldObjectData ?? []))
+			);
+		}
+
+		// Not persisting: nothing reached storage, so for a batching caller the row changed nothing.
+		if ($call->flags->persist === false) {
+			$this->lastSaveOutcome = 'unchanged';
+			return $preparedObject;
+		}
+
+		$updatedObject = $this->updateObject(
+			update: new StoredObjectUpdate(register: $call->register, schema: $call->schema, data: $call->data, existingObject: $preparedObject),
+			options: new ObjectUpdateOptions(silent: $call->flags->silent, oldObject: $oldObject)
+		);
+
+		$this->settleOrphans(parent: (string)$preparedObject->getUuid());
+
+		// Recorded AFTER the write, so a cascade descendant saved inside
+		// updateObject() cannot leave its outcome behind as this frame's answer.
+		// The strict array comparison errs toward `updated` (a reordered property
+		// reads as a change), never toward `unchanged`, the bucket a caller acts
+		// on by skipping work.
+		$this->lastSaveOutcome = self::updateOutcome(updated: $updatedObject, old: $oldObject);
+
+		return $updatedObject;
+	}//end handleObjectUpdate()
+
+	/**
+	 * Refuse to modify a destroyed or transferred object.
+	 *
+	 * Both vocabularies are known: GAP A4 moved the stored spelling to English
+	 * and stored data is not migrated, so already-destroyed records in an
+	 * existing install still carry the Dutch value.
+	 *
+	 * @param ObjectEntity $existingObject The stored object.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 409 when the archival status forbids changes.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function refuseArchivedUpdate(ObjectEntity $existingObject): void {
+		$archStatus = ($existingObject->getRetention() ?? [])['archiefstatus'] ?? null;
 		$immutableMap = [
 			'vernietigd' => 'OBJECT_DESTROYED',
 			'destroyed' => 'OBJECT_DESTROYED',
@@ -3772,279 +3120,130 @@ class SaveObject {
 				409
 			);
 		}
+	}//end refuseArchivedUpdate()
 
-		// SOFT UNIQUENESS, the update half. The spec asks for the warning on
-		// create AND on update, and a create-only version would let every
-		// duplicate in through an edit instead. The object being written is
-		// excluded from its own matches, so re-saving a record that already
-		// holds the value is silent.
+	/**
+	 * Record the soft-uniqueness warnings of an update, excluding the object itself from its matches.
+	 *
+	 * SOFT UNIQUENESS, the update half: a create-only check would let every
+	 * duplicate in through an edit. Re-saving a record that already holds the
+	 * value stays silent.
+	 *
+	 * @param ObjectSaveCall $call           The save call.
+	 * @param ObjectEntity   $existingObject The stored object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recordUpdateUniqueHints(ObjectSaveCall $call, ObjectEntity $existingObject): void {
 		$uniqueHints = $this->resolveUniqueHintChecker();
-		if ($uniqueHints !== null) {
-			$uniqueHints->check(
-				configuration: ($schema->getConfiguration() ?? []),
-				register: $register->getId(),
-				schema: $schema->getId(),
-				data: $data,
+		if ($uniqueHints === null) {
+			return;
+		}
+
+		$uniqueHints->check(
+			configuration: ($call->schema->getConfiguration() ?? []),
+			candidate: new UniqueHintCandidate(
+				scope: new UniqueHintScope(register: $call->register->getId(), schema: $call->schema->getId()),
+				data: $call->data,
 				selfUuid: ((string)$existingObject->getUuid())
-			);
-		}
-
-		// IMPORTANT: Capture the old state BEFORE prepareObjectForUpdate modifies the entity.
-		// This is critical for event dispatching - the old status must be captured here,
-		// not after preparation when the entity has already been modified.
-		$oldObjectData = $existingObject->getObject();
-		$oldObject = clone $existingObject;
-		// Deep clone the object data array to prevent reference issues.
-		$oldObject->setObject($oldObjectData);
-
-		// Prepare the object for update.
-		$preparedObject = $this->prepareObjectForUpdate(
-			existingObject: $existingObject,
-			schema: $schema,
-			data: $data,
-			selfData: $selfData,
-			folderId: $folderId,
-			currentUser: $currentUser
+			)
 		);
+	}//end recordUpdateUniqueHints()
 
-		// A record that changes its own selectielijst category (DECISIONS row
-		// 48) is refused when that category has no row, re-derived while it is
-		// still active, and refused once it has been nominated.
-		$retentionService = $this->resolveRetentionService();
-		if ($retentionService !== null) {
-			$preparedObject = $retentionService->applyClassificationOnUpdate(
-				object: $preparedObject,
-				schema: $schema,
-				previousData: ($oldObjectData ?? [])
-			);
-		}
+	/**
+	 * Prepare the stored object with the update, after dropping orphans a previous pass queued for it.
+	 *
+	 * @param ObjectSaveCall $call           The save call.
+	 * @param ObjectEntity   $existingObject The stored object.
+	 *
+	 * @return ObjectEntity The prepared object.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function prepareUpdatedObject(ObjectSaveCall $call, ObjectEntity $existingObject): ObjectEntity {
+		unset($this->pendingOrphans[(string)$existingObject->getUuid()]);
 
-		// If not persisting, return the prepared object. Nothing reached
-		// storage, so from a batching caller's point of view the row changed
-		// nothing.
-		if ($persist === false) {
-			$this->lastSaveOutcome = 'unchanged';
-			return $preparedObject;
-		}
-
-		// Update the object, passing the captured old state.
-		$updatedObject = $this->updateObject(
-			register: $register,
-			schema: $schema,
-			data: $data,
-			existingObject: $preparedObject,
-			folderId: $folderId,
-			silent: $silent,
-			oldObject: $oldObject
+		return $this->prepareObjectForUpdate(
+			preparation: new UpdatePreparation(
+				existingObject: $existingObject,
+				schema: $call->schema,
+				payload: new ObjectPayload(data: $call->data, selfData: $call->selfData),
+				currentUser: $call->flags->currentUser
+			)
 		);
+	}//end prepareUpdatedObject()
 
-		// Record the verdict AFTER the write, so a cascade descendant saved
-		// inside updateObject() cannot leave its own outcome behind as this
-		// frame's answer.
-		//
-		// STRICT comparison, and the asymmetry is the point. `===` on arrays
-		// also requires the same key ORDER, so a property merely reordered by
-		// normalisation reads as a change. That errs toward `updated`, never
-		// toward `unchanged` — the bucket a caller acts on by SKIPPING work.
-		// Over-reporting a change costs a redundant downstream refresh;
-		// under-reporting one would let a real edit be silently ignored.
-		$this->lastSaveOutcome = 'updated';
-		if ($updatedObject->getObject() === $oldObject->getObject()) {
-			$this->lastSaveOutcome = 'unchanged';
+	/**
+	 * The verdict of a persisted update.
+	 *
+	 * @param ObjectEntity $updated The object after the write.
+	 * @param ObjectEntity $old     The object before the write.
+	 *
+	 * @return string `unchanged` or `updated`.
+	 */
+	private static function updateOutcome(ObjectEntity $updated, ObjectEntity $old): string {
+		if ($updated->getObject() === $old->getObject()) {
+			return 'unchanged';
 		}
 
-		return $updatedObject;
-	}//end handleObjectUpdate()
+		return 'updated';
+	}//end updateOutcome()
 
 	/**
 	 * Handle creation of new object.
 	 *
-	 * @param int $registerId Register ID
-	 * @param int $schemaId Schema ID
-	 * @param Register $register Register entity
-	 * @param Schema $schema Schema entity
-	 * @param array $data Object data
-	 * @param array $selfData @self metadata
-	 * @param string|null $uuid UUID for new object
-	 * @param int|null $folderId Folder ID
-	 * @param bool $persist Whether to persist changes
-	 * @param bool $silent Whether to skip audit trail
-	 * @param bool $_multitenancy Whether to apply multitenancy
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
-	 * @param bool $failIfExists Insert-only: refuse instead of updating when the identifier is taken.
-	 * @param bool $_unowned Stamp the system identity even when a session exists.
-	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
+	 * @param ObjectSaveCall $call The save call: register, schema, data, `@self` data and flags.
 	 *
 	 * @return ObjectEntity Created object
 	 *
 	 * @throws Exception If file processing fails
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible object creation
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleObjectCreation(
-		int $registerId,
-		int $schemaId,
-		Register $register,
-		Schema $schema,
-		array $data,
-		array $selfData,
-		?string $uuid,
-		?int $folderId,
-		bool $persist,
-		bool $silent,
-		bool $_multitenancy,
-		?IUser $currentUser = null,
-		bool $failIfExists = false,
-		bool $_unowned = false,
-		?string $_owner = null,
-	): ObjectEntity {
-		// Create a new object entity.
-		$objectEntity = new ObjectEntity();
-		$objectEntity->setRegister((string)$registerId);
-		$objectEntity->setSchema((string)$schemaId);
-		$objectEntity->setCreated(new DateTime());
-		$objectEntity->setUpdated(new DateTime());
-
-		if ($uuid !== null) {
-			$objectEntity->setUuid($uuid);
-		}
-
-		// Set folder ID if provided.
-		if ($folderId !== null) {
-			$objectEntity->setFolder((string)$folderId);
-		}
-
-		// Prepare the object for creation (WITHOUT file processing yet).
-		$preparedObject = $this->prepareObjectForCreation(
-			objectEntity: $objectEntity,
-			schema: $schema,
-			data: $data,
-			selfData: $selfData,
-			_multitenancy: $_multitenancy,
-			currentUser: $currentUser,
-			_unowned: $_unowned,
-			_owner: $_owner
-		);
-
-		// Apply archival metadata from schema archive configuration.
-		$retentionService = $this->resolveRetentionService();
-		if ($retentionService !== null) {
-			// Outside the try below on purpose: a per-object selectielijst
-			// category that names no row is the caller's error, and must be
-			// refused rather than logged and ignored.
-			$retentionService->guardClassificationOverride(
-				schema: $schema,
-				data: ($preparedObject->getObject() ?? [])
-			);
-
-			try {
-				$preparedObject = $retentionService->applyArchivalMetadata($preparedObject, $schema);
-			} catch (\Throwable $e) {
-				$this->logger->debug('[SaveObject] Skipping archival metadata: ' . $e->getMessage());
-			}
-		}
+	private function handleObjectCreation(ObjectSaveCall $call): ObjectEntity {
+		$preparedObject = $this->prepareNewObject(call: $call);
 
 		// If not persisting, return the prepared object.
-		if ($persist === false) {
+		if ($call->flags->persist === false) {
 			return $preparedObject;
 		}
 
 		// Save the object to database FIRST (so it gets an ID).
-		// Use MagicMapper to route to MagicMapper when magic mapping is enabled.
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:pre-insert');
 		$savedEntity = $this->unifiedObjectMapper->insert(
 			entity: $preparedObject,
-			register: $register,
-			schema: $schema,
-			failIfExists: $failIfExists
+			register: $call->register,
+			schema: $call->schema,
+			failIfExists: $call->flags->failIfExists
 		);
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INSERT');
 
-		// Capture the MAPPER's verdict for this row NOW, into a local. Two
-		// reasons it cannot be read at the end of this method instead:
-		// file-property processing and inverse-relation maintenance both write
-		// OTHER objects further down, so by then `getLastWriteAction()` answers
-		// about one of those rows rather than this one.
-		//
-		// The mapper is the authority rather than this method's name, for the
-		// reason spelled out at the audit-trail block below: we arrived here
-		// because the service-level lookup found nothing, but the mapper looks
-		// again and a concurrent writer can land the row in between — in which
-		// case the mapper took its UPDATE branch on what this path calls a
-		// create. Believing the method name here is what recorded three
-		// "created" audit entries for one insert (#2212/#2217).
+		// Capture the MAPPER's verdict for this row NOW: file-property processing
+		// and inverse-relation maintenance below write OTHER objects, after which
+		// getLastWriteAction() answers about one of those rows. The mapper is the
+		// authority, not this method's name: a concurrent writer can land the row
+		// between the service lookup and the insert, and the mapper then took its
+		// UPDATE branch on what this path calls a create (#2212/#2217).
 		$mapperWriteAction = $this->unifiedObjectMapper->getLastWriteAction();
 
-		// Update the name cache with the saved object's name.
-		// This ensures the name is available for subsequent operations and relation resolution.
-		$savedName = $savedEntity->getName();
-		$savedUuid = $savedEntity->getUuid();
-		if ($savedUuid !== null && $savedName !== null && trim($savedName) !== '') {
-			// SEC-CTRL-2 step 2: the cached name carries the entity's tenancy, so it
-			// is only ever handed back to a caller in that organisation.
-			$this->cacheHandler->setObjectName(
-				identifier: $savedUuid,
-				name: $savedName,
-				organisation: $savedEntity->getOrganisation()
-			);
-		}
-
-		// Process file properties with rollback on failure.
-		$savedEntity = $this->processFilePropertiesWithRollback(
-			savedEntity: $savedEntity,
-			data: $data,
-			register: $register,
-			schema: $schema
-		);
+		$this->cacheSavedName(savedEntity: $savedEntity);
+		$savedEntity = $this->storeCreatedFileProperties(call: $call, savedEntity: $savedEntity);
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:FILEPROPS');
 
-		// Create audit trail if not in silent mode.
-		//
-		// The ACTION comes from the mapper, not from this method's name. We got
-		// here because the service-level existence lookup found nothing — but
-		// the mapper looks again, and between the two lookups a concurrent
-		// writer can land the row, so the mapper may have taken its UPDATE
-		// branch on what we are calling a create.
-		//
-		// Recording `create` regardless is how three audit `create` entries
-		// ended up against a single `_id` that was inserted once (#2212/#2217):
-		// the audit trail said three objects were created, and one was. The
-		// mapper's lookup ran last and therefore matches the row, so it is the
-		// one to believe. `old: null` is kept for a genuine create — there is
-		// no previous version to diff against — while an update is recorded as
-		// an update rather than as a second birth.
-		if ($silent === false && $this->isAuditTrailsEnabled() === true) {
-			$action = $this->unifiedObjectMapper->getLastWriteAction();
-			if ($action === 'update') {
-				$log = $this->auditTrailMapper->createAuditTrail(
-					old: null,
-					new: $savedEntity,
-					action: 'update'
-				);
-			} else {
-				$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
-			}
+		$this->auditCreation(call: $call, savedEntity: $savedEntity);
 
-			$savedEntity->setLastLog($log->jsonSerialize());
-			\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
-		}
-
-		// Update inverse relations on related objects (bidirectional relationship management).
-		// This ensures that when object A references object B, object B's relations also include A.
-		// Skip for silent mode (cascaded sub-objects) - the parent object handles the relationship,
-		// and the inversedBy property is already set in cascadeSingleObject before saving.
-		// This optimization significantly improves performance when creating many sub-objects.
-		if ($silent === false) {
-			$this->updateInverseRelations(savedEntity: $savedEntity, register: $register, schema: $schema);
+		// Bidirectional relations. Skipped in silent mode (cascaded sub-objects):
+		// the parent handles the relationship, and cascadeSingleObject already set
+		// the inversedBy property before saving.
+		if ($call->flags->silent === false) {
+			$this->inverseRelations()->update(saved: $savedEntity, write: new InverseRelationWrite(register: $call->register, schema: $call->schema));
 			\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INVERSE-RELATIONS');
 		}
 
-		// Publish the verdict last, from the local captured right after THIS
-		// row's insert. Written here rather than earlier so that the cascade and
-		// inverse-relation saves above — which run through saveObject() again
-		// and set their own outcome — cannot be mistaken for this frame's.
+		// Published last, from the verdict captured right after THIS row's insert,
+		// so the cascade and inverse-relation saves above cannot be mistaken for it.
 		$this->lastSaveOutcome = 'created';
 		if ($mapperWriteAction === 'update') {
 			$this->lastSaveOutcome = 'updated';
@@ -4054,176 +3253,131 @@ class SaveObject {
 	}//end handleObjectCreation()
 
 	/**
-	 * Process file properties with automatic rollback on failure.
+	 * A new object entity for a create, prepared and with its archival metadata, not yet persisted.
 	 *
-	 * @param ObjectEntity $savedEntity Saved object entity
-	 * @param array $data Object data (modified by reference)
-	 * @param Register $register Register entity
-	 * @param Schema $schema Schema entity
+	 * @param ObjectSaveCall $call The save call.
 	 *
-	 * @return ObjectEntity Updated object with file IDs
-	 *
-	 * @throws Exception If file processing fails
+	 * @return ObjectEntity The prepared object.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function processFilePropertiesWithRollback(
-		ObjectEntity $savedEntity,
-		array &$data,
-		Register $register,
-		Schema $schema,
-	): ObjectEntity {
-		$this->logger->debug(
-			message: '[SaveObject] processFilePropertiesWithRollback called',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'app' => 'openregister',
-				'uuid' => $savedEntity->getUuid(),
-				'dataKeys' => array_keys($data),
-			]
+	private function prepareNewObject(ObjectSaveCall $call): ObjectEntity {
+		$objectEntity = new ObjectEntity();
+		$objectEntity->setRegister((string)$call->registerId);
+		$objectEntity->setSchema((string)$call->schemaId);
+		$objectEntity->setCreated(new DateTime());
+		$objectEntity->setUpdated(new DateTime());
+		$this->userActivity?->stamp(object: $objectEntity);
+
+		if ($call->uuid !== null) {
+			$objectEntity->setUuid($call->uuid);
+		}
+
+		// Prepare the object for creation (WITHOUT file processing yet).
+		$preparedObject = $this->prepareObjectForCreation(
+			objectEntity: $objectEntity,
+			schema: $call->schema,
+			payload: new ObjectPayload(data: $call->data, selfData: $call->selfData),
+			flags: $call->flags
 		);
 
-		$filePropsProcessed = false;
-
-		try {
-			// Process all file properties.
-			foreach ($data as $propertyName => $value) {
-				if ($this->filePropertyHandler->isFileProperty(
-					value: $value,
-					schema: $schema,
-					propertyName: $propertyName
-				) === true
-				) {
-					$this->filePropertyHandler->handleFileProperty(
-						objectEntity: $savedEntity,
-						object: $data,
-						propertyName: $propertyName,
-						schema: $schema
-					);
-					$filePropsProcessed = true;
-				}
-			}
-
-			// If files were processed, update the object with file IDs.
-			if ($filePropsProcessed === true) {
-				$this->logger->warning(
-					message: '[SaveObject] File properties processed, updating object with file IDs',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'uuid' => $savedEntity->getUuid(),
-						'data' => json_encode($data),
-					]
-				);
-
-				$savedEntity->setObject($data);
-
-				// DEBUG: Verify setObject worked.
-				$this->logger->error(
-					message: '[SaveObject] DEBUG: After setObject - entity object is now',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'entityObject' => json_encode($savedEntity->getObject()),
-					]
-				);
-
-				// DEBUG: About to call update.
-				$this->logger->error(
-					message: '[SaveObject] DEBUG: About to call objectEntityMapper->update()',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'uuid' => $savedEntity->getUuid(),
-					]
-				);
-
-				// Clear image metadata if objectImageField is a file property.
-				$this->clearImageMetadataIfFileProperty(
-					savedEntity: $savedEntity,
-					schema: $schema
-				);
-
-				$savedEntity = $this->objectEntityMapper->update(entity: $savedEntity, register: $register, schema: $schema);
-
-				// DEBUG: After update.
-				$this->logger->error(
-					message: '[SaveObject] DEBUG: After objectEntityMapper->update() - result object',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'resultObject' => json_encode($savedEntity->getObject()),
-					]
-				);
-			}//end if
-
-			return $savedEntity;
-		} catch (Exception $e) {
-			// ROLLBACK: Delete the object if file processing failed.
-			$this->logger->warning(
-				message: '[SaveObject] File processing failed, rolling back object creation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $savedEntity->getUuid(),
-					'error' => $e->getMessage(),
-				]
-			);
-			$this->objectEntityMapper->delete($savedEntity);
-
-			// Re-throw the exception so the controller can handle it.
-			throw $e;
-		}//end try
-	}//end processFilePropertiesWithRollback()
+		return $this->applyArchivalOnCreate(schema: $call->schema, preparedObject: $preparedObject);
+	}//end prepareNewObject()
 
 	/**
-	 * Clear image metadata if objectImageField points to a file property.
+	 * Apply the schema's archival metadata to a new object, when retention is available.
 	 *
-	 * @param ObjectEntity $savedEntity Saved object entity
-	 * @param Schema $schema Schema entity
+	 * A per-object selectielijst category that names no row is the caller's
+	 * error and is refused; any other failure to apply metadata is logged.
+	 *
+	 * @param Schema       $schema         The object's schema.
+	 * @param ObjectEntity $preparedObject The prepared object.
+	 *
+	 * @return ObjectEntity The object with its archival metadata.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyArchivalOnCreate(Schema $schema, ObjectEntity $preparedObject): ObjectEntity {
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService === null) {
+			return $preparedObject;
+		}
+
+		$retentionService->guardClassificationOverride(
+			schema: $schema,
+			data: ($preparedObject->getObject() ?? [])
+		);
+
+		try {
+			return $retentionService->applyArchivalMetadata($preparedObject, $schema);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] Skipping archival metadata: ' . $e->getMessage());
+			return $preparedObject;
+		}
+	}//end applyArchivalOnCreate()
+
+	/**
+	 * Put a saved object's name in the name cache, scoped to its organisation (SEC-CTRL-2).
+	 *
+	 * @param ObjectEntity $savedEntity The saved object.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function clearImageMetadataIfFileProperty(
-		ObjectEntity $savedEntity,
-		Schema $schema,
-	): void {
-		$config = $schema->getConfiguration();
-		if (($config['objectImageField'] ?? null) === null) {
+	private function cacheSavedName(ObjectEntity $savedEntity): void {
+		$savedName = $savedEntity->getName();
+		$savedUuid = $savedEntity->getUuid();
+		if ($savedUuid !== null && $savedName !== null && trim($savedName) !== '') {
+			$this->cacheHandler->setObjectName(
+				identifier: $savedUuid,
+				name: $savedName,
+				organisation: $savedEntity->getOrganisation()
+			);
+		}
+	}//end cacheSavedName()
+
+	/**
+	 * Write the audit trail of a create, unless silent or audit trails are off.
+	 *
+	 * The action comes from the mapper, not from this path's name: when the
+	 * mapper took its UPDATE branch the entry is an update, never a second
+	 * create (#2212/#2217). A genuine create keeps `old: null`.
+	 *
+	 * @param ObjectSaveCall $call        The save call.
+	 * @param ObjectEntity   $savedEntity The saved object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function auditCreation(ObjectSaveCall $call, ObjectEntity $savedEntity): void {
+		if ($call->flags->silent === true || $this->isAuditTrailsEnabled() === false) {
 			return;
 		}
 
-		$imageField = $config['objectImageField'];
-		$schemaProperties = $schema->getProperties() ?? [];
-
-		// Check if the image field is a file property.
-		if (($schemaProperties[$imageField] ?? null) !== null) {
-			$propertyConfig = $schemaProperties[$imageField];
-			if (($propertyConfig['type'] ?? '') === 'file') {
-				// Clear the image metadata so it will be extracted from the file object during rendering.
-				$savedEntity->setImage(null);
-			}
+		$action = null;
+		if ($this->unifiedObjectMapper->getLastWriteAction() === 'update') {
+			$action = 'update';
 		}
-	}//end clearImageMetadataIfFileProperty()
+
+		$this->noteClientCauseAttempt(call: $call, object: $savedEntity);
+		$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity, action: $action);
+
+		$savedEntity->setLastLog($log->jsonSerialize());
+		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
+	}//end auditCreation()
 
 	/**
 	 * Prepares an object for creation by applying all necessary transformations.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity to prepare.
 	 * @param Schema $schema The schema of the object.
-	 * @param array $data The object data.
-	 * @param array $selfData The @self metadata.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
-	 * @param bool $_unowned Stamp the system identity even when a session exists.
-	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
+	 * @param ObjectPayload $payload The object data and the @self metadata.
+	 * @param ObjectSaveFlags $flags The save flags: the explicit acting user for `@self.folder` access
+	 *                               checks (forwarded to setSelfMetadata), whether to stamp the system
+	 *                               identity even when a session exists, and an explicit owner, such
+	 *                               as a draft's scope value (decision 195).
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -4238,15 +3392,14 @@ class SaveObject {
 	private function prepareObjectForCreation(
 		ObjectEntity $objectEntity,
 		Schema $schema,
-		array $data,
-		array $selfData,
-		bool $_multitenancy,
-		?IUser $currentUser = null,
-		bool $_unowned = false,
-		?string $_owner = null,
+		ObjectPayload $payload,
+		ObjectSaveFlags $flags,
 	): ObjectEntity {
+		$data     = $payload->data;
+		$selfData = $payload->selfData;
+
 		// Set @self metadata properties.
-		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
+		$this->setSelfMetadata(objectEntity: $objectEntity, submission: new SelfSubmission(selfData: $selfData, actingUser: $flags->currentUser));
 
 		// Start the object's version sequence. Nothing wrote this before, so on
 		// the magic tables (which carry no column default) every object read
@@ -4273,10 +3426,10 @@ class SaveObject {
 		);
 
 		// Prepare the data.
-		$preparedData = $this->prepareObjectData(objectEntity: $objectEntity, schema: $schema, data: $data);
+		$preparedData = $this->prepareCascadeData(run: CascadeRun::forObject(parent: $objectEntity, data: $data), schema: $schema);
 
 		// Validate reference existence for properties with validateReference: true.
-		$this->validateReferences(schema: $schema, data: $preparedData, register: $objectEntity->getRegister());
+		$this->validateReferences(schema: $schema, run: ReferencePropertyRun::forSave(data: $preparedData, register: $objectEntity->getRegister()));
 
 		// Set the prepared data.
 		$objectEntity->setObject($preparedData);
@@ -4290,8 +3443,14 @@ class SaveObject {
 			throw new Exception('Object metadata hydration failed: ' . $e->getMessage() . '. ' . $mismatchHint, 0, $e);
 		}
 
+		// Decide the slug after hydration, with the uuid known (#4037).
+		$this->decideSlug(
+			request: new SlugRequest(entity: $objectEntity, schema: $schema, clientSlug: $payload->clientSlug()),
+			stored: null
+		);
+
 		// Extract Nc* property references and populate linked entity metadata columns.
-		$this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema, $preparedData);
+		$this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema);
 
 		// Populate TMLO archival metadata defaults if register has TMLO enabled.
 		$this->populateTmloDefaults(objectEntity: $objectEntity, schema: $schema);
@@ -4299,7 +3458,7 @@ class SaveObject {
 		// Set owner from the active user session, or fall back to the system
 		// identifier when no session is active. See applyOwnerAttribution()
 		// for the system-context contract (openregister#1617).
-		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $_unowned, _owner: $_owner);
+		$this->applyOwnerAttribution(objectEntity: $objectEntity, flags: $flags);
 
 		// Set organisation from active organisation if not already set.
 		// setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
@@ -4313,11 +3472,7 @@ class SaveObject {
 
 		// Update object relations.
 		try {
-			$objectEntity = $this->updateObjectRelations(
-				objectEntity: $objectEntity,
-				data: $preparedData,
-				schema: $schema
-			);
+			$objectEntity->setRelations($this->scanForRelations(data: $preparedData, prefix: '', schema: $schema));
 		} catch (Exception $e) {
 			// CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
 			$hint = 'This indicates invalid relation data or schema configuration problems.';
@@ -4363,18 +3518,35 @@ class SaveObject {
 	 * owned by `portal:<subjectRef>` (decision 195, see DraftOwner), names
 	 * it here. No controller forwards it either.
 	 *
-	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
-	 * @param bool         $_unowned     Stamp the system identity even when a session exists.
-	 * @param string|null  $_owner       An explicit owner; wins over the session and the system identity.
+	 * @param ObjectEntity    $objectEntity Entity being prepared for creation.
+	 * @param ObjectSaveFlags $flags        Its `unowned` stamps the system identity even when a session exists;
+	 *                                      its `owner` is an explicit owner that wins over the session and the
+	 *                                      system identity.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
-	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false, ?string $_owner = null): void {
+	private function applyOwnerAttribution(ObjectEntity $objectEntity, ObjectSaveFlags $flags = new ObjectSaveFlags()): void {
+		$owner = ($this->attributedOwner(_unowned: $flags->unowned, _owner: $flags->owner) ?? $this->ownerWithoutSession(objectEntity: $objectEntity));
+		if ($owner !== null) {
+			$objectEntity->setOwner($owner);
+		}
+	}//end applyOwnerAttribution()
+
+	/**
+	 * The owner a new object gets from the write itself: the explicit owner, the system identity, or the session user.
+	 *
+	 * @param bool        $_unowned Stamp the system identity even when a session exists.
+	 * @param string|null $_owner   An explicit owner; wins over the session and the system identity.
+	 *
+	 * @return string|null The owner, or null when there is no session and nothing was asked for.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function attributedOwner(bool $_unowned, string|null $_owner): string|null {
 		if ($_owner !== null && $_owner !== '') {
-			$objectEntity->setOwner($_owner);
-			return;
+			return $_owner;
 		}
 
 		// DELIBERATELY UNOWNED. The system identifier rather than an empty
@@ -4382,34 +3554,38 @@ class SaveObject {
 		// REST list path's RBAC filter even for admins (openregister#1617), so
 		// "no owner" has to mean the system, not nobody.
 		if ($_unowned === true) {
-			$objectEntity->setOwner($this->organisationService->getSystemUserId());
-			return;
+			return $this->organisationService->getSystemUserId();
 		}
 
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$objectEntity->setOwner($user->getUID());
-			return;
-		}
+		return $this->userSession->getUser()?->getUID();
+	}//end attributedOwner()
 
+	/**
+	 * The owner a new object gets when there is no session: the system identity, unless it already has one.
+	 *
+	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
+	 *
+	 * @return string|null The system identity, or null to keep the owner it has.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function ownerWithoutSession(ObjectEntity $objectEntity): ?string {
 		// No user session — only fall back to the system identifier when
 		// owner is genuinely missing (empty or null). An explicit non-empty
 		// owner (e.g. set by the caller) is preserved.
 		$currentOwner = $objectEntity->getOwner();
 		if ($currentOwner === null || $currentOwner === '') {
-			$objectEntity->setOwner($this->organisationService->getSystemUserId());
+			return $this->organisationService->getSystemUserId();
 		}
-	}//end applyOwnerAttribution()
+
+		return null;
+	}//end ownerWithoutSession()
 
 	/**
 	 * Prepares an object for update by applying all necessary transformations.
 	 *
-	 * @param ObjectEntity $existingObject The existing object entity to prepare.
-	 * @param Schema $schema The schema of the object.
-	 * @param array $data The updated object data.
-	 * @param array $selfData The @self metadata.
-	 * @param int|null $folderId The folder ID to set on the object.
-	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
+	 * @param UpdatePreparation $preparation The stored object, its schema, the updated data with its @self metadata,
+	 *                                       and the explicit acting user for `@self.folder` access checks.
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -4417,16 +3593,19 @@ class SaveObject {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function prepareObjectForUpdate(
-		ObjectEntity $existingObject,
-		Schema $schema,
-		array $data,
-		array $selfData,
-		?int $folderId,
-		?IUser $currentUser = null,
-	): ObjectEntity {
+	private function prepareObjectForUpdate(UpdatePreparation $preparation): ObjectEntity {
+		$existingObject = $preparation->existingObject;
+		$schema         = $preparation->schema;
+		$currentUser    = $preparation->currentUser;
+		$data           = $preparation->payload->data;
+		$selfData       = $preparation->payload->selfData;
+
+		// The stored record as property rules see it, taken before this request's
+		// `@self` is applied to the entity.
+		$storedRecord = $existingObject->getMatchEnvelope();
+
 		// Set @self metadata properties.
-		$this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
+		$this->setSelfMetadata(objectEntity: $existingObject, submission: new SelfSubmission(selfData: $selfData, actingUser: $currentUser));
 
 		// A save is a patch. Bumped here rather than after the write so the
 		// value the audit trail copies onto its own `version` column is the
@@ -4441,12 +3620,8 @@ class SaveObject {
 		$this->versionHandler->advanceVersion(entity: $existingObject, carried: $carriedVersion);
 
 		// Set folder ID if provided.
-		if ($folderId !== null) {
-			$existingObject->setFolder((string)$folderId);
-		}
-
-		// Snapshot the object's pre-update data BEFORE prepareObjectData runs.
-		// prepareObjectData calls preCacheParentName which writes the incoming
+		// Snapshot the object's pre-update data BEFORE prepareCascadeData runs.
+		// prepareCascadeData calls preCacheParentName which writes the incoming
 		// data back into $existingObject via setObject() so cascade descendants
 		// can resolve the parent's name template; reading getObject() afterwards
 		// would yield the new data, not the original. Capturing here keeps the
@@ -4455,7 +3630,7 @@ class SaveObject {
 
 		// Detect which declared write-only locations this payload OMITS, so the stored
 		// values can be carried forward below instead of being nulled (openregister#463).
-		// This runs on the RAW $data on purpose: prepareObjectData's setDefaultValues()
+		// This runs on the RAW $data on purpose: prepareCascadeData's setDefaultValues()
 		// applies a property's `default` when the key is absent, which would materialize
 		// an omitted key and hide the omission from this check.
 		$omittedWriteOnly = $this->propertyRbacHandler->collectOmittedWriteOnlyPaths(
@@ -4464,32 +3639,27 @@ class SaveObject {
 		);
 
 		// A property the writer may not read was stripped from what they were
-		// shown, so omitting it is not a request to clear it: it is carried
-		// forward the same way (openregister#4170).
+		// shown, so omitting it is not a request to clear it (openregister#4170);
+		// one they may not update cannot be cleared by omission either, since that
+		// is the write the property rule refuses. Both are carried forward. The
+		// rules are asked of the stored record; the values come from $oldData.
 		$omittedWriteOnly = array_values(
 			array_unique(
 				array_merge(
 					$omittedWriteOnly,
-					$this->propertyRbacHandler->collectOmittedUnreadableProperties(
-						schema: $schema,
-						incoming: $data,
-						stored: ($oldData ?? [])
-					)
+					$this->propertyRbacHandler->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: $data, stored: $storedRecord))
 				)
 			)
 		);
 
 		// Prepare the data.
-		$preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
+		$preparedData = $this->prepareCascadeData(run: CascadeRun::forObject(parent: $existingObject, data: $data), schema: $schema);
 
 		// Validate reference existence for properties with validateReference: true.
 		// On updates, skip validation for unchanged values to avoid re-validating existing references.
-		$this->validateReferences(
-			schema: $schema,
-			data: $preparedData,
-			register: $existingObject->getRegister(),
-			oldData: $oldData
-		);
+		$referenceRun = ReferencePropertyRun::forSave(data: $preparedData, register: $existingObject->getRegister());
+		$referenceRun->oldData = $oldData;
+		$this->validateReferences(schema: $schema, run: $referenceRun);
 
 		// Carry omitted write-only values forward from the stored object (openregister#463).
 		// The read boundary strips writeOnly from every response, so a client doing the
@@ -4498,7 +3668,7 @@ class SaveObject {
 		// is the save-side half of the writeOnly contract, symmetric with the read-side
 		// strip in PropertyRbacHandler::stripWriteOnlyProperties().
 		//
-		// Ordering is load-bearing in both directions. It must run AFTER prepareObjectData
+		// Ordering is load-bearing in both directions. It must run AFTER prepareCascadeData
 		// because that is where FieldEncryptionHandler::encryptProperties() runs: $oldData
 		// holds the stored value, which for an encrypted property is ciphertext, and
 		// restoring it any earlier would double-encrypt it. It must run BEFORE the null-fill
@@ -4515,8 +3685,7 @@ class SaveObject {
 		if (empty($omittedWriteOnly) === false) {
 			$preparedData = $this->propertyRbacHandler->restoreWriteOnlyValues(
 				prepared: $preparedData,
-				stored: $oldData,
-				omittedPaths: $omittedWriteOnly
+				omitted: new OmittedWriteOnly(stored: $oldData, paths: $omittedWriteOnly)
 			);
 		}
 
@@ -4533,21 +3702,16 @@ class SaveObject {
 		$this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
 
 		// Extract Nc* property references and populate linked entity metadata columns.
-		$this->linkedEntityHandler->extractAndPopulate($existingObject, $schema, $preparedData);
+		$this->linkedEntityHandler->extractAndPopulate($existingObject, $schema);
 
 		// Validate TMLO metadata if present (status transitions and field values).
 		$this->validateTmloOnUpdate(existingObject: $existingObject, selfData: $selfData);
 
 		// NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
-		// Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
+		// Duplicate call would overwrite relations after the write-back removes properties
 		// Update object relations (result currently unused but operation has side effects).
 		try {
-			// $objectEntity = $this->updateObjectRelations($existingObject, $preparedData, $schema);
-			$this->updateObjectRelations(
-				objectEntity: $existingObject,
-				data: $preparedData,
-				schema: $schema
-			);
+			$existingObject->setRelations($this->scanForRelations(data: $preparedData, prefix: '', schema: $schema));
 		} catch (Exception $e) {
 			// CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
 			$hint = 'This indicates invalid relation data or schema configuration problems.';
@@ -4558,32 +3722,77 @@ class SaveObject {
 	}//end prepareObjectForUpdate()
 
 	/**
-	 * Sets @self metadata properties on an object entity.
+	 * Decide and set an entity's slug: frozen when it has one, otherwise unique in its register+schema (#4037).
 	 *
-	 * @param ObjectEntity $objectEntity The object entity to set metadata on.
-	 * @param array $selfData The @self metadata.
-	 * @param array $data The object data (for generated values like slug).
-	 * @param IUser|null $currentUser Explicit acting user for the `@self.folder` access check; falls back to the session user when null.
+	 * @param SlugRequest $request The entity (hydrated and with its uuid), its schema and the slug the client sent.
+	 * @param string|null $stored  The slug stored before this save (null on create).
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction from multiple sources
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional metadata fields with validation
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-once-set-must-not-be-changed-by-a-later-save
+	 */
+	private function decideSlug(SlugRequest $request, ?string $stored): void {
+		$this->slugHandler->applyOnSave(
+			request: $request,
+			originalSlug: $stored
+		);
+	}//end decideSlug()
+
+	/**
+	 * The slug handler this save pipeline uses, so the bulk path shares one instance.
+	 *
+	 * @return ObjectSlugHandler The handler.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	public function getSlugHandler(): ObjectSlugHandler {
+		return $this->slugHandler;
+	}//end getSlugHandler()
+
+	/**
+	 * Sets @self metadata properties on an object entity.
+	 *
+	 * @param ObjectEntity   $objectEntity The object entity to set metadata on.
+	 * @param SelfSubmission $submission   The @self metadata and the explicit acting user for the `@self.folder`
+	 *                                     access check (the session user when null).
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
-	private function setSelfMetadata(
-		ObjectEntity $objectEntity,
-		array $selfData,
-		array $data = [],
-		?IUser $currentUser = null,
-	): void {
-		// Extract and set slug property if present (check both @self and data).
-		$slug = $selfData['slug'] ?? $data['slug'] ?? null;
-		if (empty($slug) === false) {
-			$objectEntity->setSlug($slug);
-		}
+	private function setSelfMetadata(ObjectEntity $objectEntity, SelfSubmission $submission): void {
+		$selfData = $submission->selfData;
+		$this->applyClientSelfData(objectEntity: $objectEntity, selfData: $selfData);
+		$this->bindSelfFolder(objectEntity: $objectEntity, bind: FolderBind::fromSelfData(selfData: $selfData, actingUser: $submission->actingUser));
+		self::applySelfGeo(objectEntity: $objectEntity, selfData: $selfData);
+		// SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
+		// from client input on CREATE.  The destruction pipeline keys off archiefstatus;
+		// a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
+		// destruction-eligible bypassing the validated state machine.  populateTmloDefaults()
+		// (called after this method) will apply the correct system defaults including
+		// resetting archiefstatus to 'actief' for new objects, overriding any client value.
+		// On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
+		// Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
+		// (No setTmlo() call — the field is intentionally omitted).
+	}//end setSelfMetadata()
+
+	/**
+	 * Applies the client-writable @self fields that need no folder: owner refusal, status and organisation.
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to set metadata on.
+	 * @param array        $selfData     The @self metadata.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When @self names an owner the caller may not set.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function applyClientSelfData(ObjectEntity $objectEntity, array $selfData): void {
+		// The slug is not set here any more: ObjectSlugHandler::applyOnSave()
+		// decides it after hydration, so the freeze and uniqueness rules see
+		// the client slug and the stored one together (#4037).
 
 		// SECURITY (wave-7 CRITICAL C2): owner must NOT be set from client-supplied
 		// @self input. The sole authoritative setter is applyOwnerAttribution() which
@@ -4634,56 +3843,80 @@ class SaveObject {
 			// Non-member callers silently fall through; prepareObjectForCreation() will
 			// stamp the caller's active organisation via getOrganisationForNewEntity().
 		}
+	}//end applyClientSelfData()
 
+	/**
+	 * Binds the folder @self asks for, after the access check when it names a folder id.
+	 *
+	 * @param ObjectEntity    $objectEntity The object entity to set the folder on.
+	 * @param FolderBind|null $bind         The requested bind, or null when @self names no folder.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 */
+	private function bindSelfFolder(ObjectEntity $objectEntity, FolderBind|null $bind): void {
 		// Propagate @self.folder so the access-control check governs the bind
 		// (numeric → access-checked, empty/legacy → auto-create). Without
 		// propagation a user-supplied @self.folder is silently dropped —
 		// defeating the whole `self-folder-access-control` capability.
-		if (array_key_exists('folder', $selfData) === true && empty($selfData['folder']) === false) {
-			$folderValue = (string)$selfData['folder'];
+		if ($bind === null) {
+			return;
+		}
 
-			// For folder values that are a bare positive integer node id (the
-			// format produced by explicit `@self.folder` writes), require that
-			// the acting user can read the target folder — otherwise reject the
-			// bind with `FolderAccessDeniedException`. We gate on `ctype_digit`
-			// rather than `is_numeric` so floats / scientific-notation / signed
-			// strings (e.g. "42.5", "4e2", "+42") don't slip through and then
-			// get `(int)`-truncated to a *different* node than was validated.
-			// Legacy non-numeric values fall through to the auto-create path.
-			// A payload that echoes the folder the object already has is not a
-			// bind: the stored value was written by OpenRegister and is
-			// re-validated as a managed folder in ensureObjectFolder(). Asking
-			// the caller-supplied question here refused every editor, because a
-			// managed folder sits in the openregister account's home and in
-			// nobody's own mount.
-			$storedFolder = (string)($objectEntity->getFolder() ?? '');
-			$isUnchanged = ($storedFolder !== '' && $storedFolder === $folderValue);
+		$folderValue = $bind->folder;
 
-			if (ctype_digit($folderValue) === true && $isUnchanged === false) {
-				// Pass `$currentUser` through so the access check uses the
-				// SAME user identity that the downstream
-				// `createObjectFolderById` check uses on the lazy-init path.
-				// When `$currentUser` is null (HTTP path), both checks fall
-				// back to `IUserSession::getUser()` and agree by default.
-				// When `$currentUser` is non-null (DI / event listener path),
-				// both checks use it explicitly — no chance of one site
-				// passing while another denies because of session vs explicit
-				// user disagreement.
-				$this->folderManagementHandler->assertFolderIsAccessible(
-					folderId: $folderValue,
-					currentUser: $currentUser,
-					objectEntity: $objectEntity
-				);
+		// For folder values that are a bare positive integer node id (the
+		// format produced by explicit `@self.folder` writes), require that
+		// the acting user can read the target folder — otherwise reject the
+		// bind with `FolderAccessDeniedException`. We gate on `ctype_digit`
+		// rather than `is_numeric` so floats / scientific-notation / signed
+		// strings (e.g. "42.5", "4e2", "+42") don't slip through and then
+		// get `(int)`-truncated to a *different* node than was validated.
+		// Legacy non-numeric values fall through to the auto-create path.
+		// A payload that echoes the folder the object already has is not a
+		// bind: the stored value was written by OpenRegister and is
+		// re-validated as a managed folder in ensureObjectFolder(). Asking
+		// the caller-supplied question here refused every editor, because a
+		// managed folder sits in the openregister account's home and in
+		// nobody's own mount.
+		$storedFolder = (string)($objectEntity->getFolder() ?? '');
+		$isUnchanged = ($storedFolder !== '' && $storedFolder === $folderValue);
 
-				// Normalise to the canonical integer string so the persisted
-				// value matches the node that was validated (no "42.5" vs "42"
-				// drift in audit / analytics / equality checks).
-				$folderValue = (string)(int)$folderValue;
-			}//end if
+		if (ctype_digit($folderValue) === true && $isUnchanged === false) {
+			// Pass `$currentUser` through so the access check uses the
+			// SAME user identity that the downstream
+			// `createObjectFolderById` check uses on the lazy-init path.
+			// When `$currentUser` is null (HTTP path), both checks fall
+			// back to `IUserSession::getUser()` and agree by default.
+			// When `$currentUser` is non-null (DI / event listener path),
+			// both checks use it explicitly — no chance of one site
+			// passing while another denies because of session vs explicit
+			// user disagreement.
+			$this->folderManagementHandler->assertFolderIsAccessible(
+				check: new FolderAccessCheck(folderId: $folderValue, currentUser: $bind->actingUser, objectEntity: $objectEntity)
+			);
 
-			$objectEntity->setFolder($folderValue);
+			// Normalise to the canonical integer string so the persisted
+			// value matches the node that was validated (no "42.5" vs "42"
+			// drift in audit / analytics / equality checks).
+			$folderValue = (string)(int)$folderValue;
 		}//end if
 
+		$objectEntity->setFolder($folderValue);
+	}//end bindSelfFolder()
+
+	/**
+	 * Applies @self.geo, the object's geographical metadata.
+	 *
+	 * @param ObjectEntity $objectEntity The object entity to set the geo on.
+	 * @param array        $selfData     The @self metadata.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function applySelfGeo(ObjectEntity $objectEntity, array $selfData): void {
 		// Propagate @self.geo — the object's geographical metadata (a GeoJSON-ish
 		// array rendered/edited by map widgets, e.g. CnObjectGeoWidget). Unlike
 		// organisation/tmlo this is plain descriptive data driving no security or
@@ -4694,17 +3927,7 @@ class SaveObject {
 				$objectEntity->setGeo($geoValue);
 			}
 		}
-
-		// SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
-		// from client input on CREATE.  The destruction pipeline keys off archiefstatus;
-		// a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
-		// destruction-eligible bypassing the validated state machine.  populateTmloDefaults()
-		// (called after this method) will apply the correct system defaults including
-		// resetting archiefstatus to 'actief' for new objects, overriding any client value.
-		// On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
-		// Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
-		// (No setTmlo() call — the field is intentionally omitted).
-	}//end setSelfMetadata()
+	}//end applySelfGeo()
 
 	/**
 	 * Refuse a write that asks for an owner the acting user may not take.
@@ -4741,26 +3964,17 @@ class SaveObject {
 	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	private function refuseOwnerClaim(ObjectEntity $objectEntity, array $selfData): void {
-		if (array_key_exists('owner', $selfData) === false) {
-			return;
-		}
-
-		$requested = $selfData['owner'];
-		if (is_string($requested) === false || $requested === '') {
+		$requested = self::requestedOwner(selfData: $selfData);
+		if ($requested === null) {
 			return;
 		}
 
 		$actor = $this->userSession->getUser()?->getUID();
-		if ($actor === null) {
+		if ($actor === null || $requested === $actor) {
 			return;
 		}
 
-		if ($requested === $actor) {
-			return;
-		}
-
-		$stored = $objectEntity->getOwner();
-		if ($stored !== null && $stored !== '' && $requested === $stored) {
+		if (self::isStoredOwner(objectEntity: $objectEntity, requested: $requested) === true) {
 			return;
 		}
 
@@ -4768,6 +3982,44 @@ class SaveObject {
 			message: 'An owner cannot be set through a save. Use the ownership endpoint to hand a record over.'
 		);
 	}//end refuseOwnerClaim()
+
+	/**
+	 * The owner a `@self` block asks for: a non-empty string, else null (absent, or an echoed non-string value).
+	 *
+	 * @param array $selfData The caller's `@self` block.
+	 *
+	 * @return string|null The requested owner.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private static function requestedOwner(array $selfData): string|null {
+		if (array_key_exists('owner', $selfData) === false) {
+			return null;
+		}
+
+		$requested = $selfData['owner'];
+		if (is_string($requested) === false || $requested === '') {
+			return null;
+		}
+
+		return $requested;
+	}//end requestedOwner()
+
+	/**
+	 * Whether the requested owner is the owner already stored (the GET-edit-PUT echo).
+	 *
+	 * @param ObjectEntity $objectEntity The entity being written.
+	 * @param string       $requested    The requested owner.
+	 *
+	 * @return bool True when nothing would move.
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private static function isStoredOwner(ObjectEntity $objectEntity, string $requested): bool {
+		$stored = $objectEntity->getOwner();
+
+		return $stored !== null && $stored !== '' && $requested === $stored;
+	}//end isStoredOwner()
 
 	/**
 	 * Resolve whether the current session user is in the admin group.
@@ -4808,18 +4060,8 @@ class SaveObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema): void {
-		$registerId = $objectEntity->getRegister();
-		if ($registerId === null) {
-			return;
-		}
-
-		try {
-			$register = $this->getCachedRegister(registerId: (int)$registerId);
-		} catch (Exception $e) {
-			return;
-		}
-
-		if ($this->tmloService->isTmloEnabled($register) === false) {
+		$register = $this->tmloRegisterOf(objectEntity: $objectEntity);
+		if ($register === null) {
 			return;
 		}
 
@@ -4831,16 +4073,76 @@ class SaveObject {
 		// On UPDATE, the separate validateTmloOnUpdate() path enforces the transition matrix.
 		// Validate field values before populating (entity may have leftover TMLO from a prior
 		// update path; ensure they are valid before stamping defaults).
-		$currentTmlo = $objectEntity->getTmlo();
-		if (is_array($currentTmlo) === true && empty($currentTmlo) === false) {
-			$errors = $this->tmloService->validateFieldValues($currentTmlo);
-			if (empty($errors) === false) {
-				throw new Exception('TMLO validation failed: ' . implode('; ', $errors));
-			}
+		$this->assertStoredTmloValid(objectEntity: $objectEntity);
+
+		$this->tmloService->populateDefaults($objectEntity, new RegisterSchema(register: $register, schema: $schema));
+	}//end populateTmloDefaults()
+
+	/**
+	 * The object's register when it has TMLO enabled, else null (no register, or one that does not resolve).
+	 *
+	 * @param ObjectEntity $objectEntity The object entity being created.
+	 *
+	 * @return Register|null The TMLO-enabled register.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function tmloRegisterOf(ObjectEntity $objectEntity): Register|null {
+		$registerId = $objectEntity->getRegister();
+		if ($registerId === null) {
+			return null;
 		}
 
-		$this->tmloService->populateDefaults($objectEntity, $register, $schema);
-	}//end populateTmloDefaults()
+		try {
+			$register = $this->getCachedRegister(registerId: (int)$registerId);
+		} catch (Exception $e) {
+			return null;
+		}
+
+		if ($this->tmloService->isTmloEnabled($register) === false) {
+			return null;
+		}
+
+		return $register;
+	}//end tmloRegisterOf()
+
+	/**
+	 * Refuse leftover TMLO values on the entity that do not validate, before defaults are stamped.
+	 *
+	 * @param ObjectEntity $objectEntity The object entity being created.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the stored TMLO values do not validate.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function assertStoredTmloValid(ObjectEntity $objectEntity): void {
+		$currentTmlo = $objectEntity->getTmlo();
+		if (is_array($currentTmlo) === false || empty($currentTmlo) === true) {
+			return;
+		}
+
+		$this->assertTmloFieldValues(tmlo: $currentTmlo);
+	}//end assertStoredTmloValid()
+
+	/**
+	 * Refuse TMLO field values that do not validate.
+	 *
+	 * @param array $tmlo The TMLO values.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If TMLO validation fails.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function assertTmloFieldValues(array $tmlo): void {
+		$errors = $this->tmloService->validateFieldValues($tmlo);
+		if (empty($errors) === false) {
+			throw new Exception('TMLO validation failed: ' . implode('; ', $errors));
+		}
+	}//end assertTmloFieldValues()
 
 	/**
 	 * Validate TMLO metadata on an object update (status transitions and field values).
@@ -4863,738 +4165,65 @@ class SaveObject {
 		$newTmlo = $selfData['tmlo'];
 
 		// Validate field values.
-		$fieldErrors = $this->tmloService->validateFieldValues($newTmlo);
-		if (empty($fieldErrors) === false) {
-			throw new Exception('TMLO validation failed: ' . implode('; ', $fieldErrors));
-		}
+		$this->assertTmloFieldValues(tmlo: $newTmlo);
 
 		// Validate status transition if archiefstatus is changing.
+		$this->assertTmloTransition(existingObject: $existingObject, newTmlo: $newTmlo);
+
+		// Update the TMLO field on the entity.
+		$existingObject->setTmlo(array_merge(($existingObject->getTmlo() ?? []), $newTmlo));
+	}//end validateTmloOnUpdate()
+
+	/**
+	 * Refuse an archiefstatus change the transition matrix does not allow.
+	 *
+	 * @param ObjectEntity $existingObject The existing object being updated.
+	 * @param array        $newTmlo        The TMLO values the update sends.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the status transition is not allowed.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function assertTmloTransition(ObjectEntity $existingObject, array $newTmlo): void {
 		$oldTmlo = $existingObject->getTmlo();
 		$oldStatus = ($oldTmlo['archiefstatus'] ?? TmloService::ARCHIEFSTATUS_ACTIEF);
 		$newStatus = ($newTmlo['archiefstatus'] ?? null);
-
-		if ($newStatus !== null && $newStatus !== $oldStatus) {
-			// Merge old TMLO with new for complete validation context.
-			$mergedTmlo = array_merge(($oldTmlo ?? []), $newTmlo);
-			$transitionErrors = $this->tmloService->validateStatusTransition($mergedTmlo, $oldStatus);
-			if (empty($transitionErrors) === false) {
-				throw new Exception('TMLO status transition failed: ' . implode('; ', $transitionErrors));
-			}
+		if ($newStatus === null || $newStatus === $oldStatus) {
+			return;
 		}
 
-		// Update the TMLO field on the entity.
-		$existingObject->setTmlo(array_merge(($oldTmlo ?? []), $newTmlo));
-	}//end validateTmloOnUpdate()
+		// Merge old TMLO with new for complete validation context.
+		$mergedTmlo = array_merge(($oldTmlo ?? []), $newTmlo);
+		$transitionErrors = $this->tmloService->validateStatusTransition($mergedTmlo, $oldStatus);
+		if (empty($transitionErrors) === false) {
+			throw new Exception('TMLO status transition failed: ' . implode('; ', $transitionErrors));
+		}
+	}//end assertTmloTransition()
 
 	/**
 	 * Validate reference existence for all properties with validateReference: true.
 	 *
-	 * Iterates schema properties, finds those with $ref and validateReference enabled,
-	 * and checks that referenced object UUIDs exist in the target schema.
+	 * Operator-controlled admin bypass: an admin with the bypass flag on (default
+	 * true) skips this, so admins can repair broken cross-references during
+	 * migrations or bulk imports. `occ config:app:set openregister
+	 * reference_validation_admin_bypass --value=false` enforces it for every user.
 	 *
-	 * @param Schema $schema The schema containing property definitions.
-	 * @param array $data The object data to validate.
-	 * @param string|null $register The object's register ID (fallback for target register).
-	 * @param array|null $oldData Previous object data (for update skip-unchanged logic).
+	 * @param Schema               $schema The schema containing property definitions.
+	 * @param ReferencePropertyRun $run    The data, register and previous data of the write.
 	 *
 	 * @return void
 	 *
 	 * @throws ValidationException If a referenced object does not exist.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property type checks
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function validateReferences(
-		Schema $schema,
-		array $data,
-		?string $register,
-		?array $oldData = null,
-	): void {
-		// Operator-controlled admin bypass: when the current user is in
-		// the admin group AND the bypass flag is on (default true), skip
-		// reference existence validation entirely. Mirrors the
-		// `MultiTenancyTrait::isCurrentUserAdmin()` short-circuit so
-		// admins can repair broken cross-references during migrations or
-		// bulk imports without tripping 422s. Operators can flip the
-		// flag off via `occ config:app:set openregister
-		// reference_validation_admin_bypass --value=false` to enforce
-		// validation for every user.
-		if ($this->shouldBypassValidationForAdmin() === true) {
-			return;
+	private function validateReferences(Schema $schema, ReferencePropertyRun $run): void {
+		if ($this->referenceAdminBypass()->applies() === false) {
+			$this->referenceValidator()->validate(schema: $schema, run: $run);
 		}
-
-		$properties = $schema->getProperties();
-		if ($properties === null) {
-			return;
-		}
-
-		foreach ($properties as $propertyName => $property) {
-			// Resolve the configured strictness level for this property.
-			// Returns null when validation is not enabled — short-circuit
-			// so legacy `validateReference: false` (or absent) costs zero.
-			$strictness = $this->resolveReferenceStrictness(property: $property);
-			if ($strictness === null) {
-				continue;
-			}
-
-			// Determine the $ref target.
-			$ref = $property['$ref'] ?? $property['items']['$ref'] ?? null;
-			$isArray = isset($property['type']) && $property['type'] === 'array';
-
-			if ($ref === null) {
-				continue;
-			}
-
-			// Get the value from data.
-			$value = $data[$propertyName] ?? null;
-
-			// Skip null or empty values (non-required property).
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			// On updates, skip validation for unchanged values.
-			if ($oldData !== null && array_key_exists($propertyName, $oldData) === true) {
-				if ($oldData[$propertyName] === $value) {
-					continue;
-				}
-			}
-
-			// Resolve the target register: property-level config or object's register.
-			$targetRegister = $property['register'] ?? $register;
-
-			// Normalize to array for uniform validation.
-			$uuidsToValidate = [$value];
-			if ($isArray === true && is_array($value) === true) {
-				$uuidsToValidate = $value;
-			}
-
-			foreach ($uuidsToValidate as $uuid) {
-				if (empty($uuid) === true) {
-					continue;
-				}
-
-				try {
-					// Cross-app references can be expressed as HTTP(S)
-					// URLs (the canonical resource address of an object
-					// owned by another app or instance). Components are
-					// designed to operate individually — component A may
-					// not have read access to component B for security
-					// or tenancy reasons, so we MUST NOT fetch the URL
-					// to verify existence. Instead, validate syntax only:
-					// scheme is http/https and host parses. Decision
-					// recorded in `reference-existence-validation`
-					// tasks.md (2026-05-02).
-					if ($this->looksLikeHttpUrl(value: (string)$uuid) === true) {
-						$this->validateExternalUrlSyntax(
-							propertyName: $propertyName,
-							value: (string)$uuid,
-							schemaRef: $ref,
-							register: $targetRegister
-						);
-						continue;
-					}
-
-					$this->validateReferenceExists(
-						propertyName: $propertyName,
-						uuid: (string)$uuid,
-						schemaRef: $ref,
-						register: $targetRegister
-					);
-
-					// And it has to be one the picker would have offered.
-					// Costs nothing for a property that declares no filter:
-					// the reader returns null before any read is made.
-					$this->assertReferenceMatchesFilter(
-						propertyName: $propertyName,
-						property: $property,
-						record: $data,
-						uuid: (string)$uuid,
-						schemaRef: $ref,
-						register: $targetRegister
-					);
-				} catch (ReferenceValidationException $exception) {
-					// Strict mode (`error`) re-raises the 422 so the save
-					// is rejected. `warn` mode swallows the exception
-					// after the failure event has already fired in
-					// `validateReferenceExists()` — listeners still see
-					// the miss, the warning is logged for ops visibility,
-					// and the save proceeds. This lets schema authors
-					// adopt reference validation gradually on registers
-					// with known dirty data without forcing every save
-					// through an HTTP 422.
-					if ($strictness === 'warn') {
-						$this->logger->warning(
-							message: '[SaveObject] Reference validation failed (warn-only)',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'property' => $propertyName,
-								'uuid' => $uuid,
-								'targetSchema' => $exception->getTargetSchemaSlug(),
-								'targetRegister' => $exception->getTargetRegister(),
-							]
-						);
-						continue;
-					}
-
-					throw $exception;
-				}//end try
-			}//end foreach
-		}//end foreach
 	}//end validateReferences()
-
-	/**
-	 * Resolve the configured strictness level for a schema property.
-	 *
-	 * Schema authors declare reference validation in two related fields:
-	 *
-	 * - `validateReference` — the on/off toggle (boolean) or a shorthand
-	 *   string carrying both the on/off bit AND the severity:
-	 *   `true` / `'error'` / `'strict'` / `'block'` enable strict
-	 *   validation; `'warn'` enables warn-only mode; `false` or
-	 *   `'off'` disables validation entirely.
-	 * - `validationStrictness` — optional explicit severity field
-	 *   (`'strict'`, `'warn'`, `'off'`) that overrides the default
-	 *   strict severity when `validateReference` is just the boolean
-	 *   `true`. Matches the spec's documented schema shape.
-	 *
-	 * Returns `'error'` when validation is strict, `'warn'` when
-	 * warn-only, and `null` when validation is disabled — the caller
-	 * uses `null` as the short-circuit signal to skip the property
-	 * without paying for the database round trip.
-	 *
-	 * @param array $property The schema property definition.
-	 *
-	 * @return string|null Returns `'error'` for strict mode, `'warn'` for
-	 *                     warn-only, `null` when validation is disabled.
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function resolveReferenceStrictness(array $property): ?string {
-		$configured = ($property['validateReference'] ?? false);
-		$explicit = ($property['validationStrictness'] ?? null);
-
-		// Explicit strictness field can disable validation outright,
-		// mirroring the spec's "off" level even when the boolean toggle
-		// is true.
-		if (is_string($explicit) === true && strtolower($explicit) === 'off') {
-			return null;
-		}
-
-		// Map the optional explicit strictness onto our internal verdict.
-		$explicitNormalized = null;
-		if (is_string($explicit) === true) {
-			$candidate = strtolower($explicit);
-			if ($candidate === 'strict' || $candidate === 'error' || $candidate === 'block') {
-				$explicitNormalized = 'error';
-			} elseif ($candidate === 'warn') {
-				$explicitNormalized = 'warn';
-			}
-		}
-
-		// Boolean true: validation enabled, default strict, but defer
-		// to explicit strictness when present.
-		if ($configured === true) {
-			return $explicitNormalized ?? 'error';
-		}
-
-		// String shorthand on `validateReference` carries both the
-		// on/off bit and the severity.
-		if (is_string($configured) === true) {
-			$normalized = strtolower($configured);
-			if ($normalized === 'off' || $normalized === 'false') {
-				return null;
-			}
-
-			if ($normalized === 'error' || $normalized === 'block' || $normalized === 'strict') {
-				return $explicitNormalized ?? 'error';
-			}
-
-			if ($normalized === 'warn') {
-				return $explicitNormalized ?? 'warn';
-			}
-		}
-
-		return null;
-	}//end resolveReferenceStrictness()
-
-	/**
-	 * Detect whether a reference value expresses HTTP(S) URL intent.
-	 *
-	 * Scheme-prefix only — once the user writes `http://` or `https://`
-	 * they've signalled a URL and we want strict syntax validation to
-	 * speak in URL terms (so a missing host gets the URL-shaped error,
-	 * not the UUID-not-found error). Strict checks happen in
-	 * `validateExternalUrlSyntax()`.
-	 *
-	 * @param string $value Reference value to inspect.
-	 *
-	 * @return bool True when the value declares HTTP(S) URL intent.
-	 */
-	private function looksLikeHttpUrl(string $value): bool {
-		return str_starts_with($value, 'http://') === true
-			|| str_starts_with($value, 'https://') === true;
-	}//end looksLikeHttpUrl()
-
-	/**
-	 * Validate that an external URL reference is syntactically well-formed.
-	 *
-	 * Components are designed to operate individually; component A may
-	 * not have read access to component B for security or tenancy
-	 * reasons. Fetching the URL to verify existence would either pass
-	 * falsely (no read = "not found") or block legitimate writes, so
-	 * the design decision (`reference-existence-validation` tasks.md
-	 * 2026-05-02) is to validate syntax only:
-	 *
-	 * - Scheme MUST be `http` or `https`.
-	 * - Host MUST parse (non-empty after `parse_url`).
-	 * - Host MUST NOT be a literal IP without port-and-path (defensive
-	 *   against trivially malformed inputs that pass the scheme check
-	 *   but are clearly broken).
-	 *
-	 * On miss: dispatches `ReferenceValidationFailedEvent` (so warn-mode
-	 * listeners observe the rejection like they would for a UUID miss)
-	 * and throws `ReferenceValidationException` carrying HTTP 422.
-	 *
-	 * @param string $propertyName The property holding the reference.
-	 * @param string $value The URL value to validate.
-	 * @param string $schemaRef The schema $ref the URL is supposed to address.
-	 * @param string|null $register The register the URL is supposed to address.
-	 *
-	 * @return void
-	 *
-	 * @throws ReferenceValidationException When the URL syntax is invalid.
-	 */
-	private function validateExternalUrlSyntax(
-		string $propertyName,
-		string $value,
-		string $schemaRef,
-		?string $register,
-	): void {
-		$valid = false;
-		$parts = parse_url($value);
-		if ($parts !== false && is_array($parts) === true) {
-			$scheme = ($parts['scheme'] ?? '');
-			$host = ($parts['host'] ?? '');
-			$hasHost = ($host !== '');
-			$okScheme = ($scheme === 'http' || $scheme === 'https');
-			$valid = ($okScheme === true && $hasHost === true);
-		}
-
-		if ($valid === true) {
-			return;
-		}
-
-		// Reduce `#/components/schemas/foo` to `foo` for the failure
-		// payload — the bare slug matches the convention used by the
-		// UUID-existence path so listeners see a consistent shape.
-		$targetSlug = $schemaRef;
-		$prefix = '#/components/schemas/';
-		if (str_starts_with($schemaRef, $prefix) === true) {
-			$targetSlug = substr($schemaRef, strlen($prefix));
-		}
-
-		$this->dispatchReferenceValidationFailedEvent(
-			propertyName: $propertyName,
-			referencedUuid: $value,
-			targetSchemaSlug: $targetSlug,
-			targetRegister: $register
-		);
-
-		throw new ReferenceValidationException(
-			propertyName: $propertyName,
-			referencedUuid: $value,
-			targetSchemaSlug: $targetSlug,
-			targetRegister: $register,
-			message: sprintf(
-				'External URL reference "%s" is malformed: scheme MUST be http or https and host MUST parse.',
-				$value
-			)
-		);
-	}//end validateExternalUrlSyntax()
-
-	/**
-	 * Validate that a referenced object exists in the target schema.
-	 *
-	 * @param string $propertyName The property name holding the reference.
-	 * @param string $uuid The UUID to validate.
-	 * @param string $schemaRef The $ref value pointing to the target schema.
-	 * @param string|null $register The register ID to search in.
-	 *
-	 * @return void
-	 *
-	 * @throws ValidationException If the referenced object does not exist (HTTP 422).
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	/**
-	 * Refuse a reference the narrowing filter would not have offered.
-	 *
-	 * 🔴 IT CALLS THE SAME `resolve()` THE OPTIONS READ WILL, and that is the
-	 * whole design rather than a tidiness note. A picker that offers one set
-	 * and a save path that accepts another is two evaluators of one rule, and
-	 * they disagree within a week; the one that ends up wider is the one that
-	 * discloses. `ReferenceFilterDeclaration` is the single reader and the
-	 * single resolver, and this method only compares.
-	 *
-	 * 🔴 AN UNRESOLVED OPERAND REFUSES, IT DOES NOT WAVE THROUGH. When the
-	 * record has no organisation yet, the picker would have offered NOTHING,
-	 * so no value can be inside the filter and every value has to be refused.
-	 * Waving it through would make the server accept precisely the writes the
-	 * form was built to prevent, which is the "no options becomes every option"
-	 * failure one layer down.
-	 *
-	 * COST. A property declaring no filter costs one array lookup:
-	 * `fromProperty()` returns null before anything is read. Only a filtered
-	 * reference pays for the extra object read, and only for the values that
-	 * changed, because the caller already skipped unchanged ones.
-	 *
-	 * @param string              $propertyName The property carrying the reference.
-	 * @param array<string,mixed> $property     The property definition.
-	 * @param array<string,mixed> $record       The record being written.
-	 * @param string              $uuid         The referenced object.
-	 * @param string              $schemaRef    The referenced schema.
-	 * @param string|null         $register     The register to look in.
-	 *
-	 * @return void
-	 *
-	 * @throws ReferenceValidationException When the value is outside the filter.
-	 *
-	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
-	 */
-	private function assertReferenceMatchesFilter(
-		string $propertyName,
-		array $property,
-		array $record,
-		string $uuid,
-		string $schemaRef,
-		?string $register,
-	): void {
-		$declaration = ReferenceFilterDeclaration::fromProperty(property: $property, path: $propertyName);
-		if ($declaration === null) {
-			return;
-		}
-
-		$answer = $declaration->resolve(record: $record);
-
-		if ($answer['needs'] !== []) {
-			throw new ReferenceValidationException(
-				propertyName: $propertyName,
-				referencedUuid: $uuid,
-				targetSchemaSlug: $schemaRef,
-				targetRegister: $register,
-				message: sprintf(
-					"'%s' is filtered on %s, and this record answers none of them, so nothing may be chosen for it yet.",
-					$propertyName,
-					implode(', ', $answer['needs'])
-				)
-			);
-		}
-
-		$referenced = $this->readReferencedObject(
-			uuid: $uuid,
-			schemaRef: $schemaRef,
-			register: $register
-		);
-		if ($referenced === null) {
-			// Unreadable to this caller, or gone between the existence check
-			// and here. Existence is validateReferenceExists()'s question and
-			// it has already answered it; answering it again differently here
-			// would refuse a save for a reason this method cannot see.
-			return;
-		}
-
-		foreach ($answer['filter'] as $field => $expected) {
-			if ($this->filterFieldMatches(actual: ($referenced[$field] ?? null), expected: $expected) === true) {
-				continue;
-			}
-
-			throw new ReferenceValidationException(
-				propertyName: $propertyName,
-				referencedUuid: $uuid,
-				targetSchemaSlug: $schemaRef,
-				targetRegister: $register,
-				message: sprintf(
-					"'%s' only accepts an object whose '%s' matches this record. '%s' does not.",
-					$propertyName,
-					(string)$field,
-					$uuid
-				)
-			);
-		}
-	}//end assertReferenceMatchesFilter()
-
-	/**
-	 * One condition of a resolved filter, compared.
-	 *
-	 * @param mixed $actual   The referenced object's value.
-	 * @param mixed $expected The resolved expectation.
-	 *
-	 * @return bool True when it matches.
-	 */
-	private function filterFieldMatches(mixed $actual, mixed $expected): bool {
-		if (is_array($expected) === false) {
-			return ((string)$actual === (string)$expected);
-		}
-
-		if (array_key_exists('neq', $expected) === true) {
-			return ((string)$actual !== (string)$expected['neq']);
-		}
-
-		if (array_key_exists('in', $expected) === true) {
-			$allowed = array_map('strval', (array)$expected['in']);
-
-			return in_array((string)$actual, $allowed, true);
-		}
-
-		// An operator this method does not know refuses, rather than passing.
-		// `ReferenceFilterDeclaration::OPERATORS` is the list, and a new entry
-		// there without an arm here would otherwise accept everything.
-		return false;
-	}//end filterFieldMatches()
-
-	/**
-	 * The referenced object as a plain array, or null when it cannot be read.
-	 *
-	 * @param string      $uuid      The object.
-	 * @param string      $schemaRef The schema it belongs to.
-	 * @param string|null $register  The register to look in.
-	 *
-	 * @return array<string,mixed>|null The object's data.
-	 */
-	private function readReferencedObject(string $uuid, string $schemaRef, ?string $register): ?array {
-		$targetSchemaId = $this->resolveSchemaReference(reference: $schemaRef);
-		if ($targetSchemaId === null) {
-			return null;
-		}
-
-		try {
-			$registerEntity = null;
-			if ($register !== null) {
-				$registerEntity = $this->getCachedRegister(registerId: $register);
-			}
-
-			$found = $this->unifiedObjectMapper->find(
-				identifier: $uuid,
-				register: $registerEntity,
-				schema: null,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			return null;
-		}
-
-		$data = $found->getObject();
-
-		if (is_array($data) === true) {
-			return $data;
-		}
-
-		return null;
-	}//end readReferencedObject()
-
-	/**
-	 * Refuse a reference that points at no object, or at a cycle.
-	 *
-	 * @param string $propertyName The property carrying the reference, named in the refusal.
-	 * @param string $uuid The referenced object's uuid.
-	 * @param string $schemaRef The schema the reference declares.
-	 * @param string|null $register The register to look in, or null for the object's own.
-	 *
-	 * @throws CircularReferenceException When the reference closes a cycle back onto an object being saved.
-	 * @throws ReferenceValidationException When the reference resolves to no stored object.
-	 *
-	 * @return void
-	 */
-	private function validateReferenceExists(
-		string $propertyName,
-		string $uuid,
-		string $schemaRef,
-		?string $register,
-	): void {
-		// Circular reference short-circuit: if the UUID we're about
-		// to validate is already on the in-flight save call stack,
-		// we have a cycle (A -> B -> A). Reject before hitting the
-		// database — a cycle on otherwise-valid UUIDs would silently
-		// pass the existence check, but cascading the save would
-		// recurse forever.
-		$cycle = $this->detectCircularReference(uuid: $uuid);
-		if ($cycle !== null) {
-			$this->logger->warning(
-				message: '[SaveObject] Circular reference detected during validation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propertyName,
-					'uuid' => $uuid,
-					'targetSchema' => $schemaRef,
-					'cycleDepth' => count($cycle),
-				]
-			);
-
-			throw new CircularReferenceException(
-				referencedUuid: $uuid,
-				targetSchemaSlug: $schemaRef,
-				cycle: array_map(
-					static fn (array $frame): array => [
-						'schema' => $frame['schemaSlug'],
-						'uuid' => $frame['uuid'],
-						'register' => $frame['register'],
-					],
-					$cycle
-				),
-				code: 422
-			);
-		}//end if
-
-		// Resolve the target schema ID.
-		$targetSchemaId = $this->resolveSchemaReference(reference: $schemaRef);
-		if ($targetSchemaId === null) {
-			$this->logger->warning(
-				message: '[SaveObject] Could not resolve schema reference for reference validation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propertyName,
-					'ref' => $schemaRef,
-				]
-			);
-			return;
-		}
-
-		// Request-scoped cache short-circuit: if we already validated this
-		// (targetSchemaId, uuid) pair during this request — typically
-		// during a bulk import or cascade save — skip the database round
-		// trip and replay the verdict. We still raise/return without
-		// re-emitting events so listeners observe each unique reference
-		// exactly once per request.
-		$cacheKey = $targetSchemaId . ':' . $uuid;
-		if (array_key_exists($cacheKey, $this->referenceValidationCache) === true) {
-			if ($this->referenceValidationCache[$cacheKey] === true) {
-				return;
-			}
-
-			// Cached negative verdict — re-raise without dispatching the
-			// failure event again (already dispatched on first miss).
-			throw new ReferenceValidationException(
-				propertyName: $propertyName,
-				referencedUuid: $uuid,
-				targetSchemaSlug: $schemaRef,
-				targetRegister: $register,
-				code: 422
-			);
-		}
-
-		// Get the target schema for the error message.
-		$targetSchemaSlug = $schemaRef;
-		try {
-			$targetSchema = $this->getCachedSchema(schemaId: $targetSchemaId);
-			$targetSchemaSlug = $targetSchema->getSlug() ?? $schemaRef;
-		} catch (DoesNotExistException $e) {
-			// Use the raw reference as the slug in the error message.
-		}
-
-		// Resolve register and schema to entity objects for MagicMapper.
-		$registerEntity = null;
-		if ($register !== null) {
-			try {
-				$registerEntity = $this->getCachedRegister(registerId: $register);
-			} catch (DoesNotExistException $e) {
-				$this->logger->warning(
-					message: '[SaveObject] Could not resolve register for reference validation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'property' => $propertyName,
-						'register' => $register,
-					]
-				);
-				return;
-			}
-		}
-
-		$targetSchemaEntity = $targetSchema ?? null;
-
-		// Check if the object exists.
-		// Explicitly pass `includeDeleted: false` so soft-deleted target
-		// objects are treated as nonexistent — closes the spec's
-		// "Soft-deleted references treated as nonexistent" requirement.
-		// The MagicMapper default is already `false`, but pinning it
-		// here keeps the validation contract local + survives mapper
-		// signature changes.
-		try {
-			$this->unifiedObjectMapper->find(
-				identifier: $uuid,
-				register: $registerEntity,
-				schema: $targetSchemaEntity,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (DoesNotExistException $e) {
-			// Cache the negative verdict before the throw so subsequent
-			// checks for the same UUID short-circuit cheaply (and don't
-			// re-dispatch the failure event).
-			$this->referenceValidationCache[$cacheKey] = false;
-
-			// Side-channel notification for monitoring / extensibility.
-			// Dispatched BEFORE the exception so listeners observe every
-			// failure regardless of whether the controller layer
-			// recovers or surfaces the 422.
-			$this->dispatchReferenceValidationFailedEvent(
-				propertyName: $propertyName,
-				referencedUuid: $uuid,
-				targetSchemaSlug: $targetSchemaSlug,
-				targetRegister: $register
-			);
-
-			// Throw a structured exception so API clients can render
-			// actionable error UI without parsing the message string —
-			// closes the spec's "structured diagnostic information"
-			// requirement. Subclasses ValidationException so existing
-			// 422 handlers route it correctly.
-			throw new ReferenceValidationException(
-				propertyName: $propertyName,
-				referencedUuid: $uuid,
-				targetSchemaSlug: $targetSchemaSlug,
-				targetRegister: $register,
-				code: 422,
-				previous: $e
-			);
-		} catch (Exception $e) {
-			// Non-existence errors (e.g., database errors) — log warning but don't block.
-			$this->logger->warning(
-				message: '[SaveObject] Reference validation lookup failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propertyName,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
-			);
-			return;
-		}//end try
-
-		// Cache the positive verdict so subsequent checks for the same
-		// (target schema, UUID) inside the same request — bulk imports,
-		// cascading saves — skip the database round trip.
-		$this->referenceValidationCache[$cacheKey] = true;
-
-		// Lookup succeeded — emit a success event so listeners can hook
-		// into accepted references (analytics, cache warming, etc.)
-		// without changing the save flow.
-		$this->dispatchReferenceValidatedEvent(
-			propertyName: $propertyName,
-			referencedUuid: $uuid,
-			targetSchemaSlug: $targetSchemaSlug,
-			targetRegister: $register
-		);
-	}//end validateReferenceExists()
 
 	/**
 	 * Clear the request-scoped reference-existence cache.
@@ -5608,7 +4237,7 @@ class SaveObject {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function clearReferenceValidationCache(): void {
-		$this->referenceValidationCache = [];
+		$this->referenceExistence()->forget();
 	}//end clearReferenceValidationCache()
 
 	/**
@@ -5667,414 +4296,197 @@ class SaveObject {
 	 * re-validation is sequenced after this primitive lands and is
 	 * tracked separately.
 	 *
-	 * @param Register|null $register Register context for the batch.
-	 * @param Schema|int|string|null $schema Schema context for the batch.
-	 * @param iterable $rows Input rows (each is the same
-	 *                       shape `saveObject` accepts).
-	 * @param BatchOperationStatus|null $status Optional pre-existing status
-	 *                                          (for callers that want to
-	 *                                          accumulate across multiple
-	 *                                          calls).
+	 * @param StreamingSave $save The register and schema context of the batch, its rows (each the shape
+	 *                            `saveObject` accepts) and an optional pre-existing status for callers
+	 *                            that accumulate across multiple calls.
 	 *
 	 * @return BatchOperationStatus
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function saveObjectsStreaming(
-		Register|int|string|null $register,
-		Schema|int|string|null $schema,
-		iterable $rows,
-		?BatchOperationStatus $status = null,
-	): BatchOperationStatus {
-		$status ??= new BatchOperationStatus();
+	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus {
+		$status = ($save->status ?? new BatchOperationStatus());
 		$status->start();
+
+		$run = new StreamRun();
+		$run->register = $save->register;
+		$run->schema = $save->schema;
+		$run->status = $status;
 
 		// Position in the submitted batch. A failed create has no UUID yet, so
 		// this is the only thing that lets a caller identify the row it lost
 		// (issue #2778). Counted rather than read from the key because $rows is
 		// an iterable and may be a generator.
-		$rowIndex = -1;
-
-		foreach ($rows as $row) {
-			$rowIndex++;
-			$cacheBefore = count($this->referenceValidationCache);
-
-			try {
-				$rowData = [];
-				if (is_array($row) === true) {
-					$rowData = $row;
-				}
-
-				// Clear the slot first. Without this, a row that reaches neither
-				// terminal path would be classified with the PREVIOUS row's
-				// verdict — a stale answer that reads exactly like a real one,
-				// where a null falls through to the fallback and is at least
-				// derived from this row.
-				$this->lastSaveOutcome = null;
-
-				$entity = $this->saveObject(
-					register: $register,
-					schema: $schema,
-					data: $rowData
-				);
-
-				$uuid = ((string)$entity->getUuid());
-
-				// Outcome bucket — from the save path's own verdict, not from
-				// the shape of the input. This used to guess: "the row carried a
-				// uuid, so it must be an update". The guess is wrong in both
-				// directions. A row supplying a uuid for an object that does not
-				// exist yet is a CREATE counted as an update, and a write that
-				// changed nothing is an UPDATE counted as a change — which is
-				// why `unchanged` was described here as a future enhancement
-				// needing "a deep diff against the previous state". No such diff
-				// is needed: handleObjectUpdate() already clones the pre-update
-				// state for the audit trail and handleObjectCreation() already
-				// has the mapper's write action, so both paths know the answer
-				// and now record it.
-				//
-				// The fallback is the old heuristic, kept for the one case that
-				// can still leave the verdict unset — a `persist: false` prepare
-				// reaching neither terminal path — so a null can never be
-				// silently dropped from the totals.
-				$outcome = $this->consumeLastSaveOutcome();
-				if ($outcome === null) {
-					$hadUuid = (
-						is_array($row) === true
-						&& (isset($row['@self']['id']) === true
-						|| isset($row['id']) === true
-						|| isset($row['uuid']) === true)
-					);
-					$outcome = 'created';
-					if ($hadUuid === true) {
-						$outcome = 'updated';
-					}
-				}
-
-				if ($outcome === 'created') {
-					$status->recordCreated(uuid: $uuid);
-				}
-
-				if ($outcome === 'updated') {
-					$status->recordUpdated(uuid: $uuid);
-				}
-
-				if ($outcome === 'unchanged') {
-					$status->recordUnchanged(uuid: $uuid);
-				}
-			} catch (Exception $e) {
-				$rowUuid = null;
-				if (is_array($row) === true) {
-					$rowUuid = (
-						$row['@self']['id'] ?? $row['id'] ?? $row['uuid'] ?? null
-					);
-					if (is_string($rowUuid) === false) {
-						$rowUuid = null;
-					}
-				}
-
-				$status->recordFailed(
-					uuid: $rowUuid,
-					message: $e->getMessage(),
-					exceptionClass: $e::class,
-					index: $rowIndex
-				);
-
-				$this->logger->warning(
-					message: '[SaveObject] saveObjectsStreaming row failed',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $rowUuid,
-						'index' => $rowIndex,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-
-			// Each row's reference checks either grew the cache (miss)
-			// or hit existing entries (hit). Comparing cache size
-			// before/after the row gives us a cheap proxy: any growth
-			// is a miss; rows that didn't grow the cache resolved
-			// their references via existing entries (hit).
-			$cacheAfter = count($this->referenceValidationCache);
-			$delta = ($cacheAfter - $cacheBefore);
-			if ($delta > 0) {
-				for ($i = 0; $i < $delta; $i++) {
-					$status->recordReferenceCacheMiss();
-				}
-			}
-
-			if ($delta <= 0) {
-				$status->recordReferenceCacheHit();
-			}
-		}//end foreach
+		foreach ($save->rows as $row) {
+			$run->rowIndex++;
+			$run->row = $row;
+			$cacheBefore = $this->referenceExistence()->verdictCount();
+			$this->saveStreamRow(run: $run);
+			$this->recordReferenceCacheUse(status: $status, cacheBefore: $cacheBefore);
+		}
 
 		$status->complete();
 		return $status;
 	}//end saveObjectsStreaming()
 
 	/**
-	 * Push an in-flight save onto the call stack used for circular
-	 * reference detection.
+	 * Save one streamed row and record its outcome, or its failure without stopping the batch.
 	 *
-	 * Returns the unique key under which the frame is recorded so
-	 * `popSaveCallFrame()` can remove it cleanly even when the caller
-	 * is in a nested cascade (we may have multiple frames on the stack
-	 * at once). Empty UUIDs are skipped — pre-persist creates have no
-	 * stable identifier yet, so they cannot be re-encountered as a
-	 * back-reference within the same chain.
-	 *
-	 * @param string $schemaSlug Schema slug (or id when slug is null).
-	 * @param string $uuid Object UUID. Empty string when not yet known.
-	 * @param string|null $register Register identifier.
-	 *
-	 * @return string|null The stack frame key, or null when nothing was pushed.
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function pushSaveCallFrame(string $schemaSlug, string $uuid, ?string $register): ?string {
-		if ($uuid === '') {
-			return null;
-		}
-
-		$key = $schemaSlug . ':' . $uuid;
-		if (array_key_exists($key, $this->saveCallStackIndex) === true) {
-			// Already on the stack — re-entry without going through
-			// a child save. This is unusual but harmless; just refuse
-			// to double-push so pop semantics stay balanced.
-			return null;
-		}
-
-		$this->saveCallStack[] = [
-			'schemaSlug' => $schemaSlug,
-			'uuid' => $uuid,
-			'register' => $register,
-		];
-		$this->saveCallStackIndex[$key] = (count($this->saveCallStack) - 1);
-
-		return $key;
-	}//end pushSaveCallFrame()
-
-	/**
-	 * Pop a frame previously pushed by `pushSaveCallFrame()`.
-	 *
-	 * Tolerant of null keys (pushSaveCallFrame returns null when the
-	 * frame couldn't be pushed) so callers can wrap unconditional
-	 * `try { … } finally { popSaveCallFrame($key); }` without checking.
-	 *
-	 * @param string|null $key The frame key returned by pushSaveCallFrame, or null.
+	 * @param StreamRun $run The batch, on one row.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function popSaveCallFrame(?string $key): void {
-		if ($key === null) {
-			return;
-		}
-
-		if (array_key_exists($key, $this->saveCallStackIndex) === false) {
-			return;
-		}
-
-		$depth = $this->saveCallStackIndex[$key];
-		unset($this->saveCallStackIndex[$key]);
-
-		// Pop only the frames at or above the recorded depth so
-		// unbalanced finallys (e.g. an exception that skipped a pop
-		// somewhere) self-heal instead of leaking entries forever.
-		$stackSize = count($this->saveCallStack);
-		while ($stackSize > $depth) {
-			$frame = array_pop($this->saveCallStack);
-			if ($frame === null) {
-				break;
+	private function saveStreamRow(StreamRun $run): void {
+		try {
+			$rowData = [];
+			if (is_array($run->row) === true) {
+				$rowData = $run->row;
 			}
 
-			$stackSize--;
+			// Clear the slot first: a row that reaches neither terminal path must
+			// not be classified with the PREVIOUS row's verdict.
+			$this->lastSaveOutcome = null;
+			$target = new ObjectFindTarget(register: $run->register, schema: $run->schema);
+			$entity = $this->saveObject(data: $rowData, options: new ObjectSaveOptions(target: $target));
+			$this->recordStreamOutcome(run: $run, uuid: (string)$entity->getUuid());
+		} catch (Exception $e) {
+			$rowUuid = self::streamRowUuid(row: $run->row);
+			$run->status->recordFailed(
+				failure: new RowFailure(uuid: $rowUuid, message: $e->getMessage(), exceptionClass: $e::class, index: $run->rowIndex)
+			);
 
-			$existing = $frame['schemaSlug'] . ':' . $frame['uuid'];
-			if ($existing !== $key) {
-				unset($this->saveCallStackIndex[$existing]);
-			}
-		}
-
-	}//end popSaveCallFrame()
+			$this->logger->warning(
+				message: '[SaveObject] saveObjectsStreaming row failed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'uuid' => $rowUuid,
+					'index' => $run->rowIndex,
+					'error' => $e->getMessage(),
+				]
+			);
+		}//end try
+	}//end saveStreamRow()
 
 	/**
-	 * Detect whether the supplied UUID is currently being saved
-	 * higher up the cascade chain.
+	 * Record a saved row as created, updated or unchanged, from the save path's own verdict.
 	 *
-	 * Returns the cycle path (the visited stack) when re-entry is
-	 * detected, otherwise null. Schema match is loose — if any frame
-	 * on the stack carries the same UUID (regardless of schema), we
-	 * consider it a cycle. This is the right shape for the spec's
-	 * "A->B->A" example: the schema may legitimately differ between
-	 * the parent and child cascades but the UUID is what closes the
-	 * loop.
+	 * The verdict is not guessed from the input: a row supplying a uuid for an
+	 * object that does not exist yet is a create, and a write that changed
+	 * nothing is unchanged. Only when the verdict is unset (a `persist: false`
+	 * prepare reaching neither terminal path) does the old heuristic apply,
+	 * so a row is never dropped from the totals.
 	 *
-	 * @param string $uuid Candidate UUID being referenced.
+	 * @param StreamRun $run  The batch, on one row.
+	 * @param string    $uuid The saved object's UUID.
 	 *
-	 * @return array<int, array{schemaSlug:string,uuid:string,register:string|null}>|null
-	 *                                                                                    Cycle path when detected, null otherwise.
+	 * @return void
 	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function detectCircularReference(string $uuid): ?array {
-		if ($uuid === '') {
-			return null;
+	private function recordStreamOutcome(StreamRun $run, string $uuid): void {
+		$outcome = ($this->consumeLastSaveOutcome() ?? self::guessedStreamOutcome(row: $run->row));
+		if ($outcome === 'created') {
+			$run->status->recordCreated(uuid: $uuid);
 		}
 
-		foreach ($this->saveCallStack as $frame) {
-			if ($frame['uuid'] === $uuid) {
-				return $this->saveCallStack;
-			}
+		if ($outcome === 'updated') {
+			$run->status->recordUpdated(uuid: $uuid);
 		}
 
-		return null;
-	}//end detectCircularReference()
+		if ($outcome === 'unchanged') {
+			$run->status->recordUnchanged(uuid: $uuid);
+		}
+	}//end recordStreamOutcome()
 
 	/**
-	 * Decide whether the current user should bypass reference validation.
+	 * The outcome guessed from a row's shape: updated when it carries an identifier, else created.
 	 *
-	 * Returns true when the current session user is in the `admin`
-	 * group AND the `reference_validation_admin_bypass` app-config flag
-	 * resolves to `true` (the default). The dependencies are optional
-	 * to keep older test fixtures working — when either is missing the
-	 * method returns false so validation runs as before.
+	 * @param mixed $row The input row.
 	 *
-	 * @return bool True when admin bypass applies.
+	 * @return string The guessed outcome.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function shouldBypassValidationForAdmin(): bool {
-		if ($this->groupManager === null || $this->appConfig === null) {
-			return false;
-		}
-
-		$bypassEnabled = filter_var(
-			$this->appConfig->getValueString(
-				app: self::APP_ID,
-				key: self::CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS,
-				default: 'true'
-			),
-			FILTER_VALIDATE_BOOLEAN
+	private static function guessedStreamOutcome(mixed $row): string {
+		$hadUuid = (
+			is_array($row) === true
+			&& (isset($row['@self']['id']) === true
+			|| isset($row['id']) === true
+			|| isset($row['uuid']) === true)
 		);
-
-		if ($bypassEnabled === false) {
-			return false;
+		if ($hadUuid === true) {
+			return 'updated';
 		}
 
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
-	}//end shouldBypassValidationForAdmin()
+		return 'created';
+	}//end guessedStreamOutcome()
 
 	/**
-	 * Dispatch a `ReferenceValidatedEvent` if a dispatcher is wired.
+	 * The identifier a failed row carries, or null when it carries no string identifier.
 	 *
-	 * Encapsulates the null-check so call-sites stay readable. Failures
-	 * inside listeners are caught and logged so a misbehaving listener
-	 * cannot block a save.
+	 * @param mixed $row The input row.
 	 *
-	 * @param string $propertyName Schema property name.
-	 * @param string $referencedUuid UUID that resolved.
-	 * @param string $targetSchemaSlug Target schema slug.
-	 * @param string|null $targetRegister Register the lookup ran in.
+	 * @return string|null The identifier.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function streamRowUuid(mixed $row): ?string {
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$rowUuid = ($row['@self']['id'] ?? $row['id'] ?? $row['uuid'] ?? null);
+		if (is_string($rowUuid) === false) {
+			return null;
+		}
+
+		return $rowUuid;
+	}//end streamRowUuid()
+
+	/**
+	 * Count a row's reference checks as cache misses (the cache grew) or one hit (it did not).
+	 *
+	 * Comparing the cache size before and after the row is a cheap proxy.
+	 *
+	 * @param BatchOperationStatus $status      The batch status.
+	 * @param int                  $cacheBefore The reference cache size before the row.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function dispatchReferenceValidatedEvent(
-		string $propertyName,
-		string $referencedUuid,
-		string $targetSchemaSlug,
-		?string $targetRegister,
-	): void {
-		if ($this->eventDispatcher === null) {
+	private function recordReferenceCacheUse(BatchOperationStatus $status, int $cacheBefore): void {
+		$delta = ($this->referenceExistence()->verdictCount() - $cacheBefore);
+		if ($delta <= 0) {
+			$status->recordReferenceCacheHit();
 			return;
 		}
 
-		try {
-			$this->eventDispatcher->dispatchTyped(
-				new ReferenceValidatedEvent(
-					propertyName: $propertyName,
-					referencedUuid: $referencedUuid,
-					targetSchemaSlug: $targetSchemaSlug,
-					targetRegister: $targetRegister
-				)
-			);
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[SaveObject] ReferenceValidatedEvent dispatch failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propertyName,
-					'uuid' => $referencedUuid,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-
-	}//end dispatchReferenceValidatedEvent()
-
-	/**
-	 * Dispatch a `ReferenceValidationFailedEvent` if a dispatcher is wired.
-	 *
-	 * Encapsulates the null-check so call-sites stay readable. Failures
-	 * inside listeners are caught and logged so a misbehaving listener
-	 * cannot mask the underlying validation failure.
-	 *
-	 * @param string $propertyName Schema property name.
-	 * @param string $referencedUuid UUID that did not resolve.
-	 * @param string $targetSchemaSlug Target schema slug.
-	 * @param string|null $targetRegister Register the lookup ran in.
-	 *
-	 * @return void
-	 */
-	private function dispatchReferenceValidationFailedEvent(
-		string $propertyName,
-		string $referencedUuid,
-		string $targetSchemaSlug,
-		?string $targetRegister,
-	): void {
-		if ($this->eventDispatcher === null) {
-			return;
+		for ($i = 0; $i < $delta; $i++) {
+			$status->recordReferenceCacheMiss();
 		}
-
-		try {
-			$this->eventDispatcher->dispatchTyped(
-				new ReferenceValidationFailedEvent(
-					propertyName: $propertyName,
-					referencedUuid: $referencedUuid,
-					targetSchemaSlug: $targetSchemaSlug,
-					targetRegister: $targetRegister
-				)
-			);
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[SaveObject] ReferenceValidationFailedEvent dispatch failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $propertyName,
-					'uuid' => $referencedUuid,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-
-	}//end dispatchReferenceValidationFailedEvent()
+	}//end recordReferenceCacheUse()
 
 	/**
-	 * Prepares object data by applying all necessary transformations.
+	 * Whether the current user skips reference validation.
 	 *
-	 * @param ObjectEntity $objectEntity The object entity.
-	 * @param Schema $schema The schema of the object.
-	 * @param array $data The object data.
+	 * @return ReferenceAdminBypass The bypass decision.
+	 */
+	private function referenceAdminBypass(): ReferenceAdminBypass {
+		return new ReferenceAdminBypass(
+			adminGate: new AdminGate(userSession: $this->userSession, groupManager: $this->groupManager),
+			appConfig: $this->appConfig
+		);
+	}//end referenceAdminBypass()
+
+	/**
+	 * Prepares the run's object data by applying all necessary transformations.
+	 *
+	 * @param CascadeRun $run    The pass: the object entity as parent, and the object data.
+	 * @param Schema     $schema The schema of the object.
 	 *
 	 * @return array The prepared object data.
 	 *
@@ -6082,11 +4494,13 @@ class SaveObject {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function prepareObjectData(ObjectEntity $objectEntity, Schema $schema, array $data): array {
+	private function prepareCascadeData(CascadeRun $run, Schema $schema): array {
+		$objectEntity = $run->parent;
+		$data = $run->data;
 		// Sanitize empty strings after validation but before cascading operations.
 		// This prevents empty values from causing issues in downstream processing.
 		try {
-			$data = $this->sanitizeEmptyStringsForObjectProperties(data: $data, schema: $schema);
+			$data = $this->emptyValues()->sanitize(data: $data, schema: $schema);
 		} catch (Exception $e) {
 			// CRITICAL FIX: Sanitization failures indicate serious data problems - don't suppress!
 			$part1 = 'Object data sanitization failed: ' . $e->getMessage();
@@ -6095,27 +4509,38 @@ class SaveObject {
 			throw new Exception($errorMessage, 0, $e);
 		}
 
+		// Removed references are only cleaned up when the schema opts in. Read before
+		// the pre-cache below overwrites the entity's data with the incoming data.
+		$run->data = $data;
+		if (($schema->getConfiguration()['orphanCleanup'] ?? false) === true) {
+			$run->stored = ($objectEntity->getObject() ?? []);
+		}
+
 		// Pre-populate the name cache with the parent object's name before cascading.
 		// This ensures that when sub-objects (e.g., koppelingen) resolve relation fields
 		// (e.g., {{ moduleA }}) via the name template, they can find the parent's name
 		// in the cache even though the parent hasn't been persisted to the database yet.
 		// Without this, cascaded sub-objects fall back to showing the raw UUID as the name.
-		$this->preCacheParentName(objectEntity: $objectEntity, schema: $schema, data: $data);
+		$this->preCacheParentName(run: $run, schema: $schema);
 
 		// Apply cascading operations.
-		$data = $this->cascadeObjects(objectEntity: $objectEntity, schema: $schema, data: $data);
-		$data = $this->handleInverseRelationsWriteBack(objectEntity: $objectEntity, schema: $schema, data: $data);
+		$data = $this->cascadeObjects(run: $run, schema: $schema);
+		$writeBack = new CascadeRun();
+		$writeBack->parent = $objectEntity;
+		$writeBack->data = $data;
+		$data = $this->inverseWriteBack()->write(run: $writeBack, schema: $schema);
 
-		// Apply default values (including slug generation).
-		$data = $this->setDefaultValues(objectEntity: $objectEntity, schema: $schema, data: $data);
+		$data = $this->propertyDefaults()->forSave(
+			schema: $schema,
+			context: DefaultValueContext::ofSave(objectEntity: $objectEntity, data: $data)
+		);
 
 		// Evaluate computed fields with evaluateOn: 'save'.
 		// This computes values from Twig expressions and stores them in the object data.
 		if ($this->computedFieldHandler->hasComputedProperties($schema) === true) {
 			$data = $this->computedFieldHandler->evaluateComputedFields(
 				data: $data,
-				schema: $schema,
-				evaluateOn: 'save'
+				pass: new ComputedPass(schema: $schema, evaluateOn: 'save')
 			);
 		}
 
@@ -6132,7 +4557,7 @@ class SaveObject {
 		}
 
 		return $data;
-	}//end prepareObjectData()
+	}//end prepareCascadeData()
 
 	/**
 	 * Pre-populate the name cache with the parent object's name before cascading.
@@ -6147,15 +4572,16 @@ class SaveObject {
 	 * This method computes the parent's name from its data and schema configuration,
 	 * then stores it in the cache so sub-objects can resolve it during cascading.
 	 *
-	 * @param ObjectEntity $objectEntity The parent object entity (with UUID already set).
-	 * @param Schema $schema The parent object's schema.
-	 * @param array $data The parent object's data.
+	 * @param CascadeRun $run    The pass: the parent object entity (with UUID already set) and its data.
+	 * @param Schema     $schema The parent object's schema.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function preCacheParentName(ObjectEntity $objectEntity, Schema $schema, array $data): void {
+	private function preCacheParentName(CascadeRun $run, Schema $schema): void {
+		$objectEntity = $run->parent;
+		$data = $run->data;
 		$uuid = $objectEntity->getUuid();
 		if ($uuid === null) {
 			return;
@@ -6164,181 +4590,254 @@ class SaveObject {
 		// Temporarily set the object data so hydrateObjectMetadata can extract the name.
 		$objectEntity->setObject($data);
 
-		try {
-			$this->metaHydrationHandler->hydrateObjectMetadata(entity: $objectEntity, schema: $schema);
-		} catch (\Exception $e) {
-			// Non-critical: if hydration fails, cascaded sub-objects will fall back to UUID.
-			$this->logger->debug(
-				message: '[SaveObject] Pre-cache name hydration failed, sub-objects may show UUID names',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
-			);
-
+		if ($this->hydratesParentName(objectEntity: $objectEntity, schema: $schema) === false) {
 			return;
 		}
 
-		// SEC-CTRL-2 step 2: pre-cached parent names carry their owning organisation
-		// so the shared name cache can never disclose them across tenants.
-		$parentOrganisation = $objectEntity->getOrganisation();
-
-		$name = $objectEntity->getName();
-		if ($name !== null && trim($name) !== '') {
-			$this->cacheHandler->setObjectName(
-				identifier: $uuid,
-				name: $name,
-				organisation: $parentOrganisation
-			);
-		}
-
-		// Also try the 'naam' field as a fallback (common in Dutch schemas).
-		// This covers cases where objectNameField is not configured but naam exists in data.
-		if (($name === null || trim($name) === '') && isset($data['naam']) === true) {
-			$name = trim((string)$data['naam']);
-			if ($name !== '') {
-				$this->cacheHandler->setObjectName(
-					identifier: $uuid,
-					name: $name,
-					organisation: $parentOrganisation
-				);
-			}
-		}
+		$this->cacheParentName(objectEntity: $objectEntity, data: $data);
 	}//end preCacheParentName()
+
+	/**
+	 * Hydrate the parent's metadata so its name is known; a failure is logged and caches nothing.
+	 *
+	 * @param ObjectEntity $objectEntity The parent, holding the incoming data.
+	 * @param Schema       $schema       The parent object's schema.
+	 *
+	 * @return bool True when hydration succeeded.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function hydratesParentName(ObjectEntity $objectEntity, Schema $schema): bool {
+		try {
+			$this->metaHydrationHandler->hydrateObjectMetadata(entity: $objectEntity, schema: $schema);
+			return true;
+		} catch (\Exception $e) {
+			// Non-critical: if hydration fails, cascaded sub-objects will fall back to UUID.
+			$this->logNameHydrationFailed(uuid: (string)$objectEntity->getUuid(), error: $e);
+			return false;
+		}
+	}//end hydratesParentName()
+
+	/**
+	 * Log a failed name pre-cache.
+	 *
+	 * @param string     $uuid  The parent's uuid.
+	 * @param \Exception $error The failure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function logNameHydrationFailed(string $uuid, \Exception $error): void {
+		$this->logger->debug(
+			message: '[SaveObject] Pre-cache name hydration failed, sub-objects may show UUID names',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $uuid,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logNameHydrationFailed()
+
+	/**
+	 * Cache the parent's name, with its owning organisation, when it has one.
+	 *
+	 * SEC-CTRL-2 step 2: pre-cached parent names carry their owning organisation
+	 * so the shared name cache can never disclose them across tenants.
+	 *
+	 * @param ObjectEntity $objectEntity The hydrated parent.
+	 * @param array        $data         The incoming data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheParentName(ObjectEntity $objectEntity, array $data): void {
+		$parentOrganisation = $objectEntity->getOrganisation();
+		$name = self::cacheableParentName(name: $objectEntity->getName(), data: $data);
+		if ($name === null) {
+			return;
+		}
+
+		$this->cacheHandler->setObjectName(
+			identifier: (string)$objectEntity->getUuid(),
+			name: $name,
+			organisation: $parentOrganisation
+		);
+	}//end cacheParentName()
+
+	/**
+	 * The hydrated name when it is not blank, else the trimmed `naam` field, else null.
+	 *
+	 * Also try the 'naam' field as a fallback (common in Dutch schemas).
+	 * This covers cases where objectNameField is not configured but naam exists in data.
+	 *
+	 * @param string|null $name The hydrated name.
+	 * @param array       $data The incoming data.
+	 *
+	 * @return string|null The name to cache.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function cacheableParentName(string|null $name, array $data): string|null {
+		if ($name !== null && trim($name) !== '') {
+			return $name;
+		}
+
+		if (isset($data['naam']) === false) {
+			return null;
+		}
+
+		$naam = trim((string)$data['naam']);
+		if ($naam === '') {
+			return null;
+		}
+
+		return $naam;
+	}//end cacheableParentName()
 
 	/**
 	 * Updates an existing object.
 	 *
-	 * @param Register|int|string $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
-	 * @param array $data The updated object data.
-	 * @param ObjectEntity $existingObject The existing object to update.
-	 * @param int|null $folderId The folder ID to set on the object (optional).
-	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
-	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
+	 * @param StoredObjectUpdate  $update  The register, schema, new data and the stored object to update.
+	 * @param ObjectUpdateOptions $options Silent mode and the original object before changes.
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 *
 	 * @throws Exception If there is an error during update.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex update logic with file handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple update paths and file processing
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive update with file handling
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function updateObject(
-		Register|int|string $register,
-		Schema|int|string $schema,
-		array $data,
-		ObjectEntity $existingObject,
-		?int $folderId = null,
-		bool $silent = false,
-		?ObjectEntity $oldObject = null,
+		StoredObjectUpdate $update,
+		ObjectUpdateOptions $options = new ObjectUpdateOptions(),
 	): ObjectEntity {
+		$existingObject = $update->existingObject;
+		$data           = $update->data;
+		$run            = new ObjectUpdateRun();
+		$run->silent    = $options->silent;
 
-		// Use provided oldObject or clone the existing object for audit trail.
-		// Note: If oldObject is not provided, the clone here may have modified data
-		// since prepareObjectForUpdate already modified existingObject in place.
-		// Always prefer passing oldObject from the caller (handleObjectUpdate).
-		if ($oldObject === null) {
-			$oldObject = clone $existingObject;
-		}
+		// Prefer the caller's oldObject (handleObjectUpdate): a clone taken here may
+		// already hold data prepareObjectForUpdate changed in place.
+		$run->oldObject = ($options->oldObject ?? clone $existingObject);
 
-		// Extract @self data if present.
-		$selfData = [];
 		if (($data['@self'] ?? null) !== null && is_array($data['@self']) === true) {
-			$selfData = $data['@self'];
+			$run->selfData = $data['@self'];
 		}
 
-		// Remove @self and id from the data before processing.
 		unset($data['@self'], $data['id']);
+		$run->data = $data;
 
 		// Resolve register and schema to entity objects if needed.
+		$register = $update->register;
 		if (is_int($register) === true || is_string($register) === true) {
 			$register = $this->registerMapper->find(id: (int)$register, _multitenancy: false);
 		}
 
+		$schema = $update->schema;
 		if (is_int($schema) === true || is_string($schema) === true) {
 			$schema = $this->schemaMapper->find(id: (int)$schema, _multitenancy: false);
 		}
 
-		// Set register ID and schema ID.
-		$registerId = $register->getId();
-		$schemaId = $schema->getId();
+		$run->register = $register;
+		$run->schema = $schema;
 
-		// Prepare the object for update using the new structure.
-		$preparedObject = $this->prepareObjectForUpdate(
-			existingObject: $existingObject,
-			schema: $schema,
-			data: $data,
-			selfData: $selfData,
-			folderId: $folderId
-		);
+		$updatedEntity = $this->persistObjectUpdate(run: $run, existingObject: $existingObject);
+		$this->outdatedTranslations()->flag(run: $run, updated: $updatedEntity);
+		$this->recordObjectUpdate(run: $run, updatedEntity: $updatedEntity);
+		$updatedEntity = $this->objectFiles()->storeForUpdate(run: $run, updated: $updatedEntity);
 
-		// Recalculate the archive action date if a source property changed.
-		$retentionService = $this->resolveRetentionService();
-		if ($retentionService !== null) {
-			try {
-				$preparedObject = $retentionService->recalculateArchiveActionDate(
-					$preparedObject,
-					$schema,
-					$oldObject->getObject()
-				);
-			} catch (\Throwable $e) {
-				$this->logger->debug('[SaveObject] Skipping archive action date recalculation: ' . $e->getMessage());
-			}
+		// Bidirectional relations; skipped in silent mode (cascaded sub-objects) for performance.
+		if ($options->silent === false) {
+			$this->inverseRelations()->update(saved: $updatedEntity, write: new InverseRelationWrite(register: $register, schema: $schema));
 		}
 
-		// Update the object properties.
+		return $updatedEntity;
+	}//end updateObject()
+
+	/**
+	 * Prepare the stored object with the update and write it through the unified mapper.
+	 *
+	 * The old object goes along so events detect status changes accurately.
+	 *
+	 * @param ObjectUpdateRun $run            The update call.
+	 * @param ObjectEntity    $existingObject The stored object.
+	 *
+	 * @return ObjectEntity The updated entity.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function persistObjectUpdate(ObjectUpdateRun $run, ObjectEntity $existingObject): ObjectEntity {
+		$registerId = $run->register->getId();
+		$schemaId = $run->schema->getId();
+		$preparedObject = $this->prepareObjectForUpdate(
+			preparation: new UpdatePreparation(
+				existingObject: $existingObject,
+				schema: $run->schema,
+				payload: new ObjectPayload(data: $run->data, selfData: $run->selfData)
+			)
+		);
+		$preparedObject = $this->recalculateArchiveDate(run: $run, preparedObject: $preparedObject);
+
 		$preparedObject->setRegister((string)$registerId);
 		$preparedObject->setSchema((string)$schemaId);
 		$preparedObject->setUpdated(new DateTime());
+		$this->userActivity?->stamp(object: $preparedObject);
 
-		// Log that we're about to update using MagicMapper.
 		$this->logger->debug(
 			message: '[SaveObject] Updating object using MagicMapper',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $preparedObject->getUuid(),
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $preparedObject->getUuid()]
 		);
 
-		// Save the object to database using MagicMapper.
-		// This ensures proper event dispatching for magic table objects.
-		// Pass the oldObject to ensure accurate status change detection in events.
-		$updatedEntity = $this->unifiedObjectMapper->update(
+		return $this->unifiedObjectMapper->update(
 			entity: $preparedObject,
-			register: $register,
-			schema: $schema,
-			oldEntity: $oldObject
+			register: $run->register,
+			schema: $run->schema,
+			oldEntity: $run->oldObject
 		);
+	}//end persistObjectUpdate()
 
-		// I18n-source-of-truth: when a translatable property's source-language
-		// value changes, flip every derived translation row to `outdated` so
-		// editorial tooling surfaces the staleness immediately. Conservative —
-		// only triggers when the source value itself changed; per-language
-		// edits on non-source languages do NOT flip status.
-		try {
-			$this->flagOutdatedDerivedTranslations(
-				schema: $schema,
-				register: $register,
-				oldObject: $oldObject,
-				newObject: $updatedEntity
-			);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				'[SaveObject] failed to flag outdated translations: ' . $e->getMessage()
-			);
+	/**
+	 * Recalculate the archive action date when a source property changed, when retention is available.
+	 *
+	 * @param ObjectUpdateRun $run            The update call.
+	 * @param ObjectEntity    $preparedObject The object prepared for the update.
+	 *
+	 * @return ObjectEntity The object with its archive action date recalculated.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recalculateArchiveDate(ObjectUpdateRun $run, ObjectEntity $preparedObject): ObjectEntity {
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService === null) {
+			return $preparedObject;
 		}
 
-		// Debug: "an object was updated" is the single most routine event this
-		// application has. At info it is not a signal, it IS the noise floor.
-		// A FAILED update is what warrants attention, and that path logs already.
+		try {
+			return $retentionService->recalculateActionDate(
+				new RecordUpdate($preparedObject, $run->schema, $run->oldObject->getObject())
+			);
+		} catch (\Throwable $e) {
+			$this->logger->debug('[SaveObject] Skipping archive action date recalculation: ' . $e->getMessage());
+			return $preparedObject;
+		}
+	}//end recalculateArchiveDate()
+
+	/**
+	 * Log the update and write its audit trail, unless silent or audit trails are off.
+	 *
+	 * The log is debug: a routine update is the noise floor, and a failed
+	 * update logs on its own path.
+	 *
+	 * @param ObjectUpdateRun $run           The update call.
+	 * @param ObjectEntity    $updatedEntity The updated entity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function recordObjectUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): void {
 		$this->logger->debug(
 			message: '[SaveObject] Object updated successfully',
 			context: [
@@ -6349,274 +4848,11 @@ class SaveObject {
 			]
 		);
 
-		// Create audit trail for update if audit trails are enabled and not in silent mode.
-		if ($silent === false && $this->isAuditTrailsEnabled() === true) {
-			$log = $this->auditTrailMapper->createAuditTrail(old: $oldObject, new: $updatedEntity);
+		if ($run->silent === false && $this->isAuditTrailsEnabled() === true) {
+			$log = $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
 			$updatedEntity->setLastLog($log->jsonSerialize());
 		}
-
-		// Handle file properties - process them and replace content with file IDs.
-		// BUG-OBJ-8: collect the names of the properties the file handler rewrote so
-		// we can overlay ONLY those file-id replacements onto the merged/prepared body
-		// below, instead of clobbering the whole object with the raw partial $data.
-		$filePropsProcessed = false;
-		$processedFileProperties = [];
-		foreach ($data as $propertyName => $value) {
-			$isFileProperty = $this->filePropertyHandler->isFileProperty(
-				value: $value,
-				schema: $schema,
-				propertyName: $propertyName
-			);
-			if ($isFileProperty === true) {
-				$this->filePropertyHandler->handleFileProperty(
-					objectEntity: $updatedEntity,
-					object: $data,
-					propertyName: $propertyName,
-					schema: $schema
-				);
-				$filePropsProcessed = true;
-				$processedFileProperties[] = $propertyName;
-			}
-		}
-
-		// Update the object with the modified data (file IDs instead of content).
-		if ($filePropsProcessed === true) {
-			// BUG-OBJ-8: build the post-file body from the MERGED/prepared object that
-			// was just persisted (which contains computed fields, defaults, cascaded
-			// sub-objects, null-fills, and previously-stored fields not present in this
-			// request), then overlay only the file-id replacements computed by the file
-			// handler. Using the raw partial $data here would drop every field absent
-			// from the request — data loss that depends on payload shape.
-			$mergedObject = $updatedEntity->getObject() ?? [];
-			foreach ($processedFileProperties as $fileProperty) {
-				if (array_key_exists($fileProperty, $data) === true) {
-					$mergedObject[$fileProperty] = $data[$fileProperty];
-				}
-			}
-
-			$updatedEntity->setObject($mergedObject);
-
-			// Clear image metadata if objectImageField points to a file property.
-			// This ensures the image URL is extracted from the file object during rendering.
-			$config = $schema->getConfiguration();
-			if (($config['objectImageField'] ?? null) !== null) {
-				$imageField = $config['objectImageField'];
-				$schemaProperties = $schema->getProperties() ?? [];
-
-				// Check if the image field is a file property.
-				if (($schemaProperties[$imageField] ?? null) !== null) {
-					$propertyConfig = $schemaProperties[$imageField];
-					if (($propertyConfig['type'] ?? '') === 'file') {
-						// Clear the image metadata so it will be extracted from the file object during rendering.
-						$updatedEntity->setImage(null);
-					}
-				}
-			}
-
-			// Save the updated entity with file IDs back to database.
-			$updatedEntity = $this->objectEntityMapper->update(entity: $updatedEntity, register: $register, schema: $schema);
-		}//end if
-
-		// Update inverse relations on related objects (bidirectional relationship management).
-		// This ensures that when object A references object B, object B's relations also include A.
-		// Skip for silent mode (cascaded sub-objects) to improve performance.
-		if ($silent === false) {
-			$this->updateInverseRelations(savedEntity: $updatedEntity, register: $register, schema: $schema);
-		}
-
-		return $updatedEntity;
-	}//end updateObject()
-
-	/**
-	 * Compare old vs new object values for translatable properties and flip
-	 * derived-language translation rows to `outdated` when the resolved
-	 * source-language value changes.
-	 *
-	 * Conservative trigger: only fires when the source-language value
-	 * itself changed. Edits to other-language values do not flip status.
-	 *
-	 * @param Schema $schema The schema for the object.
-	 * @param Register $register The owning register (for default language fallback).
-	 * @param ObjectEntity $oldObject The pre-persist state.
-	 * @param ObjectEntity $newObject The post-persist state.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/i18n-source-of-truth/spec.md
-	 */
-	private function flagOutdatedDerivedTranslations(
-		Schema $schema,
-		Register $register,
-		ObjectEntity $oldObject,
-		ObjectEntity $newObject,
-	): void {
-		$uuid = $newObject->getUuid();
-		if ($uuid === null || $uuid === '') {
-			return;
-		}
-
-		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-		if (count($translatableProps) === 0) {
-			return;
-		}
-
-		$oldData = (array)($oldObject->getObject() ?? []);
-		$newData = (array)($newObject->getObject() ?? []);
-
-		$registerDefault = $register->getDefaultLanguage();
-		foreach ($translatableProps as $property) {
-			$sourceLanguage = $this->translationProjectionService->resolveSourceLanguage(
-				schema: $schema,
-				object: $newObject,
-				property: $property,
-				registerDefault: $registerDefault
-			);
-
-			$oldSource = $this->extractLanguageValue(
-				value: $oldData[$property] ?? null,
-				language: $sourceLanguage
-			);
-			$newSource = $this->extractLanguageValue(
-				value: $newData[$property] ?? null,
-				language: $sourceLanguage
-			);
-
-			if ($oldSource === null || $newSource === null) {
-				continue;
-			}
-
-			if ($oldSource === $newSource) {
-				continue;
-			}
-
-			$this->translationStatusService->markDerivedTranslationsOutdated(
-				objectUuid: (string)$uuid,
-				property: (string)$property,
-				sourceLanguage: $sourceLanguage
-			);
-		}//end foreach
-	}//end flagOutdatedDerivedTranslations()
-
-	/**
-	 * Extract the value for a given language out of a translatable property
-	 * payload. Accepts both language-keyed objects (`{nl: "x"}`) and scalar
-	 * values (interpreted as the source language).
-	 *
-	 * @param mixed $value The raw property value from the object body.
-	 * @param string $language The language tag to extract for.
-	 *
-	 * @return string|null The string value, or null when not present.
-	 *
-	 * @spec openspec/specs/i18n-source-of-truth/spec.md
-	 */
-	private function extractLanguageValue(mixed $value, string $language): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_string($value) === true) {
-			// Scalar bodies are treated as the source-language value.
-			return $value;
-		}
-
-		if (is_array($value) === true && isset($value[$language]) === true) {
-			$entry = $value[$language];
-			if (is_string($entry) === true) {
-				return $entry;
-			}
-
-			if (is_scalar($entry) === true) {
-				return (string)$entry;
-			}
-		}
-
-		return null;
-	}//end extractLanguageValue()
-
-	/**
-	 * Check if an object is effectively empty (contains only empty values)
-	 *
-	 * This method checks if an object contains only empty strings, empty arrays,
-	 * empty objects, or null values, which indicates it doesn't contain meaningful data
-	 * that should be cascaded.
-	 *
-	 * @param array $object The object data to check
-	 *
-	 * @return bool True if the object is effectively empty, false otherwise
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function isEffectivelyEmptyObject(array $object): bool {
-		// If the array is completely empty, it's effectively empty.
-		if (empty($object) === true) {
-			return true;
-		}
-
-		// Check each value in the object.
-		foreach ($object as $key => $value) {
-			// Skip metadata keys that don't represent actual data.
-			if (in_array($key, ['@self', 'id', '_id']) === true) {
-				continue;
-			}
-
-			// If we find any non-empty value, the object is not effectively empty.
-			if ($this->isValueNotEmpty(value: $value) === true) {
-				return false;
-			}
-		}
-
-		// All values are empty, so the object is effectively empty.
-		return true;
-	}//end isEffectivelyEmptyObject()
-
-	/**
-	 * Check if a value is not empty (contains meaningful data)
-	 *
-	 * @param mixed $value The value to check
-	 *
-	 * @return bool True if the value is not empty, false otherwise
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple value type checks required
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function isValueNotEmpty($value): bool {
-		// Null values are empty.
-		if ($value === null) {
-			return false;
-		}
-
-		// Empty strings are empty.
-		if (is_string($value) === true && trim($value) === '') {
-			return false;
-		}
-
-		// Empty arrays are empty.
-		if (is_array($value) === true && empty($value) === true) {
-			return false;
-		}
-
-		// For objects/arrays with content, check recursively. The empty-array
-		// case already returned above, so only the array-ness matters here.
-		if (is_array($value) === true) {
-			// If it's an associative array (object-like), check if it's effectively empty.
-			if (array_keys($value) !== range(0, count($value) - 1)) {
-				return $this->isEffectivelyEmptyObject(object: $value) === false;
-			}
-
-			// For indexed arrays, check if any element is not empty.
-			foreach ($value as $item) {
-				if ($this->isValueNotEmpty(value: $item) === true) {
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		// For all other values (numbers, booleans, etc.), they are not empty.
-		return true;
-	}//end isValueNotEmpty()
+	}//end recordObjectUpdate()
 
 	/**
 	 * Check if audit trails are enabled in the settings
@@ -6648,12 +4884,9 @@ class SaveObject {
 	 * provider itself re-verifies the backing source's writable flag at write
 	 * time (fail closed), so a stale annotation can never authorize a write.
 	 *
-	 * @param Register|null $register The resolved register.
-	 * @param Schema $schema The sourced schema.
+	 * @param ObjectSaveCall $call The save call: the resolved register, the sourced schema, the
+	 *                            object data, the object id (null for creates) and the silent flag.
 	 * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
-	 * @param array<string, mixed> $data The validated object data.
-	 * @param string|null $uuid The object id for updates, null for creates.
-	 * @param bool $silent Whether to skip audit trail creation.
 	 *
 	 * @return ObjectEntity The written virtual object as returned by the provider.
 	 *
@@ -6661,46 +4894,86 @@ class SaveObject {
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function delegateObjectSourceWrite(
-		?Register $register,
-		Schema $schema,
-		array $objectSource,
-		array $data,
-		?string $uuid,
-		bool $silent,
-	): ObjectEntity {
+	private function delegateObjectSourceWrite(ObjectSaveCall $call, array $objectSource): ObjectEntity {
+		$provider = $this->writableObjectSourceProvider(call: $call, objectSource: $objectSource);
+		$source   = self::sourcedTableFor(call: $call, objectSource: $objectSource);
+
+		if ($call->uuid === null || $call->uuid === '') {
+			$entity = $provider->insert(source: $source, data: $call->data);
+			$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'create', old: null, new: $entity), silent: $call->flags->silent);
+			return $entity;
+		}
+
+		$old = $provider->find(source: $source, id: $call->uuid);
+		$entity = $provider->update(source: $source, id: $call->uuid, data: $call->data);
+		$this->recordObjectSourceAudit(change: new ObjectSourceChange(action: 'update', old: $old, new: $entity), silent: $call->flags->silent);
+
+		return $entity;
+	}//end delegateObjectSourceWrite()
+
+	/**
+	 * The writable provider of an explicit, currently-valid write opt-in; the v1 read-only rejection otherwise.
+	 *
+	 * @param ObjectSaveCall       $call         The save call: the resolved register and the sourced schema.
+	 * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
+	 *
+	 * @return WritableObjectSourceProvider The provider.
+	 *
+	 * @throws \RuntimeException When the schema is not writable (v1 rejection).
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function writableObjectSourceProvider(ObjectSaveCall $call, array $objectSource): WritableObjectSourceProvider {
 		$provider = null;
 		if ($this->objectSourceRegistry !== null) {
 			$provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
 		}
 
 		$writableOptIn = (($objectSource['readOnly'] ?? true) === false);
-		$writable = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
-
-		if ($writableOptIn === false || $writable === false || $register instanceof Register === false) {
-			throw new RuntimeException(
-				sprintf(
-					'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
-					(string)$schema->getSlug(),
-					$objectSource['provider']
-				)
-			);
+		$writable = ($provider instanceof WritableObjectSourceProvider);
+		if ($writableOptIn === false || $writable === false || $call->register instanceof Register === false) {
+			throw self::readOnlyProjectionRefusal(call: $call, objectSource: $objectSource);
 		}
 
-		$config = ($objectSource['config'] ?? []);
+		return $provider;
+	}//end writableObjectSourceProvider()
 
-		if ($uuid === null || $uuid === '') {
-			$entity = $provider->insert(register: $register, schema: $schema, data: $data, config: $config);
-			$this->recordObjectSourceAudit(old: null, new: $entity, action: 'create', silent: $silent);
-			return $entity;
-		}
+	/**
+	 * The v1 rejection of a write to a read-only object-source projection.
+	 *
+	 * @param ObjectSaveCall       $call         The save call: the sourced schema.
+	 * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
+	 *
+	 * @return RuntimeException The rejection.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private static function readOnlyProjectionRefusal(ObjectSaveCall $call, array $objectSource): RuntimeException {
+		return new RuntimeException(
+			sprintf(
+				'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
+				(string)$call->schema->getSlug(),
+				$objectSource['provider']
+			)
+		);
+	}//end readOnlyProjectionRefusal()
 
-		$old = $provider->find(register: $register, schema: $schema, id: $uuid, config: $config);
-		$entity = $provider->update(register: $register, schema: $schema, id: $uuid, data: $data, config: $config);
-		$this->recordObjectSourceAudit(old: $old, new: $entity, action: 'update', silent: $silent);
-
-		return $entity;
-	}//end delegateObjectSourceWrite()
+	/**
+	 * The register, the sourced schema and the annotation's `config` block, as the provider takes them.
+	 *
+	 * @param ObjectSaveCall       $call         The save call: the resolved register and the sourced schema.
+	 * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
+	 *
+	 * @return SourcedTable The sourced table.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private static function sourcedTableFor(ObjectSaveCall $call, array $objectSource): SourcedTable {
+		return new SourcedTable(
+			table: new RegisterSchema(register: $call->register, schema: $call->schema),
+			config: ($objectSource['config'] ?? [])
+		);
+	}//end sourcedTableFor()
 
 	/**
 	 * Record an audit-trail row for an external write (best effort, design D6).
@@ -6708,25 +4981,23 @@ class SaveObject {
 	 * An audit failure must never mask a successful external write; it degrades
 	 * to a structured secret-free warning.
 	 *
-	 * @param ObjectEntity|null $old The pre-write entity (null on create).
-	 * @param ObjectEntity $new The post-write entity.
-	 * @param string $action The action (`create`|`update`).
-	 * @param bool $silent Whether audit creation is suppressed.
+	 * @param ObjectSourceChange $change What the external write changed, and as which action.
+	 * @param bool               $silent Whether audit creation is suppressed.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function recordObjectSourceAudit(?ObjectEntity $old, ObjectEntity $new, string $action, bool $silent): void {
+	private function recordObjectSourceAudit(ObjectSourceChange $change, bool $silent): void {
 		if ($silent === true) {
 			return;
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrail(old: $old, new: $new, action: $action);
+			$this->auditTrailMapper->createAuditTrail(old: $change->old, new: $change->new, action: $change->action);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				'[SaveObject] audit trail for external ' . $action . ' on uuid ' . ((string)$new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),
+				'[SaveObject] audit trail for external ' . $change->action . ' on uuid ' . ((string)$change->new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),
 				['file' => __FILE__, 'line' => __LINE__]
 			);
 		}

@@ -32,6 +32,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
@@ -116,13 +119,13 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) {
 				return match ($id) {
-					\OCA\OpenRegister\Service\DateTimeNormalizer::class => $this->createMock(
+					\OCA\OpenRegister\Service\DateTimeNormalizerInterface::class => $this->createMock(
 						\OCA\OpenRegister\Service\DateTimeNormalizer::class
 					),
 					\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(
 						\OCA\OpenRegister\Service\ConditionMatcher::class
 					),
-					\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class => $this->createMock(
+					\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(
 						\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class
 					),
 					default => null,
@@ -132,17 +135,22 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 
 		$mapper = new MagicMapper(
 			$this->db,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$config,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(\OCA\OpenRegister\Service\SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$config,
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		// Route the two tableHandler probes findInRegisterSchemaTable calls
@@ -180,6 +188,8 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 		$qb->method('where')->willReturnSelf();
 		$qb->method('andWhere')->willReturnSelf();
 		$qb->method('createNamedParameter')->willReturn(':param');
+		$qb->method('addOrderBy')->willReturnSelf();
+		$qb->method('createFunction')->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryFunction::class));
 
 		$result = $this->createMock(IResult::class);
 		$result->method('fetch')->willReturn(false);
@@ -283,6 +293,32 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 
 		$this->assertSame([], $this->accessControlCalls, 'the access-control seam MUST NOT be consulted when both flags are false');
 	}//end testFullBypassSkipsAccessControlSeam()
+
+	/**
+	 * Inside an organisation context the full bypass still consults the seam,
+	 * which applies the organisation filter.
+	 */
+	public function testFullBypassInsideAnOrganisationContextInvokesTheSeam(): void {
+		$mapper = $this->makeMapper();
+
+		try {
+			\OCA\OpenRegister\Service\OrganisationContext::run(
+				'org-a',
+				fn () => $mapper->findInRegisterSchemaTable(
+					identifier: 'uuid-portal-context',
+					register: $this->makeRegister(id: 1),
+					schema: $this->makeSchema(id: 4),
+					_rbac: false,
+					_multitenancy: false
+				)
+			);
+			$this->fail('empty DB result should have raised DoesNotExistException');
+		} catch (DoesNotExistException) {
+			// Expected.
+		}
+
+		$this->assertCount(1, $this->accessControlCalls);
+	}//end testFullBypassInsideAnOrganisationContextInvokesTheSeam()
 
 	/**
 	 * The default parameter values (both true) must exercise the seam — a

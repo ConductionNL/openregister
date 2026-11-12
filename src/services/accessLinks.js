@@ -74,33 +74,59 @@ export function linksForSubject(links, subjectType, subjectId) {
  * @param {string} [form.label] An optional label.
  * @return {object} The request body.
  */
-export function mintPayload({
-	subjectType,
-	subjectId,
-	capabilities,
-	expiresOn,
-	password,
-	label,
-}) {
+export function mintPayload(form) {
+	const expiry = endOfDay(form.expiresOn)
+	const body = {
+		subjectType: form.subjectType,
+		subjectId: String(form.subjectId),
+		capabilities: offeredCapabilities(form.capabilities),
+		expiresAt: expiry.toISOString(),
+	}
+	return Object.assign(body, givenSecrets(form))
+}
+
+/**
+ * The optional password and label of a link, only when they are given.
+ *
+ * @param {object} form The form values.
+ * @param {string} [form.password] An optional password.
+ * @param {string} [form.label] An optional label.
+ * @return {object} The fields to add.
+ */
+function givenSecrets({ password, label }) {
+	const fields = {}
+	if (password) {
+		fields.password = password
+	}
+	if (label) {
+		fields.label = label
+	}
+	return fields
+}
+
+/**
+ * The last second of a picked day, in the reader's time zone.
+ *
+ * @param {string} expiresOn The date, `YYYY-MM-DD`.
+ * @return {Date} The moment.
+ */
+function endOfDay(expiresOn) {
 	const [year, month, day] = String(expiresOn || '')
 		.split('-')
 		.map(Number)
-	const expiry = new Date(year, (month || 1) - 1, day || 1, 23, 59, 59)
-	const body = {
-		subjectType,
-		subjectId: String(subjectId),
-		capabilities: CAPABILITIES.filter((capability) =>
-			(capabilities || []).includes(capability),
-		),
-		expiresAt: expiry.toISOString(),
-	}
-	if (password) {
-		body.password = password
-	}
-	if (label) {
-		body.label = label
-	}
-	return body
+	return new Date(year, (month || 1) - 1, day || 1, 23, 59, 59)
+}
+
+/**
+ * The ticked capabilities a link can declare, in the order a form offers them.
+ *
+ * @param {Array<string>|undefined} capabilities The capabilities ticked.
+ * @return {Array<string>} The capabilities.
+ */
+function offeredCapabilities(capabilities) {
+	return CAPABILITIES.filter((capability) =>
+		(capabilities || []).includes(capability),
+	)
 }
 
 /**
@@ -192,21 +218,41 @@ export function printable(value) {
 		return ''
 	}
 	if (Array.isArray(value)) {
-		return value
-			.map(printable)
-			.filter((item) => item !== '')
-			.join(', ')
+		return printableList(value)
 	}
 	if (typeof value === 'object') {
-		return Object.entries(value)
-			.filter(([key]) => !isMetadataKey(key))
-			.map(([key, item]) => `${key}: ${printable(item)}`)
-			.join('; ')
+		return printableRecord(value)
 	}
 	if (typeof value === 'boolean') {
 		return value ? '✓' : '✗'
 	}
 	return String(value)
+}
+
+/**
+ * A list as text: its non-empty items, comma separated.
+ *
+ * @param {Array} list The list.
+ * @return {string} The text.
+ */
+function printableList(list) {
+	return list
+		.map(printable)
+		.filter((item) => item !== '')
+		.join(', ')
+}
+
+/**
+ * A record as text: its schema fields as `key: value`, semicolon separated.
+ *
+ * @param {object} record The record.
+ * @return {string} The text.
+ */
+function printableRecord(record) {
+	return Object.entries(record)
+		.filter(([key]) => !isMetadataKey(key))
+		.map(([key, item]) => `${key}: ${printable(item)}`)
+		.join('; ')
 }
 
 /**

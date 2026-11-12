@@ -1,10 +1,12 @@
 module.exports = {
 	transform: {
 		'^.+\\.vue$': '@vue/vue3-jest',
-		// .babelrc is file-relative, so it never reaches node_modules. The
-		// connection formatter spec imports a nextcloud-vue built-in from the
-		// package's ESM source, which needs its own preset.
-		'/node_modules/@conduction/nextcloud-vue/src/.+\\.js$': [
+		// .babelrc is file-relative, so it never reaches node_modules. Every
+		// package that transformIgnorePatterns below lets through (the ESM-only
+		// @nextcloud/* and @conduction/* packages, @nextcloud/axios 2.6 among
+		// them) therefore needs the preset passed explicitly, or Jest parses
+		// its `import` statements raw and the suite fails to run.
+		'/node_modules/.+\\.[cm]?js$': [
 			'babel-jest',
 			{ presets: ['@babel/preset-env'] },
 		],
@@ -12,6 +14,15 @@ module.exports = {
 		'^.+\\.ts$': 'ts-jest',
 		'.+\\.(css|styl|less|sass|scss|png|jpg|ttf|woff|woff2)$':
 			'jest-transform-stub',
+	},
+	// Compiles the script block of node_modules components (the icons) too, so
+	// a spec that does not mock an icon renders the real one.
+	globals: {
+		'vue-jest': {
+			transform: {
+				'^js$': require('path').join(__dirname, 'tests/jest/vueScriptTransformer.js'),
+			},
+		},
 	},
 	moduleFileExtensions: ['js', 'json', 'vue', 'ts'],
 	testEnvironment: 'jest-environment-jsdom',
@@ -25,6 +36,17 @@ module.exports = {
 	],
 	moduleNameMapper: {
 		'^@/(.*)$': '<rootDir>/src/$1',
+		// Maps each icon to its own file on purpose. Jest's resolver caches a
+		// module id per (importing file, request) for the whole worker, and a
+		// `jest.mock(..., { virtual: true })` makes that id a fake path next to
+		// the spec. The next spec in the worker then mocks the real path while
+		// the cached id still names the fake one, so its mock is ignored and
+		// the real icon loads. A mapped request never takes the virtual path,
+		// so every spec gets the same id. Mapping all icons to one stub would
+		// give them all one id, and one spec's icon mocks would overwrite each
+		// other.
+		'^vue-material-design-icons/(.+)$':
+			'<rootDir>/node_modules/vue-material-design-icons/$1',
 		// ⚠️ Jest's default resolver reads `main` and does NOT honour an
 		// `exports` map or a bare `module` field. The Vue-3-era @nextcloud
 		// packages ship one or the other and no `main`, so `jest.mock(...)` and
@@ -90,5 +112,12 @@ module.exports = {
 		'<rootDir>/\\.migration/',
 	],
 	coveragePathIgnorePatterns: ['index.js', 'index.ts'],
+	// Without this, a file no spec imports is left out of the total entirely.
+	collectCoverageFrom: [
+		'src/**/*.{js,ts,vue}',
+		'!src/**/*.spec.{js,ts}',
+		'!src/**/*.test.{js,ts}',
+		'!src/tests/**',
+	],
 	coverageDirectory: '<rootDir>/coverage-frontend/',
 }

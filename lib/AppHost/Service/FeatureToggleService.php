@@ -142,16 +142,7 @@ class FeatureToggleService {
 	 */
 	public function defaults(array $declarations): array {
 		$defaults = [];
-		foreach ($declarations as $declaration) {
-			if (is_array($declaration) === false) {
-				continue;
-			}
-
-			$key = (string)($declaration['key'] ?? '');
-			if ($key === '') {
-				continue;
-			}
-
+		foreach (self::keyedDeclarations(declarations: $declarations) as $key => $declaration) {
 			$defaults[$key] = $this->asBool(value: ($declaration['default'] ?? false));
 		}
 
@@ -169,17 +160,8 @@ class FeatureToggleService {
 	 */
 	public function failModes(array $declarations): array {
 		$modes = [];
-		foreach ($declarations as $declaration) {
-			if (is_array($declaration) === false) {
-				continue;
-			}
-
-			$key = (string)($declaration['key'] ?? '');
-			if ($key === '') {
-				continue;
-			}
-
-			$mode = (string)($declaration['failMode'] ?? self::FAIL_OPEN);
+		foreach (self::keyedDeclarations(declarations: $declarations) as $key => $declaration) {
+			$mode         = (string)($declaration['failMode'] ?? self::FAIL_OPEN);
 			$modes[$key] = self::FAIL_OPEN;
 			if ($mode === self::FAIL_CLOSED) {
 				$modes[$key] = self::FAIL_CLOSED;
@@ -188,6 +170,29 @@ class FeatureToggleService {
 
 		return $modes;
 	}//end failModes()
+
+	/**
+	 * The well-formed declarations, by key: entries that are objects with a non-empty key.
+	 *
+	 * @param array $declarations The app's `features` declarations.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private static function keyedDeclarations(array $declarations): array {
+		$keyed = [];
+		foreach ($declarations as $declaration) {
+			if (is_array($declaration) === false) {
+				continue;
+			}
+
+			$key = (string)($declaration['key'] ?? '');
+			if ($key !== '') {
+				$keyed[$key] = $declaration;
+			}
+		}
+
+		return $keyed;
+	}//end keyedDeclarations()
 
 	/**
 	 * Why an update is refused, or null when it is acceptable.
@@ -233,23 +238,49 @@ class FeatureToggleService {
 		}
 
 		$defaults = $this->defaults(declarations: $declarations);
-		$stored = $this->storedOverrides(app: $app);
+		$stored   = $this->storedOverrides(app: $app);
 
 		if ($stored === null) {
 			// Unreadable: each toggle falls back the way it declared it should.
-			$modes = $this->failModes(declarations: $declarations);
-			$merged = [];
-			foreach ($defaults as $key => $default) {
-				$merged[$key] = $default;
-				if (($modes[$key] ?? self::FAIL_OPEN) === self::FAIL_CLOSED) {
-					$merged[$key] = false;
-				}
-			}
-
-			$this->memo[$app] = $merged;
-			return $merged;
+			$merged = $this->failSafe(defaults: $defaults, declarations: $declarations);
+		} else {
+			$merged = $this->withOverrides(defaults: $defaults, stored: $stored);
 		}
 
+		$this->memo[$app] = $merged;
+		return $merged;
+	}//end merged()
+
+	/**
+	 * The defaults with every fail-closed toggle switched off.
+	 *
+	 * @param array<string, bool> $defaults     The declared defaults.
+	 * @param array               $declarations The app's `features` declarations.
+	 *
+	 * @return array<string, bool>
+	 */
+	private function failSafe(array $defaults, array $declarations): array {
+		$modes  = $this->failModes(declarations: $declarations);
+		$merged = [];
+		foreach ($defaults as $key => $default) {
+			$merged[$key] = $default;
+			if (($modes[$key] ?? self::FAIL_OPEN) === self::FAIL_CLOSED) {
+				$merged[$key] = false;
+			}
+		}
+
+		return $merged;
+	}//end failSafe()
+
+	/**
+	 * The defaults with the stored overrides of declared toggles applied.
+	 *
+	 * @param array<string, bool>  $defaults The declared defaults.
+	 * @param array<string, mixed> $stored   The stored overrides.
+	 *
+	 * @return array<string, bool>
+	 */
+	private function withOverrides(array $defaults, array $stored): array {
 		$merged = $defaults;
 		foreach ($stored as $key => $value) {
 			if (array_key_exists((string)$key, $defaults) === false) {
@@ -259,9 +290,8 @@ class FeatureToggleService {
 			$merged[(string)$key] = $this->asBool(value: $value);
 		}
 
-		$this->memo[$app] = $merged;
 		return $merged;
-	}//end merged()
+	}//end withOverrides()
 
 	/**
 	 * Whether one feature is on.
@@ -299,12 +329,30 @@ class FeatureToggleService {
 	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
 	 */
 	public function update(string $app, array $declarations, array $overrides): array {
-		$undeclared = $this->undeclaredKeyIn(overrides: $overrides, declarations: $declarations);
+		return $this->updateToggles(toggles: new ToggleSet(app: $app, declarations: $declarations), overrides: $overrides);
+	}//end update()
+
+	/**
+	 * Write the overrides, audit each changed toggle, return the merged map:
+	 * the value-object form of update().
+	 *
+	 * @param ToggleSet            $toggles   The app and its declared toggles.
+	 * @param array<string, mixed> $overrides The submitted overrides.
+	 *
+	 * @return array<string, bool> The merged map after the write.
+	 *
+	 * @throws FeatureToggleRefusedException When a key is not declared.
+	 *
+	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
+	 */
+	public function updateToggles(ToggleSet $toggles, array $overrides): array {
+		$app = $toggles->app;
+		$undeclared = $this->undeclaredKeyIn(overrides: $overrides, declarations: $toggles->declarations);
 		if ($undeclared !== null) {
 			throw new FeatureToggleRefusedException(appId: $app, key: $undeclared);
 		}
 
-		$before = $this->merged(app: $app, declarations: $declarations);
+		$before = $this->merged(app: $app, declarations: $toggles->declarations);
 
 		$stored = ($this->storedOverrides(app: $app) ?? []);
 		foreach ($overrides as $key => $value) {
@@ -317,11 +365,11 @@ class FeatureToggleService {
 		// here rather than recomputing keeps one place where the map is built.
 		unset($this->memo[$app]);
 
-		$after = $this->merged(app: $app, declarations: $declarations);
-		$this->audit(app: $app, before: $before, after: $after);
+		$after = $this->merged(app: $app, declarations: $toggles->declarations);
+		$this->audit(app: $app, change: new ToggleChange(before: $before, after: $after));
 
 		return $after;
-	}//end update()
+	}//end updateToggles()
 
 	/**
 	 * The stored overrides, or null when they cannot be read.
@@ -359,15 +407,14 @@ class FeatureToggleService {
 	 * Never throws: the toggle has already been written, so failing here would
 	 * report a failed save for a change that happened.
 	 *
-	 * @param string              $app    The app.
-	 * @param array<string, bool> $before The map before.
-	 * @param array<string, bool> $after  The map after.
+	 * @param string       $app    The app.
+	 * @param ToggleChange $change The merged map before and after the write.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/feature-toggle-surface/specs/apphost-settings-plane/spec.md
 	 */
-	private function audit(string $app, array $before, array $after): void {
+	private function audit(string $app, ToggleChange $change): void {
 		try {
 			$auditor = $this->container->get(self::AUDITOR);
 			if (method_exists($auditor, 'recordUpdate') === false) {
@@ -376,8 +423,8 @@ class FeatureToggleService {
 
 			$auditor->recordUpdate(
 				$app,
-				$this->prefixed(map: $before),
-				$this->prefixed(map: $after),
+				$this->prefixed(map: $change->before),
+				$this->prefixed(map: $change->after),
 				[]
 			);
 		} catch (Throwable $e) {

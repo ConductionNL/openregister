@@ -31,8 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\TranslationSourceLanguageBackfillInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -50,12 +50,12 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 	/**
 	 * Wire the mappers used by the command.
 	 *
-	 * @param RegisterMapper $registerMapper Register lookup mapper.
-	 * @param TranslationMapper $translationMapper Translation sidecar mapper.
+	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
+	 * @param TranslationSourceLanguageBackfillInterface $translationMapper Translation sidecar back-fill.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly TranslationMapper $translationMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly TranslationSourceLanguageBackfillInterface $translationMapper,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -98,10 +98,7 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$batchSize = (int)$input->getOption('batch-size');
-		if ($batchSize < 1) {
-			$batchSize = 1000;
-		}
+		$batchSize = self::batchSize(input: $input);
 
 		$pending = $this->translationMapper->countMissingSourceLanguage();
 		$output->writeln(sprintf('<info>Translation rows pending back-fill: %d</info>', $pending));
@@ -112,17 +109,82 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 		}
 
 		if ((bool)$input->getOption('dry-run') === true) {
-			$output->writeln(
-				sprintf(
-					'<comment>Dry-run: would update up to %d rows (batch size %d).</comment>',
-					$pending,
-					$batchSize
-				)
-			);
+			$output->writeln(self::dryRunLine(pending: $pending, batchSize: $batchSize));
 			return Command::SUCCESS;
 		}
 
-		// Build register-id -> default-language map.
+		return $this->backfill(output: $output, batchSize: $batchSize);
+	}//end execute()
+
+	/**
+	 * The --batch-size option, or 1000 when it is below one.
+	 *
+	 * @param InputInterface $input The console input.
+	 *
+	 * @return int The batch size.
+	 *
+	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
+	 */
+	private static function batchSize(InputInterface $input): int {
+		$batchSize = (int)$input->getOption('batch-size');
+		if ($batchSize < 1) {
+			$batchSize = 1000;
+		}
+
+		return $batchSize;
+	}//end batchSize()
+
+	/**
+	 * What a dry run would update.
+	 *
+	 * @param int $pending   The rows pending back-fill.
+	 * @param int $batchSize The rows a real run updates at most.
+	 *
+	 * @return string The line to print.
+	 *
+	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
+	 */
+	private static function dryRunLine(int $pending, int $batchSize): string {
+		return sprintf(
+			'<comment>Dry-run: would update up to %d rows (batch size %d).</comment>',
+			$pending,
+			$batchSize
+		);
+	}//end dryRunLine()
+
+	/**
+	 * Back-fill one batch, then say how many rows are still pending.
+	 *
+	 * @param OutputInterface $output    The console output.
+	 * @param int             $batchSize The rows to update at most.
+	 *
+	 * @return int Always SUCCESS.
+	 *
+	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
+	 */
+	private function backfill(OutputInterface $output, int $batchSize): int {
+		$updated = $this->translationMapper->backfillSourceLanguage($this->defaultLanguages(), $batchSize);
+		$output->writeln(sprintf('<info>%d rows updated.</info>', $updated));
+
+		$remaining = $this->translationMapper->countMissingSourceLanguage();
+		if ($remaining > 0) {
+			$output->writeln(
+				sprintf(
+					'<comment>%d rows still pending — re-run the command to continue back-filling.</comment>',
+					$remaining
+				)
+			);
+		}
+
+		return Command::SUCCESS;
+	}//end backfill()
+
+	/**
+	 * Build the register-id -> default-language map.
+	 *
+	 * @return array<int|string, string> Default language per register id.
+	 */
+	private function defaultLanguages(): array {
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 		$defaults = [];
 		foreach ($registers as $register) {
@@ -138,19 +200,6 @@ class BackfillTranslationSourceLanguageCommand extends Command {
 			$defaults[(string)$id] = $register->getDefaultLanguage();
 		}
 
-		$updated = $this->translationMapper->backfillSourceLanguage($defaults, $batchSize);
-		$output->writeln(sprintf('<info>%d rows updated.</info>', $updated));
-
-		$remaining = $this->translationMapper->countMissingSourceLanguage();
-		if ($remaining > 0) {
-			$output->writeln(
-				sprintf(
-					'<comment>%d rows still pending — re-run the command to continue back-filling.</comment>',
-					$remaining
-				)
-			);
-		}
-
-		return Command::SUCCESS;
-	}//end execute()
+		return $defaults;
+	}//end defaultLanguages()
 }//end class

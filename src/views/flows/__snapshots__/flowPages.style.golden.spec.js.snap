@@ -1,0 +1,423 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`flow page styles FlowOverview.vue compiles to the same rules 1`] = `
+{
+  ".flowCard": {
+    "background": "var(--color-main-background)",
+    "border": "1px solid var(--color-border)",
+    "border-radius": "var(--border-radius-large)",
+    "min-width": "0",
+  },
+  ".flowCard--stat": {
+    "padding": "16px 20px",
+  },
+  ".flowCard__body": {
+    "margin": "0",
+    "padding": "20px",
+  },
+  ".flowCard__foot": {
+    "align-items": "center",
+    "color": "var(--color-text-maxcontrast)",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "12px",
+    "justify-content": "space-between",
+    "padding": "12px 20px",
+  },
+  ".flowCard__head": {
+    "align-items": "center",
+    "border-bottom": "1px solid var(--color-border)",
+    "display": "flex",
+    "gap": "12px",
+    "justify-content": "space-between",
+    "padding": "12px 20px",
+  },
+  ".flowCard__head h2": {
+    "font-size": "16px",
+    "font-weight": "600",
+    "margin": "0",
+  },
+  ".flowCard__head--wrap": {
+    "flex-wrap": "wrap",
+  },
+  ".flowCard__note": {
+    "color": "var(--color-text-maxcontrast)",
+    "font-size": "13px",
+    "margin": "8px 0 0",
+  },
+  ".flowCard__note--error": {
+    "color": "var(--color-error-text)",
+  },
+  ".flowCard__paging": {
+    "display": "flex",
+    "gap": "8px",
+  },
+  ".flowCard__term": {
+    "color": "var(--color-text-maxcontrast)",
+    "font-size": "13px",
+    "margin": "0 0 4px",
+  },
+  ".flowCard__value": {
+    "margin": "0",
+  },
+  ".flowCard__value--big": {
+    "font-size": "24px",
+    "font-weight": "600",
+  },
+  ".flowCard__value--row": {
+    "align-items": "center",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "8px",
+  },
+  ".flowFacts": {
+    "display": "grid",
+    "gap": "16px 24px",
+    "grid-template-columns": "minmax(0, 1fr)",
+  },
+  ".flowFacts dd": {
+    "margin": "0",
+  },
+  ".flowFacts dt": {
+    "color": "var(--color-text-maxcontrast)",
+    "font-size": "13px",
+    "margin": "0 0 4px",
+  },
+  ".flowPage": {
+    "box-sizing": "border-box",
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "calc(var(--default-grid-baseline, 4px) * 5)",
+    "max-width": "1200px",
+    "padding": "16px",
+  },
+  ".flowPage__actions": {
+    "align-items": "center",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "8px",
+  },
+  ".flowPage__badges": {
+    "align-items": "center",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "8px",
+  },
+  ".flowPage__crumbs": {
+    "color": "var(--color-text-maxcontrast)",
+  },
+  ".flowPage__description": {
+    "color": "var(--color-text-maxcontrast)",
+    "margin": "0",
+    "max-width": "640px",
+  },
+  ".flowPage__filters": {
+    "align-items": "center",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "8px",
+  },
+  ".flowPage__header": {
+    "align-items": "flex-start",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "16px",
+    "justify-content": "space-between",
+  },
+  ".flowPage__health": {
+    "display": "grid",
+    "gap": "16px",
+    "grid-template-columns": "repeat(auto-fit, minmax(190px, 1fr))",
+  },
+  ".flowPage__pair": {
+    "display": "grid",
+    "gap": "20px",
+    "grid-template-columns": "repeat(auto-fit, minmax(320px, 1fr))",
+  },
+  ".flowPage__title": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "10px",
+  },
+  ".flowPage__title h1": {
+    "font-size": "30px",
+    "font-weight": "700",
+    "line-height": "1.2",
+    "margin": "0",
+  },
+  ".flowSteps": {
+    "overflow-x": "auto",
+  },
+  ".flowSteps__arrow": {
+    "color": "var(--color-text-maxcontrast)",
+    "font-size": "18px",
+  },
+  ".flowSteps__item": {
+    "align-items": "center",
+    "display": "flex",
+    "gap": "10px",
+  },
+  ".flowSteps__list": {
+    "display": "flex",
+    "gap": "10px",
+    "list-style": "none",
+    "margin": "0",
+    "min-width": "max-content",
+    "padding": "0",
+  },
+  ".flowSteps__step": {
+    "background": "var(--color-main-background)",
+    "border": "1px solid var(--color-border-dark)",
+    "border-radius": "var(--border-radius-large)",
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "4px",
+    "min-width": "150px",
+    "padding": "12px 14px",
+  },
+  ".flowSteps__step span": {
+    "color": "var(--color-text-maxcontrast)",
+    "font-size": "12px",
+  },
+  ".flowSteps__step--trigger": {
+    "border-color": "var(--color-success)",
+  },
+  ".mono": {
+    "font-family": "var(--font-face-monospace, monospace)",
+    "font-size": "13px",
+  },
+}
+`;
+
+exports[`flow page styles FlowRunDetail.vue compiles to the same rules 1`] = `
+{
+  ".mono": {
+    "font-family": "var(--font-face-monospace, monospace)",
+    "font-size": "13px",
+  },
+  ".runCard": {
+    "background": "var(--color-main-background)",
+    "border": "1px solid var(--color-border)",
+    "border-radius": "var(--border-radius-large)",
+    "min-width": "0",
+  },
+  ".runCard__body": {
+    "margin": "0",
+    "padding": "20px",
+  },
+  ".runCard__head": {
+    "border-bottom": "1px solid var(--color-border)",
+    "padding": "12px 20px",
+  },
+  ".runCard__head h2": {
+    "font-size": "16px",
+    "font-weight": "600",
+    "margin": "0",
+  },
+  ".runChanged + .runChanged": {
+    "margin-top": "16px",
+  },
+  ".runChanged h3": {
+    "font-size": "15px",
+    "font-weight": "600",
+    "margin": "0 0 8px",
+  },
+  ".runFacts": {
+    "display": "grid",
+    "gap": "16px 24px",
+    "grid-template-columns": "repeat(auto-fit, minmax(200px, 1fr))",
+  },
+  ".runFacts dd": {
+    "margin": "0",
+    "overflow-wrap": "anywhere",
+  },
+  ".runFacts dt": {
+    "color": "var(--color-text-maxcontrast)",
+    "font-size": "13px",
+    "margin": "0 0 4px",
+  },
+  ".runList": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "8px",
+    "list-style": "none",
+    "margin": "0",
+    "padding": "0",
+  },
+  ".runList li": {
+    "align-items": "baseline",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "12px",
+  },
+  ".runPage": {
+    "box-sizing": "border-box",
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "calc(var(--default-grid-baseline, 4px) * 5)",
+    "max-width": "1200px",
+    "padding": "16px",
+  },
+  ".runPage__actions": {
+    "align-items": "center",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "8px",
+  },
+  ".runPage__alertText": {
+    "margin": "0",
+    "overflow-wrap": "anywhere",
+  },
+  ".runPage__alertTitle": {
+    "font-weight": "600",
+    "margin": "0 0 4px",
+  },
+  ".runPage__badges": {
+    "align-items": "center",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "8px",
+  },
+  ".runPage__crumbs": {
+    "color": "var(--color-text-maxcontrast)",
+  },
+  ".runPage__header": {
+    "align-items": "flex-start",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "16px",
+    "justify-content": "space-between",
+  },
+  ".runPage__muted": {
+    "color": "var(--color-text-maxcontrast)",
+  },
+  ".runPage__title": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "10px",
+  },
+  ".runPage__title h1": {
+    "font-size": "30px",
+    "font-weight": "700",
+    "line-height": "1.2",
+    "margin": "0",
+  },
+  ".runSteps": {
+    "list-style": "none",
+    "margin": "0",
+    "padding": "0",
+  },
+  ".runSteps__badge": {
+    "margin-inline-start": "6px",
+  },
+  ".runSteps__dot": {
+    "align-items": "center",
+    "border-radius": "50%",
+    "color": "var(--color-primary-element-text)",
+    "display": "flex",
+    "font-size": "13px",
+    "font-weight": "700",
+    "height": "24px",
+    "justify-content": "center",
+    "width": "24px",
+  },
+  ".runSteps__dot--failed": {
+    "background": "var(--color-error)",
+  },
+  ".runSteps__dot--ok": {
+    "background": "var(--color-success)",
+  },
+  ".runSteps__dot--skipped": {
+    "background": "var(--color-border-dark)",
+  },
+  ".runSteps__dot--waiting": {
+    "background": "var(--color-warning)",
+  },
+  ".runSteps__duration": {
+    "color": "var(--color-text-maxcontrast)",
+    "font-size": "13px",
+  },
+  ".runSteps__io": {
+    "display": "grid",
+    "gap": "12px",
+    "grid-template-columns": "repeat(auto-fit, minmax(260px, 1fr))",
+    "margin-top": "8px",
+  },
+  ".runSteps__main": {
+    "display": "flex",
+    "flex-direction": "column",
+    "gap": "12px",
+    "min-width": "0",
+  },
+  ".runSteps__meta": {
+    "color": "var(--color-text-maxcontrast)",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "font-size": "13px",
+    "gap": "12px",
+  },
+  ".runSteps__row": {
+    "align-items": "start",
+    "border-bottom": "1px solid var(--color-border)",
+    "display": "grid",
+    "gap": "14px",
+    "grid-template-columns": "28px minmax(0, 1fr) auto",
+    "padding": "14px 20px",
+  },
+  ".runSteps__row--empty": {
+    "color": "var(--color-text-maxcontrast)",
+    "display": "block",
+  },
+  ".runSteps__row--failed": {
+    "background": "var(--color-error-hover, var(--color-background-hover))",
+  },
+  ".runSteps__row--skipped": {
+    "color": "var(--color-text-maxcontrast)",
+  },
+  ".runSteps__row:last-child": {
+    "border-bottom": "0",
+  },
+  ".runSteps__term": {
+    "color": "var(--color-text-maxcontrast)",
+    "font-size": "13px",
+    "margin": "0 0 4px",
+  },
+  ".runTabs": {
+    "border-bottom": "1px solid var(--color-border)",
+    "display": "flex",
+    "flex-wrap": "wrap",
+    "gap": "4px",
+    "padding": "0 12px",
+  },
+  ".runTabs__tab": {
+    "background": "none",
+    "border": "0",
+    "border-bottom": "3px solid transparent",
+    "border-radius": "0",
+    "color": "var(--color-text-maxcontrast)",
+    "cursor": "pointer",
+    "font-weight": "500",
+    "margin": "0",
+    "min-height": "var(--default-clickable-area, 44px)",
+    "padding": "0 16px",
+  },
+  ".runTabs__tab[aria-selected=true]": {
+    "border-bottom-color": "var(--color-primary-element)",
+    "color": "var(--color-main-text)",
+  },
+  "pre": {
+    "background": "var(--color-background-dark)",
+    "border": "1px solid var(--color-border)",
+    "border-radius": "var(--border-radius-large)",
+    "font-family": "var(--font-face-monospace, monospace)",
+    "font-size": "13px",
+    "line-height": "1.5",
+    "margin": "0",
+    "max-height": "480px",
+    "overflow": "auto",
+    "overflow-wrap": "anywhere",
+    "padding": "12px 14px",
+    "white-space": "pre-wrap",
+  },
+}
+`;

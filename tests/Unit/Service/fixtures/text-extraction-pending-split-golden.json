@@ -1,0 +1,2267 @@
+{
+    "testExtractPendingFilesGolden:empty pool": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 5
+            }
+        ],
+        [
+            "window",
+            5,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 0,
+                "failed": 0,
+                "foundPending": 0
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 0,
+                "failed": 0,
+                "total": 0,
+                "truncated": false
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:short window": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 5
+            }
+        ],
+        [
+            "window",
+            5,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 3,
+                "limit": 5,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 1,
+                "fileName": "f1.pdf"
+            }
+        ],
+        [
+            "extract",
+            1,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 2,
+                "fileName": "f2.pdf"
+            }
+        ],
+        [
+            "extract",
+            2,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 3,
+                "fileName": "f3.pdf"
+            }
+        ],
+        [
+            "extract",
+            3,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 3,
+                "failed": 0,
+                "foundPending": 3
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 3,
+                "failed": 0,
+                "total": 3,
+                "truncated": false
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:two full windows": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 2
+            }
+        ],
+        [
+            "window",
+            2,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 1,
+                "fileName": "f1.pdf"
+            }
+        ],
+        [
+            "extract",
+            1,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 2,
+                "fileName": "f2.pdf"
+            }
+        ],
+        [
+            "extract",
+            2,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 2,
+                "failed": 0,
+                "foundPending": 2
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 2,
+                "failed": 0,
+                "total": 2,
+                "truncated": false
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:failures at the head step the offset": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 3
+            }
+        ],
+        [
+            "window",
+            3,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 3,
+                "limit": 3,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 1,
+                "fileName": "f1.pdf"
+            }
+        ],
+        [
+            "extract",
+            1,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 1,
+                "error": "unreadable 1"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 2,
+                "fileName": "f2.pdf"
+            }
+        ],
+        [
+            "extract",
+            2,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 2,
+                "error": "unreadable 2"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 3,
+                "fileName": "f3.pdf"
+            }
+        ],
+        [
+            "extract",
+            3,
+            false
+        ],
+        [
+            "window",
+            3,
+            2
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 3,
+                "limit": 3,
+                "offset": 2,
+                "window": 2
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 4,
+                "fileName": "f4.pdf"
+            }
+        ],
+        [
+            "extract",
+            4,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 5,
+                "fileName": "f5.pdf"
+            }
+        ],
+        [
+            "extract",
+            5,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 3,
+                "failed": 2,
+                "foundPending": 3
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 3,
+                "failed": 2,
+                "total": 6,
+                "truncated": false
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:all failing walks every window": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 2
+            }
+        ],
+        [
+            "window",
+            2,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 1,
+                "fileName": "f1.pdf"
+            }
+        ],
+        [
+            "extract",
+            1,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 1,
+                "error": "unreadable 1"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 2,
+                "fileName": "f2.pdf"
+            }
+        ],
+        [
+            "extract",
+            2,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 2,
+                "error": "unreadable 2"
+            }
+        ],
+        [
+            "window",
+            2,
+            2
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 2,
+                "window": 2
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 3,
+                "fileName": "f3.pdf"
+            }
+        ],
+        [
+            "extract",
+            3,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 3,
+                "error": "unreadable 3"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 4,
+                "fileName": "f4.pdf"
+            }
+        ],
+        [
+            "extract",
+            4,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 4,
+                "error": "unreadable 4"
+            }
+        ],
+        [
+            "window",
+            2,
+            4
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 4,
+                "window": 3
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 5,
+                "fileName": "f5.pdf"
+            }
+        ],
+        [
+            "extract",
+            5,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 5,
+                "error": "unreadable 5"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 6,
+                "fileName": "f6.pdf"
+            }
+        ],
+        [
+            "extract",
+            6,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 6,
+                "error": "unreadable 6"
+            }
+        ],
+        [
+            "window",
+            2,
+            6
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 6,
+                "window": 4
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 7,
+                "fileName": "f7.pdf"
+            }
+        ],
+        [
+            "extract",
+            7,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 7,
+                "error": "unreadable 7"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 8,
+                "fileName": "f8.pdf"
+            }
+        ],
+        [
+            "extract",
+            8,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 8,
+                "error": "unreadable 8"
+            }
+        ],
+        [
+            "window",
+            2,
+            8
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 8,
+                "window": 5
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 9,
+                "fileName": "f9.pdf"
+            }
+        ],
+        [
+            "extract",
+            9,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 9,
+                "error": "unreadable 9"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 10,
+                "fileName": "f10.pdf"
+            }
+        ],
+        [
+            "extract",
+            10,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 10,
+                "error": "unreadable 10"
+            }
+        ],
+        [
+            "window",
+            2,
+            10
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 10,
+                "window": 6
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 11,
+                "fileName": "f11.pdf"
+            }
+        ],
+        [
+            "extract",
+            11,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 11,
+                "error": "unreadable 11"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 12,
+                "fileName": "f12.pdf"
+            }
+        ],
+        [
+            "extract",
+            12,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 12,
+                "error": "unreadable 12"
+            }
+        ],
+        [
+            "window",
+            2,
+            12
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 12,
+                "window": 7
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 13,
+                "fileName": "f13.pdf"
+            }
+        ],
+        [
+            "extract",
+            13,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 13,
+                "error": "unreadable 13"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 14,
+                "fileName": "f14.pdf"
+            }
+        ],
+        [
+            "extract",
+            14,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 14,
+                "error": "unreadable 14"
+            }
+        ],
+        [
+            "window",
+            2,
+            14
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 14,
+                "window": 8
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 15,
+                "fileName": "f15.pdf"
+            }
+        ],
+        [
+            "extract",
+            15,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 15,
+                "error": "unreadable 15"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 16,
+                "fileName": "f16.pdf"
+            }
+        ],
+        [
+            "extract",
+            16,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 16,
+                "error": "unreadable 16"
+            }
+        ],
+        [
+            "window",
+            2,
+            16
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 16,
+                "window": 9
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 17,
+                "fileName": "f17.pdf"
+            }
+        ],
+        [
+            "extract",
+            17,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 17,
+                "error": "unreadable 17"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 18,
+                "fileName": "f18.pdf"
+            }
+        ],
+        [
+            "extract",
+            18,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 18,
+                "error": "unreadable 18"
+            }
+        ],
+        [
+            "window",
+            2,
+            18
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 18,
+                "window": 10
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 19,
+                "fileName": "f19.pdf"
+            }
+        ],
+        [
+            "extract",
+            19,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 19,
+                "error": "unreadable 19"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 20,
+                "fileName": "f20.pdf"
+            }
+        ],
+        [
+            "extract",
+            20,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 20,
+                "error": "unreadable 20"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 0,
+                "failed": 20,
+                "foundPending": 2
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 0,
+                "failed": 20,
+                "total": 20,
+                "truncated": true
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:window cap truncates": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 1
+            }
+        ],
+        [
+            "window",
+            1,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 1,
+                "fileName": "f1.pdf"
+            }
+        ],
+        [
+            "extract",
+            1,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 1,
+                "error": "unreadable 1"
+            }
+        ],
+        [
+            "window",
+            1,
+            1
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 1,
+                "window": 2
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 2,
+                "fileName": "f2.pdf"
+            }
+        ],
+        [
+            "extract",
+            2,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 2,
+                "error": "unreadable 2"
+            }
+        ],
+        [
+            "window",
+            1,
+            2
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 2,
+                "window": 3
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 3,
+                "fileName": "f3.pdf"
+            }
+        ],
+        [
+            "extract",
+            3,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 3,
+                "error": "unreadable 3"
+            }
+        ],
+        [
+            "window",
+            1,
+            3
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 3,
+                "window": 4
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 4,
+                "fileName": "f4.pdf"
+            }
+        ],
+        [
+            "extract",
+            4,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 4,
+                "error": "unreadable 4"
+            }
+        ],
+        [
+            "window",
+            1,
+            4
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 4,
+                "window": 5
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 5,
+                "fileName": "f5.pdf"
+            }
+        ],
+        [
+            "extract",
+            5,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 5,
+                "error": "unreadable 5"
+            }
+        ],
+        [
+            "window",
+            1,
+            5
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 5,
+                "window": 6
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 6,
+                "fileName": "f6.pdf"
+            }
+        ],
+        [
+            "extract",
+            6,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 6,
+                "error": "unreadable 6"
+            }
+        ],
+        [
+            "window",
+            1,
+            6
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 6,
+                "window": 7
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 7,
+                "fileName": "f7.pdf"
+            }
+        ],
+        [
+            "extract",
+            7,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 7,
+                "error": "unreadable 7"
+            }
+        ],
+        [
+            "window",
+            1,
+            7
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 7,
+                "window": 8
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 8,
+                "fileName": "f8.pdf"
+            }
+        ],
+        [
+            "extract",
+            8,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 8,
+                "error": "unreadable 8"
+            }
+        ],
+        [
+            "window",
+            1,
+            8
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 8,
+                "window": 9
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 9,
+                "fileName": "f9.pdf"
+            }
+        ],
+        [
+            "extract",
+            9,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 9,
+                "error": "unreadable 9"
+            }
+        ],
+        [
+            "window",
+            1,
+            9
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 9,
+                "window": 10
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 10,
+                "fileName": "f10.pdf"
+            }
+        ],
+        [
+            "extract",
+            10,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 10,
+                "error": "unreadable 10"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 0,
+                "failed": 10,
+                "foundPending": 1
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 0,
+                "failed": 10,
+                "total": 10,
+                "truncated": true
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:budget reached mid window": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 2
+            }
+        ],
+        [
+            "window",
+            2,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 2,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 1,
+                "fileName": "f1.pdf"
+            }
+        ],
+        [
+            "extract",
+            1,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 2,
+                "fileName": "f2.pdf"
+            }
+        ],
+        [
+            "extract",
+            2,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 2,
+                "failed": 0,
+                "foundPending": 2
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 2,
+                "failed": 0,
+                "total": 2,
+                "truncated": false
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:row without file id": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 5
+            }
+        ],
+        [
+            "window",
+            5,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 3,
+                "limit": 5,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 1,
+                "fileName": "f1.pdf"
+            }
+        ],
+        [
+            "extract",
+            1,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 3,
+                "fileName": "f3.pdf"
+            }
+        ],
+        [
+            "extract",
+            3,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 2,
+                "failed": 0,
+                "foundPending": 3
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 2,
+                "failed": 0,
+                "total": 3,
+                "truncated": false
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:row with zero file id": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 5
+            }
+        ],
+        [
+            "window",
+            5,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 2,
+                "limit": 5,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 2,
+                "fileName": "f2.pdf"
+            }
+        ],
+        [
+            "extract",
+            2,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 1,
+                "failed": 0,
+                "foundPending": 2
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 1,
+                "failed": 0,
+                "total": 2,
+                "truncated": false
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:row without name": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 5
+            }
+        ],
+        [
+            "window",
+            5,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 5,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 7,
+                "fileName": "unknown"
+            }
+        ],
+        [
+            "extract",
+            7,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 7,
+                "error": "unreadable 7"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 0,
+                "failed": 1,
+                "foundPending": 1
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 0,
+                "failed": 1,
+                "total": 1,
+                "truncated": false
+            }
+        ]
+    ],
+    "testExtractPendingFilesGolden:limit zero": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 0
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 0,
+                "failed": 0,
+                "foundPending": 0
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 0,
+                "failed": 0,
+                "total": 0,
+                "truncated": false
+            }
+        ]
+    ],
+    "testRecursiveSplitGolden:fits": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "short text",
+                    "start_offset": 0,
+                    "end_offset": 10
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:paragraphs with overlap": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 0,
+                    "end_offset": 169
+                },
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 228,
+                    "end_offset": 397
+                },
+                {
+                    "text": "Kort. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 456,
+                    "end_offset": 631
+                },
+                {
+                    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "start_offset": 691,
+                    "end_offset": 891
+                },
+                {
+                    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "start_offset": 861,
+                    "end_offset": 1061
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:paragraphs without overlap": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 0,
+                    "end_offset": 169
+                },
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 228,
+                    "end_offset": 397
+                },
+                {
+                    "text": "Kort. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 456,
+                    "end_offset": 631
+                },
+                {
+                    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "start_offset": 691,
+                    "end_offset": 891
+                },
+                {
+                    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "start_offset": 891,
+                    "end_offset": 1091
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:overlap larger than chunk": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 0,
+                    "end_offset": 112
+                },
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    "start_offset": 112,
+                    "end_offset": 226
+                },
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 228,
+                    "end_offset": 340
+                },
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    "start_offset": 340,
+                    "end_offset": 454
+                },
+                {
+                    "text": "Kort. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 456,
+                    "end_offset": 574
+                },
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    "start_offset": 574,
+                    "end_offset": 688
+                },
+                {
+                    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "start_offset": 691,
+                    "end_offset": 811
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:small chunks": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 0,
+                    "end_offset": 112
+                },
+                {
+                    "text": "etur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    "start_offset": 92,
+                    "end_offset": 228
+                },
+                {
+                    "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 228,
+                    "end_offset": 340
+                },
+                {
+                    "text": "etur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    "start_offset": 320,
+                    "end_offset": 456
+                },
+                {
+                    "text": "Kort. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit",
+                    "start_offset": 456,
+                    "end_offset": 574
+                },
+                {
+                    "text": "etur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+                    "start_offset": 554,
+                    "end_offset": 690
+                },
+                {
+                    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "start_offset": 691,
+                    "end_offset": 841
+                },
+                {
+                    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "start_offset": 821,
+                    "end_offset": 971
+                },
+                {
+                    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                    "start_offset": 951,
+                    "end_offset": 1091
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:no separators left": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij",
+                    "start_offset": 0,
+                    "end_offset": 241
+                },
+                {
+                    "text": "efghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij",
+                    "start_offset": 191,
+                    "end_offset": 439
+                },
+                {
+                    "text": "efghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij",
+                    "start_offset": 389,
+                    "end_offset": 637
+                },
+                {
+                    "text": "efghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij",
+                    "start_offset": 587,
+                    "end_offset": 835
+                },
+                {
+                    "text": "efghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij",
+                    "start_offset": 785,
+                    "end_offset": 1033
+                },
+                {
+                    "text": "efghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij",
+                    "start_offset": 983,
+                    "end_offset": 1099
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:single separator down to fixed size": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+                    "start_offset": 0,
+                    "end_offset": 250
+                },
+                {
+                    "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+                    "start_offset": 240,
+                    "end_offset": 490
+                },
+                {
+                    "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+                    "start_offset": 480,
+                    "end_offset": 700
+                },
+                {
+                    "text": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+                    "start_offset": 700,
+                    "end_offset": 850
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:tiny pieces dropped": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "b\n\ncd\n\nwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+                    "start_offset": 1,
+                    "end_offset": 208
+                },
+                {
+                    "text": "wwwww\n\nef\n\nvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",
+                    "start_offset": 203,
+                    "end_offset": 334
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:whitespace pieces": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+                    "start_offset": 0,
+                    "end_offset": 160
+                },
+                {
+                    "text": "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+                    "start_offset": 157,
+                    "end_offset": 312
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:chunk at minimum size and overlap equal to it": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "start_offset": 0,
+                    "end_offset": 100
+                },
+                {
+                    "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                    "start_offset": 100,
+                    "end_offset": 250
+                }
+            ]
+        ]
+    ],
+    "testRecursiveSplitGolden:piece exactly filling a chunk": [
+        [
+            "chunks",
+            [
+                {
+                    "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                    "start_offset": 0,
+                    "end_offset": 120
+                },
+                {
+                    "text": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                    "start_offset": 120,
+                    "end_offset": 250
+                }
+            ]
+        ]
+    ],
+    "testExtractPendingFilesGolden:budget used up in the last window": [
+        [
+            "log.debug",
+            "[TextExtractionService] Extracting files without chunks",
+            {
+                "limit": 1
+            }
+        ],
+        [
+            "window",
+            1,
+            0
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 0,
+                "window": 1
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 1,
+                "fileName": "f1.pdf"
+            }
+        ],
+        [
+            "extract",
+            1,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 1,
+                "error": "unreadable 1"
+            }
+        ],
+        [
+            "window",
+            1,
+            1
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 1,
+                "window": 2
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 2,
+                "fileName": "f2.pdf"
+            }
+        ],
+        [
+            "extract",
+            2,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 2,
+                "error": "unreadable 2"
+            }
+        ],
+        [
+            "window",
+            1,
+            2
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 2,
+                "window": 3
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 3,
+                "fileName": "f3.pdf"
+            }
+        ],
+        [
+            "extract",
+            3,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 3,
+                "error": "unreadable 3"
+            }
+        ],
+        [
+            "window",
+            1,
+            3
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 3,
+                "window": 4
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 4,
+                "fileName": "f4.pdf"
+            }
+        ],
+        [
+            "extract",
+            4,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 4,
+                "error": "unreadable 4"
+            }
+        ],
+        [
+            "window",
+            1,
+            4
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 4,
+                "window": 5
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 5,
+                "fileName": "f5.pdf"
+            }
+        ],
+        [
+            "extract",
+            5,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 5,
+                "error": "unreadable 5"
+            }
+        ],
+        [
+            "window",
+            1,
+            5
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 5,
+                "window": 6
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 6,
+                "fileName": "f6.pdf"
+            }
+        ],
+        [
+            "extract",
+            6,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 6,
+                "error": "unreadable 6"
+            }
+        ],
+        [
+            "window",
+            1,
+            6
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 6,
+                "window": 7
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 7,
+                "fileName": "f7.pdf"
+            }
+        ],
+        [
+            "extract",
+            7,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 7,
+                "error": "unreadable 7"
+            }
+        ],
+        [
+            "window",
+            1,
+            7
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 7,
+                "window": 8
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 8,
+                "fileName": "f8.pdf"
+            }
+        ],
+        [
+            "extract",
+            8,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 8,
+                "error": "unreadable 8"
+            }
+        ],
+        [
+            "window",
+            1,
+            8
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 8,
+                "window": 9
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 9,
+                "fileName": "f9.pdf"
+            }
+        ],
+        [
+            "extract",
+            9,
+            false
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Failed to extract file",
+            {
+                "fileId": 9,
+                "error": "unreadable 9"
+            }
+        ],
+        [
+            "window",
+            1,
+            9
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Found files without chunks",
+            {
+                "count": 1,
+                "limit": 1,
+                "offset": 9,
+                "window": 10
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Processing file",
+            {
+                "fileId": 10,
+                "fileName": "f10.pdf"
+            }
+        ],
+        [
+            "extract",
+            10,
+            false
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Extraction complete",
+            {
+                "processed": 1,
+                "failed": 9,
+                "foundPending": 1
+            }
+        ],
+        [
+            "result",
+            {
+                "processed": 1,
+                "failed": 9,
+                "total": 10,
+                "truncated": false
+            }
+        ]
+    ]
+}

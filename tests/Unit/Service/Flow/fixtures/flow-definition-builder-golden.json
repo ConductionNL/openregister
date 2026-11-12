@@ -1,0 +1,998 @@
+{
+    "build / empty": {
+        "error": "InvalidArgumentException",
+        "message": "Flow declares no nodes; nothing to run."
+    },
+    "build / no nodes": {
+        "error": "InvalidArgumentException",
+        "message": "Flow declares no nodes; nothing to run."
+    },
+    "build / single node": {
+        "places": {
+            "a": "a",
+            "end:a": "end:a"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "end:a"
+                ]
+            ]
+        ]
+    },
+    "build / line": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "c"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / edge without id": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "c"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / fan out list": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "end:b": "end:b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b",
+                    "c"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "end:b"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / merge": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a",
+            "b"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "c"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "c"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / join": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "c#e1": "c#e1",
+            "c#e2": "c#e2",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a",
+            "b"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "c#e1"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "c#e2"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c#e1",
+                    "c#e2"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / join without incoming": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "end:b": "end:b"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "end:b"
+                ]
+            ]
+        ]
+    },
+    "build / join truthy not true": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a",
+            "b"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "c"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "c"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / multi from": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a",
+            "b"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "c"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "c"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / duplicate edge targets": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "end:b": "end:b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a",
+            "c"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "end:b"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / cycle": {
+        "places": {
+            "x": "x",
+            "y": "y"
+        },
+        "initial": [
+            "x"
+        ],
+        "transitions": [
+            [
+                "x",
+                [
+                    "x"
+                ],
+                [
+                    "y"
+                ]
+            ],
+            [
+                "y",
+                [
+                    "y"
+                ],
+                [
+                    "x"
+                ]
+            ]
+        ]
+    },
+    "build / self loop plus source": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a",
+            "c"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / initial string": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "end:b": "end:b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "b"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "end:b"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / initial list": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "end:b": "end:b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "c",
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "end:b"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / initial empty list": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "end:b": "end:b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a",
+            "c"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "end:b"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / initial unknown": {
+        "error": "InvalidArgumentException",
+        "message": "Flow initial node \"zz\" is not a declared node."
+    },
+    "build / two sources": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "end:b": "end:b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a",
+            "b"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "c"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "end:b"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / node padded id": {
+        "places": {
+            "a": "a",
+            "end:a": "end:a"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "end:a"
+                ]
+            ]
+        ]
+    },
+    "build / node not object": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node at index 1 is not an object."
+    },
+    "build / node no id": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node at index 0 has no id."
+    },
+    "build / node blank id": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node at index 0 has no id."
+    },
+    "build / node duplicate id": {
+        "error": "InvalidArgumentException",
+        "message": "Flow declares node id \"a\" more than once."
+    },
+    "build / node no type": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node \"a\" declares no \"type\". A node is the action that runs, so a node without a type is a step that does nothing while reporting success."
+    },
+    "build / node blank type": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node \"a\" declares no \"type\". A node is the action that runs, so a node without a type is a step that does nothing while reporting success."
+    },
+    "build / exits all conditioned": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node \"a\" conditions all 2 of its exits and declares no else. A token is exclusive and must always leave through exactly one exit, so if no condition holds the token has nowhere to go — and the run stops without reporting anything, which is indistinguishable from a flow that finished. Add an exit with no condition."
+    },
+    "build / exit single conditioned": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node \"a\" conditions all 1 of its exits and declares no else. A token is exclusive and must always leave through exactly one exit, so if no condition holds the token has nowhere to go — and the run stops without reporting anything, which is indistinguishable from a flow that finished. Add an exit with no condition."
+    },
+    "build / exits with else": {
+        "places": {
+            "a": "a",
+            "end:a": "end:a"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "end:a"
+                ]
+            ]
+        ]
+    },
+    "build / exits with empty condition": {
+        "places": {
+            "a": "a",
+            "end:a": "end:a"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "end:a"
+                ]
+            ]
+        ]
+    },
+    "build / exits non-array entries": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node \"a\" conditions all 2 of its exits and declares no else. A token is exclusive and must always leave through exactly one exit, so if no condition holds the token has nowhere to go — and the run stops without reporting anything, which is indistinguishable from a flow that finished. Add an exit with no condition."
+    },
+    "build / exits only non-array": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node \"a\" conditions all 1 of its exits and declares no else. A token is exclusive and must always leave through exactly one exit, so if no condition holds the token has nowhere to go — and the run stops without reporting anything, which is indistinguishable from a flow that finished. Add an exit with no condition."
+    },
+    "build / exits not array": {
+        "places": {
+            "a": "a",
+            "end:a": "end:a"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "end:a"
+                ]
+            ]
+        ]
+    },
+    "build / exits empty": {
+        "places": {
+            "a": "a",
+            "end:a": "end:a"
+        },
+        "initial": [
+            "a"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "end:a"
+                ]
+            ]
+        ]
+    },
+    "build / legacy edge type": {
+        "error": "InvalidArgumentException",
+        "message": "Flow edge \"e1\" carries \"type\", which the engine no longer reads — an edge is sequence and a NODE is the action. This flow is in the pre-inversion shape and has not been migrated; run the or-flow-migrate-definitions migration. It is refused rather than reinterpreted because a half-migrated flow would run, skip the step nobody claimed, and report success."
+    },
+    "build / legacy edge type by name": {
+        "error": "InvalidArgumentException",
+        "message": "Flow edge \"n1\" carries \"type\", which the engine no longer reads — an edge is sequence and a NODE is the action. This flow is in the pre-inversion shape and has not been migrated; run the or-flow-migrate-definitions migration. It is refused rather than reinterpreted because a half-migrated flow would run, skip the step nobody claimed, and report success."
+    },
+    "build / legacy edge type by index": {
+        "error": "InvalidArgumentException",
+        "message": "Flow edge \"1\" carries \"type\", which the engine no longer reads — an edge is sequence and a NODE is the action. This flow is in the pre-inversion shape and has not been migrated; run the or-flow-migrate-definitions migration. It is refused rather than reinterpreted because a half-migrated flow would run, skip the step nobody claimed, and report success."
+    },
+    "build / legacy blank type ok": {
+        "places": {
+            "a": "a",
+            "b": "b",
+            "end:b": "end:b",
+            "c": "c",
+            "end:c": "end:c"
+        },
+        "initial": [
+            "a",
+            "c"
+        ],
+        "transitions": [
+            [
+                "a",
+                [
+                    "a"
+                ],
+                [
+                    "b"
+                ]
+            ],
+            [
+                "b",
+                [
+                    "b"
+                ],
+                [
+                    "end:b"
+                ]
+            ],
+            [
+                "c",
+                [
+                    "c"
+                ],
+                [
+                    "end:c"
+                ]
+            ]
+        ]
+    },
+    "build / edge missing to": {
+        "error": "InvalidArgumentException",
+        "message": "Flow edge at index 0 must declare both \"from\" and \"to\"."
+    },
+    "build / edge empty from": {
+        "error": "InvalidArgumentException",
+        "message": "Flow edge at index 0 must declare both \"from\" and \"to\"."
+    },
+    "build / edge unknown node": {
+        "error": "InvalidArgumentException",
+        "message": "Flow edge \"e1\" references unknown node \"zz\"."
+    },
+    "build / edge unknown node no id": {
+        "error": "InvalidArgumentException",
+        "message": "Flow edge \"0\" references unknown node \"zz\"."
+    },
+    "build / fault order: legacy before nodes": {
+        "error": "InvalidArgumentException",
+        "message": "Flow edge \"0\" carries \"type\", which the engine no longer reads — an edge is sequence and a NODE is the action. This flow is in the pre-inversion shape and has not been migrated; run the or-flow-migrate-definitions migration. It is refused rather than reinterpreted because a half-migrated flow would run, skip the step nobody claimed, and report success."
+    },
+    "build / fault order: nodes before edges": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node \"a\" declares no \"type\". A node is the action that runs, so a node without a type is a step that does nothing while reporting success."
+    },
+    "build / fault order: edges before initial": {
+        "error": "InvalidArgumentException",
+        "message": "Flow edge at index 0 must declare both \"from\" and \"to\"."
+    },
+    "build / numeric node ids": {
+        "error": "TypeError",
+        "message": "OCA\\OpenRegister\\Service\\Flow\\FlowGraph::inPlace(): Argument #1 ($nodeId) must be of type string, int given"
+    },
+    "build / numeric join node id": {
+        "error": "TypeError",
+        "message": "OCA\\OpenRegister\\Service\\Flow\\FlowGraph::incoming(): Argument #1 ($nodeId) must be of type string, int given"
+    },
+    "build / fault order: type before exits": {
+        "error": "InvalidArgumentException",
+        "message": "Flow node \"a\" declares no \"type\". A node is the action that runs, so a node without a type is a step that does nothing while reporting success."
+    },
+    "lowerSteps / none": {
+        "nodes": [
+            {
+                "id": "trigger",
+                "type": "openregister.trigger-manual",
+                "config": []
+            },
+            {
+                "id": "inputs",
+                "type": "openregister.action-inputs",
+                "config": []
+            },
+            {
+                "id": "end",
+                "type": "openregister.end",
+                "config": []
+            }
+        ],
+        "edges": [
+            {
+                "id": "trigger>inputs",
+                "from": "trigger",
+                "to": "inputs"
+            },
+            {
+                "id": "inputs>end",
+                "from": "inputs",
+                "to": "end"
+            }
+        ]
+    },
+    "lowerSteps / none with next": {
+        "nodes": [
+            {
+                "id": "trigger",
+                "type": "openregister.trigger-manual",
+                "config": []
+            },
+            {
+                "id": "inputs",
+                "type": "openregister.action-inputs",
+                "config": []
+            },
+            {
+                "id": "end",
+                "type": "openregister.end",
+                "config": {
+                    "next": "view"
+                }
+            }
+        ],
+        "edges": [
+            {
+                "id": "trigger>inputs",
+                "from": "trigger",
+                "to": "inputs"
+            },
+            {
+                "id": "inputs>end",
+                "from": "inputs",
+                "to": "end"
+            }
+        ]
+    },
+    "lowerSteps / steps": {
+        "nodes": [
+            {
+                "id": "trigger",
+                "type": "openregister.trigger-manual",
+                "config": []
+            },
+            {
+                "id": "inputs",
+                "type": "openregister.action-inputs",
+                "config": []
+            },
+            {
+                "id": "step-1-s",
+                "type": "t",
+                "config": {
+                    "a": 1
+                },
+                "label": "L"
+            },
+            {
+                "id": "step-2-",
+                "type": "u",
+                "config": []
+            },
+            {
+                "id": "step-3-z",
+                "type": "",
+                "config": [
+                    "x"
+                ]
+            },
+            {
+                "id": "end",
+                "type": "openregister.end",
+                "config": {
+                    "next": "list"
+                }
+            }
+        ],
+        "edges": [
+            {
+                "id": "trigger>inputs",
+                "from": "trigger",
+                "to": "inputs"
+            },
+            {
+                "id": "inputs>step-1-s",
+                "from": "inputs",
+                "to": "step-1-s"
+            },
+            {
+                "id": "step-1-s>step-2-",
+                "from": "step-1-s",
+                "to": "step-2-"
+            },
+            {
+                "id": "step-2->step-3-z",
+                "from": "step-2-",
+                "to": "step-3-z"
+            },
+            {
+                "id": "step-3-z>end",
+                "from": "step-3-z",
+                "to": "end"
+            }
+        ]
+    }
+}

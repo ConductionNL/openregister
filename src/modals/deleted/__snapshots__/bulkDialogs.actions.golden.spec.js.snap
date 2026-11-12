@@ -1,0 +1,468 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`bulk dialogs actions golden purge: closes and resets 1`] = `
+{
+  "log": [
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "selected": [
+      {
+        "id": "a",
+      },
+    ],
+    "success": null,
+    "successMessage": "",
+    "timer": true,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden purge: removes objects and closes when none are left 1`] = `
+{
+  "between": {
+    "error": "old error",
+    "loading": false,
+    "selected": [
+      {
+        "id": "b",
+      },
+    ],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+  "log": [
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "selected": [],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden purge: takes the stored selection empty 1`] = `
+{
+  "log": [
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "selected": [],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden purge: takes the stored selection none 1`] = `
+{
+  "log": [
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "selected": [],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden purge: takes the stored selection two 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "old error",
+    "loading": false,
+    "selected": [
+      {
+        "id": "a",
+      },
+      {
+        "id": "b",
+      },
+    ],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden purge: titles objects 1`] = `
+[
+  "Unknown",
+  "Unknown",
+  "T",
+  "f",
+  "N",
+  "OT",
+  "ON",
+  "OT",
+  "f",
+  7,
+  "Unknown",
+]
+`;
+
+exports[`bulk dialogs actions golden restore: closes and resets 1`] = `
+{
+  "log": [
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "selected": [
+      {
+        "id": "a",
+      },
+    ],
+    "success": null,
+    "successMessage": "",
+    "timer": true,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden restore: removes objects and closes when none are left 1`] = `
+{
+  "between": {
+    "error": "old error",
+    "loading": false,
+    "selected": [
+      {
+        "id": "b",
+      },
+    ],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+  "log": [
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "selected": [],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden restore: restores empty 1`] = `
+{
+  "after": {
+    "error": "No objects selected for restoration",
+    "loading": false,
+    "selected": [],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+  "log": [
+    [
+      "after 1999 ms",
+    ],
+  ],
+}
+`;
+
+exports[`bulk dialogs actions golden restore: restores missing 1`] = `
+{
+  "after": {
+    "error": "No objects selected for restoration",
+    "loading": false,
+    "selected": null,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+  "log": [
+    [
+      "after 1999 ms",
+    ],
+  ],
+}
+`;
+
+exports[`bulk dialogs actions golden restore: restores one 1`] = `
+{
+  "after": {
+    "error": false,
+    "loading": false,
+    "selected": [
+      {
+        "id": "a",
+      },
+    ],
+    "success": true,
+    "successMessage": "Successfully restored {count} object {"count":1}",
+    "timer": true,
+  },
+  "log": [
+    [
+      "restoreMultiple",
+      [
+        "a",
+      ],
+      true,
+    ],
+    [
+      "emit",
+      "deleted-objects-restored",
+      [
+        "a",
+      ],
+    ],
+    [
+      "after 1999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+}
+`;
+
+exports[`bulk dialogs actions golden restore: restores throwsNamed 1`] = `
+{
+  "after": {
+    "error": "Denied",
+    "loading": false,
+    "selected": [
+      {
+        "id": "a",
+      },
+    ],
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+  "log": [
+    [
+      "restoreMultiple",
+      [
+        "a",
+      ],
+      true,
+    ],
+    [
+      "after 1999 ms",
+    ],
+  ],
+}
+`;
+
+exports[`bulk dialogs actions golden restore: restores throwsSilent 1`] = `
+{
+  "after": {
+    "error": "An error occurred while restoring the objects",
+    "loading": false,
+    "selected": [
+      {
+        "id": "a",
+      },
+    ],
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+  "log": [
+    [
+      "restoreMultiple",
+      [
+        "a",
+      ],
+      true,
+    ],
+    [
+      "after 1999 ms",
+    ],
+  ],
+}
+`;
+
+exports[`bulk dialogs actions golden restore: restores two 1`] = `
+{
+  "after": {
+    "error": false,
+    "loading": false,
+    "selected": [
+      {
+        "id": "a",
+      },
+      {
+        "id": 7,
+      },
+    ],
+    "success": true,
+    "successMessage": "Successfully restored {count} objects {"count":2}",
+    "timer": true,
+  },
+  "log": [
+    [
+      "restoreMultiple",
+      [
+        "a",
+        7,
+      ],
+      true,
+    ],
+    [
+      "emit",
+      "deleted-objects-restored",
+      [
+        "a",
+        7,
+      ],
+    ],
+    [
+      "after 1999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+}
+`;
+
+exports[`bulk dialogs actions golden restore: takes the stored selection empty 1`] = `
+{
+  "log": [
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "selected": [],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden restore: takes the stored selection none 1`] = `
+{
+  "log": [
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "selected": [],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden restore: takes the stored selection two 1`] = `
+{
+  "log": [],
+  "state": {
+    "error": "old error",
+    "loading": false,
+    "selected": [
+      {
+        "id": "a",
+      },
+      {
+        "id": "b",
+      },
+    ],
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`bulk dialogs actions golden restore: titles objects 1`] = `
+[
+  "Unknown",
+  "Unknown",
+  "T",
+  "f",
+  "N",
+  "OT",
+  "ON",
+  "OT",
+  "f",
+  7,
+  "Unknown",
+]
+`;

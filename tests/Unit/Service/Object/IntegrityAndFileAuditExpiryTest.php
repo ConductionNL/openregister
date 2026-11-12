@@ -34,17 +34,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\AuditRetentionResolver;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\BulkDownloadArchive;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -56,16 +64,21 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
- * @covers \OCA\OpenRegister\Service\File\FileAuditHandler
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
+ * @covers \OCA\OpenRegister\Files\Service\File\FileAuditHandler
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
  * @uses \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard
+ * @uses \OCA\OpenRegister\Service\Object\CascadeDeleteOrigin
  * @uses \OCA\OpenRegister\Service\AuditRetentionResolver
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class IntegrityAndFileAuditExpiryTest extends TestCase {
 
@@ -119,10 +132,7 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$container,
-					$this->createMock(IUserSession::class),
-					$this->createMock(IRequest::class),
-					$this->createMock(LoggerInterface::class),
+					new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IRequest::class)),
 				]
 			)
 			->onlyMethods(['insert'])
@@ -150,14 +160,10 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 
 		return new ReferentialIntegrityService(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->objectMapper,
-			$this->mapper(),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IDBConnection::class),
-			$cacheFactory,
-			new ArchivalRetentionGuard($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class))
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->mapper(), archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class)))),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 	}//end integrityService()
@@ -205,10 +211,8 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$this->objectIsFound($this->object(['legalHold' => ['active' => true]]));
 
 		$service->logRestrictBlock(
-			objectUuid: '11111111-1111-4111-8111-111111111111',
-			schemaId: '2',
-			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']]),
-			userId: 'alice'
+			refused: new RefusedDeletion(objectUuid: '11111111-1111-4111-8111-111111111111', schemaId: '2', userId: 'alice'),
+			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']])
 		);
 
 		$this->assertCount(1, $this->inserted);
@@ -230,17 +234,23 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$service->applyDeletionActions(
 			analysis: new DeletionAnalysis(
 				deletable: true,
-				nullifyTargets: [
-					[
-						'objectUuid' => '11111111-1111-4111-8111-111111111111',
-						'property' => 'parent',
-						'schema' => '2',
-						'sourceUuid' => '22222222-2222-4222-8222-222222222222',
-					],
-				]
+				effects: new DeletionEffects(
+					nullifyTargets: [
+						[
+							'objectUuid' => '11111111-1111-4111-8111-111111111111',
+							'property' => 'parent',
+							'schema' => '2',
+							'sourceUuid' => '22222222-2222-4222-8222-222222222222',
+						],
+					]
+				)
 			),
-			userId: 'alice',
-			cascadeSource: '22222222-2222-4222-8222-222222222222'
+			origin: new CascadeDeleteOrigin(
+				userId: 'alice',
+				cascadeSource: '22222222-2222-4222-8222-222222222222',
+				triggerSchemaSlug: null,
+				organisationId: null
+			)
 		);
 
 		$this->assertCount(1, $this->inserted);
@@ -265,10 +275,8 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 		$this->objectMapper->method('findAcrossAllSources')->willThrowException(new \RuntimeException('gone'));
 
 		$service->logRestrictBlock(
-			objectUuid: '11111111-1111-4111-8111-111111111111',
-			schemaId: '2',
-			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']]),
-			userId: 'alice'
+			refused: new RefusedDeletion(objectUuid: '11111111-1111-4111-8111-111111111111', schemaId: '2', userId: 'alice'),
+			analysis: new DeletionAnalysis(deletable: false, blockers: [['schema' => 'child', 'property' => 'parent']])
 		);
 
 		$this->assertCount(1, $this->inserted);
@@ -317,9 +325,11 @@ class IntegrityAndFileAuditExpiryTest extends TestCase {
 
 		$handler->logBulkDownload(
 			object: $this->object(['bewaartermijn' => 'P10Y']),
-			fileIds: [1, 2],
-			fileNames: ['a.pdf', 'b.pdf'],
-			zipName: 'files.zip'
+			archive: new BulkDownloadArchive(
+				fileIds: [1, 2],
+				fileNames: ['a.pdf', 'b.pdf'],
+				zipName: 'files.zip'
+			)
 		);
 
 		$this->assertCount(1, $this->inserted);

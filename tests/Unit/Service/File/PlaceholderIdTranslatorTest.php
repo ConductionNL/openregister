@@ -3,7 +3,7 @@
 /**
  * PlaceholderIdTranslatorTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\PlaceholderIdTranslator}
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator}
  * covering per-document first-appearance numbering, per-dossier deterministic
  * recomputation, ranking purity/ordering, and translation keyed on `e.id`
  * (anonymisation-placeholder-id-scope, Decisions 1, 3 & 4).
@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
-use OCA\OpenRegister\Service\File\PlaceholderIdTranslator;
+use OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -192,7 +192,12 @@ class PlaceholderIdTranslatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testSeededMapContinuesAfterMaxForUnseenId(): void {
-		$translator = PlaceholderIdTranslator::withSeededMap(seed: [11 => 1, 22 => 2]);
+		$translator = PlaceholderIdTranslator::forDossier(
+			rows: [
+				['entity_id' => 11, 'file_id' => 1, 'position_start' => 1],
+				['entity_id' => 22, 'file_id' => 1, 'position_start' => 5],
+			]
+		);
 
 		$this->assertSame(expected: 1, actual: $translator->translate(entityId: 11));
 		$this->assertSame(expected: 2, actual: $translator->translate(entityId: 22));

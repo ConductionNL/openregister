@@ -44,7 +44,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
-class CaseItemAuditMapper extends QBMapper {
+class CaseItemAuditMapper extends QBMapper implements CaseItemAuditMapperInterface {
 
 	/**
 	 * Constructor.

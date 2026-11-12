@@ -46,6 +46,10 @@ use RuntimeException;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\LifecycleActionListener
+ * @uses \OCA\OpenRegister\Listener\LifecycleAttempt
+ * @uses \OCA\OpenRegister\Listener\LifecycleDeclaration
+ * @uses \OCA\OpenRegister\Listener\LifecycleEdit
+ * @uses \OCA\OpenRegister\Listener\LifecycleEditReader
  */
 class LifecycleActionListenerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;
@@ -63,10 +67,9 @@ class LifecycleActionListenerTest extends TestCase {
 		$executor = new LifecycleActionExecutor($this->registry, $logger);
 
 		$this->listener = new LifecycleActionListener(
-			$this->schemaMapper,
+			new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())),
 			$executor,
-			$logger,
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())
+			$logger
 		);
 	}//end setUp()
 

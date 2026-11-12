@@ -48,10 +48,12 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\BackfillFlowTriggerIndex;
 use OCA\OpenRegister\Repair\BackfillFlowVersions;
-use OCA\OpenRegister\Service\Flow\FlowDefinitionPin;
-use OCA\OpenRegister\Service\Flow\FlowTriggerIndex;
+use OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerIndexInterface;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -101,18 +103,11 @@ final class BackfillFlowPagingTest extends TestCase {
 	private function pagingMapper(array $uuids, array &$seenRef): FlowMapper {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			function (
-				?string $app = null,
-				?string $applicationSlug = null,
-				?string $organisation = null,
-				?bool $enabled = null,
-				int $limit = 100,
-				int $offset = 0,
-			) use ($uuids, &$seenRef): array {
-				$seenRef[] = ['limit' => $limit, 'offset' => $offset];
+			function (FlowSelection $selection, ListQuery $query) use ($uuids, &$seenRef): array {
+				$seenRef[] = ['limit' => $query->limit, 'offset' => $query->offset];
 
 				$page = [];
-				foreach (array_slice($uuids, $offset, $limit) as $uuid) {
+				foreach (array_slice($uuids, (int)$query->offset, $query->limit) as $uuid) {
 					$flow = new Flow();
 					$flow->setUuid($uuid);
 					$flow->setNodes([]);
@@ -152,7 +147,7 @@ final class BackfillFlowPagingTest extends TestCase {
 			}
 		);
 
-		$pin = $this->createMock(FlowDefinitionPin::class);
+		$pin = $this->createMock(FlowDefinitionPinInterface::class);
 		$pin->method('pin')->willReturn('deadbeef');
 
 		$runs = $this->createMock(FlowRunMapper::class);
@@ -162,8 +157,8 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $versions, $pin, $runs) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
-					FlowDefinitionPin::class => $pin,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
+					FlowDefinitionPinInterface::class => $pin,
 					FlowRunMapper::class => $runs,
 					default => $mapper,
 				};
@@ -208,7 +203,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $versions) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					default => $mapper,
 				};
 			}
@@ -243,7 +238,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $versions) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
 					default => $mapper,
 				};
 			}
@@ -269,7 +264,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$mapper = $this->pagingMapper($this->uuids(), $calls);
 
 		$rebuilt = null;
-		$index = $this->createMock(FlowTriggerIndex::class);
+		$index = $this->createMock(FlowTriggerIndexInterface::class);
 		$index->method('rebuild')->willReturnCallback(
 			function (array $flows) use (&$rebuilt): array {
 				$rebuilt = $flows;
@@ -282,7 +277,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $index) {
 				return match ($id) {
-					FlowTriggerIndex::class => $index,
+					FlowTriggerIndexInterface::class => $index,
 					default => $mapper,
 				};
 			}
@@ -318,14 +313,14 @@ final class BackfillFlowPagingTest extends TestCase {
 		$calls = [];
 		$mapper = $this->pagingMapper([], $calls);
 
-		$index = $this->createMock(FlowTriggerIndex::class);
+		$index = $this->createMock(FlowTriggerIndexInterface::class);
 		$index->expects($this->never())->method('rebuild');
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $index) {
 				return match ($id) {
-					FlowTriggerIndex::class => $index,
+					FlowTriggerIndexInterface::class => $index,
 					default => $mapper,
 				};
 			}
@@ -373,7 +368,7 @@ final class BackfillFlowPagingTest extends TestCase {
 
 		// The middle flow cannot be pinned. `backfillOne()` turns a null hash
 		// into a RuntimeException, which is what the per-flow catch is for.
-		$pin = $this->createMock(FlowDefinitionPin::class);
+		$pin = $this->createMock(FlowDefinitionPinInterface::class);
 		$pin->method('pin')->willReturnCallback(
 			static fn (array $flow, string $flowId): ?string => $flowId === 'flow-0001' ? null : 'deadbeef'
 		);
@@ -385,8 +380,8 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $versions, $pin, $runs) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
-					FlowDefinitionPin::class => $pin,
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
+					FlowDefinitionPinInterface::class => $pin,
 					FlowRunMapper::class => $runs,
 					default => $mapper,
 				};
@@ -421,7 +416,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$calls = [];
 		$mapper = $this->pagingMapper(['flow-0000'], $calls);
 
-		$index = $this->createMock(FlowTriggerIndex::class);
+		$index = $this->createMock(FlowTriggerIndexInterface::class);
 		$index->method('rebuild')->willThrowException(
 			new \RuntimeException('the trigger table is missing')
 		);
@@ -438,7 +433,7 @@ final class BackfillFlowPagingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($mapper, $index) {
 				return match ($id) {
-					FlowTriggerIndex::class => $index,
+					FlowTriggerIndexInterface::class => $index,
 					default => $mapper,
 				};
 			}

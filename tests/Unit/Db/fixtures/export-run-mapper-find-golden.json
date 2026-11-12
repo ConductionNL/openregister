@@ -1,0 +1,253 @@
+{
+    "administrator, defaults": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "one actor": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "paging": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "period": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.gte(produced_at, :p1, NULL)",
+            "#1 andWhere(gte(produced_at, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.lte(produced_at, :p2, NULL)",
+            "#1 andWhere(lte(produced_at, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "from only": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(produced_at, :p2, NULL)",
+            "#1 andWhere(gte(produced_at, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "until only": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.lte(produced_at, :p2, NULL)",
+            "#1 andWhere(lte(produced_at, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "period as strings is ignored": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "every column": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = r, 2",
+            "#1 expr.eq(register_name, :p1, NULL)",
+            "#1 andWhere(eq(register_name, :p1, NULL))",
+            "#1 param :p2 = s, 2",
+            "#1 expr.eq(schema_name, :p2, NULL)",
+            "#1 andWhere(eq(schema_name, :p2, NULL))",
+            "#1 param :p3 = p, 2",
+            "#1 expr.eq(profile, :p3, NULL)",
+            "#1 andWhere(eq(profile, :p3, NULL))",
+            "#1 param :p4 = api, 2",
+            "#1 expr.eq(source, :p4, NULL)",
+            "#1 andWhere(eq(source, :p4, NULL))",
+            "#1 param :p5 = ready, 2",
+            "#1 expr.eq(status, :p5, NULL)",
+            "#1 andWhere(eq(status, :p5, NULL))",
+            "#1 param :p6 = bob, 2",
+            "#1 expr.eq(actor, :p6, NULL)",
+            "#1 andWhere(eq(actor, :p6, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "actor filter cannot widen a scoped read": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = bob, 2",
+            "#1 expr.eq(actor, :p2, NULL)",
+            "#1 andWhere(eq(actor, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "dropped filters": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(profile, :p2, NULL)",
+            "#1 andWhere(eq(profile, :p2, NULL))",
+            "#1 param :p3 = 1, 2",
+            "#1 expr.eq(source, :p3, NULL)",
+            "#1 andWhere(eq(source, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "filters and period order": {
+        "result": [
+            {
+                "uuid": "e1",
+                "actor": "anna"
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_runs, NULL)",
+            "#1 orderBy(produced_at, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(produced_at, :p2, NULL)",
+            "#1 andWhere(gte(produced_at, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.lte(produced_at, :p3, NULL)",
+            "#1 andWhere(lte(produced_at, :p3, NULL))",
+            "#1 param :p4 = ready, 2",
+            "#1 expr.eq(status, :p4, NULL)",
+            "#1 andWhere(eq(status, :p4, NULL))",
+            "#1 param :p5 = r, 2",
+            "#1 expr.eq(register_name, :p5, NULL)",
+            "#1 andWhere(eq(register_name, :p5, NULL))",
+            "#1 executeQuery()"
+        ]
+    }
+}

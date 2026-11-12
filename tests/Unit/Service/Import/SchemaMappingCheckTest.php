@@ -133,4 +133,39 @@ final class SchemaMappingCheckTest extends TestCase {
 
 		$this->assertSame([], SchemaMappingCheck::unknownTargets($definition, $schema));
 	}
+
+	/**
+	 * Malformed entries are passed over rather than refused, and a target named
+	 * twice is reported once, in the order it was first found.
+	 *
+	 * @return void
+	 */
+	public function testMalformedEntriesArePassedOverAndDuplicatesNamedOnce(): void {
+		$definition = [
+			'fieldMappings' => [
+				'not an array',
+				['source' => 'a'],
+				['target' => ''],
+				['target' => 42],
+				['target' => 'zzz'],
+				['target' => '@self.owner'],
+				['target' => 'uuid'],
+				['target' => 'zzz'],
+			],
+			'defaults' => ['' => 'x', 7 => 'y', 'yyy' => 'z', 'naam' => 'n'],
+		];
+
+		$this->assertSame(['zzz', 'yyy'], SchemaMappingCheck::unknownTargets($definition, $this->schema()));
+	}
+
+	/**
+	 * Defaults that are not a map are ignored.
+	 *
+	 * @return void
+	 */
+	public function testDefaultsThatAreNotAMapAreIgnored(): void {
+		$definition = ['defaults' => 'oops'];
+
+		$this->assertSame([], SchemaMappingCheck::unknownTargets($definition, $this->schema()));
+	}
 }

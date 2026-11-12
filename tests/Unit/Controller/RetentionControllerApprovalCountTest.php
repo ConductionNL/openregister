@@ -41,6 +41,9 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Service\Archival\DestructionInfrastructure;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RetentionControllerFactory;
 use OCA\OpenRegister\Controller\RetentionController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -110,7 +113,7 @@ class RetentionControllerApprovalCountTest extends TestCase {
 
 		$this->auditMapper = $this->createMock(AuditTrailMapper::class);
 
-		return new RetentionController(
+		return RetentionControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(RetentionService::class),
@@ -120,9 +123,7 @@ class RetentionControllerApprovalCountTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->auditMapper,
 			new DestructionService(
-				objectMapper: $objectMapper,
-				appConfig: $this->createMock(IAppConfig::class),
-				jobList: $this->createMock(IJobList::class),
+				infrastructure: new DestructionInfrastructure(objectMapper: $objectMapper, appConfig: $this->createMock(IAppConfig::class), jobList: $this->createMock(IJobList::class)),
 				userSession: $session,
 				logger: new NullLogger(),
 			),
@@ -149,14 +150,14 @@ class RetentionControllerApprovalCountTest extends TestCase {
 
 		$action = null;
 		$recorded = null;
-		$this->auditMapper->method('createAuditTrailEntry')
-			->willReturnCallback(
+		$this->auditMapper->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function ($object, $entryAction, $payload) use (&$action, &$recorded) {
 					$action = $entryAction;
 					$recorded = $payload;
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$response = $controller->approveDestructionList('list-uuid');
 

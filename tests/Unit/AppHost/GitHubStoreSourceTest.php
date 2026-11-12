@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
+use OCA\OpenRegister\AppHost\Store\Source\StoreSearch;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -236,6 +237,27 @@ class GitHubStoreSourceTest extends TestCase {
 
 		$source = $this->sourceReturning($this->response(200, '{}'), null, 0);
 		$result = $source->search($manifest, '', 'not-a-kind');
+
+		$this->assertSame(GenericStoreService::OUTCOME_OK, $result['outcome']);
+		$this->assertSame([], $result['cards']);
+	}
+
+	/**
+	 * find() answers the same as search() for the same query and kind.
+	 *
+	 * @return void
+	 */
+	public function testFindTakesTheSearchObject(): void {
+		$manifest = StoreManifest::fromManifest('demo', [
+			'store' => [
+				'source' => 'github',
+				'topics' => ['demo-app'],
+				'kinds' => ['app'],
+			],
+		]);
+
+		$source = $this->sourceReturning($this->response(200, '{}'), null, 0);
+		$result = $source->find($manifest, new StoreSearch('', 'not-a-kind'));
 
 		$this->assertSame(GenericStoreService::OUTCOME_OK, $result['outcome']);
 		$this->assertSame([], $result['cards']);

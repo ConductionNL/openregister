@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\QueuedNotification;
+use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use PHPUnit\Framework\TestCase;
 
 /**

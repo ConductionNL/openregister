@@ -1,0 +1,533 @@
+{
+    "delivery fails with a status code": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            },
+            {
+                "service.deliverWebhook": [
+                    "webhook#3",
+                    "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+                    {
+                        "id": 5
+                    },
+                    3,
+                    null
+                ]
+            },
+            {
+                "logMapper.findByWebhook": [
+                    3,
+                    1,
+                    0
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "message": "bad",
+            "error_details": {
+                "status_code": 502,
+                "response_body": "gateway"
+            }
+        }
+    },
+    "delivery fails with a status code and no message": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            },
+            {
+                "service.deliverWebhook": [
+                    "webhook#3",
+                    "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+                    {
+                        "id": 5
+                    },
+                    3,
+                    null
+                ]
+            },
+            {
+                "logMapper.findByWebhook": [
+                    3,
+                    1,
+                    0
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "message": "Webhook retry delivery failed",
+            "error_details": {
+                "status_code": 410,
+                "response_body": null
+            }
+        }
+    },
+    "delivery fails with an error message only": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            },
+            {
+                "service.deliverWebhook": [
+                    "webhook#3",
+                    "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+                    {
+                        "id": 5
+                    },
+                    3,
+                    null
+                ]
+            },
+            {
+                "logMapper.findByWebhook": [
+                    3,
+                    1,
+                    0
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "message": "timeout"
+        }
+    },
+    "delivery fails without later logs": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            },
+            {
+                "service.deliverWebhook": [
+                    "webhook#3",
+                    "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+                    {
+                        "id": 5
+                    },
+                    3,
+                    null
+                ]
+            },
+            {
+                "logMapper.findByWebhook": [
+                    3,
+                    1,
+                    0
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "message": "Webhook retry delivery failed"
+        }
+    },
+    "delivery throws": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            },
+            {
+                "service.deliverWebhook": [
+                    "webhook#3",
+                    "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+                    {
+                        "id": 5
+                    },
+                    3,
+                    null
+                ]
+            },
+            {
+                "logger.error": [
+                    "[WebhooksController] Error retrying webhook: socket",
+                    {
+                        "log_id": 11
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retry webhook"
+        }
+    },
+    "log not found": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "logger.error": [
+                    "[WebhooksController] Webhook log not found for retry: no log",
+                    {
+                        "log_id": 11
+                    }
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Webhook log not found"
+        }
+    },
+    "no payload anywhere": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "No payload available for retry"
+        }
+    },
+    "no session": {
+        "calls": [],
+        "status": 403,
+        "data": {
+            "error": "Administrator privileges are required to manage webhooks"
+        }
+    },
+    "non-admin": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Administrator privileges are required to manage webhooks"
+        }
+    },
+    "non-admin with a forged userId": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "Administrator privileges are required to manage webhooks"
+        }
+    },
+    "request body empty json": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "No payload available for retry"
+        }
+    },
+    "request body not json falls to empty": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "No payload available for retry"
+        }
+    },
+    "request body with data": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            },
+            {
+                "service.deliverWebhook": [
+                    "webhook#3",
+                    "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+                    {
+                        "id": 5
+                    },
+                    3,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Webhook retry delivered successfully"
+        }
+    },
+    "request body without data": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            },
+            {
+                "service.deliverWebhook": [
+                    "webhook#3",
+                    "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+                    {
+                        "id": 7
+                    },
+                    2,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Webhook retry delivered successfully"
+        }
+    },
+    "scalar json body": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "No payload available for retry"
+        }
+    },
+    "scalar json empty string body": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "No payload available for retry"
+        }
+    },
+    "scalar json zero body": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "No payload available for retry"
+        }
+    },
+    "stored payload": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            },
+            {
+                "service.deliverWebhook": [
+                    "webhook#3",
+                    "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
+                    {
+                        "id": 9
+                    },
+                    2,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Webhook retry delivered successfully"
+        }
+    },
+    "successful delivery cannot be retried": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Cannot retry a successful webhook delivery"
+        }
+    },
+    "webhook gone": {
+        "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
+            {
+                "logMapper.find": [
+                    11
+                ]
+            },
+            {
+                "webhookMapper.find": [
+                    3
+                ]
+            },
+            {
+                "logger.error": [
+                    "[WebhooksController] Error retrying webhook: webhook gone",
+                    {
+                        "log_id": 11
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retry webhook"
+        }
+    }
+}

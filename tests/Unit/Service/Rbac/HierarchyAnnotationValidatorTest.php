@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -92,7 +92,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAValidDeclarationIsAccepted(): void {
 		$this->assertSame(
@@ -106,7 +106,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAParentPointingElsewhereIsRefused(): void {
 		$errors = $this->errors(['parent' => 'assignee']);
@@ -122,7 +122,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testANonReferencePropertyIsRefused(): void {
 		$errors = $this->errors(['parent' => 'title']);
@@ -136,7 +136,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAnUnknownPropertyIsRefused(): void {
 		$errors = $this->errors(['parent' => 'notAProperty']);
@@ -150,7 +150,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testABlockWithNoParentIsRefused(): void {
 		$errors = $this->errors(['maxDepth' => 3]);
@@ -166,7 +166,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testNoAnnotationIsNoFinding(): void {
 		$this->assertSame([], $this->validator->validate($this->caseSchema(null)));
@@ -177,7 +177,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testTheAliasSpellingIsValidatedToo(): void {
 		$this->assertSame([], $this->errors(['parentField' => 'parentCase']));
@@ -192,7 +192,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAnUnknownKeyWarnsRatherThanRefusing(): void {
 		$split = HierarchyAnnotationValidator::partition(
@@ -211,7 +211,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testABadDepthOrVerbListIsRefused(): void {
 		$this->assertSame(
@@ -237,7 +237,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testANonObjectBlockIsRefused(): void {
 		$findings = $this->validator->validate(
@@ -256,7 +256,7 @@ class HierarchyAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function testAPathStyleReferenceIsAccepted(): void {
 		$findings = $this->validator->validate(

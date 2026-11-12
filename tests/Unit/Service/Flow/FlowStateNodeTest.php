@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCP\IL10N;
@@ -73,11 +74,11 @@ final class FlowStateNodeTest extends TestCase {
 	public function testClaimTakesTheFirstFreeSlot(): void {
 		$state = new FlowStateHandle();
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['holder' => 'issue-42']),
 			config: ['operation' => 'claim', 'slots' => 'slots', 'capacity' => 3],
 			context: $this->ctx(handle: $state)
-		);
+		));
 
 		self::assertTrue(condition: $out[0]['json']['claimed']);
 		self::assertSame(expected: 1, actual: $out[0]['json']['slot']);
@@ -105,7 +106,7 @@ final class FlowStateNodeTest extends TestCase {
 	public function testClaimRecordsTheNamedItemFields(): void {
 		$state = new FlowStateHandle();
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['holder' => 'issue-42', 'stage' => 'builder', 'repo' => 'ConductionNL/hydra']),
 			config: [
 				'operation' => 'claim',
@@ -114,7 +115,7 @@ final class FlowStateNodeTest extends TestCase {
 				'record' => ['stage', 'repo', 'absent'],
 			],
 			context: $this->ctx(handle: $state)
-		);
+		));
 
 		$slot = $state->get(key: 'slots')['1'];
 
@@ -133,11 +134,11 @@ final class FlowStateNodeTest extends TestCase {
 	public function testASecondClaimTakesTheNextSlot(): void {
 		$state = new FlowStateHandle(values: ['slots' => ['1' => 'issue-1']]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['holder' => 'issue-2']),
 			config: ['operation' => 'claim', 'slots' => 'slots', 'capacity' => 3],
 			context: $this->ctx(handle: $state)
-		);
+		));
 
 		self::assertSame(expected: 2, actual: $out[0]['json']['slot']);
 
@@ -165,11 +166,11 @@ final class FlowStateNodeTest extends TestCase {
 	public function testAtCapacityTheClaimIsRefused(): void {
 		$state = new FlowStateHandle(values: ['slots' => ['1' => 'a', '2' => 'b']]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['holder' => 'c']),
 			config: ['operation' => 'claim', 'slots' => 'slots', 'capacity' => 2],
 			context: $this->ctx(handle: $state)
-		);
+		));
 
 		self::assertFalse(condition: $out[0]['json']['claimed']);
 		self::assertNull(actual: $out[0]['json']['slot']);
@@ -195,11 +196,11 @@ final class FlowStateNodeTest extends TestCase {
 	public function testASlotAboveALoweredCapacityIsKeptUntilReleased(): void {
 		$state = new FlowStateHandle(values: ['slots' => ['1' => 'a', '2' => 'b', '3' => 'c']]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['holder' => 'd']),
 			config: ['operation' => 'claim', 'slots' => 'slots', 'capacity' => 2],
 			context: $this->ctx(handle: $state)
-		);
+		));
 
 		self::assertFalse(condition: $out[0]['json']['claimed']);
 
@@ -217,19 +218,19 @@ final class FlowStateNodeTest extends TestCase {
 	public function testReleaseFreesTheSlotForTheNextClaim(): void {
 		$state = new FlowStateHandle(values: ['slots' => ['1' => 'a', '2' => 'b']]);
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['slot' => 1]),
 			config: ['operation' => 'release', 'slots' => 'slots'],
 			context: $this->ctx(handle: $state)
-		);
+		));
 
 		self::assertSame(expected: ['1' => null, '2' => 'b'], actual: $state->get(key: 'slots'));
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['holder' => 'c']),
 			config: ['operation' => 'claim', 'slots' => 'slots', 'capacity' => 2],
 			context: $this->ctx(handle: $state)
-		);
+		));
 
 		self::assertSame(expected: 1, actual: $out[0]['json']['slot']);
 
@@ -245,11 +246,11 @@ final class FlowStateNodeTest extends TestCase {
 	public function testReleaseByHolderWhenTheSlotNumberIsUnknown(): void {
 		$state = new FlowStateHandle(values: ['slots' => ['1' => 'a', '2' => 'b']]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['holder' => 'b']),
 			config: ['operation' => 'release', 'slots' => 'slots'],
 			context: $this->ctx(handle: $state)
-		);
+		));
 
 		self::assertTrue(condition: $out[0]['json']['released']);
 		self::assertSame(expected: ['1' => 'a', '2' => null], actual: $state->get(key: 'slots'));
@@ -264,11 +265,11 @@ final class FlowStateNodeTest extends TestCase {
 	public function testReleasingAnUnheldSlotReportsFalse(): void {
 		$state = new FlowStateHandle(values: ['slots' => ['1' => 'a']]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['holder' => 'zzz']),
 			config: ['operation' => 'release', 'slots' => 'slots'],
 			context: $this->ctx(handle: $state)
-		);
+		));
 
 		self::assertFalse(condition: $out[0]['json']['released']);
 		self::assertFalse(condition: $state->isDirty());
@@ -283,18 +284,18 @@ final class FlowStateNodeTest extends TestCase {
 	public function testGetReadsAKeyWithADefault(): void {
 		$state = new FlowStateHandle(values: ['cursor' => 7]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: $this->items(json: []),
 			config: ['operation' => 'get', 'key' => 'cursor'],
 			context: $this->ctx(handle: $state)
-		);
+		));
 		self::assertSame(expected: 7, actual: $out[0]['json']['cursor']);
 
-		$fresh = $this->node->execute(
+		$fresh = $this->node->execute(new FlowNodeCall(
 			items: $this->items(json: []),
 			config: ['operation' => 'get', 'key' => 'cursor', 'default' => 0],
 			context: $this->ctx(handle: new FlowStateHandle())
-		);
+		));
 		self::assertSame(expected: 0, actual: $fresh[0]['json']['cursor']);
 
 	}//end testGetReadsAKeyWithADefault()
@@ -307,18 +308,18 @@ final class FlowStateNodeTest extends TestCase {
 	public function testSetStoresALiteralOrAValueFromTheItem(): void {
 		$state = new FlowStateHandle();
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			items: $this->items(json: []),
 			config: ['operation' => 'set', 'key' => 'cursor', 'value' => 3],
 			context: $this->ctx(handle: $state)
-		);
+		));
 		self::assertSame(expected: 3, actual: $state->get(key: 'cursor'));
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			items: $this->items(json: ['lastId' => 99]),
 			config: ['operation' => 'set', 'key' => 'cursor', 'from' => 'lastId'],
 			context: $this->ctx(handle: $state)
-		);
+		));
 		self::assertSame(expected: 99, actual: $state->get(key: 'cursor'));
 
 	}//end testSetStoresALiteralOrAValueFromTheItem()
@@ -334,11 +335,11 @@ final class FlowStateNodeTest extends TestCase {
 	public function testARunWithoutFlowStateRefuses(): void {
 		$this->expectException(exception: InvalidArgumentException::class);
 
-		$this->node->execute(
+		$this->node->execute(new FlowNodeCall(
 			items: $this->items(json: []),
 			config: ['operation' => 'get', 'key' => 'cursor'],
 			context: []
-		);
+		));
 
 	}//end testARunWithoutFlowStateRefuses()
 
@@ -381,7 +382,7 @@ final class FlowStateNodeTest extends TestCase {
 		$stale = (new \DateTime('-2 hours'))->format(\DateTimeInterface::ATOM);
 		$state = new FlowStateHandle(values: ['slots' => ['1' => ['holder' => 'dead-run', 'since' => $stale]]]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [['json' => ['holder' => 'live-run'], 'binary' => [], 'pairedItem' => null]],
 			config: [
 				'operation' => 'claim',
@@ -391,7 +392,7 @@ final class FlowStateNodeTest extends TestCase {
 				'leaseSeconds' => 60,
 			],
 			context: $this->ctx($state)
-		);
+		));
 
 		$this->assertTrue($out[0]['json']['claimed'], 'the only slot was held by a run that ended two hours ago');
 		$this->assertSame('live-run', $state->get(key: 'slots')['1']['holder']);
@@ -413,7 +414,7 @@ final class FlowStateNodeTest extends TestCase {
 		$fresh = (new \DateTime('-5 seconds'))->format(\DateTimeInterface::ATOM);
 		$state = new FlowStateHandle(values: ['slots' => ['1' => ['holder' => 'busy-run', 'since' => $fresh]]]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [['json' => ['holder' => 'other-run'], 'binary' => [], 'pairedItem' => null]],
 			config: [
 				'operation' => 'claim',
@@ -423,7 +424,7 @@ final class FlowStateNodeTest extends TestCase {
 				'leaseSeconds' => 3600,
 			],
 			context: $this->ctx($state)
-		);
+		));
 
 		$this->assertFalse($out[0]['json']['claimed'], 'a run five seconds into an hour-long lease was displaced');
 		$this->assertSame('busy-run', $state->get(key: 'slots')['1']['holder']);
@@ -443,11 +444,11 @@ final class FlowStateNodeTest extends TestCase {
 		$ancient = (new \DateTime('-30 days'))->format(\DateTimeInterface::ATOM);
 		$state = new FlowStateHandle(values: ['slots' => ['1' => ['holder' => 'dead-run', 'since' => $ancient]]]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [['json' => ['holder' => 'live-run'], 'binary' => [], 'pairedItem' => null]],
 			config: ['operation' => 'claim', 'slots' => 'slots', 'capacity' => 1, 'holder' => 'holder'],
 			context: $this->ctx($state)
-		);
+		));
 
 		$this->assertFalse($out[0]['json']['claimed'], 'an unleased pool must behave exactly as it did before');
 
@@ -464,7 +465,7 @@ final class FlowStateNodeTest extends TestCase {
 	public function testAnUnreadableTimestampKeepsTheSlotHeld(): void {
 		$state = new FlowStateHandle(values: ['slots' => ['1' => ['holder' => 'odd-run', 'since' => 'not-a-date']]]);
 
-		$out = $this->node->execute(
+		$out = $this->node->execute(new FlowNodeCall(
 			items: [['json' => ['holder' => 'live-run'], 'binary' => [], 'pairedItem' => null]],
 			config: [
 				'operation' => 'claim',
@@ -474,7 +475,7 @@ final class FlowStateNodeTest extends TestCase {
 				'leaseSeconds' => 1,
 			],
 			context: $this->ctx($state)
-		);
+		));
 
 		$this->assertFalse($out[0]['json']['claimed'], 'a timestamp that will not parse must not free the slot');
 

@@ -1,0 +1,55 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FilesIndex table header renders the header and sorts from it 1`] = `
+"<thead>
+  <tr>
+    <th scope="col" class="column-filename sortable">t:File Name
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-mimetype">t:Type</th>
+    <th scope="col" class="column-size sortable">t:Size
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-chunks sortable">t:Chunks
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-entities sortable">t:Entities
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-risk sortable">t:Risk Level
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-extracted sortable">t:Extracted At <span class="sort-indicator">▼</span></th>
+    <th scope="col" class="column-actions">t:Actions</th>
+  </tr>
+</thead>
+click 0: fileName DESC
+click 0: fileName ASC
+click 1: fileName ASC
+click 3: chunkCount DESC
+click 6: extractedAt DESC
+click 7: extractedAt DESC
+<thead>
+  <tr>
+    <th scope="col" class="column-filename sortable">t:File Name
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-mimetype">t:Type</th>
+    <th scope="col" class="column-size sortable">t:Size
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-chunks sortable">t:Chunks
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-entities sortable">t:Entities
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-risk sortable">t:Risk Level
+      <!--v-if-->
+    </th>
+    <th scope="col" class="column-extracted sortable">t:Extracted At <span class="sort-indicator">▼</span></th>
+    <th scope="col" class="column-actions">t:Actions</th>
+  </tr>
+</thead>
+api calls: 5"
+`;

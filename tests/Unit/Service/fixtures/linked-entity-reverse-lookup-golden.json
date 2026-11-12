@@ -1,0 +1,803 @@
+{
+    "circuit breaker": {
+        "results": [
+            {
+                "entityType": "object",
+                "uuid": "obj-11",
+                "name": "Object of 11",
+                "schema": "Persons",
+                "schemaId": 11,
+                "schemaIcon": "user",
+                "register": 3,
+                "url": "/apps/leaf/obj-11"
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-b",
+                "name": null,
+                "schema": "Persons",
+                "schemaId": 11,
+                "schemaIcon": "user",
+                "register": 0,
+                "url": null
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-12",
+                "name": "Object of 12",
+                "schema": "Cases",
+                "schemaId": 12,
+                "schemaIcon": null,
+                "register": 3,
+                "url": "/apps/leaf/obj-12"
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-b",
+                "name": null,
+                "schema": "Cases",
+                "schemaId": 12,
+                "schemaIcon": null,
+                "register": 0,
+                "url": null
+            },
+            {
+                "entityType": "register",
+                "uuid": "r-1",
+                "name": "Reg one"
+            },
+            {
+                "entityType": "schema",
+                "uuid": "s-11",
+                "name": "Persons"
+            },
+            {
+                "entityType": "organisation",
+                "uuid": "o-1",
+                "name": "Org"
+            }
+        ],
+        "log": [
+            [
+                "magic",
+                11,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "deepLink",
+                3,
+                11,
+                {
+                    "uuid": "obj-11",
+                    "register": 3,
+                    "schema": 11
+                }
+            ],
+            [
+                "deepLink",
+                0,
+                11,
+                {
+                    "uuid": "obj-b",
+                    "register": 0,
+                    "schema": 11
+                }
+            ],
+            [
+                "magic",
+                12,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "deepLink",
+                3,
+                12,
+                {
+                    "uuid": "obj-12",
+                    "register": 3,
+                    "schema": 12
+                }
+            ],
+            [
+                "deepLink",
+                0,
+                12,
+                {
+                    "uuid": "obj-b",
+                    "register": 0,
+                    "schema": 12
+                }
+            ],
+            [
+                "magic",
+                100,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                101,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                102,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                103,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                104,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                105,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                106,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                107,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                108,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                109,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                110,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                111,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                112,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                113,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                114,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                115,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                116,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                117,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                118,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                119,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                120,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                121,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                122,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                123,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                124,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                125,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                126,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                127,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                128,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                129,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                130,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                131,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                132,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                133,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                134,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                135,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                136,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                137,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                138,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                139,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                140,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                141,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                142,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                143,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                144,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                145,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                146,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "magic",
+                147,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "warning",
+                "[LinkedEntityService] Circuit breaker: max tables reached",
+                {
+                    "maxTables": 50,
+                    "type": "mail"
+                }
+            ]
+        ]
+    },
+    "deck": {
+        "results": [
+            {
+                "entityType": "object",
+                "uuid": "obj-11",
+                "name": "Object of 11",
+                "schema": "Persons",
+                "schemaId": 11,
+                "schemaIcon": "user",
+                "register": 3,
+                "url": "/apps/leaf/obj-11"
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-b",
+                "name": null,
+                "schema": "Persons",
+                "schemaId": 11,
+                "schemaIcon": "user",
+                "register": 0,
+                "url": null
+            },
+            {
+                "entityType": "schema",
+                "uuid": "s-12",
+                "name": "Cases"
+            },
+            {
+                "entityType": "organisation",
+                "uuid": "o-1",
+                "name": "Org"
+            }
+        ],
+        "log": [
+            [
+                "magic",
+                11,
+                "_deck",
+                "d-1"
+            ],
+            [
+                "deepLink",
+                3,
+                11,
+                {
+                    "uuid": "obj-11",
+                    "register": 3,
+                    "schema": 11
+                }
+            ],
+            [
+                "deepLink",
+                0,
+                11,
+                {
+                    "uuid": "obj-b",
+                    "register": 0,
+                    "schema": 11
+                }
+            ]
+        ]
+    },
+    "magic table throws": {
+        "results": [
+            {
+                "entityType": "object",
+                "uuid": "obj-12",
+                "name": "Object of 12",
+                "schema": "Cases",
+                "schemaId": 12,
+                "schemaIcon": null,
+                "register": 3,
+                "url": "/apps/leaf/obj-12"
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-b",
+                "name": null,
+                "schema": "Cases",
+                "schemaId": 12,
+                "schemaIcon": null,
+                "register": 0,
+                "url": null
+            },
+            {
+                "entityType": "register",
+                "uuid": "r-1",
+                "name": "Reg one"
+            },
+            {
+                "entityType": "schema",
+                "uuid": "s-11",
+                "name": "Persons"
+            },
+            {
+                "entityType": "organisation",
+                "uuid": "o-1",
+                "name": "Org"
+            }
+        ],
+        "log": [
+            [
+                "magic",
+                11,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "warning",
+                "[LinkedEntityService] Error scanning magic table",
+                {
+                    "schema": 11,
+                    "error": "table missing"
+                }
+            ],
+            [
+                "magic",
+                12,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "deepLink",
+                3,
+                12,
+                {
+                    "uuid": "obj-12",
+                    "register": 3,
+                    "schema": 12
+                }
+            ],
+            [
+                "deepLink",
+                0,
+                12,
+                {
+                    "uuid": "obj-b",
+                    "register": 0,
+                    "schema": 12
+                }
+            ]
+        ]
+    },
+    "mail hit": {
+        "results": [
+            {
+                "entityType": "object",
+                "uuid": "obj-11",
+                "name": "Object of 11",
+                "schema": "Persons",
+                "schemaId": 11,
+                "schemaIcon": "user",
+                "register": 3,
+                "url": "/apps/leaf/obj-11"
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-b",
+                "name": null,
+                "schema": "Persons",
+                "schemaId": 11,
+                "schemaIcon": "user",
+                "register": 0,
+                "url": null
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-12",
+                "name": "Object of 12",
+                "schema": "Cases",
+                "schemaId": 12,
+                "schemaIcon": null,
+                "register": 3,
+                "url": "/apps/leaf/obj-12"
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-b",
+                "name": null,
+                "schema": "Cases",
+                "schemaId": 12,
+                "schemaIcon": null,
+                "register": 0,
+                "url": null
+            },
+            {
+                "entityType": "register",
+                "uuid": "r-1",
+                "name": "Reg one"
+            },
+            {
+                "entityType": "schema",
+                "uuid": "s-11",
+                "name": "Persons"
+            },
+            {
+                "entityType": "organisation",
+                "uuid": "o-1",
+                "name": "Org"
+            }
+        ],
+        "log": [
+            [
+                "magic",
+                11,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "deepLink",
+                3,
+                11,
+                {
+                    "uuid": "obj-11",
+                    "register": 3,
+                    "schema": 11
+                }
+            ],
+            [
+                "deepLink",
+                0,
+                11,
+                {
+                    "uuid": "obj-b",
+                    "register": 0,
+                    "schema": 11
+                }
+            ],
+            [
+                "magic",
+                12,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "deepLink",
+                3,
+                12,
+                {
+                    "uuid": "obj-12",
+                    "register": 3,
+                    "schema": 12
+                }
+            ],
+            [
+                "deepLink",
+                0,
+                12,
+                {
+                    "uuid": "obj-b",
+                    "register": 0,
+                    "schema": 12
+                }
+            ]
+        ]
+    },
+    "mail other id": {
+        "results": [],
+        "log": [
+            [
+                "magic",
+                11,
+                "_mail",
+                "m-9"
+            ],
+            [
+                "magic",
+                12,
+                "_mail",
+                "m-9"
+            ]
+        ]
+    },
+    "mappers throw": {
+        "results": [
+            {
+                "entityType": "object",
+                "uuid": "obj-11",
+                "name": "Object of 11",
+                "schema": "Persons",
+                "schemaId": 11,
+                "schemaIcon": "user",
+                "register": 3,
+                "url": "/apps/leaf/obj-11"
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-b",
+                "name": null,
+                "schema": "Persons",
+                "schemaId": 11,
+                "schemaIcon": "user",
+                "register": 0,
+                "url": null
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-12",
+                "name": "Object of 12",
+                "schema": "Cases",
+                "schemaId": 12,
+                "schemaIcon": null,
+                "register": 3,
+                "url": "/apps/leaf/obj-12"
+            },
+            {
+                "entityType": "object",
+                "uuid": "obj-b",
+                "name": null,
+                "schema": "Cases",
+                "schemaId": 12,
+                "schemaIcon": null,
+                "register": 0,
+                "url": null
+            }
+        ],
+        "log": [
+            [
+                "magic",
+                11,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "deepLink",
+                3,
+                11,
+                {
+                    "uuid": "obj-11",
+                    "register": 3,
+                    "schema": 11
+                }
+            ],
+            [
+                "deepLink",
+                0,
+                11,
+                {
+                    "uuid": "obj-b",
+                    "register": 0,
+                    "schema": 11
+                }
+            ],
+            [
+                "magic",
+                12,
+                "_mail",
+                "m-1"
+            ],
+            [
+                "deepLink",
+                3,
+                12,
+                {
+                    "uuid": "obj-12",
+                    "register": 3,
+                    "schema": 12
+                }
+            ],
+            [
+                "deepLink",
+                0,
+                12,
+                {
+                    "uuid": "obj-b",
+                    "register": 0,
+                    "schema": 12
+                }
+            ],
+            [
+                "warning",
+                "[LinkedEntityService] Error scanning registers",
+                {
+                    "error": "register table gone"
+                }
+            ],
+            [
+                "warning",
+                "[LinkedEntityService] Error scanning schemas",
+                {
+                    "error": "schema table gone"
+                }
+            ],
+            [
+                "warning",
+                "[LinkedEntityService] Error scanning organisations",
+                {
+                    "error": "org table gone"
+                }
+            ]
+        ]
+    }
+}

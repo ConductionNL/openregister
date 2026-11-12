@@ -1,7 +1,7 @@
 # apphost-scheduling Specification
 
 ## Purpose
-Recurring work for manifest-driven apps that ship no PHP: the manifest declares schedules, OpenRegister reconciles them into background jobs, evaluates the cron expression, and runs only actions on an allow-list.
+Recurring work for manifest-driven apps that ship no PHP: the manifest declares schedules, and publishing the manifest makes each one a scheduled flow on the one flow engine. There is no reconciler: the `TimedJob` went with #3382 and the class it drove is deleted. A schedule's run acts as the user who published it, in the application's organisation.
 
 ## Requirements
 
@@ -12,140 +12,159 @@ manifest via a top-level `schedules[]` array (manifest v2). Each entry SHALL
 carry a stable `id`, exactly one of `interval` (positive integer seconds) or
 `cron` (a cron expression), an allow-listed `action` type, an `arguments`
 object, and an `enabled` boolean (default `true`). The schedule declaration
-SHALL NOT carry a runtime execution identity — the executing user is resolved
-from the owning application, never supplied by the manifest author.
+SHALL NOT carry a runtime execution identity: the executing user is the user who
+published the production version, never supplied by the manifest author.
 
 #### Scenario: Virtual app declares an interval schedule
 
 - **WHEN** a virtual app whose manifest is stored as an OpenRegister
   `application` object in the `openbuild` register declares
   `schedules: [{ id: "nightly-sync", interval: 86400, action:
-  "openconnector:synchronization", arguments: { synchronization:
+  "openconnector:synchronization", arguments: { synchronizationId:
   "00000000-0000-0000-0000-000000000000" }, enabled: true }]`
-- **THEN** the manifest validates against the manifest v2 schema and the
-  reconciler treats `nightly-sync` as a schedulable declaration for that
-  application
+- **THEN** the manifest validates against the manifest v2 schema and
+  `nightly-sync` parses as a schedule declaration for that application
 
 #### Scenario: Virtual app declares a cron schedule
 
 - **WHEN** a virtual app declares `schedules: [{ id: "weekday-report", cron:
   "0 6 * * 1-5", action: "openconnector:synchronization", arguments: {
-  synchronization: "00000000-0000-0000-0000-000000000000" }, enabled: true }]`
-- **THEN** the manifest validates and the reconciler computes the schedule's
-  next fire time from the cron expression and writes it as the reconciled OC
-  `job` object's `nextRun`, so the existing `JobService` executes it on schedule
+  synchronizationId: "00000000-0000-0000-0000-000000000000" }, enabled: true }]`
+- **THEN** the manifest validates and the schedule parses as a declaration for
+  that application
 
 #### Scenario: On-disk manifest app declares a schedule
 
 - **WHEN** an on-disk AppHost manifest app (manifest served by OpenRegister
   directly) declares the same `schedules[]` entry
-- **THEN** the reconciler discovers and treats the declaration identically to a
-  virtual app's — the manifest source does not change the scheduling behaviour
+- **THEN** the declaration parses identically to a virtual app's: the manifest
+  source does not change it
 
 #### Scenario: Schedule missing both interval and cron is rejected
 
 - **WHEN** a schedule entry declares neither `interval` nor `cron` (or declares
   both)
-- **THEN** the entry SHALL NOT be reconciled into a `job` object and the
-  reconciler SHALL log the rejected entry with its `applicationId` and `id`
+- **THEN** the entry SHALL be refused as a schedule declaration, naming its `id`
 
-### Requirement: Reconciler upserts an OpenConnector job idempotently
+#### Scenario: A manifest cannot name the identity
 
-A single generic OpenRegister AppHost reconciler `TimedJob` SHALL, each tick,
-enumerate the manifests of published apps (on-disk and virtual), read each
-`schedules[]` entry, and idempotently UPSERT a corresponding OpenConnector `job`
-OR object keyed on `applicationId + scheduleId` (mirroring
-`lib/BackgroundJob/ScheduledWorkflowJob.php`). For an `interval` schedule the
-reconciled `job` carries that `interval`; for a `cron` schedule the reconciler
-SHALL evaluate the cron expression to the next fire time and write it as the
-job's `nextRun`. Execution of the resulting `job` objects SHALL reuse the
-existing OpenConnector `JobTask`/`JobService` path unchanged; the reconciler
-SHALL NOT implement its own execution or logging.
+- **WHEN** a schedule entry carries a `runAs` or `owner` key naming a user
+- **THEN** the key is ignored and the run acts as the publisher
 
-#### Scenario: First reconciliation creates a job
+### Requirement: Publishing a manifest applies its schedules as scheduled flows
 
-- **WHEN** the reconciler runs and finds a declared, enabled, allow-listed
-  schedule for which no `job` object keyed on `applicationId + scheduleId` yet
-  exists
-- **THEN** it creates one OpenConnector `job` object with `interval`/`cron`,
-  `arguments`, `isEnabled: true`, `jobClass` set to the vetted generic action
-  class for the schedule's `action` type, and `userId` set to the resolved
-  application owner
+When an application's production version is published, or the schedules of its production version change, OpenRegister SHALL make each schedule one scheduled flow. Applying SHALL be idempotent, and an unrelated save of the application SHALL NOT apply anything.
 
-#### Scenario: Re-reconciliation of an unchanged schedule is a no-op
+#### Scenario: First publish creates a published flow
 
-- **WHEN** the reconciler runs again and a `job` object already exists for
-  `applicationId + scheduleId` and matches the current declaration
-- **THEN** no duplicate `job` object is created and the existing job's
-  `lastRun`/`nextRun` bookkeeping (owned by `JobService`) is not disturbed
+- **WHEN** a production version with one enabled cron schedule is published
+- **THEN** one enabled flow exists with trigger `schedule`, that cron, and a published version, and the schedule worker fires it when it is due
 
-#### Scenario: Changed schedule fields are updated in place
+#### Scenario: Publishing the same manifest again changes nothing
 
-- **WHEN** a manifest changes an existing schedule's `interval`, `cron`, or
-  `arguments`
-- **THEN** the reconciler updates the SAME `job` object (matched on
-  `applicationId + scheduleId`) rather than creating a second one
+- **WHEN** the same user publishes a manifest whose schedules are unchanged
+- **THEN** no flow is written and no flow version is added
 
-### Requirement: Disabled or removed schedule disables or removes its job
+#### Scenario: A changed schedule updates its flow
 
-A schedule set `enabled: false` or removed from a manifest SHALL have its
-reconciled `job` object disabled or removed on the next reconciler tick, so a
-withdrawn declaration never keeps executing.
+- **WHEN** a published schedule's cron or arguments change
+- **THEN** the same flow carries them in a new published version
 
-#### Scenario: Schedule disabled in manifest
+#### Scenario: A disabled schedule disables its flow
 
-- **WHEN** a previously reconciled schedule is changed to `enabled: false`
-- **THEN** the reconciler sets the corresponding `job` object's `isEnabled` to
-  `false` so `JobService` skips it, without deleting its run history
+- **WHEN** a schedule is published with `enabled: false`
+- **THEN** its flow stays and does not fire
 
-#### Scenario: Schedule removed from manifest
+#### Scenario: A production version of another application is refused
 
-- **WHEN** a previously reconciled schedule `id` is no longer present in the
-  application's manifest
-- **THEN** the reconciler disables or removes the orphaned `job` object keyed on
-  that `applicationId + scheduleId` (garbage collection), leaving no live job
-  for a declaration that no longer exists
+- **WHEN** an application's production version cannot be read or belongs to another application
+- **THEN** no flow is written or removed and the refusal is logged
+
+#### Scenario: A removed schedule removes its flow
+
+- **WHEN** a published manifest no longer holds a schedule, or the application is deleted
+- **THEN** its flow is removed, and flows an author drew for that application stay
 
 ### Requirement: Action type must be allow-listed
 
-The reconciler SHALL only map a schedule to a `job` whose `jobClass` is drawn
-from a closed, server-controlled allow-list of generic action types. A schedule
-SHALL NEVER cause a raw PHP class name (FQCN) supplied in manifest data to be
-used as a `jobClass`. Any schedule whose `action` is not on the allow-list SHALL
-be rejected (no `job` created/updated) and logged.
+A schedule SHALL only become a flow through a closed, server-controlled map from action type to flow node. A schedule whose `action` is not on the map, or that lacks the action's argument, SHALL be refused and logged with its application and id. `openconnector:synchronization` SHALL read `arguments.synchronizationId`.
 
-#### Scenario: Allow-listed action is mapped to a vetted job class
+#### Scenario: Non-allow-listed action is refused
 
-- **WHEN** a schedule declares `action: "openconnector:synchronization"` and
-  that type is on the allow-list
-- **THEN** the reconciler sets the reconciled `job`'s `jobClass` to the vetted
-  server-side class for that action type — not to any value taken from the
-  manifest
+- **WHEN** a schedule declares `action: "OCA\\Evil\\Backdoor"`
+- **THEN** no flow is written for it and the refusal is logged
 
-#### Scenario: Non-allow-listed action is rejected
+### Requirement: An interval maps to an exact cron expression or is refused
 
-- **WHEN** a schedule declares `action: "OCA\\Evil\\Backdoor"` or any other
-  value not on the allow-list
-- **THEN** the reconciler creates/updates NO `job` object for that schedule and
-  logs the rejected `action` with its `applicationId` and `id`
+An `interval` SHALL become a cron expression only when one fires at exactly that interval: whole minutes dividing an hour, whole hours dividing a day, one day, or one week. Any other interval SHALL be refused and logged.
 
-### Requirement: Reconciled job runs as the application owner
+#### Scenario: A daily interval
 
-The reconciler SHALL set the reconciled `job` object's `userId` to the identity
-resolved from the owning application (reusing the existing owner-impersonation
-seam), never to an identity supplied by the manifest author. One tenant's
-schedule SHALL NOT be able to run as another tenant's user.
+- **WHEN** a schedule declares `interval: 86400`
+- **THEN** its flow's cron is `0 0 * * *`
 
-#### Scenario: Owner resolved from the application, not the manifest
+#### Scenario: An interval with no exact cron
 
-- **WHEN** a manifest schedule includes an author-supplied `runAs`/`owner`
-  field naming a different user
-- **THEN** the reconciler ignores the author-supplied value and sets the
-  reconciled `job`'s `userId` to the owner resolved from the application record,
-  so execution occurs under the app owner's identity
+- **WHEN** a schedule declares `interval: 5400`
+- **THEN** no flow is written for it and the refusal names the schedule
 
-#### Scenario: Owner cannot be resolved
+### Requirement: A schedule runs as the user who published it
 
-- **WHEN** the reconciler cannot resolve an owner for an application
-- **THEN** it does NOT create a `job` that would run under an ambiguous or
-  elevated identity, and logs the unresolved-owner skip for that application
+A compiled flow's schedule trigger SHALL declare as `runAs` the user who published the production version, and that user SHALL own the flow. Publishing again as another user SHALL change the identity of the application's schedules, and each change SHALL be recorded in the application's audit trail with the previous user, the new user and the time. The identity SHALL be re-resolved at each firing as `delegated-identity` requires.
+
+#### Scenario: The publisher is the acting identity
+
+- **WHEN** user P publishes an application owned by user O
+- **THEN** a run of its schedule acts as P, not O
+
+#### Scenario: Publishing as someone else changes the identity
+
+- **GIVEN** a schedule published by P
+- **WHEN** Q publishes the same schedules
+- **THEN** the run acts as Q, and the audit trail records that it changed from P to Q, and when
+
+#### Scenario: No publisher is refused
+
+- **WHEN** a production version changes with no signed-in user
+- **THEN** no flow is written and the refusal is logged
+
+#### Scenario: A refusal reaches the caller of the publish
+
+- **WHEN** a publish succeeds and a schedule of it is refused
+- **THEN** the response carries the reason in the header `X-OpenRegister-Schedule-Refused`
+
+#### Scenario: An on-disk app with no publisher is refused
+
+- **WHEN** an app ships schedules in its own manifest and has no published application object
+- **THEN** no flow exists for them and each refusal is logged
+
+### Requirement: A schedule SHALL NOT run as another tenant's user
+
+A compiled flow SHALL belong to the application's `@self.organisation`. One tenant's schedule SHALL NOT be able to run as another tenant's user: the publisher SHALL be a member of that organisation when publishing, and the flow's `runAs` SHALL be a member at each firing.
+
+#### Scenario: The flow takes the application's organisation
+
+- **WHEN** a member of the application's organisation publishes while another organisation is active
+- **THEN** the flow belongs to the application's organisation
+
+#### Scenario: The same slug in another organisation is another application
+
+- **GIVEN** a compiled flow of an application
+- **WHEN** an application of another organisation with the same slug is published or deleted
+- **THEN** that flow is untouched
+
+#### Scenario: A publisher outside the organisation is refused
+
+- **WHEN** a user who is not a member of the application's organisation publishes, administrators included
+- **THEN** no flow is written and the refusal is logged
+
+#### Scenario: An application with no organisation is refused
+
+- **WHEN** an application with no organisation is published
+- **THEN** no flow is written and the refusal is logged
+
+#### Scenario: A member who left stops the schedule
+
+- **GIVEN** a compiled flow whose `runAs` has left the organisation
+- **WHEN** the schedule worker ticks
+- **THEN** no run is queued, the flow is disabled, and its status message gives the reason

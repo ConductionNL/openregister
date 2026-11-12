@@ -1,0 +1,146 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RuleConditionEditor lists the operators per category 1`] = `
+[
+  {
+    "headers": [
+      "t:Operator",
+      "t:Takes",
+      "t:What it does",
+    ],
+    "rows": [
+      [
+        ">",
+        "2",
+        "Greater than",
+      ],
+      [
+        "==",
+        "2",
+        "Equals",
+      ],
+    ],
+  },
+  {
+    "headers": [
+      "t:Operator",
+      "t:Takes",
+      "t:What it does",
+    ],
+    "rows": [
+      [
+        "var",
+        "1",
+        "Reads a field",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`RuleInventoryTable shows every rule in pipeline order 1`] = `
+[
+  {
+    "headers": [
+      "t:Order",
+      "t:Rule",
+      "t:Kind",
+      "t:Declared in",
+      "t:Last run",
+      "t:On",
+      "t:Actions",
+    ],
+    "rows": [
+      [
+        "1",
+        "Totalr1",
+        "calculation",
+        "x-openregister-calculations",
+        "2026-11-01",
+        "t:Switch off {rule}{"rule":"Total"}",
+        "t:Open",
+      ],
+      [
+        "2",
+        "blockr2",
+        "state-block",
+        "x-state",
+        "t:Nevert:Nothing in the reporting windowBoom",
+        "t:Switch on {rule}{"rule":"block"}",
+        "t:Open",
+      ],
+      [
+        "3",
+        "oddr3",
+        "unknown-kind",
+        "x-other",
+        "t:Never",
+        "t:Switch off {rule}{"rule":"odd"}",
+        "t:Open",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`RuleInventoryTable shows the empty state without rules 1`] = `"t:No rules on this schema yet | t:A calculation, a state field block, a transition condition or a triggering flow appears here the moment you declare it."`;
+
+exports[`RuleRunsPanel shows the empty state without runs 1`] = `"t:No runs match | t:A run is written when an object is saved. A dry run writes none, which is what makes it dry."`;
+
+exports[`RuleRunsPanel shows the runs the log returns 1`] = `
+[
+  {
+    "headers": [
+      "t:When",
+      "t:Verdict",
+      "t:Object",
+      "t:What decided it",
+    ],
+    "rows": [
+      [
+        "2026-11-01 10:00",
+        "pass",
+        "u-1",
+        "amountt:read as 12",
+      ],
+      [
+        "2026-11-02",
+        "fail",
+        "",
+        "Too low",
+      ],
+      [
+        "",
+        "skip",
+        "",
+        "",
+      ],
+    ],
+  },
+]
+`;
+
+exports[`RuleTrialPanel shows what the rule would have written 1`] = `
+[
+  {
+    "headers": [
+      "t:Property",
+      "t:Value",
+    ],
+    "rows": [
+      [
+        "total",
+        "12",
+      ],
+      [
+        "label",
+        "x",
+      ],
+      [
+        "nested",
+        "{"a":1}",
+      ],
+    ],
+  },
+]
+`;

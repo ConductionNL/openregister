@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -55,8 +56,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 
 class ImportServiceRegisterAutoCreateTest extends TestCase {
+	use PassThroughL10nTrait;
 
 	/** @var RegisterMapper&MockObject */
 	private RegisterMapper $registerMapper;
@@ -89,16 +93,19 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 		// importRegister()/importSchema()'s find-or-create logic runs for
 		// real; only the mappers underneath are mocked.
 		$this->importHandler = new ImportHandler(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
-			appConfig: $this->createMock(IAppConfig::class),
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: sys_get_temp_dir(),
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->objectService
 		);
 
@@ -119,15 +126,10 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 		$translationCsvCodec->method('unflattenFromCsv')->willReturnCallback(static fn (array $row) => $row);
 
 		$this->service = new ImportService(
-			$this->schemaMapper,
-			$this->objectService,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IGroupManager::class),
-			$translationCsvCodec,
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			new MappingEngine(),
-			$this->createMock(ValidateObject::class),
-			$container
+			new \OCA\OpenRegister\Service\Import\ImportServiceStores($this->schemaMapper, $this->objectService, $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class), $this->createMock(ValidateObject::class)),
+			new \OCA\OpenRegister\Service\Import\ImportServiceCodecs($translationCsvCodec, new MappingEngine($this->passThroughL10n())),
+			new \OCA\OpenRegister\Service\Import\ImportServiceRuntime($container, new \OCA\OpenRegister\Listener\NotifyPushBatch(), $this->createMock(LoggerInterface::class)),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end setUp()
 
@@ -258,10 +260,10 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 		$path = $this->writeTempJsonFile($this->productsBundle());
 
 		$result = $this->service->importFromJson(
-			filePath: $path,
-			register: null,
-			schema: null,
-			registerSlug: 'products'
+			request: new ImportRequest(
+				filePath: $path,
+				scope: new ImportScope(registerSlug: 'products'),
+			),
 		);
 
 		$this->assertSame(['uuid-widget-1'], $result['JSON']['created']);
@@ -338,12 +340,12 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 		$path = $this->writeTempJsonFile($this->productsBundle());
 
 		// First import: creates the register + schema.
-		$this->service->importFromJson(filePath: $path, register: null, schema: null, registerSlug: 'products');
+		$this->service->importFromJson(request: new ImportRequest(filePath: $path, scope: new ImportScope(registerSlug: 'products')));
 
 		// Second import of the SAME bundle: registerMapper::createFromArray
 		// and schemaMapper::createFromArray each remain asserted ->once()
 		// above — a second invocation would fail this test.
-		$result = $this->service->importFromJson(filePath: $path, register: null, schema: null, registerSlug: 'products');
+		$result = $this->service->importFromJson(request: new ImportRequest(filePath: $path, scope: new ImportScope(registerSlug: 'products')));
 
 		$this->assertSame([], $result['JSON']['errors']);
 	}//end testReimportOfExistingBundleDoesNotDuplicateRegister()
@@ -363,10 +365,10 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 
 		try {
 			$this->service->importFromJson(
-				filePath: $path,
-				register: null,
-				schema: null,
-				registerSlug: 'orders'
+				request: new ImportRequest(
+					filePath: $path,
+					scope: new ImportScope(registerSlug: 'orders'),
+				),
 			);
 			$this->fail('Expected RegisterNotFoundException to be thrown.');
 		} catch (RegisterNotFoundException $e) {

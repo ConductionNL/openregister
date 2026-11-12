@@ -1,0 +1,151 @@
+{
+    "no annotation": {
+        "validate": [],
+        "nominated": []
+    },
+    "annotation null": {
+        "validate": [],
+        "nominated": []
+    },
+    "annotation string": {
+        "validate": [
+            {
+                "code": "unique-hint.not-list",
+                "property": "",
+                "message": "x-openregister-unique-hint must be an array of property names."
+            }
+        ],
+        "nominated": []
+    },
+    "annotation false": {
+        "validate": [
+            {
+                "code": "unique-hint.not-list",
+                "property": "",
+                "message": "x-openregister-unique-hint must be an array of property names."
+            }
+        ],
+        "nominated": []
+    },
+    "annotation empty": {
+        "validate": [],
+        "nominated": []
+    },
+    "all declared": {
+        "validate": [],
+        "nominated": [
+            "email",
+            "kvk"
+        ]
+    },
+    "mixed entries": {
+        "validate": [
+            {
+                "code": "unique-hint.not-a-name",
+                "property": "",
+                "message": "x-openregister-unique-hint entry #1 must be a non-empty property name."
+            },
+            {
+                "code": "unique-hint.unknown-property",
+                "property": "phone",
+                "message": "x-openregister-unique-hint names \"phone\", which this schema does not declare."
+            },
+            {
+                "code": "unique-hint.not-a-name",
+                "property": "",
+                "message": "x-openregister-unique-hint entry #3 must be a non-empty property name."
+            },
+            {
+                "code": "unique-hint.not-a-name",
+                "property": "",
+                "message": "x-openregister-unique-hint entry #4 must be a non-empty property name."
+            },
+            {
+                "code": "unique-hint.unknown-property",
+                "property": "phone",
+                "message": "x-openregister-unique-hint names \"phone\", which this schema does not declare."
+            },
+            {
+                "code": "unique-hint.not-a-name",
+                "property": "",
+                "message": "x-openregister-unique-hint entry #8 must be a non-empty property name."
+            },
+            {
+                "code": "unique-hint.not-a-name",
+                "property": "",
+                "message": "x-openregister-unique-hint entry #10 must be a non-empty property name."
+            }
+        ],
+        "nominated": [
+            "email",
+            "phone",
+            "kvk",
+            "12"
+        ]
+    },
+    "assoc keys": {
+        "validate": [
+            {
+                "code": "unique-hint.not-a-name",
+                "property": "",
+                "message": "x-openregister-unique-hint entry #0 must be a non-empty property name."
+            },
+            {
+                "code": "unique-hint.unknown-property",
+                "property": "nope",
+                "message": "x-openregister-unique-hint names \"nope\", which this schema does not declare."
+            },
+            {
+                "code": "unique-hint.not-a-name",
+                "property": "",
+                "message": "x-openregister-unique-hint entry #3 must be a non-empty property name."
+            }
+        ],
+        "nominated": [
+            "email",
+            "nope"
+        ]
+    },
+    "properties missing": {
+        "validate": [
+            {
+                "code": "unique-hint.unknown-property",
+                "property": "email",
+                "message": "x-openregister-unique-hint names \"email\", which this schema does not declare."
+            },
+            {
+                "code": "unique-hint.not-a-name",
+                "property": "",
+                "message": "x-openregister-unique-hint entry #1 must be a non-empty property name."
+            }
+        ],
+        "nominated": [
+            "email"
+        ]
+    },
+    "properties not array": {
+        "validate": [
+            {
+                "code": "unique-hint.unknown-property",
+                "property": "email",
+                "message": "x-openregister-unique-hint names \"email\", which this schema does not declare."
+            }
+        ],
+        "nominated": [
+            "email"
+        ]
+    },
+    "properties list": {
+        "validate": [
+            {
+                "code": "unique-hint.unknown-property",
+                "property": "email",
+                "message": "x-openregister-unique-hint names \"email\", which this schema does not declare."
+            }
+        ],
+        "nominated": [
+            "email",
+            "0"
+        ]
+    }
+}

@@ -33,14 +33,18 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion + local fixture helpers take positional args by convention; mirroring BrpPersoonProviderTest in this repo.
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -82,7 +86,7 @@ class FakeExternalProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 }//end class
@@ -115,7 +119,7 @@ class FakeLocalProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 }//end class
@@ -211,6 +215,44 @@ class ExplodingCallService {
 }//end class
 
 /**
+ * Stand-in for integriq's CallService, whose `call` takes `withholdBodies`:
+ * remembers the options and the flag it was handed.
+ */
+class WithholdingCallService {
+	/**
+	 * The request options the router handed to call().
+	 *
+	 * @var array<string,mixed>|null
+	 */
+	public ?array $receivedConfig = null;
+
+	/**
+	 * The withholdBodies flag the router handed to call().
+	 *
+	 * @var bool|null
+	 */
+	public ?bool $receivedWithholdBodies = null;
+
+	public function __construct(
+		private object $log,
+	) {
+	}//end __construct()
+
+	public function call(
+		$source,
+		string $endpoint = '',
+		string $method = 'GET',
+		array $config = [],
+		bool $persistLog = true,
+		bool $withholdBodies = false,
+	) {
+		$this->receivedConfig = $config;
+		$this->receivedWithholdBodies = $withholdBodies;
+		return $this->log;
+	}//end call()
+}//end class
+
+/**
  * Unit tests for ExternalIntegrationRouter.
  */
 class ExternalIntegrationRouterTest extends TestCase {
@@ -281,17 +323,8 @@ class ExternalIntegrationRouterTest extends TestCase {
 			->getMock();
 
 		$objectService->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				$register = null,
-				$schema = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-				bool $_render = true,
-				bool $_audit = true,
-			) use ($sources, $failure): ?ObjectEntity {
+			function (...$args) use ($sources, $failure): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render, $_audit] = FindCallShape::find(args: $args);
 				$this->finds[] = [
 					'id' => $id,
 					'register' => $register,
@@ -324,10 +357,11 @@ class ExternalIntegrationRouterTest extends TestCase {
 	 *
 	 * @param ObjectService $objectService Answers the source lookup.
 	 * @param object|null $callService The connector CallService stand-in.
+	 * @param LoggerInterface|null $logger The logger to assert on; a null logger when none.
 	 *
 	 * @return ExternalIntegrationRouter
 	 */
-	private function routerOn(ObjectService $objectService, ?object $callService = null): ExternalIntegrationRouter {
+	private function routerOn(ObjectService $objectService, ?object $callService = null, ?LoggerInterface $logger = null): ExternalIntegrationRouter {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn(true);
 		$appManager->method('isEnabledForUser')->willReturn(true);
@@ -335,7 +369,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($objectService, $callService) {
-				if ($id === ObjectService::class) {
+				if ($id === \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class) {
 					return $objectService;
 				}
 
@@ -347,7 +381,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 			}
 		);
 
-		return new ExternalIntegrationRouter($appManager, $container, new NullLogger());
+		return new ExternalIntegrationRouter($appManager, $container, ($logger ?? new NullLogger()));
 	}//end routerOn()
 
 	/**
@@ -372,7 +406,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$provider = new FakeLocalProvider();
 
 		$this->expectException(\LogicException::class);
-		$router->call($provider, 'GET', '/some/path');
+		$router->call($provider, new UpstreamRequest(method: 'GET', path: '/some/path', options: []));
 	}//end testCallRejectsNonExternalProvider()
 
 	public function testCallRejectsExternalProviderWithoutSource(): void {
@@ -380,7 +414,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$provider = new FakeExternalProvider(source: null);
 
 		try {
-			$router->call($provider, 'GET', '/some/path');
+			$router->call($provider, new UpstreamRequest(method: 'GET', path: '/some/path', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(
@@ -399,7 +433,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$provider = new FakeExternalProvider();
 
 		try {
-			$router->call($provider, 'GET', '/some/path');
+			$router->call($provider, new UpstreamRequest(method: 'GET', path: '/some/path', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(
@@ -476,7 +510,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$router = $this->routerOn($this->objectService([]), new ExplodingCallService());
 
 		try {
-			$router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+			$router->call(new FakeExternalProvider(source: 'kvk'), new UpstreamRequest(method: 'GET', path: 'zoeken', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING, $e->getCause());
@@ -492,7 +526,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$router = $this->routerOn($this->objectService([], $failure), new ExplodingCallService());
 
 		try {
-			$router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+			$router->call(new FakeExternalProvider(source: 'kvk'), new UpstreamRequest(method: 'GET', path: 'zoeken', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING, $e->getCause());
@@ -516,7 +550,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$router = new ExternalIntegrationRouter($appManager, $container, new NullLogger());
 
 		try {
-			$router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+			$router->call(new FakeExternalProvider(source: 'kvk'), new UpstreamRequest(method: 'GET', path: 'zoeken', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN, $e->getCause());
@@ -530,7 +564,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		);
 		$router = $this->routerOn($this->objectService(['integriq/kvk' => $source]), $callService);
 
-		$router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+		$router->call(new FakeExternalProvider(source: 'kvk'), new UpstreamRequest(method: 'GET', path: 'zoeken', options: []));
 
 		$this->assertSame($source, $callService->receivedSource);
 	}//end testCallHandsTheFoundSourceToTheCallService()
@@ -546,7 +580,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		);
 		$router = $this->buildRouterWithCallLog($log);
 
-		$result = $router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+		$result = $router->call(new FakeExternalProvider(source: 'kvk'), new UpstreamRequest(method: 'GET', path: 'zoeken', options: []));
 
 		$this->assertSame(['resultaten' => [['kvkNummer' => '69599084']]], $result);
 	}//end testCallUnwrapsTheIntegriqCallLogObject()
@@ -566,7 +600,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		);
 		$router = $this->buildRouterWithCallLog($log);
 
-		$result = $router->callWithMeta(new FakeExternalProvider(), 'POST', 'personen');
+		$result = $router->callWithMeta(new FakeExternalProvider(), new UpstreamRequest(method: 'POST', path: 'personen', options: []));
 
 		$this->assertSame(['personen' => []], $result['body']);
 		$this->assertSame(200, $result['meta']['status']);
@@ -580,7 +614,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		);
 
 		try {
-			$router->call(new FakeExternalProvider(), 'GET', '');
+			$router->call(new FakeExternalProvider(), new UpstreamRequest(method: 'GET', path: '', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_PROVIDER_AUTH, $e->getCause());
@@ -595,7 +629,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		);
 
 		try {
-			$router->call(new FakeExternalProvider(), 'GET', '');
+			$router->call(new FakeExternalProvider(), new UpstreamRequest(method: 'GET', path: '', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, $e->getCause());
@@ -610,7 +644,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$log = new FakeCallLog(200, ['statusCode' => 200, 'headers' => [], 'body' => $body, 'encoding' => 'UTF-8']);
 		$router = $this->buildRouterWithCallLog($log);
 
-		$result = $router->call(new FakeExternalProvider(), 'GET', '');
+		$result = $router->call(new FakeExternalProvider(), new UpstreamRequest(method: 'GET', path: '', options: []));
 
 		$this->assertArrayHasKey('pageSummaries', $result);
 		$this->assertSame('xwiki:Sandbox.Page', $result['pageSummaries'][0]['id']);
@@ -620,14 +654,14 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$log = new FakeCallLog(200, ['body' => base64_encode('{"items":[]}'), 'encoding' => 'base64']);
 		$router = $this->buildRouterWithCallLog($log);
 
-		$this->assertSame(['items' => []], $router->call(new FakeExternalProvider(), 'GET', ''));
+		$this->assertSame(['items' => []], $router->call(new FakeExternalProvider(), new UpstreamRequest(method: 'GET', path: '', options: [])));
 	}//end testCallDecodesBase64EncodedBody()
 
 	public function testCallTreatsAuthErrorAsProviderAuth(): void {
 		$router = $this->buildRouterWithCallLog(new FakeCallLog(401, ['body' => 'denied']));
 
 		try {
-			$router->call(new FakeExternalProvider(), 'GET', '');
+			$router->call(new FakeExternalProvider(), new UpstreamRequest(method: 'GET', path: '', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_PROVIDER_AUTH, $e->getCause());
@@ -638,7 +672,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$router = $this->buildRouterWithCallLog(new FakeCallLog(500, ['body' => 'oops']));
 
 		try {
-			$router->call(new FakeExternalProvider(), 'GET', '');
+			$router->call(new FakeExternalProvider(), new UpstreamRequest(method: 'GET', path: '', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, $e->getCause());
@@ -665,7 +699,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		);
 		$router = $this->buildRouterWithCallLog($log);
 
-		$result = $router->callWithMeta(new FakeExternalProvider(), 'POST', 'personen');
+		$result = $router->callWithMeta(new FakeExternalProvider(), new UpstreamRequest(method: 'POST', path: 'personen', options: []));
 
 		$this->assertArrayHasKey('body', $result);
 		$this->assertArrayHasKey('meta', $result);
@@ -689,7 +723,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		);
 		$router = $this->buildRouterWithCallLog($log);
 
-		$result = $router->callWithMeta(new FakeExternalProvider(), 'POST', 'personen');
+		$result = $router->callWithMeta(new FakeExternalProvider(), new UpstreamRequest(method: 'POST', path: 'personen', options: []));
 		$this->assertSame('lower-case-id', $result['meta']['correlationId']);
 	}//end testCallWithMetaFindsCorrelationIdCaseInsensitively()
 
@@ -697,7 +731,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$log = new FakeCallLog(200, ['statusCode' => 200, 'body' => '{"personen":[]}', 'encoding' => 'UTF-8']);
 		$router = $this->buildRouterWithCallLog($log);
 
-		$result = $router->callWithMeta(new FakeExternalProvider(), 'POST', 'personen');
+		$result = $router->callWithMeta(new FakeExternalProvider(), new UpstreamRequest(method: 'POST', path: 'personen', options: []));
 		$this->assertNull($result['meta']['correlationId']);
 		$this->assertSame(0, $result['meta']['durationMs']);
 		$this->assertSame(200, $result['meta']['status']);
@@ -708,7 +742,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$router = $this->buildRouterWithCallLog(new FakeCallLog(401, ['body' => 'denied']));
 
 		try {
-			$router->callWithMeta(new FakeExternalProvider(), 'POST', 'personen');
+			$router->callWithMeta(new FakeExternalProvider(), new UpstreamRequest(method: 'POST', path: 'personen', options: []));
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
 			$this->assertSame(ProviderUnavailableException::CAUSE_PROVIDER_AUTH, $e->getCause());
@@ -746,7 +780,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		];
 		$router = $this->buildMockRouter(['mock' => true, 'mockResponse' => $fixture]);
 
-		$result = $router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+		$result = $router->call(new FakeExternalProvider(source: 'kvk'), new UpstreamRequest(method: 'GET', path: 'zoeken', options: []));
 
 		$this->assertSame($fixture, $result);
 		$this->assertSame('69599084', $result['resultaten'][0]['kvkNummer']);
@@ -757,7 +791,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		// own extractor then yields an empty result set.
 		$router = $this->buildMockRouter(['mock' => true]);
 
-		$this->assertSame([], $router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken'));
+		$this->assertSame([], $router->call(new FakeExternalProvider(source: 'kvk'), new UpstreamRequest(method: 'GET', path: 'zoeken', options: [])));
 	}//end testCallReturnsEmptyBodyWhenMockResponseAbsent()
 
 	public function testCallWithMetaReturnsCannedBodyAndSynthesizedMeta(): void {
@@ -766,7 +800,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$fixture = ['personen' => [['burgerservicenummer' => '999990019']]];
 		$router = $this->buildMockRouter(['mock' => true, 'mockResponse' => $fixture]);
 
-		$result = $router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), 'POST', 'personen');
+		$result = $router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), new UpstreamRequest(method: 'POST', path: 'personen', options: []));
 
 		$this->assertSame($fixture, $result['body']);
 		$this->assertSame('999990019', $result['body']['personen'][0]['burgerservicenummer']);
@@ -785,7 +819,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 			]
 		);
 
-		$result = $router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), 'POST', 'personen');
+		$result = $router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), new UpstreamRequest(method: 'POST', path: 'personen', options: []));
 
 		$this->assertSame(42, $result['meta']['durationMs']);
 		$this->assertSame('fixed-cid', $result['meta']['correlationId']);
@@ -797,7 +831,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$log = new FakeCallLog(200, ['statusCode' => 200, 'headers' => [], 'body' => '{"resultaten":[]}', 'encoding' => 'UTF-8']);
 		$router = $this->buildRouterWithCallLog($log);
 
-		$result = $router->call(new FakeExternalProvider(source: 'kvk'), 'GET', 'zoeken');
+		$result = $router->call(new FakeExternalProvider(source: 'kvk'), new UpstreamRequest(method: 'GET', path: 'zoeken', options: []));
 
 		$this->assertSame(['resultaten' => []], $result);
 	}//end testNonMockSourceStillUsesTheRealCallPath()
@@ -829,12 +863,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$callService = new GuzzleForwardingCallService($this->sentLog());
 		$router = $this->routerForwardingToGuzzle($callService);
 
-		$result = $router->call(
-			new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'),
-			'POST',
-			'messages',
-			['body' => ['recipients' => ['+31611110001'], 'body' => 'Hallo'], 'headers' => ['Accept' => 'application/json']]
-		);
+		$result = $router->call(new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'), new UpstreamRequest(method: 'POST', path: 'messages', options: ['body' => ['recipients' => ['+31611110001'], 'body' => 'Hallo'], 'headers' => ['Accept' => 'application/json']]));
 
 		$this->assertSame(['id' => 'm1'], $result);
 		$this->assertCount(1, $callService->sent);
@@ -856,10 +885,10 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$callService = new GuzzleForwardingCallService($this->sentLog());
 		$router = $this->routerOn($this->objectService($sources), $callService);
 
-		$router->call(new FakeExternalProvider(id: 'a', source: 'cmcom-sms'), 'POST', 'message', ['body' => ['x' => 1]]);
-		$router->call(new FakeExternalProvider(id: 'b', source: 'cmcom-sms'), 'GET', '/status');
-		$router->call(new FakeExternalProvider(id: 'c', source: 'slashed'), 'GET', 'items');
-		$router->call(new FakeExternalProvider(id: 'd', source: 'slashed'), 'GET', '/items');
+		$router->call(new FakeExternalProvider(id: 'a', source: 'cmcom-sms'), new UpstreamRequest(method: 'POST', path: 'message', options: ['body' => ['x' => 1]]));
+		$router->call(new FakeExternalProvider(id: 'b', source: 'cmcom-sms'), new UpstreamRequest(method: 'GET', path: '/status', options: []));
+		$router->call(new FakeExternalProvider(id: 'c', source: 'slashed'), new UpstreamRequest(method: 'GET', path: 'items', options: []));
+		$router->call(new FakeExternalProvider(id: 'd', source: 'slashed'), new UpstreamRequest(method: 'GET', path: '/items', options: []));
 
 		$this->assertSame(
 			[
@@ -876,12 +905,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$callService = new GuzzleForwardingCallService($this->sentLog());
 		$router = $this->routerForwardingToGuzzle($callService);
 
-		$router->call(
-			new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'),
-			'POST',
-			'Messages.json',
-			['body' => ['To' => '+31611110001', 'Body' => 'Hallo'], 'headers' => ['Content-Type' => 'application/x-www-form-urlencoded']]
-		);
+		$router->call(new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'), new UpstreamRequest(method: 'POST', path: 'Messages.json', options: ['body' => ['To' => '+31611110001', 'Body' => 'Hallo'], 'headers' => ['Content-Type' => 'application/x-www-form-urlencoded']]));
 
 		$this->assertCount(1, $callService->sent);
 		$request = $callService->sent[0];
@@ -893,12 +917,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$callService = new GuzzleForwardingCallService($this->sentLog());
 		$router = $this->routerForwardingToGuzzle($callService);
 
-		$router->call(
-			new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'),
-			'POST',
-			'raw',
-			['body' => '<x/>', 'headers' => ['Content-Type' => 'application/xml']]
-		);
+		$router->call(new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'), new UpstreamRequest(method: 'POST', path: 'raw', options: ['body' => '<x/>', 'headers' => ['Content-Type' => 'application/xml']]));
 
 		$this->assertSame('<x/>', (string)$callService->sent[0]->getBody());
 	}//end testAStringBodyIsSentAsIs()
@@ -907,14 +926,76 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$callService = new GuzzleForwardingCallService($this->sentLog());
 		$router = $this->routerForwardingToGuzzle($callService);
 
-		$envelope = $router->callWithMeta(
-			new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'),
-			'POST',
-			'personen',
-			['body' => ['type' => 'RaadpleegMetBurgerservicenummer']]
-		);
+		$envelope = $router->callWithMeta(new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'), new UpstreamRequest(method: 'POST', path: 'personen', options: ['body' => ['type' => 'RaadpleegMetBurgerservicenummer']]));
 
 		$this->assertSame(['id' => 'm1'], $envelope['body']);
 		$this->assertSame('{"type":"RaadpleegMetBurgerservicenummer"}', (string)$callService->sent[0]->getBody());
 	}//end testCallWithMetaSendsAnArrayBodyAsJson()
+
+	public function testSourceConfigurationAnswersTheSourcesConfiguration(): void {
+		$source = $this->sourceEntity(['slug' => 'brp-haalcentraal', 'configuration' => ['residentCount' => true, 'mock' => false]]);
+		$router = $this->routerOn($this->objectService(['integriq/brp-haalcentraal' => $source]), new ExplodingCallService());
+
+		$this->assertSame(
+			['residentCount' => true, 'mock' => false],
+			$router->sourceConfiguration(new FakeExternalProvider(source: 'brp-haalcentraal'))
+		);
+	}//end testSourceConfigurationAnswersTheSourcesConfiguration()
+
+	public function testSourceConfigurationFailsLikeCallWhenTheSourceIsMissing(): void {
+		$router = $this->routerOn($this->objectService([]), new ExplodingCallService());
+
+		try {
+			$router->sourceConfiguration(new FakeExternalProvider(source: 'brp-haalcentraal'));
+			$this->fail('Expected ProviderUnavailableException');
+		} catch (ProviderUnavailableException $e) {
+			$this->assertSame(ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING, $e->getCause());
+		}
+	}//end testSourceConfigurationFailsLikeCallWhenTheSourceIsMissing()
+
+	public function testWithheldBodiesReachTheConnectorAndNotTheRequestOptions(): void {
+		$source = $this->sourceEntity(['slug' => 'brp-haalcentraal', 'location' => 'https://brp.example']);
+		$callService = new WithholdingCallService(
+			$this->integriqCallLog(['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => '{"personen":[{},{}]}', 'encoding' => 'UTF-8']])
+		);
+		$router = $this->routerOn($this->objectService(['integriq/brp-haalcentraal' => $source]), $callService);
+
+		$envelope = $router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), new UpstreamRequest(method: 'POST', path: 'personen', options: ['body' => ['type' => 'ZoekMetAdresseerbaarObjectIdentificatie'], 'withholdBodies' => true]));
+
+		$this->assertTrue($callService->receivedWithholdBodies);
+		$this->assertArrayNotHasKey('withholdBodies', $callService->receivedConfig);
+		$this->assertSame(['type' => 'ZoekMetAdresseerbaarObjectIdentificatie'], $callService->receivedConfig['json']);
+		$this->assertCount(2, $envelope['body']['personen']);
+	}//end testWithheldBodiesReachTheConnectorAndNotTheRequestOptions()
+
+	public function testWithoutTheOptionTheConnectorRecordsBodiesAsBefore(): void {
+		$source = $this->sourceEntity(['slug' => 'kvk', 'location' => 'https://kvk.example']);
+		$callService = new WithholdingCallService(
+			$this->integriqCallLog(['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => '{}', 'encoding' => 'UTF-8']])
+		);
+		$router = $this->routerOn($this->objectService(['integriq/kvk' => $source]), $callService);
+
+		$router->call(new FakeExternalProvider(source: 'kvk'), new UpstreamRequest(method: 'GET', path: 'zoeken', options: []));
+
+		$this->assertFalse($callService->receivedWithholdBodies);
+	}//end testWithoutTheOptionTheConnectorRecordsBodiesAsBefore()
+
+	public function testAConnectorThatCannotWithholdBodiesIsNotCalled(): void {
+		$source = $this->sourceEntity(['slug' => 'brp-haalcentraal', 'location' => 'https://brp.example']);
+		$callService = new FakeCallService(
+			$this->integriqCallLog(['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => '{}', 'encoding' => 'UTF-8']])
+		);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('error');
+		$router = $this->routerOn($this->objectService(['integriq/brp-haalcentraal' => $source]), $callService, $logger);
+
+		try {
+			$router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), new UpstreamRequest(method: 'POST', path: 'personen', options: ['withholdBodies' => true]));
+			$this->fail('Expected ProviderUnavailableException');
+		} catch (ProviderUnavailableException $e) {
+			$this->assertSame(ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES, $e->getCause());
+		}
+
+		$this->assertNull($callService->receivedSource);
+	}//end testAConnectorThatCannotWithholdBodiesIsNotCalled()
 }//end class

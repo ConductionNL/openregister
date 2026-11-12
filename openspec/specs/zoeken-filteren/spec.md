@@ -343,6 +343,13 @@ The system MUST support sorting by one or more fields via the `_order` parameter
 - **THEN** results MUST be ordered by `aanmaakdatum` descending
 
 The `?ordering=-aanmaakdatum` form this scenario used to describe is NOT supported.
+
+#### Scenario: Every form of `_order` orders the same
+- **GIVEN** a search on one schema or across several
+- **WHEN** `_order` is a map, that map as JSON, a list of objects with `field` and `direction`, a list of names, or one name, where a name is `field` or `field:direction`
+- **THEN** the search MUST order on those fields, ascending unless the direction is `desc` in any case
+- **AND** an entry that names no field MUST be left out, not end in an error
+- **AND** a field that may not be sorted on MUST be refused in every form
 It was only ever implemented in `SearchQueryHandler::cleanQuery()`, which no
 production code called; over HTTP `ordering` is read as a filter on a property no
 schema declares, which adds `1 = 0` and returns **zero rows**. Measured on a live
@@ -362,11 +369,11 @@ The system MUST support pagination through `_limit`, `_offset`, and `_page` para
 - **GIVEN** 150 matching objects
 - **WHEN** the user requests `?_offset=60&_limit=30`
 - **THEN** the system MUST return objects 61-90
-- **AND** `SearchQueryHandler.addPaginationUrls()` MUST add `next` and `prev` URL links
+- **AND** `PaginationLinks.around()` (applied by the objects controller) MUST add `next` and `prev` URL links
 
 #### Scenario: Pagination URLs generated only when needed
 - **GIVEN** a query returning 20 results with `_limit=30`
-- **WHEN** `addPaginationUrls()` is called with `page=1, pages=1`
+- **WHEN** `PaginationLinks.around()` is called with `page=1, pages=1`
 - **THEN** no `next` or `prev` URLs MUST be added (single page of results)
 
 #### Scenario: First page has no prev URL
@@ -989,6 +996,181 @@ through the platform's `quote()`.
 - **WHEN** the client filters `?name[like]=a_b`
 - **THEN** only "a_b" is returned
 - @e2e exclude {covered by LikeOperatorTest and DbalObjectSourceProviderTest on SQLite}
+
+### Requirement: A boolean filter value filters like its string form
+
+A property filter whose value is a PHP boolean SHALL return the same objects as
+the same filter with the value written as a string (`false` as `'false'`, `true`
+as `'true'`), on the list, on the count and on the facets, on PostgreSQL, MySQL and
+MariaDB. This SHALL hold for equality, `in`, `notIn` and `ne`.
+
+A null or missing property value SHALL match neither `true` nor `false`. A caller
+that means "false or not set" SHALL ask for that explicitly; the filter SHALL NOT
+widen to it on its own.
+
+#### Scenario: a PHP false filter returns the rows that hold false
+
+- **GIVEN** a schema with a boolean property `isDraft`, two objects with `isDraft` false, one with `isDraft` true and one without `isDraft`
+- **WHEN** a PHP caller searches with `['isDraft' => false]`
+- **THEN** the two objects with `isDraft` false are returned
+- **AND** the same search with `['isDraft' => 'false']` returns the same two objects
+- @e2e exclude {a PHP-caller value type; no browser or HTTP request can send a PHP boolean. Covered by tests/Db/BooleanFilterIntegrationTest.php against a real database}
+
+#### Scenario: a PHP true filter returns the rows that hold true
+
+- **GIVEN** the same objects
+- **WHEN** a PHP caller searches with `['isDraft' => true]`
+- **THEN** only the object with `isDraft` true is returned
+- @e2e exclude {a PHP-caller value type; covered by tests/Db/BooleanFilterIntegrationTest.php}
+
+#### Scenario: an unset value is not false
+
+- **GIVEN** the same objects
+- **WHEN** a caller searches with `isDraft` false, as a boolean or as a string
+- **THEN** the object without `isDraft` is not returned
+- @e2e exclude {covered by tests/Db/BooleanFilterIntegrationTest.php; the behaviour is the existing one for the string form}
+
+#### Scenario: a boolean in an operator bag
+
+- **GIVEN** the same objects
+- **WHEN** a PHP caller searches with `['isDraft' => ['ne' => true]]` or `['isDraft' => ['in' => [false]]]`
+- **THEN** the two objects with `isDraft` false are returned
+- @e2e exclude {a PHP-caller value type; covered by tests/Unit/Db/MagicSearchHandlerBooleanFilterValueTest.php and tests/Db/BooleanFilterIntegrationTest.php}
+
+### Requirement: A filter can name a field inside an object property
+
+A property filter SHALL accept a path into an object-typed property, written
+as a dotted key (`dunning.currentStage=2`) or as the nested map the request
+layer rebuilds from it (`['dunning' => ['currentStage' => 2]]`). It SHALL
+compare the value at that path on PostgreSQL, MySQL and MariaDB, for the list
+and the count, with equality, a list of values, `in`, `notIn`, `ne`, `isnull`,
+`like` and the comparisons `gt`, `gte`, `lt` and `lte`. The comparisons SHALL
+be numeric when the operand is a number. A boolean value SHALL compare in its
+JSON spelling. A path segment that is not a plain property name SHALL match
+nothing. A path into an encrypted property SHALL be refused, the same as a
+filter on that property. A filter on the object property itself SHALL keep
+its meaning.
+
+#### Scenario: invoices in a reminder round
+
+- **GIVEN** an ARInvoice schema whose object property `dunning` holds `currentStage`, two invoices at stage 1 and 2, and one without a stage
+- **WHEN** a client lists `ARInvoice?dunning.currentStage[isnull]=false`
+- **THEN** the two invoices with a stage are returned, and the total is 2
+
+#### Scenario: the same filter from PHP
+
+- **GIVEN** the same invoices
+- **WHEN** a PHP caller searches with `['dunning.currentStage' => 2]`
+- **THEN** the invoice at stage 2 is returned
+
+#### Scenario: a path segment that is not a name
+
+- **WHEN** a client filters on `dunning.current'Stage=1`
+- **THEN** nothing matches and the filter is reported as ignored
+
+### Requirement: A filter can also admit empty values with orNull
+
+An operator bag on a property filter or a `@self` metadata filter SHALL accept
+the modifier `orNull`. When its value reads as true (`true`, `"true"`, `"1"`,
+`"on"`, `"yes"`), the field's other operators SHALL still all have to hold, OR
+the field SHALL be empty (NULL or not set). When it reads as false, or is
+absent, the filter SHALL behave exactly as it does without the modifier. On its
+own, `orNull` SHALL add no condition. This SHALL hold on the list and the count,
+on PostgreSQL, MySQL and MariaDB, and on paths inside object
+properties.
+
+#### Scenario: ne with orNull returns the unwritten row
+
+- **GIVEN** a schema with a boolean property `isFinalStatus` and three objects holding `true`, `false` and no value
+- **WHEN** a caller searches with `isFinalStatus[ne]=true&isFinalStatus[orNull]=true`
+- **THEN** the objects holding `false` and no value are returned
+- @e2e exclude {a query-language rule; covered by tests/Unit/Db/MagicSearchHandlerOrNullModifierTest.php, which runs the generated condition against a real SQLite table}
+
+#### Scenario: ne without orNull keeps its meaning
+
+- **GIVEN** the same objects
+- **WHEN** a caller searches with `isFinalStatus[ne]=true`
+- **THEN** only the object holding `false` is returned
+- @e2e exclude {unchanged behaviour; covered by tests/Unit/Db/MagicSearchHandlerOrNullModifierTest.php}
+
+#### Scenario: orNull on a metadata field
+
+- **GIVEN** objects with and without `@self.expires`
+- **WHEN** a caller searches with `@self[expires][lt]=2026-01-01&@self[expires][orNull]=true`
+- **THEN** the objects that expire before 2026 and the objects without an expiry are returned
+- @e2e exclude {a query-language rule; covered by tests/Unit/Db/MagicSearchHandlerOrNullModifierTest.php on both builders}
+
+### Requirement: An object records when a person last wrote it
+
+Every object SHALL carry `@self.lastUserActivity`. A create or update made by a
+signed-in user in a web request SHALL set it to the time of the write. A write
+made on the command line, from Nextcloud's cron, without a signed-in user,
+inside the system-operation scope, or labelled with a write cause other than
+`person` SHALL leave it unchanged. `@self.updated` SHALL keep moving on every
+write. `@self.lastUserActivity` SHALL be filterable with the same operators as
+`@self.updated` and sortable with `_order[@self.lastUserActivity]`.
+
+#### Scenario: a recompute job does not make a case look worked on
+
+- **GIVEN** a case a person last wrote on 1 September
+- **WHEN** a background job rewrites one of its fields on 10 October
+- **THEN** its `@self.updated` is 10 October
+- **AND** its `@self.lastUserActivity` is still 1 September
+- @e2e exclude {a background-job write cannot be driven from a browser; covered by tests/Unit/Service/Object/UserActivityStamperTest.php}
+
+#### Scenario: a person's edit moves it
+
+- **GIVEN** the same case
+- **WHEN** a signed-in user saves it through the API
+- **THEN** its `@self.lastUserActivity` is the time of that save
+- @e2e exclude {covered by tests/Unit/Service/Object/UserActivityStamperTest.php; the API save path calls the same stamper}
+
+#### Scenario: stalled cases are found by filter
+
+- **GIVEN** cases last written by a person before and after 1 October
+- **WHEN** a caller searches with `@self[lastUserActivity][lt]=2026-10-01T00:00:00`
+- **THEN** only the cases a person last wrote before 1 October are returned
+- @e2e exclude {a query-language rule; covered by tests/Unit/Db/LastUserActivityMetadataTest.php on both builders}
+
+### Requirement: A filter can match one element of an array property
+
+A list query MAY carry `_element[<property>][<field>]=<value>` for an array-of-objects property. The object SHALL match
+when one element of the array carries every field of the block; numbered blocks (`_element[<property>][<n>][…]`) SHALL
+each be matched by an element of their own. A field SHALL take a value, a list or an operator bag as a nested-path
+filter does. A block on a property that is not an array, or that the caller may not read, SHALL match nothing; an
+encrypted property SHALL refuse; a query across several schemas SHALL refuse `_element`.
+
+#### Scenario: A case-type field on the case list
+
+- **GIVEN** a case carries `properties: [{ "propertyDefinition": "pd-7", "name": "Oppervlakte", "value": "120" }]`
+- **WHEN** the list asks `_element[properties][propertyDefinition]=pd-7&_element[properties][value][gte]=100`
+- **THEN** the case is listed, and a case whose pd-7 answer is 80 is not
+
+#### Scenario: Both fields on the same element
+
+- **GIVEN** a case answers pd-7 with "80" and pd-8 with "120"
+- **WHEN** the list asks `_element[properties][propertyDefinition]=pd-7&_element[properties][value][gte]=100`
+- **THEN** the case is not listed
+
+### Requirement: The search index status reads index names in bulk
+
+The search index status SHALL read the index names of all tables in scope in one query per 500 tables, and SHALL answer every table in scope, with an empty list for a table without indexes.
+
+#### Scenario: Three tables
+- WHEN the status is read for three tables
+- THEN one pg_indexes query runs and each table lists its index names
+
+### Requirement: The search index status names how many rows it covers
+
+The search index status SHALL answer `rowsInTables`, the rows of all tables in scope, and `indexed`, the rows per schema slug, summed over the registers that hold that slug. It SHALL count the rows of up to 200 tables in one query. A slug with a table that cannot be counted SHALL be left out of `indexed`, and `rowsInTables` SHALL then be left out too, so a reader never sees a count that is too low.
+
+#### Scenario: Cases and documents
+- WHEN the status is read and the tables in scope hold 12418 cases and 31902 documents
+- THEN it answers `rowsInTables` 44320 and `indexed` with `cases` 12418 and `documents` 31902
+
+#### Scenario: A table that cannot be counted
+- WHEN one table of the `documents` schema cannot be counted
+- THEN `indexed` leaves `documents` out, keeps `cases`, and the answer has no `rowsInTables`
 
 ## Current Implementation Status
 

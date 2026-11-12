@@ -262,6 +262,7 @@ class Routes {
 				'verb' => 'POST',
 				'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
 			],
+			['name' => 'store#publish', 'url' => '/api/store/publish', 'verb' => 'POST'],
 		];
 	}//end canonicalRoutes()
 

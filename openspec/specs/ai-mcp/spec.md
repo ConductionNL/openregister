@@ -699,7 +699,7 @@ invocation behavior.
 
 ### Requirement: REQ-ATTR-007 — A curated attribute tool forwards free-form annotations
 
-`#[McpTool]` MUST accept an optional `annotations` map whose keys are non-empty strings and whose values are scalars. `AttributeToolScanner` MUST reject a malformed map at scan time (logged, the offending tool skipped, sibling tools unaffected) and MUST forward a non-empty map into the descriptor under `annotations`; an empty map MUST NOT be forwarded. `AttributeToolProvider::getTools()` and `McpProviderBridge::getFunctions()` MUST carry the key through unchanged, so a consumer reads the same map on the JSON-RPC surface and on `ToolRegistryFacade::listTools()`. OpenRegister MUST NOT interpret any mark: a mark is a claim, and grant resolution, reach and RBAC MUST NOT change because of one.
+`#[McpTool]` MUST accept an optional `annotations` map whose keys are non-empty strings and whose values are scalars, and whose keys MUST NOT be one of the five tool-hint keys the MCP specification reserves in a descriptor's `annotations` object (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`, `title`; compared case-insensitively), because the map is forwarded to external clients under that key and a client could trust a hint OpenRegister's own checks contradict. `AttributeToolScanner` MUST reject a malformed map at scan time (logged, the offending tool skipped, sibling tools unaffected) and MUST forward a non-empty map into the descriptor under `annotations`; an empty map MUST NOT be forwarded. `AttributeToolProvider::getTools()` and `McpProviderBridge::getFunctions()` MUST carry the key through unchanged, so a consumer reads the same map on the JSON-RPC surface and on `ToolRegistryFacade::listTools()`. OpenRegister MUST NOT interpret any mark: a mark is a claim, and grant resolution, reach and RBAC MUST NOT change because of one.
 
 #### Scenario: A declared mark appears on both surfaces
 - **GIVEN** app `dossiq` exposes `#[McpTool(scope: 'create', action: 'create', annotations: ['citizenIntake' => true])] fileCase(string $title)`
@@ -712,6 +712,13 @@ invocation behavior.
 - **WHEN** its descriptor is built
 - **THEN** the descriptor MUST NOT carry an `annotations` key
 @e2e exclude Descriptor-shape assertion with no UI surface; asserted by AttributeToolScannerTest.
+
+#### Scenario: A reserved MCP hint key is rejected at scan time
+- **GIVEN** a method `#[McpTool(scope: 'update', annotations: ['readOnlyHint' => true])]`
+- **WHEN** `AttributeToolScanner` scans the declaring class
+- **THEN** no tool MUST be registered for that method
+- **AND** a warning MUST be logged naming `annotations` and the offending key
+@e2e exclude Malformed-attribute path with no UI surface; asserted by AttributeToolScannerTest.
 
 #### Scenario: A malformed map is rejected at scan time
 - **GIVEN** a method `#[McpTool(annotations: ['citizenIntake' => ['nested' => true]])]`

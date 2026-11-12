@@ -68,24 +68,43 @@ final class TaskForm {
 	public const KINDS = [self::KIND_FIELDS, self::KIND_EXTERNAL];
 
 	/**
+	 * The subject schema reference (id, uuid or slug); '' when not native.
+	 *
+	 * @var string
+	 */
+	public readonly string $schema;
+
+	/**
+	 * The lifecycle action whose inputs are the field list, or null.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $action;
+
+	/**
+	 * The inline field list, in declared order.
+	 *
+	 * @var array<int, array{field: string, required: bool}>
+	 */
+	public readonly array $fields;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string|null $kind One of KINDS, or null when the step declares no form.
-	 * @param string $schema The subject schema reference (id, uuid or slug); '' when not native.
-	 * @param string|null $action The lifecycle action whose inputs are the field list, or null.
-	 * @param array<int, array{field: string, required: bool}> $fields The inline field list, in declared order.
+	 * @param TaskFormFields $native The subject schema and its fields, for the native kind; empty otherwise.
 	 * @param int|null $formId The Nextcloud Forms form id, for the external kind.
 	 * @param bool $requireChecklist Whether every checklist item must be checked before completion.
 	 */
 	public function __construct(
 		public readonly ?string $kind,
-		public readonly string $schema = '',
-		public readonly ?string $action = null,
-		public readonly array $fields = [],
+		TaskFormFields $native = new TaskFormFields(),
 		public readonly ?int $formId = null,
 		public readonly bool $requireChecklist = false,
 	) {
-
+		$this->schema = $native->schema;
+		$this->action = $native->action;
+		$this->fields = $native->fields;
 	}//end __construct()
 
 	/**

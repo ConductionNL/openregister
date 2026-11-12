@@ -92,9 +92,29 @@ class GeometryValidatedOnSaveTest extends TestCase {
 	}//end testAnUnclosedRingIsRefusedNamingTheProperty()
 
 	public function testAValidGeometrySaves(): void {
-		$this->guard(['naam' => 'Centrum', 'area' => $this->square(), 'locatie' => ['type' => 'Point', 'coordinates' => [5.12, 52.09]]]);
-		$this->addToAssertionCount(1);
+		$refusal = $this->refusalOf(['naam' => 'Centrum', 'area' => $this->square(), 'locatie' => ['type' => 'Point', 'coordinates' => [5.12, 52.09]]]);
+
+		// Pairs: testAnUnclosedRingIsRefusedNamingTheProperty and
+		// testAPropertyDeclaredByTypeIsCheckedToo break one geometry each.
+		$this->assertNull($refusal, 'a valid polygon and point were refused');
 	}//end testAValidGeometrySaves()
+
+	/**
+	 * Run the write-path guard and return its refusal, or null when the save may go on.
+	 *
+	 * @param array<string, mixed> $object The object as it would be saved.
+	 *
+	 * @return ValidationException|null The refusal.
+	 */
+	private function refusalOf(array $object): ?ValidationException {
+		try {
+			$this->guard($object);
+		} catch (ValidationException $refusal) {
+			return $refusal;
+		}
+
+		return null;
+	}//end refusalOf()
 
 	public function testAPropertyDeclaredByTypeIsCheckedToo(): void {
 		$this->expectException(ValidationException::class);
@@ -103,9 +123,9 @@ class GeometryValidatedOnSaveTest extends TestCase {
 	}//end testAPropertyDeclaredByTypeIsCheckedToo()
 
 	public function testAnAbsentOrNullGeometryIsLeftToTheRequiredRule(): void {
-		$this->guard(['naam' => 'Centrum', 'area' => null]);
-		$this->guard(['naam' => 'Centrum']);
-		$this->addToAssertionCount(1);
+		// Pair: testAnUnclosedRingIsRefusedNamingTheProperty, a present but broken area.
+		$this->assertNull($this->refusalOf(['naam' => 'Centrum', 'area' => null]), 'a null geometry was refused');
+		$this->assertNull($this->refusalOf(['naam' => 'Centrum']), 'an absent geometry was refused');
 	}//end testAnAbsentOrNullGeometryIsLeftToTheRequiredRule()
 
 	public function testTheValidatorNamesEveryInvalidProperty(): void {

@@ -1,0 +1,966 @@
+{
+    "testABusinessDayTermSuspendedOverAWeekendKeepsItsBusinessDays ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-08-31T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-09-14T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-08-31T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "suspended",
+            "actor": null,
+            "reason": "weekend closure test",
+            "priorFireAt": "2026-09-14T09:00:00+02:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-04T17:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "resumed",
+            "actor": null,
+            "reason": "",
+            "priorFireAt": null,
+            "newFireAt": "2026-09-15T01:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-07T09:00:00+02:00"
+        }
+    ],
+    "testADowntimeGapFiresTheSkippedRungsInOrderOnceEachAndAddressesTheGroup ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testADueTimerPastItsMomentStaysArmedAndIsOverdueOnRead ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testAFailingWriteRollsTheOperationBack ": [],
+    "testAHersteltermijnPauseReturnsTheRemainderIntact ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": "alice",
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "suspended",
+            "actor": "bob",
+            "reason": "Hersteltermijn: aanvulling gevraagd Expected until 2026-10-04T09:00:00+02:00.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": "Awb 4:15",
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-20T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "resumed",
+            "actor": "bob",
+            "reason": "Aanvulling ontvangen",
+            "priorFireAt": null,
+            "newFireAt": "2026-11-02T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-26T09:00:00+02:00"
+        }
+    ],
+    "testAMapperHandingBackAClosedTimerIsSkippedDefensively ": [],
+    "testAMovedAnchorSupersedesTheTimerAndInheritsOnlyTheRungsStillInThePast ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "superseded",
+            "actor": "carol",
+            "reason": "Bezwaartermijn verlengd",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-21T09:00:00+02:00"
+        },
+        {
+            "timer": 1,
+            "type": "armed",
+            "actor": "carol",
+            "reason": "Re-armed from moved anchor; supersedes 'timer#0'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": "2026-10-30T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-21T09:00:00+02:00"
+        }
+    ],
+    "testANonEnforcingExpiryFallsBackToTheTasksDeclaredTimeout ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "fired",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome ''.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        }
+    ],
+    "testANonEnforcingExpiryWithNoDeclaredTimeoutAppliesNothing ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "fired",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome ''.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        }
+    ],
+    "testANonTaskSubjectEnforcesNothingAndEscalatesToRoles ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'skip'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        }
+    ],
+    "testAPreBreachRuleBeyondTheSlaIsRefusedAtArmTimeNamingTheAnchor ": [],
+    "testARunTerminalityCancelsSubjectAndProvenanceTimers ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 1,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 2,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "cancelled",
+            "actor": "flow-run:run-1",
+            "reason": "run failed",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 1,
+            "type": "cancelled",
+            "actor": "flow-run:run-1",
+            "reason": "run failed",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testARungFireOnAnAbsentTaskFallsBackToRoleDescriptors ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testASixWeekTimerSurvivesARestartAndFiresExactlyOnce ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-13T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'skip'.",
+            "priorFireAt": "2026-10-13T09:00:00+02:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-14T09:00:00+02:00"
+        }
+    ],
+    "testASubjectMayCarryThreeDeadlinesWithDifferentMomentsIndependently ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-09-21T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 1,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-11T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 2,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 2,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'skip'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        }
+    ],
+    "testATaskClosedConcurrentlyIsNothingToDo ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'error'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        }
+    ],
+    "testATerminalTimerCannotBeSuperseded ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "cancelled",
+            "actor": null,
+            "reason": "done",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-02T09:00:00+02:00"
+        }
+    ],
+    "testAnAbsentTaskSubjectIsLoggedNotFatal ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'skip'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        }
+    ],
+    "testAnAnchorlessTimerRunsFromNow ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testAnExtensionRecordsItsActorReasonAndBasisAndRefusesANonPositiveAmountFirst ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "extended",
+            "actor": "carol",
+            "reason": "Verdaging (+3 calendarDays)",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": "2026-10-30T09:00:00+01:00",
+            "daysImpact": "3.0",
+            "basis": "Awb 4:14",
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-03T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "extended",
+            "actor": "supervisor",
+            "reason": "Override (+4 hours)",
+            "priorFireAt": "2026-10-30T09:00:00+01:00",
+            "newFireAt": "2026-10-30T13:00:00+01:00",
+            "daysImpact": "0.16666666666666666",
+            "basis": "override",
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-04T09:00:00+02:00"
+        }
+    ],
+    "testAnUnknownCalendarIsRefusedNotDowngraded ": [],
+    "testAnchorDatesArriveAsStringsOrDateTimesAndBadOnesAreNamed ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": "Awb 4:13",
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testArmRollsTheDeadlineOffASundayAndSaysWhy ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": "alice",
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-05T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": "2026-10-04T09:00:00+02:00",
+            "rolledBy": "weekend",
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testArmStoresTheAnchorAndProjectsOntoTheTask ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": "alice",
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testArmWithoutARollKeepsTheSunday ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": "alice",
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-04T09:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testCompletingTheWorkCancelsBothTimersAndRaisesNothing ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 1,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-11-10T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "cancelled",
+            "actor": "task:task-1",
+            "reason": "Task 'task-1' reached terminal state 'completed'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-11T09:00:00+02:00"
+        },
+        {
+            "timer": 1,
+            "type": "cancelled",
+            "actor": "task:task-1",
+            "reason": "Task 'task-1' reached terminal state 'completed'.",
+            "priorFireAt": "2026-11-10T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-11T09:00:00+02:00"
+        }
+    ],
+    "testExtendingAfterExpiryIsRefusedAndTheBreachStays ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'error'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        }
+    ],
+    "testOnlyAWettelijkExpiryTimerMayEnforce ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "now"
+        }
+    ],
+    "testRungsFireOnlyOnAnArmedTimerWithAFireMoment ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "suspended",
+            "actor": null,
+            "reason": "pauze",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-02T09:00:00+02:00"
+        }
+    ],
+    "testSuspendAndResumeRefuseTheWrongState ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        }
+    ],
+    "testTheClockStartsTheDayAfterTheWindowCloses ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-03-21T00:00:00+01:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-03-31T00:00:00+02:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-03-03T10:00:00+01:00"
+        }
+    ],
+    "testTheFourExpiryOutcomesAreAppliedAsDistinctNamedTaskActions ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 1,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 2,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 3,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'skip'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        },
+        {
+            "timer": 1,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'error'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        },
+        {
+            "timer": 2,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'dead_letter'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        },
+        {
+            "timer": 3,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'transition:approve'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        }
+    ],
+    "testTheOrganisationCalendarIsResolvedWhenTheTimerNamesNone ": [],
+    "testTheRemainingBuildRefusalsAreNamed ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "suspended",
+            "actor": null,
+            "reason": "twice",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-02T09:00:00+02:00"
+        }
+    ],
+    "testTheSecondExtensionIsRefusedNamingTheBoundAndTheOverrideIsRecordedAsOne ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "extended",
+            "actor": "carol",
+            "reason": "Verdaging: advies derde nodig (+7 calendarDays)",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": "2026-11-03T09:00:00+01:00",
+            "daysImpact": "7.0",
+            "basis": "Awb 4:14",
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-11T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "extended",
+            "actor": "supervisor",
+            "reason": "Supervisor override (+2 businessDays)",
+            "priorFireAt": "2026-11-03T09:00:00+01:00",
+            "newFireAt": "2026-11-04T01:00:00+01:00",
+            "daysImpact": "0.6666666666666666",
+            "basis": "override",
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-13T09:00:00+02:00"
+        }
+    ],
+    "testTwoOverlappingPassesFireAnExpiryOnce ": [
+        {
+            "timer": 0,
+            "type": "armed",
+            "actor": null,
+            "reason": "Armed from anchor 2026-09-01T09:00:00+02:00.",
+            "priorFireAt": null,
+            "newFireAt": "2026-10-27T09:00:00+01:00",
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-09-01T09:00:00+02:00"
+        },
+        {
+            "timer": 0,
+            "type": "breached",
+            "actor": "flow-timer-sweep",
+            "reason": "Expiry reached; outcome 'error'.",
+            "priorFireAt": "2026-10-27T09:00:00+01:00",
+            "newFireAt": null,
+            "daysImpact": "NULL",
+            "basis": null,
+            "unrolledAt": null,
+            "rolledBy": null,
+            "created": "2026-10-28T09:00:00+01:00"
+        }
+    ]
+}

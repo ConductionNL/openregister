@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Exception\FlowRunExpired;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowEndNode;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
@@ -20,6 +22,7 @@ use OCA\OpenRegister\Service\Flow\RegistryStepDispatcher;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\WorkflowEngine\IManager;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
@@ -55,13 +58,15 @@ class TaggingNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		$out = [];
 		foreach ($items as $index => $item) {
 			$json = (array)($item['json'] ?? []);
 			$json['taggedBy'] = $this->id;
 			$json['label'] = (string)($config['label'] ?? '');
-			$out[] = FlowItems::item(json: $json, binary: [], fromItemIndex: $index);
+			$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: [], fromItemIndex: $index));
 		}
 
 		return $out;
@@ -94,7 +99,8 @@ class SlowNode extends TaggingNode {
 		parent::__construct('test.slow');
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		$deadline = (hrtime(true) + 1_200_000_000);
 		while (hrtime(true) < $deadline) {
 			$remaining = (int)(($deadline - hrtime(true)) / 1_000);
@@ -274,7 +280,8 @@ class FlowNodeRegistryTest extends TestCase {
 			public function validateConfig(array $config): void {
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};
@@ -303,7 +310,8 @@ class FlowNodeRegistryTest extends TestCase {
 			public function validateConfig(array $config): void {
 			}
 
-			public function execute(array $items, array $config, array $context): array {
+			public function execute(FlowNodeCall $call): array {
+				$items = $call->items;
 				return $items;
 			}
 		};
@@ -405,6 +413,27 @@ class FlowNodeRegistryTest extends TestCase {
 
 		$this->expectException(FlowRunExpired::class);
 		$this->expectExceptionMessageMatches('/test\.slow/');
+
+		$dispatcher->dispatch(
+			['type' => 'test.slow', 'config' => ['maxRuntimeSeconds' => 1]],
+			[FlowItems::item(json: [])],
+			[]
+		);
+	}
+
+	/**
+	 * A step's run time is read from a clock that cannot jump.
+	 *
+	 * The wall clock is frozen for this process, so a step timed on it reads as
+	 * taking no time at all. Wall time steps backwards and forwards under clock
+	 * synchronisation, which would let an overrun pass and stop a healthy step.
+	 */
+	#[RunInSeparateProcess]
+	public function testAStepIsTimedOnAClockThatCannotJump(): void {
+		eval('namespace OCA\\OpenRegister\\Service\\Flow; function microtime(bool $asFloat = false) { return 1000.0; }');
+		$dispatcher = new RegistryStepDispatcher($this->registryWith([new SlowNode()]));
+
+		$this->expectException(FlowRunExpired::class);
 
 		$dispatcher->dispatch(
 			['type' => 'test.slow', 'config' => ['maxRuntimeSeconds' => 1]],

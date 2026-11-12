@@ -192,7 +192,8 @@ export const CASES = [
 			{
 				id: 't1',
 				type: 'openregister.trigger-schedule',
-				config: { cron: '0 3 * * *' },
+				// A schedule has no session, so it names the user its runs act as.
+				config: { cron: '0 3 * * *', runAs: '{{username}}' },
 			},
 			{
 				id: 'r1',
@@ -658,7 +659,7 @@ export const CASES = [
 				id: 'to1',
 				type: 'openregister.trigger-object',
 				config: {
-					event: 'created',
+					event: 'object.created',
 					register: '{{register}}',
 					schema: '{{schema}}',
 				},

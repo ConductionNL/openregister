@@ -86,22 +86,7 @@ class OpenRegisterCloudFederationProvider implements ICloudFederationProvider {
 	 */
 	public function shareReceived(ICloudFederationShare $share): string {
 		try {
-			$protocol = $share->getProtocol();
-			$options = ($protocol['options'] ?? []);
-
-			$recorded = $this->shareService->recordIncomingShare(
-				params: [
-					'remoteInstanceUrl' => ($options['apiUrl'] ?? null),
-					'remoteProviderId' => $share->getProviderId(),
-					'shareToken' => (string)($options['token'] ?? $share->getShareSecret()),
-					'scope' => (string)($options['scope'] ?? 'schema'),
-					'register' => ($options['register'] ?? null),
-					'schema' => ($options['schema'] ?? null),
-					'objectUri' => ($options['objectUri'] ?? null),
-					'permissions' => (string)($options['permissions'] ?? 'read'),
-					'sharedWith' => $share->getShareWith(),
-				]
-			);
+			$recorded = $this->shareService->recordIncomingShare(params: $this->incomingShareParams(share: $share));
 
 			return (string)$recorded->getId();
 		} catch (Throwable $e) {
@@ -109,6 +94,33 @@ class OpenRegisterCloudFederationProvider implements ICloudFederationProvider {
 			throw new ProviderCouldNotAddShareException('Could not record OpenRegister federated share');
 		}//end try
 	}//end shareReceived()
+
+	/**
+	 * The incoming share to record: the OCM share and its protocol options, with their defaults.
+	 *
+	 * Without a token in the options the share secret is the token; the scope defaults to
+	 * schema and the permission to read.
+	 *
+	 * @param ICloudFederationShare $share The inbound OCM share.
+	 *
+	 * @return array<string, mixed> The share parameters.
+	 */
+	private function incomingShareParams(ICloudFederationShare $share): array {
+		$protocol = $share->getProtocol();
+		$options = ($protocol['options'] ?? []);
+
+		return [
+			'remoteInstanceUrl' => ($options['apiUrl'] ?? null),
+			'remoteProviderId' => $share->getProviderId(),
+			'shareToken' => (string)($options['token'] ?? $share->getShareSecret()),
+			'scope' => (string)($options['scope'] ?? 'schema'),
+			'register' => ($options['register'] ?? null),
+			'schema' => ($options['schema'] ?? null),
+			'objectUri' => ($options['objectUri'] ?? null),
+			'permissions' => (string)($options['permissions'] ?? 'read'),
+			'sharedWith' => $share->getShareWith(),
+		];
+	}//end incomingShareParams()
 
 	/**
 	 * {@inheritDoc}

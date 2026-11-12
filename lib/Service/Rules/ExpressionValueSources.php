@@ -52,6 +52,13 @@ class ExpressionValueSources {
 	public const NODE_KEY = 'source';
 
 	/**
+	 * The answer for a reference that stayed unresolved: the caller fails closed.
+	 *
+	 * @var array{resolved: bool, node: mixed}
+	 */
+	private const UNRESOLVED = ['resolved' => false, 'node' => null];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container The server container.
@@ -110,17 +117,28 @@ class ExpressionValueSources {
 			return $this->resolve(reference: $reference);
 		}
 
+		return $this->substituteChildren(node: $node);
+	}//end substitute()
+
+	/**
+	 * Replace every source node below a node that is not one itself.
+	 *
+	 * @param array<mixed> $node The node.
+	 *
+	 * @return array{resolved: bool, node: mixed} The node with values in place, or unresolved.
+	 */
+	private function substituteChildren(array $node): array {
 		foreach ($node as $key => $child) {
 			$result = $this->substitute(node: $child);
 			if ($result['resolved'] === false) {
-				return ['resolved' => false, 'node' => null];
+				return self::UNRESOLVED;
 			}
 
 			$node[$key] = $result['node'];
 		}
 
 		return ['resolved' => true, 'node' => $node];
-	}//end substitute()
+	}//end substituteChildren()
 
 	/**
 	 * The reference a node names, when it is a source node.
@@ -134,13 +152,23 @@ class ExpressionValueSources {
 			return null;
 		}
 
-		$reference = $node[self::NODE_KEY];
-		if (is_string($reference) === false || str_contains($reference, ':') === false) {
-			return null;
+		return $this->asReference(value: $node[self::NODE_KEY]);
+	}//end referenceOf()
+
+	/**
+	 * A source node's value as a reference, when it reads as `<prefix>:<key>`.
+	 *
+	 * @param mixed $value The value under the node key.
+	 *
+	 * @return string|null The reference, or null when it is not one.
+	 */
+	private function asReference(mixed $value): ?string {
+		if (is_string($value) === true && str_contains($value, ':') === true) {
+			return $value;
 		}
 
-		return $reference;
-	}//end referenceOf()
+		return null;
+	}//end asReference()
 
 	/**
 	 * Resolve one reference through the registry.
@@ -151,14 +179,27 @@ class ExpressionValueSources {
 	 */
 	private function resolve(string $reference): array {
 		$registry = $this->registry();
-		if ($registry === null) {
-			$this->logger->warning(
-				'[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.',
-				['reference' => $reference]
-			);
-			return ['resolved' => false, 'node' => null];
+		if ($registry !== null) {
+			return $this->resolveThrough(registry: $registry, reference: $reference);
 		}
 
+		$this->logger->warning(
+			'[ExpressionValueSources] Value source {reference} cannot resolve: integriq is not installed; the condition does not hold.',
+			['reference' => $reference]
+		);
+
+		return self::UNRESOLVED;
+	}//end resolve()
+
+	/**
+	 * Resolve one reference through integriq's registry, failing closed on a refusal.
+	 *
+	 * @param object $registry The registry.
+	 * @param string $reference The reference.
+	 *
+	 * @return array{resolved: bool, node: mixed} The value, or unresolved.
+	 */
+	private function resolveThrough(object $registry, string $reference): array {
 		try {
 			return ['resolved' => true, 'node' => $registry->resolve($reference)];
 		} catch (Throwable $e) {
@@ -167,9 +208,9 @@ class ExpressionValueSources {
 				'[ExpressionValueSources] Value source {reference} was refused; the condition does not hold.',
 				['reference' => $reference, 'refusal' => get_class($e)]
 			);
-			return ['resolved' => false, 'node' => null];
+			return self::UNRESOLVED;
 		}
-	}//end resolve()
+	}//end resolveThrough()
 
 	/**
 	 * Integriq's registry, when integriq is installed.
@@ -177,20 +218,28 @@ class ExpressionValueSources {
 	 * @return object|null The registry.
 	 */
 	private function registry(): ?object {
-		try {
-			if ($this->container->has(self::REGISTRY_CLASS) === false) {
-				return null;
-			}
+		$registry = $this->lookup();
+		if (is_object($registry) === true && method_exists($registry, 'resolve') === true) {
+			return $registry;
+		}
 
-			$registry = $this->container->get(self::REGISTRY_CLASS);
+		return null;
+	}//end registry()
+
+	/**
+	 * Whatever the container holds under the registry's class name.
+	 *
+	 * @return mixed The service, or null when the container has none or cannot build it.
+	 */
+	private function lookup(): mixed {
+		try {
+			if ($this->container->has(self::REGISTRY_CLASS) === true) {
+				return $this->container->get(self::REGISTRY_CLASS);
+			}
 		} catch (Throwable $e) {
 			return null;
 		}
 
-		if (is_object($registry) === false || method_exists($registry, 'resolve') === false) {
-			return null;
-		}
-
-		return $registry;
-	}//end registry()
+		return null;
+	}//end lookup()
 }//end class

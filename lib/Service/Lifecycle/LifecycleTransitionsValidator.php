@@ -50,97 +50,159 @@ final class LifecycleTransitionsValidator {
 	 * (a legacy value kept for old objects) is legitimate and refusing it would
 	 * stop shipped schemas from importing.
 	 *
-	 * @param array<int, mixed>        $states      State names, or `{name}` objects.
-	 * @param string|null              $initial     The initial state.
-	 * @param array<int|string, mixed> $transitions A list, or a map keyed by action, of `{from, to, guards?}`.
-	 *                                              `from` is a state or a list of states.
-	 * @param array<int, string>|null  $knownGuards The app's guard catalogue. When given, a guard token outside
-	 *                                              it is refused; when null, guards are shape-checked only.
+	 * @param LifecycleGraph $graph The states, initial state, transitions and guard catalogue.
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function validate(array $states, ?string $initial, array $transitions, ?array $knownGuards=null): array {
-		$stateNames = $this->collectStateNames(states: $states);
-		$errors = [];
-
-		if ($stateNames === []) {
-			$errors[] = $this->error(code: 'lifecycle-states-empty', message: 'A lifecycle must declare at least one named state.');
-		}
-
-		$errors = array_merge($errors, $this->initialErrors(initial: $initial, stateNames: $stateNames));
-
-		$touched = [];
-		foreach ($transitions as $action => $spec) {
-			$label = $this->label(action: $action);
-			if (is_array($spec) === false) {
-				$errors[] = $this->error(
-					code: 'lifecycle-transition-malformed',
-					message: sprintf('Transition %s must be an object with `from` and `to`.', $label)
-				);
-				continue;
-			}
-
-			$result = $this->inspectTransition(spec: $spec, label: $label, stateNames: $stateNames, knownGuards: $knownGuards);
-			$errors = array_merge($errors, $result['errors']);
-			foreach ($result['touched'] as $state) {
-				$touched[$state] = true;
-			}
-		}
-
-		$errors = array_merge($errors, $this->unreachableErrors(stateNames: $stateNames, touched: $touched, initial: $initial));
-
-		return $errors;
+	public function validate(LifecycleGraph $graph): array {
+		$check = new LifecycleGraphCheck(states: $graph->states, knownGuards: $graph->knownGuards);
+		$this->checkStates(initial: $graph->initial, check: $check);
+		$this->checkTransitions(transitions: $graph->transitions, check: $check);
+		$this->checkUnreachable(initial: $graph->initial, check: $check);
+		return $check->errors();
 	}//end validate()
+
+	/**
+	 * Refuse an empty state list, then check the initial state against it.
+	 *
+	 * @param string|null         $initial The initial state.
+	 * @param LifecycleGraphCheck $check   The graph and the errors found so far.
+	 *
+	 * @return void
+	 */
+	private function checkStates(?string $initial, LifecycleGraphCheck $check): void {
+		if ($check->stateNames === []) {
+			$check->addError(code: 'lifecycle-states-empty', message: 'A lifecycle must declare at least one named state.');
+		}
+
+		$this->checkInitial(initial: $initial, check: $check);
+	}//end checkStates()
+
+	/**
+	 * Check every declared transition, in declaration order.
+	 *
+	 * @param array<int|string, mixed> $transitions A list, or a map keyed by action, of `{from, to, guards?}`.
+	 * @param LifecycleGraphCheck      $check       The graph and the errors found so far.
+	 *
+	 * @return void
+	 */
+	private function checkTransitions(array $transitions, LifecycleGraphCheck $check): void {
+		foreach ($transitions as $action => $spec) {
+			$this->checkTransition(transition: ['label' => $this->label(action: $action), 'spec' => $spec], check: $check);
+		}
+	}//end checkTransitions()
 
 	/**
 	 * Check the initial state.
 	 *
-	 * @param string|null         $initial    The initial state.
-	 * @param array<string, true> $stateNames Declared states.
+	 * @param string|null         $initial The initial state.
+	 * @param LifecycleGraphCheck $check   The validation in progress.
 	 *
-	 * @return array<int, array{code: string, message: string}>
+	 * @return void
 	 */
-	private function initialErrors(?string $initial, array $stateNames): array {
-		if ($initial === null || $initial === '') {
-			return [$this->error(code: 'lifecycle-initial-missing', message: 'A lifecycle must declare its initial state.')];
+	private function checkInitial(?string $initial, LifecycleGraphCheck $check): void {
+		if (in_array($initial, [null, ''], true) === true) {
+			$check->addError(code: 'lifecycle-initial-missing', message: 'A lifecycle must declare its initial state.');
+			return;
 		}
 
-		if ($stateNames !== [] && isset($stateNames[$initial]) === false) {
-			return [
-				$this->error(
-					code: 'lifecycle-initial-not-declared',
-					message: sprintf('Initial state "%s" is not a declared state.', $initial)
-				),
-			];
+		if ($check->stateNames !== [] && isset($check->stateNames[$initial]) === false) {
+			$check->addError(
+				code: 'lifecycle-initial-not-declared',
+				message: sprintf('Initial state "%s" is not a declared state.', $initial)
+			);
 		}
-
-		return [];
-	}//end initialErrors()
+	}//end checkInitial()
 
 	/**
 	 * Report declared states no transition starts or ends in, other than the initial one.
 	 *
-	 * @param array<string, true> $stateNames Declared states.
-	 * @param array<string, true> $touched    States some transition touches.
-	 * @param string|null         $initial    The initial state.
+	 * @param string|null         $initial The initial state.
+	 * @param LifecycleGraphCheck $check   The validation in progress.
 	 *
-	 * @return array<int, array{code: string, message: string}>
+	 * @return void
 	 */
-	private function unreachableErrors(array $stateNames, array $touched, ?string $initial): array {
-		$errors = [];
-		foreach (array_keys($stateNames) as $name) {
-			if (isset($touched[$name]) === false && $name !== $initial) {
-				$errors[] = $this->error(
+	private function checkUnreachable(?string $initial, LifecycleGraphCheck $check): void {
+		foreach (array_keys($check->stateNames) as $name) {
+			if ($check->isTouched(state: (string)$name) === false && $name !== $initial) {
+				$check->addError(
 					code: 'lifecycle-state-unreachable',
 					message: sprintf('State "%s" is unreachable: no transition starts or ends in it.', $name)
 				);
 			}
 		}
+	}//end checkUnreachable()
 
-		return $errors;
-	}//end unreachableErrors()
+	/**
+	 * Check one transition: its shape, its endpoints and its guards.
+	 *
+	 * @param array{label: string, spec: mixed} $transition How to name the transition, and its declaration.
+	 * @param LifecycleGraphCheck               $check      The validation in progress.
+	 *
+	 * @return void
+	 */
+	private function checkTransition(array $transition, LifecycleGraphCheck $check): void {
+		$spec = $transition['spec'];
+		if (is_array($spec) === false) {
+			$check->addError(
+				code: 'lifecycle-transition-malformed',
+				message: sprintf('Transition %s must be an object with `from` and `to`.', $transition['label'])
+			);
+			return;
+		}
+
+		$this->checkFrom(transition: $transition, check: $check);
+		$this->checkTo(transition: $transition, check: $check);
+		if (array_key_exists('guards', $spec) === true) {
+			$this->checkGuards(transition: $transition, check: $check);
+		}
+	}//end checkTransition()
+
+	/**
+	 * Check a transition's `from` states.
+	 *
+	 * @param array{label: string, spec: array<string, mixed>} $transition How to name the transition, and its declaration.
+	 * @param LifecycleGraphCheck                              $check      The validation in progress.
+	 *
+	 * @return void
+	 */
+	private function checkFrom(array $transition, LifecycleGraphCheck $check): void {
+		$from = $this->fromStates(from: ($transition['spec']['from'] ?? null));
+		if ($from === null) {
+			$check->addError(
+				code: 'lifecycle-from-missing',
+				message: sprintf('Transition %s must declare a non-empty `from` state or list of states.', $transition['label'])
+			);
+			return;
+		}
+
+		foreach ($from as $state) {
+			$this->checkEndpoint(endpoint: ['label' => $transition['label'], 'side' => 'from', 'state' => $state], check: $check);
+		}
+	}//end checkFrom()
+
+	/**
+	 * Check a transition's `to` state.
+	 *
+	 * @param array{label: string, spec: array<string, mixed>} $transition How to name the transition, and its declaration.
+	 * @param LifecycleGraphCheck                              $check      The validation in progress.
+	 *
+	 * @return void
+	 */
+	private function checkTo(array $transition, LifecycleGraphCheck $check): void {
+		$to = ($transition['spec']['to'] ?? null);
+		if (is_string($to) === false || $to === '') {
+			$check->addError(
+				code: 'lifecycle-to-missing',
+				message: sprintf('Transition %s must declare a non-empty `to` state.', $transition['label'])
+			);
+			return;
+		}
+
+		$this->checkEndpoint(endpoint: ['label' => $transition['label'], 'side' => 'to', 'state' => $to], check: $check);
+	}//end checkTo()
 
 	/**
 	 * Read a transition's `from` as a list of states, or null when it is malformed.
@@ -150,166 +212,148 @@ final class LifecycleTransitionsValidator {
 	 * @return array<int, string>|null
 	 */
 	private function fromStates(mixed $from): ?array {
+		$list = $from;
 		if (is_string($from) === true) {
-			$from = [$from];
+			$list = [$from];
 		}
 
-		if (is_array($from) === false || $from === []) {
+		if (self::isStateList(list: $list) === false) {
 			return null;
 		}
 
-		foreach ($from as $state) {
-			if (is_string($state) === false || $state === '') {
-				return null;
-			}
-		}
-
-		return array_values($from);
+		return array_values($list);
 	}//end fromStates()
 
 	/**
-	 * Check one transition and report the declared states it touches.
+	 * Whether a value is a non-empty list of non-empty state names.
 	 *
-	 * @param array<string, mixed>    $spec        The transition.
-	 * @param string                  $label       How to name it in a message.
-	 * @param array<string, true>     $stateNames  Declared states.
-	 * @param array<int, string>|null $knownGuards The guard catalogue, or null.
+	 * @param mixed $list The value.
 	 *
-	 * @return array{errors: array<int, array{code: string, message: string}>, touched: array<int, string>}
+	 * @return bool True when it is.
+	 *
+	 * @phpstan-assert-if-true array<mixed> $list
 	 */
-	private function inspectTransition(array $spec, string $label, array $stateNames, ?array $knownGuards): array {
-		$errors = [];
-		$touched = [];
-
-		$from = $this->fromStates(from: ($spec['from'] ?? null));
-		if ($from === null) {
-			$errors[] = $this->error(
-				code: 'lifecycle-from-missing',
-				message: sprintf('Transition %s must declare a non-empty `from` state or list of states.', $label)
-			);
-			$from = [];
-		}
-
-		foreach ($from as $state) {
-			$touched = array_merge($touched, $this->endpoint(state: $state, side: 'from', label: $label, stateNames: $stateNames, errors: $errors));
-		}
-
-		$to = ($spec['to'] ?? null);
-		if (is_string($to) === false || $to === '') {
-			$errors[] = $this->error(
-				code: 'lifecycle-to-missing',
-				message: sprintf('Transition %s must declare a non-empty `to` state.', $label)
-			);
-			$to = null;
-		}
-
-		if ($to !== null) {
-			$touched = array_merge($touched, $this->endpoint(state: $to, side: 'to', label: $label, stateNames: $stateNames, errors: $errors));
-		}
-
-		if (array_key_exists('guards', $spec) === true) {
-			$errors = array_merge(
-				$errors,
-				$this->guardErrors(guards: $spec['guards'], label: $label, knownGuards: $knownGuards)
-			);
-		}
-
-		return ['errors' => $errors, 'touched' => $touched];
-	}//end inspectTransition()
+	private static function isStateList(mixed $list): bool {
+		return is_array($list) === true && $list !== [] && self::allNonEmptyStrings(values: $list) === true;
+	}//end isStateList()
 
 	/**
-	 * Check one endpoint against the declared states.
+	 * Whether every value is a non-empty string.
 	 *
-	 * @param string                                           $state      The endpoint.
-	 * @param string                                           $side       `from` or `to`.
-	 * @param string                                           $label      How to name the transition.
-	 * @param array<string, true>                              $stateNames Declared states.
-	 * @param array<int, array{code: string, message: string}> $errors     Errors, appended to.
+	 * @param array<mixed> $values The values.
 	 *
-	 * @return array<int, string> The endpoint when it is declared, else nothing.
+	 * @return bool True when they all are.
 	 */
-	private function endpoint(string $state, string $side, string $label, array $stateNames, array &$errors): array {
-		if (isset($stateNames[$state]) === true) {
-			return [$state];
+	private static function allNonEmptyStrings(array $values): bool {
+		foreach ($values as $value) {
+			if (is_string($value) === false || $value === '') {
+				return false;
+			}
 		}
 
-		$errors[] = $this->error(
-			code: sprintf('lifecycle-%s-not-declared', $side),
-			message: sprintf('Transition %s has %s-state "%s", which is not a declared state.', $label, $side, $state)
-		);
+		return true;
+	}//end allNonEmptyStrings()
 
-		return [];
-	}//end endpoint()
+	/**
+	 * Check one endpoint against the declared states, and record it as touched when declared.
+	 *
+	 * @param array{label: string, side: string, state: string} $endpoint The transition, `from` or `to`, and the state.
+	 * @param LifecycleGraphCheck                               $check    The validation in progress.
+	 *
+	 * @return void
+	 */
+	private function checkEndpoint(array $endpoint, LifecycleGraphCheck $check): void {
+		if (isset($check->stateNames[$endpoint['state']]) === true) {
+			$check->touch(state: $endpoint['state']);
+			return;
+		}
+
+		$check->addError(
+			code: sprintf('lifecycle-%s-not-declared', $endpoint['side']),
+			message: sprintf(
+				'Transition %s has %s-state "%s", which is not a declared state.',
+				$endpoint['label'],
+				$endpoint['side'],
+				$endpoint['state']
+			)
+		);
+	}//end checkEndpoint()
 
 	/**
 	 * Check a transition's guard tokens.
 	 *
-	 * @param mixed                   $guards      The declared guards.
-	 * @param string                  $label       How to name the transition.
-	 * @param array<int, string>|null $knownGuards The guard catalogue, or null.
+	 * @param array{label: string, spec: array<string, mixed>} $transition How to name the transition, and its declaration.
+	 * @param LifecycleGraphCheck                              $check      The validation in progress.
 	 *
-	 * @return array<int, array{code: string, message: string}>
+	 * @return void
 	 */
-	private function guardErrors(mixed $guards, string $label, ?array $knownGuards): array {
+	private function checkGuards(array $transition, LifecycleGraphCheck $check): void {
+		$guards = $transition['spec']['guards'];
 		if (is_array($guards) === false) {
-			return [
-				$this->error(
-					code: 'lifecycle-guards-malformed',
-					message: sprintf('Transition %s must declare `guards` as a list of guard tokens.', $label)
-				),
-			];
+			$this->addGuardsMalformed(label: $transition['label'], check: $check);
+			return;
 		}
 
-		$errors = [];
 		foreach ($guards as $guard) {
-			$token = '?';
-			if (is_string($guard) === true) {
-				$token = $guard;
-			}
-
-			if ($knownGuards !== null) {
-				if (in_array($guard, $knownGuards, true) === false) {
-					$errors[] = $this->error(
-						code: 'lifecycle-guard-unknown',
-						message: sprintf('Transition %s declares unknown guard token "%s".', $label, $token)
-					);
-				}
-
-				continue;
-			}
-
-			if (is_string($guard) === false || $guard === '') {
-				$errors[] = $this->error(
-					code: 'lifecycle-guards-malformed',
-					message: sprintf('Transition %s must declare `guards` as a list of guard tokens.', $label)
-				);
-			}
-		}//end foreach
-
-		return $errors;
-	}//end guardErrors()
+			$this->checkGuard(guard: ['label' => $transition['label'], 'token' => $guard], check: $check);
+		}
+	}//end checkGuards()
 
 	/**
-	 * Collect the declared, non-empty state names.
+	 * Check one guard token: against the catalogue when there is one, else its shape.
 	 *
-	 * @param array<int, mixed> $states State names, or `{name}` objects.
+	 * @param array{label: string, token: mixed} $guard How to name the transition, and the declared token.
+	 * @param LifecycleGraphCheck                $check The validation in progress.
 	 *
-	 * @return array<string, true>
+	 * @return void
 	 */
-	private function collectStateNames(array $states): array {
-		$names = [];
-		foreach ($states as $state) {
-			if (is_array($state) === true) {
-				$state = ($state['name'] ?? null);
+	private function checkGuard(array $guard, LifecycleGraphCheck $check): void {
+		$token = $guard['token'];
+		if ($check->knownGuards !== null) {
+			if (in_array($token, $check->knownGuards, true) === false) {
+				$check->addError(
+					code: 'lifecycle-guard-unknown',
+					message: sprintf('Transition %s declares unknown guard token "%s".', $guard['label'], self::tokenName(token: $token))
+				);
 			}
 
-			if (is_string($state) === true && $state !== '') {
-				$names[$state] = true;
-			}
+			return;
 		}
 
-		return $names;
-	}//end collectStateNames()
+		if (is_string($token) === false || $token === '') {
+			$this->addGuardsMalformed(label: $guard['label'], check: $check);
+		}
+	}//end checkGuard()
+
+	/**
+	 * A guard token as a message names it: the string, or `?` for anything else.
+	 *
+	 * @param mixed $token The declared token.
+	 *
+	 * @return string The name.
+	 */
+	private static function tokenName(mixed $token): string {
+		if (is_string($token) === true) {
+			return $token;
+		}
+
+		return '?';
+	}//end tokenName()
+
+	/**
+	 * Record that a transition's `guards` is not a list of guard tokens.
+	 *
+	 * @param string              $label How to name the transition.
+	 * @param LifecycleGraphCheck $check The validation in progress.
+	 *
+	 * @return void
+	 */
+	private function addGuardsMalformed(string $label, LifecycleGraphCheck $check): void {
+		$check->addError(
+			code: 'lifecycle-guards-malformed',
+			message: sprintf('Transition %s must declare `guards` as a list of guard tokens.', $label)
+		);
+	}//end addGuardsMalformed()
 
 	/**
 	 * Name a transition in a message: its action key, or its position.
@@ -325,16 +369,4 @@ final class LifecycleTransitionsValidator {
 
 		return sprintf('#%d', ($action + 1));
 	}//end label()
-
-	/**
-	 * Build one error entry.
-	 *
-	 * @param string $code    Stable error code.
-	 * @param string $message Human-readable message.
-	 *
-	 * @return array{code: string, message: string}
-	 */
-	private function error(string $code, string $message): array {
-		return ['code' => $code, 'message' => $message];
-	}//end error()
 }//end class

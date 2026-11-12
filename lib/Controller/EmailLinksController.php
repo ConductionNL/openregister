@@ -34,14 +34,23 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use Exception;
+use OCA\OpenRegister\Controller\Support\EmailLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
+use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\EmailLinkService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\EmailLinkServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\EmailMessageRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\MailboxPage;
 
 /**
  * Tier-2 Email links controller.
@@ -50,21 +59,44 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class EmailLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+	use ChecksObjectUpdateRight;
+
+	/**
+	 * Backing service.
+	 *
+	 * @var EmailLinkServiceInterface
+	 */
+	private readonly EmailLinkServiceInterface $emailLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Answers the object update right
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissions;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param EmailLinkService $emailLinkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param EmailLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly EmailLinkService $emailLinkService,
-		private readonly ObjectService $objectService,
+		EmailLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->emailLinkService = $services->emailLinkService;
+		$this->objectService = $services->objectService;
+		$this->permissions = $services->permissions;
 	}//end __construct()
 
 	/**
@@ -85,33 +117,33 @@ class EmailLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$cursor = $this->request->getParam('cursor');
-			$limit = (int)$this->request->getParam('limit', 50);
-
-			$cursorStr = null;
-			if ($cursor !== null) {
-				$cursorStr = (string)$cursor;
-			}
-
-			$result = $this->emailLinkService->getLinkedEmails(
-				$object->getUuid(),
-				$cursorStr,
-				$limit
-			);
-
-			return new JSONResponse($result);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end index()
+
+	/**
+	 * List linked Mail messages for an object — paginated: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
+		return $this->onLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: function (ObjectEntity $object): JSONResponse {
+				$cursorStr = $this->requestedCursor();
+				$limit     = (int)$this->request->getParam('limit', 50);
+
+				$result = $this->emailLinkService->getLinkedEmails(
+					$object->getUuid(),
+					$cursorStr,
+					$limit
+				);
+
+				return new JSONResponse($result);
+			}
+		);
+	}//end indexFor()
 
 	/**
 	 * Link a Mail message to an object.
@@ -130,46 +162,71 @@ class EmailLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * Link a Mail message to an object: the body of link() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkFor(ObjectRef $ref): JSONResponse {
 		if ($this->emailLinkService->isMailAvailable() === false) {
+			return $this->appNotInstalled(appName: 'Nextcloud Mail');
+		}
+
+		return $this->onLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: fn (ObjectEntity $object): JSONResponse => $this->linkEmailTo(object: $object)
+		);
+	}//end linkFor()
+
+	/**
+	 * Link the requested message to the object, once the caller may update it.
+	 *
+	 * @param ObjectEntity $object The object the message is linked to.
+	 *
+	 * @return JSONResponse 201 with the link, 403 without the update right, or 400 for a missing account or message.
+	 */
+	private function linkEmailTo(ObjectEntity $object): JSONResponse {
+		if ($this->mayUpdate(object: $object) === false) {
+			return $this->updateRefused();
+		}
+
+		$message = $this->requestedMessage();
+		if ($message instanceof JSONResponse) {
+			return $message;
+		}
+
+		$link = $this->emailLinkService->linkEmail(
+			target: $this->linkTargetOf(object: $object),
+			message: $message
+		);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end linkEmailTo()
+
+	/**
+	 * The mail message the request names.
+	 *
+	 * @return EmailMessageRef|JSONResponse The message with its uid, or a 400 when the account or message id is missing.
+	 */
+	private function requestedMessage(): EmailMessageRef|JSONResponse {
+		$mailAccountId = (int)$this->request->getParam('mailAccountId', 0);
+		$messageId = (string)$this->request->getParam('messageId', '');
+		$messageUid = (string)$this->request->getParam('messageUid', '');
+
+		if ($mailAccountId === 0 || $messageId === '') {
 			return new JSONResponse(
-				['error' => 'Nextcloud Mail app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
+				['error' => 'mailAccountId and messageId are required'],
+				400
 			);
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$mailAccountId = (int)$this->request->getParam('mailAccountId', 0);
-			$messageId = (string)$this->request->getParam('messageId', '');
-			$messageUid = (string)$this->request->getParam('messageUid', '');
-
-			if ($mailAccountId === 0 || $messageId === '') {
-				return new JSONResponse(
-					['error' => 'mailAccountId and messageId are required'],
-					400
-				);
-			}
-
-			$link = $this->emailLinkService->linkEmail(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$mailAccountId,
-				$messageId,
-				$messageUid
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
-	}//end link()
+		return (new EmailMessageRef(mailAccountId: $mailAccountId, messageId: $messageId))->withUid(uid: $messageUid);
+	}//end requestedMessage()
 
 	/**
 	 * Unlink a Mail message from an object.
@@ -187,21 +244,40 @@ class EmailLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $linkId): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$this->emailLinkService->unlinkEmail($object->getUuid(), (int)$linkId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->destroyFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id), linkId: $linkId);
 	}//end destroy()
+
+	/**
+	 * Unlink a Mail message from an object: the body of destroy() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string $linkId Link primary key (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyFor(ObjectRef $ref, string $linkId): JSONResponse {
+		return $this->onLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: function (ObjectEntity $object) use ($linkId): JSONResponse {
+				if ($this->mayUpdate(object: $object) === false) {
+					return $this->updateRefused();
+				}
+
+				$this->emailLinkService->unlinkEmail($object->getUuid(), (int)$linkId);
+
+				return new JSONResponse(['success' => true]);
+			}
+		);
+	}//end destroyFor()
+
+	/**
+	 * The answer to a caller who may read the object but not change it.
+	 *
+	 * @return JSONResponse The 403.
+	 */
+	private function updateRefused(): JSONResponse {
+		return new JSONResponse(['error' => 'You may not change this object, so you cannot change its emails.'], 403);
+	}//end updateRefused()
 
 	/**
 	 * List Mail accounts owned by the current user (picker step 1).
@@ -217,10 +293,7 @@ class EmailLinksController extends Controller {
 	 */
 	public function accounts(): JSONResponse {
 		if ($this->emailLinkService->isMailAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Mail app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Mail');
 		}
 
 		$accounts = $this->emailLinkService->getAvailableAccounts();
@@ -241,10 +314,7 @@ class EmailLinksController extends Controller {
 	 */
 	public function mailboxes(string $accountId): JSONResponse {
 		if ($this->emailLinkService->isMailAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Mail app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Mail');
 		}
 
 		try {
@@ -271,10 +341,7 @@ class EmailLinksController extends Controller {
 	 */
 	public function messages(string $accountId): JSONResponse {
 		if ($this->emailLinkService->isMailAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Mail app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Mail');
 		}
 
 		try {
@@ -283,20 +350,11 @@ class EmailLinksController extends Controller {
 				return new JSONResponse(['error' => 'mailbox query parameter is required'], 400);
 			}
 
-			$cursor = $this->request->getParam('cursor');
-			$limit = (int)$this->request->getParam('limit', 50);
+			$cursorStr = $this->requestedCursor();
+			$limit     = (int)$this->request->getParam('limit', 50);
 
-			$cursorStr = null;
-			if ($cursor !== null) {
-				$cursorStr = (string)$cursor;
-			}
-
-			$result = $this->emailLinkService->getMessagesForMailbox(
-				(int)$accountId,
-				$mailbox,
-				$cursorStr,
-				$limit
-			);
+			$page   = (new MailboxPage(accountId: (int)$accountId, mailbox: $mailbox))->startingAfter(afterCursor: $cursorStr, limit: $limit);
+			$result = $this->emailLinkService->getMessagesForMailbox(page: $page);
 
 			return new JSONResponse($result);
 		} catch (Exception $e) {
@@ -305,29 +363,20 @@ class EmailLinksController extends Controller {
 	}//end messages()
 
 	/**
-	 * Resolve an OR object from register/schema/id.
+	 * The paging cursor of the request, null when absent.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
+	 * @return string|null The cursor.
 	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @spec exclude Private helper: resolves an object from register/schema/id; the link REST contract is
-	 *              owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function requestedCursor(): ?string {
+		$cursor = $this->request->getParam('cursor');
+		if ($cursor === null) {
+			return null;
+		}
 
-		return $this->objectService->getObject();
-	}//end validateObject()
+		return (string)$cursor;
+	}//end requestedCursor()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -347,12 +396,18 @@ class EmailLinksController extends Controller {
 	 * @spec exclude Private helper: maps a service exception code to an HTTP status; the link REST contract
 	 *              is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
-	private function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if (in_array($code, [401, 403, 404, 409, 503], true) === true) {
-			return new JSONResponse(['error' => $exception->getMessage()], $code);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+	protected function mapException(Exception $exception): JSONResponse {
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [401, 403, 404, 409, 503]);
 	}//end mapException()
+
+	/**
+	 * The link route of the object a route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return ObjectLinkRoute The route the link traits resolve.
+	 */
+	private function routeOf(ObjectRef $ref): ObjectLinkRoute {
+		return new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end routeOf()
 }//end class

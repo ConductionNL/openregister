@@ -26,6 +26,8 @@ use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
@@ -35,6 +37,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * A queued run must name who it runs as and which tenant owns it.
@@ -89,7 +92,7 @@ class FlowRunAttributionTest extends TestCase {
 				// Version 1 is live. These fixtures are about ATTRIBUTION, so
 				// they must reach the attribution code rather than stopping at
 				// the unpublished-flow refusal that now precedes it.
-				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 
@@ -99,7 +102,7 @@ class FlowRunAttributionTest extends TestCase {
 
 				// A session-less caller: OrganisationService is unavailable, so
 				// activeOrganisation() yields null and the flow has to answer.
-				if ($id === 'OCA\OpenRegister\Service\OrganisationService' && $activeOrg !== null) {
+				if ($id === 'OCA\OpenRegister\Service\OrganisationServiceInterface' && $activeOrg !== null) {
 					return new class($activeOrg) {
 						public function __construct(private readonly string $uuid) {
 						}
@@ -126,12 +129,13 @@ class FlowRunAttributionTest extends TestCase {
 		$engine = new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class));
 
 		return new FlowRunService(
-			$runMapper,
-			$this->createMock(FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container
+			stores: new FlowRunStores(
+				mapper: $runMapper,
+				stateMapper: $this->createMock(FlowStateMapper::class)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 	}
 
@@ -172,7 +176,7 @@ class FlowRunAttributionTest extends TestCase {
 		$this->expectException(FlowUnattributed::class);
 
 		$this->service($this->ownedFlow('alice', 'org-a'))
-			->queue(flowId: 'flow-1', trigger: 'schedule');
+			->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'schedule'));
 	}
 
 	/**
@@ -192,11 +196,42 @@ class FlowRunAttributionTest extends TestCase {
 			['id' => 'stop', 'type' => 'end'],
 		]);
 
-		$run = $this->service($flow)->queue(flowId: 'flow-1', trigger: 'schedule');
+		$run = $this->service($flow)->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'schedule'));
 
 		$this->assertSame('carol', $run->getRunAs(), 'the trigger names the acting identity');
 		$this->assertNotSame('alice', $run->getRunAs(), "the flow's owner must not answer");
 		$this->assertSame('org-a', $run->getOrganisation(), 'tenancy still falls back to the flow');
+	}
+
+	/**
+	 * A run a case plan queues without a caller (a system or cascade realisation) goes through the real queue
+	 * path and acts as the identity the flow's schedule trigger declares; the flow's owner still does not answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 */
+	public function testACaseRunWithoutACallerActsAsTheFlowsDeclaredIdentity(): void {
+		$flow = $this->ownedFlow('alice', 'org-a');
+		$flow->setNodes([
+			['id' => 'start', 'type' => 'openregister.trigger-schedule', 'config' => ['runAs' => 'carol']],
+			['id' => 'stop', 'type' => 'end'],
+		]);
+
+		$run = $this->service($flow)->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'case', user: null));
+
+		$this->assertSame('carol', $run->getRunAs());
+	}
+
+	/**
+	 * A case run for a flow that declares no identity is refused as unattributed, never run as the owner.
+	 *
+	 * @return void
+	 */
+	public function testACaseRunWithoutACallerOrADeclaredIdentityIsRefused(): void {
+		$this->expectException(FlowUnattributed::class);
+
+		$this->service($this->ownedFlow('alice', 'org-a'))->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'case', user: null));
 	}
 
 	/**
@@ -219,7 +254,7 @@ class FlowRunAttributionTest extends TestCase {
 
 		$this->expectException(FlowUnattributed::class);
 
-		$this->service($flow)->queue(flowId: 'flow-1', trigger: 'schedule');
+		$this->service($flow)->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'schedule'));
 	}
 
 	/**
@@ -232,7 +267,7 @@ class FlowRunAttributionTest extends TestCase {
 	 */
 	public function testAnActingUserOutranksTheDocument(): void {
 		$run = $this->service($this->ownedFlow('alice', 'org-a'), 'org-b')
-			->queue(flowId: 'flow-1', trigger: 'manual', user: 'bob');
+			->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'manual', user: 'bob'));
 
 		$this->assertSame('bob', $run->getTriggeredBy());
 		$this->assertSame('bob', $run->getRunAs());
@@ -252,7 +287,7 @@ class FlowRunAttributionTest extends TestCase {
 	 */
 	public function testTheTenantComesFromTheFlowWhenTheSessionHasNone(): void {
 		$run = $this->service($this->ownedFlow('alice', 'org-a'))
-			->queue(flowId: 'flow-1', trigger: 'manual', user: 'bob');
+			->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'manual', user: 'bob'));
 
 		$this->assertSame('bob', $run->getTriggeredBy());
 		$this->assertSame('org-a', $run->getOrganisation());
@@ -278,7 +313,7 @@ class FlowRunAttributionTest extends TestCase {
 
 		$this->expectException(FlowUnattributed::class);
 
-		$this->service($flow)->queue(flowId: 'flow-1', trigger: 'schedule');
+		$this->service($flow)->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'schedule'));
 	}
 
 	/**
@@ -295,7 +330,7 @@ class FlowRunAttributionTest extends TestCase {
 	public function testAnUnloadableFlowIsRefusedRatherThanUnattributed(): void {
 		$this->expectException(FlowUnattributed::class);
 
-		$this->service(null)->queue(flowId: 'ghost', trigger: 'schedule');
+		$this->service(null)->queueRun(flowId: 'ghost', options: new FlowRunQueueOptions(trigger: 'schedule'));
 	}
 
 	/**
@@ -337,7 +372,7 @@ class FlowRunAttributionTest extends TestCase {
 		$grant->setActingAs('carol');
 
 		$run = $this->service($this->delegatingFlow(), null, DelegationVerdict::granted($grant))
-			->queue(flowId: 'flow-1', trigger: 'schedule');
+			->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'schedule'));
 
 		$this->assertSame('carol', $run->getRunAs());
 	}
@@ -362,7 +397,7 @@ class FlowRunAttributionTest extends TestCase {
 
 		try {
 			$this->service($this->delegatingFlow(), null, $refused)
-				->queue(flowId: 'flow-1', trigger: 'schedule');
+				->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'schedule'));
 			$this->fail('a revoked delegation must stop the run');
 		} catch (DelegationRefused $e) {
 			// The REASON, not just the refusal. "Revoked" and "no permission"
@@ -400,7 +435,7 @@ class FlowRunAttributionTest extends TestCase {
 			['id' => 'stop', 'type' => 'end'],
 		]);
 
-		$run = $this->service($flow)->queue(flowId: 'flow-1', trigger: 'schedule');
+		$run = $this->service($flow)->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'schedule'));
 
 		$this->assertSame('carol', $run->getRunAs());
 	}
@@ -419,7 +454,7 @@ class FlowRunAttributionTest extends TestCase {
 	 */
 	public function testAnUnreachableDelegationStoreStopsADelegatingRun(): void {
 		try {
-			$this->service($this->delegatingFlow())->queue(flowId: 'flow-1', trigger: 'schedule');
+			$this->service($this->delegatingFlow())->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'schedule'));
 			$this->fail('an unverifiable delegation must not run');
 		} catch (DelegationRefused $e) {
 			$this->assertSame(DelegationVerdict::REASON_UNREADABLE, $e->getVerdict()->reason);

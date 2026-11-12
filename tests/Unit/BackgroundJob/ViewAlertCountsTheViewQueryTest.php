@@ -26,10 +26,16 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
+use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\SearchReferenceResolver;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\View\ViewObjectQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -39,7 +45,12 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
+use ReflectionParameter;
 use ReflectionNamedType;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepSources;
+use OCA\OpenRegister\BackgroundJob\Support\ViewAlertSweepPlatform;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 class ViewAlertCountsTheViewQueryTest extends TestCase {
 
@@ -100,7 +111,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 		);
 
-		$job = new ViewAlertSweepJob($this->createMock(ITimeFactory::class), $views, $objects, $users, $dispatcher, new NullLogger());
+		$job = new ViewAlertSweepJob($this->createMock(ITimeFactory::class), new ViewAlertSweepSources($views, $objects, new ViewObjectQuery()), new ViewAlertSweepPlatform($users, $dispatcher, new NullLogger()));
 		$run = new \ReflectionMethod(ViewAlertSweepJob::class, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);
@@ -113,7 +124,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 	 */
 	private function realObjectService(): ObjectService {
 		$args = [];
-		foreach ((new ReflectionClass(ObjectService::class))->getConstructor()->getParameters() as $param) {
+		foreach ((new \ReflectionMethod(ObjectServiceFactory::class, 'args'))->getParameters() as $param) {
 			$type = $param->getType();
 			if ($param->isOptional() === true) {
 				$args[] = $param->getDefaultValue();
@@ -121,8 +132,13 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 
 			$this->assertInstanceOf(ReflectionNamedType::class, $type);
-			if ($type->getName() === MagicMapper::class) {
+			if (in_array($type->getName(), [MagicMapper::class, MagicMapperInterface::class], true) === true) {
 				$args[] = $this->mapper;
+				continue;
+			}
+
+			if ($type->getName() === QueryHandler::class) {
+				$args[] = $this->realQueryHandler();
 				continue;
 			}
 
@@ -130,7 +146,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 		}
 
 		$service = $this->getMockBuilder(ObjectService::class)
-			->setConstructorArgs($args)
+			->setConstructorArgs(ObjectServiceFactory::args(...$args))
 			->onlyMethods(['runAs'])
 			->getMock();
 		$service->method('runAs')->willReturnCallback(
@@ -141,6 +157,30 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 
 		return $service;
 	}//end realObjectService()
+
+	/**
+	 * The real QueryHandler and reference resolver over this test's mapper.
+	 *
+	 * @return QueryHandler
+	 */
+	private function realQueryHandler(): QueryHandler {
+		$resolver = new SearchReferenceResolver(new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapperInterface::class), tables: $this->createMock(MagicMapperInterface::class)), new NullLogger());
+
+		// A final class is a constructor bundle: build it from its own parameters.
+		$argument = function (ReflectionParameter $param) use (&$argument, $resolver): mixed {
+			$type = $param->getType();
+			$this->assertInstanceOf(ReflectionNamedType::class, $type);
+			return match (true) {
+				$type->getName() === MagicMapperInterface::class => $this->mapper,
+				$type->getName() === SearchReferenceResolver::class => $resolver,
+				(new ReflectionClass($type->getName()))->isFinal() === true => new ($type->getName())(...array_map($argument, (new ReflectionClass($type->getName()))->getConstructor()->getParameters())),
+				$param->isOptional() === true => $param->getDefaultValue(),
+				default => $this->createMock($type->getName()),
+			};
+		};
+
+		return new QueryHandler(...array_map($argument, (new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters()));
+	}//end realQueryHandler()
 
 	/**
 	 * 🔴 The live case: three records behind the view, no alert at gte 4.

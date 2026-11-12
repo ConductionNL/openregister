@@ -27,7 +27,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -176,7 +176,7 @@ class CalendarFeedToken extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the token may answer.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function isLive(?DateTime $now = null): bool {
 		$moment = ($now ?? new DateTime());
@@ -200,7 +200,7 @@ class CalendarFeedToken extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The serialised token.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

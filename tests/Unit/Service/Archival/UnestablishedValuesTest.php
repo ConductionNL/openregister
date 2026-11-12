@@ -20,11 +20,9 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
-use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Service\Archival\UnestablishedValues;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
-use ReflectionMethod;
 
 /**
  * Tests for UnestablishedValues.
@@ -73,19 +71,18 @@ class UnestablishedValuesTest extends TestCase {
 	/**
 	 * THE PROPERTY: the result is unchanged by the read path's strip.
 	 *
-	 * Drives the real private `ObjectsController::stripEmptyValues()` rather
+	 * Drives the real `EmptyValueStripper::stripped()` rather
 	 * than restating its rule, so a strip that learns a new kind of empty, or
 	 * a helper that drifts from it, reddens here.
 	 */
 	public function testTheResultIsAFixedPointOfTheReadPathStrip(): void {
-		$controller = (new ReflectionClass(ObjectsController::class))->newInstanceWithoutConstructor();
-		$strip = new ReflectionMethod(ObjectsController::class, 'stripEmptyValues');
+		$stripper = new EmptyValueStripper();
 
 		$pruned = (new UnestablishedValues())->without(values: $this->awkward());
 
-		$this->assertSame($pruned, $strip->invoke($controller, $pruned));
+		$this->assertSame($pruned, $stripper->stripped($pruned));
 		// And it agrees with the strip applied to the raw value, so the two
 		// rules are the same rule, not merely compatible ones.
-		$this->assertSame($strip->invoke($controller, $this->awkward()), $pruned);
+		$this->assertSame($stripper->stripped($this->awkward()), $pruned);
 	}
 }//end class

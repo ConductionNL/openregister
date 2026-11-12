@@ -280,6 +280,7 @@ class Version1Date20260901120000 extends SimpleMigrationStep {
 	 * @return string The stream id.
 	 */
 	public static function streamIdFor(string $runUuid, int $ordinal): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		return substr(sha1($runUuid . ':' . $ordinal), 0, 32);
 	}//end streamIdFor()
 

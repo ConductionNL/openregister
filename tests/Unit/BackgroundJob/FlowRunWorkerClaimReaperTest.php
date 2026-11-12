@@ -25,7 +25,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\BackgroundJob\FlowRunRecoveryServices;
 use OCA\OpenRegister\BackgroundJob\FlowRunWorker;
+use OCA\OpenRegister\BackgroundJob\FlowRunWorkerServices;
 use OCA\OpenRegister\Db\FlowClaim;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
@@ -115,14 +117,9 @@ class FlowRunWorkerClaimReaperTest extends TestCase {
 
 		return new FlowRunWorker(
 			$this->createMock(ITimeFactory::class),
-			$this->mapper,
-			$this->advancer,
-			$appConfig,
-			new NullLogger(),
-			null,
-			$this->claims,
-			$this->streams,
-			$this->flows
+			new FlowRunWorkerServices($this->mapper, $this->advancer, $appConfig, new NullLogger()),
+			new FlowRunRecoveryServices($this->claims, $this->streams, $this->flows),
+			null
 		);
 	}//end worker()
 

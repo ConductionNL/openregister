@@ -5,11 +5,10 @@
  *
  * Tests for uncovered methods and branches in the SaveObject service,
  * focusing on: isReference, isEffectivelyEmptyObject, isValueNotEmpty,
- * isAuditTrailsEnabled, generateSlug, createSlug, removeQueryParameters,
+ * isAuditTrailsEnabled, removeQueryParameters,
  * resolveRegisterReference, sanitizeEmptyStringsForObjectProperties,
  * shouldApplyDefault, resolveDefaultTemplateValue, applyAlwaysDefaults,
- * applyPropertyDefaults, hydrateObjectMetadata branches, setSelfMetadata,
- * and getValueFromPath.
+ * applyPropertyDefaults, hydrateObjectMetadata branches and setSelfMetadata.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers
@@ -29,7 +28,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Service\Object\SaveObject\SelfSubmission;
 use Exception;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -39,6 +40,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Tests\Unit\Service\Object\EmptyValueCalls;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PropertyDefaultsCalls;
+use OCA\OpenRegister\Tests\Unit\Service\Object\RelationCalls;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -57,7 +61,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Testable Schema subclass to avoid mocking Entity __call magic methods.
@@ -160,6 +168,9 @@ class SaveObjectAdditionalTest extends TestCase {
 	/** @var MockObject&PropertyRbacHandler */
 	private $propertyRbacHandler;
 
+	/** @var TranslationHandler&MockObject */
+	private $translationHandler;
+
 	/** @var MockObject&LoggerInterface */
 	private $logger;
 
@@ -209,29 +220,49 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->mockUser);
 		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-123');
 
+		$this->translationHandler = $this->createMock(TranslationHandler::class);
+
 		$this->saveObject = new SaveObject(
-			$this->objectEntityMapper,
-			$this->unifiedObjectMapper,
-			$this->metaHydrationHandler,
-			$this->filePropertyHandler,
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$this->userSession,
-			$this->auditTrailMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->urlGenerator,
-			$this->organisationService,
-			$this->cacheHandler,
-			$this->settingsService,
-			$this->propertyRbacHandler,
-			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->logger,
-			$this->createMock(TmloService::class),
-			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			new ArrayLoader([])
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->translationHandler,
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService
+				)
+			),
+			propertyRbacHandler: $this->propertyRbacHandler,
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 
 		$this->reflection = new ReflectionClass(SaveObject::class);
@@ -246,6 +277,18 @@ class SaveObjectAdditionalTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $methodName, array $parameters = []): mixed {
+		if (in_array($methodName, EmptyValueCalls::METHODS, true) === true) {
+			return EmptyValueCalls::{$methodName}($this->saveObject, $parameters);
+		}
+
+		if (in_array($methodName, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$methodName}($this->saveObject, $parameters);
+		}
+
+		if (in_array($methodName, PropertyDefaultsCalls::METHODS, true) === true) {
+			return PropertyDefaultsCalls::{$methodName}($this->saveObject, $parameters);
+		}
+
 		$method = $this->reflection->getMethod($methodName);
 		$method->setAccessible(true);
 
@@ -497,69 +540,22 @@ class SaveObjectAdditionalTest extends TestCase {
 	// =================================================================
 
 	public function testRemoveQueryParametersWithQueryString(): void {
-		$result = $this->invokePrivate('removeQueryParameters', ['schema?key=value']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'schema?key=value');
 		$this->assertSame('schema', $result);
 	}
 
 	public function testRemoveQueryParametersWithoutQueryString(): void {
-		$result = $this->invokePrivate('removeQueryParameters', ['schema']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'schema');
 		$this->assertSame('schema', $result);
 	}
 
 	public function testRemoveQueryParametersWithMultipleParams(): void {
-		$result = $this->invokePrivate('removeQueryParameters', ['schema?a=1&b=2']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'schema?a=1&b=2');
 		$this->assertSame('schema', $result);
 	}
 
-	// =================================================================
-	// generateSlug() + createSlug() tests
-	// =================================================================
-
-	public function testGenerateSlugReturnsNullWhenNoConfig(): void {
-		$this->mockSchema->testConfiguration = null;
-		$result = $this->invokePrivate('generateSlug', [['name' => 'Test'], $this->mockSchema]);
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugReturnsNullWhenNoSlugField(): void {
-		$this->mockSchema->testConfiguration = [];
-		$result = $this->invokePrivate('generateSlug', [['name' => 'Test'], $this->mockSchema]);
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugReturnsNullWhenFieldValueIsEmpty(): void {
-		$this->mockSchema->testConfiguration = ['objectSlugField' => 'name'];
-		$result = $this->invokePrivate('generateSlug', [['name' => ''], $this->mockSchema]);
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugReturnsSlugWithTimestamp(): void {
-		$this->mockSchema->testConfiguration = ['objectSlugField' => 'name'];
-		$result = $this->invokePrivate('generateSlug', [['name' => 'My Test Object'], $this->mockSchema]);
-		$this->assertNotNull($result);
-		$this->assertMatchesRegularExpression('/^my-test-object-\d+$/', $result);
-	}
-
-	public function testCreateSlugConvertsToLowercase(): void {
-		$result = $this->invokePrivate('createSlug', ['Hello World']);
-		$this->assertSame('hello-world', $result);
-	}
-
-	public function testCreateSlugReplacesSpecialCharacters(): void {
-		$result = $this->invokePrivate('createSlug', ['Hello & World! @2024']);
-		$this->assertSame('hello-world-2024', $result);
-	}
-
-	public function testCreateSlugTrimsHyphens(): void {
-		$result = $this->invokePrivate('createSlug', ['---test---']);
-		$this->assertSame('test', $result);
-	}
-
-	public function testCreateSlugTruncatesLongStrings(): void {
-		$longString = str_repeat('a', 60);
-		$result = $this->invokePrivate('createSlug', [$longString]);
-		$this->assertLessThanOrEqual(50, strlen($result));
-	}
+	// generateSlug() + createSlug() were removed (#4037); slug decisions are
+	// covered by ObjectSlugHandlerTest.
 
 	// =================================================================
 	// shouldApplyDefault() tests
@@ -642,7 +638,7 @@ class SaveObjectAdditionalTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueComplexTemplate(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willReturn('John Doe');
 
 		$result = $this->invokePrivate('resolveDefaultTemplateValue', [
@@ -672,7 +668,7 @@ class SaveObjectAdditionalTest extends TestCase {
 	}
 
 	public function testResolveDefaultTemplateValueExceptionReturnsNull(): void {
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willThrowException(new Exception('Template error'));
 
 		$result = $this->invokePrivate('resolveDefaultTemplateValue', [
@@ -791,33 +787,6 @@ class SaveObjectAdditionalTest extends TestCase {
 		$data = ['status' => ''];
 		$result = $this->saveObject->applyPropertyDefaults($this->mockSchema, $data);
 		$this->assertSame('active', $result['status']);
-	}
-
-	// =================================================================
-	// getValueFromPath() tests
-	// =================================================================
-
-	public function testGetValueFromPathSimple(): void {
-		$result = $this->invokePrivate('getValueFromPath', [['name' => 'Test'], 'name']);
-		$this->assertSame('Test', $result);
-	}
-
-	public function testGetValueFromPathNested(): void {
-		$result = $this->invokePrivate('getValueFromPath', [
-			['contact' => ['email' => 'test@test.com']],
-			'contact.email',
-		]);
-		$this->assertSame('test@test.com', $result);
-	}
-
-	public function testGetValueFromPathReturnsNullForMissingKey(): void {
-		$result = $this->invokePrivate('getValueFromPath', [['name' => 'Test'], 'missing']);
-		$this->assertNull($result);
-	}
-
-	public function testGetValueFromPathConvertIntToString(): void {
-		$result = $this->invokePrivate('getValueFromPath', [['count' => 42], 'count']);
-		$this->assertSame('42', $result);
 	}
 
 	// =================================================================
@@ -965,9 +934,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 	public function testResolveSchemaReferenceCachedResult(): void {
 		// Pre-populate the schema reference cache.
-		$cacheProperty = $this->reflection->getProperty('schemaReferenceCache');
-		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($this->saveObject, ['test-ref' => '42']);
+		SaveLookupsAccess::set($this->saveObject, 'schemaReferenceCache', ['test-ref' => '42']);
 
 		$result = $this->invokePrivate('resolveSchemaReference', ['test-ref']);
 		$this->assertSame('42', $result);
@@ -983,9 +950,7 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->assertNull($result);
 
 		// Verify it was cached as null.
-		$cacheProperty = $this->reflection->getProperty('schemaReferenceCache');
-		$cacheProperty->setAccessible(true);
-		$cache = $cacheProperty->getValue($this->saveObject);
+		$cache = SaveLookupsAccess::get($this->saveObject, 'schemaReferenceCache');
 		$this->assertNull($cache['nonexistent-slug']);
 	}
 
@@ -994,7 +959,7 @@ class SaveObjectAdditionalTest extends TestCase {
 	// =================================================================
 
 	public function testResolveRegisterReferenceEmpty(): void {
-		$result = $this->invokePrivate('resolveRegisterReference', ['']);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: '');
 		$this->assertNull($result);
 	}
 
@@ -1007,7 +972,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->registerMapper->method('find')->willReturn($register);
 
-		$result = $this->invokePrivate('resolveRegisterReference', ['42']);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: '42');
 		$this->assertSame('42', $result);
 	}
 
@@ -1024,10 +989,7 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$register]);
 
-		$result = $this->invokePrivate(
-			'resolveRegisterReference',
-			['http://example.com/registers/publication']
-		);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: 'http://example.com/registers/publication');
 		$this->assertSame('5', $result);
 	}
 
@@ -1037,7 +999,7 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('resolveRegisterReference', ['nonexistent']);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: 'nonexistent');
 		$this->assertNull($result);
 	}
 
@@ -1131,63 +1093,6 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->assertSame('https://example.com/access.png', $entity->getImage());
 	}
 
-	public function testHydrateObjectMetadataWithPublishedDate(): void {
-		// objectPublishedField is deprecated — should not throw.
-		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setObject(['pubDate' => '2024-01-15']);
-
-		$this->mockSchema->testConfiguration = ['objectPublishedField' => 'pubDate'];
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('2024-01-15');
-
-		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		$this->assertTrue(true);
-	}
-
-	public function testHydrateObjectMetadataWithInvalidPublishedDate(): void {
-		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setObject(['pubDate' => 'not-a-date']);
-
-		$this->mockSchema->testConfiguration = ['objectPublishedField' => 'pubDate'];
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('not-a-date');
-
-		// Should log warning but not throw.
-		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		// No exception means success.
-		$this->assertTrue(true);
-	}
-
-	public function testHydrateObjectMetadataWithDepublishedDate(): void {
-		// objectDepublishedField is deprecated — should not throw.
-		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setObject(['endDate' => '2025-12-31']);
-
-		$this->mockSchema->testConfiguration = ['objectDepublishedField' => 'endDate'];
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('2025-12-31');
-
-		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		$this->assertTrue(true);
-	}
-
-	public function testHydrateObjectMetadataWithInvalidDepublishedDate(): void {
-		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-		$entity->setObject(['endDate' => 'invalid-date']);
-
-		$this->mockSchema->testConfiguration = ['objectDepublishedField' => 'endDate'];
-
-		$this->metaHydrationHandler->method('extractMetadataValue')
-			->willReturn('invalid-date');
-
-		// Should log warning but not throw.
-		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		$this->assertTrue(true);
-	}
-
 	public function testHydrateObjectMetadataWithNumericImage(): void {
 		$entity = $this->createEntity(1, 'aaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 		$entity->setObject(['fileId' => 123]);
@@ -1199,7 +1104,8 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		// Numeric image - logs debug but doesn't set image.
 		$this->saveObject->hydrateObjectMetadata($entity, $this->mockSchema);
-		$this->assertTrue(true);
+
+		$this->assertNull($entity->getImage());
 	}
 
 	// =================================================================
@@ -1291,12 +1197,59 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->expectExceptionMessage('not authorized to modify');
 
 		$this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
 			data: ['name' => 'Updated', 'secret_field' => 'hacked'],
-			uuid: $uuid,
-			_rbac: true
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 		);
+	}
+
+	/**
+	 * The property update check reads the stored record with `@self` from its own metadata.
+	 */
+	public function testSaveObjectWithRbacChecksPropertiesOnTheRecordsMetadata(): void {
+		$schema = new AdditionalTestableSchema();
+		$schema->setId(1);
+		$schema->setSlug('rbac-schema');
+		$schema->setTestHasPropertyAuth(true);
+		$schema->testSchemaObject = (object)['properties' => new stdClass()];
+		$schema->testProperties = ['name' => ['type' => 'string']];
+
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$uuid = 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4';
+		$existingObject = $this->createEntity(1, $uuid);
+		$existingObject->setOrganisation('org-b');
+		$existingObject->setOwner('bob');
+		$existingObject->setObject(['name' => 'Original', '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
+
+		$this->unifiedObjectMapper->method('find')->willReturn($existingObject);
+		$this->translationHandler->method('normalizeTranslationsForSave')->willReturnCallback(
+			static fn (...$args): array => $args[0]
+		);
+
+		$seen = null;
+		$this->propertyRbacHandler->method('getUnauthorizedProperties')->willReturnCallback(
+			static function (PropertyWriteCheck $write) use (&$seen): array {
+				[$schema, $object, $incomingData, $isCreate] = [$write->schema, $write->request->object, $write->incoming, $write->request->isCreate];
+				$seen = $object;
+
+				return ['name'];
+			}
+		);
+
+		try {
+			$this->saveObject->saveObject(
+				data: ['name' => 'Updated'],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
+			);
+			$this->fail('the refused property was written');
+		} catch (Exception $e) {
+			$this->assertStringContainsString('not authorized to modify', $e->getMessage());
+		}
+
+		$this->assertSame('org-b', $seen['@self']['organisation']);
+		$this->assertSame('bob', $seen['@self']['owner']);
+		$this->assertSame('Original', $seen['name']);
+		$this->assertArrayNotHasKey('_organisation', $seen);
 	}
 
 	/**
@@ -1336,29 +1289,27 @@ class SaveObjectAdditionalTest extends TestCase {
 		$newObject = $this->createEntity(2, $uuid);
 		$newObject->setObject(['name' => 'New']);
 
-		$this->unifiedObjectMapper->method('insert')
+		$this->unifiedObjectMapper->expects($this->once())->method('insert')
 			->willReturn($newObject);
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://test.com/obj');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
 			data: ['name' => 'New'],
-			uuid: $uuid,
-			_rbac: true
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($newObject, $result);
 	}
 
 	// =================================================================
-	// saveObject() — auto-generated UUID path
+	// saveObject() — no uuid given
 	// =================================================================
 
-	public function testSaveObjectWithAutoGeneratedUuidSkipsLookup(): void {
+	public function testSaveObjectWithoutAUuidCreates(): void {
 		$schema = $this->mockSchema;
 		$schema->testSchemaObject = (object)['properties' => new stdClass()];
 		$schema->testProperties = [];
@@ -1369,21 +1320,20 @@ class SaveObjectAdditionalTest extends TestCase {
 		$newObject = $this->createEntity(1, 'generated-uuid');
 		$newObject->setObject(['name' => 'New']);
 
-		$this->unifiedObjectMapper->method('insert')
+		$this->unifiedObjectMapper->expects($this->once())->method('insert')
 			->willReturn($newObject);
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://test.com/obj');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
-		$this->filePropertyHandler->method('isFileProperty')->willReturn(false);
+		$this->filePropertyHandler->method('isFileInSchema')->willReturn(false);
 
-		// Pass data with @self._autoGeneratedUuid.
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
-			data: ['name' => 'New', '@self' => ['_autoGeneratedUuid' => true]]
+			data: ['name' => 'New'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema))
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($newObject, $result);
 	}
 
 	// =================================================================
@@ -1407,19 +1357,19 @@ class SaveObjectAdditionalTest extends TestCase {
 		$newObject = $this->createEntity(1, $uuid);
 		$newObject->setObject(['name' => 'New', 'logo' => 42]);
 
-		$this->unifiedObjectMapper->method('insert')
+		$this->unifiedObjectMapper->expects($this->once())->method('insert')
 			->willReturn($newObject);
 
 		// File property detected.
-		$this->filePropertyHandler->method('isFileProperty')
-			->willReturnCallback(function ($value, $schema, $propertyName) {
+		$this->filePropertyHandler->method('isFileInSchema')
+			->willReturnCallback(function ($schema, $propertyName) {
 				return $propertyName === 'logo';
 			});
 
 		// File handling modifies data in-place (simulated).
 		$this->filePropertyHandler->method('handleFileProperty')
-			->willReturnCallback(function ($objectEntity, &$object, $propertyName) {
-				$object[$propertyName] = 42;
+			->willReturnCallback(function ($write, $propertyName) {
+				$write->data[$propertyName] = 42;
 			});
 
 		$this->objectEntityMapper->method('update')
@@ -1431,13 +1381,12 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->urlGenerator->method('linkToRoute')->willReturn('/obj');
 
 		$result = $this->saveObject->saveObject(
-			register: $this->mockRegister,
-			schema: $schema,
 			data: ['name' => 'New', 'logo' => 'file-data'],
-			uuid: $uuid
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->mockRegister, schema: $schema), uuid: $uuid)
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($newObject, $result);
 	}
 
 	// =================================================================
@@ -1517,7 +1466,7 @@ class SaveObjectAdditionalTest extends TestCase {
 			],
 		];
 
-		$this->metaHydrationHandler->method('processTwigLikeTemplate')
+		$this->metaHydrationHandler->method('renderTemplate')
 			->willThrowException(new Exception('Template error'));
 
 		$entity = $this->createEntity(1, 'test-uuid');
@@ -1531,7 +1480,7 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->assertSame('{{ invalid }} {{ template }}', $result['computed']);
 	}
 
-	public function testSetDefaultValuesWithSlugGeneration(): void {
+	public function testSetDefaultValuesAddsNoSlug(): void {
 		$this->mockSchema->testSchemaObject = (object)[
 			'properties' => (object)[
 				'name' => ['type' => 'string'],
@@ -1546,9 +1495,8 @@ class SaveObjectAdditionalTest extends TestCase {
 			$entity, $this->mockSchema, ['name' => 'My Object'],
 		]);
 
-		// Slug should be generated.
-		$this->assertArrayHasKey('slug', $result);
-		$this->assertMatchesRegularExpression('/^my-object-\d+$/', $result['slug']);
+		// No slug in the data: ObjectSlugHandler decides it as metadata (#4037).
+		$this->assertArrayNotHasKey('slug', $result);
 	}
 
 	// =================================================================
@@ -1571,55 +1519,16 @@ class SaveObjectAdditionalTest extends TestCase {
 	// setSelfMetadata — published/depublished fields
 	// =================================================================
 
-	public function testSetSelfMetadataWithSlug(): void {
+	public function testSetSelfMetadataLeavesTheSlugAlone(): void {
 		$entity = $this->createEntity(1, 'test-uuid');
 
 		$this->invokePrivate('setSelfMetadata', [
 			$entity,
-			['slug' => 'my-slug'],
-			[],
+			new SelfSubmission(selfData: ['slug' => 'my-slug']),
 		]);
 
-		$this->assertSame('my-slug', $entity->getSlug());
-	}
-
-	public function testSetSelfMetadataWithPublished(): void {
-		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createEntity(1, 'test-uuid');
-
-		$this->invokePrivate('setSelfMetadata', [
-			$entity,
-			['published' => '2024-01-15T10:00:00+00:00'],
-			[],
-		]);
-
-		$this->assertTrue(true);
-	}
-
-	public function testSetSelfMetadataWithNullPublished(): void {
-		// Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createEntity(1, 'test-uuid');
-
-		$this->invokePrivate('setSelfMetadata', [
-			$entity,
-			['published' => null],
-			[],
-		]);
-
-		$this->assertTrue(true);
-	}
-
-	public function testSetSelfMetadataWithDepublished(): void {
-		// Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
-		$entity = $this->createEntity(1, 'test-uuid');
-
-		$this->invokePrivate('setSelfMetadata', [
-			$entity,
-			['depublished' => '2025-12-31T23:59:59+00:00'],
-			[],
-		]);
-
-		$this->assertTrue(true);
+		// The slug is decided after hydration by ObjectSlugHandler (#4037).
+		$this->assertNull($entity->getSlug());
 	}
 
 	// =================================================================
@@ -1689,9 +1598,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 	public function testResolveSchemaReferenceCleanedCacheLookup(): void {
 		// Pre-populate cache with cleaned reference.
-		$cacheProperty = $this->reflection->getProperty('schemaReferenceCache');
-		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($this->saveObject, ['schema' => '99']);
+		SaveLookupsAccess::set($this->saveObject, 'schemaReferenceCache', ['schema' => '99']);
 
 		// Query with query params should find the cleaned version.
 		$result = $this->invokePrivate('resolveSchemaReference', ['schema?version=2']);

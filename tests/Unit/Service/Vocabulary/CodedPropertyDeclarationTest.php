@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -178,32 +178,6 @@ class CodedPropertyDeclarationTest extends TestCase {
 		$this->assertStringContainsString('grondslag', $errors['grondslag']);
 		$this->assertStringContainsString('urn:vernietigen', $errors['grondslag']);
 	}//end testAConceptMissingADeclaredFieldIsReportedByName()
-
-	/**
-	 * A batch reports its invalid concepts by uri, so an import of forty
-	 * resultaattypen names the two that fail and imports the other
-	 * thirty-eight.
-	 *
-	 * @return void
-	 */
-	public function testABatchReportsItsInvalidConceptsByUri(): void {
-		$concepts = $this->createMock(ConceptRepository::class);
-		$concepts->method('conceptShape')->willReturn(
-			['properties' => ['grondslag' => ['type' => 'string']], 'required' => ['grondslag']]
-		);
-
-		$guard = new ConceptShapeGuard(concepts: $concepts, lifecycle: new ConceptLifecycle());
-
-		$invalid = $guard->invalidInBatch(
-			concepts: [
-				['uri' => 'urn:a', 'fields' => ['grondslag' => 'Selectielijst']],
-				['uri' => 'urn:b', 'fields' => []],
-			],
-			schemeUri: 'https://example.org/resultaattypen'
-		);
-
-		$this->assertSame(['urn:b' => ['grondslag']], $invalid);
-	}//end testABatchReportsItsInvalidConceptsByUri()
 
 	/**
 	 * An ordinary object is never shape-checked, however much it looks like a

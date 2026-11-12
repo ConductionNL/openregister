@@ -39,7 +39,7 @@ use UnexpectedValueException;
 /**
  * Computes the next semantic version.
  */
-class FlowSemanticVersion {
+class FlowSemanticVersion implements FlowSemanticVersionInterface {
 
 	/**
 	 * Constructor.
@@ -64,18 +64,21 @@ class FlowSemanticVersion {
 	public const FIRST = '1.0.0';
 
 	/**
-	 * Derived from a graph comparison.
+	 * The preview of a flow's first publish: nothing removed, version FIRST.
 	 *
-	 * @var string
+	 * @var array<string, mixed>
 	 */
-	public const SOURCE_DERIVED = 'derived';
+	private const FIRST_PREVIEW = [
+		'verdict'      => FlowGraphDiff::MINOR,
+		'next'         => self::FIRST,
+		'removed'      => '',
+		'removedNodes' => [],
+		'removedEdges' => [],
+		'removedKeys'  => [],
+		'first'        => true,
+	];
 
-	/**
-	 * Assigned by the back-fill, which had no graphs to compare.
-	 *
-	 * @var string
-	 */
-	public const SOURCE_BACKFILL = 'backfill';
+	// The provenance values (SOURCE_DERIVED, SOURCE_BACKFILL) are declared on FlowSemanticVersionInterface.
 
 	/**
 	 * The next version, given the last one and what the diff found.
@@ -117,9 +120,8 @@ class FlowSemanticVersion {
 	 * would make the version mean "what somebody felt like", which is the
 	 * state this leaves behind.
 	 *
-	 * @param string $derived The diff's verdict.
-	 * @param string|null $requested What the author asked for, or null.
-	 * @param string $removed A summary of what was removed, for the refusal.
+	 * @param FlowGraphFinding $found     The diff's verdict and a summary of what was removed, for the refusal.
+	 * @param string|null      $requested What the author asked for, or null.
 	 *
 	 * @return string The verdict to use.
 	 *
@@ -127,35 +129,54 @@ class FlowSemanticVersion {
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-an-author-may-raise-the-verdict-and-never-lower-it
 	 */
-	public function reconcile(string $derived, ?string $requested, string $removed = ''): string {
-		$asked = strtolower(trim((string)$requested));
+	public function reconcile(FlowGraphFinding $found, ?string $requested): string {
+		$asked = self::askedBump(requested: $requested);
 		if ($asked === '') {
-			return $derived;
+			return $found->verdict;
 		}
 
-		if ($asked === FlowGraphDiff::MAJOR) {
-			return FlowGraphDiff::MAJOR;
+		if ($asked === FlowGraphDiff::MINOR && $found->verdict === FlowGraphDiff::MAJOR) {
+			throw self::notMinor(removed: $found->removed);
 		}
 
-		if ($asked !== FlowGraphDiff::MINOR) {
+		return $asked;
+	}//end reconcile()
+
+	/**
+	 * The bump the author asked for: '', `major` or `minor`.
+	 *
+	 * @param string|null $requested What the author asked for, or null.
+	 *
+	 * @return string The normalised bump, '' when none was asked.
+	 *
+	 * @throws UnexpectedValueException When the request is neither major nor minor.
+	 */
+	private static function askedBump(?string $requested): string {
+		$asked = strtolower(trim((string)$requested));
+		if (in_array($asked, ['', FlowGraphDiff::MAJOR, FlowGraphDiff::MINOR], true) === false) {
 			throw new UnexpectedValueException(
 				sprintf('A version bump is "major" or "minor"; "%s" is neither.', (string)$requested)
 			);
 		}
 
-		if ($derived === FlowGraphDiff::MAJOR) {
-			$detail = $removed;
-			if ($detail === '') {
-				$detail = 'Something a consumer could depend on was removed.';
-			}
+		return $asked;
+	}//end askedBump()
 
-			throw new UnexpectedValueException(
-				'This publish cannot be minor. ' . $detail
-			);
+	/**
+	 * The refusal of a minor bump over a removal the diff found.
+	 *
+	 * @param string $removed A summary of what was removed, or ''.
+	 *
+	 * @return UnexpectedValueException
+	 */
+	private static function notMinor(string $removed): UnexpectedValueException {
+		$detail = $removed;
+		if ($detail === '') {
+			$detail = 'Something a consumer could depend on was removed.';
 		}
 
-		return FlowGraphDiff::MINOR;
-	}//end reconcile()
+		return new UnexpectedValueException('This publish cannot be minor. ' . $detail);
+	}//end notMinor()
 
 	/**
 	 * The sequence a back-fill assigns: 1.0.0, 1.1.0, 1.2.0, …
@@ -177,23 +198,10 @@ class FlowSemanticVersion {
 	}//end backfilled()
 
 	/**
-	 * The version a publish should produce, from the two graphs and the
-	 * author's request.
+	 * The semantic version a publish of this revision stores.
 	 *
-	 * The one call a publisher makes. It compares, reconciles the verdict with
-	 * what the author asked for, and numbers the result — so the caller holds
-	 * one collaborator rather than two and never sees a verdict it has no use
-	 * for.
-	 *
-	 * A null previous graph means there is nothing to have broken, so the
-	 * answer is the first version whatever else is true. That covers both a
-	 * flow's first publish and a previous definition that can no longer be
-	 * read.
-	 *
-	 * @param array|null $publishedGraph The graph that was live, or null.
-	 * @param array $candidateGraph The graph being published.
-	 * @param string|null $previousSemver The last semantic version, if any.
-	 * @param string|null $requested `major`, `minor`, or null.
+	 * @param FlowGraphRevision $revision  The live graph, the candidate, and the last semantic version.
+	 * @param string|null       $requested `major`, `minor`, or null.
 	 *
 	 * @return string The semantic version to store.
 	 *
@@ -201,27 +209,18 @@ class FlowSemanticVersion {
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
 	 */
-	public function forPublish(
-		?array $publishedGraph,
-		array $candidateGraph,
-		?string $previousSemver,
-		?string $requested
-	): string {
-		if ($publishedGraph === null) {
+	public function versionFor(FlowGraphRevision $revision, ?string $requested): string {
+		if ($revision->published === null) {
 			return self::FIRST;
 		}
 
-		$comparison = $this->diff->compare(published: $publishedGraph, candidate: $candidateGraph);
+		$comparison = $this->diff->compare(published: $revision->published, candidate: $revision->candidate);
+		$found = new FlowGraphFinding(verdict: $comparison['verdict'], removed: $this->diff->summarise(diff: $comparison));
+		$verdict = $this->reconcile(found: $found, requested: $requested);
 
-		$verdict = $this->reconcile(
-			derived: $comparison['verdict'],
-			requested: $requested,
-			removed: $this->diff->summarise(diff: $comparison)
-		);
+		return $this->next(previous: $revision->previousSemver, verdict: $verdict);
+	}//end versionFor()
 
-		return $this->next(previous: $previousSemver, verdict: $verdict);
-
-	}//end forPublish()
 
 	/**
 	 * What publishing WOULD do, without doing it.
@@ -232,13 +231,11 @@ class FlowSemanticVersion {
 	 * the author has actually asserted something; raising it here would make
 	 * the editor unable to ASK without first committing to an answer.
 	 *
-	 * It reads the same comparison {@see forPublish()} does, deliberately. A
+	 * It reads the same comparison {@see versionFor()} does, deliberately. A
 	 * preflight computed a second way is a second opinion, and the first time
 	 * the two disagree the author learns to believe neither.
 	 *
-	 * @param array|null  $publishedGraph The graph that is live, or null.
-	 * @param array       $candidateGraph The graph being considered.
-	 * @param string|null $previousSemver The last semantic version, if any.
+	 * @param FlowGraphRevision $revision The live graph (or null), the candidate, and the last semantic version.
 	 *
 	 * @return array{
 	 *     verdict: string,
@@ -252,27 +249,19 @@ class FlowSemanticVersion {
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-the-author-is-told-what-it-will-be-before-publishing
 	 */
-	public function preview(?array $publishedGraph, array $candidateGraph, ?string $previousSemver): array {
-		if ($publishedGraph === null) {
+	public function previewOf(FlowGraphRevision $revision): array {
+		if ($revision->published === null) {
 			// Nothing to have broken. The first publish is not "minor over
 			// nothing", it is the first publish, and saying so is the
 			// difference between a number and an explanation.
-			return [
-				'verdict'      => FlowGraphDiff::MINOR,
-				'next'         => self::FIRST,
-				'removed'      => '',
-				'removedNodes' => [],
-				'removedEdges' => [],
-				'removedKeys'  => [],
-				'first'        => true,
-			];
+			return self::FIRST_PREVIEW;
 		}
 
-		$comparison = $this->diff->compare(published: $publishedGraph, candidate: $candidateGraph);
+		$comparison = $this->diff->compare(published: $revision->published, candidate: $revision->candidate);
 
 		return [
 			'verdict'      => $comparison['verdict'],
-			'next'         => $this->next(previous: $previousSemver, verdict: $comparison['verdict']),
+			'next'         => $this->next(previous: $revision->previousSemver, verdict: $comparison['verdict']),
 			'removed'      => $this->diff->summarise(diff: $comparison),
 			'removedNodes' => $comparison['removedNodes'],
 			'removedEdges' => $comparison['removedEdges'],
@@ -280,7 +269,7 @@ class FlowSemanticVersion {
 			'first'        => false,
 		];
 
-	}//end preview()
+	}//end previewOf()
 
 	/**
 	 * Read a semantic version into its three components.

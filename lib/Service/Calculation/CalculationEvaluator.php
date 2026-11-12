@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Calculation;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use Throwable;
 
 /**
@@ -64,14 +64,18 @@ use Throwable;
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
  */
-class CalculationEvaluator {
+class CalculationEvaluator implements CalculationEvaluatorInterface {
+	use PayloadPathWalking;
+	use PropNameReading;
+
 	/**
 	 * The operator vocabulary, described.
 	 *
-	 * This table is the published catalogue. It sits directly beside the
-	 * `match` in {@see self::evaluateNode()} that dispatches on the same keys,
-	 * so an operator is added to both in one edit; `OperatorCatalogueTest`
-	 * reads the match arms out of this file and fails when the two drift.
+	 * This table is the published catalogue. The `category` picks the dispatch
+	 * in {@see self::evaluateOperator()}, and the `match` blocks there dispatch
+	 * on the same keys, so an operator is added to both in one file;
+	 * `OperatorCatalogueTest` reads the match arms out of this file and fails
+	 * when the two drift.
 	 * `CalculationAnnotationValidator` reads its vocabulary from here, so a
 	 * schema can never be refused for an operator the catalogue advertises.
 	 *
@@ -324,13 +328,13 @@ class CalculationEvaluator {
 	/**
 	 * Constructor.
 	 *
-	 * @param PlaceholderResolver $placeholders Shared placeholder resolver for literal-string interpolation.
+	 * @param PlaceholderResolverInterface $placeholders Shared placeholder resolver for literal-string interpolation.
 	 * @param RateSchedule        $rates        The arithmetic behind graduated and bandRate.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly PlaceholderResolver $placeholders,
+		private readonly PlaceholderResolverInterface $placeholders,
 		private readonly RateSchedule $rates = new RateSchedule(),
 	) {
 	}//end __construct()
@@ -365,23 +369,34 @@ class CalculationEvaluator {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
 	 */
 	public function evaluate(array $object, mixed $expression, ?SequenceContext $sequenceContext = null): mixed {
-		// Outermost call installs the sequence context (when supplied); nested
-		// recursive calls pass null and therefore inherit the active context.
-		$restore = false;
-		$previous = $this->sequenceContext;
-		if ($sequenceContext !== null) {
-			$this->sequenceContext = $sequenceContext;
-			$restore = true;
-		}
-
+		$previous = $this->installSequenceContext(context: $sequenceContext);
 		try {
 			return $this->evaluateNode(object: $object, expression: $expression);
 		} finally {
-			if ($restore === true) {
-				$this->sequenceContext = $previous;
-			}
+			$this->sequenceContext = $previous;
 		}
 	}//end evaluate()
+
+	/**
+	 * Install a sequence context for one evaluate() call and hand back the one it replaces.
+	 *
+	 * The outermost call installs the context (when supplied); nested recursive
+	 * calls pass null and therefore inherit the active one. Restoring the
+	 * returned value afterwards is a no-op for a call that installed nothing,
+	 * since every call that does install restores its own predecessor.
+	 *
+	 * @param SequenceContext|null $context The context to install, or null to inherit the active one.
+	 *
+	 * @return SequenceContext|null The context that was active before this call.
+	 */
+	private function installSequenceContext(?SequenceContext $context): ?SequenceContext {
+		$previous = $this->sequenceContext;
+		if ($context !== null) {
+			$this->sequenceContext = $context;
+		}
+
+		return $previous;
+	}//end installSequenceContext()
 
 	/**
 	 * Evaluate a single AST node (the recursion target shared by every handler).
@@ -403,51 +418,166 @@ class CalculationEvaluator {
 			throw new EvaluationException('Expression must be a single-key object.');
 		}
 
-		$op = (string)array_key_first($expression);
-		$args = $expression[$op];
+		return $this->evaluateOperator(object: $object, expression: $expression);
+	}//end evaluateNode()
 
-		// A calculation's result is stored and returned, so it never reads a
-		// value source: those may be secrets (expression-value-sources D-4).
-		// Not an operator, so it stays out of the dispatch and the catalogue.
+	/**
+	 * Evaluate a single-key operator node through its category's dispatch.
+	 *
+	 * @param array<string, mixed> $object     The object's stored data.
+	 * @param array<mixed, mixed>  $expression The single-key node.
+	 *
+	 * @return mixed The computed value.
+	 *
+	 * @throws EvaluationException When the operator is unknown or reads a value source.
+	 */
+	private function evaluateOperator(array $object, array $expression): mixed {
+		$op = (string)array_key_first($expression);
+		$this->refuseValueSource(op: $op, args: $expression[$op]);
+
+		return match (self::OPERATORS[$op]['category'] ?? null) {
+			'reference', 'string' => $this->evaluateValueOperator(object: $object, expression: $expression),
+			'logic', 'comparison' => $this->evaluateLogicOperator(object: $object, expression: $expression),
+			'arithmetic' => $this->evaluateArithmeticOperator(object: $object, expression: $expression),
+			'date', 'identifier' => $this->evaluateDateOperator(object: $object, expression: $expression),
+			default => throw new EvaluationException(sprintf('Unknown operator "%s".', $op)),
+		};
+	}//end evaluateOperator()
+
+	/**
+	 * A calculation's result is stored and returned, so it never reads a value
+	 * source: those may be secrets (expression-value-sources D-4). `source` is
+	 * not an operator, so it stays out of the dispatch and the catalogue.
+	 *
+	 * @param string $op   The node's key.
+	 * @param mixed  $args The node's value.
+	 *
+	 * @return void
+	 *
+	 * @throws EvaluationException When the node reads a value source.
+	 */
+	private function refuseValueSource(string $op, mixed $args): void {
 		if ($op === 'source') {
 			throw new EvaluationException(
 				sprintf('A calculation cannot read the value source %s: its result is stored.', (string)json_encode($args))
 			);
 		}
+	}//end refuseValueSource()
+
+	/**
+	 * Dispatch of the reference and string operators.
+	 *
+	 * @param array<string, mixed> $object     The object's stored data.
+	 * @param array<mixed, mixed>  $expression The single-key node.
+	 *
+	 * @return mixed The computed value.
+	 */
+	private function evaluateValueOperator(array $object, array $expression): mixed {
+		$op = (string)array_key_first($expression);
+		$args = $expression[$op];
 
 		return match ($op) {
 			'prop' => $this->propValue(object: $object, args: $args),
 			'lit' => $this->placeholders->resolve($args),
 			'concat' => $this->concat(object: $object, args: $args),
+			'sha256' => $this->sha256Of(object: $object, args: $args),
+			default => throw new EvaluationException(sprintf('Unknown operator "%s".', $op)),
+		};//end match
+	}//end evaluateValueOperator()
+
+	/**
+	 * Dispatch of the logic and comparison operators.
+	 *
+	 * @param array<string, mixed> $object     The object's stored data.
+	 * @param array<mixed, mixed>  $expression The single-key node.
+	 *
+	 * @return mixed The computed value.
+	 */
+	private function evaluateLogicOperator(array $object, array $expression): mixed {
+		$op = (string)array_key_first($expression);
+		$args = $expression[$op];
+
+		return match ($op) {
 			'if' => $this->ifExpr(object: $object, args: $args),
 			'not' => !$this->boolEval(object: $object, expr: $args[0] ?? null),
-			'and' => $this->reduceBool(object: $object, args: $args, shortCircuit: true),
-			'or' => $this->reduceBool(object: $object, args: $args, shortCircuit: false),
-			'+' => $this->arith(object: $object, args: $args, reducer: fn ($a, $b) => $a + $b, initial: 0),
+			'and' => $this->allTrue(object: $object, args: $args),
+			'or' => $this->anyTrue(object: $object, args: $args),
+			'coalesce' => $this->coalesce(object: $object, args: $args),
+			'eq', 'ne', 'lt', 'lte', 'gt', 'gte' => $this->compare(object: $object, expression: $expression),
+			default => throw new EvaluationException(sprintf('Unknown operator "%s".', $op)),
+		};//end match
+	}//end evaluateLogicOperator()
+
+	/**
+	 * Dispatch of the arithmetic operators; the numeric functions continue in
+	 * {@see self::evaluateNumericFunction()}.
+	 *
+	 * @param array<string, mixed> $object     The object's stored data.
+	 * @param array<mixed, mixed>  $expression The single-key node.
+	 *
+	 * @return int|float|null The computed value.
+	 */
+	private function evaluateArithmeticOperator(array $object, array $expression): int|float|null {
+		$op = (string)array_key_first($expression);
+		$args = $expression[$op];
+
+		return match ($op) {
+			'+' => array_sum($this->numericOperands(object: $object, args: $args)),
 			'-' => $this->subOrNeg(object: $object, args: $args),
-			'*' => $this->arith(object: $object, args: $args, reducer: fn ($a, $b) => $a * $b, initial: 1),
+			'*' => array_product($this->numericOperands(object: $object, args: $args)),
 			'/' => $this->divide(object: $object, args: $args),
 			'%' => $this->modulo(object: $object, args: $args),
-			'eq', 'ne', 'lt', 'lte', 'gt', 'gte' => $this->compare(object: $object, args: $args, op: $op),
+			default => $this->evaluateNumericFunction(object: $object, expression: $expression),
+		};//end match
+	}//end evaluateArithmeticOperator()
+
+	/**
+	 * Dispatch of the numeric functions.
+	 *
+	 * @param array<string, mixed> $object     The object's stored data.
+	 * @param array<mixed, mixed>  $expression The single-key node.
+	 *
+	 * @return int|float|null The computed value.
+	 */
+	private function evaluateNumericFunction(array $object, array $expression): int|float|null {
+		$op = (string)array_key_first($expression);
+		$args = $expression[$op];
+
+		return match ($op) {
+			'max' => $this->maxOf(object: $object, args: $args),
+			'min' => $this->minOf(object: $object, args: $args),
+			'abs' => $this->absVal(object: $object, args: $args),
+			'round' => $this->roundVal(object: $object, args: $args),
+			'graduated' => $this->graduated(object: $object, args: $args),
+			'bandRate' => $this->bandRate(object: $object, args: $args),
+			default => throw new EvaluationException(sprintf('Unknown operator "%s".', $op)),
+		};//end match
+	}//end evaluateNumericFunction()
+
+	/**
+	 * Dispatch of the date and identifier operators.
+	 *
+	 * @param array<string, mixed> $object     The object's stored data.
+	 * @param array<mixed, mixed>  $expression The single-key node.
+	 *
+	 * @return mixed The computed value.
+	 */
+	private function evaluateDateOperator(array $object, array $expression): mixed {
+		$op = (string)array_key_first($expression);
+		$args = $expression[$op];
+
+		return match ($op) {
 			'now' => $this->now(),
 			'diffDays' => $this->diffDays(object: $object, args: $args),
 			'formatDate' => $this->formatDate(object: $object, args: $args),
 			'dateDiff' => $this->dateDiff(object: $object, args: $args),
 			'dateAdd' => $this->dateAdd(object: $object, args: $args),
-			'sequence' => $this->sequence(object: $object, args: $args),
-			'max' => $this->minMax(object: $object, args: $args, wantMax: true),
-			'min' => $this->minMax(object: $object, args: $args, wantMax: false),
-			'coalesce' => $this->coalesce(object: $object, args: $args),
-			'abs' => $this->absVal(object: $object, args: $args),
-			'round' => $this->roundVal(object: $object, args: $args),
 			'year' => $this->yearOf(object: $object, args: $args),
 			'monthsElapsed' => $this->monthsElapsed(object: $object, args: $args),
-			'graduated' => $this->rateSchedule(object: $object, args: $args, cumulative: true),
-			'bandRate' => $this->rateSchedule(object: $object, args: $args, cumulative: false),
-			'sha256' => $this->sha256Of(object: $object, args: $args),
+			'sequence' => $this->sequence(object: $object, args: $args),
 			default => throw new EvaluationException(sprintf('Unknown operator "%s".', $op)),
 		};//end match
-	}//end evaluateNode()
+	}//end evaluateDateOperator()
 
 	/**
 	 * Resolve a property reference against the object payload.
@@ -464,13 +594,7 @@ class CalculationEvaluator {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
 	 */
 	private function propValue(array $object, mixed $args): mixed {
-		$name = '';
-		if (is_string($args) === true) {
-			$name = $args;
-		} elseif (is_array($args) === true) {
-			$name = (string)($args[0] ?? '');
-		}
-
+		$name = $this->propName(args: $args);
 		if ($name === '') {
 			throw new EvaluationException('prop requires a non-empty field name.');
 		}
@@ -482,17 +606,7 @@ class CalculationEvaluator {
 			return ($object[$name] ?? null);
 		}
 
-		$parts = explode('.', $name);
-		$current = $object;
-		foreach ($parts as $part) {
-			if (is_array($current) === false || array_key_exists($part, $current) === false) {
-				return null;
-			}
-
-			$current = $current[$part];
-		}
-
-		return $current;
+		return $this->walkPath(payload: $object, parts: explode('.', $name));
 	}//end propValue()
 
 	/**
@@ -557,62 +671,92 @@ class CalculationEvaluator {
 	}//end boolEval()
 
 	/**
-	 * Reduce a list of boolean expressions with AND/OR semantics.
+	 * AND over a list of expressions, stopping at the first false one.
 	 *
 	 * @param array<string, mixed> $object The object's stored data.
-	 * @param mixed $args Array of sub-expressions to fold.
-	 * @param bool $shortCircuit True for AND (return false on first false), false for OR.
+	 * @param mixed $args Array of sub-expressions.
 	 *
-	 * @return bool The reduced result.
+	 * @return bool True when every operand is true, or args is not a list.
 	 */
-	private function reduceBool(array $object, mixed $args, bool $shortCircuit): bool {
+	private function allTrue(array $object, mixed $args): bool {
 		if (is_array($args) === false) {
-			return $shortCircuit;
+			return true;
 		}
 
 		foreach ($args as $a) {
-			$v = $this->boolEval(object: $object, expr: $a);
-			if ($shortCircuit === true && $v === false) {
+			if ($this->boolEval(object: $object, expr: $a) === false) {
 				return false;
 			}
+		}
 
-			if ($shortCircuit === false && $v === true) {
+		return true;
+	}//end allTrue()
+
+	/**
+	 * OR over a list of expressions, stopping at the first true one.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param mixed $args Array of sub-expressions.
+	 *
+	 * @return bool True when an operand is true.
+	 */
+	private function anyTrue(array $object, mixed $args): bool {
+		if (is_array($args) === false) {
+			return false;
+		}
+
+		foreach ($args as $a) {
+			if ($this->boolEval(object: $object, expr: $a) === true) {
 				return true;
 			}
 		}
 
-		return $shortCircuit;
-	}//end reduceBool()
+		return false;
+	}//end anyTrue()
 
 	/**
-	 * Reduce an array of numeric operands with a binary callback.
+	 * Evaluate the operands of `+` or `*` to numbers.
 	 *
 	 * @param array<string, mixed> $object The object's stored data.
 	 * @param mixed $args Array of operand sub-expressions.
-	 * @param callable $reducer Binary callback applied to (acc, operand).
-	 * @param int|float $initial Initial accumulator value.
 	 *
-	 * @return int|float The reduced numeric value.
+	 * @return array<int, int|float> The operands' numeric values.
 	 *
 	 * @throws EvaluationException When args is not an array or an operand is non-numeric.
 	 */
-	private function arith(array $object, mixed $args, callable $reducer, int|float $initial): int|float {
+	private function numericOperands(array $object, mixed $args): array {
 		if (is_array($args) === false) {
 			throw new EvaluationException('Arithmetic requires an array of operands.');
 		}
 
-		$acc = $initial;
+		$values = [];
 		foreach ($args as $a) {
-			$v = $this->evaluateNode(object: $object, expression: $a);
-			if (is_numeric($v) === false) {
-				throw new EvaluationException('Arithmetic operand is not numeric.');
-			}
-
-			$acc = $reducer($acc, $v + 0);
+			$values[] = $this->numberOf(
+				value: $this->evaluateNode(object: $object, expression: $a),
+				message: 'Arithmetic operand is not numeric.'
+			);
 		}
 
-		return $acc;
-	}//end arith()
+		return $values;
+	}//end numericOperands()
+
+	/**
+	 * A numeric value as a number.
+	 *
+	 * @param mixed  $value   The evaluated operand.
+	 * @param string $message The refusal when it is not numeric.
+	 *
+	 * @return int|float The number.
+	 *
+	 * @throws EvaluationException When the value is not numeric.
+	 */
+	private function numberOf(mixed $value, string $message): int|float {
+		if (is_numeric($value) === false) {
+			throw new EvaluationException($message);
+		}
+
+		return $value + 0;
+	}//end numberOf()
 
 	/**
 	 * Subtract operands or, with one operand, negate it.
@@ -629,28 +773,40 @@ class CalculationEvaluator {
 			throw new EvaluationException('- requires at least one operand.');
 		}
 
-		$first = $this->evaluateNode(object: $object, expression: $args[0]);
-		if (is_numeric($first) === false) {
-			throw new EvaluationException('- first operand not numeric.');
-		}
-
+		$first = $this->numberOf(
+			value: $this->evaluateNode(object: $object, expression: $args[0]),
+			message: '- first operand not numeric.'
+		);
 		if (count($args) === 1) {
-			return -($first + 0);
+			return -$first;
 		}
 
-		$acc = $first + 0;
+		return $this->subtractRest(object: $object, operands: ['first' => $first, 'args' => $args]);
+	}//end subOrNeg()
+
+	/**
+	 * Subtract the operands after the first from its value, left to right.
+	 *
+	 * @param array<string, mixed>                         $object   The object's stored data.
+	 * @param array{first: int|float, args: array<mixed>} $operands The first value and every sub-expression.
+	 *
+	 * @return int|float The result.
+	 *
+	 * @throws EvaluationException When an operand is non-numeric.
+	 */
+	private function subtractRest(array $object, array $operands): int|float {
+		$acc = $operands['first'];
+		$args = $operands['args'];
 		$argCount = count($args);
 		for ($i = 1; $i < $argCount; $i++) {
-			$v = $this->evaluateNode(object: $object, expression: $args[$i]);
-			if (is_numeric($v) === false) {
-				throw new EvaluationException('- operand not numeric.');
-			}
-
-			$acc -= $v + 0;
+			$acc -= $this->numberOf(
+				value: $this->evaluateNode(object: $object, expression: $args[$i]),
+				message: '- operand not numeric.'
+			);
 		}
 
 		return $acc;
-	}//end subOrNeg()
+	}//end subtractRest()
 
 	/**
 	 * Divide the first operand by the second.
@@ -663,18 +819,43 @@ class CalculationEvaluator {
 	 * @throws EvaluationException When fewer than two operands or the divisor is zero/non-numeric.
 	 */
 	private function divide(array $object, mixed $args): float {
-		if (is_array($args) === false || count($args) < 2) {
-			throw new EvaluationException('/ requires two operands.');
-		}
-
+		$this->requireTwoOperands(args: $args, message: '/ requires two operands.');
 		$a = $this->evaluateNode(object: $object, expression: $args[0]);
 		$b = $this->evaluateNode(object: $object, expression: $args[1]);
-		if (is_numeric($a) === false || is_numeric($b) === false || (float)$b === 0.0) {
+		if ($this->isValidDivision(dividend: $a, divisor: $b) === false) {
 			throw new EvaluationException('/ requires non-zero numeric operands.');
 		}
 
 		return ((float)$a) / ((float)$b);
 	}//end divide()
+
+	/**
+	 * Refuse anything but an array of at least two operands.
+	 *
+	 * @param mixed  $args    The operator's arguments.
+	 * @param string $message The refusal.
+	 *
+	 * @return void
+	 *
+	 * @throws EvaluationException When there are fewer than two operands.
+	 */
+	private function requireTwoOperands(mixed $args, string $message): void {
+		if (is_array($args) === false || count($args) < 2) {
+			throw new EvaluationException($message);
+		}
+	}//end requireTwoOperands()
+
+	/**
+	 * Whether two evaluated operands can be divided.
+	 *
+	 * @param mixed $dividend The first operand.
+	 * @param mixed $divisor  The second operand.
+	 *
+	 * @return bool True when both are numeric and the divisor is not zero.
+	 */
+	private function isValidDivision(mixed $dividend, mixed $divisor): bool {
+		return is_numeric($dividend) === true && is_numeric($divisor) === true && (float)$divisor !== 0.0;
+	}//end isValidDivision()
 
 	/**
 	 * Modulo of the first operand by the second.
@@ -687,13 +868,10 @@ class CalculationEvaluator {
 	 * @throws EvaluationException When fewer than two operands or the divisor is zero/non-numeric.
 	 */
 	private function modulo(array $object, mixed $args): int|float {
-		if (is_array($args) === false || count($args) < 2) {
-			throw new EvaluationException('% requires two operands.');
-		}
-
+		$this->requireTwoOperands(args: $args, message: '% requires two operands.');
 		$a = $this->evaluateNode(object: $object, expression: $args[0]);
 		$b = $this->evaluateNode(object: $object, expression: $args[1]);
-		if (is_numeric($a) === false || is_numeric($b) === false || (float)$b === 0.0) {
+		if ($this->isValidDivision(dividend: $a, divisor: $b) === false) {
 			throw new EvaluationException('% requires non-zero numeric operands.');
 		}
 
@@ -701,37 +879,52 @@ class CalculationEvaluator {
 	}//end modulo()
 
 	/**
-	 * Compare two operands using the given operator.
+	 * Compare two operands; the node's key is the comparison.
 	 *
-	 * @param array<string, mixed> $object The object's stored data.
-	 * @param mixed $args Two-operand list.
-	 * @param string $op One of 'eq','ne','lt','lte','gt','gte'.
+	 * @param array<string, mixed> $object     The object's stored data.
+	 * @param array<mixed, mixed>  $expression The single-key node: one of eq, ne, lt, lte, gt, gte.
 	 *
 	 * @return bool The comparison result.
 	 *
 	 * @throws EvaluationException When fewer than two operands.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Six comparison operators (eq/ne/lt/lte/gt/gte)
-	 *   each require null-safety checks via && in their match arm; collapsing to a lookup
-	 *   table would remove the null guards and risk undefined-comparison exceptions.
 	 */
-	private function compare(array $object, mixed $args, string $op): bool {
-		if (is_array($args) === false || count($args) < 2) {
-			throw new EvaluationException(sprintf('%s requires two operands.', $op));
-		}
+	private function compare(array $object, array $expression): bool {
+		$relation = (string)array_key_first($expression);
+		$args = $expression[$relation];
+		$this->requireTwoOperands(args: $args, message: sprintf('%s requires two operands.', $relation));
 
 		$a = $this->normaliseForCompare(v: $this->evaluateNode(object: $object, expression: $args[0]));
 		$b = $this->normaliseForCompare(v: $this->evaluateNode(object: $object, expression: $args[1]));
-		return match ($op) {
-			'eq' => $a == $b,
-			'ne' => $a != $b,
-			'lt' => $a !== null && $b !== null && $a < $b,
-			'lte' => $a !== null && $b !== null && $a <= $b,
-			'gt' => $a !== null && $b !== null && $a > $b,
-			'gte' => $a !== null && $b !== null && $a >= $b,
+		if ($relation === 'eq') {
+			return $a == $b;
+		}
+
+		if ($relation === 'ne') {
+			return $a != $b;
+		}
+
+		return $a !== null && $b !== null && $this->isOrdered(relation: $relation, pair: [$a, $b]);
+	}//end compare()
+
+	/**
+	 * Whether two non-null values stand in an ordering relation.
+	 *
+	 * @param string            $relation One of lt, lte, gt, gte.
+	 * @param array{mixed, mixed} $pair     The left and right value.
+	 *
+	 * @return bool The comparison result.
+	 */
+	private function isOrdered(string $relation, array $pair): bool {
+		[$a, $b] = $pair;
+
+		return match ($relation) {
+			'lt' => $a < $b,
+			'lte' => $a <= $b,
+			'gt' => $a > $b,
+			'gte' => $a >= $b,
 			default => false,
 		};
-	}//end compare()
+	}//end isOrdered()
 
 	/**
 	 * Coerce ISO-8601 date strings + DateTimeInterface values to integer timestamps.
@@ -750,11 +943,7 @@ class CalculationEvaluator {
 		}
 
 		if (is_string($v) === true && preg_match('/^\d{4}-\d{2}-\d{2}/', $v) === 1) {
-			try {
-				return (new DateTimeImmutable($v))->getTimestamp();
-			} catch (Throwable) {
-				return $v;
-			}
+			return $this->dateFromString(value: $v)?->getTimestamp() ?? $v;
 		}
 
 		return $v;
@@ -780,19 +969,34 @@ class CalculationEvaluator {
 	 * @throws EvaluationException When fewer than two operands.
 	 */
 	private function diffDays(array $object, mixed $args): ?int {
-		if (is_array($args) === false || count($args) < 2) {
-			throw new EvaluationException('diffDays requires (later, earlier).');
-		}
-
-		$later = $this->toDateOrNull(v: $this->evaluateNode(object: $object, expression: $args[0]));
-		$earlier = $this->toDateOrNull(v: $this->evaluateNode(object: $object, expression: $args[1]));
-		if ($later === null || $earlier === null) {
+		$this->requireTwoOperands(args: $args, message: 'diffDays requires (later, earlier).');
+		$dates = $this->bothDates(
+			dates: [
+				$this->toDateOrNull(v: $this->evaluateNode(object: $object, expression: $args[0])),
+				$this->toDateOrNull(v: $this->evaluateNode(object: $object, expression: $args[1])),
+			]
+		);
+		if ($dates === null) {
 			return null;
 		}
 
-		$diff = $later->getTimestamp() - $earlier->getTimestamp();
-		return (int)floor($diff / 86400);
+		return (int)floor(($dates[0]->getTimestamp() - $dates[1]->getTimestamp()) / 86400);
 	}//end diffDays()
+
+	/**
+	 * Both dates of a pair, or null when one of them is missing.
+	 *
+	 * @param array{DateTimeImmutable|null, DateTimeImmutable|null} $dates The pair.
+	 *
+	 * @return array{DateTimeImmutable, DateTimeImmutable}|null
+	 */
+	private function bothDates(array $dates): ?array {
+		if ($dates[0] === null || $dates[1] === null) {
+			return null;
+		}
+
+		return $dates;
+	}//end bothDates()
 
 	/**
 	 * Format a date/time value via PHP's DateTimeImmutable::format().
@@ -816,10 +1020,7 @@ class CalculationEvaluator {
 	 * @throws EvaluationException When fewer than two operands.
 	 */
 	private function formatDate(array $object, mixed $args): ?string {
-		if (is_array($args) === false || count($args) < 2) {
-			throw new EvaluationException('formatDate requires (date, fmt).');
-		}
-
+		$this->requireTwoOperands(args: $args, message: 'formatDate requires (date, fmt).');
 		$date = $this->toDateOrNull(v: $this->evaluateNode(object: $object, expression: $args[0]));
 		$fmt = (string)$this->evaluateNode(object: $object, expression: $args[1]);
 		if ($date === null) {
@@ -860,38 +1061,55 @@ class CalculationEvaluator {
 	 *
 	 * @throws EvaluationException When the args dict is missing required keys or the unit is unknown.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Input validation (type + three required
-	 *   key checks) and null propagation are mandatory guard steps; each extracted helper
-	 *   (validateDateDiffUnit, resolveDateOperand, applyDateDiffUnit) already carries its
-	 *   own CC but PHPMD 2.x accumulates their complexity into the calling method's score.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      NPath inflation mirrors the CyclomaticComplexity
-	 *   accumulation issue; the method body itself delegates entirely to extracted helpers.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-1
 	 */
 	private function dateDiff(array $object, mixed $args): ?int {
+		$this->requireDateDiffKeys(args: $args);
+
+		$unit = $this->validateDateDiffUnit(object: $object, unitExpr: $args['unit']);
+		$dates = $this->resolvedDates(object: $object, expressions: [$args['from'], $args['to']]);
+		if ($dates === null) {
+			return null;
+		}
+
+		return $this->applyDateDiffUnit(dates: $dates, unit: $unit);
+	}//end dateDiff()
+
+	/**
+	 * Refuse dateDiff arguments that are not a dict with from, to and unit.
+	 *
+	 * @param mixed $args The operator's arguments.
+	 *
+	 * @return void
+	 *
+	 * @throws EvaluationException When a key is missing.
+	 */
+	private function requireDateDiffKeys(mixed $args): void {
 		if (is_array($args) === false) {
 			throw new EvaluationException('dateDiff requires an object argument with keys: from, to, unit.');
 		}
 
-		if (array_key_exists('from', $args) === false
-			|| array_key_exists('to', $args) === false
-			|| array_key_exists('unit', $args) === false
-		) {
+		if (array_diff(['from', 'to', 'unit'], array_keys($args)) !== []) {
 			throw new EvaluationException('dateDiff requires keys: from, to, unit.');
 		}
+	}//end requireDateDiffKeys()
 
-		$unit = $this->validateDateDiffUnit(object: $object, unitExpr: $args['unit']);
-
-		$from = $this->resolveDateOperand(object: $object, expression: $args['from']);
-		$to = $this->resolveDateOperand(object: $object, expression: $args['to']);
-
-		if ($from === null || $to === null) {
-			return null;
-		}
-
-		return $this->applyDateDiffUnit(from: $from, to: $to, unit: $unit);
-	}//end dateDiff()
+	/**
+	 * Two date operands, resolved; null when one of them is not a date.
+	 *
+	 * @param array<string, mixed> $object      The object's stored data.
+	 * @param array{mixed, mixed}  $expressions The two sub-expressions.
+	 *
+	 * @return array{DateTimeImmutable, DateTimeImmutable}|null
+	 */
+	private function resolvedDates(array $object, array $expressions): ?array {
+		return $this->bothDates(
+			dates: [
+				$this->resolveDateOperand(object: $object, expression: $expressions[0]),
+				$this->resolveDateOperand(object: $object, expression: $expressions[1]),
+			]
+		);
+	}//end resolvedDates()
 
 	/**
 	 * Validate and resolve the unit expression for dateDiff.
@@ -946,20 +1164,19 @@ class CalculationEvaluator {
 	 * units are derived from the elapsed-second delta so DST transitions
 	 * are handled consistently.
 	 *
-	 * @param DateTimeImmutable $from The start date.
-	 * @param DateTimeImmutable $to The end date.
+	 * @param array{DateTimeImmutable, DateTimeImmutable} $dates The start and end date.
 	 * @param string $unit One of years, months, weeks, days, hours, minutes, seconds.
 	 *
 	 * @return int The signed integer difference.
 	 *
 	 * @throws EvaluationException When the unit is unhandled (should not occur after validation).
 	 */
-	private function applyDateDiffUnit(DateTimeImmutable $from, DateTimeImmutable $to, string $unit): int {
-		if ($unit === 'years' || $unit === 'months') {
-			return $this->calendarDiff(from: $from, to: $to, unit: $unit);
+	private function applyDateDiffUnit(array $dates, string $unit): int {
+		if (in_array($unit, ['years', 'months'], true) === true) {
+			return $this->calendarDiff(dates: $dates)[$unit];
 		}
 
-		$deltaSecs = $to->getTimestamp() - $from->getTimestamp();
+		$deltaSecs = $dates[1]->getTimestamp() - $dates[0]->getTimestamp();
 
 		return match ($unit) {
 			'weeks' => (int)intdiv($deltaSecs, 604800),
@@ -972,28 +1189,22 @@ class CalculationEvaluator {
 	}//end applyDateDiffUnit()
 
 	/**
-	 * Compute a calendar-accurate signed difference in years or months.
+	 * Compute a calendar-accurate signed difference in years and in months.
 	 *
 	 * Uses DateInterval::diff() to respect leap years and variable month lengths.
 	 *
-	 * @param DateTimeImmutable $from The start date.
-	 * @param DateTimeImmutable $to The end date.
-	 * @param string $unit Either "years" or "months".
+	 * @param array{DateTimeImmutable, DateTimeImmutable} $dates The start and end date.
 	 *
-	 * @return int The signed integer difference.
+	 * @return array{years: int, months: int} The signed whole years and whole months.
 	 */
-	private function calendarDiff(DateTimeImmutable $from, DateTimeImmutable $to, string $unit): int {
-		$interval = $from->diff($to);
+	private function calendarDiff(array $dates): array {
+		$interval = $dates[0]->diff($dates[1]);
 		$sign = 1;
 		if ($interval->invert === 1) {
 			$sign = -1;
 		}
 
-		if ($unit === 'years') {
-			return $sign * $interval->y;
-		}
-
-		return $sign * ($interval->y * 12 + $interval->m);
+		return ['years' => $sign * $interval->y, 'months' => $sign * ($interval->y * 12 + $interval->m)];
 	}//end calendarDiff()
 
 	/**
@@ -1022,71 +1233,77 @@ class CalculationEvaluator {
 	 *
 	 * @throws EvaluationException When the args dict is missing the required keys.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The method branches over the two
-	 *   mutually-exclusive argument shapes (amount+unit vs ISO-duration) plus null guards
-	 *   on the resolved date and interval; each branch is a distinct, required path.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      The sequential null guards (missing keys,
-	 *   unparseable date, unbuildable interval) multiply into the NPath count but are each a
-	 *   mandatory fail-soft return; extracting them would not remove a single decision.
 	 */
 	private function dateAdd(array $object, mixed $args): ?string {
-		if (is_array($args) === false || array_key_exists('date', $args) === false) {
-			throw new EvaluationException('dateAdd requires a "date" key plus either ("amount" + "unit") or "duration".');
-		}
+		$this->requireDateAddShape(args: $args);
 
-		$hasDuration = array_key_exists('duration', $args);
-		$hasAmountUnit = (array_key_exists('amount', $args) === true && array_key_exists('unit', $args) === true);
-		if ($hasDuration === false && $hasAmountUnit === false) {
-			throw new EvaluationException('dateAdd requires either ("amount" + "unit") or "duration".');
-		}
-
-		$hadTime = false;
-		$date = $this->toDateAddDate(object: $object, expr: $args['date'], hadTime: $hadTime);
+		$raw = $this->evaluateNode(object: $object, expression: $args['date']);
+		$date = $this->toDateOrNull(v: $raw);
 		if ($date === null) {
 			return null;
 		}
 
-		$interval = null;
-		if ($hasDuration === true) {
-			$interval = $this->intervalFromDuration(value: $this->evaluateNode(object: $object, expression: $args['duration']));
-		}
-
-		if ($hasDuration === false) {
-			$interval = $this->intervalFromAmountUnit(
-				amount: $this->evaluateNode(object: $object, expression: $args['amount']),
-				unit: (string)$this->evaluateNode(object: $object, expression: $args['unit'])
-			);
-		}
-
+		$interval = $this->dateAddInterval(object: $object, args: $args);
 		if ($interval === null) {
 			return null;
 		}
 
-		$shifted = $date->add($interval);
-		if ($hadTime === true) {
-			return $shifted->format('Y-m-d\TH:i:sP');
-		}
-
-		return $shifted->format('Y-m-d');
+		return $date->add($interval)->format($this->dateAddFormat(raw: $raw));
 	}//end dateAdd()
 
 	/**
-	 * Resolve the dateAdd `date` operand and record whether it carried a time component.
+	 * Refuse dateAdd arguments without a date, or without (amount + unit) or duration.
 	 *
-	 * @param array<string, mixed> $object The object's stored data.
-	 * @param mixed $expr The date sub-expression.
-	 * @param bool $hadTime Out-param set true when the raw string contained a time part.
+	 * @param mixed $args The operator's arguments.
 	 *
-	 * @return DateTimeImmutable|null The parsed date, or null when empty/unparseable.
+	 * @return void
+	 *
+	 * @throws EvaluationException When the dict is missing the required keys.
 	 */
-	private function toDateAddDate(array $object, mixed $expr, bool &$hadTime): ?DateTimeImmutable {
-		$raw = $this->evaluateNode(object: $object, expression: $expr);
-		if (is_string($raw) === true && preg_match('/\d{1,2}:\d{2}/', $raw) === 1) {
-			$hadTime = true;
+	private function requireDateAddShape(mixed $args): void {
+		if (is_array($args) === false || array_key_exists('date', $args) === false) {
+			throw new EvaluationException('dateAdd requires a "date" key plus either ("amount" + "unit") or "duration".');
 		}
 
-		return $this->toDateOrNull(v: $raw);
-	}//end toDateAddDate()
+		$hasAmountUnit = array_diff(['amount', 'unit'], array_keys($args)) === [];
+		if (array_key_exists('duration', $args) === false && $hasAmountUnit === false) {
+			throw new EvaluationException('dateAdd requires either ("amount" + "unit") or "duration".');
+		}
+	}//end requireDateAddShape()
+
+	/**
+	 * The interval dateAdd adds: its `duration`, else its `amount` and `unit`.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param array<string, mixed> $args   The operator's arguments.
+	 *
+	 * @return DateInterval|null The interval, or null when it is unusable.
+	 */
+	private function dateAddInterval(array $object, array $args): ?DateInterval {
+		if (array_key_exists('duration', $args) === true) {
+			return $this->intervalFromDuration(value: $this->evaluateNode(object: $object, expression: $args['duration']));
+		}
+
+		return $this->intervalFromAmountUnit(
+			amount: $this->evaluateNode(object: $object, expression: $args['amount']),
+			unit: (string)$this->evaluateNode(object: $object, expression: $args['unit'])
+		);
+	}//end dateAddInterval()
+
+	/**
+	 * The format of a dateAdd result: with a time when the raw date string has one.
+	 *
+	 * @param mixed $raw The evaluated `date` operand.
+	 *
+	 * @return string The format.
+	 */
+	private function dateAddFormat(mixed $raw): string {
+		if (is_string($raw) === true && preg_match('/\d{1,2}:\d{2}/', $raw) === 1) {
+			return 'Y-m-d\TH:i:sP';
+		}
+
+		return 'Y-m-d';
+	}//end dateAddFormat()
 
 	/**
 	 * Build a DateInterval from an ISO-8601 duration string (e.g. "P30D", "P1Y6M").
@@ -1119,9 +1336,6 @@ class CalculationEvaluator {
 	 * @param string $unit One of days, weeks, months, years.
 	 *
 	 * @return DateInterval|null The interval, or null when the amount/unit is unusable.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) DateInterval is constructed directly; there is
-	 *   no instance-based factory in the PHP standard library.
 	 */
 	private function intervalFromAmountUnit(mixed $amount, string $unit): ?DateInterval {
 		if (is_numeric($amount) === false) {
@@ -1130,23 +1344,15 @@ class CalculationEvaluator {
 
 		$n = (int)$amount;
 
-		$iso = match ($unit) {
-			'days' => 'P' . $n . 'D',
-			'weeks' => 'P' . ($n * 7) . 'D',
-			'months' => 'P' . $n . 'M',
-			'years' => 'P' . $n . 'Y',
-			default => null,
-		};
-
-		if ($iso === null) {
-			return null;
-		}
-
-		try {
-			return new DateInterval($iso);
-		} catch (Throwable) {
-			return null;
-		}
+		return $this->intervalFromDuration(
+			value: match ($unit) {
+				'days' => 'P' . $n . 'D',
+				'weeks' => 'P' . ($n * 7) . 'D',
+				'months' => 'P' . $n . 'M',
+				'years' => 'P' . $n . 'Y',
+				default => null,
+			}
+		);
 	}//end intervalFromAmountUnit()
 
 	/**
@@ -1179,9 +1385,32 @@ class CalculationEvaluator {
 			throw new EvaluationException('sequence requires a "scope" key (yearly, monthly or global).');
 		}
 
-		$scope = (string)$this->evaluateNode(object: $object, expression: $args['scope']);
+		$scopeKey = $this->sequenceScopeKey(scope: (string)$this->evaluateNode(object: $object, expression: $args['scope']));
+
+		// Read path / update path: no context installed → never consume a number.
+		if ($this->sequenceContext === null) {
+			return null;
+		}
+
+		$pad = $this->sequencePad(object: $object, args: $args);
+		$reserved = $this->sequenceContext->reserveNext(scopeKey: $scopeKey);
+
+		return str_pad((string)$reserved, $pad, '0', STR_PAD_LEFT);
+	}//end sequence()
+
+	/**
+	 * The key a scope reserves under, from the current server time.
+	 *
+	 * @param string $scope yearly, monthly or global.
+	 *
+	 * @return string The scope key.
+	 *
+	 * @throws EvaluationException When the scope is invalid.
+	 */
+	private function sequenceScopeKey(string $scope): string {
 		$now = new DateTimeImmutable('now');
-		$scopeKey = match ($scope) {
+
+		return match ($scope) {
 			'yearly' => $now->format('Y'),
 			'monthly' => $now->format('Y-m'),
 			'global' => '',
@@ -1189,24 +1418,28 @@ class CalculationEvaluator {
 				sprintf('sequence scope "%s" is invalid. Supported: yearly, monthly, global.', $scope)
 			),
 		};
+	}//end sequenceScopeKey()
 
-		// Read path / update path: no context installed → never consume a number.
-		if ($this->sequenceContext === null) {
-			return null;
+	/**
+	 * The zero-padding width of a sequence: its numeric `pad`, default 4.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param array<string, mixed> $args   The sequence's arguments.
+	 *
+	 * @return int The width.
+	 */
+	private function sequencePad(array $object, array $args): int {
+		if (array_key_exists('pad', $args) === false) {
+			return 4;
 		}
 
-		$pad = 4;
-		if (array_key_exists('pad', $args) === true) {
-			$padArg = $this->evaluateNode(object: $object, expression: $args['pad']);
-			if (is_numeric($padArg) === true) {
-				$pad = (int)$padArg;
-			}
+		$pad = $this->evaluateNode(object: $object, expression: $args['pad']);
+		if (is_numeric($pad) === true) {
+			return (int)$pad;
 		}
 
-		$reserved = $this->sequenceContext->reserveNext(scopeKey: $scopeKey);
-
-		return str_pad((string)$reserved, $pad, '0', STR_PAD_LEFT);
-	}//end sequence()
+		return 4;
+	}//end sequencePad()
 
 	/**
 	 * Whether an expression tree contains a `sequence` node.
@@ -1259,24 +1492,68 @@ class CalculationEvaluator {
 	 *   class; no instance-based alternatives exist in the PHP standard library.
 	 */
 	private function toDateOrNull(mixed $v): ?DateTimeImmutable {
-		if ($v instanceof DateTimeImmutable) {
-			return $v;
-		}
-
 		if ($v instanceof DateTimeInterface) {
-			return DateTimeImmutable::createFromInterface($v);
+			return $this->immutableDate(date: $v);
 		}
 
 		if (is_string($v) === true && $v !== '') {
-			try {
-				return new DateTimeImmutable($v);
-			} catch (Throwable) {
-				return null;
-			}
+			return $this->dateFromString(value: $v);
 		}
 
 		return null;
 	}//end toDateOrNull()
+
+	/**
+	 * A date as an immutable one.
+	 *
+	 * @param DateTimeInterface $date The date.
+	 *
+	 * @return DateTimeImmutable
+	 */
+	private function immutableDate(DateTimeInterface $date): DateTimeImmutable {
+		if ($date instanceof DateTimeImmutable) {
+			return $date;
+		}
+
+		return DateTimeImmutable::createFromInterface($date);
+	}//end immutableDate()
+
+	/**
+	 * Parse a date string.
+	 *
+	 * @param string $value The date string.
+	 *
+	 * @return DateTimeImmutable|null The date, or null when it does not parse or names only a timezone.
+	 */
+	private function dateFromString(string $value): ?DateTimeImmutable {
+		if ($this->namesOnlyATimezone(value: $value) === true) {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable($value);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end dateFromString()
+
+	/**
+	 * Whether a string holds a timezone and no date or time.
+	 *
+	 * PHP reads such a string, like any single letter (a military timezone), as
+	 * the current moment in that zone.
+	 *
+	 * @param string $value The date string.
+	 *
+	 * @return bool
+	 */
+	private function namesOnlyATimezone(string $value): bool {
+		$parsed = date_parse($value);
+
+		return ($parsed['zone_type'] ?? 0) !== 0
+			&& isset($parsed['relative']) === false
+			&& array_filter([$parsed['year'], $parsed['month'], $parsed['day'], $parsed['hour']], 'is_int') === [];
+	}//end namesOnlyATimezone()
 
 	/**
 	 * Resolve a single operand: the first element of a list, or the bare node.
@@ -1297,47 +1574,72 @@ class CalculationEvaluator {
 	}//end firstOperand()
 
 	/**
-	 * Max(...) / min(...) over N numeric operands; null operands are skipped.
+	 * Max(...) over N numeric operands; null operands are skipped.
 	 *
 	 * @param array<string, mixed> $object The object's stored data.
 	 * @param mixed $args Operand list.
-	 * @param bool $wantMax True for max, false for min.
 	 *
-	 * @return int|float|null The extreme value, or null when every operand is null.
+	 * @return int|float|null The largest value, or null when every operand is null.
 	 *
 	 * @throws EvaluationException When args is not a list or an operand is non-numeric.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) The null-skip + non-numeric guard +
-	 *   max/min direction branch over N operands sit at the CC threshold; each branch is a
-	 *   distinct, required guard and extracting them would not reduce the decision count.
 	 */
-	private function minMax(array $object, mixed $args, bool $wantMax): int|float|null {
-		if (is_array($args) === false) {
-			throw new EvaluationException('max/min requires an array of operands.');
-		}
-
+	private function maxOf(array $object, mixed $args): int|float|null {
 		$result = null;
-		foreach ($args as $a) {
-			$v = $this->evaluateNode(object: $object, expression: $a);
-			if ($v === null) {
-				continue;
-			}
-
-			if (is_numeric($v) === false) {
-				throw new EvaluationException('max/min operand is not numeric.');
-			}
-
-			$num = ($v + 0);
-			if ($result === null
-				|| ($wantMax === true && $num > $result)
-				|| ($wantMax === false && $num < $result)
-			) {
+		foreach ($this->presentNumbers(object: $object, args: $args) as $num) {
+			if ($result === null || $num > $result) {
 				$result = $num;
 			}
 		}
 
 		return $result;
-	}//end minMax()
+	}//end maxOf()
+
+	/**
+	 * Min(...) over N numeric operands; null operands are skipped.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param mixed $args Operand list.
+	 *
+	 * @return int|float|null The smallest value, or null when every operand is null.
+	 *
+	 * @throws EvaluationException When args is not a list or an operand is non-numeric.
+	 */
+	private function minOf(array $object, mixed $args): int|float|null {
+		$result = null;
+		foreach ($this->presentNumbers(object: $object, args: $args) as $num) {
+			if ($result === null || $num < $result) {
+				$result = $num;
+			}
+		}
+
+		return $result;
+	}//end minOf()
+
+	/**
+	 * The numeric values of max/min operands, without the null ones.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param mixed $args Operand list.
+	 *
+	 * @return array<int, int|float> The numbers.
+	 *
+	 * @throws EvaluationException When args is not a list or an operand is non-numeric.
+	 */
+	private function presentNumbers(array $object, mixed $args): array {
+		if (is_array($args) === false) {
+			throw new EvaluationException('max/min requires an array of operands.');
+		}
+
+		$numbers = [];
+		foreach ($args as $a) {
+			$v = $this->evaluateNode(object: $object, expression: $a);
+			if ($v !== null) {
+				$numbers[] = $this->numberOf(value: $v, message: 'max/min operand is not numeric.');
+			}
+		}
+
+		return $numbers;
+	}//end presentNumbers()
 
 	/**
 	 * Coalesce(...): the first non-null operand, or null when all are null.
@@ -1380,11 +1682,7 @@ class CalculationEvaluator {
 			return null;
 		}
 
-		if (is_numeric($v) === false) {
-			throw new EvaluationException('abs operand is not numeric.');
-		}
-
-		return abs($v + 0);
+		return abs($this->numberOf(value: $v, message: 'abs operand is not numeric.'));
 	}//end absVal()
 
 	/**
@@ -1407,22 +1705,33 @@ class CalculationEvaluator {
 			return null;
 		}
 
-		if (is_numeric($v) === false) {
-			throw new EvaluationException('round value is not numeric.');
-		}
+		$number = $this->numberOf(value: $v, message: 'round value is not numeric.');
 
-		$precision = 0;
-		if (array_key_exists(1, $args) === true) {
-			$precisionArg = $this->evaluateNode(object: $object, expression: $args[1]);
-			if (is_int($precisionArg) === false) {
-				throw new EvaluationException('round precision must be an integer.');
-			}
-
-			$precision = $precisionArg;
-		}
-
-		return round(($v + 0), $precision);
+		return round($number, $this->roundPrecision(object: $object, args: $args));
 	}//end roundVal()
+
+	/**
+	 * The decimals of a round: its second operand, default 0.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param array<int, mixed>    $args   `[value]` or `[value, precision]`.
+	 *
+	 * @return int The precision.
+	 *
+	 * @throws EvaluationException When the precision is not an integer.
+	 */
+	private function roundPrecision(array $object, array $args): int {
+		if (array_key_exists(1, $args) === false) {
+			return 0;
+		}
+
+		$precision = $this->evaluateNode(object: $object, expression: $args[1]);
+		if (is_int($precision) === false) {
+			throw new EvaluationException('round precision must be an integer.');
+		}
+
+		return $precision;
+	}//end roundPrecision()
 
 	/**
 	 * Year(date): the four-digit year of a date operand.
@@ -1452,21 +1761,17 @@ class CalculationEvaluator {
 	 * @throws EvaluationException When fewer than two operands are supplied.
 	 */
 	private function monthsElapsed(array $object, mixed $args): ?int {
-		if (is_array($args) === false || count($args) < 2) {
-			throw new EvaluationException('monthsElapsed requires (later, earlier).');
-		}
-
-		$later = $this->resolveDateOperand(object: $object, expression: $args[0]);
-		$earlier = $this->resolveDateOperand(object: $object, expression: $args[1]);
-		if ($later === null || $earlier === null) {
+		$this->requireTwoOperands(args: $args, message: 'monthsElapsed requires (later, earlier).');
+		$dates = $this->resolvedDates(object: $object, expressions: [$args[1], $args[0]]);
+		if ($dates === null) {
 			return null;
 		}
 
-		return $this->calendarDiff(from: $earlier, to: $later, unit: 'months');
+		return $this->calendarDiff(dates: $dates)['months'];
 	}//end monthsElapsed()
 
 	/**
-	 * Graduated([quantity, bands, cap?]) and bandRate([unit, bands]) over a rate schedule.
+	 * Graduated([quantity, bands, cap?]): the amount accrued over a rate schedule.
 	 *
 	 * Null-safe like the other arithmetic operators: a quantity or a schedule
 	 * that resolves to null yields null, so a record that has not started
@@ -1474,31 +1779,73 @@ class CalculationEvaluator {
 	 *
 	 * @param array<string, mixed> $object The object's stored data.
 	 * @param mixed $args `[quantity, bands]` or `[quantity, bands, cap]`.
-	 * @param bool $cumulative True for graduated (the accrued amount), false for bandRate.
 	 *
-	 * @return int|float|null The amount or the rate, or null when an operand is null.
+	 * @return int|float|null The amount, or null when an operand is null.
 	 *
 	 * @throws EvaluationException When an operand is missing or not numeric, or the schedule is malformed.
 	 *
-	 * @spec openspec/changes/graduated-rate-calculation/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
-	private function rateSchedule(array $object, mixed $args, bool $cumulative): int|float|null {
-		if (is_array($args) === false || array_is_list($args) === false || count($args) < 2) {
-			throw new EvaluationException('graduated/bandRate requires (quantity, bands).');
-		}
+	private function graduated(array $object, mixed $args): int|float|null {
+		$this->requireRateOperands(args: $args);
 
 		$cap = null;
-		if ($cumulative === true && isset($args[2]) === true) {
+		if (isset($args[2]) === true) {
 			$cap = $this->evaluateNode(object: $object, expression: $args[2]);
 		}
 
-		return $this->rates->evaluate(
+		return $this->rates->graduated(operands: $this->rateOperands(object: $object, args: $args), cap: $cap);
+	}//end graduated()
+
+	/**
+	 * BandRate([unit, bands]): the rate of the band a value falls in; null-safe like graduated.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param mixed $args `[unit, bands]`.
+	 *
+	 * @return int|float|null The rate, or null when an operand is null.
+	 *
+	 * @throws EvaluationException When an operand is missing or not numeric, or the schedule is malformed.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md
+	 */
+	private function bandRate(array $object, mixed $args): int|float|null {
+		$this->requireRateOperands(args: $args);
+
+		return $this->rates->bandRate(operands: $this->rateOperands(object: $object, args: $args));
+	}//end bandRate()
+
+	/**
+	 * Resolve the quantity and the schedule of a rate-schedule operator.
+	 *
+	 * @param array<string, mixed> $object The object's stored data.
+	 * @param array<int, mixed>    $args   The operator's arguments, at least two.
+	 *
+	 * @return RateOperands The resolved quantity (or unit) and schedule.
+	 *
+	 * @throws EvaluationException When an operand cannot be evaluated.
+	 */
+	private function rateOperands(array $object, array $args): RateOperands {
+		return new RateOperands(
 			quantity: $this->evaluateNode(object: $object, expression: $args[0]),
-			bands: $this->evaluateNode(object: $object, expression: $args[1]),
-			cap: $cap,
-			cumulative: $cumulative
+			bands: $this->evaluateNode(object: $object, expression: $args[1])
 		);
-	}//end rateSchedule()
+	}//end rateOperands()
+
+	/**
+	 * Refuse rate-schedule arguments that are not a list of at least two operands.
+	 *
+	 * @param mixed $args The operator's arguments.
+	 *
+	 * @return void
+	 *
+	 * @throws EvaluationException When the shape is wrong.
+	 */
+	private function requireRateOperands(mixed $args): void {
+		if (is_array($args) === false || array_is_list($args) === false || count($args) < 2) {
+			throw new EvaluationException('graduated/bandRate requires (quantity, bands).');
+		}
+	}//end requireRateOperands()
 
 	/**
 	 * Sha256(value): lowercase hex SHA-256 digest of the stringified operand.
@@ -1541,44 +1888,55 @@ class CalculationEvaluator {
 	 *
 	 * @return array<int, string> The property names the expression reads.
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function referencedProperties(mixed $expression): array {
-		$names = [];
-		$this->collectReferences(expression: $expression, names: $names);
-
-		return array_values(array_unique($names));
+		return array_values(array_unique($this->referencesIn(expression: $expression)));
 	}//end referencedProperties()
 
 	/**
-	 * Walk a node collecting every `prop` reference beneath it.
+	 * Every `prop` reference beneath a node, in reading order.
 	 *
 	 * @param mixed $expression Expression AST (any node).
-	 * @param array<int, string> $names Mutable accumulator of property names.
 	 *
-	 * @return void
+	 * @return array<int, string> The property names, duplicates included.
 	 */
-	private function collectReferences(mixed $expression, array &$names): void {
+	private function referencesIn(mixed $expression): array {
 		if (is_array($expression) === false) {
-			return;
+			return [];
 		}
 
+		$names = [];
 		foreach ($expression as $key => $value) {
 			if ($key === 'prop') {
-				$name = $value;
-				if (is_array($name) === true) {
-					$name = ($name[0] ?? null);
-				}
-
-				if (is_string($name) === true && $name !== '') {
-					$names[] = $name;
-				}
-
+				$names = array_merge($names, $this->referenceName(value: $value));
 				continue;
 			}
 
-			$this->collectReferences(expression: $value, names: $names);
+			$names = array_merge($names, $this->referencesIn(expression: $value));
 		}
-	}//end collectReferences()
+
+		return $names;
+	}//end referencesIn()
+
+	/**
+	 * The name a `prop` value references, as a list of none or one.
+	 *
+	 * @param mixed $value The `prop` node's value.
+	 *
+	 * @return array<int, string> The name, when it is a non-empty string.
+	 */
+	private function referenceName(mixed $value): array {
+		$name = $value;
+		if (is_array($value) === true) {
+			$name = ($value[0] ?? null);
+		}
+
+		if (is_string($name) === true && $name !== '') {
+			return [$name];
+		}
+
+		return [];
+	}//end referenceName()
 
 }//end class

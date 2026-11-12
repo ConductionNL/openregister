@@ -29,8 +29,15 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCP\DB\IPreparedStatement;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
@@ -38,6 +45,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * A ground row (`code`) cited by code from an assessment's array property.
@@ -46,10 +55,16 @@ use RuntimeException;
  * `note` schema whose `labels` property lists codes.
  *
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityAuditEntry
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
+ * @uses \OCA\OpenRegister\Service\Object\ReferenceKey
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
@@ -75,6 +90,27 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 	private ReferentialIntegrityService $service;
 
 	/**
+	 * The mapper mock: it names the citing table and its columns.
+	 *
+	 * @var MagicMapper&MockObject
+	 */
+	private MagicMapper $mapper;
+
+	/**
+	 * The SQL the citing-table query was prepared with.
+	 *
+	 * @var string
+	 */
+	private string $sql = '';
+
+	/**
+	 * The platform the connection reports; MySQL unless a test says otherwise.
+	 *
+	 * @var AbstractPlatform
+	 */
+	private AbstractPlatform $reported;
+
+	/**
 	 * Set up.
 	 *
 	 * @return void
@@ -85,15 +121,21 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 
+		// The citing table, as the mapper names it and as the connection prefixes it.
+		$this->mapper = $this->createMock(MagicMapper::class);
+		$this->mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_7_2');
+		$queryBuilder = $this->createMock(IQueryBuilder::class);
+		// Like Nextcloud's own: the prefixed name comes back ALREADY quoted for the platform.
+		$queryBuilder->method('getTableName')->willReturnCallback(fn (string $table): string => $this->reported->quoteIdentifier('oc_' . $table));
+		$this->db->method('getQueryBuilder')->willReturn($queryBuilder);
+		$this->reported = new MySQLPlatform();
+		$this->db->method('getDatabasePlatform')->willReturnCallback(fn (): AbstractPlatform => $this->reported);
+
 		$this->service = new ReferentialIntegrityService(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			logger: $this->createMock(LoggerInterface::class),
-			db: $this->db,
-			cacheFactory: $cacheFactory,
-			archivalGuard: $this->createMock(ArchivalRetentionGuard::class),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $this->mapper, db: $this->db),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->createMock(ArchivalRetentionGuard::class)),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 
@@ -102,10 +144,11 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 	 *
 	 * @param array<string, mixed> $labelsProperty The citing property's definition.
 	 * @param bool $withRegister Whether the citing schema lives in a register.
+	 * @param array<string, mixed>|null $columns The citing table's column map; null gives `labels` its column.
 	 *
 	 * @return void
 	 */
-	private function schemas(array $labelsProperty, bool $withRegister = true): void {
+	private function schemas(array $labelsProperty, bool $withRegister = true, ?array $columns = null): void {
 		$label = new Schema();
 		$label->setId(1);
 		$label->setSlug('label');
@@ -120,6 +163,8 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 		$note->setRequired([]);
 
 		$this->schemaMapper->method('findAll')->willReturn([$label, $note]);
+		// The citing table's column for its property, as the table was built (a collision suffix included).
+		$this->mapper->method('buildTableColumnsFromSchema')->willReturn($columns ?? ['labels' => ['name' => 'labels_1', 'type' => 'json']]);
 
 		$register = new Register();
 		$register->setId(7);
@@ -174,7 +219,13 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 			}
 		);
 		$statement->method('fetchAll')->willReturn($rows);
-		$this->db->method('prepare')->willReturn($statement);
+		$this->db->method('prepare')->willReturnCallback(
+			function (string $sql) use ($statement) {
+				$this->sql = $sql;
+
+				return $statement;
+			}
+		);
 	}//end citingRows()
 
 	/**
@@ -263,6 +314,18 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 	}//end testRowWithoutKeyIsDeletable()
 
 	/**
+	 * A key of only spaces cites nothing, so nothing is asked of the citing table.
+	 *
+	 * @return void
+	 */
+	public function testBlankKeyIsDeletable(): void {
+		$this->schemas(labelsProperty: ['type' => 'array', 'referenceSchema' => 'label', 'referenceKey' => 'code', 'onDelete' => 'RESTRICT']);
+		$this->db->expects(self::never())->method('prepare');
+
+		self::assertTrue($this->service->canDelete($this->label(code: '   '))->deletable);
+	}//end testBlankKeyIsDeletable()
+
+	/**
 	 * A key reference with an action other than RESTRICT is not indexed at all.
 	 *
 	 * @return void
@@ -272,4 +335,77 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
 		self::assertFalse($this->service->hasIncomingOnDeleteReferences('1'));
 	}//end testKeyReferenceOnlyRestricts()
+
+	/**
+	 * On MySQL and MariaDB a key reference is searched by comparing the column, never a quoted string.
+	 *
+	 * A double-quoted identifier is a string literal there (no ANSI_QUOTES): `"code" = ?` is
+	 * `'code' = ?`, false for every row, so the delete went through. The identifier is
+	 * quoted by the platform (backticks), the column is the one the schema's table was
+	 * built with, and the table carries the instance's prefix.
+	 *
+	 * @return void
+	 */
+	public function testAScalarKeyIsComparedAsAColumnOnMySql(): void {
+		$this->schemas(labelsProperty: ['type' => 'string', 'referenceSchema' => 'label', 'referenceKey' => 'code', 'onDelete' => 'RESTRICT']);
+		$params = [];
+		$this->citingRows(rows: [['_uuid' => 'note-1', '_register' => '7', '_schema' => '2', '_deleted' => null, '_prop' => 'A1']], params: $params);
+
+		$analysis = $this->service->canDelete($this->label(code: 'A1'));
+
+		self::assertFalse($analysis->deletable);
+		self::assertStringContainsString('`labels_1` = ?', $this->sql);
+		self::assertStringNotContainsString('"', $this->sql, 'No double-quoted identifier: MySQL reads it as a string.');
+		self::assertStringContainsString('FROM `oc_openregister_table_7_2`', $this->sql);
+		self::assertStringNotContainsString('``', $this->sql, 'The table must not be quoted twice: that names a table that does not exist and the lookup answers "no referrers".');
+		self::assertSame(['A1'], $params);
+	}//end testAScalarKeyIsComparedAsAColumnOnMySql()
+
+	/**
+	 * On PostgreSQL the same query quotes with double quotes, the platform's own way.
+	 *
+	 * @return void
+	 */
+	public function testAScalarKeyIsComparedAsAColumnOnPostgres(): void {
+		$this->reported = new PostgreSQLPlatform();
+		$this->schemas(labelsProperty: ['type' => 'string', 'referenceSchema' => 'label', 'referenceKey' => 'code', 'onDelete' => 'RESTRICT']);
+		$params = [];
+		$this->citingRows(rows: [], params: $params);
+
+		self::assertTrue($this->service->canDelete($this->label(code: 'A1'))->deletable);
+		self::assertStringContainsString('"labels_1" = ?', $this->sql);
+		self::assertStringContainsString('FROM "oc_openregister_table_7_2"', $this->sql);
+	}//end testAScalarKeyIsComparedAsAColumnOnPostgres()
+
+	/**
+	 * A property the citing table has no column for cannot be checked, so the delete is refused.
+	 *
+	 * @return void
+	 */
+	public function testAPropertyWithoutAColumnFailsClosed(): void {
+		$this->schemas(labelsProperty: ['type' => 'array', 'referenceSchema' => 'label', 'referenceKey' => 'code', 'onDelete' => 'RESTRICT'], columns: []);
+		$this->db->expects(self::never())->method('prepare');
+		$this->db->method('tableExists')->willReturn(true);
+
+		self::assertSame('unverifiable', $this->service->canDelete($this->label(code: 'A1'))->blockers[0]['reason']);
+	}//end testAPropertyWithoutAColumnFailsClosed()
+
+	/**
+	 * A relation's own `$ref` goes first, then the one on its items, then `referenceSchema`.
+	 *
+	 * @return void
+	 */
+	public function testTheTargetOfARelationIsReadInOrder(): void {
+		$read = new \ReflectionMethod(ReferentialIntegrityService::class, 'extractTargetRef');
+		$service = (new \ReflectionClass(ReferentialIntegrityService::class))->newInstanceWithoutConstructor();
+
+		$all = ['$ref' => 'own', 'referenceSchema' => 'key', 'items' => ['$ref' => 'items', 'referenceSchema' => 'itemKey']];
+		self::assertSame('own', $read->invoke($service, $all));
+		self::assertSame('items', $read->invoke($service, array_diff_key($all, ['$ref' => true])));
+
+		$noRef = ['referenceSchema' => 'key', 'items' => ['referenceSchema' => 'itemKey']];
+		self::assertSame('key', $read->invoke($service, $noRef));
+		self::assertSame('itemKey', $read->invoke($service, ['items' => ['referenceSchema' => 'itemKey']]));
+		self::assertNull($read->invoke($service, ['items' => 'string']));
+	}
 }//end class

@@ -43,18 +43,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\CaseTokenService;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CaseTokenControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
+use OCA\OpenRegister\Service\CaseTokenServiceInterface;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\Attribute\AnonRateLimit;
-use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\IRequest;
-use OCP\Security\Bruteforce\IThrottler;
-use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * Public case-token resolve controller.
@@ -66,28 +68,54 @@ class CaseTokenController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfaces::CASE_TOKEN;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::CASE_TOKEN;
+
+	/**
+	 * Case-token mint/resolve/revoke service.
+	 *
+	 * @var CaseTokenServiceInterface
+	 */
+	private readonly CaseTokenServiceInterface $tokenService;
+
+	/**
+	 * Counts rejected requests against the brute-force throttler.
+	 *
+	 * @var ObjectShareLinkThrottle
+	 */
+	private readonly ObjectShareLinkThrottle $rejections;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
-	 * @param IRequest $request Current request.
-	 * @param CaseTokenService $tokenService Case-token mint/resolve/revoke service.
-	 * @param IThrottler $throttler Brute-force throttler for rejected tokens.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param IRequest                    $request  Current request.
+	 * @param CaseTokenControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private CaseTokenService $tokenService,
-		private IThrottler $throttler,
-		private LoggerInterface $logger,
+		CaseTokenControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->tokenService = $services->tokenService;
+		$this->rejections = self::rejectionCounter(services: $services);
 	}//end __construct()
+
+	/**
+	 * The counter of rejected requests on this surface.
+	 *
+	 * @param CaseTokenControllerServices $services The throttler and logger
+	 *
+	 * @return ObjectShareLinkThrottle The counter
+	 */
+	private static function rejectionCounter(CaseTokenControllerServices $services): ObjectShareLinkThrottle {
+		return new ObjectShareLinkThrottle(
+			throttler: $services->throttler,
+			logger: $services->logger,
+			action: self::THROTTLE_ACTION,
+			label: 'CaseTokenController'
+		);
+	}//end rejectionCounter()
 
 	/**
 	 * GET /api/public/case-tokens/{token}
@@ -115,16 +143,7 @@ class CaseTokenController extends Controller {
 			// The uniform 404 below is the right answer and stays. But a
 			// uniform response is not a throttle: it hides WHICH failure
 			// occurred, it does nothing about how FAST they can be attempted.
-			try {
-				$this->throttler->registerAttempt(
-					action: self::THROTTLE_ACTION,
-					ip: $this->request->getRemoteAddress()
-				);
-			} catch (\Throwable $throttlerFailure) {
-				$this->logger->warning(
-					'CaseTokenController: registerAttempt failed: ' . $throttlerFailure->getMessage()
-				);
-			}
+			$this->rejections->countRejected(address: $this->request->getRemoteAddress());
 
 			// Uniform 404 — never distinguish "unknown" from
 			// "revoked / expired / forbidden". No enumeration oracle.

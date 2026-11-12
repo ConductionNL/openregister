@@ -20,15 +20,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
-use Throwable;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 
 /**
  * A default that is derived, and that refuses rather than derives nothing.
@@ -53,7 +52,7 @@ use Throwable;
  * detect. A value derived from a derived value is a calculation, which is a
  * different annotation with its own dependency graph.
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class ExpressionDefaultResolver {
 
@@ -88,12 +87,12 @@ final class ExpressionDefaultResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalculationEvaluator $evaluator The JSON-AST evaluator, the same one calculations use.
+	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator, the same one calculations use.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CalculationEvaluator $evaluator,
+		private readonly CalculationEvaluatorInterface $evaluator,
 	) {
 	}//end __construct()
 
@@ -107,16 +106,10 @@ final class ExpressionDefaultResolver {
 	 *
 	 * @return bool True when at least one property declares one.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaresAny(array $properties): bool {
-		foreach ($properties as $property) {
-			if (is_array($property) === true && isset($property[self::ANNOTATION]) === true) {
-				return true;
-			}
-		}
-
-		return false;
+		return (new AnnotatedProperties())->declares(properties: $properties, annotation: self::ANNOTATION);
 	}//end declaresAny()
 
 	/**
@@ -129,26 +122,17 @@ final class ExpressionDefaultResolver {
 	 *
 	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function apply(array $properties, array $data): array {
+		$evaluation = new ExpressionDefaultEvaluation(evaluator: $this->evaluator, data: $data);
 		$derived = [];
-		foreach ($properties as $name => $property) {
-			if (is_array($property) === false || isset($property[self::ANNOTATION]) === false) {
-				continue;
-			}
-
+		foreach ((new AnnotatedProperties())->annotations(properties: $properties, annotation: self::ANNOTATION) as $name => $expression) {
 			$key = (string)$name;
-			if (array_key_exists($key, $data) === true && $data[$key] !== null && $data[$key] !== '') {
-				// The caller supplied a value, so the default does not apply.
-				continue;
+			// A value the caller supplied means the default does not apply.
+			if ($this->isSupplied(data: $data, key: $key) === false) {
+				$derived[$key] = $evaluation->valueOf(name: $key, expression: $expression);
 			}
-
-			$derived[$key] = $this->evaluateOrRefuse(
-				name: $key,
-				expression: $property[self::ANNOTATION],
-				data: $data
-			);
 		}
 
 		if ($derived === []) {
@@ -159,43 +143,16 @@ final class ExpressionDefaultResolver {
 	}//end apply()
 
 	/**
-	 * Evaluate one expression, or refuse naming the property.
+	 * Whether the object being created carries its own value for a property.
 	 *
-	 * @param string $name The property the default belongs to.
-	 * @param mixed $expression The declared expression.
-	 * @param array<string, mixed> $data The object as submitted.
+	 * @param array<string, mixed> $data The object being created.
+	 * @param string               $key  The property.
 	 *
-	 * @return mixed The derived value, never null.
-	 *
-	 * @throws ExpressionDefaultException When the expression throws or yields nothing.
+	 * @return bool True when a non-empty value was supplied.
 	 */
-	private function evaluateOrRefuse(string $name, mixed $expression, array $data): mixed {
-		try {
-			$value = $this->evaluator->evaluate($data, $expression);
-		} catch (Throwable $failure) {
-			throw new ExpressionDefaultException(
-				property: $name,
-				message: sprintf(
-					'The default for "%s" could not be evaluated: %s. The object was not created.',
-					$name,
-					$failure->getMessage()
-				)
-			);
-		}
-
-		if ($value === null) {
-			throw new ExpressionDefaultException(
-				property: $name,
-				message: sprintf(
-					'The default for "%s" evaluated to nothing, so it was not written as empty. '
-					. 'The object was not created.',
-					$name
-				)
-			);
-		}
-
-		return $value;
-	}//end evaluateOrRefuse()
+	private function isSupplied(array $data, string $key): bool {
+		return array_key_exists($key, $data) === true && $data[$key] !== null && $data[$key] !== '';
+	}//end isSupplied()
 
 	/**
 	 * Refuse a declaration the engine could never run, at schema save.
@@ -208,48 +165,9 @@ final class ExpressionDefaultResolver {
 	 *
 	 * @return array<int, array{code: string, message: string}> The errors, empty when sound.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ConditionDialect's shape check reads one
-	 *   constant table and holds no state; it is the same walk the evaluator dispatches on.
-	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public static function validateDeclarations(array $properties): array {
-		$errors = [];
-		foreach ($properties as $name => $property) {
-			if (is_array($property) === false || array_key_exists(self::ANNOTATION, $property) === false) {
-				continue;
-			}
-
-			$expression = $property[self::ANNOTATION];
-			if (is_array($expression) === false
-				|| $expression === []
-				|| ConditionDialect::isWellFormedAst(node: $expression) === false
-			) {
-				$errors[] = [
-					'code' => self::CODE_MALFORMED,
-					'message' => sprintf(
-						'Property "%s": %s must be a JSON-AST expression such as '
-						. '{"dateAdd": [{"prop": "ontvangstdatum"}, 42, "days"]}.',
-						(string)$name,
-						self::ANNOTATION
-					),
-				];
-				continue;
-			}
-
-			if (array_key_exists('default', $property) === true && $property['default'] !== null) {
-				$errors[] = [
-					'code' => self::CODE_TWO_DEFAULTS,
-					'message' => sprintf(
-						'Property "%s" declares both a literal "default" and %s, and no rule says '
-						. 'which wins. Keep one.',
-						(string)$name,
-						self::ANNOTATION
-					),
-				];
-			}
-		}//end foreach
-
-		return $errors;
+		return (new ExpressionDefaultDeclarations())->errors(properties: $properties);
 	}//end validateDeclarations()
 }//end class

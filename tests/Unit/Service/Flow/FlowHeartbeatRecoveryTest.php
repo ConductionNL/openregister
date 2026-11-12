@@ -51,13 +51,21 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunCommitRows;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunStreamStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
+use OCA\OpenRegister\Service\Flow\FlowStreamAdvance;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Task\TaskForm;
@@ -71,6 +79,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /** A subject carrying nothing — the marking lives on the run. */
 class HeartbeatSubject {
@@ -102,7 +113,8 @@ class HeartbeatPassNode implements IFlowNode {
 	public function validateConfig(array $config): void {
 	}
 
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		return $items;
 	}
 }//end class
@@ -188,11 +200,8 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$forms->method('fromConfig')->willReturn(new TaskForm(kind: null));
 
 		$node = new UserTaskNode(
-			$bridge,
-			$l10n,
-			$this->createMock(IURLGenerator::class),
-			$forms,
-			$this->createMock(FlowTimerService::class)
+			new UserTaskServices($bridge, $forms, $this->createMock(FlowTimerService::class)),
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
 		$pass = new HeartbeatPassNode();
@@ -214,7 +223,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$pin = $this->pinReturning();
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($versions, $pin): object {
-				if ($id === \OCA\OpenRegister\Db\FlowVersionMapper::class) {
+				if ($id === \OCA\OpenRegister\Db\FlowVersionMapperInterface::class) {
 					return $versions;
 				}
 
@@ -280,25 +289,19 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 
 		$commit = new FlowRunCommit(
 			db: $db,
-			runs: $mapper,
-			streams: $streamMapper,
-			claims: $claimMapper,
-			steps: $stepMapper,
+			rows: new FlowRunCommitRows(runs: $mapper, streams: $streamMapper, claims: $claimMapper, steps: $stepMapper),
 			logger: new NullLogger()
 		);
 
 		$this->service = new FlowRunService(
-			$mapper,
-			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
-			$engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container,
-			null,
-			null,
-			$streamMapper,
-			new FlowPlaceClaims(claims: $claimMapper, db: $db, logger: new NullLogger()),
-			$commit
+			stores: new FlowRunStores(
+				mapper: $mapper,
+				stateMapper: $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
+				streams: new FlowRunStreamStores(streamMapper: $streamMapper, claims: new FlowPlaceClaims(claims: $claimMapper, db: $db, logger: new NullLogger()), commit: $commit)
+			),
+			walk: new FlowRunWalkServices(engine: $engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 	}//end setUp()
 
@@ -337,13 +340,8 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 	 * @return FlowRun The suspended run.
 	 */
 	private function suspendedOnBothTasks(): FlowRun {
-		$run = $this->service->queue('f1', user: 'alice');
-		$run = $this->service->execute(
-			$run,
-			$this->flow(),
-			new HeartbeatSubject(),
-			seedItems: [FlowItems::item(json: ['name' => 'Case 7'])]
-		);
+		$run = $this->service->queueRun(flowId: 'f1', options: new FlowRunQueueOptions(user: 'alice'));
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin(items: [FlowItems::item(json: ['name' => 'Case 7'])]));
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertSame(['askA', 'askB'], $this->created);
@@ -408,7 +406,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$this->complete(uuid: (string)$slots['askA']['taskUuid'], completedBy: 'bob');
 		$woken = $this->service->signal($run, []);
 		$this->assertNotNull($woken);
-		$run = $this->service->advanceStream($woken, $this->flow(), new HeartbeatSubject(), $this->streamOn('askA'), 'all');
+		$run = $this->service->advanceBranch(new \OCA\OpenRegister\Service\Flow\FlowRunPass(run: $woken, flow: $this->flow(), subject: new HeartbeatSubject()), new FlowStreamAdvance(streamId: $this->streamOn('askA'), budget: 'all'));
 
 		$this->assertSame(FlowRun::STATUS_QUEUED, $run->getStatus());
 		$kept = ($run->getContext()['resumeState'] ?? []);
@@ -423,7 +421,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 
 		// The worker's next pass re-parks branch B on the SAME task — never a
 		// duplicate in somebody's inbox.
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertSame(['askA', 'askB'], $this->created, 'a wake must never create a second task for a parked node');
 		$this->assertSame($taskB, (string)($run->getContext()['resumeState']['askB']['taskUuid'] ?? ''));
@@ -452,7 +450,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$this->complete(uuid: $taskB, completedBy: 'carol');
 
 		// The heartbeat fires: findDue() → advance() → execute().
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_COMPLETED, $run->getStatus());
 		$bagA = ($run->getItems()[0]['json']['task'] ?? null);
@@ -474,7 +472,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$run = $this->suspendedOnBothTasks();
 		$before = ($run->getContext()['resumeState'] ?? []);
 
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus());
 		$this->assertSame(['askA', 'askB'], $this->created);
@@ -502,7 +500,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		// Only task A completed, and its signal never arrived.
 		$this->complete(uuid: $taskA, completedBy: 'bob');
 
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame(FlowRun::STATUS_SUSPENDED, $run->getStatus(), 'branch B still waits');
 		$this->assertSame([$taskA], $this->recovered, 'only the addressed node\'s slot recovers');
@@ -550,7 +548,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 		$this->assertNotNull($run->getResumeAt(), 'a task-waiting run must park on a clock, never on a signal alone');
 
 		// The next heartbeat re-reads the task and applies the outcome.
-		$run = $this->service->execute($run, $this->flow(), new HeartbeatSubject());
+		$run = $this->service->executePass(pass: new FlowRunPass(run: $run, flow: $this->flow(), subject: new HeartbeatSubject()), origin: new FlowRunOrigin());
 
 		$this->assertSame([$taskA], $this->recovered, 'the raced completion is recovered, and audited as a recovery');
 		$this->assertSame(['askA', 'askB'], $this->created, 'recovery never creates a task');

@@ -1,0 +1,364 @@
+{
+    "columns / mysql": {
+        "result": {
+            "title": {
+                "name": "title",
+                "type": "character varying",
+                "sqlType": "character varying",
+                "length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": false,
+                "default": null
+            },
+            "amount": {
+                "name": "amount",
+                "type": "numeric",
+                "sqlType": "numeric",
+                "length": null,
+                "precision": 10,
+                "scale": 2,
+                "nullable": false,
+                "default": "0.00"
+            },
+            "price": {
+                "name": "price",
+                "type": "DECIMAL",
+                "sqlType": "DECIMAL",
+                "length": null,
+                "precision": 12,
+                "scale": 2,
+                "nullable": true,
+                "default": null
+            },
+            "wide": {
+                "name": "wide",
+                "type": "numeric",
+                "sqlType": "numeric",
+                "length": null,
+                "precision": 30,
+                "scale": 10,
+                "nullable": true,
+                "default": null
+            },
+            "boom": {
+                "name": "boom",
+                "type": "numeric",
+                "sqlType": "numeric",
+                "length": null,
+                "precision": 8,
+                "scale": 1,
+                "nullable": true,
+                "default": null
+            },
+            "note": {
+                "name": "note",
+                "type": "text",
+                "sqlType": "text",
+                "length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": true,
+                "default": null
+            }
+        },
+        "trace": [
+            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default, column_type FROM information_schema.columns WHERE table_name = ? AND table_schema = DATABASE()"
+        ]
+    },
+    "columns unreadable / mysql": {
+        "thrown": "Exception: prepare failed",
+        "trace": [
+            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default, column_type FROM information_schema.columns WHERE table_name = ? AND table_schema = DATABASE()",
+            "error [MagicMapper] Failed to get existing table columns {\"tableName\":\"openregister_table_1_2\",\"error\":\"prepare failed\"}"
+        ]
+    },
+    "missing / mysql": {
+        "result": {
+            "absentNumber": {
+                "name": "absent_number",
+                "type": "decimal"
+            },
+            "absentText": {
+                "type": "json_ordered"
+            }
+        },
+        "trace": []
+    },
+    "jsonb / mysql": {
+        "result": [],
+        "trace": []
+    },
+    "relation / mysql": {
+        "result": [
+            "owner_ref",
+            "parent",
+            "boom"
+        ],
+        "trace": []
+    },
+    "relation retype / mysql": {
+        "result": [],
+        "trace": []
+    },
+    "decimal / mysql": {
+        "result": [
+            "amount",
+            "price"
+        ],
+        "trace": []
+    },
+    "widen / mysql": {
+        "result": [
+            "amount",
+            "price"
+        ],
+        "trace": [
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `amount` DECIMAL(20,6) NOT NULL DEFAULT 0.00 []",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `price` DECIMAL(20,6) NULL []"
+        ]
+    },
+    "decimal retyped to text / mysql": {
+        "result": [],
+        "trace": []
+    },
+    "metadata camelCase kept / mysql": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": []
+        },
+        "trace": [
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[]}"
+        ]
+    },
+    "widen nothing / mysql": {
+        "result": [],
+        "trace": []
+    },
+    "widen fails / mysql": {
+        "result": [],
+        "trace": [
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `boom` DECIMAL(12,4) NULL []",
+            "warning [MagicMapper] Could not widen number column; values it cannot hold are refused on save {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"boom\",\"error\":\"statement failed\"}"
+        ]
+    },
+    "widen to default / mysql": {
+        "result": [
+            "amount",
+            "price"
+        ],
+        "trace": [
+            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default, column_type FROM information_schema.columns WHERE table_name = ? AND table_schema = DATABASE()",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `amount` DECIMAL(20,6) NOT NULL DEFAULT 0.00 []",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `price` DECIMAL(20,6) NULL []",
+            "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `boom` DECIMAL(20,6) NULL []",
+            "warning [MagicMapper] Could not widen number column; values it cannot hold are refused on save {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"boom\",\"error\":\"statement failed\"}"
+        ]
+    },
+    "add column plain / mysql": {
+        "result": "ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `plain` VARCHAR(255)",
+        "trace": []
+    },
+    "add column text / mysql": {
+        "result": "ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `who` VARCHAR(255) DEFAULT 'O''Brien' NOT NULL",
+        "trace": []
+    },
+    "add column flag / mysql": {
+        "result": "ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `on` BOOLEAN DEFAULT FALSE",
+        "trace": []
+    },
+    "add column number / mysql": {
+        "result": "ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `n` INTEGER DEFAULT 3",
+        "trace": []
+    },
+    "columns / postgres": {
+        "result": {
+            "title": {
+                "name": "title",
+                "type": "character varying",
+                "sqlType": "character varying",
+                "length": 255,
+                "precision": null,
+                "scale": null,
+                "nullable": false,
+                "default": null
+            },
+            "amount": {
+                "name": "amount",
+                "type": "numeric",
+                "sqlType": "numeric",
+                "length": null,
+                "precision": 10,
+                "scale": 2,
+                "nullable": false,
+                "default": "0.00"
+            },
+            "price": {
+                "name": "price",
+                "type": "DECIMAL",
+                "sqlType": "DECIMAL",
+                "length": null,
+                "precision": 12,
+                "scale": 2,
+                "nullable": true,
+                "default": null
+            },
+            "wide": {
+                "name": "wide",
+                "type": "numeric",
+                "sqlType": "numeric",
+                "length": null,
+                "precision": 30,
+                "scale": 10,
+                "nullable": true,
+                "default": null
+            },
+            "boom": {
+                "name": "boom",
+                "type": "numeric",
+                "sqlType": "numeric",
+                "length": null,
+                "precision": 8,
+                "scale": 1,
+                "nullable": true,
+                "default": null
+            },
+            "note": {
+                "name": "note",
+                "type": "text",
+                "sqlType": "text",
+                "length": null,
+                "precision": null,
+                "scale": null,
+                "nullable": true,
+                "default": null
+            }
+        },
+        "trace": [
+            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_name = ? AND table_schema = current_schema()"
+        ]
+    },
+    "columns unreadable / postgres": {
+        "thrown": "Exception: prepare failed",
+        "trace": [
+            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_name = ? AND table_schema = current_schema()",
+            "error [MagicMapper] Failed to get existing table columns {\"tableName\":\"openregister_table_1_2\",\"error\":\"prepare failed\"}"
+        ]
+    },
+    "missing / postgres": {
+        "result": {
+            "absentNumber": {
+                "name": "absent_number",
+                "type": "decimal"
+            },
+            "absentText": {
+                "type": "json_ordered"
+            }
+        },
+        "trace": []
+    },
+    "jsonb / postgres": {
+        "result": [
+            "rules"
+        ],
+        "trace": []
+    },
+    "relation / postgres": {
+        "result": [
+            "owner_ref",
+            "parent",
+            "boom"
+        ],
+        "trace": []
+    },
+    "relation retype / postgres": {
+        "result": [
+            "owner_ref",
+            "parent"
+        ],
+        "trace": [
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"owner_ref\" TYPE VARCHAR(255) USING \"owner_ref\" #>> '{}' []",
+            "debug [MagicMapper] Retyped relation column from JSON to VARCHAR (it now holds a UUID reference) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"owner_ref\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"parent\" TYPE VARCHAR(255) USING \"parent\" #>> '{}' []",
+            "debug [MagicMapper] Retyped relation column from JSON to VARCHAR (it now holds a UUID reference) {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"parent\"}",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"boom\" TYPE VARCHAR(255) USING \"boom\" #>> '{}' []",
+            "warning [MagicMapper] Could not retype relation column to VARCHAR; it still holds data that is not a UUID reference. Saves to this property will keep failing until the existing values are migrated. {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"boom\",\"error\":\"statement failed\"}"
+        ]
+    },
+    "decimal / postgres": {
+        "result": [
+            "amount",
+            "price"
+        ],
+        "trace": []
+    },
+    "widen / postgres": {
+        "result": [
+            "amount",
+            "price"
+        ],
+        "trace": [
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"amount\" TYPE DECIMAL(20,6) []",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"price\" TYPE DECIMAL(20,6) []"
+        ]
+    },
+    "decimal retyped to text / postgres": {
+        "result": [],
+        "trace": []
+    },
+    "metadata camelCase kept / postgres": {
+        "result": {
+            "columnsAdded": [],
+            "columnsDeRequired": [],
+            "columnsReRequired": [],
+            "columnsDropped": [],
+            "columnsRetyped": []
+        },
+        "trace": [
+            "info [MagicMapper] Successfully updated table structure {\"tableName\":\"openregister_table_1_2\",\"columnsAdded\":[],\"columnsDeRequired\":[],\"columnsReRequired\":[],\"columnsDropped\":[],\"columnsRetyped\":[]}"
+        ]
+    },
+    "widen nothing / postgres": {
+        "result": [],
+        "trace": []
+    },
+    "widen fails / postgres": {
+        "result": [],
+        "trace": [
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"boom\" TYPE DECIMAL(12,4) []",
+            "warning [MagicMapper] Could not widen number column; values it cannot hold are refused on save {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"boom\",\"error\":\"statement failed\"}"
+        ]
+    },
+    "widen to default / postgres": {
+        "result": [
+            "amount",
+            "price"
+        ],
+        "trace": [
+            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_name = ? AND table_schema = current_schema()",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"amount\" TYPE DECIMAL(20,6) []",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"price\" TYPE DECIMAL(20,6) []",
+            "sql ALTER TABLE \"oc_openregister_table_1_2\" ALTER COLUMN \"boom\" TYPE DECIMAL(20,6) []",
+            "warning [MagicMapper] Could not widen number column; values it cannot hold are refused on save {\"tableName\":\"openregister_table_1_2\",\"columnName\":\"boom\",\"error\":\"statement failed\"}"
+        ]
+    },
+    "add column plain / postgres": {
+        "result": "ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN IF NOT EXISTS \"plain\" VARCHAR(255)",
+        "trace": []
+    },
+    "add column text / postgres": {
+        "result": "ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN IF NOT EXISTS \"who\" VARCHAR(255) DEFAULT 'O''Brien' NOT NULL",
+        "trace": []
+    },
+    "add column flag / postgres": {
+        "result": "ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN IF NOT EXISTS \"on\" BOOLEAN DEFAULT FALSE",
+        "trace": []
+    },
+    "add column number / postgres": {
+        "result": "ALTER TABLE \"oc_openregister_table_1_2\" ADD COLUMN IF NOT EXISTS \"n\" INTEGER DEFAULT 3",
+        "trace": []
+    }
+}

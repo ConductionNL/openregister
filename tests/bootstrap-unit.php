@@ -57,6 +57,9 @@ if ($hasRealNextcloud === false) {
 	require_once __DIR__ . '/stubs/DoriathStubs.php';
 }
 
+// Integriq's events, sent by class-name string; the same stubs as tests/bootstrap.php.
+require_once __DIR__ . '/stubs/IntegriqStubs.php';
+
 // Bootstrap Nextcloud — since we run inside the Docker container,
 // the full environment (including \OC::$server) is available.
 if ($hasRealNextcloud === true) {

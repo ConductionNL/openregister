@@ -1,0 +1,453 @@
+{
+    "mysql mixed shapes": [
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor started."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor completed."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
+        ],
+        [
+            "prepare",
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+        ],
+        [
+            "bind",
+            "pattern",
+            "%openregister\\_table\\_%"
+        ],
+        [
+            "close"
+        ],
+        [
+            "log.debug",
+            "[RegisterService] Schema object counts SQL: SELECT CAST(3 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3 UNION ALL SELECT CAST(5 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5"
+        ],
+        [
+            "prepare",
+            "SELECT CAST(3 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3 UNION ALL SELECT CAST(5 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5"
+        ],
+        [
+            "close"
+        ],
+        [
+            "result",
+            {
+                "9": {
+                    "total": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                },
+                "3": {
+                    "total": 7,
+                    "deleted": 1,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                },
+                "5": {
+                    "total": 2,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                }
+            }
+        ]
+    ],
+    "postgres": [
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor started."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor completed."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
+        ],
+        [
+            "prepare",
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+        ],
+        [
+            "bind",
+            "pattern",
+            "%openregister\\_table\\_%"
+        ],
+        [
+            "close"
+        ],
+        [
+            "log.debug",
+            "[RegisterService] Schema object counts SQL: SELECT 3::text as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3 UNION ALL SELECT 5::text as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5"
+        ],
+        [
+            "prepare",
+            "SELECT 3::text as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3 UNION ALL SELECT 5::text as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5"
+        ],
+        [
+            "close"
+        ],
+        [
+            "result",
+            {
+                "9": {
+                    "total": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                },
+                "3": {
+                    "total": 7,
+                    "deleted": 1,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                },
+                "5": {
+                    "total": 2,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                }
+            }
+        ]
+    ],
+    "no schemas": [
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor started."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor completed."
+        ],
+        [
+            "result",
+            []
+        ]
+    ],
+    "no tables at all": [
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor started."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor completed."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
+        ],
+        [
+            "prepare",
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+        ],
+        [
+            "bind",
+            "pattern",
+            "%openregister\\_table\\_%"
+        ],
+        [
+            "close"
+        ],
+        [
+            "result",
+            {
+                "3": {
+                    "total": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                },
+                "5": {
+                    "total": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                },
+                "9": {
+                    "total": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                }
+            }
+        ]
+    ],
+    "only unusable shapes": [
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor started."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor completed."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] GetSchemaObjectCounts: Processing 3 schemas for register 1"
+        ],
+        [
+            "log.warning",
+            "[RegisterService] Schema without ID found, skipping"
+        ],
+        [
+            "log.warning",
+            "[RegisterService] Schema without ID found, skipping"
+        ],
+        [
+            "log.warning",
+            "[RegisterService] Schema without ID found, skipping"
+        ],
+        [
+            "result",
+            []
+        ]
+    ],
+    "catalog read fails": [
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor started."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor completed."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
+        ],
+        [
+            "prepare",
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+        ],
+        [
+            "bind",
+            "pattern",
+            "%openregister\\_table\\_%"
+        ],
+        [
+            "log.warning",
+            "[RegisterService] Could not list magic tables, falling back to per-table checks: no catalog"
+        ],
+        [
+            "tableExists",
+            "openregister_table_1_3"
+        ],
+        [
+            "prepare",
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+        ],
+        [
+            "bind",
+            "pattern",
+            "%openregister\\_table\\_%"
+        ],
+        [
+            "log.warning",
+            "[RegisterService] Could not list magic tables, falling back to per-table checks: no catalog"
+        ],
+        [
+            "tableExists",
+            "openregister_table_1_5"
+        ],
+        [
+            "prepare",
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+        ],
+        [
+            "bind",
+            "pattern",
+            "%openregister\\_table\\_%"
+        ],
+        [
+            "log.warning",
+            "[RegisterService] Could not list magic tables, falling back to per-table checks: no catalog"
+        ],
+        [
+            "tableExists",
+            "openregister_table_1_9"
+        ],
+        [
+            "prepare",
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+        ],
+        [
+            "bind",
+            "pattern",
+            "%openregister\\_table\\_%"
+        ],
+        [
+            "log.warning",
+            "[RegisterService] Could not list magic tables, falling back to per-table checks: no catalog"
+        ],
+        [
+            "tableExists",
+            "openregister_table_1_9"
+        ],
+        [
+            "log.debug",
+            "[RegisterService] Schema object counts SQL: SELECT CAST(3 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3 UNION ALL SELECT CAST(5 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5"
+        ],
+        [
+            "prepare",
+            "SELECT CAST(3 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3 UNION ALL SELECT CAST(5 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5"
+        ],
+        [
+            "close"
+        ],
+        [
+            "result",
+            {
+                "9": {
+                    "total": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                },
+                "3": {
+                    "total": 7,
+                    "deleted": 1,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                },
+                "5": {
+                    "total": 2,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                }
+            }
+        ]
+    ],
+    "count query fails": [
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor started."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor completed."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
+        ],
+        [
+            "prepare",
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+        ],
+        [
+            "bind",
+            "pattern",
+            "%openregister\\_table\\_%"
+        ],
+        [
+            "close"
+        ],
+        [
+            "log.debug",
+            "[RegisterService] Schema object counts SQL: SELECT CAST(3 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3 UNION ALL SELECT CAST(5 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5"
+        ],
+        [
+            "prepare",
+            "SELECT CAST(3 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3 UNION ALL SELECT CAST(5 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5"
+        ],
+        [
+            "log.error",
+            "[RegisterService] Error getting schema object counts: count failed"
+        ],
+        [
+            "log.error",
+            "STACK"
+        ],
+        [
+            "result",
+            {
+                "9": {
+                    "total": 0,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                }
+            }
+        ]
+    ],
+    "array id as string": [
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor started."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] RegisterService constructor completed."
+        ],
+        [
+            "log.debug",
+            "[RegisterService] GetSchemaObjectCounts: Processing 2 schemas for register 1"
+        ],
+        [
+            "prepare",
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+        ],
+        [
+            "bind",
+            "pattern",
+            "%openregister\\_table\\_%"
+        ],
+        [
+            "close"
+        ],
+        [
+            "log.debug",
+            "[RegisterService] Schema object counts SQL: SELECT CAST(5 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5 UNION ALL SELECT CAST(3 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3"
+        ],
+        [
+            "prepare",
+            "SELECT CAST(5 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_5 UNION ALL SELECT CAST(3 AS CHAR) as schema_id, COUNT(*) as total, COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted, 0 as invalid, 0 as locked, 0 as size FROM *PREFIX*openregister_table_1_3"
+        ],
+        [
+            "close"
+        ],
+        [
+            "result",
+            {
+                "3": {
+                    "total": 7,
+                    "deleted": 1,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                },
+                "5": {
+                    "total": 2,
+                    "deleted": 0,
+                    "invalid": 0,
+                    "locked": 0,
+                    "size": 0
+                }
+            }
+        ]
+    ]
+}

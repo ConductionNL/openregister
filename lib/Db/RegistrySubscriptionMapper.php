@@ -35,7 +35,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<RegistrySubscription>
  */
-class RegistrySubscriptionMapper extends QBMapper {
+class RegistrySubscriptionMapper extends QBMapper implements RegistrySubscriptionMapperInterface {
 
 	/**
 	 * Constructor.

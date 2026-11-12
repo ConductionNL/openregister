@@ -19,6 +19,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Flow\FlowRunFrame;
 
 class FlowRunContextTest extends TestCase {
 
@@ -40,7 +41,7 @@ class FlowRunContextTest extends TestCase {
 	 * A pushed frame is what a write is filed under.
 	 */
 	public function testCurrentReturnsThePushedFrame(): void {
-		$this->context->push(runUuid: 'run-a', nodeId: 'node-1', sequence: 7);
+		$this->context->push(frame: new FlowRunFrame(runUuid: 'run-a', nodeId: 'node-1', sequence: 7));
 
 		$this->assertSame(
 			['run' => 'run-a', 'node' => 'node-1', 'step' => 7],
@@ -56,8 +57,8 @@ class FlowRunContextTest extends TestCase {
 	 * called a sub-flow — and nothing about the resulting rows would look wrong.
 	 */
 	public function testNestedPopRestoresTheParentFrame(): void {
-		$this->context->push(runUuid: 'parent', nodeId: 'call-subflow', sequence: 2);
-		$this->context->push(runUuid: 'child', nodeId: 'child-node', sequence: 0);
+		$this->context->push(frame: new FlowRunFrame(runUuid: 'parent', nodeId: 'call-subflow', sequence: 2));
+		$this->context->push(frame: new FlowRunFrame(runUuid: 'child', nodeId: 'child-node', sequence: 0));
 
 		$this->assertSame('child', $this->context->current()['run']);
 
@@ -77,8 +78,8 @@ class FlowRunContextTest extends TestCase {
 	 * plausible-looking row, attributed to a run that never performed it.
 	 */
 	public function testUnattributableFrameDoesNotInheritTheParent(): void {
-		$this->context->push(runUuid: 'parent', nodeId: 'outer', sequence: 1);
-		$this->context->push(runUuid: null, nodeId: 'inner', sequence: 0);
+		$this->context->push(frame: new FlowRunFrame(runUuid: 'parent', nodeId: 'outer', sequence: 1));
+		$this->context->push(frame: new FlowRunFrame(runUuid: null, nodeId: 'inner', sequence: 0));
 
 		$this->assertNull(
 			$this->context->current(),
@@ -95,7 +96,7 @@ class FlowRunContextTest extends TestCase {
 	 * blank one is a bug upstream and must not become an attribution of "".
 	 */
 	public function testBlankRunUuidIsNotAnAttribution(): void {
-		$this->context->push(runUuid: '   ', nodeId: 'node', sequence: 0);
+		$this->context->push(frame: new FlowRunFrame(runUuid: '   ', nodeId: 'node', sequence: 0));
 
 		$this->assertNull($this->context->current());
 		$this->assertSame(1, $this->context->depth(), 'It still occupies a frame, so pop stays paired.');
@@ -123,12 +124,12 @@ class FlowRunContextTest extends TestCase {
 	 * runs rather than merely steps.
 	 */
 	public function testSequentialRunsDoNotBleed(): void {
-		$this->context->push(runUuid: 'run-1', nodeId: 'n', sequence: 0);
+		$this->context->push(frame: new FlowRunFrame(runUuid: 'run-1', nodeId: 'n', sequence: 0));
 		$this->context->pop();
 
 		$this->assertNull($this->context->current(), 'A finished run must leave nothing behind.');
 
-		$this->context->push(runUuid: 'run-2', nodeId: 'n', sequence: 0);
+		$this->context->push(frame: new FlowRunFrame(runUuid: 'run-2', nodeId: 'n', sequence: 0));
 
 		$this->assertSame('run-2', $this->context->current()['run']);
 	}//end testSequentialRunsDoNotBleed()

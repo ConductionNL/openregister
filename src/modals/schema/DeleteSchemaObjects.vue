@@ -5,11 +5,15 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
-		size="normal"
-		:canClose="false">
+		:loading="loading"
+		:closeLabel="success ? 'Close' : 'Cancel'"
+		confirmLabel="Delete All Objects"
+		:showConfirm="!success && !loading && !error && objectCount > 0"
+		@cancel="closeDialog"
+		@confirm="confirmDeletion()">
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
@@ -95,7 +99,8 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				<SchemaStatsBlock
 					:objectCount="0"
 					:objectStats="null"
-					:loading="false"
+					:loading="countLoading"
+					:failed="countFailed"
 					:title="t('openregister', 'Objects in schema')" />
 			</div>
 		</div>
@@ -129,53 +134,51 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 			<p>{{ error }}</p>
 		</NcNoteCard>
 
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton
-				v-if="!success && !loading && !error && objectCount > 0"
-				:disabled="loading"
-				variant="error"
-				@click="confirmDeletion()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<DeleteSweep v-if="!loading" :size="20" />
-				</template>
-				Delete All Objects
-			</NcButton>
+		<template #confirmIcon>
+			<DeleteSweep :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcCheckboxRadioSwitch,
-	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcCheckboxRadioSwitch, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import DeleteSweep from 'vue-material-design-icons/DeleteSweep.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { bulkResultOf, postJson } from './schemaBulkRequest.js'
+import { schemaObjectCount } from './schemaObjectCount.js'
+
+/**
+ * The register that holds a schema, from a freshly loaded register list.
+ *
+ * @param {number|string} schemaId The schema
+ * @return {Promise<object>} The register
+ */
+async function registerHoldingSchema(schemaId) {
+	await registerStore.refreshRegisterList()
+	const register = registerStore.registerList.find((reg) =>
+		reg.schemas.some((regSchema) => regSchema.id === schemaId),
+	)
+
+	if (!register) {
+		throw new Error('Could not find register containing this schema')
+	}
+	return register
+}
 
 export default {
 	name: 'DeleteSchemaObjects',
 	components: {
-		NcDialog,
-		NcButton,
+		ConfirmDialogFrame,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		Cancel,
 		DeleteSweep,
 		AlertCircle,
 		SchemaStatsBlock,
 	},
+
+	mixins: [schemaObjectCount],
 
 	data() {
 		return {
@@ -183,49 +186,12 @@ export default {
 			error: false,
 			success: false,
 			deletionResult: null,
-			objectCount: 0,
-			objectStats: null,
 			hardDelete: [],
 		}
 	},
 
-	watch: {
-		// Watch for changes in schemaItem and reload count if needed
-		'schemaStore.schemaItem': {
-			/**
-			 * @param newSchemaItem
-			 * @spec exclude watcher reloading object count on schema change
-			 */
-			handler(newSchemaItem) {
-				if (newSchemaItem?.id && this.objectCount === 0) {
-					this.loadObjectCount()
-				}
-			},
-
-			immediate: true,
-		},
-
-		// Watch for dialog state changes to load count when dialog becomes visible
-		'navigationStore.dialog': {
-			/**
-			 * @param newDialog
-			 * @spec exclude watcher loading object count when dialog opens
-			 */
-			handler(newDialog) {
-				if (
-					newDialog === 'deleteSchemaObjects'
-					&& schemaStore.schemaItem?.id
-				) {
-					this.loadObjectCount()
-				}
-			},
-
-			immediate: true,
-		},
-	},
-
 	/**
-	 * @spec exclude Vue lifecycle hook loading object count
+	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
 	 */
 	async mounted() {
 		await this.loadObjectCount()
@@ -233,23 +199,13 @@ export default {
 
 	methods: {
 		/**
-		 * @spec exclude form-state loader for schema object count via schemaStore
+		 * Report a failed object count.
+		 *
+		 * @param {Error} err The failure
+		 * @spec exclude Modal data-load plumbing — logs a failed object count.
 		 */
-		async loadObjectCount() {
-			try {
-				if (schemaStore.schemaItem?.id) {
-					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(
-						schemaStore.schemaItem.id,
-					)
-					this.objectStats = stats.objects
-					this.objectCount = stats.objects?.total || 0
-				}
-			} catch (err) {
-				console.error('DeleteSchemaObjects error in loadObjectCount:', err)
-				this.objectCount = 0
-				this.objectStats = null
-			}
+		logCountFailure(err) {
+			console.error('DeleteSchemaObjects error in loadObjectCount:', err)
 		},
 
 		/**
@@ -260,43 +216,8 @@ export default {
 			this.error = false
 
 			try {
-				// Find the register that contains this schema
-				await registerStore.refreshRegisterList()
-				const register = registerStore.registerList.find((reg) =>
-					reg.schemas.some(
-						(regSchema) => regSchema.id === schemaStore.schemaItem.id,
-					),
-				)
-
-				if (!register) {
-					throw new Error('Could not find register containing this schema')
-				}
-
-				// Call the deletion API
-				const response = await fetch(
-					`/index.php/apps/openregister/api/bulk/${register.id}/${schemaStore.schemaItem.id}/delete-schema`,
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({
-							hardDelete: this.hardDelete.includes('hardDelete'),
-						}),
-					},
-				)
-
-				if (!response.ok) {
-					throw new Error(`Deletion failed: ${response.statusText}`)
-				}
-
-				const data = await response.json()
-
-				if (data.error) {
-					throw new Error(data.error)
-				}
-
-				this.deletionResult = data
+				const register = await registerHoldingSchema(schemaStore.schemaItem.id)
+				this.deletionResult = await this.deleteObjectsIn(register)
 				this.success = true
 
 				// Refresh schema stats after successful deletion
@@ -307,6 +228,22 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Delete the current schema's objects in a register, soft unless hard
+		 * delete is ticked.
+		 *
+		 * @spec exclude modal submit plumbing — the bulk delete request.
+		 * @param {object} register The register holding the schema
+		 * @return {Promise<object>} The deletion result
+		 */
+		async deleteObjectsIn(register) {
+			const response = await postJson(
+				`/index.php/apps/openregister/api/bulk/${register.id}/${schemaStore.schemaItem.id}/delete-schema`,
+				{ hardDelete: this.hardDelete.includes('hardDelete') },
+			)
+			return bulkResultOf(response, 'Deletion')
 		},
 
 		/**
@@ -326,17 +263,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.loading-container {
-	text-align: center;
-	padding: 2rem;
-}
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
 
-.loading-subtitle {
-	color: var(--color-text-lighter);
-	font-size: 0.9rem;
-	margin-top: 0.5rem;
-}
+@include loading-container-2-rules;
 
 .success-container {
 	padding: 1rem 0;
@@ -359,13 +289,7 @@ export default {
 	border-radius: var(--border-radius);
 }
 
-.object-breakdown {
-	margin-top: 1rem;
-	padding: 1rem;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
+@include object-breakdown;
 
 .hard-delete-option {
 	margin-top: 1rem;
@@ -395,38 +319,13 @@ export default {
 	border-left: 4px solid var(--color-error);
 }
 
-.breakdown-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 0.5rem;
-}
+@include breakdown-item;
 
 .breakdown-item:last-child {
 	margin-bottom: 0;
 }
 
-.breakdown-label {
-	font-weight: 500;
-	color: var(--color-text);
-}
-
-.breakdown-value {
-	font-weight: 600;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius);
-	background: var(--color-background-hover);
-}
-
-.breakdown-value.invalid {
-	color: var(--color-warning);
-	background: var(--color-warning-light);
-}
-
-.breakdown-value.deleted {
-	color: var(--color-error);
-	background: var(--color-error-light);
-}
+@include breakdown-label-rules;
 
 .no-objects-info {
 	margin: 1rem 0;

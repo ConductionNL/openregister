@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TmloControllerFactory;
 use OCA\OpenRegister\Controller\TmloController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -39,6 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -117,7 +119,7 @@ class TmloControllerTest extends TestCase {
 		$this->exportGate = $this->createMock(ExportGate::class);
 		$this->exportGate->method('refusalFor')->willReturn(null);
 
-		$this->controller = new TmloController(
+		$this->controller = TmloControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->tmloService,
@@ -316,7 +318,7 @@ class TmloControllerTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('uuid-1', [], false, 1, 7)
+			->with(...FindCallShape::findArgs('uuid-1', [], false, 1, 7))
 			->willReturn(new ObjectEntity());
 
 		$this->tmloService->expects($this->once())
@@ -376,7 +378,7 @@ class TmloControllerTest extends TestCase {
 	 * case, deleting the gate call from the controller leaves every other test
 	 * in this file green.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
+	 * @spec openspec/specs/authorization-rbac/spec.md#requirement-export-is-its-own-permission-verb-req-exp-001
 	 *
 	 * @return void
 	 */
@@ -389,7 +391,7 @@ class TmloControllerTest extends TestCase {
 			)
 		);
 
-		$controller = new TmloController(
+		$controller = TmloControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->tmloService,

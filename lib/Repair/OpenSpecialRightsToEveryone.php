@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -64,14 +64,14 @@ class OpenSpecialRightsToEveryone implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param OrganisationSpecialRights $specialRights The one writer of special rights.
+	 * @param OrganisationSpecialRightsInterface $specialRights The one writer of special rights.
 	 * @param IAppConfig $appConfig Records that the step ran.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly OrganisationSpecialRights $specialRights,
+		private readonly OrganisationSpecialRightsInterface $specialRights,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -105,7 +105,7 @@ class OpenSpecialRightsToEveryone implements IRepairStep {
 		$changed = 0;
 		$organisations = 0;
 		try {
-			foreach (OrganisationSpecialRights::OPEN_BY_DEFAULT as $right) {
+			foreach (OrganisationSpecialRightsInterface::OPEN_BY_DEFAULT as $right) {
 				$answer = $this->specialRights->openToEveryoneInEveryOrganisation(right: $right);
 				$changed += $answer['changed'];
 				$organisations = $answer['organisations'];

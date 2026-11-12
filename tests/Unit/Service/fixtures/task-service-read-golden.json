@@ -1,0 +1,581 @@
+{
+    "testTasksForObject empty uuid": {
+        "return": [],
+        "calls": [
+            [
+                "objects",
+                5
+            ],
+            [
+                "object",
+                5,
+                "a.ics"
+            ],
+            [
+                "object",
+                5,
+                "b.ics"
+            ],
+            [
+                "object",
+                5,
+                "c.ics"
+            ],
+            [
+                "object",
+                5,
+                "ev.ics"
+            ],
+            [
+                "object",
+                5,
+                "empty.ics"
+            ],
+            [
+                "object",
+                5,
+                "gone.ics"
+            ],
+            [
+                "object",
+                5,
+                "broken.ics"
+            ],
+            [
+                "warning",
+                "Failed to parse calendar object: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ],
+            [
+                "object",
+                5,
+                "other-broken.ics"
+            ],
+            [
+                "warning",
+                "Failed to parse calendar object: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "other-broken.ics"
+                }
+            ],
+            [
+                "object",
+                5,
+                "a2.ics"
+            ]
+        ]
+    },
+    "testTasksForObject no user": {
+        "exception": "Exception",
+        "message": "No user logged in",
+        "calls": []
+    },
+    "testTasksForObject object with none": {
+        "return": [],
+        "calls": [
+            [
+                "objects",
+                5
+            ],
+            [
+                "object",
+                5,
+                "a.ics"
+            ],
+            [
+                "object",
+                5,
+                "b.ics"
+            ],
+            [
+                "object",
+                5,
+                "c.ics"
+            ],
+            [
+                "object",
+                5,
+                "ev.ics"
+            ],
+            [
+                "object",
+                5,
+                "empty.ics"
+            ],
+            [
+                "object",
+                5,
+                "gone.ics"
+            ],
+            [
+                "object",
+                5,
+                "broken.ics"
+            ],
+            [
+                "object",
+                5,
+                "other-broken.ics"
+            ],
+            [
+                "object",
+                5,
+                "a2.ics"
+            ]
+        ]
+    },
+    "testTasksForObject object with tasks": {
+        "return": [
+            {
+                "id": "a.ics",
+                "uid": "a",
+                "calendarId": "5",
+                "summary": "T a",
+                "description": "",
+                "status": "needs-action",
+                "priority": 0,
+                "due": "2026-03-01T09:00:00+00:00",
+                "completed": null,
+                "created": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "fields": [],
+                "url": "/index.php/apps/tasks/#/calendars/tasks%20list/tasks/a.ics"
+            },
+            {
+                "id": "a2.ics",
+                "uid": "a2",
+                "calendarId": "5",
+                "summary": "T a2",
+                "description": "",
+                "status": "needs-action",
+                "priority": 0,
+                "due": "2026-03-01T09:00:00+00:00",
+                "completed": null,
+                "created": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "fields": [],
+                "url": "/index.php/apps/tasks/#/calendars/tasks%20list/tasks/a2.ics"
+            }
+        ],
+        "calls": [
+            [
+                "objects",
+                5
+            ],
+            [
+                "object",
+                5,
+                "a.ics"
+            ],
+            [
+                "object",
+                5,
+                "b.ics"
+            ],
+            [
+                "object",
+                5,
+                "c.ics"
+            ],
+            [
+                "object",
+                5,
+                "ev.ics"
+            ],
+            [
+                "object",
+                5,
+                "empty.ics"
+            ],
+            [
+                "object",
+                5,
+                "gone.ics"
+            ],
+            [
+                "object",
+                5,
+                "broken.ics"
+            ],
+            [
+                "warning",
+                "Failed to parse calendar object: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ],
+            [
+                "object",
+                5,
+                "other-broken.ics"
+            ],
+            [
+                "object",
+                5,
+                "a2.ics"
+            ]
+        ]
+    },
+    "testTasksForObject object, empty calendar uri": {
+        "return": [
+            {
+                "id": "a.ics",
+                "uid": "a",
+                "calendarId": "5",
+                "summary": "T a",
+                "description": "",
+                "status": "needs-action",
+                "priority": 0,
+                "due": "2026-03-01T09:00:00+00:00",
+                "completed": null,
+                "created": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "fields": []
+            },
+            {
+                "id": "a2.ics",
+                "uid": "a2",
+                "calendarId": "5",
+                "summary": "T a2",
+                "description": "",
+                "status": "needs-action",
+                "priority": 0,
+                "due": "2026-03-01T09:00:00+00:00",
+                "completed": null,
+                "created": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "fields": []
+            }
+        ],
+        "calls": [
+            [
+                "objects",
+                5
+            ],
+            [
+                "object",
+                5,
+                "a.ics"
+            ],
+            [
+                "object",
+                5,
+                "b.ics"
+            ],
+            [
+                "object",
+                5,
+                "c.ics"
+            ],
+            [
+                "object",
+                5,
+                "ev.ics"
+            ],
+            [
+                "object",
+                5,
+                "empty.ics"
+            ],
+            [
+                "object",
+                5,
+                "gone.ics"
+            ],
+            [
+                "object",
+                5,
+                "broken.ics"
+            ],
+            [
+                "warning",
+                "Failed to parse calendar object: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ],
+            [
+                "object",
+                5,
+                "other-broken.ics"
+            ],
+            [
+                "object",
+                5,
+                "a2.ics"
+            ]
+        ]
+    },
+    "testTasksForObject object, route throws": {
+        "return": [
+            {
+                "id": "a.ics",
+                "uid": "a",
+                "calendarId": "5",
+                "summary": "T a",
+                "description": "",
+                "status": "needs-action",
+                "priority": 0,
+                "due": "2026-03-01T09:00:00+00:00",
+                "completed": null,
+                "created": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "fields": []
+            },
+            {
+                "id": "a2.ics",
+                "uid": "a2",
+                "calendarId": "5",
+                "summary": "T a2",
+                "description": "",
+                "status": "needs-action",
+                "priority": 0,
+                "due": "2026-03-01T09:00:00+00:00",
+                "completed": null,
+                "created": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "fields": []
+            }
+        ],
+        "calls": [
+            [
+                "objects",
+                5
+            ],
+            [
+                "object",
+                5,
+                "a.ics"
+            ],
+            [
+                "object",
+                5,
+                "b.ics"
+            ],
+            [
+                "object",
+                5,
+                "c.ics"
+            ],
+            [
+                "object",
+                5,
+                "ev.ics"
+            ],
+            [
+                "object",
+                5,
+                "empty.ics"
+            ],
+            [
+                "object",
+                5,
+                "gone.ics"
+            ],
+            [
+                "object",
+                5,
+                "broken.ics"
+            ],
+            [
+                "warning",
+                "Failed to parse calendar object: This parser only supports VCARD and VCALENDAR files",
+                {
+                    "uri": "broken.ics"
+                }
+            ],
+            [
+                "object",
+                5,
+                "other-broken.ics"
+            ],
+            [
+                "object",
+                5,
+                "a2.ics"
+            ]
+        ]
+    },
+    "testTasksForObject object, route without slash": {
+        "return": [
+            {
+                "id": "b.ics",
+                "uid": "b",
+                "calendarId": "5",
+                "summary": "T b",
+                "description": "",
+                "status": "needs-action",
+                "priority": 0,
+                "due": "2026-03-01T09:00:00+00:00",
+                "completed": null,
+                "created": null,
+                "objectUuid": "obj-2",
+                "registerId": 3,
+                "schemaId": 4,
+                "fields": [],
+                "url": "/apps/tasks/#/calendars/tasks%20list/tasks/b.ics"
+            }
+        ],
+        "calls": [
+            [
+                "objects",
+                5
+            ],
+            [
+                "object",
+                5,
+                "a.ics"
+            ],
+            [
+                "object",
+                5,
+                "b.ics"
+            ],
+            [
+                "object",
+                5,
+                "c.ics"
+            ],
+            [
+                "object",
+                5,
+                "ev.ics"
+            ],
+            [
+                "object",
+                5,
+                "empty.ics"
+            ],
+            [
+                "object",
+                5,
+                "gone.ics"
+            ],
+            [
+                "object",
+                5,
+                "broken.ics"
+            ],
+            [
+                "object",
+                5,
+                "other-broken.ics"
+            ],
+            [
+                "object",
+                5,
+                "a2.ics"
+            ]
+        ]
+    },
+    "testVtodoToArray bare": {
+        "return": {
+            "id": "x.ics",
+            "uid": null,
+            "calendarId": "5",
+            "summary": "",
+            "description": "",
+            "status": "needs-action",
+            "priority": 0,
+            "due": null,
+            "completed": null,
+            "created": null,
+            "objectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "fields": []
+        }
+    },
+    "testVtodoToArray data json scalar": {
+        "return": {
+            "id": "x.ics",
+            "uid": "t-4",
+            "calendarId": "5",
+            "summary": "",
+            "description": "",
+            "status": "needs-action",
+            "priority": 0,
+            "due": null,
+            "completed": null,
+            "created": null,
+            "objectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "fields": []
+        }
+    },
+    "testVtodoToArray data not base64": {
+        "return": {
+            "id": "x.ics",
+            "uid": "t-2",
+            "calendarId": "5",
+            "summary": "",
+            "description": "",
+            "status": "needs-action",
+            "priority": 0,
+            "due": null,
+            "completed": null,
+            "created": null,
+            "objectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "fields": []
+        }
+    },
+    "testVtodoToArray data not json": {
+        "return": {
+            "id": "x.ics",
+            "uid": "t-3",
+            "calendarId": "5",
+            "summary": "",
+            "description": "",
+            "status": "needs-action",
+            "priority": 0,
+            "due": null,
+            "completed": null,
+            "created": null,
+            "objectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "fields": []
+        }
+    },
+    "testVtodoToArray event only": {
+        "return": null
+    },
+    "testVtodoToArray full": {
+        "return": {
+            "id": "x.ics",
+            "uid": "t-1",
+            "calendarId": "5",
+            "summary": "Bel terug",
+            "description": "Over de zaak",
+            "status": "in-process",
+            "priority": 3,
+            "due": "2026-03-01T09:00:00+00:00",
+            "completed": "2026-03-02T10:00:00+00:00",
+            "created": "2026-01-01T08:00:00+00:00",
+            "objectUuid": "obj-1",
+            "registerId": 7,
+            "schemaId": 8,
+            "fields": {
+                "kenmerk": "Z-1",
+                "n": 2
+            }
+        }
+    }
+}

@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -46,16 +47,9 @@ use OCP\IDBConnection;
  *
  * @psalm-suppress PossiblyUnusedMethod
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+ * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
-class JobRunMapper extends QBMapper {
-
-	/**
-	 * How many rows one run-log read returns unless the caller asks for fewer.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_LIMIT = 50;
+class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 
 	/**
 	 * The most rows one run-log read will ever return.
@@ -81,25 +75,45 @@ class JobRunMapper extends QBMapper {
 	/**
 	 * The most recent runs, narrowed by job, outcome and period.
 	 *
-	 * @param string|null   $jobClass Narrow to one job class.
-	 * @param string|null   $outcome  Narrow to one JobRun OUTCOME_ constant.
-	 * @param DateTime|null $since    Only runs started at or after this moment.
-	 * @param DateTime|null $until    Only runs started at or before this moment.
-	 * @param int           $limit    How many rows to return, capped at MAX_LIMIT.
-	 * @param int           $offset   Where to start.
+	 * @param JobRunFilter|null $filter The job, outcome and period to narrow to; none narrows nothing.
+	 * @param int               $limit  How many rows to return, capped at MAX_LIMIT.
+	 * @param int               $offset Where to start.
 	 *
 	 * @return array<int, JobRun> The rows, newest first.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function findRecent(
-		?string $jobClass = null,
-		?string $outcome = null,
-		?DateTime $since = null,
-		?DateTime $until = null,
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
-	): array {
+	public function findRecent(?JobRunFilter $filter = null, int $limit = self::DEFAULT_LIMIT, int $offset = 0): array {
+		return $this->findPage(filter: $filter ?? new JobRunFilter(), query: new ListQuery(limit: $limit, offset: $offset));
+	}//end findRecent()
+
+	/**
+	 * One page of the most recent runs, narrowed by job, outcome and period.
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 * @param ListQuery    $query  The page: its limit is capped at MAX_LIMIT, a missing offset reads as zero.
+	 *
+	 * @return array<int, JobRun> The rows, newest first.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function findPage(JobRunFilter $filter, ListQuery $query): array {
+		$qb = $this->newestFirst(limit: $query->limit, offset: ($query->offset ?? 0));
+		$this->narrow(qb: $qb, filter: $filter);
+
+		return $this->findEntities(query: $qb);
+
+	}//end findPage()
+
+	/**
+	 * Every run, newest first (id breaks ties), one page with the limit clamped to 1..MAX_LIMIT.
+	 *
+	 * @param int $limit  The page size asked for.
+	 * @param int $offset The offset asked for; below zero reads as zero.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function newestFirst(int $limit, int $offset): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
@@ -108,11 +122,9 @@ class JobRunMapper extends QBMapper {
 			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
 			->setFirstResult(max(0, $offset));
 
-		$this->narrow(qb: $qb, jobClass: $jobClass, outcome: $outcome, since: $since, until: $until);
+		return $qb;
 
-		return $this->findEntities(query: $qb);
-
-	}//end findRecent()
+	}//end newestFirst()
 
 	/**
 	 * How many runs match, under the same narrowing.
@@ -124,19 +136,39 @@ class JobRunMapper extends QBMapper {
 	 *
 	 * @return int The number of matching rows.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function countRecent(
-		?string $jobClass = null,
-		?string $outcome = null,
-		?DateTime $since = null,
-		?DateTime $until = null,
-	): int {
+	public function countRecent(?string $jobClass = null, ?string $outcome = null, ?DateTime $since = null, ?DateTime $until = null): int {
+		return $this->countMatching(filter: new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until));
+	}//end countRecent()
+
+	/**
+	 * How many runs match a narrowing.
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 *
+	 * @return int The number of matching rows.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function countMatching(JobRunFilter $filter): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))->from($this->getTableName());
 
-		$this->narrow(qb: $qb, jobClass: $jobClass, outcome: $outcome, since: $since, until: $until);
+		$this->narrow(qb: $qb, filter: $filter);
 
+		return $this->fetchTotal(qb: $qb);
+
+	}//end countMatching()
+
+	/**
+	 * Run a count query and read its `total` column; no row counts as zero.
+	 *
+	 * @param IQueryBuilder $qb The count query.
+	 *
+	 * @return int The count.
+	 */
+	private function fetchTotal(IQueryBuilder $qb): int {
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
 		$result->closeCursor();
@@ -147,7 +179,7 @@ class JobRunMapper extends QBMapper {
 
 		return (int)($row['total'] ?? 0);
 
-	}//end countRecent()
+	}//end fetchTotal()
 
 	/**
 	 * The run currently holding a job, when one holds it.
@@ -159,7 +191,7 @@ class JobRunMapper extends QBMapper {
 	 *
 	 * @return JobRun|null The holding run, or null when the job is free.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
 	 */
 	public function findRunning(string $jobClass): ?JobRun {
 		$qb = $this->db->getQueryBuilder();
@@ -181,35 +213,6 @@ class JobRunMapper extends QBMapper {
 	}//end findRunning()
 
 	/**
-	 * The last run of every job that has one, keyed by job class.
-	 *
-	 * The console needs "when did each job last run and how did it come out"
-	 * for a page of jobs at once; asking per job is a query per row.
-	 *
-	 * @param int $limit How many jobs to answer for.
-	 *
-	 * @return array<string, JobRun> The newest run per job class.
-	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
-	 */
-	public function lastRunPerJob(int $limit = self::MAX_LIMIT): array {
-		$newest = [];
-
-		foreach ($this->findRecent(limit: max(1, min($limit, self::MAX_LIMIT))) as $run) {
-			$class = (string)$run->getJobClass();
-
-			if (array_key_exists($class, $newest) === true) {
-				continue;
-			}
-
-			$newest[$class] = $run;
-		}
-
-		return $newest;
-
-	}//end lastRunPerJob()
-
-	/**
 	 * The failed runs of one job inside a period, oldest first.
 	 *
 	 * The alert names the FIRST failure in the period (REQ-AOC-003), so the
@@ -221,7 +224,7 @@ class JobRunMapper extends QBMapper {
 	 *
 	 * @return array<int, JobRun> The failures, oldest first.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
 	 */
 	public function failuresSince(string $jobClass, DateTime $since): array {
 		$qb = $this->db->getQueryBuilder();
@@ -259,42 +262,80 @@ class JobRunMapper extends QBMapper {
 	}//end pruneBefore()
 
 	/**
-	 * Apply the three filters the console offers.
+	 * Point the run history of a moved job at its new class name.
 	 *
-	 * @param IQueryBuilder $qb       The query being built.
-	 * @param string|null   $jobClass Narrow to one job class.
-	 * @param string|null   $outcome  Narrow to one outcome.
-	 * @param DateTime|null $since    Lower bound on `started`.
-	 * @param DateTime|null $until    Upper bound on `started`.
+	 * @param string $from The class name the runs were recorded under.
+	 * @param string $to   The class name the job now has.
+	 *
+	 * @return int How many rows were updated.
+	 *
+	 * @spec exclude Upgrade plumbing for moved job classes; the run log itself is unchanged.
+	 */
+	public function renameJobClass(string $from, string $to): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('job_class', $qb->createNamedParameter($to))
+			->where($qb->expr()->eq('job_class', $qb->createNamedParameter($from)));
+
+		return (int)$qb->executeStatement();
+
+	}//end renameJobClass()
+
+	/**
+	 * Apply the filters the console offers.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param JobRunFilter  $filter The job class, outcome and period to narrow to.
 	 *
 	 * @return void
 	 */
-	private function narrow(
-		IQueryBuilder $qb,
-		?string $jobClass,
-		?string $outcome,
-		?DateTime $since,
-		?DateTime $until,
-	): void {
-		if ($jobClass !== null && $jobClass !== '') {
-			$qb->andWhere($qb->expr()->eq('job_class', $qb->createNamedParameter($jobClass)));
-		}
-
-		if ($outcome !== null && $outcome !== '') {
-			$qb->andWhere($qb->expr()->eq('outcome', $qb->createNamedParameter($outcome)));
-		}
-
-		if ($since !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('started', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
-
-		if ($until !== null) {
-			$qb->andWhere(
-				$qb->expr()->lte('started', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
+	private function narrow(IQueryBuilder $qb, JobRunFilter $filter): void {
+		$this->narrowToEquals(qb: $qb, filter: $filter);
+		$this->narrowToPeriod(qb: $qb, filter: $filter);
 
 	}//end narrow()
+
+	/**
+	 * Narrow to the job class and outcome, when given and not empty.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param JobRunFilter  $filter The filter.
+	 *
+	 * @return void
+	 */
+	private function narrowToEquals(IQueryBuilder $qb, JobRunFilter $filter): void {
+		$equals = ['job_class' => $filter->jobClass, 'outcome' => $filter->outcome];
+
+		foreach ($equals as $column => $value) {
+			if ($value === null || $value === '') {
+				continue;
+			}
+
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+		}
+
+	}//end narrowToEquals()
+
+	/**
+	 * Narrow `started` to the period, when bounds are given.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param JobRunFilter  $filter The filter.
+	 *
+	 * @return void
+	 */
+	private function narrowToPeriod(IQueryBuilder $qb, JobRunFilter $filter): void {
+		if ($filter->since !== null) {
+			$qb->andWhere(
+				$qb->expr()->gte('started', $qb->createNamedParameter($filter->since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		if ($filter->until !== null) {
+			$qb->andWhere(
+				$qb->expr()->lte('started', $qb->createNamedParameter($filter->until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+	}//end narrowToPeriod()
 }//end class

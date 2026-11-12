@@ -1,0 +1,7 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AuditTrailDetails.additionalFields (golden) lists the additional fields of extra fields 1`] = `"[["session","s1"],["ipAddress","10.0.0.1"],["zero",0],["flag",false],["nested",{"a":1}]]"`;
+
+exports[`AuditTrailDetails.additionalFields (golden) lists the additional fields of no entry 1`] = `"[]"`;
+
+exports[`AuditTrailDetails.additionalFields (golden) lists the additional fields of only main fields 1`] = `"[]"`;

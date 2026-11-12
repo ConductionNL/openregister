@@ -1,0 +1,104 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectDetails requests golden asks for both relation directions with fetchUses 1`] = `
+[
+  [
+    "fetchUsed",
+    "1-2",
+    "o1",
+    {
+      "_limit": 20,
+      "_offset": 60,
+    },
+  ],
+  [
+    "fetchUses",
+    "1-2",
+    "o1",
+    {
+      "_limit": 20,
+    },
+  ],
+]
+`;
+
+exports[`ObjectDetails requests golden asks for both relation directions without fetchUses 1`] = `
+[
+  [
+    "fetchUsed",
+    "1-2",
+    "o1",
+    {
+      "_limit": 20,
+      "_offset": 60,
+    },
+  ],
+]
+`;
+
+exports[`ObjectDetails requests golden asks for the audit trail page and answers 1`] = `
+{
+  "auditTrails": [
+    {
+      "id": "t1",
+    },
+  ],
+  "calls": [
+    [
+      "o1",
+      {
+        "limit": 50,
+        "page": 3,
+      },
+    ],
+  ],
+  "loading": false,
+}
+`;
+
+exports[`ObjectDetails requests golden starts from the store pages, or the first page 1`] = `
+{
+  "activeAttachment": null,
+  "auditTrailLoading": false,
+  "auditTrails": [],
+  "currentActiveObject": undefined,
+  "fileLoading": false,
+  "liveEpoch": 0,
+  "liveHandle": null,
+  "liveKey": "",
+  "livePendingKey": "",
+  "liveUnwatch": null,
+  "pagination": {
+    "auditTrails": {
+      "currentPage": 5,
+      "limit": 200,
+    },
+    "files": {
+      "currentPage": 2,
+      "limit": 200,
+    },
+    "relations": {
+      "currentPage": 7,
+      "limit": 200,
+    },
+  },
+  "relationsLoading": false,
+}
+`;
+
+exports[`ObjectDetails requests golden starts from the store pages, or the first page 2`] = `
+{
+  "auditTrails": {
+    "currentPage": 1,
+    "limit": 200,
+  },
+  "files": {
+    "currentPage": 1,
+    "limit": 200,
+  },
+  "relations": {
+    "currentPage": 1,
+    "limit": 200,
+  },
+}
+`;

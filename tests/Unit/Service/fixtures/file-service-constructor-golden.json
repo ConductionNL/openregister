@@ -1,0 +1,112 @@
+[
+    [
+        "debug",
+        "[FileService] FileService constructor started.",
+        []
+    ],
+    [
+        "debug",
+        "[FileService] About to call folderManagementHandler->setFileService.",
+        []
+    ],
+    [
+        "setFileService",
+        "folderMgmtHandler",
+        true
+    ],
+    [
+        "debug",
+        "[FileService] Called folderManagementHandler->setFileService.",
+        []
+    ],
+    [
+        "debug",
+        "[FileService] About to call updateFileHandler->setFileService.",
+        []
+    ],
+    [
+        "setFileService",
+        "updateFileHandler",
+        true
+    ],
+    [
+        "debug",
+        "[FileService] Called updateFileHandler->setFileService.",
+        []
+    ],
+    [
+        "debug",
+        "[FileService] About to call createFileHandler->setFileService.",
+        []
+    ],
+    [
+        "setFileService",
+        "createFileHandler",
+        true
+    ],
+    [
+        "debug",
+        "[FileService] Called createFileHandler->setFileService.",
+        []
+    ],
+    [
+        "debug",
+        "[FileService] About to call readFileHandler->setFileService.",
+        []
+    ],
+    [
+        "setFileService",
+        "readFileHandler",
+        true
+    ],
+    [
+        "debug",
+        "[FileService] Called readFileHandler->setFileService.",
+        []
+    ],
+    [
+        "debug",
+        "[FileService] About to call fileFormattingHandler->setFileService.",
+        []
+    ],
+    [
+        "setFileService",
+        "fileFormatHandler",
+        true
+    ],
+    [
+        "debug",
+        "[FileService] Called fileFormattingHandler->setFileService.",
+        []
+    ],
+    [
+        "debug",
+        "[FileService] About to call filePublishingHandler->setFileService.",
+        []
+    ],
+    [
+        "setFileService",
+        "filePubHandler",
+        true
+    ],
+    [
+        "debug",
+        "[FileService] Called filePublishingHandler->setFileService.",
+        []
+    ],
+    [
+        "setFileService",
+        "fileBatchHandler",
+        true
+    ],
+    [
+        "debug",
+        "[FileService] Called fileBatchHandler->setFileService.",
+        []
+    ],
+    [
+        "debug",
+        "[FileService] FileService constructor completed.",
+        []
+    ]
+]

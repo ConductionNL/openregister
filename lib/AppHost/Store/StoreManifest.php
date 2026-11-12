@@ -138,45 +138,151 @@ class StoreManifest {
 	public const DEFAULT_SOURCE = 'openregister';
 
 	/**
+	 * The calling leaf app id.
+	 *
+	 * @var string
+	 */
+	public readonly string $appId;
+
+	/**
+	 * Whether the app declared a store block at all.
+	 *
+	 * @var bool
+	 */
+	public readonly bool $enabled;
+
+	/**
+	 * Remote schema slug the registry serves.
+	 *
+	 * @var string
+	 */
+	public readonly string $schema;
+
+	/**
+	 * Default remote register slug.
+	 *
+	 * @var string
+	 */
+	public readonly string $register;
+
+	/**
+	 * Local register an install writes into.
+	 *
+	 * @var string
+	 */
+	public readonly string $localRegister;
+
+	/**
+	 * Schema slugs an install may write.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $installable;
+
+	/**
+	 * Kind quick-filters offered on the page.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $kinds;
+
+	/**
+	 * Remote field to card field map.
+	 *
+	 * @var array<string, string>
+	 */
+	public readonly array $cardFields;
+
+	/**
+	 * The app's own items, for the no-registry case.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	public readonly array $builtIn;
+
+	/**
+	 * Shareable configuration type ids this store surfaces.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $types;
+
+	/**
+	 * Discovery source: one of self::SOURCES.
+	 *
+	 * @var string
+	 */
+	public readonly string $source;
+
+	/**
+	 * GitHub topics searched when $source is `github`.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $topics;
+
+	/**
+	 * Who may install: see self::INSTALL_AUTH.
+	 *
+	 * @var string
+	 */
+	public readonly string $installAuth;
+
+	/**
+	 * Config keys an install may write.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $configurable;
+
+	/**
+	 * Item properties a publish may send, next to the slug.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $publishFields;
+
+	/**
+	 * Groups whose members may publish.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $publishGroups;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                     $appId       The calling leaf app id.
-	 * @param bool                       $enabled     Whether the app declared a store block at all.
-	 * @param string                     $schema      Remote schema slug the registry serves.
-	 * @param string                     $register      Default remote register slug.
-	 * @param string                     $localRegister Local register an install writes into.
-	 * @param array<int, string>         $installable Schema slugs an install may write.
-	 * @param array<int, string>         $kinds       Kind quick-filters offered on the page.
-	 * @param array<string, string>      $cardFields  Remote field to card field map.
-	 * @param array<int, array<string, mixed>> $builtIn The app's own items, for the no-registry case.
-	 * @param array<int, string>         $types       Shareable configuration type ids this store surfaces.
-	 * @param string                     $source      Discovery source: one of self::SOURCES.
-	 * @param array<int, string>         $topics      GitHub topics searched when $source is `github`.
-	 * @param string                     $installAuth Who may install: see self::INSTALL_AUTH.
-	 * @param array<int, string>         $configurable Config keys an install may write.
+	 * The manifest's `store` block arrives grouped as it reads: what the store
+	 * reads, offers and discovers, and who may install and publish. Every key
+	 * is still exposed as its own property, so no reader goes through a group.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This is a value object
-	 * mirroring the manifest's `store` block one key to one parameter, so the
-	 * count is the block's, not a design choice. Grouping them into sub-objects
-	 * would put a translation layer between what an app declares and what the
-	 * engine reads, which is exactly where a silently dropped key hides.
+	 * @param string                   $appId       The calling leaf app id.
+	 * @param bool                     $enabled     Whether the app declared a store block at all.
+	 * @param StoreManifestContent     $content     Target, catalogue and discovery.
+	 * @param StoreManifestPermissions $permissions Install and publish posture.
 	 */
 	public function __construct(
-		public readonly string $appId,
-		public readonly bool $enabled,
-		public readonly string $schema = '',
-		public readonly string $register = '',
-		public readonly string $localRegister = '',
-		public readonly array $installable = [],
-		public readonly array $kinds = [],
-		public readonly array $cardFields = self::DEFAULT_CARD_FIELDS,
-		public readonly array $builtIn = [],
-		public readonly array $types = [],
-		public readonly string $source = self::DEFAULT_SOURCE,
-		public readonly array $topics = [],
-		public readonly string $installAuth = self::DEFAULT_INSTALL_AUTH,
-		public readonly array $configurable = [],
+		string $appId,
+		bool $enabled,
+		StoreManifestContent $content=new StoreManifestContent(),
+		StoreManifestPermissions $permissions=new StoreManifestPermissions(),
 	) {
+		$this->appId         = $appId;
+		$this->enabled       = $enabled;
+		$this->schema        = $content->target->schema;
+		$this->register      = $content->target->register;
+		$this->localRegister = $content->target->localRegister;
+		$this->installable   = $content->catalogue->installable;
+		$this->kinds         = $content->catalogue->kinds;
+		$this->cardFields    = $content->catalogue->cardFields;
+		$this->builtIn       = $content->catalogue->builtIn;
+		$this->types         = $content->discovery->types;
+		$this->source        = $content->discovery->source;
+		$this->topics        = $content->discovery->topics;
+		$this->installAuth   = $permissions->installAuth;
+		$this->configurable  = $permissions->configurable;
+		$this->publishFields = $permissions->publishFields;
+		$this->publishGroups = $permissions->publishGroups;
 	}//end __construct()
 
 	/**
@@ -196,45 +302,76 @@ class StoreManifest {
 	 */
 	public static function fromManifest(string $appId, array $manifest): self {
 		$block = ($manifest['store'] ?? null);
-		if (is_array($block) === false) {
+		if (is_array($block) === false || self::isMalformed(block: $block) === true) {
 			return new self(appId: $appId, enabled: false);
 		}
 
+		return new self(
+			appId: $appId,
+			enabled: true,
+			content: self::contentOf(appId: $appId, block: $block),
+			permissions: self::permissionsOf(block: $block)
+		);
+	}//end fromManifest()
+
+	/**
+	 * What the store reads, offers and discovers.
+	 *
+	 * @param string               $appId The calling leaf app id.
+	 * @param array<string, mixed> $block The manifest's `store` block.
+	 *
+	 * @return StoreManifestContent
+	 */
+	private static function contentOf(string $appId, array $block): StoreManifestContent {
+		return new StoreManifestContent(
+			target: self::targetOf(appId: $appId, block: $block),
+			catalogue: self::catalogueOf(block: $block),
+			discovery: self::discoveryOf(block: $block)
+		);
+	}//end contentOf()
+
+	/**
+	 * Whether a declared `store` block is malformed, which disables the store.
+	 *
+	 * @param array<string, mixed> $block The manifest's `store` block.
+	 *
+	 * @return bool
+	 */
+	private static function isMalformed(array $block): bool {
 		// An unknown source is MALFORMED, not a fallback. Reporting it as
 		// `openregister` would point the app at a registry it never declared, and
 		// the store would then answer `not_configured` for a reason that has
 		// nothing to do with what the app got wrong.
 		$source = (string)($block['source'] ?? self::DEFAULT_SOURCE);
 		if (in_array(needle: $source, haystack: self::SOURCES, strict: true) === false) {
-			return new self(appId: $appId, enabled: false);
+			return true;
+		}
+
+		// An unrecognised posture DISABLES the block. Falling back to `admin`
+		// would silently remove a capability from an app that asked for a weaker
+		// gate: the store still works, for fewer people, for no stated reason,
+		// which is harder to notice than an outright refusal.
+		if (self::isKnownInstallAuth(value: (string)($block['installAuth'] ?? self::DEFAULT_INSTALL_AUTH)) === false) {
+			return true;
 		}
 
 		// A github store is configured by its TOPICS, not by a registry URL, so
 		// declaring none leaves it with nothing to search. That is a malformed
 		// block rather than an empty store: an empty store is a store that found
 		// nothing, which is a different thing to report.
-		// An unrecognised posture DISABLES the block. Falling back to `admin`
-		// would silently remove a capability from an app that asked for a weaker
-		// gate: the store still works, for fewer people, for no stated reason,
-		// which is harder to notice than an outright refusal.
-		$installAuth = (string)($block['installAuth'] ?? self::DEFAULT_INSTALL_AUTH);
-		if (self::isKnownInstallAuth(value: $installAuth) === false) {
-			return new self(appId: $appId, enabled: false);
-		}
+		return $source === 'github' && self::stringList(value: ($block['topics'] ?? [])) === [];
+	}//end isMalformed()
 
-		$topics = self::stringList(value: ($block['topics'] ?? []));
-		if ($source === 'github' && $topics === []) {
-			return new self(appId: $appId, enabled: false);
-		}
-
-		$cardFields = ($block['cardFields'] ?? null);
-		if (is_array($cardFields) === false || $cardFields === []) {
-			$cardFields = self::DEFAULT_CARD_FIELDS;
-		}
-
-		return new self(
-			appId: $appId,
-			enabled: true,
+	/**
+	 * Where the store reads from and installs into.
+	 *
+	 * @param string               $appId The calling leaf app id.
+	 * @param array<string, mixed> $block The manifest's `store` block.
+	 *
+	 * @return StoreManifestTarget
+	 */
+	private static function targetOf(string $appId, array $block): StoreManifestTarget {
+		return new StoreManifestTarget(
 			schema: (string)($block['schema'] ?? ''),
 			register: (string)($block['register'] ?? ''),
 			// 🔴 SCOPE THE LOCAL WRITE BY REGISTER. A schema slug is NOT unique
@@ -243,7 +380,24 @@ class StoreManifest {
 			// land in another app's register. Defaults to the app id, which is
 			// the fleet's register-slug convention, and an app whose register
 			// slug differs from its app id says so here.
-			localRegister: (string)($block['localRegister'] ?? $appId),
+			localRegister: (string)($block['localRegister'] ?? $appId)
+		);
+	}//end targetOf()
+
+	/**
+	 * What the store offers and how its cards read.
+	 *
+	 * @param array<string, mixed> $block The manifest's `store` block.
+	 *
+	 * @return StoreManifestCatalogue
+	 */
+	private static function catalogueOf(array $block): StoreManifestCatalogue {
+		$cardFields = ($block['cardFields'] ?? null);
+		if (is_array($cardFields) === false || $cardFields === []) {
+			$cardFields = self::DEFAULT_CARD_FIELDS;
+		}
+
+		return new StoreManifestCatalogue(
 			installable: self::stringList(value: ($block['installable'] ?? [])),
 			// Declared ONCE, beside the allowlist, and served to the page in the
 			// search response. An app that names its kinds here and nowhere else
@@ -251,19 +405,47 @@ class StoreManifest {
 			// whole plane is built to avoid.
 			kinds: self::stringList(value: ($block['kinds'] ?? [])),
 			cardFields: array_map(callback: static fn ($v): string => (string)$v, array: $cardFields),
-			builtIn: self::objectList(value: ($block['builtIn'] ?? [])),
-			source: $source,
-			topics: $topics,
-			installAuth: $installAuth,
-			configurable: self::stringList(value: ($block['configurable'] ?? [])),
+			builtIn: self::objectList(value: ($block['builtIn'] ?? []))
+		);
+	}//end catalogueOf()
+
+	/**
+	 * How the store discovers what it offers.
+	 *
+	 * @param array<string, mixed> $block The manifest's `store` block.
+	 *
+	 * @return StoreManifestDiscovery
+	 */
+	private static function discoveryOf(array $block): StoreManifestDiscovery {
+		return new StoreManifestDiscovery(
 			// Shareable configuration type ids (store-over-federated-config).
 			// Declaring these selects federated discovery, where an item is a
 			// configuration set, a flow or a schema that marked itself
 			// shareable. An app that declares none keeps the remote objects
 			// API it has today, so nothing that ships now changes.
 			types: self::stringList(value: ($block['types'] ?? [])),
+			source: (string)($block['source'] ?? self::DEFAULT_SOURCE),
+			topics: self::stringList(value: ($block['topics'] ?? []))
 		);
-	}//end fromManifest()
+	}//end discoveryOf()
+
+	/**
+	 * Who may install and publish.
+	 *
+	 * @param array<string, mixed> $block The manifest's `store` block.
+	 *
+	 * @return StoreManifestPermissions
+	 */
+	private static function permissionsOf(array $block): StoreManifestPermissions {
+		return new StoreManifestPermissions(
+			installAuth: (string)($block['installAuth'] ?? self::DEFAULT_INSTALL_AUTH),
+			configurable: self::stringList(value: ($block['configurable'] ?? [])),
+			// What a publish may send and who may send it. Both empty, the
+			// default, keeps the store read-only (StoreDescriptor::isPublishable).
+			publishFields: self::stringList(value: ($block['publish']['fields'] ?? [])),
+			publishGroups: self::stringList(value: ($block['publish']['groups'] ?? []))
+		);
+	}//end permissionsOf()
 
 	/**
 	 * The shareable configuration type ids this store surfaces.

@@ -20,7 +20,7 @@
  * {@see \OCA\OpenRegister\Service\ObjectService::findAll()} /
  * {@see \OCA\OpenRegister\Service\ObjectService::count()} with RBAC and
  * multitenancy scoping on, mirroring
- * {@see \OCA\OpenRegister\Service\Quality\DuplicateDetectionService::loadCandidates()}
+ * {@see \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService::loadCandidates()}
  * (ADR-022, ADR-045).
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -46,9 +46,7 @@ namespace OCA\OpenRegister\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -58,7 +56,7 @@ use Throwable;
  *
  * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
  */
-class QualityStatisticsService {
+class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	/**
 	 * Default field the score is read from when the annotation omits `field`.
 	 *
@@ -72,7 +70,7 @@ class QualityStatisticsService {
 	/**
 	 * Upper bound on the object set pulled per statistics computation.
 	 *
-	 * Mirrors {@see DuplicateDetectionService::MAX_CANDIDATES} — scopes every
+	 * Mirrors {@see \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService::MAX_CANDIDATES} — scopes every
 	 * read to a bounded, RBAC-scoped set rather than the whole schema.
 	 *
 	 * @var int
@@ -85,13 +83,6 @@ class QualityStatisticsService {
 	 * @var int
 	 */
 	private const HISTOGRAM_BUCKETS = 10;
-
-	/**
-	 * Default page size for the lowest-quality listing.
-	 *
-	 * @var int
-	 */
-	private const DEFAULT_LIMIT = 20;
 
 	/**
 	 * The shared register-scoped schema resolver.
@@ -109,9 +100,8 @@ class QualityStatisticsService {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ObjectService $objectService Object query path (RBAC + tenant scoped).
-	 * @param SchemaMapper $schemaMapper Schema lookup for the quality annotation.
-	 * @param RegisterMapper $registerMapper Register lookup — the boundary the schema resolves inside.
+	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
+	 * @param QualityScopeMappers $mappers Schema and register lookups — the register is the boundary the schema resolves inside.
 	 * @param QualityScorer $scorer Reused for status() bucketing — never reimplemented.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -120,15 +110,14 @@ class QualityStatisticsService {
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		private readonly ObjectOperationsInterface $objectService,
+		QualityScopeMappers $mappers,
 		private readonly QualityScorer $scorer,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			registerMapper: $mappers->registerMapper,
+			schemaMapper: $mappers->schemaMapper
 		);
 	}//end __construct()
 
@@ -151,62 +140,72 @@ class QualityStatisticsService {
 	 */
 	public function statisticsFor($register, $schema): array {
 		$quality = $this->loadAnnotation(register: $register, schema: $schema);
-		$field = $this->scoreField(quality: $quality);
-		$thresholds = $this->thresholds(quality: $quality);
+		$run = new QualityStatisticsRun(
+			reading: new QualityScoreReading(field: $this->scoreField(quality: $quality), thresholds: $this->thresholds(quality: $quality))
+		);
 
 		$objects = $this->loadObjects(register: $register, schema: $schema);
 
-		$histogram = $this->emptyHistogram();
-		$buckets = [
-			'good' => 0,
-			'fair' => 0,
-			'poor' => 0,
-		];
-
-		$sum = 0.0;
-		$total = 0;
-
+		$run->histogram = $this->emptyHistogram();
 		foreach ($objects as $object) {
-			$score = $this->scoreOf(object: $object, field: $field);
-			if ($score === null) {
-				continue;
-			}
+			$this->tally(run: $run, object: $object);
+		}
 
-			$total++;
-			$sum += $score;
+		return self::summary(run: $run);
+	}//end statisticsFor()
 
-			$status = $this->scorer->status(score: $score, thresholds: $thresholds);
-			if (isset($buckets[$status]) === true) {
-				$buckets[$status]++;
-			}
+	/**
+	 * Count one object's score into the run, when it has one.
+	 *
+	 * @param QualityStatisticsRun $run    The pass being counted.
+	 * @param ObjectEntity         $object The object.
+	 *
+	 * @return void
+	 */
+	private function tally(QualityStatisticsRun $run, ObjectEntity $object): void {
+		$score = $this->scoreOf(object: $object, field: $run->reading->field);
+		if ($score === null) {
+			return;
+		}
 
-			$index = $this->histogramIndex(score: $score);
-			$histogram[$index]['count']++;
-		}//end foreach
+		$run->total++;
+		$run->sum += $score;
 
+		$status = $this->scorer->status(score: $score, thresholds: $run->reading->thresholds);
+		if (isset($run->buckets[$status]) === true) {
+			$run->buckets[$status]++;
+		}
+
+		$index = $this->histogramIndex(score: $score);
+		$run->histogram[$index]['count']++;
+	}//end tally()
+
+	/**
+	 * The statistics a finished run reports.
+	 *
+	 * @param QualityStatisticsRun $run The counted pass.
+	 *
+	 * @return array{average: float|null, total: int, buckets: array<string, int>, histogram: array<int, array<string, mixed>>}
+	 */
+	private static function summary(QualityStatisticsRun $run): array {
 		$average = null;
-		if ($total > 0) {
-			$average = round(($sum / $total), 4);
+		if ($run->total > 0) {
+			$average = round(($run->sum / $run->total), 4);
 		}
 
 		return [
 			'average' => $average,
-			'total' => $total,
-			'buckets' => $buckets,
-			'histogram' => array_values($histogram),
+			'total' => $run->total,
+			'buckets' => $run->buckets,
+			'histogram' => array_values($run->histogram),
 		];
-	}//end statisticsFor()
+	}//end summary()
 
 	/**
 	 * List objects of a register/schema ascending by quality score.
 	 *
-	 * @param int|string $register Register id, uuid or slug.
-	 * @param int|string $schema Schema id, uuid or slug.
-	 * @param string|null $qualityStatus Optional status filter (`good`/`fair`/`poor`).
-	 * @param string $sort Sort field: `qualityScore` (default) or `qualityStatus`.
-	 * @param string $order Sort order: `asc` (default) or `desc`.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param QualityListingRequest $request The register and schema (id, uuid or slug), the optional status filter
+	 *                                       (`good`/`fair`/`poor`) and the window: sort field and order, page size and offset.
 	 *
 	 * @return array{
 	 *   items: array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>,
@@ -217,100 +216,197 @@ class QualityStatisticsService {
 	 *
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
 	 */
-	public function lowestQuality(
-		$register,
-		$schema,
-		?string $qualityStatus = null,
-		string $sort = 'qualityScore',
-		string $order = 'asc',
-		int $limit = self::DEFAULT_LIMIT,
-		int $offset = 0,
-	): array {
-		$quality = $this->loadAnnotation(register: $register, schema: $schema);
-		$field = $this->scoreField(quality: $quality);
-		$thresholds = $this->thresholds(quality: $quality);
+	public function lowestQuality(QualityListingRequest $request): array {
+		$rows = $this->statusRows(request: $request);
+		$this->sortRows(rows: $rows, window: $request->window);
 
-		$objects = $this->loadObjects(register: $register, schema: $schema);
+		return self::page(rows: $rows, window: $request->window);
+	}//end lowestQuality()
 
+	/**
+	 * Every loaded object's listing row, scored under the schema's annotation, filtered by status.
+	 *
+	 * @param QualityListingRequest $request The register, schema and status filter.
+	 *
+	 * @return array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}> The rows.
+	 *
+	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
+	 */
+	private function statusRows(QualityListingRequest $request): array {
+		$quality = $this->loadAnnotation(register: $request->register, schema: $request->schema);
+		$reading = new QualityScoreReading(field: $this->scoreField(quality: $quality), thresholds: $this->thresholds(quality: $quality));
+		$objects = $this->loadObjects(register: $request->register, schema: $request->schema);
+
+		return $this->withStatus(rows: $this->listingRows(objects: $objects, reading: $reading), qualityStatus: $request->qualityStatus);
+	}//end statusRows()
+
+	/**
+	 * One window of sorted rows, with the total before paging.
+	 *
+	 * @param array<int, array<string, mixed>> $rows   The sorted rows.
+	 * @param QualityListingWindow             $window The page size and offset.
+	 *
+	 * @return array{items: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
+	 *
+	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
+	 */
+	private static function page(array $rows, QualityListingWindow $window): array {
+		return [
+			'items' => array_slice($rows, max(0, $window->offset), max(0, $window->limit)),
+			'total' => count($rows),
+			'limit' => $window->limit,
+			'offset' => $window->offset,
+		];
+	}//end page()
+
+	/**
+	 * Build one listing row per object.
+	 *
+	 * @param array<int, ObjectEntity> $objects Objects in the register/schema.
+	 * @param QualityScoreReading      $reading Where the score lives and its status cut-offs.
+	 *
+	 * @return array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>
+	 */
+	private function listingRows(array $objects, QualityScoreReading $reading): array {
 		$rows = [];
 		foreach ($objects as $object) {
-			$score = $this->scoreOf(object: $object, field: $field);
-			$status = null;
-			if ($score !== null) {
-				$status = $this->scorer->status(score: $score, thresholds: $thresholds);
+			$rows[] = $this->listingRow(object: $object, reading: $reading);
+		}
+
+		return $rows;
+	}//end listingRows()
+
+	/**
+	 * Keep only the rows matching the status filter, in order.
+	 *
+	 * @param array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}> $rows          The rows.
+	 * @param string|null                                                                          $qualityStatus Optional status filter;
+	 *                                                                                                            null or '' keeps every row.
+	 *
+	 * @return array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}>
+	 */
+	private function withStatus(array $rows, ?string $qualityStatus): array {
+		$kept = [];
+		foreach ($rows as $row) {
+			if ($this->matchesStatus(status: $row['qualityStatus'], qualityStatus: $qualityStatus) === true) {
+				$kept[] = $row;
 			}
+		}
 
-			if ($qualityStatus !== null && $qualityStatus !== '' && $status !== $qualityStatus) {
-				continue;
-			}
+		return $kept;
+	}//end withStatus()
 
-			$rows[] = [
-				'id' => (string)$object->getUuid(),
-				'qualityScore' => $score,
-				'qualityStatus' => $status,
-			];
-		}//end foreach
-
-		$this->sortRows(rows: $rows, sort: $sort, order: $order);
-
-		$total = count($rows);
-		$page = array_slice($rows, max(0, $offset), max(0, $limit));
+	/**
+	 * One listing row: the object's id, score and status.
+	 *
+	 * @param ObjectEntity        $object  Object entity.
+	 * @param QualityScoreReading $reading Where the score lives and its status cut-offs.
+	 *
+	 * @return array{id: string, qualityScore: float|null, qualityStatus: string|null}
+	 */
+	private function listingRow(ObjectEntity $object, QualityScoreReading $reading): array {
+		$score = $this->scoreOf(object: $object, field: $reading->field);
+		$status = null;
+		if ($score !== null) {
+			$status = $this->scorer->status(score: $score, thresholds: $reading->thresholds);
+		}
 
 		return [
-			'items' => $page,
-			'total' => $total,
-			'limit' => $limit,
-			'offset' => $offset,
+			'id' => (string)$object->getUuid(),
+			'qualityScore' => $score,
+			'qualityStatus' => $status,
 		];
-	}//end lowestQuality()
+	}//end listingRow()
+
+	/**
+	 * Whether a row's status passes the status filter.
+	 *
+	 * @param string|null $status The row's status; null when unscored.
+	 * @param string|null $qualityStatus Optional filter; null or '' passes every row.
+	 *
+	 * @return bool
+	 */
+	private function matchesStatus(?string $status, ?string $qualityStatus): bool {
+		return $qualityStatus === null || $qualityStatus === '' || $status === $qualityStatus;
+	}//end matchesStatus()
 
 	/**
 	 * Sort listing rows in place by the requested field/order.
 	 *
-	 * @param array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}> $rows Rows to sort (by reference).
-	 * @param string $sort Sort field.
-	 * @param string $order Sort order.
+	 * @param array<int, array{id: string, qualityScore: float|null, qualityStatus: string|null}> $rows   Rows to sort (by reference).
+	 * @param QualityListingWindow                                                                 $window The sort field and order.
 	 *
 	 * @return void
 	 */
-	private function sortRows(array &$rows, string $sort, string $order): void {
-		$direction = 1;
-		if (strtolower($order) === 'desc') {
-			$direction = -1;
-		}
-
+	private function sortRows(array &$rows, QualityListingWindow $window): void {
+		$direction = $this->sortDirection(order: $window->order);
 		$key = 'qualityScore';
-		if ($sort === 'qualityStatus') {
+		if ($window->sort === 'qualityStatus') {
 			$key = 'qualityStatus';
 		}
 
 		usort(
 			$rows,
-			static function (array $left, array $right) use ($key, $direction): int {
-				$leftValue = $left[$key];
-				$rightValue = $right[$key];
-
-				if ($leftValue === $rightValue) {
-					return 0;
-				}
-
-				// Nulls (unscored objects) sort last regardless of direction.
-				if ($leftValue === null) {
-					return 1;
-				}
-
-				if ($rightValue === null) {
-					return -1;
-				}
-
-				if ($leftValue < $rightValue) {
-					return -1 * $direction;
-				}
-
-				return 1 * $direction;
-			}
+			static fn (array $left, array $right): int => (self::nullsLastOrder(leftValue: $left[$key], rightValue: $right[$key])
+				?? ($direction * self::valueOrder(leftValue: $left[$key], rightValue: $right[$key])))
 		);
 	}//end sortRows()
+
+	/**
+	 * The comparison sign for a sort order: -1 for `desc` (any case), else 1.
+	 *
+	 * @param string $order Sort order.
+	 *
+	 * @return int
+	 */
+	private function sortDirection(string $order): int {
+		if (strtolower($order) === 'desc') {
+			return -1;
+		}
+
+		return 1;
+	}//end sortDirection()
+
+	/**
+	 * The order of two sort values when they are equal or either is null:
+	 * nulls (unscored objects) sort last regardless of direction.
+	 *
+	 * @param float|string|null $leftValue  Left value.
+	 * @param float|string|null $rightValue Right value.
+	 *
+	 * @return int|null The order, or null when both are set and differ.
+	 */
+	private static function nullsLastOrder($leftValue, $rightValue): ?int {
+		if ($leftValue === $rightValue) {
+			return 0;
+		}
+
+		if ($leftValue === null) {
+			return 1;
+		}
+
+		if ($rightValue === null) {
+			return -1;
+		}
+
+		return null;
+	}//end nullsLastOrder()
+
+	/**
+	 * The ascending order of two differing, non-null sort values.
+	 *
+	 * @param float|string $leftValue  Left value.
+	 * @param float|string $rightValue Right value.
+	 *
+	 * @return int -1 when left sorts first, else 1.
+	 */
+	private static function valueOrder($leftValue, $rightValue): int {
+		if ($leftValue < $rightValue) {
+			return -1;
+		}
+
+		return 1;
+	}//end valueOrder()
 
 	/**
 	 * Load the RBAC + tenant scoped object set for a register/schema.
@@ -322,34 +418,37 @@ class QualityStatisticsService {
 	 */
 	private function loadObjects($register, $schema): array {
 		try {
-			$objects = $this->objectService->findAll(
-				[
-					'filters' => [
-						'register' => $register,
-						'schema' => $schema,
-					],
-					'limit' => self::MAX_OBJECTS,
-				]
-			);
+			$objects = $this->objectService->findAll(self::objectsQuery(register: $register, schema: $schema));
 		} catch (Throwable $e) {
 			$this->logger->warning('Quality statistics object load failed: ' . $e->getMessage());
 			return [];
 		}
 
-		$entities = [];
-		foreach ($objects as $object) {
-			if ($object instanceof ObjectEntity) {
-				$entities[] = $object;
-			}
-		}
-
-		return $entities;
+		return ObjectEntities::in(objects: $objects);
 	}//end loadObjects()
+
+	/**
+	 * The object-service query for a register/schema's objects, capped at MAX_OBJECTS.
+	 *
+	 * @param int|string $register Register reference.
+	 * @param int|string $schema   Schema reference.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private static function objectsQuery($register, $schema): array {
+		return [
+			'filters' => [
+				'register' => $register,
+				'schema' => $schema,
+			],
+			'limit' => self::MAX_OBJECTS,
+		];
+	}//end objectsQuery()
 
 	/**
 	 * Read the `x-openregister-quality` annotation off a schema.
 	 *
-	 * Mirrors {@see DuplicateDetectionService::loadAnnotation()}.
+	 * Mirrors {@see \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService::loadAnnotation()}.
 	 *
 	 * REGISTER-SCOPED. `GET /api/objects/quality/{register}/{schema}` has always
 	 * carried a register, and this lookup used to ignore it and resolve the slug
@@ -434,11 +533,8 @@ class QualityStatisticsService {
 	private function scoreOf(ObjectEntity $object, string $field): ?float {
 		$data = ($object->getObject() ?? []);
 		$value = ($data[$field] ?? null);
-		if (is_int($value) === true || is_float($value) === true) {
-			return (float)$value;
-		}
-
-		if (is_string($value) === true && is_numeric($value) === true) {
+		// Ints, floats and numeric strings: exactly what is_numeric() accepts.
+		if (is_numeric($value) === true) {
 			return (float)$value;
 		}
 

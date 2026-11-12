@@ -30,6 +30,8 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Mcp\Db\Conversation;
 
 /**
  * Class FeedbackMapper
@@ -49,7 +51,7 @@ use OCP\IDBConnection;
  *
  * @extends QBMapper<Feedback>
  */
-class FeedbackMapper extends QBMapper {
+class FeedbackMapper extends QBMapper implements FeedbackMapperInterface {
 	/**
 	 * Constructor for FeedbackMapper
 	 *

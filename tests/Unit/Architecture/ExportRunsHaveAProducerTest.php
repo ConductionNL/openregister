@@ -116,7 +116,7 @@ class ExportRunsHaveAProducerTest extends TestCase {
 		// that nothing calls is the guard-with-no-call-site shape all over
 		// again, and grepping for the helper alone cannot tell them apart.
 		$this->assertStringContainsString(
-			'$this->recordRun(report:',
+			'$this->recordRun(run:',
 			$source,
 			'The scheduled report runner defines a recordRun() that nothing calls.'
 		);

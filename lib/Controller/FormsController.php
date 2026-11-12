@@ -28,13 +28,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Controller\Support\FormsControllerServices;
+use OCA\OpenRegister\Service\Form\FormDestination;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
-use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
-use OCA\OpenRegister\Service\Form\FormDestinationValidator;
-use OCA\OpenRegister\Service\Form\FormSubmitService;
-use OCA\OpenRegister\Service\Form\FormUploadStore;
-use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormSubmission;
+use OCA\OpenRegister\Service\Form\FormSubmitter;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
+use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
@@ -69,37 +73,92 @@ class FormsController extends Controller {
 	public const HONEYPOT = '_hp';
 
 	/**
+	 * Resolves a stored form.
+	 *
+	 * @var FormDefinitionResolverInterface
+	 */
+	private readonly FormDefinitionResolverInterface $resolver;
+
+	/**
+	 * Creates the destination.
+	 *
+	 * @var FormSubmitServiceInterface
+	 */
+	private readonly FormSubmitServiceInterface $submitter;
+
+	/**
+	 * Judges a mapping.
+	 *
+	 * @var FormDestinationValidatorInterface
+	 */
+	private readonly FormDestinationValidatorInterface $validator;
+
+	/**
+	 * Holds upload tokens.
+	 *
+	 * @var FormUploadStoreInterface
+	 */
+	private readonly FormUploadStoreInterface $uploads;
+
+	/**
+	 * Resolves a destination schema.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemas;
+
+	/**
+	 * The signed-in subject, if any.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Counts guesses at form ids.
+	 *
+	 * @var IThrottler
+	 */
+	private readonly IThrottler $throttler;
+
+	/**
+	 * Translations.
+	 *
+	 * @var IL10N
+	 */
+	private readonly IL10N $l10n;
+
+	/**
+	 * Logs a throttler failure.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                   $appName     The app id.
 	 * @param IRequest                 $request     The request.
-	 * @param FormDefinitionResolver   $resolver    Resolves a stored form.
-	 * @param FormSubmitService        $submitter   Creates the destination.
-	 * @param FormDestinationValidator $validator   Judges a mapping.
-	 * @param FormUploadStore          $uploads     Holds upload tokens.
-	 * @param SchemaMapper             $schemas     Resolves a destination schema.
-	 * @param IUserSession             $userSession The signed-in subject, if any.
-	 * @param IThrottler               $throttler   Counts guesses at form ids.
-	 * @param IL10N                    $l10n        Translations.
-	 * @param LoggerInterface          $logger      Logs a throttler failure.
+	 * @param FormsControllerServices $services The forms controller services.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Three routes over four services, plus the
 	 * request, session, throttler, translations and logger every public controller here takes.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FormDefinitionResolver $resolver,
-		private readonly FormSubmitService $submitter,
-		private readonly FormDestinationValidator $validator,
-		private readonly FormUploadStore $uploads,
-		private readonly SchemaMapper $schemas,
-		private readonly IUserSession $userSession,
-		private readonly IThrottler $throttler,
-		private readonly IL10N $l10n,
-		private readonly LoggerInterface $logger,
+		FormsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->resolver = $services->domain->resolver;
+		$this->submitter = $services->domain->submitter;
+		$this->validator = $services->domain->validator;
+		$this->uploads = $services->domain->uploads;
+		$this->schemas = $services->mappers->schemas;
+		$this->userSession = $services->platform->userSession;
+		$this->throttler = $services->platform->throttler;
+		$this->l10n = $services->platform->l10n;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**
@@ -138,7 +197,10 @@ class FormsController extends Controller {
 			$mapping = [];
 		}
 
-		$findings = $this->validator->validate(mapping: $mapping, schema: $schema, options: $options);
+		$findings = $this->validator->validate(
+			mapping: $mapping,
+			destination: new FormDestination(schema: $schema, audience: ($options['audience'] ?? null))
+		);
 
 		return new JSONResponse(data: ['accepted' => ($findings === []), 'findings' => $findings]);
 	}//end validate()
@@ -157,7 +219,7 @@ class FormsController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 10, period: 60)]
 	#[UserRateLimit(limit: 60, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfaces::FORM_SUBMIT)]
+	#[BruteForceProtection(action: ThrottledSurfacesInterface::FORM_SUBMIT)]
 	public function submit(string $formId): JSONResponse {
 		// D7: the honeypot first. A hit stores nothing and tells the bot nothing.
 		if (trim((string)$this->request->getParam(self::HONEYPOT, '')) !== '') {
@@ -165,29 +227,58 @@ class FormsController extends Controller {
 		}
 
 		try {
-			$form = $this->resolveForm(formId: $formId);
-			$subject = $this->userSession->getUser();
-			if ($subject === null && $form['audience'] !== 'public') {
-				return new JSONResponse(data: ['message' => $this->l10n->t('Please sign in to send this form.'), 'findings' => []], statusCode: 401);
-			}
-
-			$key = trim($this->request->getHeader('Idempotency-Key'));
-			if ($key === '') {
-				$key = null;
-			}
-
-			$draftId = trim((string)$this->request->getParam('_draft', ''));
-			if ($draftId === '') {
-				$draftId = null;
-			}
-
-			$answer = $this->submitForm(form: $form, subject: $subject, key: $key, draftId: $draftId);
+			$answer = $this->submittedAnswer(formId: $formId);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
 
+		if ($answer instanceof JSONResponse) {
+			return $answer;
+		}
+
 		return new JSONResponse(data: $answer, statusCode: 201);
 	}//end submit()
+
+	/**
+	 * Submit the payload to the form's writes as the session user, when the audience lets them.
+	 *
+	 * @param string $formId The form
+	 *
+	 * @return array<string, mixed>|JSONResponse The submitter's answer, or the sign-in refusal
+	 *
+	 * @throws FormSubmitRefusedException When the form or the submission is refused
+	 */
+	private function submittedAnswer(string $formId): array|JSONResponse {
+		$form = $this->resolveForm(formId: $formId);
+		$subject = $this->userSession->getUser();
+		if ($this->audienceRefuses(form: $form, subject: $subject) === true) {
+			return $this->signInRequired();
+		}
+
+		$key = trim($this->request->getHeader('Idempotency-Key'));
+		if ($key === '') {
+			$key = null;
+		}
+
+		$submitter = new FormSubmitter(subject: $subject, scope: $form['id'], draftId: $this->draftIdParam());
+		$submission = new FormSubmission(writes: $this->writesOf(form: $form), payload: $this->payload(), submitter: $submitter);
+
+		return $this->submitter->submit($submission, $key);
+	}//end submittedAnswer()
+
+	/**
+	 * The draft the request continues, or null for a new submission.
+	 *
+	 * @return string|null The draft id
+	 */
+	private function draftIdParam(): ?string {
+		$draftId = trim((string)$this->request->getParam('_draft', ''));
+		if ($draftId === '') {
+			return null;
+		}
+
+		return $draftId;
+	}//end draftIdParam()
 
 	/**
 	 * Save the signed-in subject's draft of this form: the destination object in status `draft`.
@@ -207,38 +298,7 @@ class FormsController extends Controller {
 	#[UserRateLimit(limit: 120, period: 60)]
 	public function draft(string $formId): JSONResponse {
 		try {
-			$form = $this->resolveForm(formId: $formId);
-			if (count($form['writes']) !== 1) {
-				$message = $this->l10n->t('A draft is one object; a form that writes several cannot be saved as a draft.');
-				throw new FormSubmitRefusedException(message: $message, status: 422);
-			}
-
-			$draftId = trim((string)$this->request->getParam('_draft', ''));
-			if ($draftId === '') {
-				$draftId = null;
-			}
-
-			$write = $form['writes'][0];
-			$destination = ['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)];
-			$subject = $this->userSession->getUser();
-			if ($draftId !== null && $this->submitter->isOwnerOfDraft($destination, $draftId, $subject) === false) {
-				// The same 404 an unknown id gets, so a draft id is not an oracle.
-				throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
-			}
-
-			$mapping = null;
-			if (is_array($write['mapping'] ?? null) === true) {
-				$mapping = $write['mapping'];
-			}
-
-			$draft = $this->submitter->saveDraft(
-				$destination,
-				$mapping,
-				$this->payload(),
-				$subject,
-				$draftId,
-				$formId
-			);
+			$draft = $this->savedDraft(formId: $formId);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
@@ -247,13 +307,42 @@ class FormsController extends Controller {
 	}//end draft()
 
 	/**
+	 * Save the payload as a draft of the form's one write, as the session user.
+	 *
+	 * @param string $formId The form
+	 *
+	 * @return array<string, mixed> The saved draft
+	 *
+	 * @throws FormSubmitRefusedException When the form writes several objects, or the named draft is not the caller's
+	 */
+	private function savedDraft(string $formId): array {
+		$form = $this->resolveForm(formId: $formId);
+		if (count($form['writes']) !== 1) {
+			$message = $this->l10n->t('A draft is one object; a form that writes several cannot be saved as a draft.');
+			throw new FormSubmitRefusedException(message: $message, status: 422);
+		}
+
+		$draftId = $this->draftIdParam();
+		$write = $this->writesOf(form: $form)[0];
+		$destination = ['register' => $write['register'], 'schema' => $write['schema']];
+		$submitter = new FormSubmitter(subject: $this->userSession->getUser(), scope: $formId, draftId: $draftId);
+		if ($draftId !== null && $this->submitter->isOwnerOfDraft($destination, $submitter) === false) {
+			// The same 404 an unknown id gets, so a draft id is not an oracle.
+			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+		}
+
+		return $this->submitter->saveDraft(new FormSubmission(writes: [$write], payload: $this->payload(), submitter: $submitter));
+	}//end savedDraft()
+
+	/**
 	 * Hold one file for a later submit of this form, checked against the property's file rules.
 	 *
 	 * Multipart: `file` (the file) and `property` (the destination property).
 	 *
 	 * @param string $formId The form object's uuid.
 	 *
-	 * @return JSONResponse 201 `{ token, expiresAt }`; 404 or 422 with `{ message, findings }`.
+	 * @return JSONResponse 201 `{ token, expiresAt }`; 401 for an anonymous visitor of a sign-in-only form;
+	 *                      404 or 422 with `{ message, findings }`.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
@@ -261,7 +350,7 @@ class FormsController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[UserRateLimit(limit: 120, period: 60)]
-	#[BruteForceProtection(action: ThrottledSurfaces::FORM_SUBMIT)]
+	#[BruteForceProtection(action: ThrottledSurfacesInterface::FORM_SUBMIT)]
 	public function upload(string $formId): JSONResponse {
 		$property = trim((string)$this->request->getParam('property', ''));
 		$file = $this->request->getUploadedFile('file');
@@ -271,6 +360,12 @@ class FormsController extends Controller {
 
 		try {
 			$form = $this->resolveForm(formId: $formId);
+			// The token is only redeemable by submit(), which asks the audience;
+			// asking it here too keeps a closed form from storing bytes for anyone.
+			if ($this->audienceRefuses(form: $form, subject: $this->userSession->getUser()) === true) {
+				return $this->signInRequired();
+			}
+
 			$rule = $this->ruleFor(writes: $form['writes'], property: $property);
 			$issued = $this->uploads->issue(formId: $formId, property: $property, rule: $rule, file: $file);
 		} catch (FormSubmitRefusedException $refused) {
@@ -281,20 +376,38 @@ class FormsController extends Controller {
 	}//end upload()
 
 	/**
-	 * One destination through FormSubmitService::submit(), a journey's writes through submitAll().
+	 * Whether the form's audience turns this visitor away: anonymous, and the form is not public.
 	 *
 	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form    The form.
-	 * @param IUser|null                                                                         $subject The subject.
-	 * @param string|null                                                                   $key     The Idempotency-Key.
-	 * @param string|null                                                                   $draftId The subject's draft to leave, when sent.
+	 * @param IUser|null                                                                    $subject The signed-in subject, null when anonymous.
 	 *
-	 * @return array<string, mixed> The answer.
-	 *
-	 * @throws FormSubmitRefusedException On any refusal.
+	 * @return bool True when the visitor must sign in first.
 	 */
-	private function submitForm(array $form, ?IUser $subject, ?string $key, ?string $draftId = null): array {
+	private function audienceRefuses(array $form, ?IUser $subject): bool {
+		return $subject === null && $form['audience'] !== 'public';
+	}//end audienceRefuses()
+
+	/**
+	 * The 401 an anonymous visitor of a sign-in-only form gets.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function signInRequired(): JSONResponse {
+		return new JSONResponse(data: ['message' => $this->l10n->t('Please sign in to send this form.'), 'findings' => []], statusCode: 401);
+	}//end signInRequired()
+
+	/**
+	 * The form's writes as submitted: a journey's as they are, one destination as `{ register, schema, mapping }`.
+	 *
+	 * A single write drops its other keys (such as `as`), so its answer names it `write0`.
+	 *
+	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form The form.
+	 *
+	 * @return array<int, array<string, mixed>> The writes.
+	 */
+	private function writesOf(array $form): array {
 		if (count($form['writes']) !== 1) {
-			return $this->submitter->submitAll($form['writes'], $this->payload(), $subject, $key, $form['id'], $draftId);
+			return $form['writes'];
 		}
 
 		$write = $form['writes'][0];
@@ -303,16 +416,8 @@ class FormsController extends Controller {
 			$mapping = $write['mapping'];
 		}
 
-		return $this->submitter->submit(
-			['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)],
-			$mapping,
-			$this->payload(),
-			$subject,
-			$key,
-			$form['id'],
-			$draftId
-		);
-	}//end submitForm()
+		return [['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null), 'mapping' => $mapping]];
+	}//end writesOf()
 
 	/**
 	 * The stored form, registering a brute-force attempt when it does not resolve.
@@ -328,7 +433,7 @@ class FormsController extends Controller {
 			return $this->resolver->resolve(formId: $formId);
 		} catch (FormSubmitRefusedException $refused) {
 			try {
-				$this->throttler->registerAttempt(ThrottledSurfaces::FORM_SUBMIT, $this->request->getRemoteAddress());
+				$this->throttler->registerAttempt(ThrottledSurfacesInterface::FORM_SUBMIT, $this->request->getRemoteAddress());
 			} catch (Throwable $throttlerFailure) {
 				$this->logger->warning(
 					message: '[FormsController] registerAttempt failed',
@@ -352,13 +457,7 @@ class FormsController extends Controller {
 	 */
 	private function ruleFor(array $writes, string $property): array {
 		foreach ($writes as $write) {
-			try {
-				$properties = $this->schemas->find((string)($write['schema'] ?? ''), _multitenancy: false)->getProperties();
-			} catch (Throwable) {
-				continue;
-			}
-
-			$rule = ($properties[$property] ?? null);
+			$rule = ($this->schemaProperties(write: $write)[$property] ?? null);
 			if ($property !== '' && is_array($rule) === true) {
 				return $rule;
 			}
@@ -371,6 +470,21 @@ class FormsController extends Controller {
 			findings: [['property' => $property, 'code' => 'property-unknown', 'message' => $message]]
 		);
 	}//end ruleFor()
+
+	/**
+	 * The properties of a write's schema; none when the schema cannot be read.
+	 *
+	 * @param array<string, mixed> $write One write of the form
+	 *
+	 * @return array<string, mixed> The schema's properties
+	 */
+	private function schemaProperties(array $write): array {
+		try {
+			return $this->schemas->find((string)($write['schema'] ?? ''), _multitenancy: false)->getProperties();
+		} catch (Throwable) {
+			return [];
+		}
+	}//end schemaProperties()
 
 	/**
 	 * The submitted answers: the request body minus the route id and `_` control keys.

@@ -287,6 +287,7 @@ class SchemaTypeConverterTest extends TestCase {
 			$restored['notes'],
 			'a value the caller passed deliberately must keep its loud refusal, not be silently rewritten'
 		);
+		$this->assertSame([['status' => 'open']], $restored['notes']);
 	}//end testAnArrayTheCallerSuppliedIsLeftAloneSoValidationStillRefusesIt()
 
 	/**

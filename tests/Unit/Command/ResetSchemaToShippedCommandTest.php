@@ -38,6 +38,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
@@ -51,6 +52,8 @@ class ResetSchemaToShippedCommandTest extends TestCase {
 	private array $actions = [];
 
 	private int $writes = 0;
+
+	private bool $failWrites = false;
 
 	/** The user the session currently answers with. */
 	private ?IUser $active = null;
@@ -119,6 +122,10 @@ class ResetSchemaToShippedCommandTest extends TestCase {
 		$schemas->method('find')->willReturn($this->schema);
 		$schemas->method('update')->willReturnCallback(
 			function (Schema $entity): Schema {
+				if ($this->failWrites === true) {
+					throw new RuntimeException('disk full');
+				}
+
 				$this->writes++;
 				return $entity;
 			}
@@ -189,4 +196,75 @@ class ResetSchemaToShippedCommandTest extends TestCase {
 		$this->assertSame([ShippedConfigurationGuard::ACTION_RESET . ' by admin'], $this->actions);
 		$this->assertNull($this->active);
 	}//end testApplyAsAnAdministratorResetsAndRecords()
+
+	/**
+	 * A part already at its shipped value: the preview says so and exits FAILURE; --apply refuses too.
+	 *
+	 * @return void
+	 */
+	public function testAPartAtItsShippedValueIsNotReset(): void {
+		$tester = $this->tester();
+		$code = $tester->execute(['schema' => 'learner-profile', 'part' => 'properties']);
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString('Nothing to reset: ', $tester->getDisplay());
+		$this->assertStringNotContainsString('Nothing written', $tester->getDisplay());
+
+		$code = $tester->execute(['schema' => 'learner-profile', 'part' => 'properties', '--apply' => true, '--actor' => 'admin']);
+		$this->assertSame(1, $code);
+		$this->assertStringContainsString('Not reset: ', $tester->getDisplay());
+		$this->assertSame(0, $this->writes);
+		$this->assertNull($this->active);
+	}//end testAPartAtItsShippedValueIsNotReset()
+
+	/**
+	 * An unknown actor and a non-administrator get the same refusal line, before any lookup of the schema.
+	 *
+	 * @return void
+	 */
+	public function testTheRefusalNamesWhatIsNeeded(): void {
+		$tester = $this->tester();
+		foreach (['', 'bob', 'alice', '  '] as $actor) {
+			$this->assertSame(1, $tester->execute(['schema' => 'learner-profile', 'part' => 'authorization.read', '--apply' => true, '--actor' => $actor]));
+			$this->assertSame(
+				'--apply needs --actor=UID of an administrator; the reset is recorded under that name.' . PHP_EOL,
+				$tester->getDisplay()
+			);
+		}
+
+		$this->assertSame(0, $this->writes);
+		$this->assertNull($this->active);
+	}//end testTheRefusalNamesWhatIsNeeded()
+
+	/**
+	 * A successful reset prints both values and the closing line naming the part, schema and actor.
+	 *
+	 * @return void
+	 */
+	public function testASuccessfulResetPrintsTheClosingLine(): void {
+		$tester = $this->tester();
+		$tester->execute(['schema' => 'learner-profile', 'part' => 'authorization.read', '--apply' => true, '--actor' => ' admin ']);
+
+		$this->assertStringContainsString('Schema: learner-profile (id 329)', $tester->getDisplay());
+		$this->assertStringContainsString('Part:   authorization.read', $tester->getDisplay());
+		$this->assertStringEndsWith(
+			'Reset authorization.read of learner-profile to the shipped value, recorded under admin.' . PHP_EOL,
+			$tester->getDisplay()
+		);
+	}//end testASuccessfulResetPrintsTheClosingLine()
+
+	/**
+	 * A failure inside the reset is printed as an error, exits FAILURE and leaves no session behind.
+	 *
+	 * @return void
+	 */
+	public function testAFailingResetIsReportedAndStopsActing(): void {
+		$tester = $this->tester();
+		$this->failWrites = true;
+		$code = $tester->execute(['schema' => 'learner-profile', 'part' => 'authorization.read', '--apply' => true, '--actor' => 'admin']);
+
+		$this->assertSame(1, $code);
+		$this->assertStringEndsWith('disk full' . PHP_EOL, $tester->getDisplay());
+		$this->assertStringNotContainsString('Reset authorization.read', $tester->getDisplay());
+		$this->assertNull($this->active);
+	}//end testAFailingResetIsReportedAndStopsActing()
 }//end class

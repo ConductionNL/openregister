@@ -4,8 +4,8 @@
  * Who may change an organisation's special rights.
  *
  * Decision 239: every special right, not only `grant_manage`, is changed by an
- * administrator or the organisation's owner. A member keeps editing the rest
- * of the organisation. `PUT /api/organisations/{uuid}` is an ordinary
+ * administrator or the organisation's owner; a member may not change the
+ * organisation at all. `PUT /api/organisations/{uuid}` is an ordinary
  * Controller, so the 403 asserted here is the status the caller gets
  * (OCSMiddleware only rewrites an OCSController's status).
  *
@@ -27,10 +27,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\OrganisationController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationUsageService;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\OCSController;
@@ -89,9 +92,10 @@ class OrganisationSpecialRightsEditTest extends TestCase {
 		$this->organisation->setOwner('owner');
 		$this->organisation->setAuthorization(self::STORED);
 		$this->organisationMapper->method('findByUuid')->willReturn($this->organisation);
+		$this->organisationMapper->method('save')->willReturnArgument(0);
 		$this->organisationMapper->method('update')->willReturnArgument(0);
 
-		$this->controller = new OrganisationController(
+		$this->controller = OrganisationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->organisationService,
@@ -100,7 +104,9 @@ class OrganisationSpecialRightsEditTest extends TestCase {
 			$this->createMock(TenantLifecycleService::class),
 			$this->createMock(TenantUsageMapper::class),
 			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class)
+			$this->createMock(IGroupManager::class),
+			$this->createMock(OrganisationUsageService::class),
+			$this->createMock(GrantChangeAuditor::class)
 		);
 	}//end setUp()
 
@@ -143,12 +149,12 @@ class OrganisationSpecialRightsEditTest extends TestCase {
 	public function testAMemberIsRefusedWith403(array $authorization, string $right): void {
 		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
 		$this->request->method('getParams')->willReturn(['authorization' => $authorization]);
+		$this->organisationMapper->expects($this->never())->method('save');
 		$this->organisationMapper->expects($this->never())->method('update');
 
 		$response = $this->controller->update('org-1');
 
-		$this->assertSame(403, $response->getStatus());
-		$this->assertSame([$right], $response->getData()['rights']);
+		$this->assertSame(403, $response->getStatus(), $right);
 		$this->assertSame(self::STORED, $this->organisation->getAuthorization());
 	}//end testAMemberIsRefusedWith403()
 
@@ -166,41 +172,6 @@ class OrganisationSpecialRightsEditTest extends TestCase {
 		$this->assertNotSame(403, $response->getStatus());
 		$this->assertSame($authorization, $this->organisation->getAuthorization());
 	}//end testTheOwnerOrAnAdministratorChangesIt()
-
-	public function testAMemberStillEditsTheCrudListsAndTheName(): void {
-		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
-		$block = self::storedWith('object', ['create' => ['staff'], 'read' => ['staff'], 'update' => [], 'delete' => []]);
-		$this->request->method('getParams')->willReturn(['name' => 'Gemeente Zuid', 'authorization' => $block]);
-
-		$response = $this->controller->update('org-1');
-
-		$this->assertSame(200, $response->getStatus());
-		$this->assertSame(['staff'], $this->organisation->getAuthorization()['object']['create']);
-		$this->assertSame('Gemeente Zuid', $this->organisation->getName());
-	}//end testAMemberStillEditsTheCrudListsAndTheName()
-
-	public function testTheRetiredRightsAreNotSpecialRightsAnyMore(): void {
-		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
-		$block = self::STORED;
-		unset($block['object_publish'], $block['dashboard_view']);
-		$this->request->method('getParams')->willReturn(['authorization' => $block]);
-
-		$response = $this->controller->update('org-1');
-
-		$this->assertSame(200, $response->getStatus());
-	}//end testTheRetiredRightsAreNotSpecialRightsAnyMore()
-
-	public function testLeavingOutAKeyTheOrganisationNeverSetIsNoChange(): void {
-		$this->organisation->setAuthorization(['object' => ['read' => ['staff']]]);
-		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
-		$this->request->method('getParams')->willReturn(
-			['authorization' => ['object' => ['read' => ['staff', 'guests']], 'agent_use' => ['*']]]
-		);
-
-		$response = $this->controller->update('org-1');
-
-		$this->assertSame(200, $response->getStatus());
-	}//end testLeavingOutAKeyTheOrganisationNeverSetIsNoChange()
 
 	public function testTheEndpointIsAPlainControllerSoThe403ReachesTheCaller(): void {
 		$this->assertTrue(is_subclass_of(OrganisationController::class, Controller::class));

@@ -1,0 +1,378 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`searchStore.searchObjects golden both empty ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/abc",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden both none ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/abc",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden both two notOk 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/abc?_search=a+b&_page=2",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "Bad Request",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [],
+  "sameRefs": true,
+  "success": false,
+}
+`;
+
+exports[`searchStore.searchObjects golden both two notOkNoText 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/abc?_search=a+b&_page=2",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 2,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden both two ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/abc?_search=a+b&_page=2",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden both two ok 2`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/abc?_search=a+b&_page=2",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden both two rejected 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/abc?_search=a+b&_page=2",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "Error: offline",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [],
+  "sameRefs": true,
+  "success": false,
+}
+`;
+
+exports[`searchStore.searchObjects golden emptyIds empty ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects//",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden emptyIds none ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects//",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden emptyIds two ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects//?_search=a+b&_page=2",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden none empty ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects//",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden none none ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects//",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden none two ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects//?_search=a+b&_page=2",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden re-runs the last query 1`] = `
+[
+  [
+    "/index.php/apps/openregister/api/objects//?a=1",
+    {
+      "method": "GET",
+    },
+  ],
+  [
+    "/index.php/apps/openregister/api/objects//?a=1",
+    {
+      "method": "GET",
+    },
+  ],
+]
+`;
+
+exports[`searchStore.searchObjects golden registerOnly empty ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden registerOnly none ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;
+
+exports[`searchStore.searchObjects golden registerOnly two ok 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/5/?_search=a+b&_page=2",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "error": "",
+  "loading": false,
+  "loadingAtReturn": true,
+  "result": [
+    {
+      "id": 1,
+    },
+  ],
+  "sameRefs": true,
+  "success": true,
+}
+`;

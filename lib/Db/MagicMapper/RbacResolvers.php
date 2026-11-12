@@ -30,9 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
-use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
-use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolverInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 
 /**
  * Immutable bundle of the shared RBAC resolvers used by MagicRbacHandler.
@@ -42,15 +42,15 @@ final class RbacResolvers {
 	/**
 	 * Constructor for RbacResolvers
 	 *
-	 * @param ObjectScopeResolver|null $objectScopeResolver Shared object-scope resolver; nullable so adding it is not
+	 * @param ObjectScopeResolverInterface|null $objectScopeResolver Shared object-scope resolver; nullable so adding it is not
 	 *                                                      a fatal at existing construction sites.
-	 * @param ObjectGrantResolver|null $objectGrantResolver Shared per-object grant resolver; nullable for the same reason.
-	 * @param DenyResolver|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
+	 * @param ObjectGrantResolverInterface|null $objectGrantResolver Shared per-object grant resolver; nullable for the same reason.
+	 * @param DenyResolverInterface|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
 	 */
 	public function __construct(
-		public readonly ?ObjectScopeResolver $objectScopeResolver = null,
-		public readonly ?ObjectGrantResolver $objectGrantResolver = null,
-		public readonly ?DenyResolver $denyResolver = null,
+		public readonly ?ObjectScopeResolverInterface $objectScopeResolver = null,
+		public readonly ?ObjectGrantResolverInterface $objectGrantResolver = null,
+		public readonly ?DenyResolverInterface $denyResolver = null,
 	) {
 	}//end __construct()
 }//end class

@@ -1,0 +1,2190 @@
+{
+    "admin closed": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        }
+    },
+    "admin open": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        }
+    },
+    "anonymous closed": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "42"
+                    ],
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "{\"match\":{\"x\":1}}"
+                    ]
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ]
+        }
+    },
+    "anonymous open": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "42"
+                    ],
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "{\"match\":{\"x\":1}}"
+                    ]
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ]
+        }
+    },
+    "g1 closed": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "matches",
+                        {
+                            "status": "open"
+                        }
+                    ]
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "matches",
+                        {
+                            "_organisation": "$organisation"
+                        }
+                    ]
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "filterForCreate",
+                        {
+                            "_organisation": "$organisation"
+                        }
+                    ]
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "42"
+                    ],
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "{\"match\":{\"x\":1}}"
+                    ]
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ]
+        }
+    },
+    "g1 open": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "matches",
+                        {
+                            "status": "open"
+                        }
+                    ]
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "matches",
+                        {
+                            "_organisation": "$organisation"
+                        }
+                    ]
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "filterForCreate",
+                        {
+                            "_organisation": "$organisation"
+                        }
+                    ]
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "42"
+                    ],
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "{\"match\":{\"x\":1}}"
+                    ]
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ]
+        }
+    },
+    "g2 closed": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "matches",
+                        {
+                            "_organisation": "$organisation",
+                            "status": "open"
+                        }
+                    ]
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "filterForCreate",
+                        {
+                            "_organisation": "$organisation",
+                            "status": "open"
+                        }
+                    ],
+                    [
+                        "matches",
+                        {
+                            "status": "open"
+                        }
+                    ]
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "42"
+                    ],
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "{\"match\":{\"x\":1}}"
+                    ]
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ]
+        }
+    },
+    "g2 open": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "matches",
+                        {
+                            "_organisation": "$organisation",
+                            "status": "open"
+                        }
+                    ]
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "filterForCreate",
+                        {
+                            "_organisation": "$organisation",
+                            "status": "open"
+                        }
+                    ],
+                    [
+                        "matches",
+                        {
+                            "status": "open"
+                        }
+                    ]
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "42"
+                    ],
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "{\"match\":{\"x\":1}}"
+                    ]
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ]
+        }
+    },
+    "nobody closed": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "42"
+                    ],
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "{\"match\":{\"x\":1}}"
+                    ]
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ]
+        }
+    },
+    "nobody open": {
+        "none": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "empty": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "readOnlyRule": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "emptyAction": {
+            "read": [
+                true,
+                []
+            ],
+            "update": [
+                true,
+                []
+            ],
+            "create": [
+                true,
+                []
+            ]
+        },
+        "public": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "authenticated": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "groups": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditional": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "conditionalNoMatch": {
+            "read": [
+                true,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds"
+                ]
+            ]
+        },
+        "invalid": {
+            "read": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "42"
+                    ],
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "{\"match\":{\"x\":1}}"
+                    ]
+                ]
+            ],
+            "update": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ],
+            "create": [
+                false,
+                [
+                    "getUser",
+                    "getUserGroupIds",
+                    [
+                        "warning",
+                        "[PropertyRbacHandler] Invalid rule format",
+                        "null"
+                    ]
+                ]
+            ]
+        }
+    }
+}

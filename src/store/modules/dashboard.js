@@ -5,39 +5,138 @@ import { watch } from 'vue'
 import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
 
-export const useDashboardStore = defineStore('dashboard', {
-	state: () => ({
+const CHARTS = [
+	'auditTrailActions',
+	'objectsByRegister',
+	'objectsBySchema',
+	'objectsBySize',
+]
+const STATISTICS = ['auditTrailStats', 'actionDistribution', 'mostActiveObjects']
+
+/**
+ * An object with every key set to the same value.
+ *
+ * @param {Array<string>} keys The keys.
+ * @param {null|boolean} value The value.
+ * @return {object} The object.
+ * @spec exclude Client-side shape of the dashboard panel state.
+ */
+function each(keys, value) {
+	return Object.fromEntries(keys.map((key) => [key, value]))
+}
+
+/**
+ * The dashboard store's state before anything is loaded.
+ *
+ * @return {object} The state.
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+function initialState() {
+	return {
 		registers: [],
 		loading: false,
 		error: null,
 		isInitialized: false,
-		dateRange: {
-			from: null,
-			till: null,
-		},
-		chartData: {
-			auditTrailActions: null,
-			objectsByRegister: null,
-			objectsBySchema: null,
-			objectsBySize: null,
-		},
-		chartLoading: {
-			auditTrailActions: false,
-			objectsByRegister: false,
-			objectsBySchema: false,
-			objectsBySize: false,
-		},
-		statisticsData: {
-			auditTrailStats: null,
-			actionDistribution: null,
-			mostActiveObjects: null,
-		},
-		statisticsLoading: {
-			auditTrailStats: false,
-			actionDistribution: false,
-			mostActiveObjects: false,
-		},
-	}),
+		dateRange: { from: null, till: null },
+		chartData: each(CHARTS, null),
+		chartLoading: each(CHARTS, false),
+		statisticsData: each(STATISTICS, null),
+		statisticsLoading: each(STATISTICS, false),
+	}
+}
+
+/**
+ * The register and schema the dashboard is scoped to, as request parameters.
+ *
+ * @return {{registerId: (string|number|undefined), schemaId: (string|number|undefined)}} The parameters.
+ * @spec exclude Client-side scope of the dashboard API passthroughs.
+ */
+function scopeParams() {
+	return {
+		registerId: useRegisterStore().registerItem?.id,
+		schemaId: useSchemaStore().schemaItem?.id,
+	}
+}
+
+/**
+ * Load one dashboard panel into the store, unless it is already loading.
+ *
+ * @param {object} store The dashboard store.
+ * @param {object} panel `group` (`chart` or `statistics`), `key`, `path` below the dashboard API, `params()` and `log`.
+ * @return {Promise<void>}
+ * @spec exclude API passthrough helper for the dashboard chart and statistics endpoints.
+ */
+async function fetchPanel(store, panel) {
+	const loading = store[`${panel.group}Loading`]
+	if (loading[panel.key]) return
+
+	loading[panel.key] = true
+	try {
+		store[`${panel.group}Data`][panel.key] = await getPanel(panel)
+	} finally {
+		loading[panel.key] = false
+	}
+}
+
+/**
+ * The data of one dashboard panel. A failure is logged and rethrown.
+ *
+ * @param {object} panel `path` below the dashboard API, `params()` and `log`.
+ * @return {Promise<object>} The panel data.
+ * @spec exclude API passthrough helper for the dashboard chart and statistics endpoints.
+ */
+async function getPanel(panel) {
+	try {
+		const response = await axios.get(
+			generateUrl(`/apps/openregister/api/dashboard/${panel.path}`),
+			{ params: panel.params() },
+		)
+		return response.data
+	} catch (error) {
+		console.error(panel.log, error)
+		throw error
+	}
+}
+
+/**
+ * The register list filter of the dashboard: the active register and schema,
+ * where set. The stores are looked up now; their ids are read when the
+ * returned function runs.
+ *
+ * @return {function(): object} The parameters, read on call.
+ * @spec exclude Client-side scope of GET /api/dashboard.
+ */
+function registerListScope() {
+	const registerStore = useRegisterStore()
+	const schemaStore = useSchemaStore()
+	return () => {
+		const params = {}
+		if (registerStore.registerItem?.id)
+			params.registerId = registerStore.registerItem.id
+		if (schemaStore.schemaItem?.id) params.schemaId = schemaStore.schemaItem.id
+		return params
+	}
+}
+
+/**
+ * Load the dashboard register list into the store.
+ *
+ * @param {object} store The dashboard store.
+ * @param {function(): object} params The register and schema filter, read on call.
+ * @return {Promise<Array<object>>} The registers.
+ * @spec exclude API passthrough to GET /api/dashboard (register list)
+ */
+async function loadRegisters(store, params) {
+	const response = await axios.get(
+		generateUrl('/apps/openregister/api/dashboard'),
+		{ params: params() },
+	)
+	store.registers = response.data.registers
+	return store.registers
+}
+
+export const useDashboardStore = defineStore('dashboard', {
+	state: initialState,
 
 	getters: {
 		getRegisters: (state) => state.registers,
@@ -103,33 +202,17 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec exclude API passthrough to GET /api/dashboard/charts/audit-trail-actions
 		 */
 		async fetchAuditTrailActionChart() {
-			if (this.chartLoading.auditTrailActions) return
-
-			const registerStore = useRegisterStore()
-			const schemaStore = useSchemaStore()
-
-			try {
-				this.chartLoading.auditTrailActions = true
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/dashboard/charts/audit-trail-actions',
-					),
-					{
-						params: {
-							from: this.dateRange.from,
-							till: this.dateRange.till,
-							registerId: registerStore.registerItem?.id,
-							schemaId: schemaStore.schemaItem?.id,
-						},
-					},
-				)
-				this.chartData.auditTrailActions = response.data
-			} catch (error) {
-				console.error('Error fetching audit trail action chart:', error)
-				throw error
-			} finally {
-				this.chartLoading.auditTrailActions = false
-			}
+			return fetchPanel(this, {
+				group: 'chart',
+				key: 'auditTrailActions',
+				path: 'charts/audit-trail-actions',
+				params: () => ({
+					from: this.dateRange.from,
+					till: this.dateRange.till,
+					...scopeParams(),
+				}),
+				log: 'Error fetching audit trail action chart:',
+			})
 		},
 
 		/**
@@ -139,31 +222,13 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec exclude API passthrough to GET /api/dashboard/charts/objects-by-register
 		 */
 		async fetchObjectsByRegisterChart() {
-			if (this.chartLoading.objectsByRegister) return
-
-			const registerStore = useRegisterStore()
-			const schemaStore = useSchemaStore()
-
-			try {
-				this.chartLoading.objectsByRegister = true
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/dashboard/charts/objects-by-register',
-					),
-					{
-						params: {
-							registerId: registerStore.registerItem?.id,
-							schemaId: schemaStore.schemaItem?.id,
-						},
-					},
-				)
-				this.chartData.objectsByRegister = response.data
-			} catch (error) {
-				console.error('Error fetching objects by register chart:', error)
-				throw error
-			} finally {
-				this.chartLoading.objectsByRegister = false
-			}
+			return fetchPanel(this, {
+				group: 'chart',
+				key: 'objectsByRegister',
+				path: 'charts/objects-by-register',
+				params: scopeParams,
+				log: 'Error fetching objects by register chart:',
+			})
 		},
 
 		/**
@@ -173,31 +238,13 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec exclude API passthrough to GET /api/dashboard/charts/objects-by-schema
 		 */
 		async fetchObjectsBySchemaChart() {
-			if (this.chartLoading.objectsBySchema) return
-
-			const registerStore = useRegisterStore()
-			const schemaStore = useSchemaStore()
-
-			try {
-				this.chartLoading.objectsBySchema = true
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/dashboard/charts/objects-by-schema',
-					),
-					{
-						params: {
-							registerId: registerStore.registerItem?.id,
-							schemaId: schemaStore.schemaItem?.id,
-						},
-					},
-				)
-				this.chartData.objectsBySchema = response.data
-			} catch (error) {
-				console.error('Error fetching objects by schema chart:', error)
-				throw error
-			} finally {
-				this.chartLoading.objectsBySchema = false
-			}
+			return fetchPanel(this, {
+				group: 'chart',
+				key: 'objectsBySchema',
+				path: 'charts/objects-by-schema',
+				params: scopeParams,
+				log: 'Error fetching objects by schema chart:',
+			})
 		},
 
 		/**
@@ -207,31 +254,13 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec exclude API passthrough to GET /api/dashboard/charts/objects-by-size
 		 */
 		async fetchObjectsBySizeChart() {
-			if (this.chartLoading.objectsBySize) return
-
-			const registerStore = useRegisterStore()
-			const schemaStore = useSchemaStore()
-
-			try {
-				this.chartLoading.objectsBySize = true
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/dashboard/charts/objects-by-size',
-					),
-					{
-						params: {
-							registerId: registerStore.registerItem?.id,
-							schemaId: schemaStore.schemaItem?.id,
-						},
-					},
-				)
-				this.chartData.objectsBySize = response.data
-			} catch (error) {
-				console.error('Error fetching objects by size chart:', error)
-				throw error
-			} finally {
-				this.chartLoading.objectsBySize = false
-			}
+			return fetchPanel(this, {
+				group: 'chart',
+				key: 'objectsBySize',
+				path: 'charts/objects-by-size',
+				params: scopeParams,
+				log: 'Error fetching objects by size chart:',
+			})
 		},
 
 		/**
@@ -257,32 +286,13 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec exclude API passthrough to GET /api/dashboard/statistics/audit-trail
 		 */
 		async fetchAuditTrailStatistics(hours = 24) {
-			if (this.statisticsLoading.auditTrailStats) return
-
-			const registerStore = useRegisterStore()
-			const schemaStore = useSchemaStore()
-
-			try {
-				this.statisticsLoading.auditTrailStats = true
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/dashboard/statistics/audit-trail',
-					),
-					{
-						params: {
-							registerId: registerStore.registerItem?.id,
-							schemaId: schemaStore.schemaItem?.id,
-							hours,
-						},
-					},
-				)
-				this.statisticsData.auditTrailStats = response.data
-			} catch (error) {
-				console.error('Error fetching audit trail statistics:', error)
-				throw error
-			} finally {
-				this.statisticsLoading.auditTrailStats = false
-			}
+			return fetchPanel(this, {
+				group: 'statistics',
+				key: 'auditTrailStats',
+				path: 'statistics/audit-trail',
+				params: () => ({ ...scopeParams(), hours }),
+				log: 'Error fetching audit trail statistics:',
+			})
 		},
 
 		/**
@@ -293,32 +303,13 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec exclude API passthrough to GET /api/dashboard/statistics/audit-trail-distribution
 		 */
 		async fetchActionDistribution(hours = 24) {
-			if (this.statisticsLoading.actionDistribution) return
-
-			const registerStore = useRegisterStore()
-			const schemaStore = useSchemaStore()
-
-			try {
-				this.statisticsLoading.actionDistribution = true
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/dashboard/statistics/audit-trail-distribution',
-					),
-					{
-						params: {
-							registerId: registerStore.registerItem?.id,
-							schemaId: schemaStore.schemaItem?.id,
-							hours,
-						},
-					},
-				)
-				this.statisticsData.actionDistribution = response.data
-			} catch (error) {
-				console.error('Error fetching action distribution:', error)
-				throw error
-			} finally {
-				this.statisticsLoading.actionDistribution = false
-			}
+			return fetchPanel(this, {
+				group: 'statistics',
+				key: 'actionDistribution',
+				path: 'statistics/audit-trail-distribution',
+				params: () => ({ ...scopeParams(), hours }),
+				log: 'Error fetching action distribution:',
+			})
 		},
 
 		/**
@@ -330,33 +321,13 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec exclude API passthrough to GET /api/dashboard/statistics/most-active-objects
 		 */
 		async fetchMostActiveObjects(limit = 10, hours = 24) {
-			if (this.statisticsLoading.mostActiveObjects) return
-
-			const registerStore = useRegisterStore()
-			const schemaStore = useSchemaStore()
-
-			try {
-				this.statisticsLoading.mostActiveObjects = true
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/dashboard/statistics/most-active-objects',
-					),
-					{
-						params: {
-							registerId: registerStore.registerItem?.id,
-							schemaId: schemaStore.schemaItem?.id,
-							limit,
-							hours,
-						},
-					},
-				)
-				this.statisticsData.mostActiveObjects = response.data
-			} catch (error) {
-				console.error('Error fetching most active objects:', error)
-				throw error
-			} finally {
-				this.statisticsLoading.mostActiveObjects = false
-			}
+			return fetchPanel(this, {
+				group: 'statistics',
+				key: 'mostActiveObjects',
+				path: 'statistics/most-active-objects',
+				params: () => ({ ...scopeParams(), limit, hours }),
+				log: 'Error fetching most active objects:',
+			})
 		},
 
 		/**
@@ -398,22 +369,11 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec exclude API passthrough to GET /api/dashboard (register list)
 		 */
 		async fetchRegisters() {
-			const registerStore = useRegisterStore()
-			const schemaStore = useSchemaStore()
+			const params = registerListScope()
 			try {
 				this.loading = true
 				this.error = null
-				const params = {}
-				if (registerStore.registerItem?.id)
-					params.registerId = registerStore.registerItem.id
-				if (schemaStore.schemaItem?.id)
-					params.schemaId = schemaStore.schemaItem.id
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/dashboard'),
-					{ params },
-				)
-				this.registers = response.data.registers
-				return this.registers
+				return await loadRegisters(this, params)
 			} catch (error) {
 				console.error('Error fetching registers:', error)
 				this.error = error.message || 'Failed to fetch registers'
@@ -453,33 +413,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		reset() {
-			this.registers = []
-			this.loading = false
-			this.error = null
-			this.isInitialized = false
-			this.dateRange = { from: null, till: null }
-			this.chartData = {
-				auditTrailActions: null,
-				objectsByRegister: null,
-				objectsBySchema: null,
-				objectsBySize: null,
-			}
-			this.chartLoading = {
-				auditTrailActions: false,
-				objectsByRegister: false,
-				objectsBySchema: false,
-				objectsBySize: false,
-			}
-			this.statisticsData = {
-				auditTrailStats: null,
-				actionDistribution: null,
-				mostActiveObjects: null,
-			}
-			this.statisticsLoading = {
-				auditTrailStats: false,
-				actionDistribution: false,
-				mostActiveObjects: false,
-			}
+			Object.assign(this, initialState())
 		},
 	},
 })

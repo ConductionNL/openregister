@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\RegisterResolverService;
+use OCA\OpenRegister\Service\RegisterResolverServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -45,10 +45,10 @@ class ResolverListCommand extends Command {
 	/**
 	 * Wire the command against the resolver service.
 	 *
-	 * @param RegisterResolverService $resolverService Resolver used for enumeration.
+	 * @param RegisterResolverServiceInterface $resolverService Resolver used for enumeration.
 	 */
 	public function __construct(
-		private readonly RegisterResolverService $resolverService,
+		private readonly RegisterResolverServiceInterface $resolverService,
 	) {
 		parent::__construct();
 

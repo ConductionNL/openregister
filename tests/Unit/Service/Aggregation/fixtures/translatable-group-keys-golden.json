@@ -1,0 +1,306 @@
+{
+    "all translations": {
+        "result": {
+            "groups": [
+                {
+                    "key": {
+                        "nl": "Hallo",
+                        "en": "Hello"
+                    },
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "translatable": "things"
+            },
+            {
+                "allTranslations": true
+            }
+        ]
+    },
+    "composite keys": {
+        "result": {
+            "groups": [
+                {
+                    "keys": {
+                        "status": "open",
+                        "title": "Hallo",
+                        "label": "Doei"
+                    },
+                    "value": 1
+                },
+                {
+                    "keys": {
+                        "status": "done",
+                        "title": "plain"
+                    },
+                    "value": 2
+                },
+                {
+                    "keys": "x",
+                    "key": "Hallo",
+                    "value": 3
+                }
+            ]
+        },
+        "calls": [
+            {
+                "translatable": "things"
+            },
+            {
+                "allTranslations": true
+            },
+            {
+                "resolve": [
+                    {
+                        "title": {
+                            "nl": "Hallo",
+                            "en": "Hello"
+                        }
+                    },
+                    "things",
+                    "reg"
+                ]
+            },
+            {
+                "resolve": [
+                    {
+                        "label": {
+                            "nl": "Doei",
+                            "en": "Bye"
+                        }
+                    },
+                    "things",
+                    "reg"
+                ]
+            },
+            {
+                "resolve": [
+                    {
+                        "title": {
+                            "nl": "Hallo",
+                            "en": "Hello"
+                        }
+                    },
+                    "things",
+                    "reg"
+                ]
+            }
+        ]
+    },
+    "composite non translatable first": {
+        "result": {
+            "groups": [
+                {
+                    "key": "Hallo",
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "translatable": "things"
+            },
+            {
+                "allTranslations": true
+            },
+            {
+                "resolve": [
+                    {
+                        "title": {
+                            "nl": "Hallo",
+                            "en": "Hello"
+                        }
+                    },
+                    "things",
+                    "reg"
+                ]
+            }
+        ]
+    },
+    "empty group spec": {
+        "result": {
+            "groups": [
+                {
+                    "key": {
+                        "nl": "Hallo",
+                        "en": "Hello"
+                    },
+                    "value": 1
+                }
+            ]
+        },
+        "calls": []
+    },
+    "groups not array": {
+        "result": {
+            "groups": "x"
+        },
+        "calls": []
+    },
+    "list group spec": {
+        "result": {
+            "groups": [
+                {
+                    "key": "Hallo",
+                    "values": {
+                        "count": 1
+                    }
+                }
+            ]
+        },
+        "calls": [
+            {
+                "translatable": "things"
+            },
+            {
+                "allTranslations": true
+            },
+            {
+                "resolve": [
+                    {
+                        "label": {
+                            "nl": "Hallo",
+                            "en": "Hello"
+                        }
+                    },
+                    "things",
+                    "reg"
+                ]
+            }
+        ]
+    },
+    "no group spec": {
+        "result": {
+            "groups": [
+                {
+                    "key": {
+                        "nl": "Hallo",
+                        "en": "Hello"
+                    },
+                    "value": 1
+                }
+            ]
+        },
+        "calls": []
+    },
+    "no groups": {
+        "result": {
+            "value": 3
+        },
+        "calls": []
+    },
+    "not translatable": {
+        "result": {
+            "groups": [
+                {
+                    "key": {
+                        "nl": "Hallo",
+                        "en": "Hello"
+                    },
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "translatable": "things"
+            }
+        ]
+    },
+    "single keys": {
+        "result": {
+            "backend": "php-fallback",
+            "groups": [
+                {
+                    "key": "Hallo",
+                    "value": 1
+                },
+                {
+                    "key": "Doei",
+                    "value": 2
+                },
+                {
+                    "key": "plain",
+                    "value": 3
+                },
+                {
+                    "key": "[1,2]",
+                    "value": 4
+                },
+                {
+                    "key": null,
+                    "value": 5
+                },
+                {
+                    "key": {
+                        "de": "Tschuess"
+                    },
+                    "value": 6
+                },
+                "not a row",
+                {
+                    "value": 7
+                }
+            ],
+            "cached": true
+        },
+        "calls": [
+            {
+                "translatable": "things"
+            },
+            {
+                "allTranslations": true
+            },
+            {
+                "resolve": [
+                    {
+                        "title": {
+                            "nl": "Hallo",
+                            "en": "Hello"
+                        }
+                    },
+                    "things",
+                    "reg"
+                ]
+            },
+            {
+                "resolve": [
+                    {
+                        "title": {
+                            "nl": "Doei",
+                            "en": "Bye"
+                        }
+                    },
+                    "things",
+                    "reg"
+                ]
+            },
+            {
+                "resolve": [
+                    {
+                        "title": [
+                            1,
+                            2
+                        ]
+                    },
+                    "things",
+                    "reg"
+                ]
+            },
+            {
+                "resolve": [
+                    {
+                        "title": {
+                            "de": "Tschuess"
+                        }
+                    },
+                    "things",
+                    "reg"
+                ]
+            }
+        ]
+    }
+}

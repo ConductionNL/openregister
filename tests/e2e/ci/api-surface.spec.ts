@@ -21,11 +21,11 @@
  * was deleted rather than shipped: a skipped test claiming a scenario is
  * covered stops anyone looking, which is worse than the gap it hides.
  *
- * @e2e openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#a-client-reads-the-upload-limit-before-uploading
- * @e2e openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#the-unauthenticated-answer-names-no-register
- * @e2e openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#five-suppliers-move-at-their-own-pace
- * @e2e openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md#a-withdrawn-version-says-where-to-go
- * @e2e openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#a-responsible-disclosure-contact-is-findable
+ * @e2e openspec/specs/api-surface-governance/spec.md#a-client-reads-the-upload-limit-before-uploading
+ * @e2e openspec/specs/api-surface-governance/spec.md#the-unauthenticated-answer-names-no-register
+ * @e2e openspec/specs/openapi-generation/spec.md#five-suppliers-move-at-their-own-pace
+ * @e2e openspec/specs/openapi-generation/spec.md#a-withdrawn-version-says-where-to-go
+ * @e2e openspec/specs/api-surface-governance/spec.md#a-responsible-disclosure-contact-is-findable
  */
 import type { APIRequestContext } from '@playwright/test'
 

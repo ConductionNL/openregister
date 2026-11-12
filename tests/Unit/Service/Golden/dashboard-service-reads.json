@@ -1,0 +1,254 @@
+{
+    "ok": {
+        "registersWithSchemas": [
+            {
+                "id": "totals",
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            },
+            {
+                "id": 7,
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": [
+                    {
+                        "id": 70,
+                        "stats": {
+                            "objects": {
+                                "total": 11,
+                                "size": 12,
+                                "invalid": 13,
+                                "deleted": 14,
+                                "locked": 15
+                            },
+                            "logs": {
+                                "total": 21,
+                                "size": 22
+                            },
+                            "webhookLogs": {
+                                "total": 31,
+                                "size": 0
+                            },
+                            "files": {
+                                "total": 0,
+                                "size": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "orphaned",
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            }
+        ],
+        "logged": [
+            "objects.getStatistics [null,null,[]]",
+            "audit.getStatistics [null,null,[]]",
+            "objects.getStatistics [7,null,[]]",
+            "audit.getStatistics [7,null,[]]",
+            "objects.getStatistics [7,70,[]]",
+            "audit.getStatistics [7,70,[]]",
+            "objects.getStatistics [null,null,[{\"register\":7,\"schema\":70}]]",
+            "audit.getStatistics [null,null,[{\"register\":7,\"schema\":70}]]"
+        ]
+    },
+    "failed": {
+        "registersWithSchemas": [
+            {
+                "id": "totals",
+                "stats": {
+                    "objects": {
+                        "total": 0,
+                        "size": 0,
+                        "invalid": 0,
+                        "deleted": 0,
+                        "locked": 0
+                    },
+                    "logs": {
+                        "total": 0,
+                        "size": 0
+                    },
+                    "webhookLogs": {
+                        "total": 0,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            },
+            {
+                "id": 7,
+                "stats": {
+                    "objects": {
+                        "total": 0,
+                        "size": 0,
+                        "invalid": 0,
+                        "deleted": 0,
+                        "locked": 0
+                    },
+                    "logs": {
+                        "total": 0,
+                        "size": 0
+                    },
+                    "webhookLogs": {
+                        "total": 0,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": [
+                    {
+                        "id": 70,
+                        "stats": {
+                            "objects": {
+                                "total": 0,
+                                "size": 0,
+                                "invalid": 0,
+                                "deleted": 0,
+                                "locked": 0
+                            },
+                            "logs": {
+                                "total": 0,
+                                "size": 0
+                            },
+                            "webhookLogs": {
+                                "total": 0,
+                                "size": 0
+                            },
+                            "files": {
+                                "total": 0,
+                                "size": 0
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "orphaned",
+                "stats": {
+                    "objects": {
+                        "total": 0,
+                        "size": 0,
+                        "invalid": 0,
+                        "deleted": 0,
+                        "locked": 0
+                    },
+                    "logs": {
+                        "total": 0,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            }
+        ],
+        "actionChart": {
+            "labels": [],
+            "series": []
+        },
+        "byRegister": {
+            "labels": [],
+            "series": []
+        },
+        "bySchema": {
+            "labels": [],
+            "series": []
+        },
+        "bySize": {
+            "labels": [],
+            "series": []
+        },
+        "auditStats": {
+            "total": 0,
+            "creates": 0,
+            "updates": 0,
+            "deletes": 0,
+            "reads": 0
+        },
+        "distribution": {
+            "actions": []
+        },
+        "mostActive": {
+            "objects": []
+        },
+        "logged": [
+            "[DashboardService] Failed to get statistics: boom",
+            "[DashboardService] Failed to get statistics: boom",
+            "[DashboardService] Failed to get statistics: boom",
+            "[DashboardService] Failed to get orphaned statistics: boom",
+            "[DashboardService] Failed to get audit trail action chart data: boom",
+            "[DashboardService] Failed to get objects by register chart data: boom",
+            "[DashboardService] Failed to get objects by schema chart data: boom",
+            "[DashboardService] Failed to get objects by size chart data: boom",
+            "[DashboardService] Failed to get audit trail statistics: boom",
+            "[DashboardService] Failed to get audit trail action distribution: boom",
+            "[DashboardService] Failed to get most active objects: boom"
+        ]
+    }
+}

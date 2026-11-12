@@ -1,0 +1,49 @@
+{
+    "flat ring": "1111101101110",
+    "haversine": [
+        57663.776823,
+        0.0,
+        2226651.497268
+    ],
+    "linestring": "1110101001000",
+    "linestring bad first": "0000000000000",
+    "linestring scalar first": "0000000000000",
+    "multipolygon empty": "0000000000000",
+    "multipolygon first inside": "1110101101111",
+    "multipolygon second inside": "0010000000111",
+    "null": "0000000000000",
+    "point coordinates scalar": "0000000000000",
+    "point inside": "1111101101111",
+    "point no type": "0000000000000",
+    "point non-numeric": "0000000000000",
+    "point numeric strings": "1110101101111",
+    "point on west edge": "1010111101110",
+    "point one coordinate": "0000000000000",
+    "point outside": "0010000000000",
+    "polygon around predicate": "1010101101111",
+    "polygon bad vertices": "10101011011EE",
+    "polygon crossing no vertex": "1010101101000",
+    "polygon empty ring": "0000000000000",
+    "polygon far away": "0010000000000",
+    "polygon inside": "1010101101111",
+    "polygon only bad vertices": {
+        "bits": "0000000000110",
+        "warnings": [
+            "Undefined array key 1",
+            "Undefined array key 1",
+            "Undefined array key 1",
+            "Undefined array key 1"
+        ]
+    },
+    "polygon overlapping": "1010001001100",
+    "polygon ring not array": {
+        "bits": "0000000000EEE",
+        "warnings": [
+            "foreach() argument must be of type array|object, string given",
+            "foreach() argument must be of type array|object, string given",
+            "foreach() argument must be of type array|object, string given"
+        ]
+    },
+    "triangle two vertices": "1010101101110",
+    "unknown type": "0000000000000"
+}

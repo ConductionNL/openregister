@@ -61,15 +61,16 @@ final class FlowFieldPath {
 	/**
 	 * Write a value at a dotted path, creating the containers it needs.
 	 *
-	 * @param array  $json  The item's record, modified in place.
-	 * @param string $path  The field path, optionally dotted.
-	 * @param mixed  $value The value to write.
+	 * @param array           $json  The item's record, modified in place.
+	 * @param FieldAssignment $write The field path, optionally dotted, and the value to write.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
 	 */
-	public static function assign(array &$json, string $path, mixed $value): void {
+	public static function assign(array &$json, FieldAssignment $write): void {
+		$path  = $write->path;
+		$value = $write->value;
 		if (str_contains($path, '.') === false) {
 			$json[$path] = $value;
 
@@ -78,8 +79,21 @@ final class FlowFieldPath {
 
 		$segments = explode('.', $path);
 		$last = array_pop($segments);
-		$cursor = &$json;
+		$cursor = &self::branch(json: $json, segments: $segments);
+		$cursor[$last] = $value;
+		unset($cursor);
+	}//end assign()
 
+	/**
+	 * The array at the given segments, created (or replacing a scalar) where missing.
+	 *
+	 * @param array             $json     The record, modified in place.
+	 * @param array<int,string> $segments The path segments leading to the parent.
+	 *
+	 * @return array A reference to the parent array.
+	 */
+	private static function &branch(array &$json, array $segments): array {
+		$cursor = &$json;
 		foreach ($segments as $segment) {
 			if (isset($cursor[$segment]) === false || is_array($cursor[$segment]) === false) {
 				$cursor[$segment] = [];
@@ -88,8 +102,6 @@ final class FlowFieldPath {
 			$cursor = &$cursor[$segment];
 		}
 
-		$cursor[$last] = $value;
-		unset($cursor);
-
-	}//end assign()
+		return $cursor;
+	}//end branch()
 }//end class

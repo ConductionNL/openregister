@@ -8,6 +8,7 @@ use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\SearchLeafScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -17,6 +18,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
+use OCA\OpenRegister\Db\RegisterSchema;
 
 /**
  * Unit tests for MagicSearchHandler comparison-operator filter support.
@@ -83,7 +88,7 @@ class MagicSearchHandlerTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$method->setAccessible(true);
 
-		return $method->invoke($this->handler, $query, $schema, $connection, $isPostgres);
+		return $method->invoke($this->handler, new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $schema), connection: $connection, isPostgres: $isPostgres));
 	}//end invokeMethod()
 
 	/**
@@ -326,15 +331,12 @@ class MagicSearchHandlerTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildSearchConditionSql');
 		$method->setAccessible(true);
 
-		return $method->invoke(
-			$this->handler,
-			$search,
-			$schema,
-			$query,
-			$this->makeConnection(),
-			$isPostgres,
-			null
-		);
+		$scope = new SearchLeafScope(schema: $schema, isPostgres: $isPostgres);
+		$scope->fuzzyEnabled = (new ReflectionMethod(MagicSearchHandler::class, 'isFuzzySearchEnabled'))
+			->invoke($this->handler, $query['_fuzzy'] ?? null);
+		$scope->connection = $this->makeConnection();
+
+		return $method->invoke($this->handler, $search, $scope);
 	}//end invokeBuildSearchConditionSql()
 
 	public function testBuildSearchConditionSqlQuotesReservedWordOnPostgres(): void {
@@ -439,12 +441,12 @@ class MagicSearchHandlerTest extends TestCase {
 		// The `_fuzzy=true` param is honoured only when pg_trgm is available.
 		// hasPgTrgmExtension() short-circuits to false on non-PostgreSQL, so
 		// even a client-supplied _fuzzy MUST NOT emit similarity() on MariaDB.
-		// We prime the cached hasPgTrgm=false directly so the test doesn't need
+		// We prime the probe with false directly so the test doesn't need
 		// a full IDBConnection platform mock — the platform-branch semantics in
 		// buildSearchConditionSql are the SUT here, not the pg_trgm probe.
-		$hasPgTrgmProp = new \ReflectionProperty(MagicSearchHandler::class, 'hasPgTrgm');
-		$hasPgTrgmProp->setAccessible(true);
-		$hasPgTrgmProp->setValue($this->handler, false);
+		$probe = new \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe($this->createMock(IDBConnection::class), $this->createMock(LoggerInterface::class));
+		(new \ReflectionProperty($probe, 'available'))->setValue($probe, false);
+		(new \ReflectionProperty(MagicSearchHandler::class, 'trgmProbe'))->setValue($this->handler, $probe);
 
 		$sql = $this->invokeBuildSearchConditionSql(
 			search: 'foo',
@@ -484,7 +486,7 @@ class MagicSearchHandlerTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'convertRowToObjectEntity');
 		$method->setAccessible(true);
-		$entity = $method->invoke($this->handler, $row, $register, $schema, '');
+		$entity = $method->invoke($this->handler, $row, new TableSearch(table: new RegisterSchema(register: $register, schema: $schema), tableName: ''));
 
 		return ($entity?->getObject() ?? []);
 	}//end invokeConvertRow()

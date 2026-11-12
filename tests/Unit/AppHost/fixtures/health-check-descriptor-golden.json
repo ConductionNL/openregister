@@ -1,0 +1,129 @@
+{
+    "no type": {
+        "refused": "Unknown health check type \"NULL\" (allowed: database, filesystem, appEnabled, appConfig, orAvailable)."
+    },
+    "unknown type": {
+        "refused": "Unknown health check type \"ping\" (allowed: database, filesystem, appEnabled, appConfig, orAvailable)."
+    },
+    "type not a string": {
+        "refused": "Unknown health check type \"5\" (allowed: database, filesystem, appEnabled, appConfig, orAvailable)."
+    },
+    "type true": {
+        "refused": "Unknown health check type \"1\" (allowed: database, filesystem, appEnabled, appConfig, orAvailable)."
+    },
+    "database defaults": {
+        "id": "database_4",
+        "type": "database",
+        "severity": "critical",
+        "app": null,
+        "key": null,
+        "assert": null
+    },
+    "bad severity": {
+        "refused": "Invalid severity \"fatal\" for health check (allowed: critical, degraded)."
+    },
+    "severity array": {
+        "refused": "Invalid severity \"array\" for health check (allowed: critical, degraded)."
+    },
+    "degraded": {
+        "id": "db",
+        "type": "database",
+        "severity": "degraded",
+        "app": null,
+        "key": null,
+        "assert": null
+    },
+    "empty id": {
+        "refused": "Health check id must be a non-empty string."
+    },
+    "id not a string": {
+        "refused": "Health check id must be a non-empty string."
+    },
+    "appEnabled": {
+        "id": "appEnabled_4",
+        "type": "appEnabled",
+        "severity": "critical",
+        "app": "Mail_2-x",
+        "key": null,
+        "assert": null
+    },
+    "appEnabled bad app": {
+        "refused": "appEnabled check requires a valid \"app\" id."
+    },
+    "appEnabled no app": {
+        "refused": "appEnabled check requires a valid \"app\" id."
+    },
+    "appConfig": {
+        "id": "appConfig_4",
+        "type": "appConfig",
+        "severity": "critical",
+        "app": null,
+        "key": "url",
+        "assert": "present"
+    },
+    "appConfig nonEmpty": {
+        "id": "appConfig_4",
+        "type": "appConfig",
+        "severity": "critical",
+        "app": null,
+        "key": "url",
+        "assert": "nonEmpty"
+    },
+    "appConfig no key": {
+        "refused": "appConfig check requires a non-empty \"key\"."
+    },
+    "appConfig empty key": {
+        "refused": "appConfig check requires a non-empty \"key\"."
+    },
+    "appConfig bad assert": {
+        "refused": "Invalid appConfig assert \"exists\" (allowed: present, nonEmpty)."
+    },
+    "app ignored on other types": {
+        "id": "database_4",
+        "type": "database",
+        "severity": "critical",
+        "app": null,
+        "key": null,
+        "assert": null
+    },
+    "type database": {
+        "id": "database_0",
+        "type": "database",
+        "severity": "critical",
+        "app": null,
+        "key": null,
+        "assert": null
+    },
+    "type filesystem": {
+        "id": "filesystem_1",
+        "type": "filesystem",
+        "severity": "critical",
+        "app": null,
+        "key": null,
+        "assert": null
+    },
+    "type appEnabled": {
+        "id": "appEnabled_2",
+        "type": "appEnabled",
+        "severity": "critical",
+        "app": "a",
+        "key": null,
+        "assert": null
+    },
+    "type appConfig": {
+        "id": "appConfig_3",
+        "type": "appConfig",
+        "severity": "critical",
+        "app": null,
+        "key": "k",
+        "assert": "present"
+    },
+    "type orAvailable": {
+        "id": "orAvailable_4",
+        "type": "orAvailable",
+        "severity": "critical",
+        "app": null,
+        "key": null,
+        "assert": null
+    }
+}

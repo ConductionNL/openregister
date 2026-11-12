@@ -1,0 +1,793 @@
+{
+    "related ids kept and plain pointers stay": {
+        "answer": {
+            "notes": [
+                "22222222-2222-2222-2222-222222222222",
+                "22222222222222222222222222222222",
+                "abcdefabcdefabcdefabcdefabcdefab",
+                "id-22222222-2222-2222-2222-222222222223",
+                "id-22222222222222222222222222222224",
+                "42",
+                "33333333-3333-3333-3333-333333333333"
+            ]
+        },
+        "trace": [
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "text": "new"
+                },
+                null
+            ],
+            [
+                "register",
+                "10"
+            ]
+        ],
+        "orphans": {
+            "p-1": [
+                [
+                    [
+                        "old-1",
+                        "old-2"
+                    ],
+                    {
+                        "register": {
+                            "id": 10,
+                            "uuid": null,
+                            "slug": null,
+                            "title": null,
+                            "version": null,
+                            "description": null,
+                            "schemas": [],
+                            "source": null,
+                            "tablePrefix": null,
+                            "folder": null,
+                            "updated": null,
+                            "created": null,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "authorization": [],
+                            "sharedWith": [],
+                            "groups": [],
+                            "type": null,
+                            "languages": null,
+                            "configuration": [],
+                            "quota": {
+                                "storage": null,
+                                "bandwidth": null,
+                                "requests": null,
+                                "users": null,
+                                "groups": null
+                            },
+                            "usage": {
+                                "storage": 0,
+                                "bandwidth": 0,
+                                "requests": 0,
+                                "users": 0,
+                                "groups": 0
+                            },
+                            "deleted": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null
+                        },
+                        "schema": {
+                            "id": 2,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": "note",
+                            "title": null,
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        },
+                        "inverse": null,
+                        "parent": "p-1"
+                    }
+                ]
+            ]
+        }
+    },
+    "related list emptied keeps plain pointers": {
+        "answer": {
+            "notes": []
+        },
+        "trace": [
+            [
+                "register",
+                "10"
+            ]
+        ],
+        "orphans": {
+            "p-1": [
+                [
+                    [
+                        "old-1",
+                        "22222222-2222-2222-2222-222222222222",
+                        "old-2"
+                    ],
+                    {
+                        "register": {
+                            "id": 10,
+                            "uuid": null,
+                            "slug": null,
+                            "title": null,
+                            "version": null,
+                            "description": null,
+                            "schemas": [],
+                            "source": null,
+                            "tablePrefix": null,
+                            "folder": null,
+                            "updated": null,
+                            "created": null,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "authorization": [],
+                            "sharedWith": [],
+                            "groups": [],
+                            "type": null,
+                            "languages": null,
+                            "configuration": [],
+                            "quota": {
+                                "storage": null,
+                                "bandwidth": null,
+                                "requests": null,
+                                "users": null,
+                                "groups": null
+                            },
+                            "usage": {
+                                "storage": 0,
+                                "bandwidth": 0,
+                                "requests": 0,
+                                "users": 0,
+                                "groups": 0
+                            },
+                            "deleted": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null
+                        },
+                        "schema": {
+                            "id": 2,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": "note",
+                            "title": null,
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        },
+                        "inverse": null,
+                        "parent": "p-1"
+                    }
+                ]
+            ]
+        }
+    },
+    "related with no stored list": {
+        "answer": {
+            "notes": [
+                "22222222-2222-2222-2222-222222222222",
+                "22222222222222222222222222222222",
+                "abcdefabcdefabcdefabcdefabcdefab",
+                "id-22222222-2222-2222-2222-222222222223",
+                "id-22222222222222222222222222222224",
+                "42"
+            ]
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "cascade list emptied keeps plain pointers": {
+        "answer": {
+            "notes": []
+        },
+        "trace": [
+            [
+                "register",
+                "10"
+            ]
+        ],
+        "orphans": {
+            "p-1": [
+                [
+                    [
+                        "old-1",
+                        "22222222-2222-2222-2222-222222222222",
+                        "old-2"
+                    ],
+                    {
+                        "register": {
+                            "id": 10,
+                            "uuid": null,
+                            "slug": null,
+                            "title": null,
+                            "version": null,
+                            "description": null,
+                            "schemas": [],
+                            "source": null,
+                            "tablePrefix": null,
+                            "folder": null,
+                            "updated": null,
+                            "created": null,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "authorization": [],
+                            "sharedWith": [],
+                            "groups": [],
+                            "type": null,
+                            "languages": null,
+                            "configuration": [],
+                            "quota": {
+                                "storage": null,
+                                "bandwidth": null,
+                                "requests": null,
+                                "users": null,
+                                "groups": null
+                            },
+                            "usage": {
+                                "storage": 0,
+                                "bandwidth": 0,
+                                "requests": 0,
+                                "users": 0,
+                                "groups": 0
+                            },
+                            "deleted": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null
+                        },
+                        "schema": {
+                            "id": 2,
+                            "uuid": null,
+                            "uri": null,
+                            "slug": "note",
+                            "title": null,
+                            "description": null,
+                            "version": null,
+                            "summary": null,
+                            "icon": null,
+                            "required": [],
+                            "properties": [],
+                            "archive": [],
+                            "source": null,
+                            "hardValidation": true,
+                            "immutable": false,
+                            "appendOnly": false,
+                            "searchable": true,
+                            "smartPickerEnabled": false,
+                            "updated": null,
+                            "created": null,
+                            "maxDepth": 0,
+                            "owner": null,
+                            "application": null,
+                            "organisation": null,
+                            "groups": [],
+                            "authorization": [],
+                            "sharedWith": [],
+                            "deleted": null,
+                            "configuration": null,
+                            "exportable": false,
+                            "allOf": null,
+                            "oneOf": null,
+                            "anyOf": null,
+                            "facets": null,
+                            "hooks": null,
+                            "_mail": null,
+                            "_contacts": null,
+                            "_notes": null,
+                            "_todos": null,
+                            "_calendar": null,
+                            "_talk": null,
+                            "_deck": null,
+                            "draft": null
+                        },
+                        "inverse": null,
+                        "parent": "p-1"
+                    }
+                ]
+            ]
+        }
+    },
+    "cascade ids only": {
+        "answer": {
+            "notes": []
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "cascade objects created": {
+        "answer": {
+            "notes": [
+                "33333333-3333-3333-3333-333333333333"
+            ]
+        },
+        "trace": [
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "text": "new"
+                },
+                null
+            ]
+        ],
+        "orphans": []
+    },
+    "single cascade stores the created id": {
+        "answer": {
+            "lead": "33333333-3333-3333-3333-333333333333",
+            "keep": 1
+        },
+        "trace": [
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "text": "new"
+                },
+                null
+            ]
+        ],
+        "orphans": []
+    },
+    "single cascade of an object value": {
+        "answer": {
+            "lead": "33333333-3333-3333-3333-333333333333"
+        },
+        "trace": [
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "text": "new"
+                },
+                null
+            ]
+        ],
+        "orphans": []
+    },
+    "single cascade skips an effectively empty object": {
+        "answer": {
+            "lead": {
+                "text": "",
+                "list": []
+            }
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "single cascade skips a scalar": {
+        "answer": {
+            "lead": "abc"
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "single inversedBy drops the property": {
+        "answer": [],
+        "trace": [
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "text": "new",
+                    "incidents": "p-1"
+                },
+                null
+            ]
+        ],
+        "orphans": []
+    },
+    "single write-back is left to the write-back pass": {
+        "answer": {
+            "note": {
+                "text": "new"
+            }
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "list write-back is left to the write-back pass": {
+        "answer": {
+            "tags": [
+                {
+                    "text": "new"
+                }
+            ]
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "list inversedBy drops the property": {
+        "answer": [],
+        "trace": [
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "text": "new",
+                    "incidents": "p-1"
+                },
+                null
+            ]
+        ],
+        "orphans": []
+    },
+    "list inversedBy emptied": {
+        "answer": {
+            "kids": []
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "list without a value": {
+        "answer": {
+            "kids": "old-1"
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "write-back items carry register and removal": {
+        "answer": {
+            "keep": 1
+        },
+        "trace": [
+            [
+                "find",
+                "42",
+                null,
+                null
+            ],
+            [
+                "save",
+                "11",
+                "2",
+                {
+                    "id": "42",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "42"
+            ]
+        ],
+        "orphans": []
+    },
+    "write-back at list level for items": {
+        "answer": [],
+        "trace": [
+            [
+                "find",
+                "42",
+                null,
+                null
+            ],
+            [
+                "save",
+                "12",
+                "2",
+                {
+                    "id": "42",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "42"
+            ]
+        ],
+        "orphans": []
+    },
+    "write-back to an unknown schema": {
+        "answer": [],
+        "trace": [
+            [
+                "find",
+                "42",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "",
+                {
+                    "id": "42",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "42"
+            ]
+        ],
+        "orphans": []
+    },
+    "write-back with an empty schema reference": {
+        "answer": {
+            "tags": [
+                "42"
+            ]
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "write-back of an empty list": {
+        "answer": {
+            "tags": []
+        },
+        "trace": [],
+        "orphans": []
+    },
+    "write-back to valid ids": {
+        "answer": {
+            "tags": [
+                "22222222-2222-2222-2222-222222222222",
+                "22222222222222222222222222222222",
+                "abcdefabcdefabcdefabcdefabcdefab",
+                "id-22222222-2222-2222-2222-222222222223",
+                "id-22222222222222222222222222222224",
+                "42",
+                "not-an-id",
+                "2222222-2222-2222-2222-222222222222",
+                "",
+                " ",
+                "4.2",
+                {
+                    "text": "new"
+                },
+                {
+                    "id": ""
+                },
+                [],
+                7
+            ]
+        },
+        "trace": [
+            [
+                "find",
+                "22222222-2222-2222-2222-222222222222",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "22222222-2222-2222-2222-222222222222",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "22222222-2222-2222-2222-222222222222"
+            ],
+            [
+                "find",
+                "22222222222222222222222222222222",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "22222222222222222222222222222222",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "22222222222222222222222222222222"
+            ],
+            [
+                "find",
+                "abcdefabcdefabcdefabcdefabcdefab",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "abcdefabcdefabcdefabcdefabcdefab",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "abcdefabcdefabcdefabcdefabcdefab"
+            ],
+            [
+                "find",
+                "id-22222222-2222-2222-2222-222222222223",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "id-22222222-2222-2222-2222-222222222223",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "id-22222222-2222-2222-2222-222222222223"
+            ],
+            [
+                "find",
+                "id-22222222222222222222222222222224",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "id-22222222222222222222222222222224",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "id-22222222222222222222222222222224"
+            ],
+            [
+                "find",
+                "42",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "42",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "42"
+            ]
+        ],
+        "orphans": []
+    },
+    "write-back single id": {
+        "answer": {
+            "note": "42"
+        },
+        "trace": [
+            [
+                "find",
+                "42",
+                null,
+                null
+            ],
+            [
+                "save",
+                "10",
+                "2",
+                {
+                    "id": "42",
+                    "incidents": [
+                        "p-0",
+                        "p-1"
+                    ]
+                },
+                "42"
+            ]
+        ],
+        "orphans": []
+    },
+    "write-back single non-id": {
+        "answer": {
+            "note": "not-an-id"
+        },
+        "trace": [],
+        "orphans": []
+    }
+}

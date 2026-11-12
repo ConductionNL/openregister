@@ -1,0 +1,787 @@
+{
+    "rest: accepted with a rejected object": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[RestApiTransport] Starting REST API transfer",
+                "context": {
+                    "endpoint": "https://edepot.example.com/api/ingest"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "multipart": [
+                            {
+                                "name": "sip",
+                                "contents": "resource",
+                                "filename": "<sip-name>"
+                            }
+                        ],
+                        "timeout": 300
+                    }
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[RestApiTransport] REST API transfer completed",
+                "context": {
+                    "statusCode": 200,
+                    "reference": "R-1",
+                    "hasRejections": true
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": {
+                "a": {
+                    "accepted": true,
+                    "reference": null,
+                    "error": null
+                },
+                "b": {
+                    "accepted": false,
+                    "reference": null,
+                    "error": "bad"
+                },
+                "c": {
+                    "accepted": true,
+                    "reference": "X",
+                    "error": null
+                }
+            },
+            "errorMessage": null,
+            "transferReference": "R-1",
+            "partial": true
+        }
+    },
+    "rest: accepted, id as reference, no objects": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[RestApiTransport] Starting REST API transfer",
+                "context": {
+                    "endpoint": "https://edepot.example.com/api/ingest"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "multipart": [
+                            {
+                                "name": "sip",
+                                "contents": "resource",
+                                "filename": "<sip-name>"
+                            }
+                        ],
+                        "timeout": 300
+                    }
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[RestApiTransport] REST API transfer completed",
+                "context": {
+                    "statusCode": 201,
+                    "reference": "I-9",
+                    "hasRejections": false
+                }
+            }
+        ],
+        "result": {
+            "success": true,
+            "objectResults": [],
+            "errorMessage": null,
+            "transferReference": "I-9",
+            "partial": false
+        }
+    },
+    "rest: accepted, nothing in the body": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[RestApiTransport] Starting REST API transfer",
+                "context": {
+                    "endpoint": "https://edepot.example.com/api/ingest"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "multipart": [
+                            {
+                                "name": "sip",
+                                "contents": "resource",
+                                "filename": "<sip-name>"
+                            }
+                        ],
+                        "timeout": 300
+                    }
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[RestApiTransport] REST API transfer completed",
+                "context": {
+                    "statusCode": 202,
+                    "reference": null,
+                    "hasRejections": false
+                }
+            }
+        ],
+        "result": {
+            "success": true,
+            "objectResults": [],
+            "errorMessage": null,
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "rest: http error with an error field": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[RestApiTransport] Starting REST API transfer",
+                "context": {
+                    "endpoint": "https://edepot.example.com/api/ingest"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "multipart": [
+                            {
+                                "name": "sip",
+                                "contents": "resource",
+                                "filename": "<sip-name>"
+                            }
+                        ],
+                        "timeout": 300
+                    }
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[RestApiTransport] REST API transfer failed",
+                "context": {
+                    "error": "e-Depot API returned error: disk full"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "e-Depot API returned error: disk full",
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "rest: http error with a message field": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[RestApiTransport] Starting REST API transfer",
+                "context": {
+                    "endpoint": "https://edepot.example.com/api/ingest"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "multipart": [
+                            {
+                                "name": "sip",
+                                "contents": "resource",
+                                "filename": "<sip-name>"
+                            }
+                        ],
+                        "timeout": 300
+                    }
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[RestApiTransport] REST API transfer failed",
+                "context": {
+                    "error": "e-Depot API returned error: bad package"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "e-Depot API returned error: bad package",
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "rest: http error without a body": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[RestApiTransport] Starting REST API transfer",
+                "context": {
+                    "endpoint": "https://edepot.example.com/api/ingest"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "multipart": [
+                            {
+                                "name": "sip",
+                                "contents": "resource",
+                                "filename": "<sip-name>"
+                            }
+                        ],
+                        "timeout": 300
+                    }
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[RestApiTransport] REST API transfer failed",
+                "context": {
+                    "error": "e-Depot API returned error: HTTP 503"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "e-Depot API returned error: HTTP 503",
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "rest: transport exception": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[RestApiTransport] Starting REST API transfer",
+                "context": {
+                    "endpoint": "https://edepot.example.com/api/ingest"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "multipart": [
+                            {
+                                "name": "sip",
+                                "contents": "resource",
+                                "filename": "<sip-name>"
+                            }
+                        ],
+                        "timeout": 300
+                    }
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[RestApiTransport] REST API transfer failed",
+                "context": {
+                    "error": "connection refused"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "connection refused",
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "rest: missing file": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[RestApiTransport] Starting REST API transfer",
+                "context": {
+                    "endpoint": "https://edepot.example.com/api/ingest"
+                }
+            },
+            {
+                "log": "error",
+                "message": "[RestApiTransport] REST API transfer failed",
+                "context": {
+                    "error": "SIP file not found: /nonexistent/sip.zip"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "SIP file not found: /nonexistent/sip.zip",
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "rest: oauth2 bearer": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[RestApiTransport] Starting REST API transfer",
+                "context": {
+                    "endpoint": "https://e/x"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "https://e/x",
+                    {
+                        "headers": {
+                            "Authorization": "Bearer tok"
+                        },
+                        "multipart": [
+                            {
+                                "name": "sip",
+                                "contents": "resource",
+                                "filename": "<sip-name>"
+                            }
+                        ],
+                        "timeout": 300
+                    }
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[RestApiTransport] REST API transfer completed",
+                "context": {
+                    "statusCode": 200,
+                    "reference": null,
+                    "hasRejections": false
+                }
+            }
+        ],
+        "result": {
+            "success": true,
+            "objectResults": [],
+            "errorMessage": null,
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "rest: connection test ok": {
+        "calls": [
+            {
+                "http": "get",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "timeout": 10
+                    }
+                ]
+            }
+        ],
+        "result": true
+    },
+    "rest: connection test 404": {
+        "calls": [
+            {
+                "http": "get",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "timeout": 10
+                    }
+                ]
+            }
+        ],
+        "result": false
+    },
+    "rest: connection test down": {
+        "calls": [
+            {
+                "http": "get",
+                "args": [
+                    "https://edepot.example.com/api/ingest",
+                    {
+                        "headers": {
+                            "X-API-Key": "a-real-key"
+                        },
+                        "timeout": 10
+                    }
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[RestApiTransport] Connection test failed",
+                "context": {
+                    "error": "connection refused"
+                }
+            }
+        ],
+        "result": false
+    },
+    "oc: job created": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[OpenConnectorTransport] Starting OpenConnector transfer",
+                "context": {
+                    "sourceId": "s-1"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "https://oc.example.com/index.php/apps/integriq/api/synchronizations",
+                    {
+                        "json": {
+                            "sourceId": "s-1",
+                            "action": "push",
+                            "payload": {
+                                "type": "sip_package",
+                                "filePath": "<sip>",
+                                "fileName": "<sip-name>",
+                                "fileSize": 1234
+                            }
+                        },
+                        "timeout": 60
+                    }
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[OpenConnectorTransport] Synchronization job created",
+                "context": {
+                    "sourceId": "s-1",
+                    "callLogId": 77
+                }
+            }
+        ],
+        "result": {
+            "success": true,
+            "objectResults": [],
+            "errorMessage": null,
+            "transferReference": "77",
+            "partial": false
+        }
+    },
+    "oc: job created, id, configured app": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[OpenConnectorTransport] Starting OpenConnector transfer",
+                "context": {
+                    "sourceId": "s-1"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "http://localhost:8080/index.php/apps/openconnector/api/synchronizations",
+                    {
+                        "json": {
+                            "sourceId": "s-1",
+                            "action": "push",
+                            "payload": {
+                                "type": "sip_package",
+                                "filePath": "<sip>",
+                                "fileName": "<sip-name>",
+                                "fileSize": 1234
+                            }
+                        },
+                        "timeout": 60
+                    }
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[OpenConnectorTransport] Synchronization job created",
+                "context": {
+                    "sourceId": "s-1",
+                    "callLogId": "j"
+                }
+            }
+        ],
+        "result": {
+            "success": true,
+            "objectResults": [],
+            "errorMessage": null,
+            "transferReference": "j",
+            "partial": false
+        }
+    },
+    "oc: no job id": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[OpenConnectorTransport] Starting OpenConnector transfer",
+                "context": {
+                    "sourceId": "s-1"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "http://localhost:8080/index.php/apps/integriq/api/synchronizations",
+                    {
+                        "json": {
+                            "sourceId": "s-1",
+                            "action": "push",
+                            "payload": {
+                                "type": "sip_package",
+                                "filePath": "<sip>",
+                                "fileName": "<sip-name>",
+                                "fileSize": 1234
+                            }
+                        },
+                        "timeout": 60
+                    }
+                ]
+            },
+            {
+                "log": "info",
+                "message": "[OpenConnectorTransport] Synchronization job created",
+                "context": {
+                    "sourceId": "s-1",
+                    "callLogId": null
+                }
+            }
+        ],
+        "result": {
+            "success": true,
+            "objectResults": [],
+            "errorMessage": null,
+            "transferReference": "",
+            "partial": false
+        }
+    },
+    "oc: transport exception": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[OpenConnectorTransport] Starting OpenConnector transfer",
+                "context": {
+                    "sourceId": "s-1"
+                }
+            },
+            {
+                "http": "post",
+                "args": [
+                    "http://localhost:8080/index.php/apps/integriq/api/synchronizations",
+                    {
+                        "json": {
+                            "sourceId": "s-1",
+                            "action": "push",
+                            "payload": {
+                                "type": "sip_package",
+                                "filePath": "<sip>",
+                                "fileName": "<sip-name>",
+                                "fileSize": 1234
+                            }
+                        },
+                        "timeout": 60
+                    }
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[OpenConnectorTransport] Transfer failed",
+                "context": {
+                    "error": "connection refused"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "connection refused",
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "oc: missing file": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[OpenConnectorTransport] Starting OpenConnector transfer",
+                "context": {
+                    "sourceId": "s-1"
+                }
+            },
+            {
+                "log": "error",
+                "message": "[OpenConnectorTransport] Transfer failed",
+                "context": {
+                    "error": "SIP file not found: /nonexistent/sip.zip"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "SIP file not found: /nonexistent/sip.zip",
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "oc: connection test falls through a 404": {
+        "calls": [
+            {
+                "http": "get",
+                "args": [
+                    "http://localhost:8080/index.php/apps/integriq/api/sources/s-1",
+                    {
+                        "timeout": 10,
+                        "http_errors": false
+                    }
+                ]
+            },
+            {
+                "http": "get",
+                "args": [
+                    "http://localhost:8080/index.php/apps/openconnector/api/sources/s-1",
+                    {
+                        "timeout": 10,
+                        "http_errors": false
+                    }
+                ]
+            }
+        ],
+        "result": true
+    },
+    "oc: connection test both 404": {
+        "calls": [
+            {
+                "http": "get",
+                "args": [
+                    "http://localhost:8080/index.php/apps/integriq/api/sources/s-1",
+                    {
+                        "timeout": 10,
+                        "http_errors": false
+                    }
+                ]
+            },
+            {
+                "http": "get",
+                "args": [
+                    "http://localhost:8080/index.php/apps/openconnector/api/sources/s-1",
+                    {
+                        "timeout": 10,
+                        "http_errors": false
+                    }
+                ]
+            }
+        ],
+        "result": false
+    },
+    "oc: connection test down": {
+        "calls": [
+            {
+                "http": "get",
+                "args": [
+                    "http://localhost:8080/index.php/apps/integriq/api/sources/s-1",
+                    {
+                        "timeout": 10,
+                        "http_errors": false
+                    }
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[OpenConnectorTransport] Connection test failed",
+                "context": {
+                    "error": "connection refused"
+                }
+            }
+        ],
+        "result": false
+    },
+    "sftp: missing file": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[SftpTransport] Starting SFTP transfer",
+                "context": {
+                    "host": "sftp.example.com"
+                }
+            },
+            {
+                "log": "error",
+                "message": "[SftpTransport] SFTP transfer failed",
+                "context": {
+                    "error": "SIP file not found: /nonexistent/sip.zip"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "SIP file not found: /nonexistent/sip.zip",
+            "transferReference": null,
+            "partial": false
+        }
+    },
+    "sftp: no credentials": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[SftpTransport] Starting SFTP transfer",
+                "context": {
+                    "host": "h"
+                }
+            },
+            {
+                "log": "error",
+                "message": "[SftpTransport] SFTP transfer failed",
+                "context": {
+                    "error": "SFTP requires either password or keyPath for authentication"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "SFTP requires either password or keyPath for authentication",
+            "transferReference": null,
+            "partial": false
+        }
+    }
+}

@@ -1,0 +1,240 @@
+{
+    "components not arrays": {
+        "isEmpty": false,
+        "filtered": {
+            "components": {
+                "registers": [],
+                "schemas": [],
+                "objects": []
+            }
+        },
+        "hasContent": false
+    },
+    "empty lists": {
+        "isEmpty": true,
+        "filtered": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Doc",
+                "version": "1.2.3"
+            },
+            "x-openregister": {
+                "type": "application",
+                "app": "x"
+            },
+            "components": {
+                "registers": [],
+                "schemas": [],
+                "objects": []
+            }
+        },
+        "hasContent": false
+    },
+    "empty selection": {
+        "isEmpty": true,
+        "filtered": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Doc",
+                "version": "1.2.3"
+            },
+            "x-openregister": {
+                "type": "application",
+                "app": "x"
+            },
+            "components": {
+                "registers": [],
+                "schemas": [],
+                "objects": []
+            }
+        },
+        "hasContent": false
+    },
+    "everything": {
+        "isEmpty": false,
+        "filtered": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Doc",
+                "version": "1.2.3"
+            },
+            "x-openregister": {
+                "type": "application",
+                "app": "x"
+            },
+            "components": {
+                "registers": {
+                    "Zaken": {
+                        "title": "Zaken"
+                    }
+                },
+                "schemas": {
+                    "besluit": {
+                        "title": "B"
+                    }
+                },
+                "objects": [
+                    {
+                        "title": "two",
+                        "@self": {
+                            "register": "zaken",
+                            "schema": "besluit",
+                            "slug": "obj-2"
+                        }
+                    }
+                ]
+            }
+        },
+        "hasContent": true
+    },
+    "no components": {
+        "isEmpty": false,
+        "filtered": {
+            "openapi": "3.0.0",
+            "x-openregister": "string meta",
+            "components": {
+                "registers": [],
+                "schemas": [],
+                "objects": []
+            }
+        },
+        "hasContent": false
+    },
+    "non-array lists": {
+        "isEmpty": true,
+        "filtered": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Doc",
+                "version": "1.2.3"
+            },
+            "x-openregister": {
+                "type": "application",
+                "app": "x"
+            },
+            "components": {
+                "registers": [],
+                "schemas": [],
+                "objects": []
+            }
+        },
+        "hasContent": false
+    },
+    "objects by key": {
+        "isEmpty": false,
+        "filtered": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Doc",
+                "version": "1.2.3"
+            },
+            "x-openregister": {
+                "type": "application",
+                "app": "x"
+            },
+            "components": {
+                "registers": [],
+                "schemas": [],
+                "objects": [
+                    {
+                        "title": "one",
+                        "@self": {
+                            "register": "Zaken",
+                            "schema": "ZaakType",
+                            "slug": "Obj-1"
+                        }
+                    },
+                    {
+                        "title": "two",
+                        "@self": {
+                            "register": "zaken",
+                            "schema": "besluit",
+                            "slug": "obj-2"
+                        }
+                    },
+                    {
+                        "title": "partial",
+                        "@self": {
+                            "slug": "p"
+                        }
+                    }
+                ]
+            }
+        },
+        "hasContent": true
+    },
+    "other selection keys": {
+        "isEmpty": true,
+        "filtered": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Doc",
+                "version": "1.2.3"
+            },
+            "x-openregister": {
+                "type": "application",
+                "app": "x"
+            },
+            "components": {
+                "registers": [],
+                "schemas": [],
+                "objects": []
+            }
+        },
+        "hasContent": false
+    },
+    "registers mixed case": {
+        "isEmpty": false,
+        "filtered": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Doc",
+                "version": "1.2.3"
+            },
+            "x-openregister": {
+                "type": "application",
+                "app": "x"
+            },
+            "components": {
+                "registers": {
+                    "Zaken": {
+                        "title": "Zaken"
+                    },
+                    "publicaties": {
+                        "title": "Pub"
+                    },
+                    "5": {
+                        "title": "Five"
+                    }
+                },
+                "schemas": [],
+                "objects": []
+            }
+        },
+        "hasContent": true
+    },
+    "schemas only": {
+        "isEmpty": false,
+        "filtered": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Doc",
+                "version": "1.2.3"
+            },
+            "x-openregister": {
+                "type": "application",
+                "app": "x"
+            },
+            "components": {
+                "registers": [],
+                "schemas": {
+                    "ZaakType": {
+                        "title": "ZT"
+                    }
+                },
+                "objects": []
+            }
+        },
+        "hasContent": true
+    }
+}

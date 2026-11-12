@@ -29,10 +29,14 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Exception\ViewAlertRecipientException;
+use OCA\OpenRegister\Service\Rbac\AlertRecipientChange;
+use OCA\OpenRegister\Service\Rbac\ReachedView;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCP\IGroupManager;
 use OCP\IUser;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -76,8 +80,7 @@ class ViewerReachResolverTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->resolver = new ViewerReachResolver(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -169,11 +172,7 @@ class ViewerReachResolverTest extends TestCase {
 		$this->groupManager->method('isAdmin')->willReturn(false);
 		$this->groupManager->method('getUserGroupIds')->willReturn([]);
 
-		$refused = $this->resolver->refusedFields(
-			view: ['owner' => 'someone-else', 'isPublic' => true, 'sharedWith' => []],
-			reach: $this->resolver->reachOf(userId: 'intruder'),
-			update: ['name' => 'Renamed by a stranger', 'isPublic' => false]
-		);
+		$refused = $this->resolver->refusedFields(reached: new ReachedView(view: ['owner' => 'someone-else', 'isPublic' => true, 'sharedWith' => []], reach: $this->resolver->reachOf(userId: 'intruder')), update: ['name' => 'Renamed by a stranger', 'isPublic' => false]);
 
 		$this->assertSame(['name', 'isPublic'], $refused);
 	}//end testAStrangerIsRefusedEveryFieldOfAPublicView()
@@ -191,13 +190,108 @@ class ViewerReachResolverTest extends TestCase {
 		$this->groupManager->method('isAdmin')->willReturn(false);
 		$this->groupManager->method('getUserGroupIds')->willReturn([]);
 
-		$refused = $this->resolver->refusedFields(
-			view: ['owner' => 'annemarie', 'isPublic' => true, 'sharedWith' => []],
-			reach: $this->resolver->reachOf(userId: 'annemarie'),
-			update: ['name' => 'My own view', 'isPublic' => false]
-		);
+		$refused = $this->resolver->refusedFields(reached: new ReachedView(view: ['owner' => 'annemarie', 'isPublic' => true, 'sharedWith' => []], reach: $this->resolver->reachOf(userId: 'annemarie')), update: ['name' => 'My own view', 'isPublic' => false]);
 
 		$this->assertSame([], $refused);
 	}//end testTheOwnerIsRefusedNothingOnTheirOwnView()
 
+	/**
+	 * An administrator is refused nothing on somebody else's view, and a
+	 * write member is refused the share list on it.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorIsRefusedNothingAndAWriteMemberTheShares(): void {
+		$view = ['owner' => 'someone-else', 'isPublic' => false, 'sharedWith' => [['group' => 'sales', 'mode' => 'write']]];
+		$update = ['query' => ['q' => 'x'], 'sharedWith' => []];
+
+		$admin = $this->resolver->refusedFields(reached: new ReachedView(view: $view, reach: new ViewerReach(userId: 'root', groups: [], isAdmin: true)), update: $update);
+		$member = $this->resolver->refusedFields(reached: new ReachedView(view: $view, reach: new ViewerReach(userId: 'pieter', groups: ['sales'], isAdmin: false)), update: $update);
+
+		$this->assertSame([], $admin);
+		$this->assertSame(['sharedWith'], $member);
+	}//end testAnAdministratorIsRefusedNothingAndAWriteMemberTheShares()
+
+	/**
+	 * An unreadable membership refuses the recipient rather than admitting it.
+	 *
+	 * @return void
+	 */
+	public function testARecipientWhoseGroupsCannotBeReadIsRefused(): void {
+		$this->groupManager->method('isAdmin')->willReturn(false);
+		$this->groupManager->method('isInGroup')->willThrowException(new RuntimeException('LDAP is down'));
+
+		$refused = $this->resolver->refusedRecipients(
+			reached: new ReachedView(
+				view: ['owner' => 'annemarie', 'isPublic' => false, 'sharedWith' => [['group' => 'sales', 'mode' => 'read']]],
+				reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false)
+			),
+			change: new AlertRecipientChange(alert: ['recipients' => ['user:pieter']], previous: [])
+		);
+
+		$this->assertSame(expected: ['user:pieter'], actual: $refused);
+	}//end testARecipientWhoseGroupsCannotBeReadIsRefused()
+
+	/**
+	 * A user share is checked against the users that exist, and refused without a user manager.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive/2026-10-30-saved-view-user-shares/tasks.md#task-2
+	 */
+	public function testUserSharesAreCheckedAgainstTheUserManager(): void {
+		$users = $this->createMock(IUserManager::class);
+		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'fatma');
+		$withUsers = new ViewerReachResolver(
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->userSession, $this->groupManager),
+			logger: $this->createMock(LoggerInterface::class),
+			userManager: $users
+		);
+
+		$this->assertSame([], $withUsers->shareFindings(sharedWith: [['user' => 'fatma', 'mode' => 'read']]));
+		$this->assertSame('share.unknown-user', $withUsers->shareFindings(sharedWith: [['user' => 'nobody', 'mode' => 'read']])[0]['code']);
+		$this->assertSame('share.unknown-user', $this->resolver->shareFindings(sharedWith: [['user' => 'fatma', 'mode' => 'read']])[0]['code']);
+	}//end testUserSharesAreCheckedAgainstTheUserManager()
+	/**
+	 * 🔴 A SAVE THAT NARROWS REACH REFUSES THE STORED RECIPIENTS IT STOPS REACHING.
+	 *
+	 * Stored recipients are not judged as additions and an update with no
+	 * `alert` key declares none, so un-publishing the view left pieter on an
+	 * alert about a view he can no longer open.
+	 *
+	 * @return void
+	 */
+	public function testASaveThatUnpublishesTheViewRefusesTheStoredRecipientsItStopsReaching(): void {
+		$this->groupManager->method('isAdmin')->willReturn(false);
+		$this->groupManager->method('isInGroup')->willReturn(false);
+
+		$stored = ['owner' => 'annemarie', 'isPublic' => true, 'sharedWith' => [], 'alert' => ['recipients' => ['user:pieter']]];
+
+		try {
+			$this->resolver->assertMayNameRecipients(reached: new ReachedView(view: $stored, reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false)), data: ['isPublic' => false]);
+			$this->fail('Expected the narrowing save to be refused');
+		} catch (ViewAlertRecipientException $e) {
+			$this->assertSame(['user:pieter'], $e->getRecipients());
+		}
+
+		// The control: a save that does not narrow reach is untouched.
+		$this->resolver->assertMayNameRecipients(reached: new ReachedView(view: $stored, reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false)), data: ['name' => 'Renamed']);
+		$this->addToAssertionCount(1);
+	}//end testASaveThatUnpublishesTheViewRefusesTheStoredRecipientsItStopsReaching()
+
+	/**
+	 * Removing the share a group recipient reached the view through is refused too.
+	 *
+	 * @return void
+	 */
+	public function testRemovingTheShareAStoredGroupRecipientReachesTheViewThroughIsRefused(): void {
+		$this->expectException(ViewAlertRecipientException::class);
+
+		$this->resolver->assertMayNameRecipients(reached: new ReachedView(view: [
+				'owner' => 'annemarie',
+				'isPublic' => false,
+				'sharedWith' => [['group' => 'sales', 'mode' => 'read']],
+				'alert' => ['recipients' => ['sales']],
+			], reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false)), data: ['sharedWith' => []]);
+	}//end testRemovingTheShareAStoredGroupRecipientReachesTheViewThroughIsRefused()
 }//end class

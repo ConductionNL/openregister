@@ -23,12 +23,7 @@ The mail sidebar integrates OpenRegister with the Nextcloud Mail app by injectin
   search-and-link affordance REQ-001 specifies, and it replaced the old inline "Link to Object"
   button and its modal.
 - **EntitiesTab.vue** — "Entities" tab; the extracted-entity view.
-- **LinkedObjectsList.vue** — Displays explicitly linked objects for current email.
-- **SuggestedObjectsList.vue** — Displays sender-based discovery results.
-- **ObjectCard.vue** — Card component with title, schema, register, deep link, unlink button.
 - **useMailObserver.js** — Composable observing Mail app URL changes (hash-based routing).
-- **useEmailLinks.js** — Composable for API state management with caching and abort control.
-- **emailLinks.js** — Axios API wrapper for all email link endpoints.
 
 ### Styling
 

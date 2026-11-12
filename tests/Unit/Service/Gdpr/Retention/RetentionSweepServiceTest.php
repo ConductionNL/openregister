@@ -25,10 +25,12 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepService;
+use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepSources;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Gdpr\ErasureRequest;
 
 /**
  * Test class for RetentionSweepService.
@@ -118,14 +120,7 @@ class RetentionSweepServiceTest extends TestCase {
 			)
 		);
 
-		$service = new RetentionSweepService(
-			$accessor,
-			$retention,
-			$dsr,
-			$time,
-			$this->createMock(LoggerInterface::class),
-			new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))
-		);
+		$service = new RetentionSweepService(new RetentionSweepSources($accessor, $dsr, $time), $retention, $this->createMock(LoggerInterface::class), new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class))));
 
 		return [$service, $accessor, $dsr];
 	}//end build()
@@ -141,7 +136,7 @@ class RetentionSweepServiceTest extends TestCase {
 
 		$dsr->expects($this->once())
 			->method('erase')
-			->with('s@example.org', null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE)
+			->with(new ErasureRequest('s@example.org', null, DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE))
 			->willReturn([]);
 
 		$accessor->expects($this->once())

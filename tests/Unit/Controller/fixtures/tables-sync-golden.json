@@ -1,0 +1,654 @@
+{
+    "sync: empty result": {
+        "calls": [
+            {
+                "registerMapper.find": 3
+            },
+            {
+                "schemaMapper.findInIds": [
+                    7,
+                    [
+                        7,
+                        8
+                    ]
+                ]
+            },
+            {
+                "magicMapper.syncTableForRegisterSchema": [
+                    3,
+                    7
+                ]
+            },
+            {
+                "logger.info": [
+                    "[TablesController] Magic table sync completed",
+                    {
+                        "registerId": 3,
+                        "schemaId": 7,
+                        "result": []
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Magic table synchronized successfully",
+            "register": {
+                "id": 3,
+                "title": "Register 3"
+            },
+            "schema": {
+                "id": 7,
+                "title": "Schema 7"
+            },
+            "tableName": "openregister_objects_3_7",
+            "statistics": {
+                "metadata": {
+                    "count": 0,
+                    "description": "Built-in system columns (id, uuid, register, schema, etc.)"
+                },
+                "properties": {
+                    "count": 0,
+                    "description": "Schema-defined properties"
+                },
+                "columns": {
+                    "added": {
+                        "count": 0,
+                        "list": []
+                    },
+                    "removed": {
+                        "count": 0,
+                        "list": []
+                    },
+                    "deRequired": {
+                        "count": 0,
+                        "list": [],
+                        "description": "Columns made nullable (no longer required)"
+                    },
+                    "reRequired": {
+                        "count": 0,
+                        "list": [],
+                        "description": "Columns made NOT NULL (now required)"
+                    },
+                    "unchanged": {
+                        "count": 0
+                    },
+                    "total": 0
+                }
+            }
+        }
+    },
+    "sync: numeric ids": {
+        "calls": [
+            {
+                "registerMapper.find": 3
+            },
+            {
+                "schemaMapper.findInIds": [
+                    7,
+                    [
+                        7,
+                        8
+                    ]
+                ]
+            },
+            {
+                "magicMapper.syncTableForRegisterSchema": [
+                    3,
+                    7
+                ]
+            },
+            {
+                "logger.info": [
+                    "[TablesController] Magic table sync completed",
+                    {
+                        "registerId": 3,
+                        "schemaId": 7,
+                        "result": {
+                            "metadataProperties": 12,
+                            "regularProperties": 4,
+                            "columnsAdded": 2,
+                            "columnsAddedList": [
+                                "a",
+                                "b"
+                            ],
+                            "columnsDropped": 1,
+                            "columnsDroppedList": [
+                                "c"
+                            ],
+                            "columnsDeRequired": 1,
+                            "columnsDeRequiredList": [
+                                "d"
+                            ],
+                            "columnsReRequired": 1,
+                            "columnsReRequiredList": [
+                                "e"
+                            ],
+                            "columnsUnchanged": 9,
+                            "totalProperties": 16
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Magic table synchronized successfully",
+            "register": {
+                "id": 3,
+                "title": "Register 3"
+            },
+            "schema": {
+                "id": 7,
+                "title": "Schema 7"
+            },
+            "tableName": "openregister_objects_3_7",
+            "statistics": {
+                "metadata": {
+                    "count": 12,
+                    "description": "Built-in system columns (id, uuid, register, schema, etc.)"
+                },
+                "properties": {
+                    "count": 4,
+                    "description": "Schema-defined properties"
+                },
+                "columns": {
+                    "added": {
+                        "count": 2,
+                        "list": [
+                            "a",
+                            "b"
+                        ]
+                    },
+                    "removed": {
+                        "count": 1,
+                        "list": [
+                            "c"
+                        ]
+                    },
+                    "deRequired": {
+                        "count": 1,
+                        "list": [
+                            "d"
+                        ],
+                        "description": "Columns made nullable (no longer required)"
+                    },
+                    "reRequired": {
+                        "count": 1,
+                        "list": [
+                            "e"
+                        ],
+                        "description": "Columns made NOT NULL (now required)"
+                    },
+                    "unchanged": {
+                        "count": 9
+                    },
+                    "total": 16
+                }
+            }
+        }
+    },
+    "sync: numeric string ids": {
+        "calls": [
+            {
+                "registerMapper.find": 3
+            },
+            {
+                "schemaMapper.findInIds": [
+                    "7",
+                    [
+                        7,
+                        8
+                    ]
+                ]
+            },
+            {
+                "magicMapper.syncTableForRegisterSchema": [
+                    3,
+                    7
+                ]
+            },
+            {
+                "logger.info": [
+                    "[TablesController] Magic table sync completed",
+                    {
+                        "registerId": 3,
+                        "schemaId": 7,
+                        "result": {
+                            "metadataProperties": 12,
+                            "regularProperties": 4,
+                            "columnsAdded": 2,
+                            "columnsAddedList": [
+                                "a",
+                                "b"
+                            ],
+                            "columnsDropped": 1,
+                            "columnsDroppedList": [
+                                "c"
+                            ],
+                            "columnsDeRequired": 1,
+                            "columnsDeRequiredList": [
+                                "d"
+                            ],
+                            "columnsReRequired": 1,
+                            "columnsReRequiredList": [
+                                "e"
+                            ],
+                            "columnsUnchanged": 9,
+                            "totalProperties": 16
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Magic table synchronized successfully",
+            "register": {
+                "id": 3,
+                "title": "Register 3"
+            },
+            "schema": {
+                "id": 7,
+                "title": "Schema 7"
+            },
+            "tableName": "openregister_objects_3_7",
+            "statistics": {
+                "metadata": {
+                    "count": 12,
+                    "description": "Built-in system columns (id, uuid, register, schema, etc.)"
+                },
+                "properties": {
+                    "count": 4,
+                    "description": "Schema-defined properties"
+                },
+                "columns": {
+                    "added": {
+                        "count": 2,
+                        "list": [
+                            "a",
+                            "b"
+                        ]
+                    },
+                    "removed": {
+                        "count": 1,
+                        "list": [
+                            "c"
+                        ]
+                    },
+                    "deRequired": {
+                        "count": 1,
+                        "list": [
+                            "d"
+                        ],
+                        "description": "Columns made nullable (no longer required)"
+                    },
+                    "reRequired": {
+                        "count": 1,
+                        "list": [
+                            "e"
+                        ],
+                        "description": "Columns made NOT NULL (now required)"
+                    },
+                    "unchanged": {
+                        "count": 9
+                    },
+                    "total": 16
+                }
+            }
+        }
+    },
+    "sync: register throws": {
+        "calls": [
+            {
+                "registerMapper.find": 99
+            },
+            {
+                "logger.error": [
+                    "[TablesController] Magic table sync failed",
+                    {
+                        "registerId": 99,
+                        "schemaId": 7,
+                        "error": "register gone"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to sync magic table",
+            "message": "register gone"
+        }
+    },
+    "sync: schema not in register": {
+        "calls": [
+            {
+                "registerMapper.find": 3
+            },
+            {
+                "schemaMapper.findInIds": [
+                    "other",
+                    [
+                        7,
+                        8
+                    ]
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Schema slug \"other\" is not carried by register \"reg\" (id 3), which carries 2 schema(s). 0 schema(s) elsewhere on this instance carry this slug; none of them is served here, because naming a register makes it a boundary. If the linkage was lost, run `occ openregister:registers:relink-schemas` to inspect and repair it."
+        }
+    },
+    "sync: slugs": {
+        "calls": [
+            {
+                "registerMapper.find": "reg"
+            },
+            {
+                "schemaMapper.findInIds": [
+                    "person",
+                    [
+                        7,
+                        8
+                    ]
+                ]
+            },
+            {
+                "magicMapper.syncTableForRegisterSchema": [
+                    3,
+                    7
+                ]
+            },
+            {
+                "logger.info": [
+                    "[TablesController] Magic table sync completed",
+                    {
+                        "registerId": 3,
+                        "schemaId": 7,
+                        "result": {
+                            "columnsAdded": 1
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Magic table synchronized successfully",
+            "register": {
+                "id": 3,
+                "title": "Register 3"
+            },
+            "schema": {
+                "id": 7,
+                "title": "Schema person"
+            },
+            "tableName": "openregister_objects_3_7",
+            "statistics": {
+                "metadata": {
+                    "count": 0,
+                    "description": "Built-in system columns (id, uuid, register, schema, etc.)"
+                },
+                "properties": {
+                    "count": 0,
+                    "description": "Schema-defined properties"
+                },
+                "columns": {
+                    "added": {
+                        "count": 1,
+                        "list": []
+                    },
+                    "removed": {
+                        "count": 0,
+                        "list": []
+                    },
+                    "deRequired": {
+                        "count": 0,
+                        "list": [],
+                        "description": "Columns made nullable (no longer required)"
+                    },
+                    "reRequired": {
+                        "count": 0,
+                        "list": [],
+                        "description": "Columns made NOT NULL (now required)"
+                    },
+                    "unchanged": {
+                        "count": 0
+                    },
+                    "total": 0
+                }
+            }
+        }
+    },
+    "sync: sync throws": {
+        "calls": [
+            {
+                "registerMapper.find": 3
+            },
+            {
+                "schemaMapper.findInIds": [
+                    7,
+                    [
+                        7,
+                        8
+                    ]
+                ]
+            },
+            {
+                "magicMapper.syncTableForRegisterSchema": [
+                    3,
+                    7
+                ]
+            },
+            {
+                "logger.error": [
+                    "[TablesController] Magic table sync failed",
+                    {
+                        "registerId": 3,
+                        "schemaId": 7,
+                        "error": "ddl failed"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to sync magic table",
+            "message": "ddl failed"
+        }
+    },
+    "sync: unknown numeric schema": {
+        "calls": [
+            {
+                "registerMapper.find": 3
+            },
+            {
+                "schemaMapper.findInIds": [
+                    99,
+                    [
+                        7,
+                        8
+                    ]
+                ]
+            },
+            {
+                "schemaMapper.find": 99
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "Schema slug \"99\" is not carried by register \"reg\" (id 3), which carries 2 schema(s). 0 schema(s) elsewhere on this instance carry this slug; none of them is served here, because naming a register makes it a boundary. If the linkage was lost, run `occ openregister:registers:relink-schemas` to inspect and repair it."
+        }
+    },
+    "syncAll: findAll throws": {
+        "calls": [
+            {
+                "registerMapper.findAll": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to sync magic tables",
+            "message": "db down"
+        }
+    },
+    "syncAll: mixed": {
+        "calls": [
+            {
+                "registerMapper.findAll": []
+            },
+            {
+                "schemaMapper.findInIds": [
+                    7,
+                    [
+                        7,
+                        {
+                            "id": 8
+                        },
+                        "other"
+                    ]
+                ]
+            },
+            {
+                "magicMapper.syncTableForRegisterSchema": [
+                    3,
+                    7
+                ]
+            },
+            {
+                "schemaMapper.findInIds": [
+                    8,
+                    [
+                        7,
+                        {
+                            "id": 8
+                        },
+                        "other"
+                    ]
+                ]
+            },
+            {
+                "magicMapper.syncTableForRegisterSchema": [
+                    3,
+                    8
+                ]
+            },
+            {
+                "schemaMapper.findInIds": [
+                    "other",
+                    [
+                        7,
+                        {
+                            "id": 8
+                        },
+                        "other"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": false,
+            "message": "Sync completed for 2 tables",
+            "synced": [
+                {
+                    "register": 3,
+                    "schema": 7,
+                    "status": "success"
+                },
+                {
+                    "register": 3,
+                    "schema": 8,
+                    "status": "success"
+                }
+            ],
+            "errors": [
+                {
+                    "register": 3,
+                    "schema": "other",
+                    "error": "Schema slug \"other\" is not carried by register \"reg\" (id 3), which carries 3 schema(s). 0 schema(s) elsewhere on this instance carry this slug; none of them is served here, because naming a register makes it a boundary. If the linkage was lost, run `occ openregister:registers:relink-schemas` to inspect and repair it."
+                }
+            ],
+            "totalSynced": 2,
+            "totalErrors": 1
+        }
+    },
+    "syncAll: none": {
+        "calls": [
+            {
+                "registerMapper.findAll": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Sync completed for 0 tables",
+            "synced": [],
+            "errors": [],
+            "totalSynced": 0,
+            "totalErrors": 0
+        }
+    },
+    "syncAll: sync throws": {
+        "calls": [
+            {
+                "registerMapper.findAll": []
+            },
+            {
+                "schemaMapper.findInIds": [
+                    7,
+                    [
+                        7,
+                        8
+                    ]
+                ]
+            },
+            {
+                "magicMapper.syncTableForRegisterSchema": [
+                    3,
+                    7
+                ]
+            },
+            {
+                "schemaMapper.findInIds": [
+                    8,
+                    [
+                        7,
+                        8
+                    ]
+                ]
+            },
+            {
+                "magicMapper.syncTableForRegisterSchema": [
+                    3,
+                    8
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": false,
+            "message": "Sync completed for 0 tables",
+            "synced": [],
+            "errors": [
+                {
+                    "register": 3,
+                    "schema": 7,
+                    "error": "ddl failed"
+                },
+                {
+                    "register": 3,
+                    "schema": 8,
+                    "error": "ddl failed"
+                }
+            ],
+            "totalSynced": 0,
+            "totalErrors": 2
+        }
+    }
+}

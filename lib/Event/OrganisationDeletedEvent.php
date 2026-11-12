@@ -23,41 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Organisation;
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched when an organisation is deleted.
  */
-class OrganisationDeletedEvent extends Event {
-
-	/**
-	 * The deleted organisation.
-	 *
-	 * @var Organisation The organisation that was deleted.
-	 */
-	private Organisation $organisation;
-
-	/**
-	 * Constructor for OrganisationDeletedEvent.
-	 *
-	 * @param Organisation $organisation The organisation that was deleted.
-	 *
-	 * @return void
-	 */
-	public function __construct(Organisation $organisation) {
-		parent::__construct();
-		$this->organisation = $organisation;
-	}//end __construct()
-
-	/**
-	 * Get the deleted organisation.
-	 *
-	 * @return Organisation The organisation that was deleted.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getOrganisation(): Organisation {
-		return $this->organisation;
-	}//end getOrganisation()
+class OrganisationDeletedEvent extends AbstractOrganisationEvent {
 }//end class

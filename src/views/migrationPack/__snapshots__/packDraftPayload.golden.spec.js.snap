@@ -1,0 +1,630 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`pack draft payloads (golden) payloadFromDraft matches the recorded output 1`] = `
+{
+  "emptyDescription/addDefault": "{"id":"p","name":"P","description":"","defaults":{"k":"v"},"skipRows":[],"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "emptyDescription/asStored": "{"id":"p","name":"P","description":"","defaults":[],"skipRows":[],"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "emptyDescription/clearAll": "{"id":"p","name":"P","description":"","defaults":[],"skipRows":[],"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "emptyDescription/describe": "{"id":"p","name":"P","description":"New text","defaults":[],"skipRows":[],"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "emptyDescription/skipRows": "{"id":"p","name":"P","description":"","defaults":[],"skipRows":[2,4],"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "emptyDescription/sourceField": "{"id":"p","name":"P","description":"","defaults":[],"skipRows":[],"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"sourceField","field":"ref"}}",
+  "emptyObjectDefaults/addDefault": "{"id":"p","name":"P","defaults":{"k":"v"},"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "emptyObjectDefaults/asStored": "{"id":"p","name":"P","defaults":{},"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "emptyObjectDefaults/clearAll": "{"id":"p","name":"P","defaults":{},"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "emptyObjectDefaults/describe": "{"id":"p","name":"P","defaults":{},"description":"New text","sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "emptyObjectDefaults/skipRows": "{"id":"p","name":"P","defaults":{},"sourceFormat":"","version":"","fieldMappings":[],"skipRows":[2,4],"idStrategy":{"type":"generate"}}",
+  "emptyObjectDefaults/sourceField": "{"id":"p","name":"P","defaults":{},"sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"sourceField","field":"ref"}}",
+  "full/addDefault": "{"custom":{"keep":true},"id":"pack","name":"Pack","description":"About","sourceFormat":"json","version":"2.1.0","fieldMappings":[{"source":"a","target":"b"},{"source":"c","target":"d","transform":{"type":"trim"}}],"defaults":{"k":"v"},"skipRows":[1,3],"idStrategy":{"type":"sourceField","field":"id","extra":"x"}}",
+  "full/asStored": "{"custom":{"keep":true},"id":"pack","name":"Pack","description":"About","sourceFormat":"json","version":"2.1.0","fieldMappings":[{"source":"a","target":"b"},{"source":"c","target":"d","transform":{"type":"trim"}}],"defaults":{"status":"open","count":0},"skipRows":[1,3],"idStrategy":{"type":"sourceField","field":"id","extra":"x"}}",
+  "full/clearAll": "{"custom":{"keep":true},"id":"pack","name":"Pack","description":"","sourceFormat":"json","version":"2.1.0","fieldMappings":[{"source":"a","target":"b"},{"source":"c","target":"d","transform":{"type":"trim"}}],"defaults":{},"skipRows":[],"idStrategy":{"type":"generate","field":"id","extra":"x"}}",
+  "full/describe": "{"custom":{"keep":true},"id":"pack","name":"Pack","description":"New text","sourceFormat":"json","version":"2.1.0","fieldMappings":[{"source":"a","target":"b"},{"source":"c","target":"d","transform":{"type":"trim"}}],"defaults":{"status":"open","count":0},"skipRows":[1,3],"idStrategy":{"type":"sourceField","field":"id","extra":"x"}}",
+  "full/skipRows": "{"custom":{"keep":true},"id":"pack","name":"Pack","description":"About","sourceFormat":"json","version":"2.1.0","fieldMappings":[{"source":"a","target":"b"},{"source":"c","target":"d","transform":{"type":"trim"}}],"defaults":{"status":"open","count":0},"skipRows":[2,4],"idStrategy":{"type":"sourceField","field":"id","extra":"x"}}",
+  "full/sourceField": "{"custom":{"keep":true},"id":"pack","name":"Pack","description":"About","sourceFormat":"json","version":"2.1.0","fieldMappings":[{"source":"a","target":"b"},{"source":"c","target":"d","transform":{"type":"trim"}}],"defaults":{"status":"open","count":0},"skipRows":[1,3],"idStrategy":{"type":"sourceField","field":"ref","extra":"x"}}",
+  "generatedWithField/addDefault": "{"id":"p","name":"P","idStrategy":{"type":"generate","field":"old"},"sourceFormat":"","version":"","fieldMappings":[],"defaults":{"k":"v"}}",
+  "generatedWithField/asStored": "{"id":"p","name":"P","idStrategy":{"type":"generate","field":"old"},"sourceFormat":"","version":"","fieldMappings":[]}",
+  "generatedWithField/clearAll": "{"id":"p","name":"P","idStrategy":{"type":"generate","field":"old"},"sourceFormat":"","version":"","fieldMappings":[]}",
+  "generatedWithField/describe": "{"id":"p","name":"P","idStrategy":{"type":"generate","field":"old"},"description":"New text","sourceFormat":"","version":"","fieldMappings":[]}",
+  "generatedWithField/skipRows": "{"id":"p","name":"P","idStrategy":{"type":"generate","field":"old"},"sourceFormat":"","version":"","fieldMappings":[],"skipRows":[2,4]}",
+  "generatedWithField/sourceField": "{"id":"p","name":"P","idStrategy":{"type":"sourceField","field":"ref"},"sourceFormat":"","version":"","fieldMappings":[]}",
+  "minimal/addDefault": "{"id":"p","name":"P","sourceFormat":"csv","version":"1.0.0","fieldMappings":[],"defaults":{"k":"v"},"idStrategy":{"type":"generate"}}",
+  "minimal/asStored": "{"id":"p","name":"P","sourceFormat":"csv","version":"1.0.0","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "minimal/clearAll": "{"id":"p","name":"P","sourceFormat":"csv","version":"1.0.0","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "minimal/describe": "{"id":"p","name":"P","sourceFormat":"csv","version":"1.0.0","fieldMappings":[],"description":"New text","idStrategy":{"type":"generate"}}",
+  "minimal/skipRows": "{"id":"p","name":"P","sourceFormat":"csv","version":"1.0.0","fieldMappings":[],"skipRows":[2,4],"idStrategy":{"type":"generate"}}",
+  "minimal/sourceField": "{"id":"p","name":"P","sourceFormat":"csv","version":"1.0.0","fieldMappings":[],"idStrategy":{"type":"sourceField","field":"ref"}}",
+  "none/addDefault": "{"id":"","name":"","sourceFormat":"","version":"","fieldMappings":[],"defaults":{"k":"v"},"idStrategy":{"type":"generate"}}",
+  "none/asStored": "{"id":"","name":"","sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "none/clearAll": "{"id":"","name":"","sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "none/describe": "{"id":"","name":"","description":"New text","sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"generate"}}",
+  "none/skipRows": "{"id":"","name":"","sourceFormat":"","version":"","fieldMappings":[],"skipRows":[2,4],"idStrategy":{"type":"generate"}}",
+  "none/sourceField": "{"id":"","name":"","sourceFormat":"","version":"","fieldMappings":[],"idStrategy":{"type":"sourceField","field":"ref"}}",
+  "oddDefaults/addDefault": "{"id":"p","name":"P","defaults":{"k":"v"},"idStrategy":{"type":"generate"},"sourceFormat":"","version":"","fieldMappings":[]}",
+  "oddDefaults/asStored": "{"id":"p","name":"P","defaults":{},"idStrategy":{"type":"generate"},"sourceFormat":"","version":"","fieldMappings":[]}",
+  "oddDefaults/clearAll": "{"id":"p","name":"P","defaults":{},"idStrategy":{"type":"generate"},"sourceFormat":"","version":"","fieldMappings":[]}",
+  "oddDefaults/describe": "{"id":"p","name":"P","defaults":{},"idStrategy":{"type":"generate"},"description":"New text","sourceFormat":"","version":"","fieldMappings":[]}",
+  "oddDefaults/skipRows": "{"id":"p","name":"P","defaults":{},"idStrategy":{"type":"generate"},"sourceFormat":"","version":"","fieldMappings":[],"skipRows":[2,4]}",
+  "oddDefaults/sourceField": "{"id":"p","name":"P","defaults":{},"idStrategy":{"type":"sourceField","field":"ref"},"sourceFormat":"","version":"","fieldMappings":[]}",
+}
+`;
+
+exports[`pack draft payloads (golden) transformPayload and transformSummary match the recorded output 1`] = `
+{
+  "boolMap/asStored": {
+    "payload": "{"type":"bool-map","map":{"ja":true,"nee":false},"default":false}",
+    "summary": "Yes/no table, values: 2, other values get a default",
+  },
+  "boolMap/clearFormats": {
+    "payload": "{"type":"bool-map","map":{"ja":true,"nee":false},"default":false}",
+    "summary": "Yes/no table, values: 2, other values get a default",
+  },
+  "boolMap/clearType": {
+    "payload": "{"type":"","map":{"ja":true,"nee":false},"default":false}",
+    "summary": "Copied as is",
+  },
+  "boolMap/emptyDefault": {
+    "payload": "{"type":"bool-map","map":{"ja":true,"nee":false},"default":null}",
+    "summary": "Yes/no table, values: 2, other values are stored as false",
+  },
+  "boolMap/moreFields": {
+    "payload": "{"type":"bool-map","map":{"ja":true,"nee":false},"default":false}",
+    "summary": "Yes/no table, values: 2, other values get a default",
+  },
+  "boolMap/noDefault": {
+    "payload": "{"type":"bool-map","map":{"ja":true,"nee":false}}",
+    "summary": "Yes/no table, values: 2, other values are an error",
+  },
+  "boolMap/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "boolMap/spaceSeparator": {
+    "payload": "{"type":"bool-map","map":{"ja":true,"nee":false},"default":false}",
+    "summary": "Yes/no table, values: 2, other values get a default",
+  },
+  "boolMap/valueDefault": {
+    "payload": "{"type":"bool-map","map":{"ja":true,"nee":false},"default":42}",
+    "summary": "Yes/no table, values: 2, other values get a default",
+  },
+  "concat/asStored": {
+    "payload": "{"type":"concat","fields":["a","b"],"separator":"-"}",
+    "summary": "Joined with a, b, separated by "-"",
+  },
+  "concat/clearFormats": {
+    "payload": "{"type":"concat","fields":["a","b"],"separator":"-"}",
+    "summary": "Joined with a, b, separated by "-"",
+  },
+  "concat/clearType": {
+    "payload": "{"type":"","fields":["a","b"],"separator":"-"}",
+    "summary": "Copied as is",
+  },
+  "concat/emptyDefault": {
+    "payload": "{"type":"concat","fields":["a","b"],"separator":"-"}",
+    "summary": "Joined with a, b, separated by "-"",
+  },
+  "concat/moreFields": {
+    "payload": "{"type":"concat","fields":["x","y","z"],"separator":", "}",
+    "summary": "Joined with x, y, z, separated by ", "",
+  },
+  "concat/noDefault": {
+    "payload": "{"type":"concat","fields":["a","b"],"separator":"-"}",
+    "summary": "Joined with a, b, separated by "-"",
+  },
+  "concat/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "concat/spaceSeparator": {
+    "payload": "{"type":"concat","fields":["a","b"],"separator":" "}",
+    "summary": "Joined with a, b, separated by " "",
+  },
+  "concat/valueDefault": {
+    "payload": "{"type":"concat","fields":["a","b"],"separator":"-"}",
+    "summary": "Joined with a, b, separated by "-"",
+  },
+  "concatDefaultSeparator/asStored": {
+    "payload": "{"type":"concat","fields":["a"]}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatDefaultSeparator/clearFormats": {
+    "payload": "{"type":"concat","fields":["a"]}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatDefaultSeparator/clearType": {
+    "payload": "{"type":"","fields":["a"]}",
+    "summary": "Copied as is",
+  },
+  "concatDefaultSeparator/emptyDefault": {
+    "payload": "{"type":"concat","fields":["a"]}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatDefaultSeparator/moreFields": {
+    "payload": "{"type":"concat","fields":["x","y","z"],"separator":", "}",
+    "summary": "Joined with x, y, z, separated by ", "",
+  },
+  "concatDefaultSeparator/noDefault": {
+    "payload": "{"type":"concat","fields":["a"]}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatDefaultSeparator/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "concatDefaultSeparator/spaceSeparator": {
+    "payload": "{"type":"concat","fields":["a"]}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatDefaultSeparator/valueDefault": {
+    "payload": "{"type":"concat","fields":["a"]}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatStoredSpace/asStored": {
+    "payload": "{"type":"concat","fields":["a"],"separator":" "}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatStoredSpace/clearFormats": {
+    "payload": "{"type":"concat","fields":["a"],"separator":" "}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatStoredSpace/clearType": {
+    "payload": "{"type":"","fields":["a"],"separator":" "}",
+    "summary": "Copied as is",
+  },
+  "concatStoredSpace/emptyDefault": {
+    "payload": "{"type":"concat","fields":["a"],"separator":" "}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatStoredSpace/moreFields": {
+    "payload": "{"type":"concat","fields":["x","y","z"],"separator":", "}",
+    "summary": "Joined with x, y, z, separated by ", "",
+  },
+  "concatStoredSpace/noDefault": {
+    "payload": "{"type":"concat","fields":["a"],"separator":" "}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatStoredSpace/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "concatStoredSpace/spaceSeparator": {
+    "payload": "{"type":"concat","fields":["a"],"separator":" "}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "concatStoredSpace/valueDefault": {
+    "payload": "{"type":"concat","fields":["a"],"separator":" "}",
+    "summary": "Joined with a, separated by " "",
+  },
+  "const/asStored": {
+    "payload": "{"type":"const","value":{"deep":[1,2]}}",
+    "summary": "Fixed value {"deep":[1,2]}",
+  },
+  "const/clearFormats": {
+    "payload": "{"type":"const","value":{"deep":[1,2]}}",
+    "summary": "Fixed value {"deep":[1,2]}",
+  },
+  "const/clearType": {
+    "payload": "{"type":"","value":{"deep":[1,2]}}",
+    "summary": "Copied as is",
+  },
+  "const/emptyDefault": {
+    "payload": "{"type":"const","value":{"deep":[1,2]}}",
+    "summary": "Fixed value {"deep":[1,2]}",
+  },
+  "const/moreFields": {
+    "payload": "{"type":"const","value":{"deep":[1,2]}}",
+    "summary": "Fixed value {"deep":[1,2]}",
+  },
+  "const/noDefault": {
+    "payload": "{"type":"const","value":{"deep":[1,2]}}",
+    "summary": "Fixed value {"deep":[1,2]}",
+  },
+  "const/retype": {
+    "payload": "{"type":"trim"}",
+    "summary": "Trim spaces",
+  },
+  "const/spaceSeparator": {
+    "payload": "{"type":"const","value":{"deep":[1,2]}}",
+    "summary": "Fixed value {"deep":[1,2]}",
+  },
+  "const/valueDefault": {
+    "payload": "{"type":"const","value":{"deep":[1,2]}}",
+    "summary": "Fixed value {"deep":[1,2]}",
+  },
+  "constText/asStored": {
+    "payload": "{"type":"const","value":"text"}",
+    "summary": "Fixed value text",
+  },
+  "constText/clearFormats": {
+    "payload": "{"type":"const","value":"text"}",
+    "summary": "Fixed value text",
+  },
+  "constText/clearType": {
+    "payload": "{"type":"","value":"text"}",
+    "summary": "Copied as is",
+  },
+  "constText/emptyDefault": {
+    "payload": "{"type":"const","value":"text"}",
+    "summary": "Fixed value text",
+  },
+  "constText/moreFields": {
+    "payload": "{"type":"const","value":"text"}",
+    "summary": "Fixed value text",
+  },
+  "constText/noDefault": {
+    "payload": "{"type":"const","value":"text"}",
+    "summary": "Fixed value text",
+  },
+  "constText/retype": {
+    "payload": "{"type":"trim"}",
+    "summary": "Trim spaces",
+  },
+  "constText/spaceSeparator": {
+    "payload": "{"type":"const","value":"text"}",
+    "summary": "Fixed value text",
+  },
+  "constText/valueDefault": {
+    "payload": "{"type":"const","value":"text"}",
+    "summary": "Fixed value text",
+  },
+  "dateBare/asStored": {
+    "payload": "{"type":"date"}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateBare/clearFormats": {
+    "payload": "{"type":"date"}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateBare/clearType": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "dateBare/emptyDefault": {
+    "payload": "{"type":"date"}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateBare/moreFields": {
+    "payload": "{"type":"date"}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateBare/noDefault": {
+    "payload": "{"type":"date"}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateBare/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "dateBare/spaceSeparator": {
+    "payload": "{"type":"date"}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateBare/valueDefault": {
+    "payload": "{"type":"date"}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateClearedStored/asStored": {
+    "payload": "{"type":"date","sourceFormat":"","targetFormat":""}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateClearedStored/clearFormats": {
+    "payload": "{"type":"date","sourceFormat":"","targetFormat":""}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateClearedStored/clearType": {
+    "payload": "{"type":"","sourceFormat":"","targetFormat":""}",
+    "summary": "Copied as is",
+  },
+  "dateClearedStored/emptyDefault": {
+    "payload": "{"type":"date","sourceFormat":"","targetFormat":""}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateClearedStored/moreFields": {
+    "payload": "{"type":"date","sourceFormat":"","targetFormat":""}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateClearedStored/noDefault": {
+    "payload": "{"type":"date","sourceFormat":"","targetFormat":""}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateClearedStored/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "dateClearedStored/spaceSeparator": {
+    "payload": "{"type":"date","sourceFormat":"","targetFormat":""}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateClearedStored/valueDefault": {
+    "payload": "{"type":"date","sourceFormat":"","targetFormat":""}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateFull/asStored": {
+    "payload": "{"type":"date","sourceFormat":"d-m-Y","targetFormat":"Y-m-d"}",
+    "summary": "Date d-m-Y to Y-m-d",
+  },
+  "dateFull/clearFormats": {
+    "payload": "{"type":"date"}",
+    "summary": "Date any format to Y-m-d",
+  },
+  "dateFull/clearType": {
+    "payload": "{"type":"","sourceFormat":"d-m-Y","targetFormat":"Y-m-d"}",
+    "summary": "Copied as is",
+  },
+  "dateFull/emptyDefault": {
+    "payload": "{"type":"date","sourceFormat":"d-m-Y","targetFormat":"Y-m-d"}",
+    "summary": "Date d-m-Y to Y-m-d",
+  },
+  "dateFull/moreFields": {
+    "payload": "{"type":"date","sourceFormat":"d-m-Y","targetFormat":"Y-m-d"}",
+    "summary": "Date d-m-Y to Y-m-d",
+  },
+  "dateFull/noDefault": {
+    "payload": "{"type":"date","sourceFormat":"d-m-Y","targetFormat":"Y-m-d"}",
+    "summary": "Date d-m-Y to Y-m-d",
+  },
+  "dateFull/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "dateFull/spaceSeparator": {
+    "payload": "{"type":"date","sourceFormat":"d-m-Y","targetFormat":"Y-m-d"}",
+    "summary": "Date d-m-Y to Y-m-d",
+  },
+  "dateFull/valueDefault": {
+    "payload": "{"type":"date","sourceFormat":"d-m-Y","targetFormat":"Y-m-d"}",
+    "summary": "Date d-m-Y to Y-m-d",
+  },
+  "lookup/asStored": {
+    "payload": "{"note":"x","type":"lookup","map":{"a":1,"b":"two"},"default":"z"}",
+    "summary": "Lookup table, values: 2, other values get a default",
+  },
+  "lookup/clearFormats": {
+    "payload": "{"note":"x","type":"lookup","map":{"a":1,"b":"two"},"default":"z"}",
+    "summary": "Lookup table, values: 2, other values get a default",
+  },
+  "lookup/clearType": {
+    "payload": "{"note":"x","type":"","map":{"a":1,"b":"two"},"default":"z"}",
+    "summary": "Copied as is",
+  },
+  "lookup/emptyDefault": {
+    "payload": "{"note":"x","type":"lookup","map":{"a":1,"b":"two"},"default":null}",
+    "summary": "Lookup table, values: 2, other values stay empty",
+  },
+  "lookup/moreFields": {
+    "payload": "{"note":"x","type":"lookup","map":{"a":1,"b":"two"},"default":"z"}",
+    "summary": "Lookup table, values: 2, other values get a default",
+  },
+  "lookup/noDefault": {
+    "payload": "{"note":"x","type":"lookup","map":{"a":1,"b":"two"}}",
+    "summary": "Lookup table, values: 2, other values are an error",
+  },
+  "lookup/retype": {
+    "payload": "{"note":"x","type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "lookup/spaceSeparator": {
+    "payload": "{"note":"x","type":"lookup","map":{"a":1,"b":"two"},"default":"z"}",
+    "summary": "Lookup table, values: 2, other values get a default",
+  },
+  "lookup/valueDefault": {
+    "payload": "{"note":"x","type":"lookup","map":{"a":1,"b":"two"},"default":42}",
+    "summary": "Lookup table, values: 2, other values get a default",
+  },
+  "lookupNoDefault/asStored": {
+    "payload": "{"type":"lookup","map":{}}",
+    "summary": "Lookup table, values: 0, other values are an error",
+  },
+  "lookupNoDefault/clearFormats": {
+    "payload": "{"type":"lookup","map":{}}",
+    "summary": "Lookup table, values: 0, other values are an error",
+  },
+  "lookupNoDefault/clearType": {
+    "payload": "{"type":"","map":[]}",
+    "summary": "Copied as is",
+  },
+  "lookupNoDefault/emptyDefault": {
+    "payload": "{"type":"lookup","map":{},"default":null}",
+    "summary": "Lookup table, values: 0, other values stay empty",
+  },
+  "lookupNoDefault/moreFields": {
+    "payload": "{"type":"lookup","map":{}}",
+    "summary": "Lookup table, values: 0, other values are an error",
+  },
+  "lookupNoDefault/noDefault": {
+    "payload": "{"type":"lookup","map":{}}",
+    "summary": "Lookup table, values: 0, other values are an error",
+  },
+  "lookupNoDefault/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "lookupNoDefault/spaceSeparator": {
+    "payload": "{"type":"lookup","map":{}}",
+    "summary": "Lookup table, values: 0, other values are an error",
+  },
+  "lookupNoDefault/valueDefault": {
+    "payload": "{"type":"lookup","map":{},"default":42}",
+    "summary": "Lookup table, values: 0, other values get a default",
+  },
+  "lookupNullDefault/asStored": {
+    "payload": "{"type":"lookup","map":{"a":1},"default":null}",
+    "summary": "Lookup table, values: 1, other values stay empty",
+  },
+  "lookupNullDefault/clearFormats": {
+    "payload": "{"type":"lookup","map":{"a":1},"default":null}",
+    "summary": "Lookup table, values: 1, other values stay empty",
+  },
+  "lookupNullDefault/clearType": {
+    "payload": "{"type":"","map":{"a":1},"default":null}",
+    "summary": "Copied as is",
+  },
+  "lookupNullDefault/emptyDefault": {
+    "payload": "{"type":"lookup","map":{"a":1},"default":null}",
+    "summary": "Lookup table, values: 1, other values stay empty",
+  },
+  "lookupNullDefault/moreFields": {
+    "payload": "{"type":"lookup","map":{"a":1},"default":null}",
+    "summary": "Lookup table, values: 1, other values stay empty",
+  },
+  "lookupNullDefault/noDefault": {
+    "payload": "{"type":"lookup","map":{"a":1}}",
+    "summary": "Lookup table, values: 1, other values are an error",
+  },
+  "lookupNullDefault/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "lookupNullDefault/spaceSeparator": {
+    "payload": "{"type":"lookup","map":{"a":1},"default":null}",
+    "summary": "Lookup table, values: 1, other values stay empty",
+  },
+  "lookupNullDefault/valueDefault": {
+    "payload": "{"type":"lookup","map":{"a":1},"default":42}",
+    "summary": "Lookup table, values: 1, other values get a default",
+  },
+  "none/asStored": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "none/clearFormats": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "none/clearType": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "none/emptyDefault": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "none/moreFields": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "none/noDefault": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "none/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "none/spaceSeparator": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "none/valueDefault": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "nullSummary": "Copied as is",
+  "trim/asStored": {
+    "payload": "{"type":"trim","extra":1}",
+    "summary": "Trim spaces",
+  },
+  "trim/clearFormats": {
+    "payload": "{"type":"trim","extra":1}",
+    "summary": "Trim spaces",
+  },
+  "trim/clearType": {
+    "payload": "{"type":"","extra":1}",
+    "summary": "Copied as is",
+  },
+  "trim/emptyDefault": {
+    "payload": "{"type":"trim","extra":1}",
+    "summary": "Trim spaces",
+  },
+  "trim/moreFields": {
+    "payload": "{"type":"trim","extra":1}",
+    "summary": "Trim spaces",
+  },
+  "trim/noDefault": {
+    "payload": "{"type":"trim","extra":1}",
+    "summary": "Trim spaces",
+  },
+  "trim/retype": {
+    "payload": "{"type":"const","extra":1,"value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "trim/spaceSeparator": {
+    "payload": "{"type":"trim","extra":1}",
+    "summary": "Trim spaces",
+  },
+  "trim/valueDefault": {
+    "payload": "{"type":"trim","extra":1}",
+    "summary": "Trim spaces",
+  },
+  "unknown/asStored": {
+    "payload": "{"type":"regex","pattern":"^a","flags":"i"}",
+    "summary": "Transform "regex" (kept as stored)",
+  },
+  "unknown/clearFormats": {
+    "payload": "{"type":"regex","pattern":"^a","flags":"i"}",
+    "summary": "Transform "regex" (kept as stored)",
+  },
+  "unknown/clearType": {
+    "payload": "{"type":"","pattern":"^a","flags":"i"}",
+    "summary": "Copied as is",
+  },
+  "unknown/emptyDefault": {
+    "payload": "{"type":"regex","pattern":"^a","flags":"i"}",
+    "summary": "Transform "regex" (kept as stored)",
+  },
+  "unknown/moreFields": {
+    "payload": "{"type":"regex","pattern":"^a","flags":"i"}",
+    "summary": "Transform "regex" (kept as stored)",
+  },
+  "unknown/noDefault": {
+    "payload": "{"type":"regex","pattern":"^a","flags":"i"}",
+    "summary": "Transform "regex" (kept as stored)",
+  },
+  "unknown/retype": {
+    "payload": "{"type":"const","pattern":"^a","flags":"i","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "unknown/spaceSeparator": {
+    "payload": "{"type":"regex","pattern":"^a","flags":"i"}",
+    "summary": "Transform "regex" (kept as stored)",
+  },
+  "unknown/valueDefault": {
+    "payload": "{"type":"regex","pattern":"^a","flags":"i"}",
+    "summary": "Transform "regex" (kept as stored)",
+  },
+  "untyped/asStored": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "untyped/clearFormats": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "untyped/clearType": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "untyped/emptyDefault": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "untyped/moreFields": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "untyped/noDefault": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "untyped/retype": {
+    "payload": "{"type":"const","value":"v"}",
+    "summary": "Fixed value v",
+  },
+  "untyped/spaceSeparator": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+  "untyped/valueDefault": {
+    "payload": "{"type":""}",
+    "summary": "Copied as is",
+  },
+}
+`;

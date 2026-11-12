@@ -32,56 +32,80 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface;
+use OCA\OpenRegister\Service\Rbac\ObjectAccessReportInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Controller\Support\ObjectPermissionsControllerServices;
 
 /**
  * The per-object access set and its history.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class ObjectPermissionsController extends Controller {
 
 	/**
+	 * Records why an access set could not be assembled.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Names the register and schema the request resolved.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Assembles the answer.
+	 *
+	 * @var ObjectAccessReportInterface
+	 */
+	private readonly ObjectAccessReportInterface $report;
+
+	/**
+	 * Resolves the object and decides who may ask.
+	 *
+	 * @var AccessReviewGateInterface
+	 */
+	private readonly AccessReviewGateInterface $gate;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string             $appName       Application identifier.
-	 * @param IRequest           $request       Active HTTP request.
-	 * @param ObjectService      $objectService Resolves the object through the RBAC boundary.
-	 * @param ObjectAccessReport $report        Assembles the answer.
-	 * @param IUserSession       $userSession   The calling principal.
-	 * @param IGroupManager      $groupManager  Administrator detection.
-	 * @param LoggerInterface    $logger        Records why an access set could not be assembled.
+	 * @param IRequest                            $request  Active HTTP request.
+	 * @param ObjectPermissionsControllerServices $services The services, bundled.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objectService,
-		private readonly ObjectAccessReport $report,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		ObjectPermissionsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->objectService = $services->objectService;
+		$this->report = $services->report;
+		$this->gate = $services->gate;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -111,46 +135,12 @@ class ObjectPermissionsController extends Controller {
 	 *
 	 * @return JSONResponse The access set.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
-		if ($object instanceof JSONResponse) {
-			return $object;
-		}
-
-		$refusal = $this->requireAccessReview(object: $object);
-		if ($refusal !== null) {
-			return $refusal;
-		}
-
-		try {
-			return new JSONResponse(
-				$this->report->setFor(
-					object: $object,
-					registerRef: $this->objectService->getRegister(),
-					schemaRef: $this->objectService->getSchema()
-				)
-			);
-		} catch (\Throwable $e) {
-			// An access set that could not be assembled is reported as exactly
-			// that. Left to the framework it is a 500 carrying a stack trace, on
-			// an endpoint a non-admin owner may call, and an empty set in its
-			// place would read as "nobody holds any right on this", which is
-			// the one answer an auditor must not be given by accident. The cause
-			// goes to the log, so the caller's generic message is not the only
-			// trace of it.
-			$this->logger->error(
-				message: '[ObjectPermissionsController] The access set for {uuid} could not be assembled: {error}',
-				context: ['uuid' => $id, 'error' => $e->getMessage(), 'exception' => $e]
-			);
-			return new JSONResponse(
-				['message' => 'The access set for this object could not be assembled'],
-				Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}
+		return $this->accessSetAnswer(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end index()
 
 	/**
@@ -172,19 +162,57 @@ class ObjectPermissionsController extends Controller {
 	 *         parameter to the method argument that shares it. Renaming the
 	 *         argument renames the endpoint's contract.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function history(string $register, string $schema, string $id, ?string $at = null): JSONResponse {
-		$object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+		return $this->historyAnswer(ref: new ObjectRef(register: $register, schema: $schema, id: $id), at: $at);
+	}//end history()
+
+	/**
+	 * Who holds which right on the named record, for a caller who may review its access.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return JSONResponse The access set, or the refusal.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function accessSetAnswer(ObjectRef $ref): JSONResponse {
+		$object = $this->reviewableObject(ref: $ref);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		$refusal = $this->requireAccessReview(object: $object);
-		if ($refusal !== null) {
-			return $refusal;
+		try {
+			return new JSONResponse($this->accessSetOf(object: $object));
+		} catch (\Throwable $e) {
+			// An access set that could not be assembled is reported as exactly
+			// that. Left to the framework it is a 500 carrying a stack trace, on
+			// an endpoint a non-admin owner may call, and an empty set in its
+			// place would read as "nobody holds any right on this", which is
+			// the one answer an auditor must not be given by accident. The cause
+			// goes to the log, so the caller's generic message is not the only
+			// trace of it.
+			return $this->unassembled(exception: $e, id: $ref->id);
+		}
+	}//end accessSetAnswer()
+
+	/**
+	 * How the rights on the named record changed, as of a moment, for a caller who may review its access.
+	 *
+	 * @param ObjectRef   $ref The record the route names.
+	 * @param string|null $at  The moment to read the rights at, or null for now.
+	 *
+	 * @return JSONResponse The history, or the refusal.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function historyAnswer(ObjectRef $ref, ?string $at): JSONResponse {
+		$object = $this->reviewableObject(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		try {
@@ -198,7 +226,59 @@ class ObjectPermissionsController extends Controller {
 				Http::STATUS_INTERNAL_SERVER_ERROR
 			);
 		}
-	}//end history()
+	}//end historyAnswer()
+
+	/**
+	 * The object, once the caller may both read it and review its access.
+	 *
+	 * The read is checked first (404), the review right second (403), and both
+	 * before anything about the access set is read.
+	 *
+	 * @param ObjectRef $ref The record the route names.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the refusal.
+	 */
+	private function reviewableObject(ObjectRef $ref): ObjectEntity|JSONResponse {
+		$object = $this->resolveObject(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		return ($this->requireAccessReview(object: $object) ?? $object);
+	}//end reviewableObject()
+
+	/**
+	 * The access set of the object, in the register and schema the request resolved.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array The access set.
+	 */
+	private function accessSetOf(ObjectEntity $object): array {
+		return $this->report->setFor(
+			object: $object,
+			table: new RegisterSchemaRef(register: $this->objectService->getRegister(), schema: $this->objectService->getSchema())
+		);
+	}//end accessSetOf()
+
+	/**
+	 * Log why an access set could not be assembled, and answer a generic 500.
+	 *
+	 * @param \Throwable $exception The failure.
+	 * @param string     $id        Object uuid.
+	 *
+	 * @return JSONResponse The 500.
+	 */
+	private function unassembled(\Throwable $exception, string $id): JSONResponse {
+		$this->logger->error(
+			message: '[ObjectPermissionsController] The access set for {uuid} could not be assembled: {error}',
+			context: ['uuid' => $id, 'error' => $exception->getMessage(), 'exception' => $exception]
+		);
+		return new JSONResponse(
+			['message' => 'The access set for this object could not be assembled'],
+			Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unassembled()
 
 	/**
 	 * Refuse a caller who may read the object but not review its access.
@@ -208,18 +288,7 @@ class ObjectPermissionsController extends Controller {
 	 * @return JSONResponse|null The refusal, or null when the caller may ask.
 	 */
 	private function requireAccessReview(ObjectEntity $object): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		$userId = $user?->getUID();
-
-		if ($userId !== null && $userId === $object->getOwner()) {
-			return null;
-		}
-
-		if ($userId !== null && $this->groupManager->isAdmin($userId) === true) {
-			return null;
-		}
-
-		if ($this->managesTheSchema(userId: $userId) === true) {
+		if ($this->gate->mayReviewAccess(object: $object) === true) {
 			return null;
 		}
 
@@ -230,69 +299,17 @@ class ObjectPermissionsController extends Controller {
 	}//end requireAccessReview()
 
 	/**
-	 * Whether this caller holds `manage` here through a rule somebody wrote.
-	 *
-	 * 🔴 THE GRANT HAS TO BE WRITTEN DOWN. A schema that configures nothing
-	 * resolves default-open, so `manage` would answer true for every signed-in
-	 * caller, and this endpoint would hand back the rules that `renderEntity()`
-	 * deliberately strips out of a non-admin object read. On such a schema only
-	 * the owner and an administrator may ask.
-	 *
-	 * @param string|null $userId The caller.
-	 *
-	 * @return bool True when the caller may review access here.
-	 */
-	private function managesTheSchema(?string $userId): bool {
-		$schema = $this->report->schema(reference: $this->objectService->getSchema());
-		if (($schema instanceof Schema) === false) {
-			return false;
-		}
-
-		$handler = $this->objectService->getPermissionHandler();
-
-		try {
-			$resolved = $handler->resolveAuthorization(schema: $schema);
-		} catch (\Throwable $e) {
-			// Fail closed: a report about rules nobody could resolve would be a
-			// report about nothing.
-			return false;
-		}
-
-		if (is_array($resolved) === false || $resolved === []) {
-			return false;
-		}
-
-		return $handler->hasPermission(schema: $schema, action: 'manage', userId: $userId);
-	}//end managesTheSchema()
-
-	/**
 	 * Resolve the object through the RBAC boundary.
 	 *
 	 * An object the caller cannot read resolves to nothing and answers 404, so
 	 * existence is not leaked. Same guard, same reason, as the sharing endpoints
 	 * beside this one.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema   Schema slug or id.
-	 * @param string $id       Object uuid.
+	 * @param ObjectRef $ref The record the route names.
 	 *
 	 * @return ObjectEntity|JSONResponse The object, or the refusal.
 	 */
-	private function resolveObject(string $register, string $schema, string $id): ObjectEntity|JSONResponse {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		try {
-			$object = $this->objectService->getObject();
-		} catch (\Throwable $e) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		return $object;
+	private function resolveObject(ObjectRef $ref): ObjectEntity|JSONResponse {
+		return ($this->gate->resolve(ref: $ref) ?? ObjectSharingEndpoint::notFound());
 	}//end resolveObject()
 }//end class

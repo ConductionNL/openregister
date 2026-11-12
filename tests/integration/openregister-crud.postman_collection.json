@@ -385,6 +385,52 @@
       "response": []
     },
     {
+      "name": "Setup: Capture the active organisation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/organisations/active",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "organisations",
+            "active"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// The run switches the admin's active organisation; the teardown puts this one back,",
+              "// so the collections that run after this one act in the admin's own organisation.",
+              "pm.test('the active organisation is captured', () => pm.expect(pm.response.code).to.equal(200));",
+              "const d = pm.response.json();",
+              "pm.collectionVariables.set('original_org_uuid', (d.activeOrganisation && d.activeOrganisation.uuid) || '');"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "Setup: Set Test Organization Active",
       "event": [
         {
@@ -5412,19 +5458,22 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "// AI/chat functionality requires external AI provider configuration.",
-                  "// In CI, we expect either 503 (AI not configured) or 404 (conversation UUID mismatch).",
-                  "pm.test('Status code indicates AI not available', function () {",
-                  "    pm.expect([404, 500, 503]).to.include(pm.response.code);",
+                  "// An LLM answers (CI seeds a stub, a dev instance has its own) or none is configured (503).",
+                  "pm.test('Status code is 200 with an LLM, 503 without one', function () {",
+                  "    pm.expect([200, 503], pm.response.text()).to.include(pm.response.code);",
                   "});",
                   "",
-                  "if (pm.response.code === 503) {",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('the reply carries the assistant message and the conversation', function () {",
+                  "        const json = pm.response.json();",
+                  "        pm.expect(json.message).to.be.a('string').and.not.empty;",
+                  "        pm.expect(json.conversation).to.eql(pm.collectionVariables.get('conversation_uuid'));",
+                  "    });",
+                  "} else {",
                   "    pm.test('Configuration error message', function() {",
                   "        const json = pm.response.json();",
                   "        pm.expect(json.message).to.include('not configured');",
                   "    });",
-                  "} else {",
-                  "    console.log('\u2139 Chat returned', pm.response.code, '(AI not configured in CI)');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -6207,6 +6256,49 @@
           ]
         }
       }
+    },
+    {
+      "name": "Teardown: Restore the active organisation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/index.php/apps/openregister/api/organisations/{{original_org_uuid}}/set-active",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "organisations",
+            "{{original_org_uuid}}",
+            "set-active"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the original active organisation is back', () => pm.expect(pm.response.code, pm.response.text()).to.equal(200));"
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "Cleanup: Delete Test Organization",

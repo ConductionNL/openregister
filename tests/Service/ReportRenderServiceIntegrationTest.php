@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Reporting\ReportRenderService;
+use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -142,11 +142,16 @@ class ReportRenderServiceIntegrationTest extends TestCase {
 
 	/**
 	 * PDF output: bytes start with the `%PDF-` magic header and MIME
-	 * matches.
+	 * matches. Without an office server the render refuses instead.
 	 *
 	 * @return void
 	 */
 	public function testRenderPdfProducesPdfDocument(): void {
+		$converter = \OC::$server->get(\OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class);
+		if ($converter->isAvailable() === false) {
+			$this->expectException(\OCA\OpenRegister\Exception\OfficeServerRequiredException::class);
+		}
+
 		$rendered = $this->service->render(
 			dashboard: $this->makeDashboardFixture(),
 			format: 'pdf'

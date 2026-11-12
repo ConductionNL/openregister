@@ -37,7 +37,7 @@ use OCP\IDBConnection;
  * splitting them across two mappers to get under the threshold would put two
  * objects in front of one table without removing a single query.
  */
-class BulkJobMemberMapper extends QBMapper {
+class BulkJobMemberMapper extends QBMapper implements BulkJobMemberMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -52,30 +52,18 @@ class BulkJobMemberMapper extends QBMapper {
 	 * Find the members of a job, optionally filtered by outcome.
 	 *
 	 * @param int $jobId The job id.
-	 * @param string|null $outcome Optional outcome filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param OutcomeFilter|null $filter Optional outcome and page.
 	 *
 	 * @return BulkJobMember[] The members.
 	 */
-	public function findByJob(int $jobId, ?string $outcome = null, ?int $limit = null, ?int $offset = null): array {
+	public function findByJob(int $jobId, ?OutcomeFilter $filter = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('job_id', $qb->createNamedParameter($jobId, IQueryBuilder::PARAM_INT)))
 			->orderBy('id', 'ASC');
 
-		if ($outcome !== null) {
-			$qb->andWhere($qb->expr()->eq('outcome', $qb->createNamedParameter($outcome)));
-		}
-
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		$filter?->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByJob()
@@ -90,21 +78,20 @@ class BulkJobMemberMapper extends QBMapper {
 	 * "would apply" has not been written yet, and excluding it here would
 	 * make the commit skip exactly the members it exists to act on.
 	 *
-	 * @param int $jobId The job id.
-	 * @param int $afterId Only members with a higher id.
-	 * @param int $limit The batch size.
+	 * @param int      $jobId  The job id.
+	 * @param IdCursor $cursor The members after this id, and the batch size.
 	 *
 	 * @return BulkJobMember[] The members still to walk.
 	 */
-	public function findPendingBatch(int $jobId, int $afterId, int $limit): array {
+	public function findPendingBatch(int $jobId, IdCursor $cursor): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('job_id', $qb->createNamedParameter($jobId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->andWhere($cursor->after(qb: $qb))
 			->andWhere($qb->expr()->isNull('applied_at'))
 			->orderBy('id', 'ASC')
-			->setMaxResults($limit);
+			->setMaxResults($cursor->limit);
 
 		return $this->findEntities(query: $qb);
 	}//end findPendingBatch()
@@ -133,11 +120,7 @@ class BulkJobMemberMapper extends QBMapper {
 		$row = $result->fetch();
 		$result->closeCursor();
 
-		if ($row === false) {
-			return 0;
-		}
-
-		return (int)$row['member_count'];
+		return (int)($row['member_count'] ?? 0);
 	}//end countWalked()
 
 	/**
@@ -221,16 +204,7 @@ class BulkJobMemberMapper extends QBMapper {
 			->andWhere($qb->expr()->isNotNull('applied_at'))
 			->orderBy('id', 'ASC');
 
-		$result = $qb->executeQuery();
-		$uuids = [];
-
-		foreach ($result->fetchAll() as $row) {
-			$uuids[] = (string)$row['object_uuid'];
-		}
-
-		$result->closeCursor();
-
-		return $uuids;
+		return $this->objectUuids(qb: $qb);
 	}//end findWrittenUuidsByJob()
 
 	/**
@@ -246,17 +220,23 @@ class BulkJobMemberMapper extends QBMapper {
 			->from($this->getTableName())
 			->where($qb->expr()->eq('job_id', $qb->createNamedParameter($jobId, IQueryBuilder::PARAM_INT)));
 
+		return $this->objectUuids(qb: $qb);
+	}//end findUuidsByJob()
+
+	/**
+	 * The object uuids a query selects, in row order.
+	 *
+	 * @param IQueryBuilder $qb A query selecting object_uuid.
+	 *
+	 * @return array<int, string> The uuids.
+	 */
+	private function objectUuids(IQueryBuilder $qb): array {
 		$result = $qb->executeQuery();
-		$uuids = [];
-
-		foreach ($result->fetchAll() as $row) {
-			$uuids[] = (string)$row['object_uuid'];
-		}
-
+		$uuids  = array_map(static fn (array $row): string => (string)$row['object_uuid'], $result->fetchAll());
 		$result->closeCursor();
 
 		return $uuids;
-	}//end findUuidsByJob()
+	}//end objectUuids()
 
 	/**
 	 * Create a member from an array of values.
@@ -291,19 +271,4 @@ class BulkJobMemberMapper extends QBMapper {
 
 		return $this->update(entity: $member);
 	}//end save()
-
-	/**
-	 * Delete every member of a job.
-	 *
-	 * @param int $jobId The job id.
-	 *
-	 * @return int The number of deleted rows.
-	 */
-	public function deleteByJob(int $jobId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('job_id', $qb->createNamedParameter($jobId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
-	}//end deleteByJob()
 }//end class

@@ -1,0 +1,81 @@
+[
+    [
+        "setApp",
+        [
+            "openregister"
+        ]
+    ],
+    [
+        "setUser",
+        [
+            "admin"
+        ]
+    ],
+    [
+        "setObject",
+        [
+            "transfer_list",
+            "l1"
+        ]
+    ],
+    [
+        "setSubject",
+        [
+            "edepot_transfer_list_created",
+            {
+                "uuid": "l1",
+                "objectCount": 3
+            }
+        ]
+    ],
+    [
+        "notify"
+    ],
+    [
+        "info",
+        "[TransferListService] Notification sent for transfer list",
+        {
+            "uuid": "l1"
+        }
+    ],
+    [
+        "setApp",
+        [
+            "openregister"
+        ]
+    ],
+    [
+        "setUser",
+        [
+            "admin"
+        ]
+    ],
+    [
+        "setObject",
+        [
+            "transfer_list",
+            "l1"
+        ]
+    ],
+    [
+        "setSubject",
+        [
+            "edepot_transfer_list_created",
+            {
+                "uuid": "l1",
+                "objectCount": 3
+            }
+        ]
+    ],
+    [
+        "notify"
+    ],
+    [
+        "warning",
+        "[TransferListService] Failed to send notification",
+        {
+            "uuid": "l1",
+            "error": "push down"
+        }
+    ]
+]

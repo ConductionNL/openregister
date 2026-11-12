@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * DELETE WINDOW AND RECORDED DESTRUCTION — end to end, over the HTTP API.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/delete-window-and-recorded-destruction/specs/` is
+ * once `openspec/changes/archive/2026-10-30-delete-window-and-recorded-destruction/specs/` is
  * archived into `openspec/specs/`:
  *
  * @e2e deletion-audit-trail::a-caseworker-sees-how-long-they-have

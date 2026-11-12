@@ -34,18 +34,21 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Sharing;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
-use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 
 /**
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
@@ -70,10 +73,7 @@ class AccessLinkMintGuardTest extends TestCase {
 		$this->schemas = $this->createMock(SchemaMapper::class);
 		$this->guard = new AccessLinkMintGuard(
 			objects: $this->objects,
-			subjects: new AccessLinkSubject(),
-			views: $this->views,
-			registers: $this->registers,
-			schemas: $this->schemas,
+			viewReaders: new AccessLinkViewReaders(views: $this->views, catalog: new SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->createMock(MagicMapperInterface::class))),
 		);
 	}
 
@@ -100,7 +100,7 @@ class AccessLinkMintGuardTest extends TestCase {
 	public function testTheSubjectIsFetchedAsTheCallingUserWithTheRulesOn(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, true, true, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, true, true, false, false))
 			->willReturn($this->object());
 
 		$this->assertTrue($this->guard->mayMint(subjectType: AccessLink::SUBJECT_OBJECT, subjectId: 'object-uuid'));
@@ -135,7 +135,7 @@ class AccessLinkMintGuardTest extends TestCase {
 	public function testAFileSubjectIsCheckedAgainstTheObjectThatOwnsIt(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, true, true, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, true, true, false, false))
 			->willReturn($this->object());
 
 		$this->assertTrue($this->guard->mayMint(subjectType: AccessLink::SUBJECT_FILE, subjectId: 'object-uuid/12'));

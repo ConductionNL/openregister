@@ -19,6 +19,7 @@ use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Task\TaskForm;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
+use OCA\OpenRegister\Service\Task\TaskFormSources;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IL10N;
@@ -60,7 +61,7 @@ class TaskFormReaderTest extends TestCase {
 			}
 		);
 
-		$this->reader = new TaskFormReader(schemas: $this->schemas, engine: $this->engine, apps: $this->apps, l10n: $l10n);
+		$this->reader = new TaskFormReader(sources: new TaskFormSources(schemas: $this->schemas, engine: $this->engine), apps: $this->apps, l10n: $l10n);
 	}//end setUp()
 
 	/**
@@ -410,7 +411,7 @@ class TaskFormReaderTest extends TestCase {
 		$l10n->method('t')->willReturnCallback(
 			static fn (string $text, array $parameters = []): string => $parameters === [] ? $text : vsprintf($text, $parameters)
 		);
-		$reader = new TaskFormReader(schemas: $this->schemas, engine: $this->engine, apps: $this->apps, l10n: $l10n, validator: $validator);
+		$reader = new TaskFormReader(sources: new TaskFormSources(schemas: $this->schemas, engine: $this->engine), apps: $this->apps, l10n: $l10n, validator: $validator);
 		$this->schemas->method('find')->willReturn($this->caseSchema());
 
 		$this->expectException(UnexpectedValueException::class);

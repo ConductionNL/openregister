@@ -41,6 +41,7 @@ class ProviderUnavailableException extends \RuntimeException {
 	public const CAUSE_OPENCONNECTOR_SOURCE_MISSING = 'openconnector-source-missing';
 	public const CAUSE_UPSTREAM_SERVICE_DOWN = 'upstream-service-down';
 	public const CAUSE_PROVIDER_AUTH = 'provider-auth';
+	public const CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES = 'connector-cannot-withhold-bodies';
 
 	/**
 	 * The cause classification.
@@ -69,7 +70,8 @@ class ProviderUnavailableException extends \RuntimeException {
 	 * Return the cause classification.
 	 *
 	 * @return string One of openconnector-down |
-	 *                openconnector-source-missing | upstream-service-down.
+	 *                openconnector-source-missing | upstream-service-down |
+	 *                provider-auth | connector-cannot-withhold-bodies.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-exception-all/tasks.md#task-2
 	 */

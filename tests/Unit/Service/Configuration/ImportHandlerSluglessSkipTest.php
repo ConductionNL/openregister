@@ -20,14 +20,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
-use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -57,13 +56,9 @@ class ImportHandlerSluglessSkipTest extends TestCase {
 
 	private MappingMapper&MockObject $mappingMapper;
 
-	private Client&MockObject $client;
-
 	private IAppConfig&MockObject $appConfig;
 
 	private LoggerInterface&MockObject $logger;
-
-	private UploadHandler&MockObject $uploadHandler;
 
 	private ObjectService&MockObject $objectService;
 
@@ -77,24 +72,25 @@ class ImportHandlerSluglessSkipTest extends TestCase {
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->mappingMapper = $this->createMock(MappingMapper::class);
-		$this->client = $this->createMock(Client::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->uploadHandler = $this->createMock(UploadHandler::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $this->objectEntityMapper,
-			configurationMapper: $this->configurationMapper,
-			mappingMapper:       $this->mappingMapper,
-			client:              $this->client,
-			appConfig:           $this->appConfig,
-			logger:              $this->logger,
-			appDataPath:         '/tmp',
-			uploadHandler:       $this->uploadHandler,
-			objectService:       $this->objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->logger,
+			appDataPath: '/tmp',
+			objectService: $this->objectService
 		);
 	}//end setUp()
 
@@ -106,7 +102,7 @@ class ImportHandlerSluglessSkipTest extends TestCase {
 		$this->expectExceptionMessage("missing a 'slug'");
 
 		$this->handler->importSchema(
-			data: ['title' => 'A schema with no slug', 'properties' => []],
+			definition: new ImportedSchemaLookup(data: ['title' => 'A schema with no slug', 'properties' => []]),
 			slugsAndIdsMap: []
 		);
 	}//end testImportSchemaThrowsRuntimeExceptionWhenSlugMissing()
@@ -118,7 +114,7 @@ class ImportHandlerSluglessSkipTest extends TestCase {
 		$this->expectExceptionMessage("missing a 'slug'");
 
 		$this->handler->importSchema(
-			data: ['slug' => '   ', 'title' => 'Blank slug', 'properties' => []],
+			definition: new ImportedSchemaLookup(data: ['slug' => '   ', 'title' => 'Blank slug', 'properties' => []]),
 			slugsAndIdsMap: []
 		);
 	}//end testImportSchemaThrowsRuntimeExceptionWhenSlugBlank()
@@ -129,7 +125,7 @@ class ImportHandlerSluglessSkipTest extends TestCase {
 		// (an \Error) would slip past that catch and abort the entire import.
 		try {
 			$this->handler->importSchema(
-				data: ['properties' => []],
+				definition: new ImportedSchemaLookup(data: ['properties' => []]),
 				slugsAndIdsMap: []
 			);
 			$this->fail('Expected a RuntimeException for the slug-less fragment.');

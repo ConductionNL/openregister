@@ -1,0 +1,857 @@
+{
+    "stats array": {
+        "calls": [
+            {
+                "getVectorizationStatistics": [
+                    [
+                        "a"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "stats": {
+                "count": 2
+            }
+        },
+        "order": [
+            "success",
+            "stats"
+        ]
+    },
+    "stats bad json": {
+        "calls": [
+            {
+                "getVectorizationStatistics": [
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "stats": {
+                "count": 2
+            }
+        },
+        "order": [
+            "success",
+            "stats"
+        ]
+    },
+    "stats fails": {
+        "calls": [
+            {
+                "getVectorizationStatistics": [
+                    null
+                ]
+            },
+            {
+                "error": [
+                    "[ObjectsController] Vectorization route failed",
+                    {
+                        "error": "no way"
+                    },
+                    [
+                        "error"
+                    ]
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "Internal server error"
+        },
+        "order": [
+            "success",
+            "error"
+        ]
+    },
+    "stats json": {
+        "calls": [
+            {
+                "getVectorizationStatistics": [
+                    [
+                        "a",
+                        "b"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "stats": {
+                "count": 2
+            }
+        },
+        "order": [
+            "success",
+            "stats"
+        ]
+    },
+    "stats none": {
+        "calls": [
+            {
+                "getVectorizationStatistics": [
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "stats": {
+                "count": 2
+            }
+        },
+        "order": [
+            "success",
+            "stats"
+        ]
+    },
+    "validate all defaults": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "info": [
+                    "[ObjectsController] Starting bulk validation for schema",
+                    {
+                        "register": "1",
+                        "schema": "2",
+                        "limit": null,
+                        "offset": 0
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "limit",
+                        "offset"
+                    ]
+                ]
+            },
+            {
+                "validateAndSaveObjectsBySchema": [
+                    1,
+                    2,
+                    null,
+                    0
+                ]
+            },
+            {
+                "info": [
+                    "[ObjectsController] Bulk validation and save completed",
+                    {
+                        "register": "1",
+                        "schema": "2",
+                        "processed": 5,
+                        "updated": 3,
+                        "failed": 2
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "processed",
+                        "updated",
+                        "failed"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Validation completed successfully",
+            "statistics": {
+                "processed": 5,
+                "updated": 3,
+                "failed": 2,
+                "total": 9
+            },
+            "pagination": {
+                "limit": null,
+                "offset": 0
+            },
+            "errors": [
+                "e"
+            ]
+        },
+        "order": [
+            "success",
+            "message",
+            "statistics",
+            "pagination",
+            "errors"
+        ]
+    },
+    "validate database fails": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "info": [
+                    "[ObjectsController] Starting bulk validation for schema",
+                    {
+                        "register": 1,
+                        "schema": 2,
+                        "limit": 3,
+                        "offset": 0
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "limit",
+                        "offset"
+                    ]
+                ]
+            },
+            {
+                "validateAndSaveObjectsBySchema": [
+                    1,
+                    2,
+                    3,
+                    0
+                ]
+            },
+            {
+                "error": [
+                    "[ObjectsController] Bulk validation failed",
+                    {
+                        "error": "no way"
+                    },
+                    [
+                        "error"
+                    ]
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "Internal server error",
+            "message": "Validation failed"
+        },
+        "order": [
+            "success",
+            "error",
+            "message"
+        ]
+    },
+    "validate empty result": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "info": [
+                    "[ObjectsController] Starting bulk validation for schema",
+                    {
+                        "register": 1,
+                        "schema": 2,
+                        "limit": null,
+                        "offset": 0
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "limit",
+                        "offset"
+                    ]
+                ]
+            },
+            {
+                "validateAndSaveObjectsBySchema": [
+                    1,
+                    2,
+                    null,
+                    0
+                ]
+            },
+            {
+                "info": [
+                    "[ObjectsController] Bulk validation and save completed",
+                    {
+                        "register": 1,
+                        "schema": 2,
+                        "processed": 0,
+                        "updated": 0,
+                        "failed": 0
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "processed",
+                        "updated",
+                        "failed"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Validation completed successfully",
+            "statistics": {
+                "processed": 0,
+                "updated": 0,
+                "failed": 0,
+                "total": null
+            },
+            "pagination": {
+                "limit": null,
+                "offset": 0
+            },
+            "errors": []
+        },
+        "order": [
+            "success",
+            "message",
+            "statistics",
+            "pagination",
+            "errors"
+        ]
+    },
+    "validate no register": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Register and schema parameters are required"
+        },
+        "order": [
+            "success",
+            "error"
+        ]
+    },
+    "validate no schema": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Register and schema parameters are required"
+        },
+        "order": [
+            "success",
+            "error"
+        ]
+    },
+    "validate nothing": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "error": "Register and schema parameters are required"
+        },
+        "order": [
+            "success",
+            "error"
+        ]
+    },
+    "validate partial result": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "info": [
+                    "[ObjectsController] Starting bulk validation for schema",
+                    {
+                        "register": 1,
+                        "schema": 2,
+                        "limit": null,
+                        "offset": 0
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "limit",
+                        "offset"
+                    ]
+                ]
+            },
+            {
+                "validateAndSaveObjectsBySchema": [
+                    1,
+                    2,
+                    null,
+                    0
+                ]
+            },
+            {
+                "info": [
+                    "[ObjectsController] Bulk validation and save completed",
+                    {
+                        "register": 1,
+                        "schema": 2,
+                        "processed": 0,
+                        "updated": 1,
+                        "failed": 0
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "processed",
+                        "updated",
+                        "failed"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Validation completed successfully",
+            "statistics": {
+                "processed": 0,
+                "updated": 1,
+                "failed": 0,
+                "total": null
+            },
+            "pagination": {
+                "limit": null,
+                "offset": 0
+            },
+            "errors": []
+        },
+        "order": [
+            "success",
+            "message",
+            "statistics",
+            "pagination",
+            "errors"
+        ]
+    },
+    "validate text ids": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "info": [
+                    "[ObjectsController] Starting bulk validation for schema",
+                    {
+                        "register": "r",
+                        "schema": "s",
+                        "limit": null,
+                        "offset": 0
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "limit",
+                        "offset"
+                    ]
+                ]
+            },
+            {
+                "validateAndSaveObjectsBySchema": [
+                    0,
+                    0,
+                    null,
+                    0
+                ]
+            },
+            {
+                "info": [
+                    "[ObjectsController] Bulk validation and save completed",
+                    {
+                        "register": "r",
+                        "schema": "s",
+                        "processed": 5,
+                        "updated": 3,
+                        "failed": 2
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "processed",
+                        "updated",
+                        "failed"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Validation completed successfully",
+            "statistics": {
+                "processed": 5,
+                "updated": 3,
+                "failed": 2,
+                "total": 9
+            },
+            "pagination": {
+                "limit": null,
+                "offset": 0
+            },
+            "errors": [
+                "e"
+            ]
+        },
+        "order": [
+            "success",
+            "message",
+            "statistics",
+            "pagination",
+            "errors"
+        ]
+    },
+    "validate window": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "info": [
+                    "[ObjectsController] Starting bulk validation for schema",
+                    {
+                        "register": 1,
+                        "schema": 2,
+                        "limit": 10,
+                        "offset": 20
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "limit",
+                        "offset"
+                    ]
+                ]
+            },
+            {
+                "validateAndSaveObjectsBySchema": [
+                    1,
+                    2,
+                    10,
+                    20
+                ]
+            },
+            {
+                "info": [
+                    "[ObjectsController] Bulk validation and save completed",
+                    {
+                        "register": 1,
+                        "schema": 2,
+                        "processed": 5,
+                        "updated": 3,
+                        "failed": 2
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "processed",
+                        "updated",
+                        "failed"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Validation completed successfully",
+            "statistics": {
+                "processed": 5,
+                "updated": 3,
+                "failed": 2,
+                "total": 9
+            },
+            "pagination": {
+                "limit": 10,
+                "offset": 20
+            },
+            "errors": [
+                "e"
+            ]
+        },
+        "order": [
+            "success",
+            "message",
+            "statistics",
+            "pagination",
+            "errors"
+        ]
+    },
+    "validate zero window": {
+        "calls": [
+            {
+                "getParam": "register"
+            },
+            {
+                "getParam": "schema"
+            },
+            {
+                "getParam": "limit"
+            },
+            {
+                "getParam": "offset"
+            },
+            {
+                "info": [
+                    "[ObjectsController] Starting bulk validation for schema",
+                    {
+                        "register": 1,
+                        "schema": 2,
+                        "limit": 0,
+                        "offset": 0
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "limit",
+                        "offset"
+                    ]
+                ]
+            },
+            {
+                "validateAndSaveObjectsBySchema": [
+                    1,
+                    2,
+                    0,
+                    0
+                ]
+            },
+            {
+                "info": [
+                    "[ObjectsController] Bulk validation and save completed",
+                    {
+                        "register": 1,
+                        "schema": 2,
+                        "processed": 5,
+                        "updated": 3,
+                        "failed": 2
+                    },
+                    [
+                        "register",
+                        "schema",
+                        "processed",
+                        "updated",
+                        "failed"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "Validation completed successfully",
+            "statistics": {
+                "processed": 5,
+                "updated": 3,
+                "failed": 2,
+                "total": 9
+            },
+            "pagination": {
+                "limit": 0,
+                "offset": 0
+            },
+            "errors": [
+                "e"
+            ]
+        },
+        "order": [
+            "success",
+            "message",
+            "statistics",
+            "pagination",
+            "errors"
+        ]
+    },
+    "vectorize defaults": {
+        "calls": [
+            {
+                "vectorizeBatchObjects": [
+                    null,
+                    25
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "done": 1
+            }
+        },
+        "order": [
+            "success",
+            "data"
+        ]
+    },
+    "vectorize fails": {
+        "calls": [
+            {
+                "vectorizeBatchObjects": [
+                    [
+                        "x"
+                    ],
+                    25
+                ]
+            },
+            {
+                "error": [
+                    "[ObjectsController] Vectorization route failed",
+                    {
+                        "error": "no way"
+                    },
+                    [
+                        "error"
+                    ]
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "Internal server error"
+        },
+        "order": [
+            "success",
+            "error"
+        ]
+    },
+    "vectorize views and size": {
+        "calls": [
+            {
+                "vectorizeBatchObjects": [
+                    [
+                        "a"
+                    ],
+                    7
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "done": 1
+            }
+        },
+        "order": [
+            "success",
+            "data"
+        ]
+    },
+    "vectorize zero size": {
+        "calls": [
+            {
+                "vectorizeBatchObjects": [
+                    null,
+                    0
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "data": {
+                "done": 1
+            }
+        },
+        "order": [
+            "success",
+            "data"
+        ]
+    }
+}

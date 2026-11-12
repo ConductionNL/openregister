@@ -150,7 +150,7 @@ class ObjectVersionHandlerTest extends TestCase {
 	/**
 	 * A re-imported seed carries the shipped version, which is higher: it is taken.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testAdvanceTakesAHigherCarriedVersion(): void {
 		$entity = new ObjectEntity();
@@ -164,7 +164,7 @@ class ObjectVersionHandlerTest extends TestCase {
 	/**
 	 * A stored version that cannot be parsed (`1`) is replaced by a usable carried one.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testAdvanceTakesACarriedVersionOverAnUnusableStoredOne(): void {
 		$entity = new ObjectEntity();
@@ -178,7 +178,7 @@ class ObjectVersionHandlerTest extends TestCase {
 	/**
 	 * A client echoing back the version it read is an ordinary save: the patch moves.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testAdvanceBumpsWhenTheCarriedVersionIsNotHigher(): void {
 		$equal = new ObjectEntity();
@@ -195,7 +195,7 @@ class ObjectVersionHandlerTest extends TestCase {
 	/**
 	 * No carried version, or free text, is an ordinary save.
 	 *
-	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function testAdvanceBumpsWithoutAUsableCarriedVersion(): void {
 		$none = new ObjectEntity();

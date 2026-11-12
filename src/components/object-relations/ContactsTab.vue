@@ -20,14 +20,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load linked contacts')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Contacts app missing (HTTP 501 graceful degradation) -->
 		<NcEmptyContent
@@ -46,7 +42,7 @@ SPDX-License-Identifier: EUPL-1.2
 
 		<!-- Empty state -->
 		<NcEmptyContent
-			v-else-if="contacts.length === 0"
+			v-else-if="items.length === 0"
 			:name="t('openregister', 'No contacts linked to this object')"
 			:description="
 				t(
@@ -62,7 +58,7 @@ SPDX-License-Identifier: EUPL-1.2
 		<!-- Linked contacts list -->
 		<ul v-else class="contacts-tab__list">
 			<li
-				v-for="contact in contacts"
+				v-for="contact in items"
 				:key="contact.uid || contact.contactUid || contact.id"
 				class="contacts-tab__item">
 				<div class="contacts-tab__icon">
@@ -89,28 +85,23 @@ SPDX-License-Identifier: EUPL-1.2
 						}}</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Remove contact')"
-					@click="unlinkContact(contact)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Remove contact')"
+					@unlink="unlinkContact(contact)" />
 			</li>
 		</ul>
 	</div>
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AccountOff from 'vue-material-design-icons/AccountOff.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { useContactRelationsStore } from '../../store/modules/object-relations/contacts.js'
+import { storeRelationTab } from './relationTab.js'
 
 /**
  * ContactsTab — display + manage Nextcloud contacts linked to an OpenRegister object.
@@ -128,63 +119,19 @@ export default {
 	name: 'ContactsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcButton,
-		AlertCircleOutline,
 		AccountOutline,
 		AccountPlus,
 		AccountOff,
-		CloseCircleOutline,
+		UnlinkButton,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
-
-	data() {
-		return {
-			error: false,
-			errorMessage: '',
-			store: useContactRelationsStore(),
-		}
-	},
+	mixins: [storeRelationTab(useContactRelationsStore)],
 
 	computed: {
-		/**
-		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
-		 */
-		key() {
-			return `${this.register}:${this.schema}:${this.objectId}`
-		},
-
-		/**
-		 * @spec exclude computed read of linked contacts from store; contact-relations contract owned by integration-contacts capability
-		 */
-		contacts() {
-			return this.store.byObject[this.key] || []
-		},
-
-		/**
-		 * @spec exclude computed read of loading state from store, UI plumbing
-		 */
-		loading() {
-			return !!this.store.loading[this.key]
-		},
-
 		/**
 		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
 		 */
@@ -193,64 +140,16 @@ export default {
 		},
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param newId
-			 * @spec exclude watcher refetching contacts on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchContacts()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
-		 * Fetch the contact list for the current object via the per-object
-		 * `GET /api/objects/{register}/{schema}/{id}/contacts` endpoint. Sets
-		 * `error` / `errorMessage` on failure; the 501 graceful-degradation
-		 * path is handled inside the store and surfaces as
-		 * `store.contactsUnavailable`.
-		 *
-		 * @spec openspec/specs/contacts-actions/spec.md
-		 *
-		 * @return {Promise<void>}
-		 */
-		async fetchContacts() {
-			this.error = false
-			this.errorMessage = ''
-			try {
-				await this.store.fetch(this.register, this.schema, this.objectId)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
-		},
-
-		/**
-		 * @param contact
+		 * @param {object} contact
 		 * @spec exclude store passthrough unlinking contact + change emit; contact-relations contract owned by integration-contacts capability
 		 */
-		async unlinkContact(contact) {
-			const uid = contact.uid || contact.contactUid || contact.id
-			try {
-				await this.store.unlink(
-					this.register,
-					this.schema,
-					this.objectId,
-					uid,
-				)
-				this.$emit('contacts-changed', this.contacts.length)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
+		unlinkContact(contact) {
+			return this.unlink(
+				contact.uid || contact.contactUid || contact.id,
+				'contacts-changed',
+			)
 		},
 
 		/**
@@ -263,65 +162,8 @@ export default {
 }
 </script>
 
-<style scoped>
-.contacts-tab__toolbar {
-	display: flex;
-	gap: 8px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
 
-.contacts-tab__loading {
-	display: flex;
-	justify-content: center;
-	padding: 2em 0;
-}
-
-.contacts-tab__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.contacts-tab__item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.contacts-tab__item:last-child {
-	border-bottom: none;
-}
-
-.contacts-tab__icon {
-	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
-}
-
-.contacts-tab__content {
-	flex-grow: 1;
-	min-width: 0;
-}
-
-.contacts-tab__name {
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.contacts-tab__meta {
-	display: flex;
-	gap: 6px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.85em;
-}
-
-.contacts-tab__email {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+@include relation-tab-list('contacts-tab', 'name', 'email');
 </style>

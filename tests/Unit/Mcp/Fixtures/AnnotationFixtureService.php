@@ -4,7 +4,8 @@
  * Test fixture only: attributed methods exercising the optional
  * `annotations` map on `#[McpTool]` (REQ-ATTR-007). One method declares a
  * mark, one declares none (an empty map is never forwarded), and one
- * declares a nested value (rejected at scan time).
+ * declares a nested value, and one declares a reserved MCP hint key (both
+ * rejected at scan time).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -27,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Mcp\Fixtures;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
+use OCA\OpenRegister\Mcp\Attribute\McpToolTitle;
 
 class AnnotationFixtureService {
 
@@ -40,8 +42,25 @@ class AnnotationFixtureService {
 		return ['id' => $id];
 	}//end reassignCase()
 
+	#[McpTool(scope: 'create', annotations: ['citizenIntake' => true])]
+	#[McpToolTitle('Create a task')]
+	public function createTask(string $title): array {
+		return ['title' => $title];
+	}//end createTask()
+
+	#[McpTool(scope: 'read')]
+	#[McpToolTitle('  ')]
+	public function blankTitleTool(string $id): array {
+		return ['id' => $id];
+	}//end blankTitleTool()
+
 	#[McpTool(annotations: ['citizenIntake' => ['nested' => true]])]
 	public function badAnnotationTool(string $id): array {
 		return ['id' => $id];
 	}//end badAnnotationTool()
+
+	#[McpTool(scope: 'update', annotations: ['readOnlyHint' => true])]
+	public function hintClaimingTool(string $id): array {
+		return ['id' => $id];
+	}//end hintClaimingTool()
 }//end class

@@ -3,9 +3,10 @@
 /**
  * Who may change the special right `grant_manage` on an organisation.
  *
- * A member may edit their organisation. The list of who manages the grants on
- * its records is the one part a member may not touch: a member who could add
- * their own group to it would decide who reads every record.
+ * Only an administrator or the organisation's owner may change an organisation
+ * at all, so a member cannot touch the list of who manages the grants on its
+ * records: a member who could add their own group to it would decide who reads
+ * every record. The owner edits the rest of the block as before.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Controller
@@ -24,11 +25,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -52,6 +55,8 @@ class OrganisationGrantManageGuardTest extends TestCase {
 
 	private OrganisationController $controller;
 
+	private GrantChangeAuditor&MockObject $auditor;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -67,8 +72,9 @@ class OrganisationGrantManageGuardTest extends TestCase {
 		$this->organisationMapper->method('findByUuid')->willReturn($this->organisation);
 		$this->organisationMapper->method('save')->willReturnArgument(0);
 		$this->organisationMapper->method('update')->willReturnArgument(0);
+		$this->auditor = $this->createMock(GrantChangeAuditor::class);
 
-		$this->controller = new OrganisationController(
+		$this->controller = OrganisationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->organisationService,
@@ -77,7 +83,9 @@ class OrganisationGrantManageGuardTest extends TestCase {
 			$this->createMock(TenantLifecycleService::class),
 			$this->createMock(TenantUsageMapper::class),
 			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class)
+			$this->createMock(originalClassName: IGroupManager::class),
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class),
+			$this->auditor
 		);
 	}//end setUp()
 
@@ -105,26 +113,51 @@ class OrganisationGrantManageGuardTest extends TestCase {
 		return [
 			'adding their own group' => [['grant_manage' => ['records-service', 'my-team']]],
 			'taking it away' => [['grant_manage' => []]],
-			'leaving the key out, which would drop it' => [['object_publish' => []]],
+			'leaving the key out, which would drop it' => [['object_publish' => ['editors']]],
 			'widening a narrowed entry' => [['grant_manage' => [['group' => 'records-service']]]],
 		];
 	}//end changes()
 
-	public function testAMemberStillEditsTheRestOfTheBlock(): void {
-		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
+	public function testTheOwnerStillEditsTheRestOfTheBlock(): void {
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
 		$this->request->method('getParams')->willReturn(
-			['authorization' => [
-				'grant_manage' => ['records-service'],
-				'object_publish' => [],
-				'object' => ['read' => ['editors']],
-			]]
+			['authorization' => ['grant_manage' => ['records-service'], 'object_publish' => ['editors']]]
 		);
 
 		$response = $this->controller->update('org-1');
 
 		$this->assertNotSame(403, $response->getStatus());
-		$this->assertSame(['read' => ['editors']], $this->organisation->getAuthorization()['object']);
-	}//end testAMemberStillEditsTheRestOfTheBlock()
+		$this->assertSame(['editors'], $this->organisation->getAuthorization()['object_publish']);
+	}//end testTheOwnerStillEditsTheRestOfTheBlock()
+
+	public function testAChangeOfWhoHoldsTheRightIsRecordedOnTheTrail(): void {
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
+		$this->request->method('getParams')->willReturn(
+			['authorization' => ['grant_manage' => ['records-service', 'second-service']]]
+		);
+		$this->auditor->expects($this->once())->method('recordSpecialRight')->with(
+			'org-1',
+			$this->equalTo(new \OCA\OpenRegister\Service\Rbac\SpecialRightChange(['records-service'], ['records-service', 'second-service']))
+		);
+
+		$this->controller->update('org-1');
+	}//end testAChangeOfWhoHoldsTheRightIsRecordedOnTheTrail()
+
+	public function testASaveThatLeavesTheListAloneRecordsNothing(): void {
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
+		$this->request->method('getParams')->willReturn(['name' => 'Gemeente Utrecht']);
+		$this->auditor->expects($this->never())->method('recordSpecialRight');
+
+		$this->controller->update('org-1');
+	}//end testASaveThatLeavesTheListAloneRecordsNothing()
+
+	public function testARefusedChangeRecordsNothing(): void {
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
+		$this->request->method('getParams')->willReturn(['authorization' => ['grant_manage' => []]]);
+		$this->auditor->expects($this->never())->method('recordSpecialRight');
+
+		$this->assertSame(403, $this->controller->update('org-1')->getStatus());
+	}//end testARefusedChangeRecordsNothing()
 
 	public function testTheOwnerOrAnAdministratorChangesWhoHoldsTheRight(): void {
 		$this->organisationService->method('isOrganisationAdmin')->with('org-1')->willReturn(true);

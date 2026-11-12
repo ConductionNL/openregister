@@ -22,9 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Form\FormDependent;
-use OCP\EventDispatcher\Event;
 
 /**
  * Dispatched before a schema save; a listener adds each published form of its app that writes into it.
@@ -34,7 +32,7 @@ use OCP\EventDispatcher\Event;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
  */
-class FormDestinationDependentsEvent extends Event {
+class FormDestinationDependentsEvent extends AbstractSchemaEvent {
 
 	/**
 	 * The forms announced so far.
@@ -42,24 +40,6 @@ class FormDestinationDependentsEvent extends Event {
 	 * @var array<int, FormDependent>
 	 */
 	private array $forms = [];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param Schema $schema The proposed schema definition.
-	 */
-	public function __construct(private readonly Schema $schema) {
-		parent::__construct();
-	}//end __construct()
-
-	/**
-	 * The proposed schema.
-	 *
-	 * @return Schema The schema.
-	 */
-	public function getSchema(): Schema {
-		return $this->schema;
-	}//end getSchema()
 
 	/**
 	 * Announce a published form that submits into this schema.

@@ -1,0 +1,676 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditConfiguration.created opens with organisations empty, applications empty, existing false 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+  ],
+  "item": "{"title":"","description":null,"type":"default","app":"","version":"1.0.0","application":"","owner":"","organisation":null,"registers":[],"schemas":[],"objects":[],"sources":[],"agents":[],"views":[],"sourceType":"local","isLocal":true,"sourceUrl":null,"localVersion":"1.0.0","remoteVersion":null,"autoUpdate":false,"notificationGroups":[],"githubRepo":null,"githubBranch":"main","githubPath":null}",
+  "organisations": 1,
+  "same": false,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":[],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":null,"selectedType":{"value":"default","label":"Default","description":"Standard configuration type"},"selectedSourceType":{"value":"local","label":"Local","description":"Manually managed configuration"},"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations empty, applications empty, existing true 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+    [
+      "loadExistingSelections",
+    ],
+  ],
+  "item": "{"id":"c1","title":"Existing"}",
+  "organisations": 1,
+  "same": true,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":["stale"],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":"stale","selectedType":null,"selectedSourceType":null,"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations empty, applications filled, existing false 1`] = `
+{
+  "applications": 0,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+  ],
+  "item": "{"title":"","description":null,"type":"default","app":"","version":"1.0.0","application":"","owner":"","organisation":null,"registers":[],"schemas":[],"objects":[],"sources":[],"agents":[],"views":[],"sourceType":"local","isLocal":true,"sourceUrl":null,"localVersion":"1.0.0","remoteVersion":null,"autoUpdate":false,"notificationGroups":[],"githubRepo":null,"githubBranch":"main","githubPath":null}",
+  "organisations": 1,
+  "same": false,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":[],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":null,"selectedType":{"value":"default","label":"Default","description":"Standard configuration type"},"selectedSourceType":{"value":"local","label":"Local","description":"Manually managed configuration"},"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations empty, applications filled, existing true 1`] = `
+{
+  "applications": 0,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+    [
+      "loadExistingSelections",
+    ],
+  ],
+  "item": "{"id":"c1","title":"Existing"}",
+  "organisations": 1,
+  "same": true,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":["stale"],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":"stale","selectedType":null,"selectedSourceType":null,"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations empty, applications missing, existing false 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+  ],
+  "item": "{"title":"","description":null,"type":"default","app":"","version":"1.0.0","application":"","owner":"","organisation":null,"registers":[],"schemas":[],"objects":[],"sources":[],"agents":[],"views":[],"sourceType":"local","isLocal":true,"sourceUrl":null,"localVersion":"1.0.0","remoteVersion":null,"autoUpdate":false,"notificationGroups":[],"githubRepo":null,"githubBranch":"main","githubPath":null}",
+  "organisations": 1,
+  "same": false,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":[],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":null,"selectedType":{"value":"default","label":"Default","description":"Standard configuration type"},"selectedSourceType":{"value":"local","label":"Local","description":"Manually managed configuration"},"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations empty, applications missing, existing true 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+    [
+      "loadExistingSelections",
+    ],
+  ],
+  "item": "{"id":"c1","title":"Existing"}",
+  "organisations": 1,
+  "same": true,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":["stale"],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":"stale","selectedType":null,"selectedSourceType":null,"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations filled, applications empty, existing false 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+  ],
+  "item": "{"title":"","description":null,"type":"default","app":"","version":"1.0.0","application":"","owner":"","organisation":null,"registers":[],"schemas":[],"objects":[],"sources":[],"agents":[],"views":[],"sourceType":"local","isLocal":true,"sourceUrl":null,"localVersion":"1.0.0","remoteVersion":null,"autoUpdate":false,"notificationGroups":[],"githubRepo":null,"githubBranch":"main","githubPath":null}",
+  "organisations": 0,
+  "same": false,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":[],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":null,"selectedType":{"value":"default","label":"Default","description":"Standard configuration type"},"selectedSourceType":{"value":"local","label":"Local","description":"Manually managed configuration"},"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations filled, applications empty, existing true 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+    [
+      "loadExistingSelections",
+    ],
+  ],
+  "item": "{"id":"c1","title":"Existing"}",
+  "organisations": 0,
+  "same": true,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":["stale"],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":"stale","selectedType":null,"selectedSourceType":null,"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations filled, applications filled, existing false 1`] = `
+{
+  "applications": 0,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+  ],
+  "item": "{"title":"","description":null,"type":"default","app":"","version":"1.0.0","application":"","owner":"","organisation":null,"registers":[],"schemas":[],"objects":[],"sources":[],"agents":[],"views":[],"sourceType":"local","isLocal":true,"sourceUrl":null,"localVersion":"1.0.0","remoteVersion":null,"autoUpdate":false,"notificationGroups":[],"githubRepo":null,"githubBranch":"main","githubPath":null}",
+  "organisations": 0,
+  "same": false,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":[],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":null,"selectedType":{"value":"default","label":"Default","description":"Standard configuration type"},"selectedSourceType":{"value":"local","label":"Local","description":"Manually managed configuration"},"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations filled, applications filled, existing true 1`] = `
+{
+  "applications": 0,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+    [
+      "loadExistingSelections",
+    ],
+  ],
+  "item": "{"id":"c1","title":"Existing"}",
+  "organisations": 0,
+  "same": true,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":["stale"],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":"stale","selectedType":null,"selectedSourceType":null,"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations filled, applications missing, existing false 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+  ],
+  "item": "{"title":"","description":null,"type":"default","app":"","version":"1.0.0","application":"","owner":"","organisation":null,"registers":[],"schemas":[],"objects":[],"sources":[],"agents":[],"views":[],"sourceType":"local","isLocal":true,"sourceUrl":null,"localVersion":"1.0.0","remoteVersion":null,"autoUpdate":false,"notificationGroups":[],"githubRepo":null,"githubBranch":"main","githubPath":null}",
+  "organisations": 0,
+  "same": false,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":[],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":null,"selectedType":{"value":"default","label":"Default","description":"Standard configuration type"},"selectedSourceType":{"value":"local","label":"Local","description":"Manually managed configuration"},"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations filled, applications missing, existing true 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+    [
+      "loadExistingSelections",
+    ],
+  ],
+  "item": "{"id":"c1","title":"Existing"}",
+  "organisations": 0,
+  "same": true,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":["stale"],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":"stale","selectedType":null,"selectedSourceType":null,"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations missing, applications empty, existing false 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+  ],
+  "item": "{"title":"","description":null,"type":"default","app":"","version":"1.0.0","application":"","owner":"","organisation":null,"registers":[],"schemas":[],"objects":[],"sources":[],"agents":[],"views":[],"sourceType":"local","isLocal":true,"sourceUrl":null,"localVersion":"1.0.0","remoteVersion":null,"autoUpdate":false,"notificationGroups":[],"githubRepo":null,"githubBranch":"main","githubPath":null}",
+  "organisations": 1,
+  "same": false,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":[],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":null,"selectedType":{"value":"default","label":"Default","description":"Standard configuration type"},"selectedSourceType":{"value":"local","label":"Local","description":"Manually managed configuration"},"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations missing, applications empty, existing true 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+    [
+      "loadExistingSelections",
+    ],
+  ],
+  "item": "{"id":"c1","title":"Existing"}",
+  "organisations": 1,
+  "same": true,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":["stale"],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":"stale","selectedType":null,"selectedSourceType":null,"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations missing, applications filled, existing false 1`] = `
+{
+  "applications": 0,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+  ],
+  "item": "{"title":"","description":null,"type":"default","app":"","version":"1.0.0","application":"","owner":"","organisation":null,"registers":[],"schemas":[],"objects":[],"sources":[],"agents":[],"views":[],"sourceType":"local","isLocal":true,"sourceUrl":null,"localVersion":"1.0.0","remoteVersion":null,"autoUpdate":false,"notificationGroups":[],"githubRepo":null,"githubBranch":"main","githubPath":null}",
+  "organisations": 1,
+  "same": false,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":[],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":null,"selectedType":{"value":"default","label":"Default","description":"Standard configuration type"},"selectedSourceType":{"value":"local","label":"Local","description":"Manually managed configuration"},"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations missing, applications filled, existing true 1`] = `
+{
+  "applications": 0,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+    [
+      "loadExistingSelections",
+    ],
+  ],
+  "item": "{"id":"c1","title":"Existing"}",
+  "organisations": 1,
+  "same": true,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":["stale"],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":"stale","selectedType":null,"selectedSourceType":null,"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations missing, applications missing, existing false 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+  ],
+  "item": "{"title":"","description":null,"type":"default","app":"","version":"1.0.0","application":"","owner":"","organisation":null,"registers":[],"schemas":[],"objects":[],"sources":[],"agents":[],"views":[],"sourceType":"local","isLocal":true,"sourceUrl":null,"localVersion":"1.0.0","remoteVersion":null,"autoUpdate":false,"notificationGroups":[],"githubRepo":null,"githubBranch":"main","githubPath":null}",
+  "organisations": 1,
+  "same": false,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":[],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":null,"selectedType":{"value":"default","label":"Default","description":"Standard configuration type"},"selectedSourceType":{"value":"local","label":"Local","description":"Manually managed configuration"},"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;
+
+exports[`EditConfiguration.created opens with organisations missing, applications missing, existing true 1`] = `
+{
+  "applications": 1,
+  "calls": [
+    [
+      "searchRegisters",
+      "",
+    ],
+    [
+      "searchSchemas",
+      "",
+    ],
+    [
+      "searchSources",
+      "",
+    ],
+    [
+      "searchAgents",
+      "",
+    ],
+    [
+      "searchViews",
+      "",
+    ],
+    [
+      "searchApplications",
+      "",
+    ],
+    [
+      "loadExistingSelections",
+    ],
+  ],
+  "item": "{"id":"c1","title":"Existing"}",
+  "organisations": 1,
+  "same": true,
+  "state": "{"loading":false,"error":null,"activeTab":0,"selectedRegisters":["stale"],"selectedSchemas":[],"selectedObjects":[],"selectedSources":[],"selectedAgents":[],"selectedViews":[],"selectedManagedApplications":[],"selectedApplication":"stale","selectedType":null,"selectedSourceType":null,"selectedNotificationGroups":[],"loadingRegisters":false,"loadingSchemas":false,"loadingObjects":false,"loadingSources":false,"loadingAgents":false,"loadingViews":false,"loadingApplications":false,"registerOptions":[],"schemaOptions":[],"objectOptions":[],"sourceOptions":[],"agentOptions":[],"viewOptions":[],"applicationOptions":[],"registerSearchDebounce":null,"schemaSearchDebounce":null,"objectSearchDebounce":null,"sourceSearchDebounce":null,"agentSearchDebounce":null,"viewSearchDebounce":null,"applicationSearchDebounce":null}",
+}
+`;

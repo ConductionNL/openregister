@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -45,6 +46,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Covers the post-write release and what the response says about it.
@@ -78,7 +80,7 @@ class ObjectsControllerWriteReleasesOwnLockTest extends TestCase {
 			}
 		);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -177,7 +179,7 @@ class ObjectsControllerWriteReleasesOwnLockTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('unlockObject')
-			->with('uuid-123')
+			->with(new UnlockRequest(identifier: 'uuid-123'))
 			->willReturn(true);
 
 		$body = $this->updateReturningLock($this->liveLockHeldBy(self::CALLER));
@@ -256,7 +258,7 @@ class ObjectsControllerWriteReleasesOwnLockTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),

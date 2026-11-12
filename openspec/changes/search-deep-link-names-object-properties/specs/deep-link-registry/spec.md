@@ -4,7 +4,7 @@
 
 ### Requirement: A search hit's deep link can name the object's own properties
 
-When the unified search formats a hit, the object data handed to the deep-link registry MUST include the object's own declared scalar properties, URL-encoded, so a template can name one (for example `/apps/dossiq/cases/{case}`). `@self` metadata and the resolved `uuid`, `register` and `schema` MUST win over an own property of the same name. Keys starting with `_` (attached by the pipeline, not declared by the schema) and non-scalar values MUST NOT be passed. When the resolved link still contains an unfilled `{placeholder}`, the hit MUST link to OpenRegister's own object page instead.
+When the unified search formats a hit, the object data handed to the deep-link registry MUST include the object's own declared scalar properties, URL-encoded, so a template can name one (for example `/apps/dossiq/cases/{case}`). `@self` metadata and the resolved `uuid`, `register` and `schema` MUST win over an own property of the same name. Keys starting with `_` (attached by the pipeline, not declared by the schema), non-scalar values, booleans, and empty or blank strings MUST NOT be passed, so a property that holds nothing leaves its placeholder unfilled instead of being filled with nothing. When the resolved link still contains an unfilled `{placeholder}`, the hit MUST link to OpenRegister's own object page instead.
 
 #### Scenario: A case-owned record opens its case
 - **GIVEN** an app registered `/apps/dossiq/cases/{case}` for schema `caseDocument`
@@ -22,6 +22,6 @@ When the unified search formats a hit, the object data handed to the deep-link r
 - **THEN** `{case}` resolves to `..%2Fsettings`
 
 #### Scenario: An unfilled placeholder falls back
-- **GIVEN** the `{case}` template and an object with no `case`
+- **GIVEN** the `{case}` template and an object with no `case`, or one whose `case` is `""` or blank
 - **WHEN** the hit is formatted
 - **THEN** the hit's URL is OpenRegister's `openregister.objects.show` route for the object

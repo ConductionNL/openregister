@@ -1,0 +1,50 @@
+{
+    "dates": {
+        "none": "",
+        "all good": "",
+        "due not a date": "dueAt \"soon\" is not a date",
+        "expires not a date": "expiresAt \"2024-13-45x\" is not a date",
+        "completed blank": "completedAt \" \" is not a date",
+        "claimed int": "claimedAt \"5\" is not a date",
+        "created not a date": "createdAt \"nope\" is not a date",
+        "null is not set": "",
+        "first bad field wins": "dueAt \"soon\" is not a date",
+        "expires before due": "expiresAt lies before dueAt: a task that dies before it is due is a configuration error",
+        "expires equals due": "",
+        "expires without due": "",
+        "created in future": "createdAt \"9999-01-01\" lies in the future",
+        "claimed before created": "claimedAt lies before createdAt: a task is not claimed before it exists",
+        "completed before created": "completedAt lies before createdAt: a task is not completed before it exists",
+        "both before created": "claimedAt lies before createdAt: a task is not claimed before it exists",
+        "claimed same as created": "",
+        "claimed without created": "",
+        "expiry before due wins": "expiresAt lies before dueAt: a task that dies before it is due is a configuration error"
+    },
+    "moment": {
+        "date": "2024-01-02T00:00:00+00:00",
+        "moment": "2024-01-02T10:00:00+02:00",
+        "blank": null,
+        "garbage": null,
+        "int": null,
+        "null": null
+    },
+    "checklist": {
+        "none": "",
+        "null": "checklist must be a list of items",
+        "empty": "",
+        "map": "checklist must be a list of items",
+        "text": "checklist must be a list of items",
+        "good": "",
+        "item not array": "every checklist item needs an id and a label",
+        "no id": "every checklist item needs an id and a label",
+        "blank id": "every checklist item needs an id and a label",
+        "int id": "every checklist item needs an id and a label",
+        "no label": "every checklist item needs an id and a label",
+        "blank label": "every checklist item needs an id and a label",
+        "checked not bool": "checklist item \"a\": checked is true or false",
+        "checked null": "",
+        "id twice": "checklist item id \"a\" is used twice",
+        "second item bad": "every checklist item needs an id and a label",
+        "checked before dup": "checklist item \"a\": checked is true or false"
+    }
+}

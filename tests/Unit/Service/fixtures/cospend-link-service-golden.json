@@ -1,0 +1,1135 @@
+{
+    "available": {
+        "result": true,
+        "calls": [
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "project no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 401
+        },
+        "calls": []
+    },
+    "project unavailable": {
+        "result": {
+            "throws": "Exception",
+            "message": "NC Cospend is not available",
+            "code": 503
+        },
+        "calls": [
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "project blank id": {
+        "result": {
+            "throws": "Exception",
+            "message": "Project id is required",
+            "code": 400
+        },
+        "calls": [
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "project duplicate": {
+        "result": {
+            "throws": "Exception",
+            "message": "Project already linked to this object",
+            "code": 409
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":null,\"entryType\":\"project\",\"projectId\":\"trip\"})"
+        ]
+    },
+    "project missing": {
+        "result": {
+            "throws": "Exception",
+            "message": "Cospend project not found",
+            "code": 404
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":null,\"entryType\":\"project\",\"projectId\":\"nope\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=nope\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "project db fails": {
+        "result": {
+            "throws": "Exception",
+            "message": "Cospend project not found",
+            "code": 404
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":null,\"entryType\":\"project\",\"projectId\":\"trip\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "debug CospendLinkService::fetchProject failed: db down"
+        ]
+    },
+    "project ok": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "project",
+            "ProjectId": "trip",
+            "BillId": null,
+            "Name": "Trip",
+            "Amount": null,
+            "Currency": "EUR",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "name",
+                "currency",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":null,\"entryType\":\"project\",\"projectId\":\"trip\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"project\",\"ProjectId\":\"trip\",\"BillId\":null,\"Name\":\"Trip\",\"Amount\":null,\"Currency\":\"EUR\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"name\",\"currency\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "project bare": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "project",
+            "ProjectId": "bare",
+            "BillId": null,
+            "Name": "bare",
+            "Amount": null,
+            "Currency": "",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "name",
+                "currency",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":null,\"entryType\":\"project\",\"projectId\":\"bare\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=bare\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"project\",\"ProjectId\":\"bare\",\"BillId\":null,\"Name\":\"bare\",\"Amount\":null,\"Currency\":\"\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"name\",\"currency\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "bill no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 401
+        },
+        "calls": []
+    },
+    "bill unavailable": {
+        "result": {
+            "throws": "Exception",
+            "message": "NC Cospend is not available",
+            "code": 503
+        },
+        "calls": [
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "bill blank project": {
+        "result": {
+            "throws": "Exception",
+            "message": "Project id and bill id are required",
+            "code": 400
+        },
+        "calls": [
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "bill zero id": {
+        "result": {
+            "throws": "Exception",
+            "message": "Project id and bill id are required",
+            "code": 400
+        },
+        "calls": [
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "bill duplicate": {
+        "result": {
+            "throws": "Exception",
+            "message": "Bill already linked to this object",
+            "code": 409
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":5,\"entryType\":\"bill\",\"projectId\":\"trip\"})"
+        ]
+    },
+    "bill missing": {
+        "result": {
+            "throws": "Exception",
+            "message": "Cospend bill not found",
+            "code": 404
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":99,\"entryType\":\"bill\",\"projectId\":\"trip\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_bills)",
+            "qb.where([\"id=99\"])",
+            "qb.andWhere([\"project_id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "bill db fails": {
+        "result": {
+            "throws": "Exception",
+            "message": "Cospend bill not found",
+            "code": 404
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":5,\"entryType\":\"bill\",\"projectId\":\"trip\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_bills)",
+            "qb.where([\"id=5\"])",
+            "qb.andWhere([\"project_id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "debug CospendLinkService::fetchBill failed: db down"
+        ]
+    },
+    "bill ok": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "bill",
+            "ProjectId": "trip",
+            "BillId": 5,
+            "Name": "Hotel",
+            "Amount": 120.5,
+            "Currency": "EUR",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "billId",
+                "name",
+                "amount",
+                "currency",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":5,\"entryType\":\"bill\",\"projectId\":\"trip\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_bills)",
+            "qb.where([\"id=5\"])",
+            "qb.andWhere([\"project_id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"bill\",\"ProjectId\":\"trip\",\"BillId\":5,\"Name\":\"Hotel\",\"Amount\":120.5,\"Currency\":\"EUR\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"billId\",\"name\",\"amount\",\"currency\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "bill bare": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "bill",
+            "ProjectId": "bare",
+            "BillId": 6,
+            "Name": "",
+            "Amount": null,
+            "Currency": "",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "billId",
+                "name",
+                "currency",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":6,\"entryType\":\"bill\",\"projectId\":\"bare\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_bills)",
+            "qb.where([\"id=6\"])",
+            "qb.andWhere([\"project_id=bare\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=bare\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"bill\",\"ProjectId\":\"bare\",\"BillId\":6,\"Name\":\"\",\"Amount\":null,\"Currency\":\"\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"billId\",\"name\",\"currency\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "bill project missing": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "bill",
+            "ProjectId": "ghost",
+            "BillId": 6,
+            "Name": "",
+            "Amount": 0.0,
+            "Currency": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "billId",
+                "name",
+                "amount",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":6,\"entryType\":\"bill\",\"projectId\":\"ghost\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_bills)",
+            "qb.where([\"id=6\"])",
+            "qb.andWhere([\"project_id=ghost\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=ghost\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"bill\",\"ProjectId\":\"ghost\",\"BillId\":6,\"Name\":\"\",\"Amount\":0,\"Currency\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"billId\",\"name\",\"amount\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "bill no what no project": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "bill",
+            "ProjectId": "ghost",
+            "BillId": 7,
+            "Name": "",
+            "Amount": null,
+            "Currency": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "billId",
+                "name",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "findDuplicate(obj-1, {\"\\u0000OCA\\\\OpenRegister\\\\Db\\\\CospendEntryKey\\u0000billId\":7,\"entryType\":\"bill\",\"projectId\":\"ghost\"})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_bills)",
+            "qb.where([\"id=7\"])",
+            "qb.andWhere([\"project_id=ghost\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=ghost\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"bill\",\"ProjectId\":\"ghost\",\"BillId\":7,\"Name\":\"\",\"Amount\":null,\"Currency\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"billId\",\"name\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 401
+        },
+        "calls": []
+    },
+    "create blank name": {
+        "result": {
+            "throws": "Exception",
+            "message": "Project name is required",
+            "code": 400
+        },
+        "calls": []
+    },
+    "create unavailable": {
+        "result": {
+            "throws": "Exception",
+            "message": "NC Cospend is not available",
+            "code": 503
+        },
+        "calls": [
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "create no service": {
+        "result": {
+            "throws": "Exception",
+            "message": "NC Cospend is not available",
+            "code": 503
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "container.get(OCA\\Cospend\\Service\\ProjectService)",
+            "debug CospendLinkService: ProjectService unavailable: no OCA\\Cospend\\Service\\ProjectService"
+        ]
+    },
+    "create ok string id": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "project",
+            "ProjectId": "created-id",
+            "BillId": null,
+            "Name": "My Trip!",
+            "Amount": null,
+            "Currency": "EUR",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "name",
+                "currency",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "container.get(OCA\\Cospend\\Service\\ProjectService)",
+            "createProject([\"My Trip!\",\"my-trip-RAND\",null,\"alice\"])",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"project\",\"ProjectId\":\"created-id\",\"BillId\":null,\"Name\":\"My Trip!\",\"Amount\":null,\"Currency\":\"EUR\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"name\",\"currency\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create ok array id": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "project",
+            "ProjectId": "zoo",
+            "BillId": null,
+            "Name": "Zoo",
+            "Amount": null,
+            "Currency": "USD",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "name",
+                "currency",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "container.get(OCA\\Cospend\\Service\\ProjectService)",
+            "createProject([\"Zoo\",\"zoo-RAND\",null,\"alice\"])",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=zoo\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"project\",\"ProjectId\":\"zoo\",\"BillId\":null,\"Name\":\"Zoo\",\"Amount\":null,\"Currency\":\"USD\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"name\",\"currency\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create ok array no id": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "project",
+            "ProjectId": "project-RAND",
+            "BillId": null,
+            "Name": "!!!",
+            "Amount": null,
+            "Currency": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "name",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "container.get(OCA\\Cospend\\Service\\ProjectService)",
+            "createProject([\"!!!\",\"project-RAND\",null,\"alice\"])",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=project-RAND\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"project\",\"ProjectId\":\"project-RAND\",\"BillId\":null,\"Name\":\"!!!\",\"Amount\":null,\"Currency\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"name\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create ok null result": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "project",
+            "ProjectId": "long-name-long-name-long-name-long-name--RAND",
+            "BillId": null,
+            "Name": "Long name Long name Long name Long name Long name Long name Long name Long name",
+            "Amount": null,
+            "Currency": "NOK",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "name",
+                "currency",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "container.get(OCA\\Cospend\\Service\\ProjectService)",
+            "createProject([\"Long name Long name Long name Long name Long name Long name Long name Long name\",\"long-name-long-name-long-name-long-name--RAND\",null,\"alice\"])",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"project\",\"ProjectId\":\"long-name-long-name-long-name-long-name--RAND\",\"BillId\":null,\"Name\":\"Long name Long name Long name Long name Long name Long name Long name Long name\",\"Amount\":null,\"Currency\":\"NOK\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"name\",\"currency\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create empty string result": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "project",
+            "ProjectId": "trip-RAND",
+            "BillId": null,
+            "Name": "Trip",
+            "Amount": null,
+            "Currency": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "name",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "container.get(OCA\\Cospend\\Service\\ProjectService)",
+            "createProject([\"Trip\",\"trip-RAND\",null,\"alice\"])",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=trip-RAND\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"project\",\"ProjectId\":\"trip-RAND\",\"BillId\":null,\"Name\":\"Trip\",\"Amount\":null,\"Currency\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"name\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create first fails": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "project",
+            "ProjectId": "created-id",
+            "BillId": null,
+            "Name": "Trip",
+            "Amount": null,
+            "Currency": "EUR",
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "name",
+                "currency",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "container.get(OCA\\Cospend\\Service\\ProjectService)",
+            "createProject([\"Trip\",\"trip-RAND\",null,\"alice\"])",
+            "createProject([\"Trip\",\"trip-RAND\",\"alice\"])",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"project\",\"ProjectId\":\"created-id\",\"BillId\":null,\"Name\":\"Trip\",\"Amount\":null,\"Currency\":\"EUR\",\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"name\",\"currency\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "create both fail": {
+        "result": {
+            "throws": "Exception",
+            "message": "Failed to create Cospend project",
+            "code": 500
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "container.get(OCA\\Cospend\\Service\\ProjectService)",
+            "createProject([\"Trip\",\"trip-RAND\",null,\"alice\"])",
+            "createProject([\"Trip\",\"trip-RAND\",\"alice\"])",
+            "warning CospendLinkService::createProject failed: signature mismatch"
+        ]
+    },
+    "create currency lookup none": {
+        "result": {
+            "ObjectUuid": "obj-1",
+            "RegisterId": 3,
+            "SchemaId": 4,
+            "EntryType": "project",
+            "ProjectId": "bare",
+            "BillId": null,
+            "Name": "Trip",
+            "Amount": null,
+            "Currency": null,
+            "LinkedBy": "alice",
+            "LinkedAt": "NOW",
+            "updated": [
+                "entryType",
+                "projectId",
+                "name",
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "container.get(OCA\\Cospend\\Service\\ProjectService)",
+            "createProject([\"Trip\",\"trip-RAND\",null,\"alice\"])",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=bare\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "insert({\"ObjectUuid\":\"obj-1\",\"RegisterId\":3,\"SchemaId\":4,\"EntryType\":\"project\",\"ProjectId\":\"bare\",\"BillId\":null,\"Name\":\"Trip\",\"Amount\":null,\"Currency\":null,\"LinkedBy\":\"alice\",\"LinkedAt\":\"NOW\",\"updated\":[\"entryType\",\"projectId\",\"name\",\"objectUuid\",\"registerId\",\"schemaId\",\"linkedBy\",\"linkedAt\"]})"
+        ]
+    },
+    "unlink no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 401
+        },
+        "calls": []
+    },
+    "unlink ok": {
+        "result": null,
+        "calls": [
+            "deleteByObjectAndId(obj-1, 4)"
+        ]
+    },
+    "unlink missing": {
+        "result": {
+            "throws": "Exception",
+            "message": "Cospend link not found",
+            "code": 404
+        },
+        "calls": [
+            "deleteByObjectAndId(obj-1, 4)"
+        ]
+    },
+    "linked none": {
+        "result": [],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "linked unavailable": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "project",
+                "projectId": "trip",
+                "billId": null,
+                "name": "old",
+                "amount": null,
+                "currency": "GBP",
+                "linkedBy": null,
+                "linkedAt": null,
+                "url": "/apps/cospend/p/trip"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "bill",
+                "projectId": "trip",
+                "billId": 5,
+                "name": "old bill",
+                "amount": 1.0,
+                "currency": null,
+                "linkedBy": null,
+                "linkedAt": "1600000000",
+                "url": "/apps/cospend/p/trip/b/5"
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "linked refresh": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "project",
+                "projectId": "trip",
+                "billId": null,
+                "name": "saved:Trip",
+                "amount": null,
+                "currency": "EUR",
+                "linkedBy": null,
+                "linkedAt": "NOW",
+                "url": "/apps/cospend/p/trip"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "bill",
+                "projectId": "trip",
+                "billId": 5,
+                "name": "saved:Hotel",
+                "amount": 120.5,
+                "currency": "EUR",
+                "linkedBy": null,
+                "linkedAt": "NOW",
+                "url": "/apps/cospend/p/trip/b/5"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "bill",
+                "projectId": "trip",
+                "billId": 99,
+                "name": "saved:gone",
+                "amount": 2.0,
+                "currency": "EUR",
+                "linkedBy": null,
+                "linkedAt": "NOW",
+                "url": "/apps/cospend/p/trip/b/99"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "bill",
+                "projectId": "bare",
+                "billId": null,
+                "name": "saved:bare",
+                "amount": null,
+                "currency": "",
+                "linkedBy": null,
+                "linkedAt": "NOW",
+                "url": "/apps/cospend/p/bare"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "bill",
+                "projectId": "trip",
+                "billId": 5,
+                "name": "fresh",
+                "amount": 3.0,
+                "currency": "EUR",
+                "linkedBy": null,
+                "linkedAt": "NOW",
+                "url": "/apps/cospend/p/trip/b/5"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "project",
+                "projectId": "missing",
+                "billId": null,
+                "name": "m",
+                "amount": null,
+                "currency": null,
+                "linkedBy": null,
+                "linkedAt": null,
+                "url": "/apps/cospend/p/missing"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "project",
+                "projectId": "",
+                "billId": null,
+                "name": "e",
+                "amount": null,
+                "currency": null,
+                "linkedBy": null,
+                "linkedAt": "NOW"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "project",
+                "projectId": "bare",
+                "billId": null,
+                "name": "saved:bare",
+                "amount": null,
+                "currency": "",
+                "linkedBy": null,
+                "linkedAt": "NOW",
+                "url": "/apps/cospend/p/bare"
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "isEnabledForUser(cospend)",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"EntryType\":\"project\",\"ProjectId\":\"trip\",\"BillId\":null,\"Name\":\"Trip\",\"Amount\":null,\"Currency\":\"EUR\",\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"name\",\"currency\",\"linkedAt\"]})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_bills)",
+            "qb.where([\"id=5\"])",
+            "qb.andWhere([\"project_id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"EntryType\":\"bill\",\"ProjectId\":\"trip\",\"BillId\":5,\"Name\":\"Hotel\",\"Amount\":120.5,\"Currency\":\"EUR\",\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"name\",\"amount\",\"currency\",\"linkedAt\"]})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_bills)",
+            "qb.where([\"id=99\"])",
+            "qb.andWhere([\"project_id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"EntryType\":\"bill\",\"ProjectId\":\"trip\",\"BillId\":99,\"Name\":\"gone\",\"Amount\":2,\"Currency\":\"EUR\",\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"currency\",\"linkedAt\"]})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=bare\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"EntryType\":\"bill\",\"ProjectId\":\"bare\",\"BillId\":null,\"Name\":\"bare\",\"Amount\":null,\"Currency\":\"\",\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"name\",\"currency\",\"linkedAt\"]})",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=missing\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=bare\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"EntryType\":\"project\",\"ProjectId\":\"bare\",\"BillId\":null,\"Name\":\"bare\",\"Amount\":null,\"Currency\":\"\",\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"name\",\"currency\",\"linkedAt\"]})"
+        ]
+    },
+    "linked refresh update fails": {
+        "result": [
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "project",
+                "projectId": "trip",
+                "billId": null,
+                "name": "Trip",
+                "amount": null,
+                "currency": "EUR",
+                "linkedBy": null,
+                "linkedAt": "NOW",
+                "url": "/apps/cospend/p/trip"
+            },
+            {
+                "id": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "entryType": "bill",
+                "projectId": "trip",
+                "billId": 5,
+                "name": "Hotel",
+                "amount": 120.5,
+                "currency": "EUR",
+                "linkedBy": null,
+                "linkedAt": "NOW",
+                "url": "/apps/cospend/p/trip/b/5"
+            }
+        ],
+        "calls": [
+            "findByObjectUuid(obj-1)",
+            "isEnabledForUser(cospend)",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"EntryType\":\"project\",\"ProjectId\":\"trip\",\"BillId\":null,\"Name\":\"Trip\",\"Amount\":null,\"Currency\":\"EUR\",\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"name\",\"currency\",\"linkedAt\"]})",
+            "debug CospendLinkService::refreshLink update failed: update down",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_bills)",
+            "qb.where([\"id=5\"])",
+            "qb.andWhere([\"project_id=trip\"])",
+            "qb.setMaxResults([1])",
+            "qb.executeQuery",
+            "closeCursor",
+            "update({\"ObjectUuid\":null,\"RegisterId\":null,\"SchemaId\":null,\"EntryType\":\"bill\",\"ProjectId\":\"trip\",\"BillId\":5,\"Name\":\"Hotel\",\"Amount\":120.5,\"Currency\":\"EUR\",\"LinkedBy\":null,\"LinkedAt\":\"NOW\",\"updated\":[\"name\",\"amount\",\"currency\",\"linkedAt\"]})",
+            "debug CospendLinkService::refreshLink update failed: update down"
+        ]
+    },
+    "projects unavailable": {
+        "result": [],
+        "calls": [
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "projects no user": {
+        "result": [],
+        "calls": [
+            "isEnabledForUser(cospend)"
+        ]
+    },
+    "projects all": {
+        "result": [
+            {
+                "id": "trip",
+                "name": "Trip",
+                "currency": "EUR",
+                "userId": "alice"
+            },
+            {
+                "id": "zoo",
+                "name": "Zoo Day",
+                "currency": "USD",
+                "userId": "alice"
+            }
+        ],
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"user_id=alice\"])",
+            "qb.orderBy([\"name\",\"ASC\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "projects empty search": {
+        "result": [
+            {
+                "id": "trip",
+                "name": "Trip",
+                "currency": "EUR",
+                "userId": "alice"
+            },
+            {
+                "id": "zoo",
+                "name": "Zoo Day",
+                "currency": "USD",
+                "userId": "alice"
+            }
+        ],
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"user_id=alice\"])",
+            "qb.orderBy([\"name\",\"ASC\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "projects search": {
+        "result": [
+            {
+                "id": "trip",
+                "name": "Trip",
+                "currency": "EUR",
+                "userId": "alice"
+            }
+        ],
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"user_id=alice\"])",
+            "qb.orderBy([\"name\",\"ASC\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "projects search by id fallback": {
+        "result": [],
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"user_id=alice\"])",
+            "qb.orderBy([\"name\",\"ASC\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "projects db fails": {
+        "result": [],
+        "calls": [
+            "isEnabledForUser(cospend)",
+            "qb.select([\"*\"])",
+            "qb.from(cospend_projects)",
+            "qb.where([\"user_id=alice\"])",
+            "qb.orderBy([\"name\",\"ASC\"])",
+            "qb.executeQuery",
+            "warning CospendLinkService::getAvailableProjects failed: db down"
+        ]
+    }
+}

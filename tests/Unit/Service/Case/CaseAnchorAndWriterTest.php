@@ -22,12 +22,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Case;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Case\CaseAnchor;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
 /**
  * Coverage of CaseAnchorReader and CaseBusinessStateWriter.
@@ -35,6 +37,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Case\CaseAnchorReader
  * @covers \OCA\OpenRegister\Service\Case\CaseBusinessStateWriter
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\CaseItem
  */
 class CaseAnchorAndWriterTest extends TestCase {
 
@@ -64,16 +67,16 @@ class CaseAnchorAndWriterTest extends TestCase {
 		);
 		$reader = new CaseAnchorReader(objects: $objects, logger: new NullLogger());
 
-		$this->assertSame([], $reader->read(objectUuid: 'missing', registerId: 1, schemaId: 1));
-		$this->assertSame([], $reader->read(objectUuid: 'broken', registerId: 1, schemaId: 1));
-		$this->assertIsArray($reader->read(objectUuid: 'ok', registerId: null, schemaId: null));
-		$this->assertFalse($reader->mayRead(objectUuid: 'missing', registerId: 1, schemaId: 1));
-		$this->assertFalse($reader->mayRead(objectUuid: 'broken', registerId: 1, schemaId: 1));
-		$this->assertTrue($reader->mayRead(objectUuid: 'ok', registerId: 1, schemaId: 1));
+		$this->assertSame([], $reader->read(anchor: new CaseAnchor(objectUuid: 'missing', registerId: 1, schemaId: 1)));
+		$this->assertSame([], $reader->read(anchor: new CaseAnchor(objectUuid: 'broken', registerId: 1, schemaId: 1)));
+		$this->assertIsArray($reader->read(anchor: new CaseAnchor(objectUuid: 'ok', registerId: null, schemaId: null)));
+		$this->assertFalse($reader->mayRead(anchor: new CaseAnchor(objectUuid: 'missing', registerId: 1, schemaId: 1)));
+		$this->assertFalse($reader->mayRead(anchor: new CaseAnchor(objectUuid: 'broken', registerId: 1, schemaId: 1)));
+		$this->assertTrue($reader->mayRead(anchor: new CaseAnchor(objectUuid: 'ok', registerId: 1, schemaId: 1)));
 
 		$loaded = $this->createMock(ObjectService::class);
 		$loaded->method('find')->willReturn($entity);
-		$this->assertSame(['id' => 'obj-1', 'status' => 'open'], (new CaseAnchorReader(objects: $loaded, logger: new NullLogger()))->read(objectUuid: 'x', registerId: 1, schemaId: 1));
+		$this->assertSame(['id' => 'obj-1', 'status' => 'open'], (new CaseAnchorReader(objects: $loaded, logger: new NullLogger()))->read(anchor: new CaseAnchor(objectUuid: 'x', registerId: 1, schemaId: 1)));
 	}//end testTheAnchorReaderFailsClosed()
 
 	/**
@@ -86,7 +89,9 @@ class CaseAnchorAndWriterTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$patches = [];
 		$objects->method('patchObject')->willReturnCallback(
-			static function (string $objectId, array $data) use (&$patches): ObjectEntity {
+			static function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) use (&$patches): ObjectEntity {
+				$objectId = $patch->objectId;
+				$data = $patch->data;
 				$patches[] = [$objectId, $data];
 
 				return new ObjectEntity();

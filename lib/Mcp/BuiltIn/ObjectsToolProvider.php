@@ -28,9 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * ObjectsToolProvider
@@ -43,7 +45,7 @@ use OCA\OpenRegister\Service\WriteCause;
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class ObjectsToolProvider implements IMcpToolProvider {
+class ObjectsToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the objects tool
@@ -53,71 +55,49 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param ObjectService $objectService Object service facade
+	 * @param ObjectOperationsInterface $objectService Object service facade
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 	}//end __construct()
 
 	/**
-	 * Returns the owning app id.
+	 * The tool definitions.
 	 *
-	 * @return string Always "openregister"
+	 * @var array<int, array<string, mixed>>
 	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return [
-			[
-				'id' => self::TOOL_ID,
-				'name' => 'objects',
-				'description' => 'Manage objects (data records stored in a register under a schema)',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'action' => [
-							'type' => 'string',
-							'enum' => ['list', 'get', 'create', 'update', 'delete'],
-							'description' => 'The CRUD action to perform',
-						],
-						'register' => [
-							'type' => 'integer',
-							'description' => 'Register ID (required for all object actions)',
-						],
-						'schema' => [
-							'type' => 'integer',
-							'description' => 'Schema ID (required for all object actions)',
-						],
-						'id' => [
-							'type' => 'string',
-							'description' => 'Object UUID (required for get, update, delete)',
-						],
-						'data' => [
-							'type' => 'object',
-							'description' => 'Object data fields (for create and update)',
-						],
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of results (for list)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of results to skip (for list)',
-						],
+	protected const TOOLS = [
+		[
+			'id' => self::TOOL_ID,
+			'name' => 'objects',
+			'description' => 'Manage objects (data records stored in a register under a schema)',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					...CrudToolSchema::ACTION,
+					'register' => [
+						'type' => 'integer',
+						'description' => 'Register ID (required for all object actions)',
 					],
-					'required' => ['action', 'register', 'schema'],
+					'schema' => [
+						'type' => 'integer',
+						'description' => 'Schema ID (required for all object actions)',
+					],
+					'id' => [
+						'type' => 'string',
+						'description' => 'Object UUID (required for get, update, delete)',
+					],
+					'data' => [
+						'type' => 'object',
+						'description' => 'Object data fields (for create and update)',
+					],
+					...CrudToolSchema::PAGING,
 				],
+				'required' => ['action', 'register', 'schema'],
 			],
-		];
-	}//end getTools()
+		],
+	];
 
 	/**
 	 * Invoke the objects tool.
@@ -190,7 +170,7 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 * @param array<string, mixed> $arguments Must contain id (UUID)
 	 *
 	 * @return array<string, mixed> Serialized object
-	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
@@ -219,13 +199,21 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 * @param array<string, mixed> $arguments Must contain id and data
 	 *
 	 * @return array<string, mixed> Serialized updated object
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function updateObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
+		// Read in the caller's scope first: the save then checks and writes that
+		// object, in its own register and schema, by its uuid.
+		$existing = WriteCause::asLookup(fn () => $this->objectService->find($arguments['id']));
 		$object = $this->objectService->saveObject(
 			object: $arguments['data'],
-			uuid: $arguments['id']
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $existing->getRegister(), schema: $existing->getSchema()),
+				uuid: ($existing->getUuid() ?? (string)$arguments['id'])
+			)
 		);
 		return $object->jsonSerialize();
 	}//end updateObject()
@@ -239,23 +227,7 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 */
 	private function deleteObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$this->objectService->deleteObject(uuid: $arguments['id']);
+		$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $arguments['id']));
 		return ['deleted' => true, 'id' => $arguments['id']];
 	}//end deleteObject()
-
-	/**
-	 * Assert a parameter is present in arguments.
-	 *
-	 * @param array<string, mixed> $arguments Tool arguments
-	 * @param string $param Required parameter name
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException If parameter is missing
-	 */
-	private function requireParam(array $arguments, string $param): void {
-		if (isset($arguments[$param]) === false) {
-			throw new InvalidArgumentException('Missing required parameter: ' . $param);
-		}
-	}//end requireParam()
 }//end class

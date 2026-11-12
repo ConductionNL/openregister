@@ -1,0 +1,67 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`page-shell views register their components AgentsIndex 1`] = `
+[
+  "CnDataTable",
+  "EditAgentLimits",
+  "NcAppContent",
+  "NcButton",
+  "NcEmptyContent",
+  "NcLoadingIcon",
+  "NcNoteCard",
+]
+`;
+
+exports[`page-shell views register their components FlowOverview 1`] = `
+[
+  "CnDataTable",
+  "CnStatusBadge",
+  "NcAppContent",
+  "NcButton",
+  "NcEmptyContent",
+  "NcLoadingIcon",
+  "NcNoteCard",
+  "SitemapOutline",
+]
+`;
+
+exports[`page-shell views register their components FlowRunDetail 1`] = `
+[
+  "CnStatusBadge",
+  "NcAppContent",
+  "NcButton",
+  "NcEmptyContent",
+  "NcLoadingIcon",
+  "NcNoteCard",
+  "PlayCircleOutline",
+]
+`;
+
+exports[`page-shell views register their components MigrationPacksIndex 1`] = `
+[
+  "CnDataTable",
+  "DeleteMigrationPackDialog",
+  "Download",
+  "Eye",
+  "NcAppContent",
+  "NcButton",
+  "NcEmptyContent",
+  "NcLoadingIcon",
+  "NcNoteCard",
+  "Pencil",
+  "TrashCanOutline",
+  "Upload",
+]
+`;
+
+exports[`page-shell views register their components OperationsConsoleIndex 1`] = `
+[
+  "CnDataTable",
+  "CogOutline",
+  "NcAppContent",
+  "NcButton",
+  "NcEmptyContent",
+  "NcLoadingIcon",
+  "NcNoteCard",
+]
+`;

@@ -36,8 +36,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
+use OCA\OpenRegister\Listener\Support\ConflictVeto;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -49,6 +51,7 @@ use Throwable;
  * @template-implements IEventListener<ObjectDeletingEvent>
  */
 class WorkingCalendarDeleteGuardListener implements IEventListener {
+	use ConflictVeto;
 
 	/**
 	 * The error code the refusal carries, so a client can branch on it.
@@ -60,11 +63,11 @@ class WorkingCalendarDeleteGuardListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param WorkingCalendarWriteGuard $guard Recognises a calendar and counts its open timers.
+	 * @param WorkingCalendarWriteGuardInterface $guard Recognises a calendar and counts its open timers.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly WorkingCalendarWriteGuard $guard,
+		private readonly WorkingCalendarWriteGuardInterface $guard,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -80,44 +83,22 @@ class WorkingCalendarDeleteGuardListener implements IEventListener {
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-only-an-administrator-writes-a-calendar-and-a-referenced-one-cannot-be-deleted
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectDeletingEvent === false) {
-			return;
+		if ($event instanceof ObjectDeletingEvent) {
+			$this->refuseReferencedCalendar(event: $event);
 		}
 
+	}//end handle()
+
+	/**
+	 * Refuse the delete of a calendar open timers name, letting it through when the guard itself fails.
+	 *
+	 * @param ObjectDeletingEvent $event The delete event.
+	 *
+	 * @return void
+	 */
+	private function refuseReferencedCalendar(ObjectDeletingEvent $event): void {
 		try {
-			$object = $event->getObject();
-			if ($this->guard->isWorkingCalendar(object: $object) === false) {
-				return;
-			}
-
-			$data = $object->getObject();
-			if (is_array($data) === false) {
-				return;
-			}
-
-			$slug = trim((string)($data['slug'] ?? ''));
-			if ($slug === '') {
-				return;
-			}
-
-			$blockers = $this->guard->deletionBlockers(calendarSlug: $slug);
-			if ($blockers['count'] === 0) {
-				return;
-			}
-
-			$event->setErrors(
-				[
-					'code' => self::ERROR_CODE,
-					'message' => $this->guard->blockedMessage(calendarSlug: $slug, blockers: $blockers),
-					// A referenced row refused is a conflict, not a malformed
-					// body; the delete handler reads this and answers 409.
-					'status' => 409,
-					'calendar' => $slug,
-					'openTimers' => $blockers['count'],
-					'timers' => $blockers['timers'],
-				]
-			);
-			$event->stopPropagation();
+			$this->refuseWhenTimersNameIt(event: $event);
 		} catch (Throwable $failure) {
 			// A guard that cannot read the timer table must not also become
 			// the reason nothing can be deleted. The delete proceeds and the
@@ -128,5 +109,50 @@ class WorkingCalendarDeleteGuardListener implements IEventListener {
 			);
 		}//end try
 
-	}//end handle()
+	}//end refuseReferencedCalendar()
+
+	/**
+	 * Refuse the delete when open timers name the calendar being deleted.
+	 *
+	 * @param ObjectDeletingEvent $event The delete event.
+	 *
+	 * @return void
+	 */
+	private function refuseWhenTimersNameIt(ObjectDeletingEvent $event): void {
+		$slug = $this->calendarSlugOf(object: $event->getObject());
+		if ($slug === null) {
+			return;
+		}
+
+		$blockers = $this->guard->deletionBlockers(calendarSlug: $slug);
+		if ($blockers['count'] === 0) {
+			return;
+		}
+
+		$this->vetoAsConflict(
+			event: $event,
+			refusal: ['code' => self::ERROR_CODE, 'message' => $this->guard->blockedMessage(calendarSlug: $slug, blockers: $blockers)],
+			detail: ['calendar' => $slug, 'openTimers' => $blockers['count'], 'timers' => $blockers['timers']]
+		);
+	}//end refuseWhenTimersNameIt()
+
+	/**
+	 * The slug of the working calendar being deleted, or null when the object is none.
+	 *
+	 * @param ObjectEntity $object The object being deleted.
+	 *
+	 * @return string|null The trimmed slug.
+	 */
+	private function calendarSlugOf(ObjectEntity $object): ?string {
+		if ($this->guard->isWorkingCalendar(object: $object) === false || is_array($object->getObject()) === false) {
+			return null;
+		}
+
+		$slug = trim((string)($object->getObject()['slug'] ?? ''));
+		if ($slug !== '') {
+			return $slug;
+		}
+
+		return null;
+	}//end calendarSlugOf()
 }//end class

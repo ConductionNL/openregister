@@ -21,9 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Organisation;
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched when an organisation entity is created
  *
@@ -37,33 +34,5 @@ use OCP\EventDispatcher\Event;
  * @version  1.0.0
  * @link     https://github.com/ConductionNL/OpenRegister
  */
-class OrganisationCreatedEvent extends Event {
-
-	/**
-	 * The organisation that was created
-	 *
-	 * @var Organisation
-	 */
-	private Organisation $organisation;
-
-	/**
-	 * OrganisationCreatedEvent constructor
-	 *
-	 * @param Organisation $organisation The organisation that was created
-	 */
-	public function __construct(Organisation $organisation) {
-		parent::__construct();
-		$this->organisation = $organisation;
-	}//end __construct()
-
-	/**
-	 * Get the organisation that was created
-	 *
-	 * @return Organisation The organisation entity
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getOrganisation(): Organisation {
-		return $this->organisation;
-	}//end getOrganisation()
+class OrganisationCreatedEvent extends AbstractOrganisationEvent {
 }//end class

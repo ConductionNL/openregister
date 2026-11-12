@@ -84,7 +84,7 @@ scrape_configs:
 
 ### Long-window metrics
 
-For dashboards needing time-windowed data (file processing throughput, embedding stats, search latency percentiles, storage growth), `MetricsService::getDashboardMetrics()` returns a structured payload covering the last 30 days. This isn't exposed via `/api/metrics` (which is a snapshot at scrape time) but is available to internal dashboard widgets.
+For time-windowed data (embedding stats, search latency per search type, storage growth), `MetricsService` offers `getEmbeddingStats()`, `getSearchLatencyStats()` and `getStorageGrowth()`. They are not exposed via `/api/metrics`, which is a snapshot at scrape time.
 
 The metrics retention policy is 90 days by default; the `cleanOldMetrics(int $retentionDays)` cleanup job prunes older rows.
 

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -135,9 +136,11 @@ class StreamingBulkUpsertIntegrationTest extends TestCase {
 		];
 
 		$status = $this->saveHandler->saveObjectsStreaming(
-			register: $this->testRegister,
-			schema: $this->targetSchema,
-			rows: $rows
+			save: new StreamingSave(
+				register: $this->testRegister,
+				schema: $this->targetSchema,
+				rows: $rows
+			)
 		);
 
 		$this->assertInstanceOf(BatchOperationStatus::class, $status);
@@ -160,7 +163,6 @@ class StreamingBulkUpsertIntegrationTest extends TestCase {
 			$this->targetSchema,
 			['title' => 'Single target'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -175,9 +177,11 @@ class StreamingBulkUpsertIntegrationTest extends TestCase {
 
 		$this->saveHandler->clearReferenceValidationCache();
 		$status = $this->saveHandler->saveObjectsStreaming(
-			register: $this->testRegister,
-			schema: $this->referrerSchema,
-			rows: $rows
+			save: new StreamingSave(
+				register: $this->testRegister,
+				schema: $this->referrerSchema,
+				rows: $rows
+			)
 		);
 
 		$this->assertSame(10, $status->getProcessedCount());
@@ -203,7 +207,6 @@ class StreamingBulkUpsertIntegrationTest extends TestCase {
 			$this->targetSchema,
 			['title' => 'Valid target'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -217,9 +220,11 @@ class StreamingBulkUpsertIntegrationTest extends TestCase {
 
 		$this->saveHandler->clearReferenceValidationCache();
 		$status = $this->saveHandler->saveObjectsStreaming(
-			register: $this->testRegister,
-			schema: $this->referrerSchema,
-			rows: $rows
+			save: new StreamingSave(
+				register: $this->testRegister,
+				schema: $this->referrerSchema,
+				rows: $rows
+			)
 		);
 
 		$this->assertSame(4, $status->getProcessedCount());

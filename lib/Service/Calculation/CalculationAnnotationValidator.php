@@ -47,7 +47,8 @@ namespace OCA\OpenRegister\Service\Calculation;
  * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
  * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
  */
-final class CalculationAnnotationValidator {
+final class CalculationAnnotationValidator implements CalculationAnnotationValidatorInterface {
+	use PropNameReading;
 
 	/**
 	 * Supported unit values for the dateDiff operator.
@@ -74,19 +75,16 @@ final class CalculationAnnotationValidator {
 	private const VALID_TYPES = ['string', 'integer', 'number', 'boolean', 'date'];
 
 	/**
+	 * System fields an `@self.<field>` reference may read.
+	 */
+	private const SELF_FIELDS = ['id', 'uuid', 'register', 'schema', 'owner', 'created', 'updated'];
+
+	/**
 	 * Validate a schema's `x-openregister-calculations` annotation.
 	 *
 	 * @param array<string, mixed> $schema Full schema (must include `properties`).
 	 *
 	 * @return array<int, array{code: string, message: string}> Validation error list.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method collects three reference
-	 *   families (calc names, x-openregister-references, x-openregister-aggregate-refs), runs
-	 *   the per-calc shape + expression walk, and the cycle check in one pass; the steps share
-	 *   the accumulated name/dep/error state, so splitting them would thread several mutable
-	 *   accumulators through helpers for no readability gain.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
 	 */
@@ -105,634 +103,564 @@ final class CalculationAnnotationValidator {
 			];
 		}
 
-		$properties = ($schema['properties'] ?? []);
-		$propKeys = [];
-		if (is_array($properties) === true) {
-			$propKeys = array_keys($properties);
-		}
-
-		$calcNames = array_keys($calcs);
-		$allRefs = array_merge($propKeys, $calcNames);
-
-		// Declared cross-object references (`x-openregister-references`) make
-		// `@ref.<name>.<field>` prop tokens valid. Collect their names so the
-		// walker accepts them, and validate the references block shape.
-		$references = ($schema['x-openregister-references'] ?? []);
-		$referenceKeys = [];
-		if (is_array($references) === true) {
-			$referenceKeys = array_keys($references);
-		}
-
-		// Declared aggregate-references (`x-openregister-aggregate-refs`) make
-		// `@aggregate.<name>` / `@aggregate.<name>.<field>` prop tokens valid.
-		// Collect their names so the walker accepts them, and validate the
-		// aggregate-refs block shape.
-		$aggregateRefs = ($schema['x-openregister-aggregate-refs'] ?? []);
-		$aggregateRefKeys = [];
-		if (is_array($aggregateRefs) === true) {
-			$aggregateRefKeys = array_keys($aggregateRefs);
-		}
-
-		$errors = [];
-		$deps = [];
-
-		$this->validateReferences(references: $references, propKeys: $propKeys, errors: $errors);
-		$this->validateAggregateRefs(aggregateRefs: $aggregateRefs, errors: $errors);
-
-		foreach ($calcs as $name => $spec) {
-			if (is_string($name) === false || $name === '') {
-				$errors[] = [
-					'code' => 'calculation-bad-name',
-					'message' => 'Calculation names must be non-empty strings.',
-				];
-				continue;
-			}
-
-			if (is_array($spec) === false) {
-				$errors[] = [
-					'code' => 'calculation-malformed',
-					'message' => sprintf('Calculation "%s" must be an object.', $name),
-				];
-				continue;
-			}
-
-			$type = (string)($spec['type'] ?? '');
-			if (in_array($type, self::VALID_TYPES, true) === false) {
-				$errors[] = [
-					'code' => 'calculation-bad-type',
-					'message' => sprintf(
-						'Calculation "%s" type must be one of [%s].',
-						$name,
-						implode(', ', self::VALID_TYPES)
-					),
-				];
-			}
-
-			if (isset($spec['expression']) === false) {
-				$errors[] = [
-					'code' => 'calculation-no-expression',
-					'message' => sprintf('Calculation "%s" requires an expression.', $name),
-				];
-				continue;
-			}
-
-			// A `dependsOn` list beside an expression is a second source of
-			// truth, and the failure is silent: a dependency the author forgot
-			// is a value that never refreshes. The list below is derived from
-			// the expression, so a declared one is not read. Say so rather than
-			// leaving the author believing it did something.
-			if (array_key_exists('dependsOn', $spec) === true) {
-				$errors[] = [
-					'code' => 'calculation-dependson-ignored',
-					'message' => sprintf(
-						'Calculation "%s": "dependsOn" is not read. The properties an expression '
-						. 'reads are derived from the expression itself.',
-						$name
-					),
-				];
-			}
-
-			$deps[$name] = [];
-			$this->walk(
-				expr: $spec['expression'],
-				owner: $name,
-				allRefs: $allRefs,
-				referenceKeys: $referenceKeys,
-				aggregateRefKeys: $aggregateRefKeys,
-				errors: $errors,
-				deps: $deps[$name]
-			);
-		}//end foreach
-
-		$cycle = $this->findCycle(deps: $deps);
-		if ($cycle !== null) {
-			$errors[] = [
-				'code' => 'calculation-cycle',
-				'message' => sprintf('Calculation cycle detected: %s.', implode(' -> ', $cycle)),
-			];
-		}
-
-		return $errors;
+		return $this->validateDeclared(schema: $schema, calcs: $calcs);
 	}//end validate()
 
 	/**
-	 * Recursively walk an expression AST collecting errors and dependencies.
+	 * Validate the references, the calculations and their dependency graph.
 	 *
-	 * @param mixed $expr Sub-expression to walk.
-	 * @param string $owner Name of the calc currently being walked.
-	 * @param array<int, string> $allRefs Available property + calc names.
-	 * @param array<int, string> $referenceKeys Declared `x-openregister-references` names.
-	 * @param array<int, string> $aggregateRefKeys Declared `x-openregister-aggregate-refs` names.
-	 * @param array<int, array{code: string, message: string}> $errors Mutable error accumulator.
-	 * @param array<int, string> $deps Mutable list of calc deps for the current calc.
+	 * @param array<string, mixed> $schema Full schema.
+	 * @param array<mixed>         $calcs  The declared calculations, not empty.
+	 *
+	 * @return array<int, array{code: string, message: string}> Validation error list.
+	 */
+	private function validateDeclared(array $schema, array $calcs): array {
+		$walk = new CalculationWalk(
+			propKeys: $this->keysOf(value: ($schema['properties'] ?? [])),
+			referenceKeys: $this->keysOf(value: ($schema['x-openregister-references'] ?? [])),
+			aggregateRefKeys: $this->keysOf(value: ($schema['x-openregister-aggregate-refs'] ?? []))
+		);
+		$walk->allRefs = array_merge($walk->propKeys, array_keys($calcs));
+		$this->validateReferences(references: ($schema['x-openregister-references'] ?? []), walk: $walk);
+		$this->validateAggregateRefs(aggregateRefs: ($schema['x-openregister-aggregate-refs'] ?? []), walk: $walk);
+		$this->validateCalculations(calcs: $calcs, walk: $walk);
+		$this->checkCycles(walk: $walk);
+
+		return $walk->errors;
+	}//end validateDeclared()
+
+	/**
+	 * Refuse a dependency cycle among the walked calculations.
+	 *
+	 * @param CalculationWalk $walk The validation state.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	private function walk(
-		mixed $expr,
-		string $owner,
-		array $allRefs,
-		array $referenceKeys,
-		array $aggregateRefKeys,
-		array &$errors,
-		array &$deps,
-	): void {
-		if (is_array($expr) === false) {
+	private function checkCycles(CalculationWalk $walk): void {
+		$cycle = (new DependencyCycleFinder())->find(deps: $walk->deps);
+		if ($cycle !== null) {
+			$walk->fail(code: 'calculation-cycle', message: sprintf('Calculation cycle detected: %s.', implode(' -> ', $cycle)));
+		}
+	}//end checkCycles()
+
+	/**
+	 * Whether a map entry is a named object.
+	 *
+	 * @param mixed $name The entry's key.
+	 * @param mixed $spec The entry's value.
+	 *
+	 * @return bool
+	 */
+	private function isNamedSpec(mixed $name, mixed $spec): bool {
+		return is_string($name) === true && $name !== '' && is_array($spec) === true;
+	}//end isNamedSpec()
+
+	/**
+	 * The keys of a map, or none when it is not an array.
+	 *
+	 * @param mixed $value The map.
+	 *
+	 * @return array<int, int|string>
+	 */
+	private function keysOf(mixed $value): array {
+		if (is_array($value) === true) {
+			return array_keys($value);
+		}
+
+		return [];
+	}//end keysOf()
+
+	/**
+	 * Validate each calculation in declaration order.
+	 *
+	 * @param array<mixed>    $calcs The declared calculations.
+	 * @param CalculationWalk $walk  The validation state.
+	 *
+	 * @return void
+	 */
+	private function validateCalculations(array $calcs, CalculationWalk $walk): void {
+		foreach ($calcs as $name => $spec) {
+			if (is_string($name) === false || $name === '') {
+				$walk->fail(code: 'calculation-bad-name', message: 'Calculation names must be non-empty strings.');
+				continue;
+			}
+
+			$walk->name = $name;
+			$this->validateCalculation(spec: $spec, walk: $walk);
+		}
+	}//end validateCalculations()
+
+	/**
+	 * Validate one calculation: shape, type, expression and the names it reads.
+	 *
+	 * @param mixed           $spec The calculation spec.
+	 * @param CalculationWalk $walk The validation state, named after the calculation.
+	 *
+	 * @return void
+	 */
+	private function validateCalculation(mixed $spec, CalculationWalk $walk): void {
+		if (is_array($spec) === false) {
+			$walk->fail(code: 'calculation-malformed', message: sprintf('Calculation "%s" must be an object.', $walk->name));
 			return;
-			// Bare scalar literal.
+		}
+
+		$this->checkType(spec: $spec, walk: $walk);
+		if (isset($spec['expression']) === false) {
+			$walk->fail(code: 'calculation-no-expression', message: sprintf('Calculation "%s" requires an expression.', $walk->name));
+			return;
+		}
+
+		$this->checkDependsOn(spec: $spec, walk: $walk);
+		$walk->deps[$walk->name] = [];
+		$this->walk(expr: $spec['expression'], walk: $walk);
+	}//end validateCalculation()
+
+	/**
+	 * Refuse a calculation type outside VALID_TYPES.
+	 *
+	 * @param array<string, mixed> $spec The calculation spec.
+	 * @param CalculationWalk      $walk The validation state.
+	 *
+	 * @return void
+	 */
+	private function checkType(array $spec, CalculationWalk $walk): void {
+		if (in_array((string)($spec['type'] ?? ''), self::VALID_TYPES, true) === true) {
+			return;
+		}
+
+		$walk->fail(
+			code: 'calculation-bad-type',
+			message: sprintf('Calculation "%s" type must be one of [%s].', $walk->name, implode(', ', self::VALID_TYPES))
+		);
+	}//end checkType()
+
+	/**
+	 * Report a `dependsOn` key: the dependencies are derived from the expression.
+	 *
+	 * @param array<string, mixed> $spec The calculation spec.
+	 * @param CalculationWalk      $walk The validation state.
+	 *
+	 * @return void
+	 */
+	private function checkDependsOn(array $spec, CalculationWalk $walk): void {
+		if (array_key_exists('dependsOn', $spec) === false) {
+			return;
+		}
+
+		$walk->fail(
+			code: 'calculation-dependson-ignored',
+			message: sprintf(
+				'Calculation "%s": "dependsOn" is not read. The properties an expression '
+				. 'reads are derived from the expression itself.',
+				$walk->name
+			)
+		);
+	}//end checkDependsOn()
+
+	/**
+	 * Walk an expression AST, recording errors and the names it reads.
+	 *
+	 * A non-array node is a literal operand and is not checked.
+	 *
+	 * @param mixed           $expr The expression node.
+	 * @param CalculationWalk $walk The validation state.
+	 *
+	 * @return void
+	 */
+	private function walk(mixed $expr, CalculationWalk $walk): void {
+		$op = $this->operatorOf(expr: $expr, walk: $walk);
+		if ($op === null || $op === 'lit') {
+			return;
+		}
+
+		if ($op === 'prop') {
+			$this->walkProp(args: $expr[$op], walk: $walk);
+			return;
+		}
+
+		if ($op === 'dateDiff') {
+			$this->walkDateDiff(args: $expr[$op], walk: $walk);
+			return;
+		}
+
+		$this->walkArgs(args: $expr[$op], walk: $walk);
+	}//end walk()
+
+	/**
+	 * The operator of a node, or null for a literal or a refused node.
+	 *
+	 * @param mixed           $expr The expression node.
+	 * @param CalculationWalk $walk The validation state.
+	 *
+	 * @return string|null
+	 */
+	private function operatorOf(mixed $expr, CalculationWalk $walk): ?string {
+		if (is_array($expr) === false) {
+			return null;
 		}
 
 		if (count($expr) !== 1) {
-			$errors[] = [
-				'code' => 'calculation-malformed-expr',
-				'message' => sprintf('Calculation "%s": expression must be single-key.', $owner),
-			];
-			return;
+			$walk->fail(code: 'calculation-malformed-expr', message: sprintf('Calculation "%s": expression must be single-key.', $walk->name));
+			return null;
 		}
 
 		$op = (string)array_key_first($expr);
 		if (array_key_exists($op, self::VALID_OPS) === false) {
-			$errors[] = [
-				'code' => 'calculation-unknown-op',
-				'message' => sprintf('Calculation "%s": unknown operator "%s".', $owner, $op),
-			];
-			return;
+			$walk->fail(code: 'calculation-unknown-op', message: sprintf('Calculation "%s": unknown operator "%s".', $walk->name, $op));
+			return null;
 		}
 
-		// A literal is data, not an expression: a rate schedule or a list
-		// literal holds objects with several keys, which are not operators.
-		if ($op === 'lit') {
-			return;
-		}
+		return $op;
+	}//end operatorOf()
 
-		$args = $expr[$op];
-		if ($op === 'prop') {
-			$this->walkProp(
-				args: $args,
-				owner: $owner,
-				allRefs: $allRefs,
-				referenceKeys: $referenceKeys,
-				aggregateRefKeys: $aggregateRefKeys,
-				errors: $errors,
-				deps: $deps
-			);
-			return;
-		}
-
-		// DateDiff uses a named-key dict {from, to, unit} rather than a positional array.
-		if ($op === 'dateDiff') {
-			$this->walkDateDiff(
-				args: $args,
-				owner: $owner,
-				allRefs: $allRefs,
-				referenceKeys: $referenceKeys,
-				aggregateRefKeys: $aggregateRefKeys,
-				errors: $errors,
-				deps: $deps
-			);
-			return;
-		}
-
+	/**
+	 * Walk an operator's operands: one node, or a list of nodes.
+	 *
+	 * @param mixed           $args The operands.
+	 * @param CalculationWalk $walk The validation state.
+	 *
+	 * @return void
+	 */
+	private function walkArgs(mixed $args, CalculationWalk $walk): void {
 		if (is_array($args) === false) {
-			$this->walk(
-				expr: $args,
-				owner: $owner,
-				allRefs: $allRefs,
-				referenceKeys: $referenceKeys,
-				aggregateRefKeys: $aggregateRefKeys,
-				errors: $errors,
-				deps: $deps
-			);
+			$this->walk(expr: $args, walk: $walk);
 			return;
 		}
 
 		foreach ($args as $sub) {
-			$this->walk(
-				expr: $sub,
-				owner: $owner,
-				allRefs: $allRefs,
-				referenceKeys: $referenceKeys,
-				aggregateRefKeys: $aggregateRefKeys,
-				errors: $errors,
-				deps: $deps
-			);
+			$this->walk(expr: $sub, walk: $walk);
 		}
-	}//end walk()
+	}//end walkArgs()
 
 	/**
-	 * Validate a `prop` reference token and record calc-to-calc dependencies.
+	 * Check a `prop` reference and record a plain name as a dependency.
 	 *
-	 * Recognises four families: `@ref.<declared-reference>.<field>` (cross-object
-	 * reference injected by the listener), `@aggregate.<declared-aggregate>` (folded
-	 * aggregate injected by the listener), `@self.<system-field>` (object metadata
-	 * injected by the listener), and plain property / sibling-calculation names.
+	 * Accepts `{prop: "name"}` and `{prop: ["name", default]}`.
 	 *
-	 * @param mixed $args The prop operator's argument.
-	 * @param string $owner Name of the calc currently being walked.
-	 * @param array<int, string> $allRefs Available property + calc names.
-	 * @param array<int, string> $referenceKeys Declared `x-openregister-references` names.
-	 * @param array<int, string> $aggregateRefKeys Declared `x-openregister-aggregate-refs` names.
-	 * @param array<int, array{code: string, message: string}> $errors Mutable error accumulator.
-	 * @param array<int, string> $deps Mutable list of calc deps for the current calc.
+	 * @param mixed           $args The `prop` operand.
+	 * @param CalculationWalk $walk The validation state.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method recognises four prop-token
-	 *   families (@ref, @aggregate, @self, plain), each with its own validity check and
-	 *   user-facing error message; the families are flat, mutually-exclusive early returns,
-	 *   so extracting each into a helper would only add indirection without reducing the rules.
-	 *
-	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
-	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-4
 	 */
-	private function walkProp(
-		mixed $args,
-		string $owner,
-		array $allRefs,
-		array $referenceKeys,
-		array $aggregateRefKeys,
-		array &$errors,
-		array &$deps,
-	): void {
-		$name = '';
-		if (is_string($args) === true) {
-			$name = $args;
-		} elseif (is_array($args) === true) {
-			$name = (string)($args[0] ?? '');
-		}
-
-		if ($name === '') {
-			$errors[] = [
-				'code' => 'calculation-prop-unknown',
-				'message' => sprintf(
-					'Calculation "%s": prop "%s" is not a property or calculation.',
-					$owner,
-					$name
-				),
-			];
+	private function walkProp(mixed $args, CalculationWalk $walk): void {
+		$name = $this->propName(args: $args);
+		if ($this->checkPrefixedName(name: $name, walk: $walk) === true) {
 			return;
 		}
 
-		// `@ref.<declared-reference>.<field>` is allowed — the listener
-		// pre-resolves declared references and injects them at evaluation
-		// time. The reference name (the first dotted segment after @ref.)
-		// must be declared in `x-openregister-references`. No dependency
-		// tracking for @ref refs (they read other objects, not calcs).
-		if (str_starts_with($name, '@ref.') === true) {
-			$refName = explode('.', substr($name, 5))[0] ?? '';
-			if (in_array($refName, $referenceKeys, true) === false) {
-				$errors[] = [
-					'code' => 'calculation-ref-unknown',
-					'message' => sprintf(
-						'Calculation "%s": @ref.%s is not a declared reference. Declared: %s.',
-						$owner,
-						$refName,
-						implode(', ', $referenceKeys)
-					),
-				];
-			}
-
+		if ($name === '' || in_array($name, $walk->allRefs, true) === false) {
+			$walk->fail(
+				code: 'calculation-prop-unknown',
+				message: sprintf('Calculation "%s": prop "%s" is not a property or calculation.', $walk->name, $name)
+			);
 			return;
 		}
 
-		// `@aggregate.<declared-aggregate>[.<groupKey>]` is allowed — the
-		// listener pre-resolves declared aggregate-references and injects them
-		// at evaluation time. The aggregate name (the first dotted segment
-		// after @aggregate.) must be declared in `x-openregister-aggregate-refs`.
-		// No dependency tracking (aggregates fold other objects, not calcs).
-		if (str_starts_with($name, '@aggregate.') === true) {
-			$aggName = explode('.', substr($name, 11))[0] ?? '';
-			if (in_array($aggName, $aggregateRefKeys, true) === false) {
-				$errors[] = [
-					'code' => 'calculation-aggregate-unknown',
-					'message' => sprintf(
-						'Calculation "%s": @aggregate.%s is not a declared aggregate-reference. Declared: %s.',
-						$owner,
-						$aggName,
-						implode(', ', $aggregateRefKeys)
-					),
-				];
-			}
-
-			return;
-		}
-
-		// `@self.<known-system-field>` is always allowed — the listener
-		// injects @self metadata at evaluation time. No dependency
-		// tracking for @self refs since they don't participate in
-		// the calculation cycle graph.
-		if (str_starts_with($name, '@self.') === true) {
-			$sysField = substr($name, 6);
-			$allowed = ['id', 'uuid', 'register', 'schema', 'owner', 'created', 'updated'];
-			if (in_array($sysField, $allowed, true) === false) {
-				$errors[] = [
-					'code' => 'calculation-self-unknown',
-					'message' => sprintf(
-						'Calculation "%s": @self.%s is not a known system field. Allowed: %s.',
-						$owner,
-						$sysField,
-						implode(', ', $allowed)
-					),
-				];
-			}
-
-			return;
-		}
-
-		if (in_array($name, $allRefs, true) === false) {
-			$errors[] = [
-				'code' => 'calculation-prop-unknown',
-				'message' => sprintf(
-					'Calculation "%s": prop "%s" is not a property or calculation.',
-					$owner,
-					$name
-				),
-			];
-			return;
-		}
-
-		$deps[] = $name;
+		$walk->dependOn(dependency: $name);
 	}//end walkProp()
 
 	/**
-	 * Validate a `dateDiff` operator's named-key argument dict.
+	 * Check an `@ref.`, `@aggregate.` or `@self.` name; false for any other name.
 	 *
-	 * Required keys: `from`, `to`, `unit`. Each is itself a sub-expression
-	 * (scalar literal or nested expression). The `unit` value, when a bare
-	 * string literal, is additionally checked against the allowed list.
+	 * @param string          $name The name a `prop` reads.
+	 * @param CalculationWalk $walk The validation state.
 	 *
-	 * @param mixed $args The dateDiff argument value.
-	 * @param string $owner Name of the calc currently being walked.
-	 * @param array<int, string> $allRefs Available property + calc names.
-	 * @param array<int, string> $referenceKeys Declared `x-openregister-references` names.
-	 * @param array<int, string> $aggregateRefKeys Declared `x-openregister-aggregate-refs` names.
-	 * @param array<int, array{code: string, message: string}> $errors Mutable error accumulator.
-	 * @param array<int, string> $deps Mutable list of calc deps for the current calc.
+	 * @return bool Whether the name carried one of the prefixes.
+	 */
+	private function checkPrefixedName(string $name, CalculationWalk $walk): bool {
+		if (str_starts_with($name, '@ref.') === true) {
+			$this->checkRefName(rest: substr($name, 5), walk: $walk);
+			return true;
+		}
+
+		if (str_starts_with($name, '@aggregate.') === true) {
+			$this->checkAggregateName(rest: substr($name, 11), walk: $walk);
+			return true;
+		}
+
+		if (str_starts_with($name, '@self.') === true) {
+			$this->checkSelfName(field: substr($name, 6), walk: $walk);
+			return true;
+		}
+
+		return false;
+	}//end checkPrefixedName()
+
+	/**
+	 * Refuse an `@ref.<name>` whose reference is not declared.
+	 *
+	 * @param string          $rest The name after `@ref.`.
+	 * @param CalculationWalk $walk The validation state.
 	 *
 	 * @return void
 	 */
-	private function walkDateDiff(
-		mixed $args,
-		string $owner,
-		array $allRefs,
-		array $referenceKeys,
-		array $aggregateRefKeys,
-		array &$errors,
-		array &$deps,
-	): void {
-		if (is_array($args) === false
-			|| array_key_exists('from', $args) === false
-			|| array_key_exists('to', $args) === false
-			|| array_key_exists('unit', $args) === false
-		) {
-			$errors[] = [
-				'code' => 'calculation-dateDiff-missing-keys',
-				'message' => sprintf(
-					'Calculation "%s": dateDiff requires keys: from, to, unit.',
-					$owner
-				),
-			];
+	private function checkRefName(string $rest, CalculationWalk $walk): void {
+		$refName = (explode('.', $rest)[0] ?? '');
+		if (in_array($refName, $walk->referenceKeys, true) === true) {
 			return;
 		}
 
-		// Walk from and to as sub-expressions so prop refs are validated.
-		$this->walk(
-			expr: $args['from'],
-			owner: $owner,
-			allRefs: $allRefs,
-			referenceKeys: $referenceKeys,
-			aggregateRefKeys: $aggregateRefKeys,
-			errors: $errors,
-			deps: $deps
+		$walk->fail(
+			code: 'calculation-ref-unknown',
+			message: sprintf(
+				'Calculation "%s": @ref.%s is not a declared reference. Declared: %s.',
+				$walk->name,
+				$refName,
+				implode(', ', $walk->referenceKeys)
+			)
 		);
-		$this->walk(
-			expr: $args['to'],
-			owner: $owner,
-			allRefs: $allRefs,
-			referenceKeys: $referenceKeys,
-			aggregateRefKeys: $aggregateRefKeys,
-			errors: $errors,
-			deps: $deps
-		);
+	}//end checkRefName()
 
-		// Validate unit when it's a plain string literal (not a nested expression).
-		$unit = $args['unit'];
-		if (is_string($unit) === true && in_array($unit, self::VALID_DATE_DIFF_UNITS, true) === false) {
-			$errors[] = [
-				'code' => 'calculation-dateDiff-invalid-unit',
-				'message' => sprintf(
-					'Calculation "%s": dateDiff unit "%s" is invalid. Supported: %s.',
-					$owner,
-					$unit,
-					implode(', ', self::VALID_DATE_DIFF_UNITS)
-				),
-			];
+	/**
+	 * Refuse an `@aggregate.<name>` whose aggregate-reference is not declared.
+	 *
+	 * @param string          $rest The name after `@aggregate.`.
+	 * @param CalculationWalk $walk The validation state.
+	 *
+	 * @return void
+	 */
+	private function checkAggregateName(string $rest, CalculationWalk $walk): void {
+		$aggName = (explode('.', $rest)[0] ?? '');
+		if (in_array($aggName, $walk->aggregateRefKeys, true) === true) {
+			return;
 		}
+
+		$walk->fail(
+			code: 'calculation-aggregate-unknown',
+			message: sprintf(
+				'Calculation "%s": @aggregate.%s is not a declared aggregate-reference. Declared: %s.',
+				$walk->name,
+				$aggName,
+				implode(', ', $walk->aggregateRefKeys)
+			)
+		);
+	}//end checkAggregateName()
+
+	/**
+	 * Refuse an `@self.<field>` outside SELF_FIELDS.
+	 *
+	 * @param string          $field The name after `@self.`.
+	 * @param CalculationWalk $walk  The validation state.
+	 *
+	 * @return void
+	 */
+	private function checkSelfName(string $field, CalculationWalk $walk): void {
+		if (in_array($field, self::SELF_FIELDS, true) === true) {
+			return;
+		}
+
+		$walk->fail(
+			code: 'calculation-self-unknown',
+			message: sprintf(
+				'Calculation "%s": @self.%s is not a known system field. Allowed: %s.',
+				$walk->name,
+				$field,
+				implode(', ', self::SELF_FIELDS)
+			)
+		);
+	}//end checkSelfName()
+
+	/**
+	 * Check a `dateDiff` operand: `from`, `to` and a supported `unit`.
+	 *
+	 * @param mixed           $args The `dateDiff` operand.
+	 * @param CalculationWalk $walk The validation state.
+	 *
+	 * @return void
+	 */
+	private function walkDateDiff(mixed $args, CalculationWalk $walk): void {
+		if ($this->hasDateDiffKeys(args: $args) === false) {
+			$walk->fail(
+				code: 'calculation-dateDiff-missing-keys',
+				message: sprintf('Calculation "%s": dateDiff requires keys: from, to, unit.', $walk->name)
+			);
+			return;
+		}
+
+		$this->walk(expr: $args['from'], walk: $walk);
+		$this->walk(expr: $args['to'], walk: $walk);
+		$this->checkDateDiffUnit(unit: $args['unit'], walk: $walk);
 	}//end walkDateDiff()
 
 	/**
-	 * Validate the optional `x-openregister-references` annotation shape.
+	 * Whether a `dateDiff` operand is a map with `from`, `to` and `unit`.
 	 *
-	 * Each reference must declare a non-empty `schema` and a `mode` of
-	 * `relatedObject` or `lookup`. A `relatedObject` reference requires a
-	 * `field`; a `lookup` reference requires a `filters` map.
+	 * @param mixed $args The `dateDiff` operand.
 	 *
-	 * @param mixed $references The references map.
-	 * @param array<int, string> $propKeys Schema property names (for field checks).
-	 * @param array<int, array{code: string, message: string}> $errors Mutable error accumulator.
+	 * @return bool
+	 */
+	private function hasDateDiffKeys(mixed $args): bool {
+		if (is_array($args) === false) {
+			return false;
+		}
+
+		foreach (['from', 'to', 'unit'] as $key) {
+			if (array_key_exists($key, $args) === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end hasDateDiffKeys()
+
+	/**
+	 * Refuse a string `dateDiff` unit outside VALID_DATE_DIFF_UNITS.
+	 *
+	 * @param mixed           $unit The unit.
+	 * @param CalculationWalk $walk The validation state.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
-	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
 	 */
-	private function validateReferences(mixed $references, array $propKeys, array &$errors): void {
-		if (is_array($references) === false || count($references) === 0) {
+	private function checkDateDiffUnit(mixed $unit, CalculationWalk $walk): void {
+		if (is_string($unit) === false || in_array($unit, self::VALID_DATE_DIFF_UNITS, true) === true) {
 			return;
 		}
 
-		foreach ($references as $name => $spec) {
-			if (is_string($name) === false || $name === '' || is_array($spec) === false) {
-				$errors[] = [
-					'code' => 'reference-malformed',
-					'message' => sprintf('Reference "%s" must be a named object.', (string)$name),
-				];
+		$walk->fail(
+			code: 'calculation-dateDiff-invalid-unit',
+			message: sprintf(
+				'Calculation "%s": dateDiff unit "%s" is invalid. Supported: %s.',
+				$walk->name,
+				$unit,
+				implode(', ', self::VALID_DATE_DIFF_UNITS)
+			)
+		);
+	}//end checkDateDiffUnit()
+
+	/**
+	 * Validate the `x-openregister-references` block.
+	 *
+	 * @param mixed           $references The references block.
+	 * @param CalculationWalk $walk       The validation state.
+	 *
+	 * @return void
+	 */
+	private function validateReferences(mixed $references, CalculationWalk $walk): void {
+		if (is_array($references) === false) {
+			return;
+		}
+
+		foreach ($references as $refName => $refSpec) {
+			if ($this->isNamedSpec(name: $refName, spec: $refSpec) === false) {
+				$walk->fail(code: 'reference-malformed', message: sprintf('Reference "%s" must be a named object.', (string)$refName));
 				continue;
 			}
 
-			$schema = (string)($spec['schema'] ?? '');
-			if ($schema === '') {
-				$errors[] = [
-					'code' => 'reference-no-schema',
-					'message' => sprintf('Reference "%s" requires a target schema.', $name),
-				];
-			}
-
-			$mode = (string)($spec['mode'] ?? '');
-			if ($mode !== 'relatedObject' && $mode !== 'lookup') {
-				$errors[] = [
-					'code' => 'reference-bad-mode',
-					'message' => sprintf(
-						'Reference "%s" mode must be relatedObject or lookup.',
-						$name
-					),
-				];
-				continue;
-			}
-
-			if ($mode === 'relatedObject') {
-				$field = (string)($spec['field'] ?? '');
-				if ($field === '') {
-					$errors[] = [
-						'code' => 'reference-no-field',
-						'message' => sprintf('Reference "%s" (relatedObject) requires a field.', $name),
-					];
-				} elseif (in_array($field, $propKeys, true) === false) {
-					$errors[] = [
-						'code' => 'reference-field-unknown',
-						'message' => sprintf(
-							'Reference "%s": field "%s" is not a schema property.',
-							$name,
-							$field
-						),
-					];
-				}
-			}
-
-			if ($mode === 'lookup' && is_array($spec['filters'] ?? null) === false) {
-				$errors[] = [
-					'code' => 'reference-no-filters',
-					'message' => sprintf('Reference "%s" (lookup) requires a filters map.', $name),
-				];
-			}
-		}//end foreach
+			$walk->name = $refName;
+			$this->validateReference(spec: $refSpec, walk: $walk);
+		}
 	}//end validateReferences()
 
 	/**
-	 * Validate the optional `x-openregister-aggregate-refs` annotation shape.
+	 * Validate one reference: target schema, mode and the mode's own key.
 	 *
-	 * Each aggregate-reference must declare a non-empty `schema` and a `metric`
-	 * of count/sum/avg/min/max. A non-`count` metric additionally requires a
-	 * `field` (matching `AggregationQuery::create()`'s own fail-fast contract).
-	 *
-	 * @param mixed $aggregateRefs The aggregate-references map.
-	 * @param array<int, array{code: string, message: string}> $errors Mutable error accumulator.
+	 * @param array<string, mixed> $spec The reference spec.
+	 * @param CalculationWalk      $walk The validation state, named after the reference.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
-	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-4
 	 */
-	private function validateAggregateRefs(mixed $aggregateRefs, array &$errors): void {
-		if (is_array($aggregateRefs) === false || count($aggregateRefs) === 0) {
+	private function validateReference(array $spec, CalculationWalk $walk): void {
+		if ((string)($spec['schema'] ?? '') === '') {
+			$walk->fail(code: 'reference-no-schema', message: sprintf('Reference "%s" requires a target schema.', $walk->name));
+		}
+
+		$this->checkReferenceMode(spec: $spec, walk: $walk);
+	}//end validateReference()
+
+	/**
+	 * Check a reference's mode and the mode's own key.
+	 *
+	 * @param array<string, mixed> $spec The reference spec.
+	 * @param CalculationWalk      $walk The validation state, named after the reference.
+	 *
+	 * @return void
+	 */
+	private function checkReferenceMode(array $spec, CalculationWalk $walk): void {
+		$mode = (string)($spec['mode'] ?? '');
+		if ($mode === 'relatedObject') {
+			$this->checkReferenceField(field: (string)($spec['field'] ?? ''), walk: $walk);
 			return;
 		}
 
-		foreach ($aggregateRefs as $name => $spec) {
-			if (is_string($name) === false || $name === '' || is_array($spec) === false) {
-				$errors[] = [
-					'code' => 'aggregate-ref-malformed',
-					'message' => sprintf('Aggregate-reference "%s" must be a named object.', (string)$name),
-				];
+		if ($mode !== 'lookup') {
+			$walk->fail(code: 'reference-bad-mode', message: sprintf('Reference "%s" mode must be relatedObject or lookup.', $walk->name));
+			return;
+		}
+
+		if (is_array($spec['filters'] ?? null) === false) {
+			$walk->fail(code: 'reference-no-filters', message: sprintf('Reference "%s" (lookup) requires a filters map.', $walk->name));
+		}
+	}//end checkReferenceMode()
+
+	/**
+	 * Check the field of a relatedObject reference: present and a schema property.
+	 *
+	 * @param string          $field The field.
+	 * @param CalculationWalk $walk  The validation state.
+	 *
+	 * @return void
+	 */
+	private function checkReferenceField(string $field, CalculationWalk $walk): void {
+		if ($field === '') {
+			$walk->fail(code: 'reference-no-field', message: sprintf('Reference "%s" (relatedObject) requires a field.', $walk->name));
+			return;
+		}
+
+		if (in_array($field, $walk->propKeys, true) === false) {
+			$walk->fail(
+				code: 'reference-field-unknown',
+				message: sprintf('Reference "%s": field "%s" is not a schema property.', $walk->name, $field)
+			);
+		}
+	}//end checkReferenceField()
+
+	/**
+	 * Validate the `x-openregister-aggregate-refs` block.
+	 *
+	 * @param mixed           $aggregateRefs The aggregate-references block.
+	 * @param CalculationWalk $walk          The validation state.
+	 *
+	 * @return void
+	 */
+	private function validateAggregateRefs(mixed $aggregateRefs, CalculationWalk $walk): void {
+		if (is_array($aggregateRefs) === false) {
+			return;
+		}
+
+		foreach ($aggregateRefs as $aggName => $aggSpec) {
+			if ($this->isNamedSpec(name: $aggName, spec: $aggSpec) === false) {
+				$message = sprintf('Aggregate-reference "%s" must be a named object.', (string)$aggName);
+				$walk->fail(code: 'aggregate-ref-malformed', message: $message);
 				continue;
 			}
 
-			$schema = (string)($spec['schema'] ?? '');
-			if ($schema === '') {
-				$errors[] = [
-					'code' => 'aggregate-ref-no-schema',
-					'message' => sprintf('Aggregate-reference "%s" requires a target schema.', $name),
-				];
-			}
-
-			$metric = (string)($spec['metric'] ?? '');
-			if (in_array($metric, self::VALID_AGGREGATE_METRICS, true) === false) {
-				$errors[] = [
-					'code' => 'aggregate-ref-bad-metric',
-					'message' => sprintf(
-						'Aggregate-reference "%s" metric must be one of [%s].',
-						$name,
-						implode(', ', self::VALID_AGGREGATE_METRICS)
-					),
-				];
-				continue;
-			}
-
-			if ($metric !== 'count' && (string)($spec['field'] ?? '') === '') {
-				$errors[] = [
-					'code' => 'aggregate-ref-no-field',
-					'message' => sprintf(
-						'Aggregate-reference "%s" metric "%s" requires a field.',
-						$name,
-						$metric
-					),
-				];
-			}
-		}//end foreach
+			$walk->name = $aggName;
+			$this->validateAggregateRef(spec: $aggSpec, walk: $walk);
+		}
 	}//end validateAggregateRefs()
 
 	/**
-	 * Find a cycle in the calculation dependency graph using DFS colouring.
+	 * Validate one aggregate-reference: target schema, metric and its field.
 	 *
-	 * @param array<string, array<int, string>> $deps Dependency map.
+	 * @param array<string, mixed> $spec The aggregate-reference spec.
+	 * @param CalculationWalk      $walk The validation state, named after the reference.
 	 *
-	 * @return array<int, string>|null A cycle path if found, else null.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-2
+	 * @return void
 	 */
-	private function findCycle(array $deps): ?array {
-		$colour = [];
-		$stack = [];
-		$path = null;
-
-		$visit = function (string $node) use (&$visit, &$colour, &$stack, &$deps, &$path) {
-			if ($path !== null) {
-				return;
-			}
-
-			if (($colour[$node] ?? 0) === 1) {
-				$idx = array_search($node, $stack, true);
-				if ($idx !== false) {
-					$path = array_slice($stack, $idx);
-					$path[] = $node;
-				}
-
-				return;
-			}
-
-			if (($colour[$node] ?? 0) === 2) {
-				return;
-			}
-
-			$colour[$node] = 1;
-			$stack[] = $node;
-			foreach (($deps[$node] ?? []) as $next) {
-				if (isset($deps[$next]) === true) {
-					// Only follow calc-to-calc edges.
-					$visit($next);
-				}
-			}
-
-			array_pop($stack);
-			$colour[$node] = 2;
-		};
-
-		foreach (array_keys($deps) as $name) {
-			$visit($name);
-			if ($path !== null) {
-				return $path;
-			}
+	private function validateAggregateRef(array $spec, CalculationWalk $walk): void {
+		if ((string)($spec['schema'] ?? '') === '') {
+			$walk->fail(code: 'aggregate-ref-no-schema', message: sprintf('Aggregate-reference "%s" requires a target schema.', $walk->name));
 		}
 
-		return null;
-	}//end findCycle()
+		$metric = (string)($spec['metric'] ?? '');
+		if (in_array($metric, self::VALID_AGGREGATE_METRICS, true) === false) {
+			$allowed = implode(', ', self::VALID_AGGREGATE_METRICS);
+			$walk->fail(code: 'aggregate-ref-bad-metric', message: sprintf('Aggregate-reference "%s" metric must be one of [%s].', $walk->name, $allowed));
+			return;
+		}
+
+		if ($metric !== 'count' && (string)($spec['field'] ?? '') === '') {
+			$walk->fail(code: 'aggregate-ref-no-field', message: sprintf('Aggregate-reference "%s" metric "%s" requires a field.', $walk->name, $metric));
+		}
+	}//end validateAggregateRef()
 }//end class

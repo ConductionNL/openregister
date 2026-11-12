@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -48,7 +49,7 @@ class ConfigurationControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
-		$this->controller = new ConfigurationController(
+		$this->controller = ConfigurationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->configurationMapper,
@@ -404,7 +405,7 @@ class ConfigurationControllerTest extends TestCase {
 
 	public function testDiscoverGitlabSuccess(): void {
 		$this->request->method('getParams')->willReturn(['source' => 'gitlab']);
-		$this->gitlabHandler->method('searchConfigurations')
+		$this->gitlabHandler->method('searchPage')
 			->willReturn(['results' => [], 'total_count' => 0]);
 
 		$result = $this->controller->discover();
@@ -864,7 +865,7 @@ class ConfigurationControllerTest extends TestCase {
 			'ref' => 'main',
 		]);
 		$this->gitlabHandler->method('getProjectByPath')->willReturn(['id' => 42]);
-		$this->gitlabHandler->method('getFileContent')->willReturn($configData);
+		$this->gitlabHandler->method('fileContent')->willReturn($configData);
 		$this->gitlabHandler->method('getApiBase')->willReturn('https://gitlab.com/api/v4');
 		$this->configurationMapper->method('findByApp')->willReturn([]);
 
@@ -997,7 +998,7 @@ class ConfigurationControllerTest extends TestCase {
 		$session->method('getUser')->willReturn($bob);
 		$groupMgr->method('isAdmin')->willReturn(false);
 
-		return new ConfigurationController(
+		return ConfigurationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->configurationMapper,

@@ -24,6 +24,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
+use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
+use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -36,6 +39,8 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -44,6 +49,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * Two learniq enrolments of one course. Saving the first re-saves its sibling
@@ -143,18 +150,16 @@ class RematerialiseStaleSnapshotTest extends TestCase {
 		// The REAL readOnly rule ObjectService::enforceReadOnlyOnUpdate() applies,
 		// checked against the row as it is stored at the moment of the save.
 		$rules = new ValidateObject(
-			$this->createMock(IAppConfig::class),
-			$this->createMock(MagicMapper::class),
-			$schemas,
-			$this->createMock(IURLGenerator::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createMock(IAppConfig::class), schemaMapper: $schemas, urlGenerator: $this->createMock(IURLGenerator::class)),
+			lookups: new ValidationLookups(objectMapper: $this->createMock(MagicMapper::class), userManager: $this->createMock(IUserManager::class)),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, ?array $extend = [], $reg = null, $sch = null, ?string $uuid = null) use ($rules, $schema): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($rules, $schema): ObjectEntity {
+				$uuid = $options->uuid;
 				$this->saves[] = (string) $uuid;
-				$violations = $rules->validateReadOnlyConstraints(incomingObject: $object, existingObject: $this->store[$uuid], schema: $schema);
+				$violations = $rules->validateReadOnlyConstraints(check: new WriteConstraintCheck(incoming: $object, stored: $this->store[$uuid]), schema: $schema);
 				if ($violations !== []) {
 					throw new RuntimeException('Cannot modify readOnly properties: ' . implode(', ', array_column($violations, 'property')));
 				}
@@ -171,13 +176,9 @@ class RematerialiseStaleSnapshotTest extends TestCase {
 		);
 
 		$command = new RematerialiseCalculationsCommand(
-			$registers,
-			$schemas,
-			$magic,
-			$objects,
-			$evaluator,
-			$this->createMock(ReferenceResolver::class),
-			$aggregates
+			new RematerialiseStorage(new SchemaCatalog($registers, $schemas, $magic), $objects),
+			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), $aggregates),
+			new \OCA\OpenRegister\Service\Object\SchemaTypeConverter()
 		);
 
 		$output = new BufferedOutput();

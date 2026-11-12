@@ -1,0 +1,787 @@
+{
+    "address-lists": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [
+                    "john@example.com"
+                ],
+                "cc": [
+                    "a",
+                    "b@example.com"
+                ],
+                "subject": null,
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "warnings": [],
+        "log": []
+    },
+    "address-trailing-comma": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [
+                    "one@example.com"
+                ],
+                "subject": null,
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "warnings": [],
+        "log": []
+    },
+    "address-unclosed-quote": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [
+                    "\"open, quote <q@example.com>\""
+                ],
+                "cc": [],
+                "subject": null,
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "warnings": [],
+        "log": []
+    },
+    "alternative": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "alt",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "plain part",
+                "html": "<p>html part</p>"
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"Subject: alt\\n\\nplain part\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "attachments": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "mixed",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "body",
+                "html": null
+            },
+            "attachments": [
+                {
+                    "filename": "report.pdf",
+                    "mimeType": "application/pdf",
+                    "content": "12:907af9f02c8629b652af88d0db5d3295",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": null
+                },
+                {
+                    "filename": "by-type.bin",
+                    "mimeType": "application/octet-stream",
+                    "content": "4:a6ec778b5007120e3f05d74ecb13de59",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": null
+                },
+                {
+                    "filename": "win.txt",
+                    "mimeType": "application/octet-stream",
+                    "content": "4:49e05c3caa70082e0290218b0c06f4d2",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": null
+                },
+                {
+                    "filename": "attachment-4",
+                    "mimeType": "application/octet-stream",
+                    "content": "4:fdcce05476f89059a2e30e38636ed651",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": null
+                },
+                {
+                    "filename": ".hidden",
+                    "mimeType": "application/octet-stream",
+                    "content": "4:5618576f143fc779084bc0c5df965779",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": null
+                },
+                {
+                    "filename": "img.png",
+                    "mimeType": "image/png",
+                    "content": "4:ab36cd5ac7e6437f5d322eeebc5313ea",
+                    "isInline": false,
+                    "contentId": "abc@example.com",
+                    "nestedEml": null
+                },
+                {
+                    "filename": "attachment-7",
+                    "mimeType": "image/gif",
+                    "content": "4:c2705f8de9340a9fadaac9c40a83e43f",
+                    "isInline": true,
+                    "contentId": null,
+                    "nestedEml": null
+                },
+                {
+                    "filename": "attachment-8",
+                    "mimeType": "application/octet-stream",
+                    "content": "12:7794544356eada21e17b32a40bc58a1d",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": null
+                }
+            ]
+        },
+        "flat": {
+            "returned": "\"Subject: mixed\\n\\nbody\\n\\n--- Attachment: report.pdf (application\\/pdf, not extractable inline in v1) ---\\n\\n--- Attachment: by-type.bin (application\\/octet-stream, not extractable inline in v1) ---\\n\\n--- Attachment: win.txt (application\\/octet-stream, not extractable inline in v1) ---\\n\\n--- Attachment: attachment-4 (application\\/octet-stream, not extractable inline in v1) ---\\n\\n--- Attachment: .hidden (application\\/octet-stream, not extractable inline in v1) ---\\n\\n--- Attachment: img.png (image\\/png, not extractable inline in v1) ---\\n\\n--- Attachment: attachment-7 (image\\/gif, not extractable inline in v1) ---\\n\\n--- Attachment: attachment-8 (application\\/octet-stream, not extractable inline in v1) ---\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "built-empty": {
+        "structure": {
+            "headers": [],
+            "body": {
+                "plainText": null,
+                "html": null
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "built-full": {
+        "structure": {
+            "headers": {
+                "from": "a@b",
+                "to": [],
+                "cc": "",
+                "subject": "S",
+                "date": null,
+                "extra": "x"
+            },
+            "body": {
+                "plainText": "caf\ufffd cr\ufffdme",
+                "html": "<p>ignored</p>"
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"From: a@b\\nSubject: S\\n\\ncaf\\u00e9 cr\\u00e8me\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "built-string-date-and-list": {
+        "structure": {
+            "headers": {
+                "date": "yesterday-ish",
+                "to": [
+                    "x@y",
+                    "z@w"
+                ],
+                "subject": "0"
+            },
+            "body": {
+                "plainText": "",
+                "html": "<p>caf\ufffd</p>"
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"To: x@y, z@w\\nSubject: 0\\nDate: yesterday-ish\\n\\ncaf\\u00e9\""
+        },
+        "warnings": [
+            "2: Array to string conversion"
+        ],
+        "log": []
+    },
+    "date-garbage": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": null,
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"\\nBody text.\\r\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "date-iso": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": null,
+                "date": {
+                    "date": "2026-05-11 14:00:00.000000",
+                    "timezone_type": 1,
+                    "timezone": "+02:00"
+                },
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "warnings": [],
+        "log": []
+    },
+    "date-rfc822-short-year": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": null,
+                "date": {
+                    "date": "0026-05-11 14:00:00.000000",
+                    "timezone_type": 1,
+                    "timezone": "+02:00"
+                },
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "warnings": [],
+        "log": []
+    },
+    "date-with-zone-comment": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": null,
+                "date": {
+                    "date": "2026-05-11 14:00:00.000000",
+                    "timezone_type": 1,
+                    "timezone": "+02:00"
+                },
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "warnings": [],
+        "log": []
+    },
+    "date-without-day": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": null,
+                "date": {
+                    "date": "2026-05-11 14:00:00.000000",
+                    "timezone_type": 1,
+                    "timezone": "+02:00"
+                },
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "warnings": [],
+        "log": []
+    },
+    "empty-body": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "empty",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": null,
+                "html": null
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"Subject: empty\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "file-open-fails": {
+        "threw": "OCA\\OpenRegister\\Exception\\EmlParseException: Failed to open EML file stream",
+        "warnings": [],
+        "log": []
+    },
+    "file-open-throws": {
+        "threw": "OCA\\OpenRegister\\Exception\\EmlParseException: EML parse failure (RuntimeException)",
+        "warnings": [],
+        "log": []
+    },
+    "file-stream": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "from file",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "file body\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"Subject: from file\\n\\nfile body\\r\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "headers-from-only": {
+        "structure": {
+            "headers": {
+                "from": "alice@example.com",
+                "to": [],
+                "cc": [],
+                "subject": null,
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"From: alice@example.com\\n\\nBody text.\\r\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "headers-only-subject": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "Hello",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"Subject: Hello\\n\\nBody text.\\r\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "headers-to-list": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [
+                    "bob@example.com"
+                ],
+                "cc": [],
+                "subject": null,
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"To: bob@example.com\\n\\nBody text.\\r\""
+        },
+        "warnings": [
+            "2: Array to string conversion"
+        ],
+        "log": []
+    },
+    "headers-with-date": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "d",
+                "date": {
+                    "date": "2026-05-11 14:00:00.000000",
+                    "timezone_type": 1,
+                    "timezone": "+02:00"
+                },
+                "messageId": null
+            },
+            "body": {
+                "plainText": "Body text.\r\n",
+                "html": null
+            },
+            "attachments": []
+        },
+        "flat": {
+            "threw": "Error: Object of class DateTimeImmutable could not be converted to string"
+        },
+        "warnings": [],
+        "log": []
+    },
+    "html-only": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "h",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": null,
+                "html": "<style>p{}</style><h1>Title</h1><p>Hello&nbsp;<b>Bob</b> &amp; co</p>\n\n\n\n<div>x\t\t y</div><script>alert(1)</script>\r\n"
+            },
+            "attachments": []
+        },
+        "flat": {
+            "returned": "\"Subject: h\\n\\nTitle\\n\\nHello\\u00a0Bob & co\\n\\nx y\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "nested": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "level 1",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "outer body 1",
+                "html": null
+            },
+            "attachments": [
+                {
+                    "filename": "level1.eml",
+                    "mimeType": "message/rfc822",
+                    "content": "116:c04997bf4b96c3655254543e7d3ce951",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": {
+                        "headers": {
+                            "from": "inner@example.com",
+                            "to": [],
+                            "cc": [],
+                            "subject": "level 0",
+                            "date": null,
+                            "messageId": null
+                        },
+                        "body": {
+                            "plainText": "innermost body\r\n",
+                            "html": null
+                        },
+                        "attachments": []
+                    }
+                }
+            ]
+        },
+        "flat": {
+            "returned": "\"Subject: level 1\\n\\nouter body 1\\n\\n--- Attachment: level1.eml ---\\nFrom: inner@example.com\\nSubject: level 0\\n\\ninnermost body\\r\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "nested-depth-limit": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "level 5",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "outer body 5",
+                "html": null
+            },
+            "attachments": [
+                {
+                    "filename": "level5.eml",
+                    "mimeType": "message/rfc822",
+                    "content": "1380:0c5622f398664ffbc8e284b49645eb79",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": {
+                        "headers": {
+                            "from": null,
+                            "to": [],
+                            "cc": [],
+                            "subject": "level 4",
+                            "date": null,
+                            "messageId": null
+                        },
+                        "body": {
+                            "plainText": "outer body 4",
+                            "html": null
+                        },
+                        "attachments": [
+                            {
+                                "filename": "level4.eml",
+                                "mimeType": "message/rfc822",
+                                "content": "1064:d9a06d4cff4d549af735f7c8b57b0a79",
+                                "isInline": false,
+                                "contentId": null,
+                                "nestedEml": {
+                                    "headers": {
+                                        "from": null,
+                                        "to": [],
+                                        "cc": [],
+                                        "subject": "level 3",
+                                        "date": null,
+                                        "messageId": null
+                                    },
+                                    "body": {
+                                        "plainText": "outer body 3",
+                                        "html": null
+                                    },
+                                    "attachments": [
+                                        {
+                                            "filename": "level3.eml",
+                                            "mimeType": "message/rfc822",
+                                            "content": "748:4bcb97e5e6e5872cbbe215d1eda9cd72",
+                                            "isInline": false,
+                                            "contentId": null,
+                                            "nestedEml": {
+                                                "headers": {
+                                                    "from": null,
+                                                    "to": [],
+                                                    "cc": [],
+                                                    "subject": "level 2",
+                                                    "date": null,
+                                                    "messageId": null
+                                                },
+                                                "body": {
+                                                    "plainText": "outer body 2",
+                                                    "html": null
+                                                },
+                                                "attachments": [
+                                                    {
+                                                        "filename": "level2.eml",
+                                                        "mimeType": "message/rfc822",
+                                                        "content": "432:4f980e60638e0f8afde5dd295a0d7aa8",
+                                                        "isInline": false,
+                                                        "contentId": null,
+                                                        "nestedEml": null
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "flat": {
+            "returned": "\"Subject: level 5\\n\\nouter body 5\\n\\n--- Attachment: level5.eml ---\\nSubject: level 4\\n\\nouter body 4\\n\\n--- Attachment: level4.eml ---\\nSubject: level 3\\n\\nouter body 3\\n\\n--- Attachment: level3.eml ---\\nSubject: level 2\\n\\nouter body 2\\n\\n--- Attachment: level2.eml (message\\/rfc822, not extractable inline in v1) ---\""
+        },
+        "warnings": [],
+        "log": [
+            "debug: [EmlParser] EML nesting depth limit reached {\"file\":\"EmlParser.php\",\"depth\":3}"
+        ]
+    },
+    "nested-empty": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "mixed",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": null,
+                "html": null
+            },
+            "attachments": [
+                {
+                    "filename": "empty.eml",
+                    "mimeType": "message/rfc822",
+                    "content": "0:d41d8cd98f00b204e9800998ecf8427e",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": null
+                }
+            ]
+        },
+        "flat": {
+            "returned": "\"Subject: mixed\\n\\n--- Attachment: empty.eml (message\\/rfc822, not extractable inline in v1) ---\""
+        },
+        "warnings": [],
+        "log": []
+    },
+    "nested-start-depth": {
+        "structure": {
+            "headers": {
+                "from": null,
+                "to": [],
+                "cc": [],
+                "subject": "level 2",
+                "date": null,
+                "messageId": null
+            },
+            "body": {
+                "plainText": "outer body 2",
+                "html": null
+            },
+            "attachments": [
+                {
+                    "filename": "level2.eml",
+                    "mimeType": "message/rfc822",
+                    "content": "432:4f980e60638e0f8afde5dd295a0d7aa8",
+                    "isInline": false,
+                    "contentId": null,
+                    "nestedEml": null
+                }
+            ]
+        },
+        "flat": {
+            "returned": "\"Subject: level 2\\n\\nouter body 2\\n\\n--- Attachment: level2.eml (message\\/rfc822, not extractable inline in v1) ---\""
+        },
+        "warnings": [],
+        "log": [
+            "debug: [EmlParser] EML nesting depth limit reached {\"file\":\"EmlParser.php\",\"depth\":3}"
+        ]
+    },
+    "split-angle-commas": {
+        "split": [
+            "<a,b@example.com>",
+            "plain"
+        ]
+    },
+    "split-backslash-outside-quote": {
+        "split": [
+            "a\\",
+            "b",
+            "c"
+        ]
+    },
+    "split-blank-tokens": {
+        "split": []
+    },
+    "split-empty": {
+        "split": []
+    },
+    "split-null": {
+        "split": []
+    },
+    "split-quote-in-angle": {
+        "split": [
+            "<a\"b,c@d>",
+            "e"
+        ]
+    },
+    "split-quoted-commas": {
+        "split": [
+            "\"Doe, John\" <john@example.com>",
+            "jane@example.com",
+            "\"Esc \\\"q, x\\\"\" <e@x.org>"
+        ]
+    },
+    "split-stray-closer": {
+        "split": [
+            "a>",
+            "b<c, d>",
+            "e"
+        ]
+    },
+    "split-trailing-backslash": {
+        "split": [
+            "\"x\\"
+        ]
+    },
+    "split-unclosed-quote": {
+        "split": [
+            "\"open, quote <q@example.com>, b@c"
+        ]
+    }
+}

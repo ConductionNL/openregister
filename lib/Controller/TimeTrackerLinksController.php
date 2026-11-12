@@ -37,12 +37,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\TimeTrackerLinksControllerServices;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\TimeTrackerLinkService;
+use OCA\OpenRegister\Db\TimeTrackerLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\TimeTracker\TimeEntry;
+use OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -53,21 +61,35 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class TimeTrackerLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
+	/**
+	 * Backing service.
+	 *
+	 * @var TimeTrackerLinkServiceInterface
+	 */
+	private readonly TimeTrackerLinkServiceInterface $linkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param TimeTrackerLinkService $linkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param IRequest                           $request  HTTP request.
+	 * @param TimeTrackerLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly TimeTrackerLinkService $linkService,
-		private readonly ObjectService $objectService,
+		TimeTrackerLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->linkService = $services->linkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -87,32 +109,9 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		if ($this->linkService->isTimeManagerAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
+		$action = $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedEntries($object->getUuid()));
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->linkService->getLinkedEntries($object->getUuid());
-
-			return new JSONResponse(
-				[
-					'results' => $results,
-					'total' => count($results),
-				]
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
+		return $this->listWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end index()
 
 	/**
@@ -134,43 +133,9 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		if ($this->linkService->isTimeManagerAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
+		$action = (new LinkedSourceActions(request: $this->request))->linkByTexts(params: ['entryType', 'id'], link: $this->linkEntry(...));
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$entryType = (string)$this->request->getParam('entryType', '');
-			if (trim($entryType) === '') {
-				return new JSONResponse(['error' => 'entryType is required'], 400);
-			}
-
-			$entryId = (string)$this->request->getParam('id', '');
-			if (trim($entryId) === '') {
-				return new JSONResponse(['error' => 'id is required'], 400);
-			}
-
-			$link = $this->linkService->linkEntry(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$entryType,
-				$entryId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end link()
 
 	/**
@@ -192,37 +157,9 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		if ($this->linkService->isTimeManagerAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
+		$action = $this->namedLinkOf(create: $this->linkService->createAndLinkClient(...));
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$name = (string)$this->request->getParam('name', '');
-			if (trim($name) === '') {
-				return new JSONResponse(['error' => 'name is required'], 400);
-			}
-
-			$link = $this->linkService->createAndLinkClient(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$name
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end createAndLink()
 
 	/**
@@ -243,27 +180,9 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $entryId): JSONResponse {
-		if ($this->linkService->isTimeManagerAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
+		$action = LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->linkService->unlink($uuid, $entryId));
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$this->linkService->unlink($object->getUuid(), $entryId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->onWhenInstalled(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), action: $action);
 	}//end destroy()
 
 	/**
@@ -280,46 +199,68 @@ class TimeTrackerLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function available(): JSONResponse {
-		if ($this->linkService->isTimeManagerAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'NC TimeManager app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
-
-		$search = $this->request->getParam('search');
-		if ($search !== null) {
-			$search = (string)$search;
-		}
-
-		$clients = $this->linkService->getAvailableClients($search);
-		return new JSONResponse(['results' => $clients, 'total' => count($clients)]);
+		return $this->whenTimeManagerInstalled(
+			answer: fn (): JSONResponse => LinkedSourceResponses::listed(
+				items: $this->linkService->getAvailableClients(LinkedSourceActions::search(request: $this->request))
+			)
+		);
 	}//end available()
 
 	/**
-	 * Resolve an OR object from register/schema/id.
+	 * Link an existing TimeManager entry to the object.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
+	 * @param ObjectEntity $object    The object.
+	 * @param string       $entryType `client`, `task` or `time`.
+	 * @param string       $entryId   The upstream entry id.
 	 *
-	 * @return ObjectEntity|null
+	 * @return TimeTrackerLink The link.
 	 *
-	 * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route parameter;
-	 * renaming would break consistency with caller method signatures.
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function linkEntry(ObjectEntity $object, string $entryType, string $entryId): TimeTrackerLink {
+		return $this->linkService->linkEntry($this->linkTargetOf(object: $object), new TimeEntry(type: $entryType, id: $entryId));
+	}//end linkEntry()
 
-		return $this->objectService->getObject();
-	}//end validateObject()
+	/**
+	 * List for the object its route names, when the TimeManager app is installed; 501 otherwise.
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param Closure         $action Receives the object; returns the response.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function listWhenInstalled(ObjectLinkRoute $route, Closure $action): JSONResponse {
+		return $this->whenTimeManagerInstalled(answer: fn (): JSONResponse => $this->listLinkedObject(route: $route, action: $action));
+	}//end listWhenInstalled()
+
+	/**
+	 * Run a link action on the object its route names, when the TimeManager app is installed; 501 otherwise.
+	 *
+	 * @param ObjectLinkRoute $route  The object as the route names it.
+	 * @param Closure         $action Receives the object; returns the response.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function onWhenInstalled(ObjectLinkRoute $route, Closure $action): JSONResponse {
+		return $this->whenTimeManagerInstalled(answer: fn (): JSONResponse => $this->onLinkedObject(route: $route, action: $action));
+	}//end onWhenInstalled()
+
+	/**
+	 * Run the answer when the TimeManager app is installed; 501 otherwise.
+	 *
+	 * @param Closure $answer Returns the response.
+	 *
+	 * @return JSONResponse The answer, or 501.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
+	 */
+	private function whenTimeManagerInstalled(Closure $answer): JSONResponse {
+		if ($this->linkService->isTimeManagerAvailable() === false) {
+			return $this->appNotInstalled(appName: 'NC TimeManager');
+		}
+
+		return $answer();
+	}//end whenTimeManagerInstalled()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -336,12 +277,7 @@ class TimeTrackerLinksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if (in_array($code, [400, 401, 404, 409, 503], true) === true) {
-			return new JSONResponse(['error' => $exception->getMessage()], $code);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+	protected function mapException(Exception $exception): JSONResponse {
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [400, 401, 404, 409, 503]);
 	}//end mapException()
 }//end class

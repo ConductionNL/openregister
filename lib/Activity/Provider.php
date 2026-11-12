@@ -24,12 +24,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Activity;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\Activity\Exceptions\UnknownActivityException;
 use OCP\Activity\IEvent;
 use OCP\Activity\IProvider;
 use OCP\IURLGenerator;
-use OCP\L10N\IFactory;
 
 /**
  * Activity provider for parsing OpenRegister events.
@@ -55,16 +54,14 @@ class Provider implements IProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param IFactory $l10nFactory The l10n factory.
-	 * @param IURLGenerator $urlGenerator The URL generator.
-	 * @param ProviderSubjectHandler $subjectHandler The subject handler.
+	 * @param IURLGenerator          $urlGenerator   The URL generator.
+	 * @param ProviderSubjectHandler $subjectHandler The subject handler, which also translates.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
-		private IFactory $l10nFactory,
-		private IURLGenerator $urlGenerator,
-		private ProviderSubjectHandler $subjectHandler,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly ProviderSubjectHandler $subjectHandler,
 	) {
 	}//end __construct()
 
@@ -84,29 +81,30 @@ class Provider implements IProvider {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function parse($language, IEvent $event, ?IEvent $previousEvent = null): IEvent {
-		if ($event->getApp() !== Application::APP_ID) {
+		$this->assertHandled(event: $event);
+		$this->subjectHandler->applySubjectText(event: $event, language: $language);
+		$event->setIcon($this->urlGenerator->getAbsoluteURL($this->urlGenerator->imagePath(AppIdentity::APP_ID, 'app-dark.svg')));
+		return $event;
+	}//end parse()
+
+	/**
+	 * Refuse an event this provider does not render.
+	 *
+	 * @param IEvent $event The event to check.
+	 *
+	 * @return void
+	 *
+	 * @throws UnknownActivityException If the event is another app's or carries an unknown subject.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 */
+	private function assertHandled(IEvent $event): void {
+		if ($event->getApp() !== AppIdentity::APP_ID) {
 			throw new UnknownActivityException();
 		}
 
 		if (in_array($event->getSubject(), self::HANDLED_SUBJECTS, true) === false) {
 			throw new UnknownActivityException();
 		}
-
-		$l = $this->l10nFactory->get(Application::APP_ID, $language);
-		$params = $event->getSubjectParameters();
-
-		$this->subjectHandler->applySubjectText(
-			event: $event,
-			l: $l,
-			params: $params
-		);
-
-		$event->setIcon(
-			$this->urlGenerator->getAbsoluteURL(
-				$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg')
-			)
-		);
-
-		return $event;
-	}//end parse()
+	}//end assertHandled()
 }//end class

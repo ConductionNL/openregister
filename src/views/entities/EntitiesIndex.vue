@@ -2,41 +2,22 @@
 	<NcAppContent>
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Entities') }}
-					</h1>
-					<NcButton
-						variant="tertiary"
-						:aria-label="t('openregister', 'Toggle search sidebar')"
-						@click="toggleSidebar">
-						<template #icon>
-							<FilterVariant :size="20" />
-						</template>
-						{{
-							sidebarOpen
-								? t('openregister', 'Hide Filters')
-								: t('openregister', 'Show Filters')
-						}}
-					</NcButton>
-				</div>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Manage and view detected entities from files and objects',
-						)
-					}}
-				</p>
-			</div>
+			<FilterToggleHeader
+				:title="t('openregister', 'Entities')"
+				:description="
+					t(
+						'openregister',
+						'Manage and view detected entities from files and objects',
+					)
+				"
+				:sidebarOpen="sidebarOpen"
+				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="entitiesList.length" class="viewTotalCount">
-						{{
-							t(
+			<ListActionsBar
+				:summary="
+					entitiesList.length
+						? t(
 								'openregister',
 								'Showing {showing} of {total} entities',
 								{
@@ -44,50 +25,15 @@
 									total: totalEntities,
 								},
 							)
-						}}
-					</span>
-					<span v-if="selectedEntities.length > 0" class="viewIndicator">
-						({{
-							t('openregister', '{count} selected', {
-								count: selectedEntities.length,
-							})
-						}})
-					</span>
-				</div>
-				<div class="viewActions">
-					<div class="viewModeSwitchContainer">
-						<NcCheckboxRadioSwitch
-							v-model="viewMode"
-							title="See entities as cards"
-							:buttonVariant="true"
-							value="cards"
-							name="view_mode_radio"
-							type="radio"
-							buttonVariantGrouped="horizontal">
-							Cards
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="viewMode"
-							title="See entities as a table"
-							:buttonVariant="true"
-							value="table"
-							name="view_mode_radio"
-							type="radio"
-							buttonVariantGrouped="horizontal">
-							Table
-						</NcCheckboxRadioSwitch>
-					</div>
-
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshEntities">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						: ''
+				"
+				:selectedCount="selectedEntities.length"
+				:actions="[refreshAction(refreshEntities)]">
+				<ViewModeSwitch
+					v-model="viewMode"
+					cardsTitle="See entities as cards"
+					tableTitle="See entities as a table" />
+			</ListActionsBar>
 
 			<!-- Loading State -->
 			<NcLoadingIcon v-if="loading" :size="64" />
@@ -130,57 +76,17 @@
 										entity.type
 									}}</span>
 								</h2>
-								<NcActions
+								<ActionMenu
 									class="cardActions"
-									:primary="true"
-									menuName="Actions">
-									<template #icon>
-										<DotsHorizontal :size="20" />
-									</template>
-									<NcActionButton
-										closeAfterClick
-										@click.stop="viewEntity(entity)">
-										<template #icon>
-											<EyeOutline :size="20" />
-										</template>
-										View Details
-									</NcActionButton>
-								</NcActions>
+									primary
+									:actions="entityActions(entity)" />
 							</div>
 
 							<!-- Entity Info -->
-							<table class="statisticsTable entityStats">
-								<tbody>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Category')
-											}}</strong>
-										</th>
-										<td>
-											<span class="badge badge-category">{{
-												entity.category
-											}}</span>
-										</td>
-									</tr>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Detected At')
-											}}</strong>
-										</th>
-										<td>{{ formatDate(entity.detectedAt) }}</td>
-									</tr>
-									<tr>
-										<th scope="row">
-											<strong>{{
-												t('openregister', 'Relations')
-											}}</strong>
-										</th>
-										<td>{{ entity.relationCount || 0 }}</td>
-									</tr>
-								</tbody>
-							</table>
+							<EntityStatsTable
+								class="statisticsTable entityStats"
+								:entity="entity"
+								:fields="['category', 'detectedAt', 'relations']" />
 						</div>
 					</div>
 				</template>
@@ -273,19 +179,8 @@
 									<td>{{ formatDate(entity.detectedAt) }}</td>
 									<td>{{ entity.relationCount || 0 }}</td>
 									<td class="tableColumnActions">
-										<NcActions :primary="false">
-											<template #icon>
-												<DotsHorizontal :size="20" />
-											</template>
-											<NcActionButton
-												closeAfterClick
-												@click="viewEntity(entity)">
-												<template #icon>
-													<EyeOutline :size="20" />
-												</template>
-												View Details
-											</NcActionButton>
-										</NcActions>
+										<ActionMenu
+											:actions="entityActions(entity)" />
 									</td>
 								</tr>
 							</tbody>
@@ -314,21 +209,22 @@ import { showError } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
-	NcActionButton,
-	NcActions,
 	NcAppContent,
-	NcButton,
 	NcCheckboxRadioSwitch,
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import ViewModeSwitch from '../../components/shared/ViewModeSwitch.vue'
+import EntityStatsTable from './EntityStatsTable.vue'
 import eventBus from '../../eventBus.js'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { refreshAction } from '../../services/menuActions.js'
 import { navigationStore } from '../../store/store.js'
 
 /**
@@ -340,23 +236,21 @@ import { navigationStore } from '../../store/store.js'
  * @copyright 2024 Conduction B.V.
  * @license EUPL-1.2
  * @version 1.0.0
- * @link https://github.com/ConductionNL/openregister
+ * @see https://github.com/ConductionNL/openregister
  */
 export default {
 	name: 'EntitiesIndex',
 	components: {
+		EntityStatsTable,
+		ViewModeSwitch,
+		ActionMenu,
+		ListActionsBar,
+		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
-		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		NcCheckboxRadioSwitch,
 		AccountOutline,
-		Refresh,
-		FilterVariant,
-		EyeOutline,
-		DotsHorizontal,
 		PaginationComponent,
 	},
 
@@ -455,6 +349,25 @@ export default {
 	},
 
 	methods: {
+		refreshAction,
+
+		/**
+		 * The menu of an entity's card and table row.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} entity The entity
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		entityActions(entity) {
+			return [
+				{
+					label: 'View Details',
+					icon: EyeOutline,
+					run: () => this.viewEntity(entity),
+				},
+			]
+		},
+
 		t,
 
 		/**
@@ -518,39 +431,63 @@ export default {
 		async loadEntities() {
 			this.loading = true
 			try {
-				const params = {
-					limit: this.limit,
-					offset: (this.currentPage - 1) * this.limit,
-				}
-
-				if (this.searchQuery) {
-					params.search = this.searchQuery
-				}
-
-				if (this.typeFilter) {
-					params.type = this.typeFilter
-				}
-
-				if (this.categoryFilter) {
-					params.category = this.categoryFilter
-				}
-
 				const response = await axios.get(
 					generateUrl('/apps/openregister/api/entities'),
-					{ params },
+					{ params: this.entityListParams() },
 				)
 
-				if (response.data.success) {
-					this.entitiesList = response.data.data
-					this.totalEntities =
-						response.data.count || this.entitiesList.length
-				}
+				this.showEntityList(response.data)
 			} catch (error) {
 				console.error('Failed to load entities:', error)
 				showError(t('openregister', 'Failed to load entities'))
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Take the page of entities and their total from a successful answer.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showEntityList(data) {
+			if (data.success) {
+				this.entitiesList = data.data
+				this.totalEntities = data.count || this.entitiesList.length
+			}
+		},
+
+		/**
+		 * The page of entities to ask for, narrowed by the filters in use.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @return {object} The query parameters
+		 */
+		entityListParams() {
+			return {
+				limit: this.limit,
+				offset: (this.currentPage - 1) * this.limit,
+				...this.activeFilters(),
+			}
+		},
+
+		/**
+		 * The search, type and category filters that are set.
+		 *
+		 * @spec exclude list-view API fetch plumbing (linked-entity-types contract)
+		 * @return {object} The set filters by query parameter
+		 */
+		activeFilters() {
+			const filters = {
+				search: this.searchQuery,
+				type: this.typeFilter,
+				category: this.categoryFilter,
+			}
+			return Object.fromEntries(
+				Object.entries(filters).filter(([, value]) => value),
+			)
 		},
 
 		/**
@@ -632,77 +569,16 @@ export default {
 			this.$router.push({ name: 'entityDetails', params: { id: entity.id } })
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude list-view date-formatting display helper
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
 
 <style scoped lang="scss">
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+@use '../../styles/views.scss' as *;
+@use './cardRules.scss' as *;
 
-.viewHeader {
-	margin-bottom: 20px;
-}
-
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
-
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
-
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewIndicator {
-	color: var(--color-text-maxcontrast);
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
+@include view-container-2;
 
 /* Cards Grid */
 .cardGrid {
@@ -729,15 +605,7 @@ export default {
 /* Real button that carries the card's action. The ::after overlay restores
    whole-card mouse clickability while keyboard users get a genuine button. */
 .cardActivator {
-	appearance: none;
-	background: none;
-	border: none;
-	padding: 0;
-	margin: 0;
-	font: inherit;
-	color: inherit;
-	text-align: left;
-	cursor: pointer;
+	@include card-activator-reset;
 }
 
 .cardActivator::after {
@@ -759,11 +627,7 @@ export default {
 }
 
 .cardHeader {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
+	@include card-header-row;
 }
 
 .cardHeader h2 {
@@ -774,33 +638,6 @@ export default {
 	font-size: 16px;
 	font-weight: 600;
 	flex-wrap: wrap;
-}
-
-/* Entity Stats Table */
-.entityStats {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.entityStats tbody tr {
-	border-bottom: 1px solid var(--color-border);
-}
-
-.entityStats tbody tr:last-child {
-	border-bottom: none;
-}
-
-.entityStats td,
-.entityStats th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: normal;
-}
-
-.entityStats td:first-child,
-.entityStats th:first-child {
-	width: 40%;
-	color: var(--color-text-maxcontrast);
 }
 
 /* Table View */
@@ -823,24 +660,7 @@ export default {
 }
 
 /* Badges */
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badge-type {
-	background: var(--color-primary-light);
-	color: var(--color-primary-element);
-}
-
-.badge-category {
-	background: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-}
+@include badge-rules-2;
 
 /* Column sizes for table view */
 .tableColumnCheckbox {

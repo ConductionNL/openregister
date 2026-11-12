@@ -1,0 +1,390 @@
+{
+    "plain member / default": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / rbac off": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")"
+    ],
+    "plain member / mt off": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / explicit": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / explicit string": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / both off": [],
+    "plain member / register key": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / drafts only": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / drafts any": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / archived": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / archived any": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / default": [
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / rbac off": [
+        "scope true 3 5",
+        "where 1 = 0"
+    ],
+    "no organisation / mt off": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / explicit": [
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / explicit string": [
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / both off": [],
+    "no organisation / register key": [
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / drafts only": [
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / drafts any": [
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / archived": [
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / archived any": [
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / default": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / rbac off": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")"
+    ],
+    "rules bypass / mt off": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / explicit": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / explicit string": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / both off": [],
+    "rules bypass / register key": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / drafts only": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / drafts any": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / archived": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / archived any": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / default": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / rbac off": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")"
+    ],
+    "bypass + grants / mt off": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / explicit": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / explicit string": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / both off": [],
+    "bypass + grants / register key": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / drafts only": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / drafts any": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / archived": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / archived any": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / default": [
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / rbac off": [
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)"
+    ],
+    "cross branch / mt off": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / explicit": [
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / explicit string": [
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / both off": [],
+    "cross branch / register key": [
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / drafts only": [
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / drafts any": [
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / archived": [
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / archived any": [
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / default": [
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / rbac off": [
+        "scope true 3 5",
+        "where 1 = 0"
+    ],
+    "cascade / mt off": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / explicit": [
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / explicit string": [
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / both off": [],
+    "cascade / register key": [
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / drafts only": [
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / drafts any": [
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / archived": [
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / archived any": [
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / default": [
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / rbac off": [
+        "scope true 3 5"
+    ],
+    "admin all / mt off": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / explicit": [
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / explicit string": [
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / both off": [],
+    "admin all / register key": [
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / drafts only": [
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / drafts any": [
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / archived": [
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / archived any": [
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / default": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / rbac off": [],
+    "public lifted / mt off": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / explicit": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / explicit string": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / both off": [],
+    "public lifted / register key": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / drafts only": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / drafts any": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / archived": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / archived any": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / default": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / rbac off": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")"
+    ],
+    "public kept / mt off": [
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / explicit": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / explicit string": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / both off": [],
+    "public kept / register key": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / drafts only": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / drafts any": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / archived": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / archived any": [
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ]
+}

@@ -1,0 +1,348 @@
+{
+    "absent": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "json text": {
+        "lenses": {
+            "a": {
+                "through": "t",
+                "property": "p"
+            }
+        },
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "empty": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "not arrays": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "mixed": {
+        "lenses": {
+            "full": {
+                "through": "zaak",
+                "property": "status",
+                "label": "Status"
+            },
+            "nolabel": {
+                "through": "zaak",
+                "property": "a.b"
+            },
+            "7": {
+                "through": "t",
+                "property": "p"
+            }
+        },
+        "list": {
+            "columns": [
+                {
+                    "property": "title"
+                },
+                {
+                    "property": "status",
+                    "label": "Status"
+                },
+                {
+                    "property": "n"
+                }
+            ],
+            "searchFields": [
+                "title",
+                "summary"
+            ]
+        },
+        "geo": [
+            {
+                "through": "address"
+            },
+            {
+                "through": "parcel",
+                "label": "Parcel"
+            },
+            {
+                "through": "p"
+            }
+        ],
+        "objectSource": {
+            "provider": "ldap",
+            "readOnly": true
+        },
+        "notSupplied": {
+            "unknown": "Not known",
+            "refused": "Refused"
+        }
+    },
+    "list without keys": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "geo without from": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "source no provider": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "source empty": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "view by uuid": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": {
+            "provider": "view",
+            "config": {
+                "view": "abc-123"
+            },
+            "readOnly": true
+        },
+        "notSupplied": []
+    },
+    "view by id": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": {
+            "provider": "view",
+            "config": {
+                "view": 12
+            },
+            "readOnly": true
+        },
+        "notSupplied": []
+    },
+    "view empty": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "view float": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "view not a map": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "source wins on view": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": {
+            "provider": "dbal"
+        },
+        "notSupplied": []
+    },
+    "bad source and view": {
+        "lenses": [],
+        "list": {
+            "columns": [],
+            "searchFields": []
+        },
+        "geo": [],
+        "objectSource": null,
+        "notSupplied": []
+    },
+    "facets none": null,
+    "facets all": {
+        "object_fields": {
+            "plain": {
+                "type": "terms",
+                "title": "plain",
+                "description": null,
+                "data_type": "string",
+                "queryParameter": "plain"
+            },
+            "titled": {
+                "type": "terms",
+                "title": "Titled",
+                "description": "D",
+                "data_type": "string",
+                "queryParameter": "titled"
+            },
+            "enum": {
+                "type": "terms",
+                "title": "enum",
+                "description": null,
+                "data_type": "string",
+                "queryParameter": "enum",
+                "predefined_values": [
+                    "a",
+                    "b"
+                ]
+            },
+            "date": {
+                "type": "date_histogram",
+                "title": "date",
+                "description": null,
+                "data_type": "string",
+                "queryParameter": "date",
+                "default_interval": "month",
+                "supported_intervals": [
+                    "day",
+                    "week",
+                    "month",
+                    "year"
+                ]
+            },
+            "datetime": {
+                "type": "date_histogram",
+                "title": "datetime",
+                "description": null,
+                "data_type": "string",
+                "queryParameter": "datetime",
+                "default_interval": "month",
+                "supported_intervals": [
+                    "day",
+                    "week",
+                    "month",
+                    "year"
+                ]
+            },
+            "number": {
+                "type": "range",
+                "title": "number",
+                "description": null,
+                "data_type": "number",
+                "queryParameter": "number",
+                "supports_custom_ranges": true
+            },
+            "integer": {
+                "type": "range",
+                "title": "integer",
+                "description": null,
+                "data_type": "integer",
+                "queryParameter": "integer",
+                "supports_custom_ranges": true
+            },
+            "boolean": {
+                "type": "terms",
+                "title": "boolean",
+                "description": null,
+                "data_type": "boolean",
+                "queryParameter": "boolean"
+            },
+            "array": {
+                "type": "terms",
+                "title": "array",
+                "description": null,
+                "data_type": "array",
+                "queryParameter": "array",
+                "predefined_values": [
+                    "x"
+                ]
+            },
+            "object": {
+                "type": "terms",
+                "title": "object",
+                "description": null,
+                "data_type": "object",
+                "queryParameter": "object"
+            },
+            "untyped": {
+                "type": "terms",
+                "title": "untyped",
+                "description": null,
+                "data_type": "string",
+                "queryParameter": "untyped"
+            }
+        },
+        "schema_version": "3.1"
+    },
+    "facets no version": {
+        "object_fields": {
+            "p": {
+                "type": "terms",
+                "title": "p",
+                "description": null,
+                "data_type": "string",
+                "queryParameter": "p"
+            }
+        },
+        "schema_version": "1.0"
+    },
+    "facets none set": {
+        "object_fields": [],
+        "schema_version": "1.0"
+    }
+}

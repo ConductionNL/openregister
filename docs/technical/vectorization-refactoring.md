@@ -27,13 +27,13 @@ lib/Service/
 **Before:**
 ```php
 use OCA\OpenRegister\Service\VectorEmbeddingService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\ObjectVectorizationStrategy;
 ```
 
 **After:**
 ```php
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddingService;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
 ```
@@ -96,7 +96,7 @@ If your service uses `VectorEmbeddingService`, update it:
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 
 // New
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 ```
 
 2. **Update constructor:**
@@ -124,7 +124,7 @@ Same as above - update imports and use `VectorizationService` instead of `Vector
 Update test files to use new namespaces:
 
 ```php
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddingService;
 ```
 

@@ -22,7 +22,10 @@ use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
+use OCA\OpenRegister\AppHost\Observability\MetricSources;
+use OCA\OpenRegister\AppHost\Observability\MetricsRuntime;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityManifest;
+use OCA\OpenRegister\AppHost\Observability\ObservabilityProbes;
 use OCA\OpenRegister\AppHost\Observability\PrometheusRenderer;
 use OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource;
 use OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource;
@@ -61,21 +64,21 @@ class MetricsEngineTest extends TestCase {
 		$config->method('getSystemValueString')->willReturn('33.0.0');
 
 		return new MetricsEngine(
-			$this->objectSource,
-			$this->tableSource,
-			$this->appConfigSource,
-			$this->providerSource,
+			new MetricSources(
+				$this->objectSource,
+				$this->tableSource,
+				$this->appConfigSource,
+				$this->providerSource
+			),
 			new PrometheusRenderer(),
-			$this->manifestLoader,
-			$this->cacheFactory,
-			$config,
+			new MetricsRuntime($this->manifestLoader, $this->cacheFactory, $config),
 			$this->createMock(LoggerInterface::class)
 		);
 	}
 
 	public function testImplicitInfoAndUpAlwaysEmitted(): void {
 		$this->cacheFactory->method('isAvailable')->willReturn(false);
-		$manifest = new ObservabilityManifest('myapp', [], []);
+		$manifest = new ObservabilityManifest('myapp', new ObservabilityProbes([], []));
 
 		$out = $this->engine()->render($manifest);
 
@@ -103,9 +106,9 @@ class MetricsEngineTest extends TestCase {
 
 		$this->objectSource->expects($this->once())
 			->method('collect')
-			->willReturn([MetricSample::single('cases_total', 'gauge', 'Cases', 9)]);
+			->willReturn([new MetricSample('cases_total', 'gauge', 'Cases', [['labels' => [], 'value' => 9]])]);
 
-		$manifest = new ObservabilityManifest('procest', [], [$descriptor]);
+		$manifest = new ObservabilityManifest('procest', new ObservabilityProbes([], [$descriptor]));
 		$out = $this->engine()->render($manifest);
 		$this->assertStringContainsString('procest_cases_total 9', $out);
 	}
@@ -154,9 +157,9 @@ class MetricsEngineTest extends TestCase {
 		// Source must be hit exactly once across two renders within the TTL.
 		$this->tableSource->expects($this->once())
 			->method('collect')
-			->willReturn([MetricSample::single('cached', 'gauge', 'C', 1)]);
+			->willReturn([new MetricSample('cached', 'gauge', 'C', [['labels' => [], 'value' => 1]])]);
 
-		$manifest = new ObservabilityManifest('app', [], [$descriptor]);
+		$manifest = new ObservabilityManifest('app', new ObservabilityProbes([], [$descriptor]));
 		$engine = $this->engine();
 		$first = $engine->render($manifest);
 		$second = $engine->render($manifest);

@@ -1,0 +1,110 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`OperationsConsoleIndex tables shows the empty states without rows 1`] = `
+[
+  "t:No jobs have run yet | t:Start a bulk action and it appears here, with its outcome.",
+  "t:No rule is holding an error | t:A rule that errors shows up here with its message.",
+  "t:No run in this period | t:Every recorded run shows up here with how it came out.",
+]
+`;
+
+exports[`OperationsConsoleIndex tables shows the jobs, notification outcomes, erroring rules and runs 1`] = `
+[
+  {
+    "headers": [
+      "t:Action",
+      "t:State",
+      "t:Progress",
+      "t:Started by",
+      "t:Failure",
+      "t:Do",
+    ],
+    "rows": [
+      [
+        "delete",
+        "running",
+        "3 / 10",
+        "admin",
+        "-",
+        "t:Pause",
+      ],
+      [
+        "publish",
+        "paused",
+        "1 / 2",
+        "bob",
+        "Locked",
+        "t:Resumet:Retry",
+      ],
+      [
+        "export",
+        "done",
+        "2 / 2",
+        "eve",
+        "-",
+        "",
+      ],
+    ],
+  },
+  {
+    "headers": [
+      "t:Outcome",
+      "t:Dispatches",
+    ],
+    "rows": [
+      [
+        "delivered",
+        "4",
+      ],
+      [
+        "failed",
+        "1",
+      ],
+    ],
+  },
+  {
+    "headers": [
+      "t:Rule",
+      "t:Schema",
+      "t:Last error",
+      "t:When",
+    ],
+    "rows": [
+      [
+        "r1",
+        "zaak",
+        "Division by zero",
+        "2026-11-01",
+      ],
+    ],
+  },
+  {
+    "headers": [
+      "t:Job",
+      "t:Started",
+      "t:Took",
+      "t:Outcome",
+      "t:Reason",
+      "t:Started by",
+    ],
+    "rows": [
+      [
+        "cleanup",
+        "2026-11-01 10:00",
+        "t:Still running",
+        "t:Completed",
+        "",
+        "admin",
+      ],
+      [
+        "reindex",
+        "2026-11-02 11:00",
+        "t:Still running",
+        "t:Failed",
+        "Timeout",
+        "t:The schedule",
+      ],
+    ],
+  },
+]
+`;

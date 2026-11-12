@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\SequenceScope;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -31,7 +32,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<Sequence>
  */
-class SequenceMapper extends QBMapper {
+class SequenceMapper extends QBMapper implements SequenceMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -44,19 +45,14 @@ class SequenceMapper extends QBMapper {
 	/**
 	 * Find the sequence row for a scope, or null when absent.
 	 *
-	 * @param int $registerId The register the sequence is scoped to.
-	 * @param int $schemaId The schema the sequence is scoped to.
-	 * @param string $scopeKey The scope discriminator.
+	 * @param SequenceScope $scope The register, schema and scope key of the counter.
 	 *
 	 * @return Sequence|null The row, or null when absent.
 	 */
-	public function findForScope(int $registerId, int $schemaId, string $scopeKey): ?Sequence {
+	public function findForScope(SequenceScope $scope): ?Sequence {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('scope_key', $qb->createNamedParameter($scopeKey)));
+		$qb->select('*')->from($this->getTableName());
+		$this->whereScope(qb: $qb, scope: $scope);
 
 		try {
 			return $this->findEntity(query: $qb);
@@ -75,19 +71,15 @@ class SequenceMapper extends QBMapper {
 	 * what serialises the hand-out and prevents two callers ever reading the
 	 * same post-increment value.
 	 *
-	 * @param int $registerId The register the sequence is scoped to.
-	 * @param int $schemaId The schema the sequence is scoped to.
-	 * @param string $scopeKey The scope discriminator.
+	 * @param SequenceScope $scope The register, schema and scope key of the counter.
 	 *
 	 * @return int The number of affected rows (1 when the scope row exists, 0 otherwise).
 	 */
-	public function incrementScope(int $registerId, int $schemaId, string $scopeKey): int {
+	public function incrementScope(SequenceScope $scope): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('next_value', $qb->createFunction('next_value + 1'))
-			->where($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('scope_key', $qb->createNamedParameter($scopeKey)));
+			->set('next_value', $qb->createFunction('next_value + 1'));
+		$this->whereScope(qb: $qb, scope: $scope);
 
 		return $qb->executeStatement();
 	}//end incrementScope()
@@ -100,24 +92,34 @@ class SequenceMapper extends QBMapper {
 	 * that supplied an OLD number push the counter backwards, and the next create
 	 * would then re-issue a number already printed on a record.
 	 *
-	 * @param int $registerId The register the sequence is scoped to.
-	 * @param int $schemaId The schema the sequence is scoped to.
-	 * @param string $scopeKey The scope discriminator.
+	 * @param SequenceScope $scope The register, schema and scope key of the counter.
 	 * @param int $minNextValue The value `next_value` must reach.
 	 *
 	 * @return int Affected rows: 1 when the row moved, 0 when it was already high enough or absent.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
-	public function raiseTo(int $registerId, int $schemaId, string $scopeKey, int $minNextValue): int {
+	public function raiseTo(SequenceScope $scope, int $minNextValue): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('next_value', $qb->createNamedParameter($minNextValue, IQueryBuilder::PARAM_INT))
-			->where($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('scope_key', $qb->createNamedParameter($scopeKey)))
+			->set('next_value', $qb->createNamedParameter($minNextValue, IQueryBuilder::PARAM_INT));
+		$this->whereScope(qb: $qb, scope: $scope)
 			->andWhere($qb->expr()->lt('next_value', $qb->createNamedParameter($minNextValue, IQueryBuilder::PARAM_INT)));
 
 		return $qb->executeStatement();
 	}//end raiseTo()
+
+	/**
+	 * Narrow a query to the one row of a counter scope.
+	 *
+	 * @param IQueryBuilder $qb    The query.
+	 * @param SequenceScope $scope The register, schema and scope key of the counter.
+	 *
+	 * @return IQueryBuilder The same query.
+	 */
+	private function whereScope(IQueryBuilder $qb, SequenceScope $scope): IQueryBuilder {
+		return $qb->where($qb->expr()->eq('register_id', $qb->createNamedParameter($scope->registerId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('schema_id', $qb->createNamedParameter($scope->schemaId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('scope_key', $qb->createNamedParameter($scope->scopeKey)));
+	}//end whereScope()
 }//end class

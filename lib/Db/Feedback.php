@@ -57,6 +57,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Feedback extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * UUID.
@@ -143,30 +144,4 @@ class Feedback extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * JSON serialization.
-	 *
-	 * @return (int|null|string)[]
-	 *
-	 * @psalm-return array{id: int, uuid: string, messageId: int,
-	 *     conversationId: int, agentId: int, userId: string,
-	 *     organisation: null|string, type: string, comment: null|string,
-	 *     created: null|string, updated: null|string}
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'messageId' => $this->messageId,
-			'conversationId' => $this->conversationId,
-			'agentId' => $this->agentId,
-			'userId' => $this->userId,
-			'organisation' => $this->organisation,
-			'type' => $this->type,
-			'comment' => $this->comment,
-			'created' => $this->created?->format('c'),
-			'updated' => $this->updated?->format('c'),
-		];
-	}//end jsonSerialize()
 }//end class

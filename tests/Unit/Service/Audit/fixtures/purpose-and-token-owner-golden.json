@@ -1,0 +1,86 @@
+{
+    "annotation": {
+        "schema true": true,
+        "register true": true,
+        "schema false": false,
+        "register false": false,
+        "schema \"true\"": true,
+        "register \"true\"": true,
+        "schema \" YES \"": true,
+        "register \" YES \"": true,
+        "schema \"1\"": true,
+        "register \"1\"": true,
+        "schema \"no\"": false,
+        "register \"no\"": false,
+        "schema \"\"": false,
+        "register \"\"": false,
+        "schema 1": true,
+        "register 1": true,
+        "schema 0": false,
+        "register 0": false,
+        "schema 2": false,
+        "register 2": false,
+        "schema 1.0": false,
+        "register 1.0": false,
+        "schema list": false,
+        "register list": false,
+        "schema null": false,
+        "register null": false
+    },
+    "owner": {
+        "owner in session": {
+            "mechanism": "app-password",
+            "reference": "4711",
+            "name": "Koppeling",
+            "ownerUid": "svc",
+            "ownerName": "Koppeling leverancier",
+            "consumerUuid": "c1",
+            "consumer": "Leverancier c1"
+        },
+        "another user in session": {
+            "mechanism": "app-password",
+            "reference": "4711",
+            "name": "Koppeling",
+            "ownerUid": "svc",
+            "ownerName": null,
+            "consumerUuid": "c1",
+            "consumer": "Leverancier c1"
+        },
+        "blank display name": {
+            "mechanism": "app-password",
+            "reference": "4711",
+            "name": "Koppeling",
+            "ownerUid": "svc",
+            "ownerName": null,
+            "consumerUuid": null,
+            "consumer": null
+        },
+        "no session user": {
+            "mechanism": "app-password",
+            "reference": "4711",
+            "name": "Koppeling",
+            "ownerUid": "svc",
+            "ownerName": null,
+            "consumerUuid": null,
+            "consumer": null
+        },
+        "session throws": {
+            "mechanism": "app-password",
+            "reference": "4711",
+            "name": "Koppeling",
+            "ownerUid": "svc",
+            "ownerName": null,
+            "consumerUuid": null,
+            "consumer": null
+        },
+        "a non-consumer row": {
+            "mechanism": "app-password",
+            "reference": "4711",
+            "name": "Koppeling",
+            "ownerUid": "svc",
+            "ownerName": "Koppeling leverancier",
+            "consumerUuid": null,
+            "consumer": null
+        }
+    }
+}

@@ -1,0 +1,28 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+
+@use '../../styles/modals.scss' as *;
+
+// The object count, its breakdown and the steps list the explore and
+// validate schema modals both show before they run.
+@mixin schema-count-summary-rules {
+	@include object-count-centered-rules;
+
+	.count-label {
+		color: var(--color-text-lighter);
+	}
+
+	@include loading-count-rules;
+
+	.breakdown-item:last-child {
+		margin-bottom: 0;
+	}
+
+	@include breakdown-label-rules;
+
+	.steps-section {
+		margin-bottom: 2rem;
+	}
+
+	@include steps-section-h4-rules;
+}

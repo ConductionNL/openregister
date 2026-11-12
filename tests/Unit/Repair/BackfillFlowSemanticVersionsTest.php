@@ -33,8 +33,11 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\BackfillFlowSemanticVersions;
 use OCA\OpenRegister\Service\Flow\FlowSemanticVersion;
+use OCA\OpenRegister\Service\Flow\FlowSemanticVersionInterface;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -128,15 +131,8 @@ final class BackfillFlowSemanticVersionsTest extends TestCase {
 	private function step(): BackfillFlowSemanticVersions {
 		$flows = $this->createMock(FlowMapper::class);
 		$flows->method('findAllFlows')->willReturnCallback(
-			function (
-				?string $app = null,
-				?string $applicationSlug = null,
-				?string $organisation = null,
-				?bool $enabled = null,
-				int $limit = 100,
-				int $offset = 0,
-			): array {
-				return array_slice($this->flows, $offset, $limit);
+			function (FlowSelection $selection, ListQuery $query): array {
+				return array_slice($this->flows, (int)$query->offset, $query->limit);
 			}
 		);
 		$flows->method('update')->willReturnCallback(
@@ -165,8 +161,8 @@ final class BackfillFlowSemanticVersionsTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($flows, $versions) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
-					FlowSemanticVersion::class => new FlowSemanticVersion(),
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
+					FlowSemanticVersionInterface::class => new FlowSemanticVersion(),
 					default => $flows,
 				};
 			}
@@ -321,15 +317,8 @@ final class BackfillFlowSemanticVersionsTest extends TestCase {
 
 		$flows = $this->createMock(FlowMapper::class);
 		$flows->method('findAllFlows')->willReturnCallback(
-			function (
-				?string $app = null,
-				?string $applicationSlug = null,
-				?string $organisation = null,
-				?bool $enabled = null,
-				int $limit = 100,
-				int $offset = 0,
-			): array {
-				return array_slice($this->flows, $offset, $limit);
+			function (FlowSelection $selection, ListQuery $query): array {
+				return array_slice($this->flows, (int)$query->offset, $query->limit);
 			}
 		);
 
@@ -355,8 +344,8 @@ final class BackfillFlowSemanticVersionsTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($flows, $versions) {
 				return match ($id) {
-					FlowVersionMapper::class => $versions,
-					FlowSemanticVersion::class => new FlowSemanticVersion(),
+					\OCA\OpenRegister\Db\FlowVersionMapperInterface::class => $versions,
+					FlowSemanticVersionInterface::class => new FlowSemanticVersion(),
 					default => $flows,
 				};
 			}

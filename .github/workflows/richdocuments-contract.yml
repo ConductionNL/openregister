@@ -31,9 +31,9 @@ name: Richdocuments Contract
 # This suite needs no Nextcloud server at all, so it is one cheap job here.
 on:
   pull_request:
-    branches: [main, beta, development]
+    branches: [main, 'stable*']
   push:
-    branches: [main, beta, development]
+    branches: [main, 'stable*']
   schedule:
     # Daily, 05:17 UTC: richdocuments ships patch releases without notice.
     - cron: '17 5 * * *'
@@ -61,10 +61,10 @@ jobs:
         # OpenRegister still supports; it passed the suite on 2026-10-05.
         richdocuments: [latest, v12.0.1, v11.1.2]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           tools: composer:v2

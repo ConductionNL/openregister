@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "cms-agent-test-collection",
 		"name": "OpenRegister Agent & CMS Tool Testing",
-		"description": "Test collection for OpenRegister agents with OpenCatalogi CMS Tool integration",
+		"description": "Test collection for OpenRegister agents with OpenCatalogi CMS Tool integration\n\n@newman exclude needs an Ollama model; run it with COLLECTIONS=agent-cms tests/newman/run-all.sh",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {

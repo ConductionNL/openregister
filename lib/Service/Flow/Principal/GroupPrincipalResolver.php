@@ -36,7 +36,7 @@ use OCP\IGroupManager;
 /**
  * Resolves `{type: 'group'}` references.
  */
-class GroupPrincipalResolver implements IPrincipalResolver {
+class GroupPrincipalResolver implements IPrincipalResolver, GroupPrincipalResolverInterface {
 
 	/**
 	 * The type this resolver answers for.

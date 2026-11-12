@@ -36,39 +36,30 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\WorkflowEngine;
 
-use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Event\ObjectCreatedEvent;
-use OCA\OpenRegister\Event\ObjectDeletedEvent;
-use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCP\EventDispatcher\Event;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
 use OCP\WorkflowEngine\IRuleMatcher;
-use OCP\WorkflowEngine\ISpecificOperation;
 use Psr\Log\LoggerInterface;
 use UnexpectedValueException;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Runs a named OpenRegister flow when a matching Nextcloud Flow rule fires.
  */
-class RunFlowOperation implements ISpecificOperation {
+class RunFlowOperation implements RunFlowOperationInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urlGenerator Icon path resolver.
-	 * @param FlowMapper $flows Resolves a flow by the name the rule configured.
-	 * @param FlowRunService $runner Queues the run.
-	 * @param LoggerInterface $logger Logs skipped/failed invocations.
+	 * @param FlowNodePresentation  $presentation Translations for the labels and the refusal, and the icon path.
+	 * @param RunFlowOperationFlows $flowRuns     Resolves a flow by name and queues its run.
+	 * @param LoggerInterface       $logger       Logs skipped/failed invocations.
 	 */
 	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly FlowMapper $flows,
-		private readonly FlowRunService $runner,
+		private readonly FlowNodePresentation $presentation,
+		private readonly RunFlowOperationFlows $flowRuns,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -79,7 +70,7 @@ class RunFlowOperation implements ISpecificOperation {
 	 * @return string
 	 */
 	public function getDisplayName(): string {
-		return $this->l10n->t('Run an OpenRegister flow');
+		return $this->presentation->l10n->t('Run an OpenRegister flow');
 	}//end getDisplayName()
 
 	/**
@@ -88,7 +79,7 @@ class RunFlowOperation implements ISpecificOperation {
 	 * @return string
 	 */
 	public function getDescription(): string {
-		return $this->l10n->t('Run a flow declared on the object\'s schema (by name) when this rule matches.');
+		return $this->presentation->l10n->t('Run a flow declared on the object\'s schema (by name) when this rule matches.');
 	}//end getDescription()
 
 	/**
@@ -97,7 +88,7 @@ class RunFlowOperation implements ISpecificOperation {
 	 * @return string
 	 */
 	public function getIcon(): string {
-		return $this->urlGenerator->imagePath('core', 'actions/play.svg');
+		return $this->presentation->urls->imagePath('core', 'actions/play.svg');
 	}//end getIcon()
 
 	/**
@@ -133,7 +124,7 @@ class RunFlowOperation implements ISpecificOperation {
 	 */
 	public function validateOperation(string $name, array $checks, string $operation): void {
 		if (trim($operation) === '') {
-			throw new UnexpectedValueException($this->l10n->t('Please provide the name of the OpenRegister flow to run.'));
+			throw new UnexpectedValueException($this->presentation->l10n->t('Please provide the name of the OpenRegister flow to run.'));
 		}
 	}//end validateOperation()
 
@@ -147,11 +138,21 @@ class RunFlowOperation implements ISpecificOperation {
 	 * @return void
 	 */
 	public function onEvent(string $eventName, Event $event, IRuleMatcher $ruleMatcher): void {
-		$object = $this->objectFromEvent(event: $event);
-		if ($object === null) {
-			return;
+		$object = (new LifecycleEventObject())->of(event: $event);
+		if ($object !== null) {
+			$this->runMatchedFlows(ruleMatcher: $ruleMatcher, object: $object);
 		}
+	}//end onEvent()
 
+	/**
+	 * Run every flow the matched rules name for this object.
+	 *
+	 * @param IRuleMatcher $ruleMatcher Matcher exposing the configured operations.
+	 * @param ObjectEntity $object      The object the event carried.
+	 *
+	 * @return void
+	 */
+	private function runMatchedFlows(IRuleMatcher $ruleMatcher, ObjectEntity $object): void {
 		try {
 			$flows = $ruleMatcher->getFlows(false);
 		} catch (\Throwable $e) {
@@ -161,13 +162,11 @@ class RunFlowOperation implements ISpecificOperation {
 
 		foreach ($flows as $flow) {
 			$flowName = trim((string)($flow['operation'] ?? ''));
-			if ($flowName === '') {
-				continue;
+			if ($flowName !== '') {
+				$this->runFlowNamed(name: $flowName, object: $object);
 			}
-
-			$this->runFlowNamed(name: $flowName, object: $object);
 		}
-	}//end onEvent()
+	}//end runMatchedFlows()
 
 	/**
 	 * Queue an engine run of the flow with this name.
@@ -192,7 +191,7 @@ class RunFlowOperation implements ISpecificOperation {
 		try {
 			$matches = array_values(
 				array_filter(
-					$this->flows->findAllFlows(limit: 500),
+					$this->flowRuns->flows->findAllFlows(query: new ListQuery(limit: 500)),
 					static fn ($f): bool => $f->getName() === $name
 				)
 			);
@@ -218,37 +217,21 @@ class RunFlowOperation implements ISpecificOperation {
 		}
 
 		try {
-			$this->runner->queue(
+			$this->flowRuns->runner->queueRun(
 				flowId: (string)$flow->getUuid(),
-				subject: [
-					'uuid' => $object->getUuid(),
-					'register' => (string)$object->getRegister(),
-					'schema' => (string)$object->getSchema(),
-				],
-				trigger: 'nextcloud-flow',
-				user: $flow->getOwner()
+				options: new FlowRunQueueOptions(
+					subject: [
+						'uuid' => $object->getUuid(),
+						'register' => (string)$object->getRegister(),
+						'schema' => (string)$object->getSchema(),
+					],
+					trigger: 'nextcloud-flow',
+					user: $flow->getOwner()
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning('RunFlowOperation: could not queue flow "' . $name . '": ' . $e->getMessage());
 		}
 
 	}//end runFlowNamed()
-
-	/**
-	 * Resolve the OpenRegister object from a lifecycle event.
-	 *
-	 * @param Event $event The dispatched event.
-	 *
-	 * @return ObjectEntity|null
-	 */
-	private function objectFromEvent(Event $event): ?ObjectEntity {
-		if ($event instanceof ObjectCreatedEvent
-			|| $event instanceof ObjectUpdatedEvent
-			|| $event instanceof ObjectDeletedEvent
-		) {
-			return $event->getObject();
-		}
-
-		return null;
-	}//end objectFromEvent()
 }//end class

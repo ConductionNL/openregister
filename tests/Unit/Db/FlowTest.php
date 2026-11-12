@@ -116,7 +116,7 @@ class FlowTest extends TestCase {
 		$this->assertSame(14, $flow->effectiveRetentionDays(14));
 	}//end testAnUnsetOverrideTracksAChangedDefault()
 
-	// --- audit / oversight inheritance -------------------------------------
+	// --- audit inheritance -------------------------------------------------
 	public function testAuditingFollowsTheInstanceDefaultWhenUnset(): void {
 		$flow = $this->flow();
 
@@ -130,24 +130,6 @@ class FlowTest extends TestCase {
 
 		$this->assertTrue($flow->auditsEachHop(false));
 	}//end testAnExplicitAuditOptInBeatsTheDefault()
-
-	public function testOversightFollowsTheInstanceDefaultWhenUnset(): void {
-		$flow = $this->flow();
-
-		$this->assertTrue($flow->gatesEachHop(true));
-		$this->assertFalse($flow->gatesEachHop(false));
-	}//end testOversightFollowsTheInstanceDefaultWhenUnset()
-
-	/**
-	 * An explicit opt-out is honoured — a flow may be exempted — but it has to
-	 * be chosen, not inherited from an unset column.
-	 */
-	public function testAnExplicitOversightOptOutIsHonoured(): void {
-		$flow = $this->flow();
-		$flow->setOversightEnabled(false);
-
-		$this->assertFalse($flow->gatesEachHop(true));
-	}//end testAnExplicitOversightOptOutIsHonoured()
 
 	/**
 	 * A flow with no applicationSlug stays fully valid: it serialises the

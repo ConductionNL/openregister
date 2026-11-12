@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -86,8 +87,7 @@ class FlowAccessTest extends TestCase {
 		$this->actionAuth = $this->createMock(OpenRegisterActionAuthService::class);
 
 		$this->access = new FlowAccess(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			caller: new CallerContext(userSession: $this->userSession, groupManager: $this->groupManager),
 			actionAuth: $this->actionAuth
 		);
 

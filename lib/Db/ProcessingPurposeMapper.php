@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -25,18 +25,18 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Reads and writes administered purposes.
  *
  * @template-extends QBMapper<ProcessingPurpose>
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
-class ProcessingPurposeMapper extends QBMapper {
+class ProcessingPurposeMapper extends QBMapper implements ProcessingPurposeMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -59,15 +59,10 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @throws DoesNotExistException When no row matches the id.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function find(int $id): ProcessingPurpose {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -77,23 +72,15 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose|null Null when no row matches.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function findByCode(string $code): ?ProcessingPurpose {
-		if ($code === '') {
-			return null;
+		$found = $this->findOneByFilledColumn(name: 'code', value: $code);
+		if ($found instanceof ProcessingPurpose) {
+			return $found;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('code', $qb->createNamedParameter($code)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return null;
 	}//end findByCode()
 
 	/**
@@ -103,23 +90,15 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose|null Null when no row matches.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function findByUuid(string $uuid): ?ProcessingPurpose {
-		if ($uuid === '') {
-			return null;
+		$found = $this->findOneByFilledColumn(name: 'uuid', value: $uuid);
+		if ($found instanceof ProcessingPurpose) {
+			return $found;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return null;
 	}//end findByUuid()
 
 	/**
@@ -132,7 +111,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose|null Null when nothing matches.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function resolveReference(string $reference): ?ProcessingPurpose {
 		if ($reference === '') {
@@ -155,7 +134,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose[] The matching purposes.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function findAll(?string $status = null, ?string $organisationId = null): array {
 		$qb = $this->db->getQueryBuilder();
@@ -181,21 +160,10 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose The persisted purpose.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
-	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function insert($entity): ProcessingPurpose {
-		if ($entity->getUuid() === null || $entity->getUuid() === '') {
-			$entity->setUuid((string)Uuid::v4());
-		}
-
-		$now = new DateTime();
-		if ($entity->getCreated() === null) {
-			$entity->setCreated($now);
-		}
-
-		$entity->setUpdated($now);
+		(new NewRowStamps())->onInsert(entity: $entity);
 
 		return parent::insert(entity: $entity);
 	}//end insert()
@@ -207,7 +175,7 @@ class ProcessingPurposeMapper extends QBMapper {
 	 *
 	 * @return ProcessingPurpose The persisted purpose.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function update($entity): ProcessingPurpose {
 		$entity->setUpdated(new DateTime());

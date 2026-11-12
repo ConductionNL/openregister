@@ -77,7 +77,7 @@ final class AggregationNarrowingFilterTest extends TestCase {
 		$method = $reflection->getMethod('mergeNarrowingFilter');
 		$method->setAccessible(true);
 
-		return $method->invoke($runner, $declared, $extra, 'testAggregation');
+		return $method->invoke($runner, $declared, new \OCA\OpenRegister\Service\Aggregation\RequestedNarrowing($extra, 'testAggregation'));
 
 	}//end merge()
 

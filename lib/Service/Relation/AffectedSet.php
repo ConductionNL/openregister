@@ -42,14 +42,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Relation;
 
-use InvalidArgumentException;
-
 /**
  * Turns a bounded relation graph into the set of affected objects and parties.
  *
  * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
  */
-class AffectedSet {
+class AffectedSet implements AffectedSetInterface {
 
 	/**
 	 * A reached node that is a record.
@@ -68,214 +66,208 @@ class AffectedSet {
 	/**
 	 * Derive the affected set from a graph answer.
 	 *
-	 * 🔴 `null` AND `[]` ARE DIFFERENT for both lists, and the difference is the
-	 * one that turns a filter into an unconditional pass. `types: null` means
-	 * "not filtered by type"; `types: []` is refused, because a caller who
-	 * named no types either meant everything or meant nothing and those are
-	 * opposite answers. `prune: []` is simply nothing pruned, which is
-	 * unambiguous, so it is allowed.
+	 * 🔴 A NODE THE CALLER MAY NOT READ IS NEITHER IN THE ANSWER NOR WALKED
+	 * THROUGH. The walk loads every node under the caller's RBAC, so an
+	 * unreadable record arrives unresolved; its edges are dropped before the
+	 * walk, so nothing reachable only through it appears either, and no path
+	 * names its uuid. Only resolved and external nodes are walked.
 	 *
-	 * @param array<string, mixed>    $graph        The answer from the bounded walk.
-	 * @param array<int, string>|null $types        Relation types to keep, or null for all.
-	 * @param array<int, string>      $prune        Relation types to cut.
-	 * @param array<int, string>      $partySchemas Which schemas are parties.
+	 * @param array<string, mixed> $graph The answer from the bounded walk.
+	 * @param AffectedSetQuery     $query The types to follow and prune, and the party schemas.
 	 *
 	 * @return array<string, mixed> The affected set.
 	 *
-	 * @throws InvalidArgumentException When `types` is present but empty.
-	 *
 	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
 	 */
-	public function derive(array $graph, ?array $types = null, array $prune = [], array $partySchemas = []): array {
-		if ($types !== null && $types === []) {
-			throw new InvalidArgumentException(
-				'An empty relation-type list is refused: leave it out to mean "every type", '
-				. 'because an empty list reads as both "none" and "all".'
-			);
-		}
+	public function derive(array $graph, AffectedSetQuery $query): array {
+		$nodes = $this->visibleNodes(graph: $graph);
+		$split = $this->partitionEdges(edges: $this->edgesBetween(graph: $graph, nodes: $nodes), query: $query);
+		$reached = $this->reachableFrom(root: (string)($graph['root'] ?? ''), edges: $split['kept']);
 
-		$root = (string)($graph['root'] ?? '');
-		$edges = (array)($graph['edges'] ?? []);
-		$nodes = (array)($graph['nodes'] ?? []);
-
-		['kept' => $kept, 'pruned' => $pruned] = $this->partitionEdges(
-			edges: $edges,
-			types: $types,
-			prune: $prune
+		return array_merge(
+			['root' => (string)($graph['root'] ?? '')],
+			$this->classifyNodes(nodes: $this->withPaths(nodes: $nodes, reached: $reached), query: $query),
+			[
+				'pruned' => $split['pruned'],
+				// Passed through rather than recomputed: the walk is the only
+				// thing that knows whether it stopped early.
+				'truncated' => (bool)($graph['truncated'] ?? false),
+				'truncatedBy' => ($graph['truncatedBy'] ?? null),
+			]
 		);
-
-		$reachable = $this->reachableFrom(root: $root, edges: $kept);
-
-		['objects' => $objects, 'parties' => $parties] = $this->classifyNodes(
-			nodes: $nodes,
-			root: $root,
-			reachable: $reachable,
-			partySchemas: $partySchemas
-		);
-
-		return [
-			'root' => $root,
-			'objects' => $objects,
-			'parties' => $parties,
-			'pruned' => $pruned,
-			// Passed through rather than recomputed: the walk is the only thing
-			// that knows whether it stopped early, and an affected set that
-			// reported "not truncated" over a truncated walk would be a
-			// complete-looking answer to an incomplete question.
-			'truncated' => (bool)($graph['truncated'] ?? false),
-			'truncatedBy' => ($graph['truncatedBy'] ?? null),
-		];
 	}//end derive()
 
 	/**
-	 * Split the walk's edges into the ones that survive and the ones cut.
+	 * The nodes the caller may see, keyed by uuid: resolved records and external addresses.
 	 *
-	 * Pruning is checked BEFORE the type filter, as it always has been: a type
-	 * that is both pruned and kept is pruned, and it is reported as pruned
-	 * rather than silently dropped by the filter.
+	 * @param array<string, mixed> $graph The graph.
 	 *
-	 * @param array<int, mixed>       $edges The walk's edges.
-	 * @param array<int, string>|null $types Relation types to keep, or null for all.
-	 * @param array<int, string>      $prune Relation types to cut.
-	 *
-	 * @return array{kept: array<int, mixed>, pruned: array<int, array{type: string, at: string, to: string}>} The split.
-	 *
-	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 * @return array<string, array<string, mixed>> The visible nodes.
 	 */
-	private function partitionEdges(array $edges, ?array $types, array $prune): array {
-		$kept = [];
-		$pruned = [];
+	private function visibleNodes(array $graph): array {
+		$visible = [];
+		foreach (array_filter((array)($graph['nodes'] ?? []), 'is_array') as $node) {
+			$uuid = (string)($node['uuid'] ?? '');
+			if ($uuid !== '' && (($node['resolved'] ?? false) === true || ($node['external'] ?? false) === true)) {
+				$visible[$uuid] = $node;
+			}
+		}
 
+		return $visible;
+	}//end visibleNodes()
+
+	/**
+	 * The edges whose two ends are both visible.
+	 *
+	 * @param array<string, mixed>                $graph The graph.
+	 * @param array<string, array<string, mixed>> $nodes The visible nodes.
+	 *
+	 * @return array<int, array<string, mixed>> The edges.
+	 */
+	private function edgesBetween(array $graph, array $nodes): array {
+		return array_values(
+			array_filter(
+				(array)($graph['edges'] ?? []),
+				static fn (mixed $edge): bool => is_array($edge) === true
+					&& isset($nodes[(string)($edge['from'] ?? '')], $nodes[(string)($edge['to'] ?? '')]) === true
+			)
+		);
+	}//end edgesBetween()
+
+	/**
+	 * Split the edges into the ones kept and the ones pruned, reporting each cut.
+	 *
+	 * An edge of a pruned type is reported even when a type filter would also
+	 * have dropped it: the caller named it, so the caller is told where it cut.
+	 *
+	 * @param array<int, array<string, mixed>> $edges The edges.
+	 * @param AffectedSetQuery                 $query The query.
+	 *
+	 * @return array{kept: array<int, array<string, mixed>>, pruned: array<int, array{type: string, at: string, to: string}>}
+	 */
+	private function partitionEdges(array $edges, AffectedSetQuery $query): array {
+		$split = ['kept' => [], 'pruned' => []];
 		foreach ($edges as $edge) {
-			if (is_array($edge) === false) {
-				continue;
-			}
-
 			$type = (string)($edge['type'] ?? '');
-
-			if (in_array($type, $prune, true) === true) {
-				$pruned[] = [
-					'type' => $type,
-					'at' => (string)($edge['from'] ?? ''),
-					'to' => (string)($edge['to'] ?? ''),
-				];
+			if ($query->prunes(type: $type) === true) {
+				$split['pruned'][] = ['type' => $type, 'at' => (string)($edge['from'] ?? ''), 'to' => (string)($edge['to'] ?? '')];
 				continue;
 			}
 
-			if ($types !== null && in_array($type, $types, true) === false) {
-				continue;
+			if ($query->follows(type: $type) === true) {
+				$split['kept'][] = $edge;
 			}
+		}
 
-			$kept[] = $edge;
-		}//end foreach
-
-		return [
-			'kept' => $kept,
-			'pruned' => $pruned,
-		];
+		return $split;
 	}//end partitionEdges()
 
 	/**
-	 * Split the reachable nodes into plain objects and parties.
+	 * The reached nodes, each carrying the path that reached it, in walk order.
 	 *
-	 * The root itself is never in either list: it is what the question was
-	 * about, not something the question affected.
+	 * @param array<string, array<string, mixed>>      $nodes   The visible nodes.
+	 * @param array<string, array<int, array<string, string>>> $reached The path to each reached uuid.
 	 *
-	 * @param array<int, mixed>     $nodes        The walk's nodes.
-	 * @param string                $root         The object the walk started from.
-	 * @param array<string, mixed>  $reachable    Path by uuid, from the surviving edges.
-	 * @param array<int, string>    $partySchemas Which schemas are parties.
-	 *
-	 * @return array{objects: array<int, array<string, mixed>>, parties: array<int, array<string, mixed>>} The split.
-	 *
-	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 * @return array<int, array<string, mixed>> The reached nodes.
 	 */
-	private function classifyNodes(array $nodes, string $root, array $reachable, array $partySchemas): array {
-		$objects = [];
-		$parties = [];
+	private function withPaths(array $nodes, array $reached): array {
+		$entries = [];
+		foreach ($nodes as $uuid => $node) {
+			if (array_key_exists($uuid, $reached) === true) {
+				$entries[] = array_merge($node, ['path' => $reached[$uuid]]);
+			}
+		}
 
+		return $entries;
+	}//end withPaths()
+
+	/**
+	 * Sort the reached nodes into objects and parties.
+	 *
+	 * @param array<int, array<string, mixed>> $nodes The reached nodes.
+	 * @param AffectedSetQuery                 $query The query naming the party schemas.
+	 *
+	 * @return array{objects: array<int, array<string, mixed>>, parties: array<int, array<string, mixed>>}
+	 */
+	private function classifyNodes(array $nodes, AffectedSetQuery $query): array {
+		$sorted = ['objects' => [], 'parties' => []];
 		foreach ($nodes as $node) {
-			if (is_array($node) === false) {
+			if ($query->isParty(schema: (string)($node['schema'] ?? '')) === true) {
+				$sorted['parties'][] = array_merge($node, ['kind' => self::KIND_PARTY]);
 				continue;
 			}
 
-			$uuid = (string)($node['uuid'] ?? '');
-			if ($uuid === '' || $uuid === $root || array_key_exists($uuid, $reachable) === false) {
-				continue;
-			}
+			$sorted['objects'][] = array_merge($node, ['kind' => self::KIND_OBJECT]);
+		}
 
-			$entry = $node;
-			$entry['path'] = $reachable[$uuid];
-			$entry['kind'] = self::KIND_OBJECT;
-
-			if (in_array((string)($node['schema'] ?? ''), $partySchemas, true) === true) {
-				$entry['kind'] = self::KIND_PARTY;
-				$parties[] = $entry;
-				continue;
-			}
-
-			$objects[] = $entry;
-		}//end foreach
-
-		return [
-			'objects' => $objects,
-			'parties' => $parties,
-		];
+		return $sorted;
 	}//end classifyNodes()
 
 	/**
-	 * Which nodes remain reachable, and by which path.
+	 * The shortest path from the root to every node the kept edges reach.
 	 *
-	 * A breadth-first walk over the SURVIVING edges, so a node reachable only
-	 * through a pruned or filtered edge does not appear at all. The path is the
-	 * shortest one found, which is the one a reader wants when asked why
-	 * somebody is on the list.
+	 * Breadth-first, so each node carries the first path that reached it. The
+	 * root is not in the answer: it is not in its own affected set.
 	 *
-	 * @param string            $root  The root uuid.
-	 * @param array<int, mixed> $edges The surviving edges.
+	 * @param string                           $root  The root uuid.
+	 * @param array<int, array<string, mixed>> $edges The kept edges.
 	 *
-	 * @return array<string, array<int, array<string, string>>> Uuid to the path that reached it.
+	 * @return array<string, array<int, array<string, string>>> The path to each reached uuid.
 	 */
 	private function reachableFrom(string $root, array $edges): array {
+		$outgoing = $this->outgoing(edges: $edges);
+		$paths = [$root => []];
+		$queue = [$root];
+		while ($queue !== []) {
+			$from  = (string)array_shift($queue);
+			$found = self::newlyReached(steps: ($outgoing[$from] ?? []), paths: $paths);
+			$paths = $paths + $found;
+			foreach (array_keys($found) as $to) {
+				$queue[] = (string)$to;
+			}
+		}
+
+		unset($paths[$root]);
+		return $paths;
+	}//end reachableFrom()
+
+
+	/**
+	 * The paths to the neighbours of one node that no earlier path reached.
+	 *
+	 * @param array<string, array<string, string>>             $steps The edges leaving the node, keyed by the uuid they reach.
+	 * @param array<string, array<int, array<string, string>>> $paths The paths found so far.
+	 *
+	 * @return array<string, array<int, array<string, string>>> The path to each newly reached uuid, in edge order.
+	 */
+	private static function newlyReached(array $steps, array $paths): array {
+		$found = [];
+		foreach ($steps as $to => $step) {
+			if (array_key_exists($to, $paths) === false) {
+				$found[$to] = array_merge($paths[$step['from']], [$step]);
+			}
+		}
+
+		return $found;
+	}//end newlyReached()
+
+	/**
+	 * The kept edges grouped by the node they leave: from => [to => edge], first edge wins.
+	 *
+	 * @param array<int, array<string, mixed>> $edges The kept edges.
+	 *
+	 * @return array<string, array<string, array<string, string>>> The outgoing edges.
+	 */
+	private function outgoing(array $edges): array {
 		$outgoing = [];
 		foreach ($edges as $edge) {
 			$from = (string)($edge['from'] ?? '');
-			if ($from === '') {
-				continue;
+			$to = (string)($edge['to'] ?? '');
+			if ($from !== '' && $to !== '' && isset($outgoing[$from][$to]) === false) {
+				$outgoing[$from][$to] = ['from' => $from, 'to' => $to, 'type' => (string)($edge['type'] ?? '')];
 			}
-
-			if (isset($outgoing[$from]) === false) {
-				$outgoing[$from] = [];
-			}
-
-			$outgoing[$from][] = $edge;
 		}
 
-		$paths = [];
-		$frontier = [$root];
-		$seen = [$root => true];
-
-		while ($frontier !== []) {
-			$next = [];
-			foreach ($frontier as $uuid) {
-				foreach (($outgoing[$uuid] ?? []) as $edge) {
-					$to = (string)($edge['to'] ?? '');
-					if ($to === '' || array_key_exists($to, $seen) === true) {
-						continue;
-					}
-
-					$seen[$to] = true;
-					$paths[$to] = array_merge(
-						($paths[$uuid] ?? []),
-						[['from' => $uuid, 'to' => $to, 'type' => (string)($edge['type'] ?? '')]]
-					);
-					$next[] = $to;
-				}
-			}
-
-			$frontier = $next;
-		}//end while
-
-		return $paths;
-	}//end reachableFrom()
+		return $outgoing;
+	}//end outgoing()
 }//end class

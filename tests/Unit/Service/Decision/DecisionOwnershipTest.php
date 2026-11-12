@@ -14,6 +14,8 @@ use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Event\DecisionChangeRequestedEvent;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
+use OCA\OpenRegister\Service\Decision\DecisionQuestion;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
@@ -24,12 +26,14 @@ use RuntimeException;
 /**
  * The ownership rule on a decision object (REQ-ROD-001, REQ-DEC-002).
  *
+ * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @covers \OCA\OpenRegister\Service\Decision\DecisionOwnership
  * @covers \OCA\OpenRegister\Event\DecisionChangeRequestedEvent
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicy
  * @uses   \OCA\OpenRegister\Db\Decision
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionOwnedException
  */
 class DecisionOwnershipTest extends TestCase {
 
@@ -74,7 +78,7 @@ class DecisionOwnershipTest extends TestCase {
 			}
 		);
 
-		return new DecisionOwnership(groupManager: $groups, eventDispatcher: $dispatcher, logger: $this->createMock(LoggerInterface::class));
+		return new DecisionOwnership(groupManager: $groups, platform: new DecisionVisibilityPlatform($dispatcher, $this->createMock(LoggerInterface::class)));
 	}//end ownership()
 
 	/**
@@ -107,7 +111,7 @@ class DecisionOwnershipTest extends TestCase {
 	 * @return void
 	 */
 	public function testASecondReviewerIsRefused(): void {
-		$refusal = $this->ownership()->refusal(decision: $this->decision(), actorId: 'p.bakker', policy: $this->decider(), subject: ['subjectType' => 'entity-relation', 'subjectId' => '7']);
+		$refusal = $this->ownership()->refusal(decision: $this->decision(), question: new DecisionQuestion(actorId: 'p.bakker', policy: $this->decider(), subject: ['subjectType' => 'entity-relation', 'subjectId' => '7']));
 
 		self::assertSame(
 			['error' => 'decision-owned', 'decision' => 'd-1', 'decidedBy' => 'j.devries', 'decidedAt' => '2026-10-11T09:30:00+00:00'],
@@ -126,7 +130,7 @@ class DecisionOwnershipTest extends TestCase {
 	 */
 	public function testUnderHideOthersTheRefusalNamesNoDecider(): void {
 		$policy  = ReviewPolicy::fromDeclaration(declaration: ['ownership' => 'decider', 'supervisors' => ['woo-coordinator'], 'hideOthers' => true]);
-		$refusal = $this->ownership()->refusal(decision: $this->decision(), actorId: 'p.bakker', policy: $policy);
+		$refusal = $this->ownership()->refusal(decision: $this->decision(), question: new DecisionQuestion(actorId: 'p.bakker', policy: $policy));
 
 		self::assertSame(['error' => 'decision-owned', 'decision' => 'd-1'], $refusal);
 
@@ -143,10 +147,10 @@ class DecisionOwnershipTest extends TestCase {
 	public function testTheDeciderASupervisorAnAdministratorAndOpenOwnershipMay(): void {
 		$ownership = $this->ownership();
 
-		self::assertNull($ownership->refusal(decision: $this->decision(), actorId: 'j.devries', policy: $this->decider()));
-		self::assertNull($ownership->refusal(decision: $this->decision(), actorId: 'coord', policy: $this->decider()));
-		self::assertNull($ownership->refusal(decision: $this->decision(), actorId: 'root', policy: $this->decider()));
-		self::assertNull($ownership->refusal(decision: $this->decision(), actorId: 'p.bakker', policy: ReviewPolicy::fromDeclaration(declaration: null)));
+		self::assertNull($ownership->refusal(decision: $this->decision(), question: new DecisionQuestion(actorId: 'j.devries', policy: $this->decider())));
+		self::assertNull($ownership->refusal(decision: $this->decision(), question: new DecisionQuestion(actorId: 'coord', policy: $this->decider())));
+		self::assertNull($ownership->refusal(decision: $this->decision(), question: new DecisionQuestion(actorId: 'root', policy: $this->decider())));
+		self::assertNull($ownership->refusal(decision: $this->decision(), question: new DecisionQuestion(actorId: 'p.bakker', policy: ReviewPolicy::fromDeclaration(declaration: null))));
 
 		// The supervisor's answer went through the event; the other three never asked.
 		self::assertCount(1, $this->dispatched);
@@ -165,7 +169,7 @@ class DecisionOwnershipTest extends TestCase {
 			}
 		};
 
-		self::assertNull($this->ownership()->refusal(decision: $this->decision(), actorId: 'case-supervisor', policy: $this->decider()));
+		self::assertNull($this->ownership()->refusal(decision: $this->decision(), question: new DecisionQuestion(actorId: 'case-supervisor', policy: $this->decider())));
 	}//end testAListenerMayAllow()
 
 	/**
@@ -178,7 +182,7 @@ class DecisionOwnershipTest extends TestCase {
 			$event->refuse(reason: 'not this case');
 		};
 
-		$refusal = $this->ownership()->refusal(decision: $this->decision(), actorId: 'coord', policy: $this->decider());
+		$refusal = $this->ownership()->refusal(decision: $this->decision(), question: new DecisionQuestion(actorId: 'coord', policy: $this->decider()));
 
 		self::assertSame('decision-owned', $refusal['error'] ?? null);
 		self::assertSame('not this case', $this->dispatched[0]->getReason());
@@ -194,25 +198,33 @@ class DecisionOwnershipTest extends TestCase {
 			throw new RuntimeException('listener down');
 		};
 
-		$refusal = $this->ownership()->refusal(decision: $this->decision(), actorId: 'coord', policy: $this->decider());
+		$refusal = $this->ownership()->refusal(decision: $this->decision(), question: new DecisionQuestion(actorId: 'coord', policy: $this->decider()));
 
 		self::assertSame('decision-owned', $refusal['error'] ?? null);
 	}//end testAFailingListenerRefuses()
 
 	/**
-	 * An allow after a refusal clears the reason.
+	 * A refusal is sticky: a later allow() cannot undo it, so listener order decides nothing.
 	 *
 	 * @return void
 	 */
-	public function testAnAllowClearsTheReason(): void {
+	public function testARefusalIsStickyWhateverTheListenerOrder(): void {
 		$event = new DecisionChangeRequestedEvent(decision: $this->decision(), actorId: 'x', policy: $this->decider(), subject: [], allowed: false);
-		$event->refuse(reason: 'first');
+		$event->refuse(reason: 'case closed');
 		$event->allow();
 
-		self::assertTrue($event->isAllowed());
-		self::assertNull($event->getReason());
+		self::assertFalse($event->isAllowed());
+		self::assertSame('case closed', $event->getReason());
+
+		// Allow first, then refuse: the same answer.
+		$other = new DecisionChangeRequestedEvent(decision: $this->decision(), actorId: 'x', policy: $this->decider(), subject: [], allowed: false);
+		$other->allow();
+		self::assertTrue($other->isAllowed());
+		$other->refuse(reason: 'case closed');
+		self::assertFalse($other->isAllowed());
+
 		self::assertSame('x', $event->getActorId());
 		self::assertSame('d-1', $event->getDecision()->getUuid());
 		self::assertTrue($event->getPolicy()->isDeciderOwned());
-	}//end testAnAllowClearsTheReason()
+	}//end testARefusalIsStickyWhateverTheListenerOrder()
 }//end class

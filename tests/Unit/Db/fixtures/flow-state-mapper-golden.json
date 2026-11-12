@@ -1,0 +1,168 @@
+{
+    "findByFlow, found": {
+        "result": [
+            3,
+            "flow-1",
+            {
+                "seen": [
+                    "a"
+                ]
+            },
+            "DateTime"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_state, NULL)",
+            "#1 param :p1 = flow-1, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 where(eq(flow_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByFlow, missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_state, NULL)",
+            "#1 param :p1 = flow-1, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 where(eq(flow_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByFlow, empty id": {
+        "result": null,
+        "queries": []
+    },
+    "findByFlow, blank id": {
+        "result": null,
+        "queries": []
+    },
+    "put, first write": {
+        "result": [
+            0,
+            "flow-1",
+            {
+                "seen": [
+                    "b"
+                ],
+                "count": 2
+            },
+            "DateTime"
+        ],
+        "queries": [
+            "#1 insert(openregister_flow_state)",
+            "#1 param :p1 = flow-1, 2",
+            "#1 setValue(flow_id, :p1)",
+            "#1 param :p2 = {\"seen\":[\"b\"],\"count\":2}, json",
+            "#1 setValue(state, :p2)",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 setValue(updated, :p3)",
+            "#1 executeStatement()"
+        ]
+    },
+    "put, empty state": {
+        "result": [
+            0,
+            "flow-2",
+            [],
+            "DateTime"
+        ],
+        "queries": [
+            "#1 insert(openregister_flow_state)",
+            "#1 param :p1 = flow-2, 2",
+            "#1 setValue(flow_id, :p1)",
+            "#1 param :p2 = [], json",
+            "#1 setValue(state, :p2)",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 setValue(updated, :p3)",
+            "#1 executeStatement()"
+        ]
+    },
+    "put, concurrent insert": {
+        "result": [
+            3,
+            "flow-1",
+            {
+                "seen": [
+                    "b"
+                ],
+                "count": 2
+            },
+            "DateTime"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_state, NULL)",
+            "#1 param :p1 = flow-1, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 where(eq(flow_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 update(openregister_flow_state, NULL)",
+            "#2 param :p2 = {\"seen\":[\"b\"],\"count\":2}, json",
+            "#2 set(state, :p2)",
+            "#2 param :p3 = DateTime, datetime",
+            "#2 set(updated, :p3)",
+            "#2 param :p4 = 3, 1",
+            "#2 expr.eq(id, :p4, NULL)",
+            "#2 where(eq(id, :p4, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "put, concurrent insert then delete": {
+        "thrown": "DbException reason 14",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_state, NULL)",
+            "#1 param :p1 = flow-1, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 where(eq(flow_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "put, concurrent insert, blank id": {
+        "thrown": "DbException reason 14",
+        "queries": []
+    },
+    "put, other failure": {
+        "thrown": "DbException reason 11",
+        "queries": []
+    },
+    "deleteByFlow, found": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_state, NULL)",
+            "#1 param :p1 = flow-1, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 where(eq(flow_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 delete(openregister_flow_state, NULL)",
+            "#2 param :p2 = 3, 1",
+            "#2 expr.eq(id, :p2, NULL)",
+            "#2 where(eq(id, :p2, NULL))",
+            "#2 executeStatement()"
+        ]
+    },
+    "deleteByFlow, missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_state, NULL)",
+            "#1 param :p1 = flow-1, 2",
+            "#1 expr.eq(flow_id, :p1, NULL)",
+            "#1 where(eq(flow_id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "deleteByFlow, empty id": {
+        "result": null,
+        "queries": []
+    }
+}

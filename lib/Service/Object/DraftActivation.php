@@ -41,18 +41,18 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
+use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
-use OCA\OpenRegister\Service\ObjectService;
-use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IL10N;
-use OCP\IUser;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Full validation, one allowed promotion, the same id, one event.
@@ -65,37 +65,26 @@ use Throwable;
  *
  * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
  */
-class DraftActivation {
+class DraftActivation implements DraftActivationInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService       $objects   Reads and saves objects.
-	 * @param ValidateObject      $validator The schema's full validator.
-	 * @param FormPayloadFindings $findings  Turns a refusal into per-property findings.
-	 * @param IEventDispatcher    $events    Announces the object that left draft.
-	 * @param ITimeFactory        $time      The clock, for the moment of receipt.
-	 * @param IL10N               $l10n      Translations.
+	 * @param ObjectOperationsInterface $objects Reads and saves objects.
+	 * @param DraftActivationChecks     $checks  The validator, its findings and the words of a refusal.
+	 * @param DraftActivationSignals    $signals The event dispatcher and the clock.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
-		private readonly ValidateObject $validator,
-		private readonly FormPayloadFindings $findings,
-		private readonly IEventDispatcher $events,
-		private readonly ITimeFactory $time,
-		private readonly IL10N $l10n,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly DraftActivationChecks $checks,
+		private readonly DraftActivationSignals $signals,
 	) {
-
 	}//end __construct()
 
 	/**
 	 * Make the owner's draft definitive: status `active`, same id, fully valid.
 	 *
-	 * @param Register             $register The draft's register.
-	 * @param Schema               $schema   The draft's schema.
-	 * @param string               $draftId  The draft's uuid.
-	 * @param DraftOwner           $owner    The asserted owner (decision 195).
-	 * @param array<string, mixed> $changes  Last property values, laid over the stored draft before it is judged.
+	 * @param DraftPromotion $promotion The draft, its asserted owner, and the last changes laid over it.
 	 *
 	 * @return ObjectEntity The object, now `active`.
 	 *
@@ -103,8 +92,11 @@ class DraftActivation {
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
-	public function activate(Register $register, Schema $schema, string $draftId, DraftOwner $owner, array $changes = []): ObjectEntity {
-		$draft = $this->ownDraft(register: $register, schema: $schema, draftId: $draftId, owner: $owner);
+	public function activate(DraftPromotion $promotion): ObjectEntity {
+		$address = $promotion->address;
+		$owner   = $promotion->owner;
+		$changes = $promotion->changes;
+		$draft   = $this->ownDraft(address: $address, owner: $owner);
 		$uuid = (string)$draft->getUuid();
 
 		unset($changes['@self'], $changes['id']);
@@ -114,7 +106,7 @@ class DraftActivation {
 		// server fills. What the caller sends now is judged as sent.
 		$stored = array_filter(DraftFinder::dataOf(object: $draft), static fn (mixed $value): bool => $value !== null);
 		$object = array_merge($stored, $changes);
-		$this->validateInFull(schema: $schema, object: $object);
+		$this->validateInFull(schema: $address->schema, object: $object);
 
 		$object['@self'] = ['status' => ObjectEntity::STATUS_ACTIVE];
 		DraftStatusPolicy::allowPromotion(uuid: $uuid);
@@ -124,22 +116,29 @@ class DraftActivation {
 			// as DraftFinder::own() is on the form path.
 			$saved = $this->objects->saveObject(
 				object: $object,
-				register: $register,
-				schema: $schema,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $address->register, schema: $address->schema),
+					uuid: $uuid,
+					actor: new SaveActor(currentUser: $owner->user())
+				),
 				_rbac: $owner->isScoped() === false,
-				_multitenancy: true,
-				currentUser: $owner->user()
+				_multitenancy: true
 			);
+			// Two requests on one draft can both pass the "still a draft" read.
+			// The save that did not use the allowance found it already sent:
+			// it announces nothing, and answers as for an object that is no draft.
+			if (DraftStatusPolicy::promotionWasUsed(uuid: $uuid) === false) {
+				throw $this->alreadyLeft();
+			}
 		} catch (Throwable $exception) {
 			throw $this->refusalFor(exception: $exception);
 		} finally {
 			DraftStatusPolicy::resetPromotions();
 		}
 
-		$receivedAt = DateTimeImmutable::createFromMutable($this->time->getDateTime());
+		$receivedAt = DateTimeImmutable::createFromMutable($this->signals->time->getDateTime());
 		// Creation side effects run now, once (decision 227): the created event, then the receipt.
-		(new ObjectEventGate(events: $this->events))->leftDraft(object: $saved, receivedAt: $receivedAt);
+		(new ObjectEventGate(events: $this->signals->events))->leftDraft(object: $saved, receivedAt: $receivedAt);
 
 		return $saved;
 	}//end activate()
@@ -150,11 +149,8 @@ class DraftActivation {
 	 * The owner is built here, from the user the caller's session holds, so
 	 * no controller ever writes an owner assertion of its own.
 	 *
-	 * @param Register             $register The draft's register.
-	 * @param Schema               $schema   The draft's schema.
-	 * @param string               $draftId  The draft's uuid.
-	 * @param IUser                $user     The acting user.
-	 * @param array<string, mixed> $changes  Last property values, laid over the stored draft before it is judged.
+	 * @param UserDraftActivation $activation The draft's register, schema and uuid, the acting user, and the last
+	 *                                        property values laid over the stored draft before it is judged.
 	 *
 	 * @return ObjectEntity The object, now `active`.
 	 *
@@ -162,66 +158,82 @@ class DraftActivation {
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
-	public function activateAsUser(Register $register, Schema $schema, string $draftId, IUser $user, array $changes = []): ObjectEntity {
-		return $this->activate(register: $register, schema: $schema, draftId: $draftId, owner: DraftOwner::ofUser(user: $user), changes: $changes);
+	public function activateAsUser(UserDraftActivation $activation): ObjectEntity {
+		return $this->activate(
+			promotion: new DraftPromotion(
+				address: $activation->address,
+				owner: DraftOwner::ofUser(user: $activation->user),
+				changes: $activation->changes
+			)
+		);
 	}//end activateAsUser()
 
 	/**
 	 * The stored draft, when it is a draft and the asserted owner's.
 	 *
-	 * @param Register   $register The register.
-	 * @param Schema     $schema   The schema.
-	 * @param string     $draftId  The draft's uuid.
-	 * @param DraftOwner $owner    The asserted owner.
+	 * @param DraftAddress $address The draft's register, schema and uuid.
+	 * @param DraftOwner   $owner   The asserted owner.
 	 *
 	 * @return ObjectEntity The draft.
 	 *
 	 * @throws DraftActivationRefusedException 404, 409 or 403.
 	 */
-	private function ownDraft(Register $register, Schema $schema, string $draftId, DraftOwner $owner): ObjectEntity {
-		$draft = null;
-		if ($draftId !== '') {
-			try {
-				// RBAC off for the read only: the owner comparison below is
-				// stricter than any read rule, and a scope-value owner has
-				// no session to read with.
-				$draft = $this->objects->find(
-					id: $draftId,
-					register: $register,
-					schema: $schema,
-					_rbac: false,
-					_multitenancy: false,
-					_render: false,
-					_audit: false
-				);
-			} catch (Throwable) {
-				$draft = null;
-			}
-		}
+	private function ownDraft(DraftAddress $address, DraftOwner $owner): ObjectEntity {
+		$draft = $this->readDraft(address: $address);
 
 		if ($draft === null) {
 			throw new DraftActivationRefusedException(
-				message: $this->l10n->t('This draft does not exist.'),
+				message: $this->checks->l10n->t('This draft does not exist.'),
 				reason: DraftActivationRefusedException::NOT_FOUND
 			);
 		}
 
 		if ($draft->isDraft() === false) {
 			throw new DraftActivationRefusedException(
-				message: $this->l10n->t('This is not a draft, so there is nothing to make definitive.'),
+				message: $this->checks->l10n->t('This is not a draft, so there is nothing to make definitive.'),
 				reason: DraftActivationRefusedException::NOT_A_DRAFT
 			);
 		}
 
 		if ($owner->owns(object: $draft) === false) {
 			throw new DraftActivationRefusedException(
-				message: $this->l10n->t('Only the person who started this draft can make it definitive.'),
+				message: $this->checks->l10n->t('Only the person who started this draft can make it definitive.'),
 				reason: DraftActivationRefusedException::NOT_THE_OWNER
 			);
 		}
 
 		return $draft;
 	}//end ownDraft()
+
+	/**
+	 * Read a draft by id with RBAC off; an empty id or a failed read is no draft.
+	 *
+	 * RBAC is off for the read only: the owner comparison in ownDraft() is
+	 * stricter than any read rule, and a scope-value owner has no session to
+	 * read with.
+	 *
+	 * @param DraftAddress $address The draft's register, schema and uuid.
+	 *
+	 * @return ObjectEntity|null The object read
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
+	 */
+	private function readDraft(DraftAddress $address): ?ObjectEntity {
+		if ($address->draftId === '') {
+			return null;
+		}
+
+		try {
+			return $this->objects->find(
+				id: $address->draftId,
+				options: new ObjectFindOptions(register: $address->register, schema: $address->schema, render: false, audit: false),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end readDraft()
 
 	/**
 	 * Judge the object against every rule of its schema, whatever its hard-validation flag.
@@ -236,10 +248,10 @@ class DraftActivation {
 	private function validateInFull(Schema $schema, array $object): void {
 		$excused = (new DraftStatusPolicy())->serverFilledExcusals(schema: $schema, object: $object);
 		try {
-			$result = $this->validator->validateObject(object: $object, schema: $schema, notSupplied: $excused);
-			$findings = $this->findings->fromResult(result: $result);
+			$result = $this->checks->validator->validateObject(object: $object, schema: $schema, notSupplied: $excused);
+			$findings = $this->checks->findings->fromResult(result: $result);
 		} catch (CustomValidationException $exception) {
-			$findings = $this->findings->fromThrowable(exception: $exception);
+			$findings = $this->checks->findings->fromThrowable(exception: $exception);
 		}
 
 		if ($findings !== []) {
@@ -257,19 +269,35 @@ class DraftActivation {
 	 * @throws Throwable When the save failed for a reason that is not the caller's to fix.
 	 */
 	private function refusalFor(Throwable $exception): DraftActivationRefusedException {
-		if ($this->findings->isPayloadRefusal(exception: $exception) === true) {
-			return $this->invalid(findings: $this->findings->fromThrowable(exception: $exception));
+		if ($exception instanceof DraftAlreadyLeftException) {
+			return $this->alreadyLeft();
+		}
+
+		if ($this->checks->findings->isPayloadRefusal(exception: $exception) === true) {
+			return $this->invalid(findings: $this->checks->findings->fromThrowable(exception: $exception));
 		}
 
 		if ($exception instanceof NotAuthorizedException) {
 			return new DraftActivationRefusedException(
-				message: $this->l10n->t('You may not save this object.'),
+				message: $this->checks->l10n->t('You may not save this object.'),
 				reason: DraftActivationRefusedException::NOT_THE_OWNER
 			);
 		}
 
 		throw $exception;
 	}//end refusalFor()
+
+	/**
+	 * The 409 refusal for a draft a parallel request already made definitive.
+	 *
+	 * @return DraftActivationRefusedException The refusal.
+	 */
+	private function alreadyLeft(): DraftActivationRefusedException {
+		return new DraftActivationRefusedException(
+			message: $this->checks->l10n->t('This is not a draft, so there is nothing to make definitive.'),
+			reason: DraftActivationRefusedException::NOT_A_DRAFT
+		);
+	}//end alreadyLeft()
 
 	/**
 	 * The 422 refusal.
@@ -280,7 +308,7 @@ class DraftActivation {
 	 */
 	private function invalid(array $findings): DraftActivationRefusedException {
 		return new DraftActivationRefusedException(
-			message: $this->l10n->t('This draft is not complete yet. Check the fields marked below.'),
+			message: $this->checks->l10n->t('This draft is not complete yet. Check the fields marked below.'),
 			reason: DraftActivationRefusedException::INVALID,
 			findings: $findings
 		);

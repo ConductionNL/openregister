@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MigrationObject.loadSchemaProperties (golden) loads both schemas 1`] = `"{"fetched":[["/index.php/apps/openregister/api/schemas/2"]],"sourceProperties":[{"name":"a","type":"string","required":false}],"targetProperties":[{"name":"b","type":"number","required":false}],"log":[["initializePropertyMappings"],["convertMappingToUI"]],"errors":0}"`;
+
+exports[`MigrationObject.loadSchemaProperties (golden) stops on a failed fetch 1`] = `"{"fetched":[["/index.php/apps/openregister/api/schemas/2"]],"sourceProperties":[{"name":"a","type":"string","required":false}],"targetProperties":["old"],"log":[],"errors":1}"`;
+
+exports[`MigrationObject.loadSchemaProperties (golden) without a source schema 1`] = `"{"fetched":[],"sourceProperties":["old"],"targetProperties":["old"],"log":[],"errors":0}"`;
+
+exports[`MigrationObject.loadSchemaProperties (golden) without a target schema 1`] = `"{"fetched":[],"sourceProperties":["old"],"targetProperties":["old"],"log":[],"errors":0}"`;

@@ -77,6 +77,20 @@ class DecisionTableStoreTest extends TestCase {
 		$this->assertSame('Parcel carrier', $store->find('parcel-carrier')['name']);
 	}
 
+	/**
+	 * Two rows with one key (written around the save guard) are two tables in no fixed order: the lookup refuses
+	 * rather than answering with whichever the register returned first.
+	 *
+	 * @return void
+	 */
+	public function testTwoTablesWithOneKeyAreRefusedNotPickedFrom(): void {
+		$store = $this->store([['u-1', self::shippingTable()], ['u-2', self::shippingTable(carrier: 'air')]]);
+
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage('More than one decision table has the key "parcel-carrier" (u-1, u-2)');
+		$store->find('parcel-carrier');
+	}//end testTwoTablesWithOneKeyAreRefusedNotPickedFrom()
+
 	public function testATableIsFoundByUuid(): void {
 		$store = $this->store([['u-1', self::shippingTable()]]);
 		$this->assertSame('parcel-carrier', $store->find('u-1')['key']);

@@ -1,0 +1,358 @@
+{
+    "anonymous": {
+        "OCP\\Files\\Events\\Node\\NodeCreatedEvent": [
+            [
+                "file.created",
+                [],
+                null,
+                {
+                    "payload": {
+                        "fileId": 5,
+                        "path": "/u/files/a.txt",
+                        "name": "a.txt",
+                        "mimetype": "text/plain"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeCreatedEvent broken": [
+            [
+                "file.created",
+                [],
+                null,
+                {
+                    "payload": []
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeWrittenEvent": [
+            [
+                "file.updated",
+                [],
+                null,
+                {
+                    "payload": {
+                        "fileId": 5,
+                        "path": "/u/files/a.txt",
+                        "name": "a.txt",
+                        "mimetype": "text/plain"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeWrittenEvent broken": [
+            [
+                "file.updated",
+                [],
+                null,
+                {
+                    "payload": []
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeDeletedEvent": [
+            [
+                "file.deleted",
+                [],
+                null,
+                {
+                    "payload": {
+                        "fileId": 5,
+                        "path": "/u/files/a.txt",
+                        "name": "a.txt",
+                        "mimetype": "text/plain"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeDeletedEvent broken": [
+            [
+                "file.deleted",
+                [],
+                null,
+                {
+                    "payload": []
+                }
+            ]
+        ],
+        "OCP\\Share\\Events\\ShareCreatedEvent": [
+            [
+                "share.created",
+                [],
+                null,
+                {
+                    "payload": {
+                        "shareId": "7",
+                        "nodeId": 99,
+                        "shareType": 3,
+                        "sharedWith": "bob",
+                        "path": "/u/files/a.txt"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Share\\Events\\ShareCreatedEvent broken": [
+            [
+                "share.created",
+                [],
+                null,
+                {
+                    "payload": {
+                        "shareId": "7",
+                        "nodeId": 99,
+                        "shareType": 3,
+                        "sharedWith": "bob"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Share\\Events\\ShareDeletedEvent": [
+            [
+                "share.deleted",
+                [],
+                null,
+                {
+                    "payload": {
+                        "shareId": "7",
+                        "nodeId": 99,
+                        "shareType": 3,
+                        "sharedWith": "bob",
+                        "path": "/u/files/a.txt"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Share\\Events\\ShareDeletedEvent broken": [
+            [
+                "share.deleted",
+                [],
+                null,
+                {
+                    "payload": {
+                        "shareId": "7",
+                        "nodeId": 99,
+                        "shareType": 3,
+                        "sharedWith": "bob"
+                    }
+                }
+            ]
+        ],
+        "OCP\\User\\Events\\UserCreatedEvent": [
+            [
+                "user.created",
+                [],
+                null,
+                {
+                    "payload": {
+                        "uid": "carol"
+                    }
+                }
+            ]
+        ],
+        "OCP\\User\\Events\\UserDeletedEvent": [
+            [
+                "user.deleted",
+                [],
+                null,
+                {
+                    "payload": {
+                        "uid": "dave"
+                    }
+                }
+            ]
+        ],
+        "path unreadable": [
+            [
+                "file.updated",
+                [],
+                null,
+                {
+                    "payload": {
+                        "fileId": 5,
+                        "name": "a.txt",
+                        "mimetype": "text/plain"
+                    }
+                }
+            ]
+        ],
+        "plain": []
+    },
+    "signed in": {
+        "OCP\\Files\\Events\\Node\\NodeCreatedEvent": [
+            [
+                "file.created",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "fileId": 5,
+                        "path": "/u/files/a.txt",
+                        "name": "a.txt",
+                        "mimetype": "text/plain"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeCreatedEvent broken": [
+            [
+                "file.created",
+                [],
+                "erin",
+                {
+                    "payload": []
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeWrittenEvent": [
+            [
+                "file.updated",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "fileId": 5,
+                        "path": "/u/files/a.txt",
+                        "name": "a.txt",
+                        "mimetype": "text/plain"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeWrittenEvent broken": [
+            [
+                "file.updated",
+                [],
+                "erin",
+                {
+                    "payload": []
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeDeletedEvent": [
+            [
+                "file.deleted",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "fileId": 5,
+                        "path": "/u/files/a.txt",
+                        "name": "a.txt",
+                        "mimetype": "text/plain"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Files\\Events\\Node\\NodeDeletedEvent broken": [
+            [
+                "file.deleted",
+                [],
+                "erin",
+                {
+                    "payload": []
+                }
+            ]
+        ],
+        "OCP\\Share\\Events\\ShareCreatedEvent": [
+            [
+                "share.created",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "shareId": "7",
+                        "nodeId": 99,
+                        "shareType": 3,
+                        "sharedWith": "bob",
+                        "path": "/u/files/a.txt"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Share\\Events\\ShareCreatedEvent broken": [
+            [
+                "share.created",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "shareId": "7",
+                        "nodeId": 99,
+                        "shareType": 3,
+                        "sharedWith": "bob"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Share\\Events\\ShareDeletedEvent": [
+            [
+                "share.deleted",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "shareId": "7",
+                        "nodeId": 99,
+                        "shareType": 3,
+                        "sharedWith": "bob",
+                        "path": "/u/files/a.txt"
+                    }
+                }
+            ]
+        ],
+        "OCP\\Share\\Events\\ShareDeletedEvent broken": [
+            [
+                "share.deleted",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "shareId": "7",
+                        "nodeId": 99,
+                        "shareType": 3,
+                        "sharedWith": "bob"
+                    }
+                }
+            ]
+        ],
+        "OCP\\User\\Events\\UserCreatedEvent": [
+            [
+                "user.created",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "uid": "carol"
+                    }
+                }
+            ]
+        ],
+        "OCP\\User\\Events\\UserDeletedEvent": [
+            [
+                "user.deleted",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "uid": "dave"
+                    }
+                }
+            ]
+        ],
+        "path unreadable": [
+            [
+                "file.updated",
+                [],
+                "erin",
+                {
+                    "payload": {
+                        "fileId": 5,
+                        "name": "a.txt",
+                        "mimetype": "text/plain"
+                    }
+                }
+            ]
+        ],
+        "plain": []
+    }
+}

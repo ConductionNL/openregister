@@ -32,9 +32,6 @@ use OCP\EventDispatcher\Event;
 /**
  * One email a flow sent, with who, what and on whose behalf.
  *
- * @SuppressWarnings(PHPMD.ExcessiveParameterList) The event is a value carrier;
- * each constructor argument is one field of the published contract.
- *
  * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
  */
 class FlowEmailSentEvent extends Event {
@@ -52,30 +49,14 @@ class FlowEmailSentEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param string|null $register The register of the item the email was about, when the item is an object.
-	 * @param string|null $schema The schema of the item the email was about, when the item is an object.
-	 * @param string|null $objectUuid The uuid of the object the email was about.
-	 * @param string $recipient Who the email went to: an address for an external recipient, a uid for a user.
-	 * @param string $channelKind Whether the recipient was a Nextcloud user or an external address.
-	 * @param string $subject The rendered subject.
-	 * @param string $body The rendered body, as sent.
-	 * @param string|null $flowId The flow the sending run belongs to.
-	 * @param string|null $runId The run that sent the email.
-	 * @param string $stepName The step that sent the email: the node id when known, otherwise the node type.
-	 * @param string $actingUser The user the run acted as, the sender of record.
+	 * @param FlowEmailItem $item The item the email was about.
+	 * @param FlowEmailMessage $message Who the email went to and what it said.
+	 * @param FlowEmailOrigin $origin The flow, run and step that sent it, and the acting user.
 	 */
 	public function __construct(
-		private readonly ?string $register,
-		private readonly ?string $schema,
-		private readonly ?string $objectUuid,
-		private readonly string $recipient,
-		private readonly string $channelKind,
-		private readonly string $subject,
-		private readonly string $body,
-		private readonly ?string $flowId,
-		private readonly ?string $runId,
-		private readonly string $stepName,
-		private readonly string $actingUser,
+		private readonly FlowEmailItem $item,
+		private readonly FlowEmailMessage $message,
+		private readonly FlowEmailOrigin $origin,
 	) {
 		parent::__construct();
 
@@ -89,7 +70,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getRegister(): ?string {
-		return $this->register;
+		return $this->item->register;
 	}//end getRegister()
 
 	/**
@@ -100,7 +81,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getSchema(): ?string {
-		return $this->schema;
+		return $this->item->schema;
 	}//end getSchema()
 
 	/**
@@ -111,7 +92,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getObjectUuid(): ?string {
-		return $this->objectUuid;
+		return $this->item->objectUuid;
 	}//end getObjectUuid()
 
 	/**
@@ -122,7 +103,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getRecipient(): string {
-		return $this->recipient;
+		return $this->message->recipient;
 	}//end getRecipient()
 
 	/**
@@ -133,7 +114,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getChannelKind(): string {
-		return $this->channelKind;
+		return $this->message->channelKind;
 	}//end getChannelKind()
 
 	/**
@@ -144,7 +125,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getSubject(): string {
-		return $this->subject;
+		return $this->message->subject;
 	}//end getSubject()
 
 	/**
@@ -155,7 +136,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getBody(): string {
-		return $this->body;
+		return $this->message->body;
 	}//end getBody()
 
 	/**
@@ -166,7 +147,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getFlowId(): ?string {
-		return $this->flowId;
+		return $this->origin->flowId;
 	}//end getFlowId()
 
 	/**
@@ -177,7 +158,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getRunId(): ?string {
-		return $this->runId;
+		return $this->origin->runId;
 	}//end getRunId()
 
 	/**
@@ -188,7 +169,7 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getStepName(): string {
-		return $this->stepName;
+		return $this->origin->stepName;
 	}//end getStepName()
 
 	/**
@@ -199,6 +180,6 @@ class FlowEmailSentEvent extends Event {
 	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function getActingUser(): string {
-		return $this->actingUser;
+		return $this->origin->actingUser;
 	}//end getActingUser()
 }//end class

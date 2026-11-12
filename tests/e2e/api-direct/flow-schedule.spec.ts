@@ -34,6 +34,14 @@ const runId = `e2e-sched-${Date.now()}`
 /** The uid a scheduled run acts as. ADR-099: a schedule must name somebody. */
 const ADMIN = process.env.NEXTCLOUD_ADMIN_USER || 'admin'
 
+/**
+ * Wait until the next whole minute has passed, plus a small margin.
+ */
+async function waitPastNextMinute(): Promise<void> {
+	const ms = 60_000 - (Date.now() % 60_000) + 2_000
+	await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function occ(args: string): string {
 	if (CONTAINER === null) {
 		throw new Error('NC_CONTAINER is not set; refusing to guess a container.')
@@ -147,6 +155,7 @@ test.describe('Scheduled flow trigger', () => {
 			jobId === null,
 			'FlowScheduleWorker not reachable via occ (not on the dev host)',
 		)
+		test.setTimeout(120_000)
 
 		// 🔴 AUTHORED THROUGH /api/flows, NOT AS A REGISTER OBJECT.
 		//
@@ -212,7 +221,9 @@ test.describe('Scheduled flow trigger', () => {
 		expect(uuid).toBeTruthy()
 		created.push(uuid)
 
-		// Tick the schedule worker; a flow never fired before is due at once.
+		// A never-fired flow is measured from its save, so the tick must come
+		// after the next whole minute for `* * * * *` to be due.
+		await waitPastNextMinute()
 		occ(`background-job:execute ${jobId} --force-execute`)
 
 		const hist = await request.get(`${API}/flow-runs?flowId=${uuid}`)

@@ -16,6 +16,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\IDBConnection;
 use OCP\IUserManager;
@@ -57,6 +58,24 @@ class LinkedEntityEnricher {
 		'_talk' => 'enrichTalk',
 		'_deck' => 'enrichDeck',
 	];
+
+	/**
+	 * Raw SQL on foreign app tables (see class docblock), one query per linked type.
+	 */
+	private const MAIL_SQL = 'SELECT subject, `from` AS sender, sent_at FROM *PREFIX*mail_messages WHERE id = ? LIMIT 1';
+
+	private const CONTACT_SQL = 'SELECT carddata FROM *PREFIX*cards WHERE uid = ? LIMIT 1';
+
+	private const CALENDAR_SQL = 'SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1';
+
+	private const TALK_SQL = 'SELECT name, type FROM *PREFIX*talk_rooms WHERE token = ? LIMIT 1';
+
+	private const DECK_SQL = 'SELECT c.title, b.title AS board_title, s.title AS stack_title
+                         FROM *PREFIX*deck_cards c
+                         JOIN *PREFIX*deck_stacks s ON c.stack_id = s.id
+                         JOIN *PREFIX*deck_boards b ON s.board_id = b.id
+                         WHERE c.id = ? AND b.id = ?
+                         LIMIT 1';
 
 	/**
 	 * Constructor for LinkedEntityEnricher.
@@ -115,42 +134,7 @@ class LinkedEntityEnricher {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function enrichMail(array $ids): array {
-		$results = [];
-
-		foreach ($ids as $id) {
-			$parts = explode('/', $id, 2);
-			if (count(value: $parts) !== 2) {
-				$results[] = $this->notFoundResult(id: $id);
-				continue;
-			}
-
-			[, $messageId] = $parts;
-
-			try {
-				// Raw SQL: foreign Mail-app table (see class docblock).
-				$sql = 'SELECT subject, `from` AS sender, sent_at FROM oc_mail_messages WHERE id = ? LIMIT 1';
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute([(int)$messageId]);
-				$row = $stmt->fetch();
-
-				if ($row === false) {
-					$results[] = $this->notFoundResult(id: $id);
-					continue;
-				}
-
-				$results[] = [
-					'id' => $id,
-					'subject' => $row['subject'] ?? '',
-					'sender' => $row['sender'] ?? '',
-					'date' => $row['sent_at'] ?? null,
-				];
-			} catch (\Exception $e) {
-				$this->logger->debug('[LinkedEntityEnricher] Mail enrichment failed', ['id' => $id, 'error' => $e->getMessage()]);
-				$results[] = $this->notFoundResult(id: $id);
-			}//end try
-		}//end foreach
-
-		return $results;
+		return $this->enrichEach(ids: $ids, entry: $this->mailEntry(...));
 	}//end enrichMail()
 
 	/**
@@ -163,38 +147,7 @@ class LinkedEntityEnricher {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function enrichContacts(array $ids): array {
-		$results = [];
-
-		foreach ($ids as $id) {
-			try {
-				// Raw SQL: foreign DAV/Contacts table (see class docblock).
-				$sql = 'SELECT carddata FROM oc_cards WHERE uid = ? LIMIT 1';
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute([$id]);
-				$row = $stmt->fetch();
-
-				if ($row === false) {
-					$results[] = $this->notFoundResult(id: $id);
-					continue;
-				}
-
-				// Parse minimal vCard data.
-				$carddata = $row['carddata'] ?? '';
-				$name = $this->extractVcardField(carddata: $carddata, field: 'FN');
-				$email = $this->extractVcardField(carddata: $carddata, field: 'EMAIL');
-
-				$results[] = [
-					'id' => $id,
-					'name' => $name ?? $id,
-					'email' => $email,
-				];
-			} catch (\Exception $e) {
-				$this->logger->debug('[LinkedEntityEnricher] Contact enrichment failed', ['id' => $id, 'error' => $e->getMessage()]);
-				$results[] = $this->notFoundResult(id: $id);
-			}//end try
-		}//end foreach
-
-		return $results;
+		return $this->enrichEach(ids: $ids, entry: $this->contactEntry(...));
 	}//end enrichContacts()
 
 	/**
@@ -207,29 +160,7 @@ class LinkedEntityEnricher {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function enrichNotes(array $ids): array {
-		$results = [];
-
-		foreach ($ids as $id) {
-			try {
-				$comment = $this->commentsManager->get($id);
-				$actor = $this->userManager->get($comment->getActorId());
-				$authorName = $comment->getActorId();
-				if ($actor !== null) {
-					$authorName = $actor->getDisplayName();
-				}
-
-				$results[] = [
-					'id' => $id,
-					'message' => $comment->getMessage(),
-					'author' => $authorName,
-					'date' => $comment->getCreationDateTime()->format('c'),
-				];
-			} catch (\Exception $e) {
-				$results[] = $this->notFoundResult(id: $id);
-			}
-		}
-
-		return $results;
+		return $this->enrichEach(ids: $ids, entry: $this->noteEntry(...));
 	}//end enrichNotes()
 
 	/**
@@ -244,46 +175,7 @@ class LinkedEntityEnricher {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function enrichTodos(array $ids): array {
-		$results = [];
-
-		foreach ($ids as $id) {
-			$parts = explode('/', $id, 2);
-			if (count(value: $parts) !== 2) {
-				$results[] = $this->notFoundResult(id: $id);
-				continue;
-			}
-
-			[$calendarId, $uid] = $parts;
-
-			try {
-				// Raw SQL: foreign DAV/Calendar table (see class docblock).
-				$sql = 'SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1';
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute([(int)$calendarId, $uid]);
-				$row = $stmt->fetch();
-
-				if ($row === false) {
-					$results[] = $this->notFoundResult(id: $id);
-					continue;
-				}
-
-				$caldata = $row['calendardata'] ?? '';
-				$summary = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
-				$status = $this->extractIcalField(caldata: $caldata, field: 'STATUS');
-				$due = $this->extractIcalField(caldata: $caldata, field: 'DUE');
-
-				$results[] = [
-					'id' => $id,
-					'title' => $summary ?? '',
-					'status' => $status ?? 'NEEDS-ACTION',
-					'due' => $due,
-				];
-			} catch (\Exception $e) {
-				$results[] = $this->notFoundResult(id: $id);
-			}//end try
-		}//end foreach
-
-		return $results;
+		return $this->enrichEach(ids: $ids, entry: $this->todoEntry(...));
 	}//end enrichTodos()
 
 	/**
@@ -298,49 +190,30 @@ class LinkedEntityEnricher {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function enrichCalendar(array $ids): array {
-		$results = [];
-
-		foreach ($ids as $id) {
-			$parts = explode('/', $id, 2);
-			if (count(value: $parts) !== 2) {
-				$results[] = $this->notFoundResult(id: $id);
-				continue;
-			}
-
-			[$calendarId, $uid] = $parts;
-
-			try {
-				// Raw SQL: foreign DAV/Calendar table (see class docblock).
-				$sql = 'SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1';
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute([(int)$calendarId, $uid]);
-				$row = $stmt->fetch();
-
-				if ($row === false) {
-					$results[] = $this->notFoundResult(id: $id);
-					continue;
-				}
-
-				$caldata = $row['calendardata'] ?? '';
-				$summary = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
-				$dtstart = $this->extractIcalField(caldata: $caldata, field: 'DTSTART');
-				$dtend = $this->extractIcalField(caldata: $caldata, field: 'DTEND');
-				$location = $this->extractIcalField(caldata: $caldata, field: 'LOCATION');
-
-				$results[] = [
-					'id' => $id,
-					'title' => $summary ?? '',
-					'start' => $dtstart,
-					'end' => $dtend,
-					'location' => $location,
-				];
-			} catch (\Exception $e) {
-				$results[] = $this->notFoundResult(id: $id);
-			}//end try
-		}//end foreach
-
-		return $results;
+		return $this->enrichEach(ids: $ids, entry: $this->eventEntry(...));
 	}//end enrichCalendar()
+
+	/**
+	 * The iCalendar text of a `{calendarId}/{uid}` id, or null when the id is
+	 * malformed, the object is absent or the lookup fails.
+	 *
+	 * @param string $id The calendar object id
+	 *
+	 * @return string|null
+	 */
+	private function calendarData(string $id): ?string {
+		$parts = explode('/', $id, 2);
+		if (count(value: $parts) !== 2) {
+			return null;
+		}
+
+		$row = $this->lookup(id: $id, query: new LinkedEntityQuery(sql: self::CALENDAR_SQL, params: [(int)$parts[0], $parts[1]]));
+		if ($row === false) {
+			return null;
+		}
+
+		return ($row['calendardata'] ?? '');
+	}//end calendarData()
 
 	/**
 	 * Enrich Talk conversation tokens to full conversation objects.
@@ -352,32 +225,7 @@ class LinkedEntityEnricher {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function enrichTalk(array $ids): array {
-		$results = [];
-
-		foreach ($ids as $id) {
-			try {
-				// Raw SQL: foreign Talk-app table (see class docblock).
-				$sql = 'SELECT name, type FROM oc_talk_rooms WHERE token = ? LIMIT 1';
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute([$id]);
-				$row = $stmt->fetch();
-
-				if ($row === false) {
-					$results[] = $this->notFoundResult(id: $id);
-					continue;
-				}
-
-				$results[] = [
-					'id' => $id,
-					'name' => $row['name'] ?? '',
-					'type' => (int)($row['type'] ?? 0),
-				];
-			} catch (\Exception $e) {
-				$results[] = $this->notFoundResult(id: $id);
-			}
-		}//end foreach
-
-		return $results;
+		return $this->enrichEach(ids: $ids, entry: $this->talkEntry(...));
 	}//end enrichTalk()
 
 	/**
@@ -392,47 +240,225 @@ class LinkedEntityEnricher {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function enrichDeck(array $ids): array {
+		return $this->enrichEach(ids: $ids, entry: $this->deckEntry(...));
+	}//end enrichDeck()
+
+	/**
+	 * Enrich every id with one entry builder, as a list in id order.
+	 *
+	 * @param array    $ids   The linked ids.
+	 * @param callable $entry Builds the entry of one id.
+	 *
+	 * @return array The enriched entries.
+	 */
+	private function enrichEach(array $ids, callable $entry): array {
 		$results = [];
-
 		foreach ($ids as $id) {
-			$parts = explode('/', $id, 2);
-			if (count(value: $parts) !== 2) {
-				$results[] = $this->notFoundResult(id: $id);
-				continue;
-			}
-
-			[$boardId, $cardId] = $parts;
-
-			try {
-				// Raw SQL: foreign Deck-app tables joined together (see class docblock).
-				$sql = 'SELECT c.title, b.title AS board_title, s.title AS stack_title
-                         FROM oc_deck_cards c
-                         JOIN oc_deck_stacks s ON c.stack_id = s.id
-                         JOIN oc_deck_boards b ON s.board_id = b.id
-                         WHERE c.id = ? AND b.id = ?
-                         LIMIT 1';
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute([(int)$cardId, (int)$boardId]);
-				$row = $stmt->fetch();
-
-				if ($row === false) {
-					$results[] = $this->notFoundResult(id: $id);
-					continue;
-				}
-
-				$results[] = [
-					'id' => $id,
-					'title' => $row['title'] ?? '',
-					'board' => $row['board_title'] ?? '',
-					'stack' => $row['stack_title'] ?? '',
-				];
-			} catch (\Exception $e) {
-				$results[] = $this->notFoundResult(id: $id);
-			}//end try
-		}//end foreach
+			$results[] = $entry($id);
+		}
 
 		return $results;
-	}//end enrichDeck()
+	}//end enrichEach()
+
+	/**
+	 * Run one foreign-table query and fetch its first row.
+	 *
+	 * @param mixed             $id    The linked id, for the failure log.
+	 * @param LinkedEntityQuery $query The query, its parameters and its failure line.
+	 *
+	 * @return mixed The row, or false when there is none or the query failed.
+	 */
+	private function lookup(mixed $id, LinkedEntityQuery $query): mixed {
+		try {
+			$stmt = $this->db->prepare($query->sql);
+			$stmt->execute($query->params);
+			return $stmt->fetch();
+		} catch (\Exception $e) {
+			if ($query->failure !== null) {
+				$this->logger->debug($query->failure, ['id' => $id, 'error' => $e->getMessage()]);
+			}
+
+			return false;
+		}
+	}//end lookup()
+
+	/**
+	 * The entry of one mail id, format "{accountId}/{messageId}".
+	 *
+	 * @param mixed $id The mail id.
+	 *
+	 * @return array The mail entry, or the not-found entry.
+	 */
+	private function mailEntry(mixed $id): array {
+		$parts = explode('/', $id, 2);
+		if (count(value: $parts) !== 2) {
+			return $this->notFoundResult(id: $id);
+		}
+
+		$row = $this->lookup(id: $id, query: self::mailQuery(messageId: $parts[1]));
+		if ($row === false) {
+			return $this->notFoundResult(id: $id);
+		}
+
+		return ['id' => $id, 'subject' => $row['subject'] ?? '', 'sender' => $row['sender'] ?? '', 'date' => $row['sent_at'] ?? null];
+	}//end mailEntry()
+
+	/**
+	 * The lookup of one Mail message.
+	 *
+	 * @param string $messageId The message id part of the linked id.
+	 *
+	 * @return LinkedEntityQuery
+	 */
+	private static function mailQuery(string $messageId): LinkedEntityQuery {
+		return new LinkedEntityQuery(
+			sql: self::MAIL_SQL,
+			params: [(int)$messageId],
+			failure: '[LinkedEntityEnricher] Mail enrichment failed'
+		);
+	}//end mailQuery()
+
+	/**
+	 * The entry of one contact UID, read from its minimal vCard data.
+	 *
+	 * @param mixed $id The contact UID.
+	 *
+	 * @return array The contact entry, or the not-found entry.
+	 */
+	private function contactEntry(mixed $id): array {
+		$query = new LinkedEntityQuery(
+			sql: self::CONTACT_SQL,
+			params: [$id],
+			failure: '[LinkedEntityEnricher] Contact enrichment failed'
+		);
+		$row = $this->lookup(id: $id, query: $query);
+		if ($row === false) {
+			return $this->notFoundResult(id: $id);
+		}
+
+		$carddata = $row['carddata'] ?? '';
+		$name     = $this->extractVcardField(carddata: $carddata, field: 'FN');
+
+		return ['id' => $id, 'name' => $name ?? $id, 'email' => $this->extractVcardField(carddata: $carddata, field: 'EMAIL')];
+	}//end contactEntry()
+
+	/**
+	 * The entry of one note (comment) id, via ICommentsManager.
+	 *
+	 * @param mixed $id The comment id.
+	 *
+	 * @return array The note entry, or the not-found entry.
+	 */
+	private function noteEntry(mixed $id): array {
+		try {
+			$comment = $this->commentsManager->get($id);
+
+			return [
+				'id' => $id,
+				'message' => $comment->getMessage(),
+				'author' => $this->authorName(comment: $comment),
+				'date' => $comment->getCreationDateTime()->format('c'),
+			];
+		} catch (\Exception $e) {
+			return $this->notFoundResult(id: $id);
+		}
+	}//end noteEntry()
+
+	/**
+	 * The display name of a comment's author, or the actor id when the user is unknown.
+	 *
+	 * @param IComment $comment The comment.
+	 *
+	 * @return string The author name.
+	 */
+	private function authorName(IComment $comment): string {
+		$actor = $this->userManager->get($comment->getActorId());
+		if ($actor !== null) {
+			return $actor->getDisplayName();
+		}
+
+		return $comment->getActorId();
+	}//end authorName()
+
+	/**
+	 * The entry of one todo id, format "{calendarId}/{uid}".
+	 *
+	 * @param mixed $id The todo id.
+	 *
+	 * @return array The todo entry, or the not-found entry.
+	 */
+	private function todoEntry(mixed $id): array {
+		$caldata = $this->calendarData(id: $id);
+		if ($caldata === null) {
+			return $this->notFoundResult(id: $id);
+		}
+
+		return [
+			'id' => $id,
+			'title' => $this->extractIcalField(caldata: $caldata, field: 'SUMMARY') ?? '',
+			'status' => $this->extractIcalField(caldata: $caldata, field: 'STATUS') ?? 'NEEDS-ACTION',
+			'due' => $this->extractIcalField(caldata: $caldata, field: 'DUE'),
+		];
+	}//end todoEntry()
+
+	/**
+	 * The entry of one calendar event id, format "{calendarId}/{uid}".
+	 *
+	 * @param mixed $id The event id.
+	 *
+	 * @return array The event entry, or the not-found entry.
+	 */
+	private function eventEntry(mixed $id): array {
+		$caldata = $this->calendarData(id: $id);
+		if ($caldata === null) {
+			return $this->notFoundResult(id: $id);
+		}
+
+		return [
+			'id' => $id,
+			'title' => $this->extractIcalField(caldata: $caldata, field: 'SUMMARY') ?? '',
+			'start' => $this->extractIcalField(caldata: $caldata, field: 'DTSTART'),
+			'end' => $this->extractIcalField(caldata: $caldata, field: 'DTEND'),
+			'location' => $this->extractIcalField(caldata: $caldata, field: 'LOCATION'),
+		];
+	}//end eventEntry()
+
+	/**
+	 * The entry of one Talk conversation token.
+	 *
+	 * @param mixed $id The Talk token.
+	 *
+	 * @return array The Talk entry, or the not-found entry.
+	 */
+	private function talkEntry(mixed $id): array {
+		$row = $this->lookup(id: $id, query: new LinkedEntityQuery(sql: self::TALK_SQL, params: [$id]));
+		if ($row === false) {
+			return $this->notFoundResult(id: $id);
+		}
+
+		return ['id' => $id, 'name' => $row['name'] ?? '', 'type' => (int)($row['type'] ?? 0)];
+	}//end talkEntry()
+
+	/**
+	 * The entry of one Deck card id, format "{boardId}/{cardId}".
+	 *
+	 * @param mixed $id The Deck card id.
+	 *
+	 * @return array The Deck entry, or the not-found entry.
+	 */
+	private function deckEntry(mixed $id): array {
+		$parts = explode('/', $id, 2);
+		if (count(value: $parts) !== 2) {
+			return $this->notFoundResult(id: $id);
+		}
+
+		$row = $this->lookup(id: $id, query: new LinkedEntityQuery(sql: self::DECK_SQL, params: [(int)$parts[1], (int)$parts[0]]));
+		if ($row === false) {
+			return $this->notFoundResult(id: $id);
+		}
+
+		return ['id' => $id, 'title' => $row['title'] ?? '', 'board' => $row['board_title'] ?? '', 'stack' => $row['stack_title'] ?? ''];
+	}//end deckEntry()
 
 	/**
 	 * Create a "not found" fallback result for a missing entity.

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\Support\WebhookDeliveryStores;
 use OCA\OpenRegister\BackgroundJob\WebhookRetryJob;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -33,8 +35,7 @@ class WebhookRetryJobTest extends TestCase {
 
 		$this->job = new WebhookRetryJob(
 			$timeFactory,
-			$this->webhookMapper,
-			$this->webhookLogMapper,
+			new WebhookDeliveryStores($this->webhookMapper, $this->webhookLogMapper),
 			$this->webhookService,
 			$this->logger,
 		);
@@ -133,7 +134,7 @@ class WebhookRetryJobTest extends TestCase {
 
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
-			->with($webhook, 'SomeEvent', $this->isType('array'), 3)
+			->with($this->callback(fn (WebhookDelivery $d): bool => $d->webhook === $webhook && $d->event->name === 'SomeEvent' && is_array($d->event->payload) && $d->attempt === 3))
 			->willReturn(true);
 
 		$this->logger->expects($this->atLeastOnce())->method('info');
@@ -220,7 +221,7 @@ class WebhookRetryJobTest extends TestCase {
 
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
-			->with($webhook, 'TestEvent', $this->isType('array'), 3)
+			->with($this->callback(fn (WebhookDelivery $d): bool => $d->webhook === $webhook && $d->event->name === 'TestEvent' && is_array($d->event->payload) && $d->attempt === 3))
 			->willReturn(true);
 
 		$this->runJob(null);
@@ -262,7 +263,7 @@ class WebhookRetryJobTest extends TestCase {
 
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
-			->with($webhook, 'TestEvent', $this->isType('array'), 5)
+			->with($this->callback(fn (WebhookDelivery $d): bool => $d->webhook === $webhook && $d->event->name === 'TestEvent' && is_array($d->event->payload) && $d->attempt === 5))
 			->willReturn(true);
 
 		$this->runJob(null);

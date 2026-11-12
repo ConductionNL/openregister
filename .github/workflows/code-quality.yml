@@ -41,8 +41,7 @@ on:
     # none of which run on a pull_request event.
     branches:
       - main
-      - beta
-      - development
+      - 'stable*'
   pull_request:
     # `synchronize` — a push to an open PR — is what was missing. Without it the
     # quality suite runs ONCE, when the PR is opened, and every commit after
@@ -64,7 +63,7 @@ on:
     # hermiq's copy of this workflow omits `types:` entirely, which defaults to
     # [opened, synchronize, reopened]. This repo is the outlier.
     types: [opened, reopened, synchronize]
-    branches: [main, beta, development]
+    branches: [main, 'stable*']
   workflow_dispatch:
 
 # Deduplicating a `push` run against the `pull_request` run for the SAME head
@@ -158,45 +157,25 @@ concurrency:
   # superseding really is correct.
   cancel-in-progress: ${{ github.event_name != 'push' }}
 
-# Permission CEILING for the called quality pipeline. GitHub statically
-# validates the called workflow's declared job permissions against this
-# grant — even for jobs that are disabled — so it must cover the maximum
-# any nested job declares: journeydoc-capture (contents+actions write),
-# update-baseline / features-extract (contents write), and the Quality
-# Report PR comment (issues / pull-requests write).
+# Read-only by default; the write grants sit on the job that needs them.
 permissions:
-  contents: write
-  actions: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 jobs:
   quality:
-    # SECOND CLAUSE: skip the run a STANDING release PR triggers.
-    #
-    # `Release: merge development into beta` is permanently open with
-    # `head_ref: development`, so every push to development fires this
-    # workflow TWICE on the SAME sha — once for `push`, once for that PR's
-    # `pull_request` event. The concurrency block above deliberately gives
-    # them separate lanes so the push run is not cancelled, which is right,
-    # and the consequence is that both run to completion.
-    #
-    # The PR run is the redundant one, not the push run: its head sha IS
-    # development's, which the push run already decided, and the push run
-    # carries jobs the PR run does not (Coverage Baseline Check, SBOM,
-    # Features Extract). Measured 2026-09-03: runs 33747123932 (push) and
-    # 33747129312 (pull_request), same sha b8eb72e2, four seconds apart.
-    #
-    # 20 of the fleet's 21 apps carry `beta` in `pull_request.branches` and
-    # so pay this on every development push. Removing `beta` from that list
-    # would also work and is worse: the `release/v*` and `sync/main-to-beta`
-    # PRs genuinely need their run, and they target `beta` too.
-    #
-    # A `development -> main` promotion PR is skipped by the same clause, for
-    # the same reason and just as correctly.
     if: >-
-      (github.event_name != 'push' || github.event.created != true)
-      && (github.event_name != 'pull_request' || github.head_ref != 'development')
+      github.event_name != 'push' || github.event.created != true
+    # Permission CEILING for the called quality pipeline. GitHub statically
+    # validates the called workflow's declared job permissions against this
+    # grant, even for jobs that are disabled, so it must cover the maximum
+    # any nested job declares: journeydoc-capture (contents+actions write),
+    # update-baseline / features-extract (contents write), and the Quality
+    # Report PR comment (issues / pull-requests write).
+    permissions:
+      contents: write
+      actions: write
+      issues: write
+      pull-requests: write
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openregister
@@ -229,6 +208,10 @@ jobs:
       enable-eslint: true
       enable-phpunit: true
       enable-newman: true
+      # An LLM stub plus integriq and hermiq, which chat-streaming and the flow
+      # engine collection need on a fresh instance. A script for the same eval
+      # reason as playwright-seed-command below; the path is relative to server/.
+      newman-seed-command: bash apps/openregister/tests/integration/ci/seed.sh
       # Playwright starts from a deliberately SMALL spec set rather than the
       # whole of tests/e2e (58 files, several of which write fixtures or shell
       # out to occ). A gate that is red on arrival is a gate nobody turns on —
@@ -331,6 +314,15 @@ jobs:
       # reconcile against and goes stale silently.
       # See https://github.com/ConductionNL/.github/tree/main/hydra-gates
       enable-hydra-gates: true
+      # Gate 122 (SIG unit ratchet) blocks: a unit this change adds or makes
+      # worse must stay at NLOC 60, McCabe 10 and at most 4 parameters, and a
+      # new duplicated fragment of 6+ lines fails. Units the change does not
+      # touch, or touches without making worse, are inherited and do not count.
+      hydra-gates-sig-blocking: true
+      # Maintainability floor: no rating in .maintainability-floor.json may drop
+      # more than 0.01 against the merge base (pull request) or below the
+      # committed floor (push). The floor is raised after improving merges.
+      enable-maintainability-floor: true
       # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
       # to @main, and this workflow is itself consumed at @main, so the two
       # sides move together and a gate fix reaches this repo without a commit
@@ -464,7 +456,10 @@ jobs:
       #
       # There is no .js/.json parity leg: l10n/*.js is the browser catalogue and
       # l10n/*.json the PHP one, separate sets with separate consumers.
-      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n"]'
+      #
+      # The frontend coverage ratchet runs in the `frontend-coverage` job below,
+      # not here: a frontend-checks leg cannot upload the report it produces.
+      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "test:newman-route-ratchet"]'
       # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
       #
       # The fleet's CI was not slow, it was QUEUED. A Code Quality run does
@@ -485,3 +480,62 @@ jobs:
       # branch and on the release PR into beta. Breadth moves from
       # per-commit to per-merge, it is not dropped.
       reduce-pr-matrix: true
+
+  # Jest line coverage of src/, enforced against the `vitest` key of
+  # tests/.coverage-baseline.json (floor = value - tolerance). The summary goes
+  # to the job summary and the full report (lcov, json-summary) to an artifact.
+  frontend-coverage:
+    if: >-
+      github.event_name != 'push' || github.event.created != true
+    runs-on: ubuntu-latest
+    name: "Frontend Coverage"
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Measure coverage and enforce the ratchet
+        run: |
+          set -o pipefail
+          npm run test:coverage-ratchet 2>&1 | tee coverage-ratchet.log
+
+      - name: Publish the coverage summary
+        if: always()
+        run: |
+          if [ ! -f coverage-frontend/coverage-summary.json ]; then
+            echo "No coverage report was produced." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node -e '
+            const t = require("./coverage-frontend/coverage-summary.json").total
+            const b = require("./tests/.coverage-baseline.json")
+            const rows = ["lines", "statements", "branches", "functions"]
+              .map((k) => `| ${k} | ${t[k].pct}% | ${t[k].covered}/${t[k].total} |`)
+            console.log(["### Frontend coverage (jest, src/)", "",
+              "| metric | coverage | covered/total |", "|---|---|---|", ...rows, "",
+              `Ratchet: lines must stay at or above ${(b.vitest - b.tolerance).toFixed(2)}% (baseline ${b.vitest}%, tolerance ${b.tolerance}).`,
+            ].join("\n"))
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: frontend-coverage
+          path: |
+            coverage-frontend/coverage-summary.json
+            coverage-frontend/lcov.info
+            coverage-ratchet.log
+          if-no-files-found: warn
+          retention-days: 14

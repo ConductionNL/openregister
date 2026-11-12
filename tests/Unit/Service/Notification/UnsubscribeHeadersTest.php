@@ -22,14 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\UnsubscribeHeaders;
+use OCA\OpenRegister\Notifications\Service\Notification\UnsubscribeHeaders;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingMessage;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingSymfonyMessage;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Service\Notification\UnsubscribeHeaders
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\UnsubscribeHeaders
  */
 class UnsubscribeHeadersTest extends TestCase {
 

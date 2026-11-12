@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use RuntimeException;
  * It names the property, because "validation failed" about a value the caller
  * never sent is the least actionable message the save path can produce.
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class ExpressionDefaultException extends RuntimeException {
 
@@ -58,7 +58,7 @@ final class ExpressionDefaultException extends RuntimeException {
 	 *
 	 * @return string The property name.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getProperty(): string {
 		return $this->property;
@@ -69,7 +69,7 @@ final class ExpressionDefaultException extends RuntimeException {
 	 *
 	 * @return array<string, mixed> The refusal envelope.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function toArray(): array {
 		return [

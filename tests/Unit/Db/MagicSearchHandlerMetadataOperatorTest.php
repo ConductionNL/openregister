@@ -46,6 +46,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\Schema;
 
 /**
  * Locks comparison-operator support on `@self` metadata filters, on both the
@@ -150,7 +153,7 @@ class MagicSearchHandlerMetadataOperatorTest extends TestCase {
 	private function invokeUnion(array $query): array {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildMetadataFilterConditionsSql');
 		$method->setAccessible(true);
-		return $method->invoke($this->handler, $query, $this->makeConnection(), true);
+		return $method->invoke($this->handler, new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: new Schema()), connection: $this->makeConnection(), isPostgres: true));
 	}//end invokeUnion()
 
 	/**

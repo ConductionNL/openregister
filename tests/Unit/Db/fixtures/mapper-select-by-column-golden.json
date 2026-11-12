@@ -1,0 +1,858 @@
+{
+    "AnalyticsSeriesMapper findByKey(series-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\AnalyticsSeries#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_analytics_series, NULL)",
+            "#1 param :p1 = series-1, 2",
+            "#1 expr.eq(series_key, :p1, NULL)",
+            "#1 where(eq(series_key, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "AnalyticsSeriesMapper findByKey(series-1) / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_analytics_series, NULL)",
+            "#1 param :p1 = series-1, 2",
+            "#1 expr.eq(series_key, :p1, NULL)",
+            "#1 where(eq(series_key, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "CalendarLinkMapper findByObjectUuid(obj-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\CalendarLink#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(dtstart, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "CalendarLinkMapper findByObjectUuid(obj-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(dtstart, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "CalendarLinkMapper findByObjectAndEvent(obj-1, ev-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\CalendarLink#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = ev-1, 2",
+            "#1 expr.eq(event_uid, :p2, NULL)",
+            "#1 andWhere(eq(event_uid, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "CalendarLinkMapper findByObjectAndEvent(obj-1, ev-1) / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = ev-1, 2",
+            "#1 expr.eq(event_uid, :p2, NULL)",
+            "#1 andWhere(eq(event_uid, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ExportProfileMapper find(11) / found": {
+        "result": "OCA\\OpenRegister\\Db\\ExportProfile#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_profiles, NULL)",
+            "#1 param :p1 = 11, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ExportProfileMapper find(11) / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_profiles, NULL)",
+            "#1 param :p1 = 11, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ExportProfileMapper findByUuid(uu-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\ExportProfile#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_profiles, NULL)",
+            "#1 param :p1 = uu-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ExportProfileMapper findByUuid(uu-1) / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_profiles, NULL)",
+            "#1 param :p1 = uu-1, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ExportProfileMapper findByOwner(alice) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\ExportProfile#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_profiles, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(owner, :p1, NULL)",
+            "#1 where(eq(owner, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ExportProfileMapper findByOwner(alice) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_profiles, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(owner, :p1, NULL)",
+            "#1 where(eq(owner, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ExportProfileMapper findAll() / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\ExportProfile#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_profiles, NULL)",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ExportProfileMapper findAll() / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_export_profiles, NULL)",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowClaimMapper findByRun(run-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\FlowClaim#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_claims, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 orderBy(place, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowClaimMapper findByRun(run-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_claims, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 orderBy(place, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowClaimMapper deleteByRun(run-1) / found": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_flow_claims, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "FlowClaimMapper deleteByRun(run-1) / missing": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_flow_claims, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "FlowClaimMapper deleteOrphans() / found": {
+        "result": 1,
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#2 delete(openregister_flow_claims, NULL)",
+            "#2 where(run_uuid NOT IN ((subquery #1)))",
+            "#2 executeStatement()"
+        ]
+    },
+    "FlowClaimMapper deleteOrphans() / missing": {
+        "result": 1,
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#2 delete(openregister_flow_claims, NULL)",
+            "#2 where(run_uuid NOT IN ((subquery #1)))",
+            "#2 executeStatement()"
+        ]
+    },
+    "FlowRunStepMapper findByRun(run-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\FlowRunStep#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_steps, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 orderBy(ordinal_path, ASC)",
+            "#1 addOrderBy(sequence, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowRunStepMapper findByRun(run-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_steps, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 orderBy(ordinal_path, ASC)",
+            "#1 addOrderBy(sequence, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowStreamMapper findByRun(run-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\FlowStream#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_streams, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 orderBy(ordinal_path, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowStreamMapper findByRun(run-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_streams, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 orderBy(ordinal_path, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowStreamMapper findByRunAndStream(run-1, st-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\FlowStream#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_streams, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 param :p2 = st-1, 2",
+            "#1 expr.eq(stream_id, :p2, NULL)",
+            "#1 andWhere(eq(stream_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowStreamMapper findByRunAndStream(run-1, st-1) / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_streams, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 param :p2 = st-1, 2",
+            "#1 expr.eq(stream_id, :p2, NULL)",
+            "#1 andWhere(eq(stream_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowStreamMapper deleteByRun(run-1) / found": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_flow_streams, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "FlowStreamMapper deleteByRun(run-1) / missing": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_flow_streams, NULL)",
+            "#1 param :p1 = run-1, 2",
+            "#1 expr.eq(run_uuid, :p1, NULL)",
+            "#1 where(eq(run_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "FlowStreamMapper deleteOrphans() / found": {
+        "result": 1,
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#2 delete(openregister_flow_streams, NULL)",
+            "#2 where(run_uuid NOT IN ((subquery #1)))",
+            "#2 executeStatement()"
+        ]
+    },
+    "FlowStreamMapper deleteOrphans() / missing": {
+        "result": 1,
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_flow_runs, NULL)",
+            "#2 delete(openregister_flow_streams, NULL)",
+            "#2 where(run_uuid NOT IN ((subquery #1)))",
+            "#2 executeStatement()"
+        ]
+    },
+    "FlowTimerEventMapper findByTimer(tm-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\FlowTimerEvent#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_timer_events, NULL)",
+            "#1 param :p1 = tm-1, 2",
+            "#1 expr.eq(timer_uuid, :p1, NULL)",
+            "#1 where(eq(timer_uuid, :p1, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowTimerEventMapper findByTimer(tm-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_timer_events, NULL)",
+            "#1 param :p1 = tm-1, 2",
+            "#1 expr.eq(timer_uuid, :p1, NULL)",
+            "#1 where(eq(timer_uuid, :p1, NULL))",
+            "#1 orderBy(created, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowTimerFireMapper findByTimer(tm-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\FlowTimerFire#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_timer_fires, NULL)",
+            "#1 param :p1 = tm-1, 2",
+            "#1 expr.eq(timer_uuid, :p1, NULL)",
+            "#1 where(eq(timer_uuid, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowTimerFireMapper findByTimer(tm-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_timer_fires, NULL)",
+            "#1 param :p1 = tm-1, 2",
+            "#1 expr.eq(timer_uuid, :p1, NULL)",
+            "#1 where(eq(timer_uuid, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowVersionMapper find(fl-1, 2) / found": {
+        "result": "OCA\\OpenRegister\\Db\\FlowVersion#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_versions, NULL)",
+            "#1 param :p1 = fl-1, 2",
+            "#1 expr.eq(flow_uuid, :p1, NULL)",
+            "#1 where(eq(flow_uuid, :p1, NULL))",
+            "#1 param :p2 = 2, 1",
+            "#1 expr.eq(version, :p2, NULL)",
+            "#1 andWhere(eq(version, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowVersionMapper find(fl-1, 2) / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_versions, NULL)",
+            "#1 param :p1 = fl-1, 2",
+            "#1 expr.eq(flow_uuid, :p1, NULL)",
+            "#1 where(eq(flow_uuid, :p1, NULL))",
+            "#1 param :p2 = 2, 1",
+            "#1 expr.eq(version, :p2, NULL)",
+            "#1 andWhere(eq(version, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowVersionMapper findPublished(fl-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\FlowVersion#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_versions, NULL)",
+            "#1 param :p1 = fl-1, 2",
+            "#1 expr.eq(flow_uuid, :p1, NULL)",
+            "#1 where(eq(flow_uuid, :p1, NULL))",
+            "#1 param :p2 = published, 2",
+            "#1 expr.eq(status, :p2, NULL)",
+            "#1 andWhere(eq(status, :p2, NULL))",
+            "#1 orderBy(version, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowVersionMapper findPublished(fl-1) / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_versions, NULL)",
+            "#1 param :p1 = fl-1, 2",
+            "#1 expr.eq(flow_uuid, :p1, NULL)",
+            "#1 where(eq(flow_uuid, :p1, NULL))",
+            "#1 param :p2 = published, 2",
+            "#1 expr.eq(status, :p2, NULL)",
+            "#1 andWhere(eq(status, :p2, NULL))",
+            "#1 orderBy(version, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowVersionMapper findAllForFlow(fl-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\FlowVersion#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_versions, NULL)",
+            "#1 param :p1 = fl-1, 2",
+            "#1 expr.eq(flow_uuid, :p1, NULL)",
+            "#1 where(eq(flow_uuid, :p1, NULL))",
+            "#1 orderBy(version, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowVersionMapper findAllForFlow(fl-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_versions, NULL)",
+            "#1 param :p1 = fl-1, 2",
+            "#1 expr.eq(flow_uuid, :p1, NULL)",
+            "#1 where(eq(flow_uuid, :p1, NULL))",
+            "#1 orderBy(version, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "MigrationPackMapper find(12) / found": {
+        "result": "OCA\\OpenRegister\\Db\\MigrationPack#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_migration_packs, NULL)",
+            "#1 param :p1 = 12, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "MigrationPackMapper find(12) / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_migration_packs, NULL)",
+            "#1 param :p1 = 12, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "MigrationPackMapper findByPackSlug(pack-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\MigrationPack#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_migration_packs, NULL)",
+            "#1 param :p1 = pack-1, 2",
+            "#1 expr.eq(pack_slug, :p1, NULL)",
+            "#1 where(eq(pack_slug, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "MigrationPackMapper findByPackSlug(pack-1) / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_migration_packs, NULL)",
+            "#1 param :p1 = pack-1, 2",
+            "#1 expr.eq(pack_slug, :p1, NULL)",
+            "#1 where(eq(pack_slug, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "MigrationPackMapper findAll() / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\MigrationPack#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_migration_packs, NULL)",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "MigrationPackMapper findAll() / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_migration_packs, NULL)",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskProjectionStateMapper findForTask(tk-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\TaskProjectionState#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_projections, NULL)",
+            "#1 param :p1 = tk-1, 2",
+            "#1 expr.eq(task_uuid, :p1, NULL)",
+            "#1 where(eq(task_uuid, :p1, NULL))",
+            "#1 param :p2 = caldav, 2",
+            "#1 expr.eq(surface, :p2, NULL)",
+            "#1 andWhere(eq(surface, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskProjectionStateMapper findForTask(tk-1) / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_projections, NULL)",
+            "#1 param :p1 = tk-1, 2",
+            "#1 expr.eq(task_uuid, :p1, NULL)",
+            "#1 where(eq(task_uuid, :p1, NULL))",
+            "#1 param :p2 = caldav, 2",
+            "#1 expr.eq(surface, :p2, NULL)",
+            "#1 andWhere(eq(surface, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskProjectionStateMapper findForTask(tk-1, push) / found": {
+        "result": "OCA\\OpenRegister\\Db\\TaskProjectionState#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_projections, NULL)",
+            "#1 param :p1 = tk-1, 2",
+            "#1 expr.eq(task_uuid, :p1, NULL)",
+            "#1 where(eq(task_uuid, :p1, NULL))",
+            "#1 param :p2 = push, 2",
+            "#1 expr.eq(surface, :p2, NULL)",
+            "#1 andWhere(eq(surface, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskProjectionStateMapper findForTask(tk-1, push) / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_projections, NULL)",
+            "#1 param :p1 = tk-1, 2",
+            "#1 expr.eq(task_uuid, :p1, NULL)",
+            "#1 where(eq(task_uuid, :p1, NULL))",
+            "#1 param :p2 = push, 2",
+            "#1 expr.eq(surface, :p2, NULL)",
+            "#1 andWhere(eq(surface, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskRelationMapper findForTask(13) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\TaskRelation#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_relations, NULL)",
+            "#1 param :p1 = 13, 1",
+            "#1 expr.eq(task_id, :p1, NULL)",
+            "#1 where(eq(task_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskRelationMapper findForTask(13) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_relations, NULL)",
+            "#1 param :p1 = 13, 1",
+            "#1 expr.eq(task_id, :p1, NULL)",
+            "#1 where(eq(task_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskRelationMapper findByObject(obj-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\TaskRelation#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_relations, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskRelationMapper findByObject(obj-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_relations, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskRelationMapper findByObject(obj-1, subject) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\TaskRelation#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_relations, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = subject, 2",
+            "#1 expr.eq(role, :p2, NULL)",
+            "#1 andWhere(eq(role, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskRelationMapper findByObject(obj-1, subject) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_relations, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 param :p2 = subject, 2",
+            "#1 expr.eq(role, :p2, NULL)",
+            "#1 andWhere(eq(role, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findByUuid(uu-2) / found": {
+        "result": "OCA\\OpenRegister\\Db\\TaskSequence#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = uu-2, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findByUuid(uu-2) / missing": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #1)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = uu-2, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 where(eq(uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findRunning(obj-1, tp-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\TaskSequence#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(anchor_object_uuid, :p1, NULL)",
+            "#1 where(eq(anchor_object_uuid, :p1, NULL))",
+            "#1 param :p2 = tp-1, 2",
+            "#1 expr.eq(template_id, :p2, NULL)",
+            "#1 andWhere(eq(template_id, :p2, NULL))",
+            "#1 param :p3 = running, 2",
+            "#1 expr.eq(status, :p3, NULL)",
+            "#1 andWhere(eq(status, :p3, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findRunning(obj-1, tp-1) / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(anchor_object_uuid, :p1, NULL)",
+            "#1 where(eq(anchor_object_uuid, :p1, NULL))",
+            "#1 param :p2 = tp-1, 2",
+            "#1 expr.eq(template_id, :p2, NULL)",
+            "#1 andWhere(eq(template_id, :p2, NULL))",
+            "#1 param :p3 = running, 2",
+            "#1 expr.eq(status, :p3, NULL)",
+            "#1 andWhere(eq(status, :p3, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findNewestForTemplate(tp-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\TaskSequence#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = tp-1, 2",
+            "#1 expr.eq(template_id, :p1, NULL)",
+            "#1 where(eq(template_id, :p1, NULL))",
+            "#1 orderBy(opened_at, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findNewestForTemplate(tp-1) / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = tp-1, 2",
+            "#1 expr.eq(template_id, :p1, NULL)",
+            "#1 where(eq(template_id, :p1, NULL))",
+            "#1 orderBy(opened_at, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findForAnchor(obj-1, tp-1) / found": {
+        "result": [
+            "OCA\\OpenRegister\\Db\\TaskSequence#3"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(anchor_object_uuid, :p1, NULL)",
+            "#1 where(eq(anchor_object_uuid, :p1, NULL))",
+            "#1 param :p2 = tp-1, 2",
+            "#1 expr.eq(template_id, :p2, NULL)",
+            "#1 andWhere(eq(template_id, :p2, NULL))",
+            "#1 orderBy(opened_at, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findForAnchor(obj-1, tp-1) / missing": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(anchor_object_uuid, :p1, NULL)",
+            "#1 where(eq(anchor_object_uuid, :p1, NULL))",
+            "#1 param :p2 = tp-1, 2",
+            "#1 expr.eq(template_id, :p2, NULL)",
+            "#1 andWhere(eq(template_id, :p2, NULL))",
+            "#1 orderBy(opened_at, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findNewestForAnchor(obj-1, tp-1) / found": {
+        "result": "OCA\\OpenRegister\\Db\\TaskSequence#3",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(anchor_object_uuid, :p1, NULL)",
+            "#1 where(eq(anchor_object_uuid, :p1, NULL))",
+            "#1 param :p2 = tp-1, 2",
+            "#1 expr.eq(template_id, :p2, NULL)",
+            "#1 andWhere(eq(template_id, :p2, NULL))",
+            "#1 orderBy(opened_at, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TaskSequenceMapper findNewestForAnchor(obj-1, tp-1) / missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_task_sequences, NULL)",
+            "#1 param :p1 = obj-1, 2",
+            "#1 expr.eq(anchor_object_uuid, :p1, NULL)",
+            "#1 where(eq(anchor_object_uuid, :p1, NULL))",
+            "#1 param :p2 = tp-1, 2",
+            "#1 expr.eq(template_id, :p2, NULL)",
+            "#1 andWhere(eq(template_id, :p2, NULL))",
+            "#1 orderBy(opened_at, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    }
+}

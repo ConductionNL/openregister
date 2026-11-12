@@ -1,0 +1,1042 @@
+{
+    "empty getMultitenancySettingsOnly": {
+        "result": {
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": true
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            }
+        },
+        "writes": []
+    },
+    "empty getOrganisationSettingsOnly": {
+        "result": {
+            "organisation": {
+                "default_organisation": null,
+                "auto_create_default_organisation": true
+            }
+        },
+        "writes": []
+    },
+    "empty getRbacSettingsOnly": {
+        "result": {
+            "rbac": {
+                "enabled": true,
+                "anonymousGroup": "public",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            }
+        },
+        "writes": []
+    },
+    "empty getSettings": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": true,
+                "anonymousGroup": "public",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 86400000,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": true,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 0,
+                "remaining": 0,
+                "complete": false,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 31,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": []
+    },
+    "invalid getMultitenancySettingsOnly": {
+        "result": {
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": true
+            },
+            "availableTenants": []
+        },
+        "writes": []
+    },
+    "invalid getOrganisationSettingsOnly": {
+        "result": {
+            "organisation": {
+                "default_organisation": null,
+                "auto_create_default_organisation": true
+            }
+        },
+        "writes": []
+    },
+    "invalid getRbacSettingsOnly": {
+        "result": {
+            "rbac": {
+                "enabled": true,
+                "anonymousGroup": "public",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            }
+        },
+        "writes": []
+    },
+    "invalid getSettings": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": true,
+                "anonymousGroup": "public",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": [],
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 86400000,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": true,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 0,
+                "remaining": 0,
+                "complete": false,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 31,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": []
+    },
+    "partial getMultitenancySettingsOnly": {
+        "result": {
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "t1",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": false
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            }
+        },
+        "writes": []
+    },
+    "partial getOrganisationSettingsOnly": {
+        "result": {
+            "organisation": {
+                "default_organisation": "org-1",
+                "auto_create_default_organisation": true
+            }
+        },
+        "writes": []
+    },
+    "partial getRbacSettingsOnly": {
+        "result": {
+            "rbac": {
+                "enabled": false,
+                "anonymousGroup": "anon",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            }
+        },
+        "writes": []
+    },
+    "partial getSettings": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": false,
+                "anonymousGroup": "anon",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "t1",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": false
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 5,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": false,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 12,
+                "remaining": 0,
+                "complete": true,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 7,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": []
+    },
+    "update Multitenancy empty": {
+        "result": {
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": true
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "multitenancy",
+                "{\"enabled\":true,\"defaultUserTenant\":\"\",\"defaultObjectTenant\":\"\",\"publishedObjectsBypassMultiTenancy\":false,\"adminOverride\":true}"
+            ]
+        ]
+    },
+    "update Multitenancy values": {
+        "result": {
+            "multitenancy": {
+                "enabled": false,
+                "defaultUserTenant": "x",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": true
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "multitenancy",
+                "{\"enabled\":false,\"defaultUserTenant\":\"x\",\"defaultObjectTenant\":\"\",\"publishedObjectsBypassMultiTenancy\":false,\"adminOverride\":true}"
+            ]
+        ]
+    },
+    "update Organisation empty": {
+        "result": {
+            "organisation": {
+                "default_organisation": null,
+                "auto_create_default_organisation": true
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "organisation",
+                "{\"default_organisation\":null,\"auto_create_default_organisation\":true}"
+            ]
+        ]
+    },
+    "update Organisation values": {
+        "result": {
+            "organisation": {
+                "default_organisation": "o",
+                "auto_create_default_organisation": false
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "organisation",
+                "{\"default_organisation\":\"o\",\"auto_create_default_organisation\":false}"
+            ]
+        ]
+    },
+    "update Rbac empty": {
+        "result": {
+            "rbac": {
+                "enabled": true,
+                "anonymousGroup": "public",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "rbac",
+                "{\"enabled\":true,\"anonymousGroup\":\"public\",\"defaultNewUserGroup\":\"viewer\",\"defaultObjectOwner\":\"\",\"adminOverride\":true}"
+            ]
+        ]
+    },
+    "update Rbac values": {
+        "result": {
+            "rbac": {
+                "enabled": false,
+                "anonymousGroup": "a",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "rbac",
+                "{\"enabled\":false,\"anonymousGroup\":\"a\",\"defaultNewUserGroup\":\"viewer\",\"defaultObjectOwner\":\"\",\"adminOverride\":true}"
+            ]
+        ]
+    },
+    "update all sections": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": true,
+                "anonymousGroup": "g",
+                "defaultNewUserGroup": "u",
+                "defaultObjectOwner": "o",
+                "adminOverride": false
+            },
+            "multitenancy": {
+                "enabled": false,
+                "defaultUserTenant": "",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": true,
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 1,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 86400000,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": true,
+                "searchTrailsEnabled": false
+            },
+            "blobMigration": {
+                "processed": 12,
+                "remaining": 0,
+                "complete": true,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 3,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "rbac",
+                "{\"enabled\":true,\"anonymousGroup\":\"g\",\"defaultNewUserGroup\":\"u\",\"defaultObjectOwner\":\"o\",\"adminOverride\":false}"
+            ],
+            [
+                "setValueInt",
+                "openregister",
+                "party_query_cap",
+                50
+            ],
+            [
+                "setValueString",
+                "openregister",
+                "flow_run_retention_days",
+                "3"
+            ],
+            [
+                "setValueBool",
+                "openregister",
+                "flow_audit_enabled",
+                true
+            ],
+            [
+                "setValueBool",
+                "openregister",
+                "flow_kill_switch",
+                true
+            ],
+            [
+                "setValueString",
+                "openregister",
+                "multitenancy",
+                "{\"enabled\":false,\"defaultUserTenant\":\"\",\"defaultObjectTenant\":\"\",\"publishedObjectsBypassMultiTenancy\":true,\"adminOverride\":true}"
+            ],
+            [
+                "setValueString",
+                "openregister",
+                "retention",
+                "{\"objectArchiveRetention\":31536000000,\"objectDeleteRetention\":1,\"searchTrailRetention\":2592000000,\"createLogRetention\":2592000000,\"readLogRetention\":86400000,\"updateLogRetention\":604800000,\"deleteLogRetention\":2592000000,\"auditTrailsEnabled\":true,\"searchTrailsEnabled\":false}"
+            ]
+        ]
+    },
+    "update flow refused": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": false,
+                "anonymousGroup": "anon",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "t1",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": false
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 5,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": false,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 12,
+                "remaining": 0,
+                "complete": true,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 7,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": [
+            [
+                "setValueBool",
+                "openregister",
+                "flow_audit_enabled",
+                false
+            ],
+            [
+                "setValueBool",
+                "openregister",
+                "flow_kill_switch",
+                false
+            ]
+        ]
+    },
+    "update nothing": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": false,
+                "anonymousGroup": "anon",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "t1",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": false
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 5,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": false,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 12,
+                "remaining": 0,
+                "complete": true,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 7,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": []
+    },
+    "update party scalar": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": false,
+                "anonymousGroup": "anon",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "t1",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": false
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 5,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": false,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 12,
+                "remaining": 0,
+                "complete": true,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 31,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "flow_run_retention_days",
+                "31"
+            ],
+            [
+                "setValueBool",
+                "openregister",
+                "flow_audit_enabled",
+                false
+            ],
+            [
+                "setValueBool",
+                "openregister",
+                "flow_kill_switch",
+                false
+            ]
+        ]
+    },
+    "update rbac null": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": false,
+                "anonymousGroup": "anon",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "t1",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": false
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 5,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": false,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 12,
+                "remaining": 0,
+                "complete": true,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 7,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": []
+    },
+    "update rbac partial": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": false,
+                "anonymousGroup": "public",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "admin",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "t1",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": false
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 5,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": false,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 12,
+                "remaining": 0,
+                "complete": true,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 7,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "rbac",
+                "{\"enabled\":false,\"anonymousGroup\":\"public\",\"defaultNewUserGroup\":\"viewer\",\"defaultObjectOwner\":\"admin\",\"adminOverride\":true}"
+            ]
+        ]
+    },
+    "update rbac string": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": true,
+                "anonymousGroup": "public",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "t1",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": false
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 5,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": false,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 12,
+                "remaining": 0,
+                "complete": true,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 7,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": [
+            [
+                "setValueString",
+                "openregister",
+                "rbac",
+                "{\"enabled\":true,\"anonymousGroup\":\"public\",\"defaultNewUserGroup\":\"viewer\",\"defaultObjectOwner\":\"\",\"adminOverride\":true}"
+            ]
+        ]
+    },
+    "zero getMultitenancySettingsOnly": {
+        "result": {
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": true
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            }
+        },
+        "writes": []
+    },
+    "zero getOrganisationSettingsOnly": {
+        "result": {
+            "organisation": {
+                "default_organisation": null,
+                "auto_create_default_organisation": true
+            }
+        },
+        "writes": []
+    },
+    "zero getRbacSettingsOnly": {
+        "result": {
+            "rbac": {
+                "enabled": true,
+                "anonymousGroup": "public",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            }
+        },
+        "writes": []
+    },
+    "zero getSettings": {
+        "result": {
+            "version": {
+                "appName": "Open Register",
+                "appVersion": "0.2.3"
+            },
+            "rbac": {
+                "enabled": true,
+                "anonymousGroup": "public",
+                "defaultNewUserGroup": "viewer",
+                "defaultObjectOwner": "",
+                "adminOverride": true
+            },
+            "multitenancy": {
+                "enabled": true,
+                "defaultUserTenant": "",
+                "defaultObjectTenant": "",
+                "publishedObjectsBypassMultiTenancy": false,
+                "adminOverride": true
+            },
+            "availableGroups": {
+                "public": "Public (No restrictions)",
+                "admin": "Admins"
+            },
+            "availableTenants": {
+                "org-uuid": "Org"
+            },
+            "availableUsers": {
+                "jan": "Jan",
+                "anon": "anon"
+            },
+            "retention": {
+                "objectArchiveRetention": 31536000000,
+                "objectDeleteRetention": 63072000000,
+                "searchTrailRetention": 2592000000,
+                "createLogRetention": 2592000000,
+                "readLogRetention": 86400000,
+                "updateLogRetention": 604800000,
+                "deleteLogRetention": 2592000000,
+                "auditTrailsEnabled": true,
+                "searchTrailsEnabled": true
+            },
+            "blobMigration": {
+                "processed": 0,
+                "remaining": 0,
+                "complete": false,
+                "lastRun": ""
+            },
+            "flow": {
+                "retentionDays": 31,
+                "auditEnabled": false,
+                "killSwitch": true
+            },
+            "party": {
+                "queryCap": 51
+            }
+        },
+        "writes": []
+    }
+}

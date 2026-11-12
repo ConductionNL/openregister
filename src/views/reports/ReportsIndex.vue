@@ -28,13 +28,10 @@
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcButton variant="primary" :disabled="loading" @click="refresh">
-						<template #icon>
-							<NcLoadingIcon v-if="loading" :size="20" />
-							<Refresh v-else :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
+					<RefreshButton
+						variant="primary"
+						:loading="loading"
+						@click="refresh" />
 				</div>
 			</div>
 
@@ -105,16 +102,11 @@
 </template>
 
 <script>
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent } from '@nextcloud/vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import RefreshButton from '../../components/shared/RefreshButton.vue'
 import { reportsStore } from '../../store/store.js'
 
 export default {
@@ -122,10 +114,8 @@ export default {
 
 	components: {
 		NcAppContent,
-		NcButton,
 		NcEmptyContent,
-		NcLoadingIcon,
-		Refresh,
+		RefreshButton,
 		ChartLine,
 		ChartBoxOutline,
 		ClockOutline,
@@ -173,7 +163,7 @@ export default {
 		async refresh() {
 			try {
 				await reportsStore.fetchDashboards()
-			} catch (e) {
+			} catch {
 				// surfaced via store error
 			}
 		},
@@ -194,18 +184,12 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+@use '../avg/pillBadge.scss' as *;
+@use '../entities/cardRules.scss' as *;
 
-.viewHeader {
-	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 12px;
-}
+@include view-container-rules;
 
 .viewHeaderTitleIndented {
 	margin: 0;
@@ -241,15 +225,7 @@ export default {
 /* Real button carrying the card's action; the ::after overlay restores
    whole-card mouse clickability while keyboard users get a genuine button. */
 .reportCardActivator {
-	appearance: none;
-	background: none;
-	border: none;
-	padding: 0;
-	margin: 0;
-	font: inherit;
-	color: inherit;
-	text-align: left;
-	cursor: pointer;
+	@include card-activator-reset;
 }
 
 .reportCardActivator::after {
@@ -305,18 +281,10 @@ export default {
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
-	padding: 2px 8px;
-	border-radius: 12px;
-	background: var(--color-background-darker);
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
+	@include pill-badge;
 }
 
-.badge-status-published {
-	background: var(--color-success);
-	color: var(--color-primary-text);
-}
+@include badge-status-published;
 
 @media (prefers-reduced-motion: reduce) {
 	.reportCard {

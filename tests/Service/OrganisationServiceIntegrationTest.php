@@ -140,7 +140,7 @@ class OrganisationServiceIntegrationTest extends TestCase {
 		$name = 'phpunit-test-' . uniqid();
 		$description = 'Test organisation for integration tests';
 
-		$result = $this->service->createOrganisation($name, $description, false);
+		$result = $this->service->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: $name, description: $description), false);
 
 		$this->assertInstanceOf(Organisation::class, $result);
 		$this->assertSame($name, $result->getName());
@@ -159,7 +159,7 @@ class OrganisationServiceIntegrationTest extends TestCase {
 		$name = 'phpunit-test-uuid-' . uniqid();
 		$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
 
-		$result = $this->service->createOrganisation($name, '', false, $uuid);
+		$result = $this->service->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: $name, uuid: $uuid), false);
 
 		$this->assertInstanceOf(Organisation::class, $result);
 		$this->assertSame($uuid, $result->getUuid());
@@ -176,7 +176,7 @@ class OrganisationServiceIntegrationTest extends TestCase {
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('Invalid UUID format');
 
-		$this->service->createOrganisation('test', '', false, 'not-a-valid-uuid');
+		$this->service->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'test', uuid: 'not-a-valid-uuid'), false);
 	}
 
 	/**
@@ -187,7 +187,7 @@ class OrganisationServiceIntegrationTest extends TestCase {
 	public function testCreateOrganisationGeneratesSlug(): void {
 		$name = 'phpunit-test-slug-' . uniqid();
 
-		$result = $this->service->createOrganisation($name, '', false);
+		$result = $this->service->createOrganisation(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: $name), false);
 
 		$this->assertInstanceOf(Organisation::class, $result);
 		$slug = $result->getSlug();

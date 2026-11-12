@@ -1,0 +1,377 @@
+{
+    "admin": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ],
+            [
+                "findByImportJobId",
+                "j1",
+                "create"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "softDeleteByImportJobId",
+                "j1"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "deleted": 2
+        }
+    },
+    "anonymous": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ]
+        ],
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        }
+    },
+    "anonymous on an app job": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ]
+        ],
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        }
+    },
+    "app job": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "This import job loaded data for app dossiq. Remove it through that app, or with occ openregister:objects:purge --import-job j1.",
+            "importJobId": "j1",
+            "app": "dossiq"
+        }
+    },
+    "app job of the importer": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "This import job loaded data for app dossiq. Remove it through that app, or with occ openregister:objects:purge --import-job j1.",
+            "importJobId": "j1",
+            "app": "dossiq"
+        }
+    },
+    "audit row without a user": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ],
+            [
+                "findByImportJobId",
+                "j1",
+                "create"
+            ],
+            [
+                "isAdmin",
+                "other"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "Forbidden: only the user who initiated the import or an admin may roll it back"
+        }
+    },
+    "audit row without a user as admin": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ],
+            [
+                "findByImportJobId",
+                "j1",
+                "create"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "softDeleteByImportJobId",
+                "j1"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "deleted": 2
+        }
+    },
+    "delete fails": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ],
+            [
+                "findByImportJobId",
+                "j1",
+                "create"
+            ],
+            [
+                "isAdmin",
+                "importer"
+            ],
+            [
+                "softDeleteByImportJobId",
+                "j1"
+            ]
+        ],
+        "status": 500,
+        "data": {
+            "error": "delete failed"
+        }
+    },
+    "empty job id": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ]
+        ],
+        "status": 422,
+        "data": {
+            "error": "importJobId is required"
+        }
+    },
+    "first row decides": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ],
+            [
+                "findByImportJobId",
+                "j1",
+                "create"
+            ],
+            [
+                "isAdmin",
+                "second"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "Forbidden: only the user who initiated the import or an admin may roll it back"
+        }
+    },
+    "importer": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ],
+            [
+                "findByImportJobId",
+                "j1",
+                "create"
+            ],
+            [
+                "isAdmin",
+                "importer"
+            ],
+            [
+                "softDeleteByImportJobId",
+                "j1"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "deleted": 2
+        }
+    },
+    "job id not a string": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ]
+        ],
+        "status": 422,
+        "data": {
+            "error": "importJobId is required"
+        }
+    },
+    "no job id": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ]
+        ],
+        "status": 422,
+        "data": {
+            "error": "importJobId is required"
+        }
+    },
+    "somebody else": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ],
+            [
+                "findByImportJobId",
+                "j1",
+                "create"
+            ],
+            [
+                "isAdmin",
+                "other"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "Forbidden: only the user who initiated the import or an admin may roll it back"
+        }
+    },
+    "unknown job": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ],
+            [
+                "findByImportJobId",
+                "j1",
+                "create"
+            ]
+        ],
+        "status": 404,
+        "data": {
+            "error": "Import job not found",
+            "importJobId": "j1"
+        }
+    },
+    "unknown job as admin": {
+        "calls": [
+            [
+                "getParam",
+                "importJobId"
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\Configuration\\AppImportJobRecorder"
+            ],
+            [
+                "appForJob",
+                "j1"
+            ],
+            [
+                "findByImportJobId",
+                "j1",
+                "create"
+            ]
+        ],
+        "status": 404,
+        "data": {
+            "error": "Import job not found",
+            "importJobId": "j1"
+        }
+    }
+}

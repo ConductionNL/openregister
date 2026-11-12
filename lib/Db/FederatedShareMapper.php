@@ -27,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -41,15 +43,15 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<FederatedShare>
  */
-class FederatedShareMapper extends QBMapper {
+class FederatedShareMapper extends QBMapper implements FederatedShareMapperInterface {
 	use MultiTenancyTrait;
 
 	/**
 	 * Organisation mapper (required by MultiTenancyTrait).
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	protected OrganisationMapper $organisationMapper;
+	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * User session (required by MultiTenancyTrait).
@@ -76,22 +78,18 @@ class FederatedShareMapper extends QBMapper {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
-	 * @param OrganisationMapper $organisationMapper Organisation mapper.
-	 * @param IUserSession $userSession User session.
-	 * @param IGroupManager $groupManager Group manager.
+	 * @param TenancyServices $tenancy Organisation mapper, user session and group manager (MultiTenancyTrait).
 	 * @param IAppConfig $appConfig App configuration.
 	 */
 	public function __construct(
 		IDBConnection $db,
-		OrganisationMapper $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		TenancyServices $tenancy,
 		IAppConfig $appConfig,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_federated_shares', entityClass: FederatedShare::class);
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $appConfig;
 	}//end __construct()
 
@@ -169,23 +167,23 @@ class FederatedShareMapper extends QBMapper {
 	/**
 	 * Find all federated shares, optionally filtered.
 	 *
-	 * @param int|null $limit Maximum number of results.
-	 * @param int|null $offset Result offset.
-	 * @param array<string, mixed>|null $filters Column => value equality filters.
+	 * @param ListQuery|null $query The page (unbounded for every row) and the column => value equality filters;
+	 *                              null for every share.
 	 *
 	 * @return FederatedShare[] The matching shares.
 	 *
 	 * @psalm-return list<FederatedShare>
 	 */
-	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = []): array {
-		$qb = $this->db->getQueryBuilder();
+	public function findAll(?ListQuery $query = null): array {
+		$query ??= ListQuery::unbounded();
+		$qb      = $this->db->getQueryBuilder();
 
 		$qb->select('*')
 			->from('openregister_federated_shares')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($query->limitOrNull())
+			->setFirstResult($query->offset);
 
-		foreach ($filters ?? [] as $column => $value) {
+		foreach ($query->filters as $column => $value) {
 			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
 		}
 
@@ -193,6 +191,29 @@ class FederatedShareMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * Every outgoing share that is not revoked or declined, across all organisations.
+	 *
+	 * No organisation filter: for administrator reports from the command line only.
+	 *
+	 * @return FederatedShare[] The shares, oldest first.
+	 *
+	 * @psalm-return list<FederatedShare>
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	public function findLiveOutgoingAcrossOrganisations(): array {
+		$qb = $this->db->getQueryBuilder();
+
+		$qb->select('*')
+			->from('openregister_federated_shares')
+			->where($qb->expr()->eq('direction', $qb->createNamedParameter('outgoing')))
+			->andWhere($qb->expr()->notIn('status', $qb->createNamedParameter(['revoked', 'declined'], IQueryBuilder::PARAM_STR_ARRAY)))
+			->orderBy('id', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findLiveOutgoingAcrossOrganisations()
 
 	/**
 	 * Insert a new federated share, stamping uuid/timestamps/organisation.

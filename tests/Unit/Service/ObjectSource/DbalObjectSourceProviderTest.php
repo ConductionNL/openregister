@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Doctrine\DBAL\DriverManager;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -300,10 +302,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 		);
 
 		$objects = $provider->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['limit' => 5],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: ['limit' => 5]
 		);
 
 		$this->assertCount(5, $objects);
@@ -318,10 +318,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 	 */
 	public function testFindAllAppliesFilterAndLimitInSql(): void {
 		$objects = $this->provider()->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['filters' => ['status' => 'active'], 'limit' => 10, 'offset' => 0],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: ['filters' => ['status' => 'active'], 'limit' => 10, 'offset' => 0]
 		);
 
 		$this->assertCount(10, $objects);
@@ -339,10 +337,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 	 */
 	public function testLikeFilterMatchesSubstringIgnoringCase(): void {
 		$objects = $this->provider()->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['filters' => ['name' => ['like' => 'PERSON 11']], 'limit' => 200, 'offset' => 0],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: ['filters' => ['name' => ['like' => 'PERSON 11']], 'limit' => 200, 'offset' => 0]
 		);
 
 		// Person 11 and Person 110 to Person 119.
@@ -366,10 +362,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 		$provider = $this->provider();
 		foreach (['son_1', '%', '\\'] as $term) {
 			$count = $provider->count(
-				register: $this->register(),
-				schema: $this->peopleSchema(),
-				query: ['filters' => ['name' => ['like' => $term]]],
-				config: $this->peopleConfig()
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+				query: ['filters' => ['name' => ['like' => $term]]]
 			);
 			$this->assertSame(0, $count, $term);
 		}
@@ -389,10 +383,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 	 */
 	public function testSearchCastsMixedColumnTypes(): void {
 		$byStatus = $this->provider()->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['_search' => 'active', 'limit' => 100, 'offset' => 0],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: ['_search' => 'active', 'limit' => 100, 'offset' => 0]
 		);
 		$this->assertNotEmpty($byStatus);
 		foreach ($byStatus as $object) {
@@ -401,10 +393,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 
 		// A purely numeric term must hit the INTEGER id column via the cast.
 		$byId = $this->provider()->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['_search' => '7', 'limit' => 100, 'offset' => 0],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: ['_search' => '7', 'limit' => 100, 'offset' => 0]
 		);
 		$this->assertNotEmpty($byId);
 	}//end testSearchCastsMixedColumnTypes()
@@ -421,18 +411,14 @@ class DbalObjectSourceProviderTest extends TestCase {
 		$provider = $this->provider();
 
 		$objects = $provider->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['filters' => ['status' => "' OR 1=1 --"]],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: ['filters' => ['status' => "' OR 1=1 --"]]
 		);
 		$this->assertSame([], $objects);
 
 		$count = $provider->count(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['filters' => ['status' => "' OR 1=1 --"]],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: ['filters' => ['status' => "' OR 1=1 --"]]
 		);
 		$this->assertSame(0, $count);
 	}//end testInjectionAttemptIsMatchedLiterally()
@@ -449,18 +435,14 @@ class DbalObjectSourceProviderTest extends TestCase {
 		$query = ['filters' => ['status' => 'active'], 'limit' => 50, 'offset' => 50];
 
 		$page = $provider->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: $query,
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: $query
 		);
 		$this->assertCount(10, $page);
 
 		$total = $provider->count(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: $query,
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: $query
 		);
 		$this->assertSame(60, $total);
 	}//end testCountReflectsFullPredicateWithPagedFindAll()
@@ -478,19 +460,15 @@ class DbalObjectSourceProviderTest extends TestCase {
 
 		// "rowid" is a real SQLite column but not on the schema — ignored.
 		$all = $provider->count(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['filters' => ['rowid' => '1']],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: ['filters' => ['rowid' => '1']]
 		);
 		$this->assertSame(120, $all);
 
 		// "secret" is a schema column but declared non-filterable — ignored.
 		$stillAll = $provider->count(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['filters' => ['secret' => 'hidden-1']],
-			config: $this->peopleConfig(overrides: ['nonFilterable' => ['secret']])
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig(overrides: ['nonFilterable' => ['secret']])),
+			query: ['filters' => ['secret' => 'hidden-1']]
 		);
 		$this->assertSame(120, $stillAll);
 	}//end testOnlyAllowlistedColumnsAreFilterable()
@@ -506,20 +484,16 @@ class DbalObjectSourceProviderTest extends TestCase {
 		$provider = $this->provider();
 
 		$object = $provider->find(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			id: '7',
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			id: '7'
 		);
 		$this->assertNotNull($object);
 		$this->assertSame('7', $object->getUuid());
 		$this->assertSame('Person 7', $object->getObject()['name']);
 
 		$absent = $provider->find(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			id: '99999',
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			id: '99999'
 		);
 		$this->assertNull($absent);
 	}//end testFindByIdAndAbsentReturnsNull()
@@ -552,19 +526,15 @@ class DbalObjectSourceProviderTest extends TestCase {
 		];
 
 		$objects = $provider->findAll(
-			register: $this->register(),
-			schema: $schema,
-			query: [],
-			config: $config
+			source: new SourcedTable(new RegisterSchema($this->register(), $schema), $config),
+			query: []
 		);
 		$this->assertCount(2, $objects);
 		$this->assertSame('1::A', $objects[0]->getUuid());
 
 		$found = $provider->find(
-			register: $this->register(),
-			schema: $schema,
-			id: '2::B',
-			config: $config
+			source: new SourcedTable(new RegisterSchema($this->register(), $schema), $config),
+			id: '2::B'
 		);
 		$this->assertNotNull($found);
 		$this->assertSame('Second', $found->getObject()['label']);
@@ -582,22 +552,18 @@ class DbalObjectSourceProviderTest extends TestCase {
 		$config = $this->peopleConfig(overrides: ['idColumn' => null]);
 
 		$this->assertNull(
-			$provider->find(register: $this->register(), schema: $this->peopleSchema(), id: '1', config: $config)
+			$provider->find(source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $config), id: '1')
 		);
 
 		$objects = $provider->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['limit' => 5],
-			config: $config
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $config),
+			query: ['limit' => 5]
 		);
 		$this->assertCount(5, $objects);
 
 		$total = $provider->count(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: [],
-			config: $config
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $config),
+			query: []
 		);
 		$this->assertSame(120, $total);
 	}//end testListOnlySchemaFindReturnsNull()
@@ -611,10 +577,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 	 */
 	public function testSortAppliedForAllowlistedColumn(): void {
 		$objects = $this->provider()->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: ['sort' => ['id' => 'desc'], 'limit' => 1],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: ['sort' => ['id' => 'desc'], 'limit' => 1]
 		);
 
 		$this->assertSame('120', $objects[0]->getUuid());
@@ -634,10 +598,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 
 		try {
 			$provider->findAll(
-				register: $this->register(),
-				schema: $this->peopleSchema(),
-				query: [],
-				config: $this->peopleConfig()
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+				query: []
 			);
 			$this->fail('Expected DbalObjectSourceException');
 		} catch (DbalObjectSourceException $e) {
@@ -658,18 +620,14 @@ class DbalObjectSourceProviderTest extends TestCase {
 		$provider = $this->provider(driver: 'oci8');
 
 		$objects = $provider->findAll(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: [],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: []
 		);
 		$this->assertSame([], $objects);
 
 		$total = $provider->count(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			query: [],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			query: []
 		);
 		$this->assertSame(0, $total);
 	}//end testMissingDriverDegradesToEmptyList()
@@ -687,35 +645,29 @@ class DbalObjectSourceProviderTest extends TestCase {
 		$this->assertInstanceOf(WritableObjectSourceProvider::class, $provider);
 
 		$created = $provider->insert(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			data: ['name' => 'Willem Writes', 'status' => 'active'],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			data: ['name' => 'Willem Writes', 'status' => 'active']
 		);
 		$newId = (string)$created->getUuid();
 		$this->assertNotSame('', $newId);
 		$this->assertSame('Willem Writes', $created->getObject()['name']);
 
 		$updated = $provider->update(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
 			id: $newId,
-			data: ['status' => 'inactive'],
-			config: $this->peopleConfig()
+			data: ['status' => 'inactive']
 		);
 		$this->assertSame('inactive', $updated->getObject()['status']);
 		$this->assertSame('Willem Writes', $updated->getObject()['name']);
 
 		$this->assertTrue(
 			$provider->remove(
-				register: $this->register(),
-				schema: $this->peopleSchema(),
-				id: $newId,
-				config: $this->peopleConfig()
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+				id: $newId
 			)
 		);
 		$this->assertNull(
-			$provider->find(register: $this->register(), schema: $this->peopleSchema(), id: $newId, config: $this->peopleConfig())
+			$provider->find(source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()), id: $newId)
 		);
 	}//end testWritableInsertUpdateDeleteRoundTrip()
 
@@ -732,10 +684,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 		$this->expectExceptionMessageMatches('/read-only projection/');
 
 		$this->provider(writable: false)->insert(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			data: ['name' => 'Nope', 'status' => 'active'],
-			config: $this->peopleConfig()
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+			data: ['name' => 'Nope', 'status' => 'active']
 		);
 	}//end testWriteRejectedWhenSourceNotWritable()
 
@@ -749,10 +699,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 	public function testUnknownPropertyRejected(): void {
 		try {
 			$this->provider(writable: true)->insert(
-				register: $this->register(),
-				schema: $this->peopleSchema(),
-				data: ['name' => 'X', 'status' => 'active', 'bogus' => 1],
-				config: $this->peopleConfig()
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+				data: ['name' => 'X', 'status' => 'active', 'bogus' => 1]
 			);
 			$this->fail('Expected DbalWriteException was not thrown.');
 		} catch (DbalWriteException $e) {
@@ -771,10 +719,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 	public function testNotNullViolationMapsTo422(): void {
 		try {
 			$this->provider(writable: true)->insert(
-				register: $this->register(),
-				schema: $this->peopleSchema(),
-				data: ['status' => 'active'],
-				config: $this->peopleConfig()
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+				data: ['status' => 'active']
 			);
 			$this->fail('Expected DbalWriteException was not thrown.');
 		} catch (DbalWriteException $e) {
@@ -796,11 +742,9 @@ class DbalObjectSourceProviderTest extends TestCase {
 
 		try {
 			$provider->update(
-				register: $this->register(),
-				schema: $this->peopleSchema(),
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig(overrides: ['idColumn' => null])),
 				id: '1',
-				data: ['status' => 'x'],
-				config: $this->peopleConfig(overrides: ['idColumn' => null])
+				data: ['status' => 'x']
 			);
 			$this->fail('Expected DbalWriteException was not thrown.');
 		} catch (DbalWriteException $e) {
@@ -809,20 +753,16 @@ class DbalObjectSourceProviderTest extends TestCase {
 
 		$this->assertFalse(
 			$provider->remove(
-				register: $this->register(),
-				schema: $this->peopleSchema(),
-				id: '99999',
-				config: $this->peopleConfig()
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
+				id: '99999'
 			)
 		);
 
 		try {
 			$provider->update(
-				register: $this->register(),
-				schema: $this->peopleSchema(),
+				source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig()),
 				id: '99999',
-				data: ['status' => 'x'],
-				config: $this->peopleConfig()
+				data: ['status' => 'x']
 			);
 			$this->fail('Expected DoesNotExistException was not thrown.');
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -842,10 +782,8 @@ class DbalObjectSourceProviderTest extends TestCase {
 		$this->expectExceptionMessageMatches('/read-only projection/');
 
 		$this->provider(writable: true)->insert(
-			register: $this->register(),
-			schema: $this->peopleSchema(),
-			data: ['name' => 'X', 'status' => 'active'],
-			config: $this->peopleConfig(overrides: ['isView' => true])
+			source: new SourcedTable(new RegisterSchema($this->register(), $this->peopleSchema()), $this->peopleConfig(overrides: ['isView' => true])),
+			data: ['name' => 'X', 'status' => 'active']
 		);
 	}//end testViewNeverWritable()
 
@@ -877,23 +815,21 @@ class DbalObjectSourceProviderTest extends TestCase {
 		];
 
 		try {
-			$provider->insert(register: $this->register(), schema: $schema, data: ['tenant_id' => 3, 'label' => 'Missing code'], config: $config);
+			$provider->insert(source: new SourcedTable(new RegisterSchema($this->register(), $schema), $config), data: ['tenant_id' => 3, 'label' => 'Missing code']);
 			$this->fail('Expected DbalWriteException was not thrown.');
 		} catch (DbalWriteException $e) {
 			$this->assertSame(400, $e->getStatusCode());
 		}
 
 		$created = $provider->insert(
-			register: $this->register(),
-			schema: $schema,
-			data: ['tenant_id' => 3, 'code' => 'C', 'label' => 'Third'],
-			config: $config
+			source: new SourcedTable(new RegisterSchema($this->register(), $schema), $config),
+			data: ['tenant_id' => 3, 'code' => 'C', 'label' => 'Third']
 		);
 		$this->assertSame('3::C', (string)$created->getUuid());
 
-		$updated = $provider->update(register: $this->register(), schema: $schema, id: '3::C', data: ['label' => 'Third v2'], config: $config);
+		$updated = $provider->update(source: new SourcedTable(new RegisterSchema($this->register(), $schema), $config), id: '3::C', data: ['label' => 'Third v2']);
 		$this->assertSame('Third v2', $updated->getObject()['label']);
 
-		$this->assertTrue($provider->remove(register: $this->register(), schema: $schema, id: '3::C', config: $config));
+		$this->assertTrue($provider->remove(source: new SourcedTable(new RegisterSchema($this->register(), $schema), $config), id: '3::C'));
 	}//end testCompositeKeyWriteRules()
 }//end class

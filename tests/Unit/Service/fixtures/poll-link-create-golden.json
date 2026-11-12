@@ -1,0 +1,1176 @@
+{
+    "date poll with deadline": {
+        "writes": [
+            {
+                "table": "polls_polls",
+                "values": {
+                    "type": [
+                        "datePoll",
+                        2
+                    ],
+                    "title": [
+                        "Meet",
+                        2
+                    ],
+                    "description": [
+                        "d",
+                        2
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ],
+                    "expire": [
+                        1798113600,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "access": [
+                        "private",
+                        2
+                    ],
+                    "anonymous": [
+                        0,
+                        1
+                    ],
+                    "allow_maybe": [
+                        1,
+                        1
+                    ],
+                    "allow_proposals": [
+                        "disallow",
+                        2
+                    ],
+                    "show_results": [
+                        "always",
+                        2
+                    ],
+                    "admin_access": [
+                        0,
+                        1
+                    ],
+                    "allow_comment": [
+                        1,
+                        1
+                    ],
+                    "hide_booked_up": [
+                        1,
+                        1
+                    ],
+                    "use_no": [
+                        1,
+                        1
+                    ],
+                    "voting_variant": [
+                        "simple",
+                        2
+                    ]
+                }
+            },
+            {
+                "table": "polls_options",
+                "values": {
+                    "poll_id": [
+                        9,
+                        1
+                    ],
+                    "poll_option_text": [
+                        "2026-12-01 10:00",
+                        2
+                    ],
+                    "poll_option_hash": [
+                        "b006f091a3198efc393d70cd0afcae88",
+                        2
+                    ],
+                    "order": [
+                        1,
+                        1
+                    ],
+                    "timestamp": [
+                        1796119200,
+                        1
+                    ],
+                    "duration": [
+                        0,
+                        1
+                    ],
+                    "confirmed": [
+                        0,
+                        1
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "released": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ]
+                }
+            },
+            {
+                "table": "polls_options",
+                "values": {
+                    "poll_id": [
+                        9,
+                        1
+                    ],
+                    "poll_option_text": [
+                        "not a date",
+                        2
+                    ],
+                    "poll_option_hash": [
+                        "20cc0d27d9d172401d7d7e335139970f",
+                        2
+                    ],
+                    "order": [
+                        2,
+                        1
+                    ],
+                    "timestamp": [
+                        0,
+                        1
+                    ],
+                    "duration": [
+                        0,
+                        1
+                    ],
+                    "confirmed": [
+                        0,
+                        1
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "released": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ]
+                }
+            }
+        ],
+        "logs": [],
+        "link": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "pollId": 9,
+            "pollTitle": "Meet",
+            "pollType": "datePoll",
+            "deadline": "2026-12-24T12:00:00+00:00",
+            "voterCount": 0,
+            "optionCount": 2,
+            "closed": false,
+            "linkedBy": "alice",
+            "linkedAt": "DateTime"
+        }
+    },
+    "datePoll canonical": {
+        "writes": [
+            {
+                "table": "polls_polls",
+                "values": {
+                    "type": [
+                        "datePoll",
+                        2
+                    ],
+                    "title": [
+                        "Meet",
+                        2
+                    ],
+                    "description": [
+                        "",
+                        2
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ],
+                    "expire": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "access": [
+                        "private",
+                        2
+                    ],
+                    "anonymous": [
+                        0,
+                        1
+                    ],
+                    "allow_maybe": [
+                        1,
+                        1
+                    ],
+                    "allow_proposals": [
+                        "disallow",
+                        2
+                    ],
+                    "show_results": [
+                        "always",
+                        2
+                    ],
+                    "admin_access": [
+                        0,
+                        1
+                    ],
+                    "allow_comment": [
+                        1,
+                        1
+                    ],
+                    "hide_booked_up": [
+                        1,
+                        1
+                    ],
+                    "use_no": [
+                        1,
+                        1
+                    ],
+                    "voting_variant": [
+                        "simple",
+                        2
+                    ]
+                }
+            },
+            {
+                "table": "polls_options",
+                "values": {
+                    "poll_id": [
+                        3,
+                        1
+                    ],
+                    "poll_option_text": [
+                        "2026-01-02",
+                        2
+                    ],
+                    "poll_option_hash": [
+                        "b59bf088e5410680b2b8977885a032bd",
+                        2
+                    ],
+                    "order": [
+                        1,
+                        1
+                    ],
+                    "timestamp": [
+                        1767312000,
+                        1
+                    ],
+                    "duration": [
+                        0,
+                        1
+                    ],
+                    "confirmed": [
+                        0,
+                        1
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "released": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ]
+                }
+            }
+        ],
+        "logs": [],
+        "link": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "pollId": 3,
+            "pollTitle": "Meet",
+            "pollType": "datePoll",
+            "deadline": null,
+            "voterCount": 0,
+            "optionCount": 1,
+            "closed": false,
+            "linkedBy": "alice",
+            "linkedAt": "DateTime"
+        }
+    },
+    "empty type": {
+        "writes": [
+            {
+                "table": "polls_polls",
+                "values": {
+                    "type": [
+                        "textPoll",
+                        2
+                    ],
+                    "title": [
+                        "T",
+                        2
+                    ],
+                    "description": [
+                        "",
+                        2
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ],
+                    "expire": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "access": [
+                        "private",
+                        2
+                    ],
+                    "anonymous": [
+                        0,
+                        1
+                    ],
+                    "allow_maybe": [
+                        1,
+                        1
+                    ],
+                    "allow_proposals": [
+                        "disallow",
+                        2
+                    ],
+                    "show_results": [
+                        "always",
+                        2
+                    ],
+                    "admin_access": [
+                        0,
+                        1
+                    ],
+                    "allow_comment": [
+                        1,
+                        1
+                    ],
+                    "hide_booked_up": [
+                        1,
+                        1
+                    ],
+                    "use_no": [
+                        1,
+                        1
+                    ],
+                    "voting_variant": [
+                        "simple",
+                        2
+                    ]
+                }
+            }
+        ],
+        "logs": [],
+        "link": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "pollId": 5,
+            "pollTitle": "T",
+            "pollType": "textPoll",
+            "deadline": null,
+            "voterCount": 0,
+            "optionCount": 0,
+            "closed": false,
+            "linkedBy": "alice",
+            "linkedAt": "DateTime"
+        }
+    },
+    "insert fails": {
+        "writes": [],
+        "logs": [
+            "Failed to create poll: db down"
+        ],
+        "error": [
+            "Exception",
+            "Failed to create poll: db down",
+            500
+        ]
+    },
+    "no id": {
+        "writes": [
+            {
+                "table": "polls_polls",
+                "values": {
+                    "type": [
+                        "textPoll",
+                        2
+                    ],
+                    "title": [
+                        "T",
+                        2
+                    ],
+                    "description": [
+                        "",
+                        2
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ],
+                    "expire": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "access": [
+                        "private",
+                        2
+                    ],
+                    "anonymous": [
+                        0,
+                        1
+                    ],
+                    "allow_maybe": [
+                        1,
+                        1
+                    ],
+                    "allow_proposals": [
+                        "disallow",
+                        2
+                    ],
+                    "show_results": [
+                        "always",
+                        2
+                    ],
+                    "admin_access": [
+                        0,
+                        1
+                    ],
+                    "allow_comment": [
+                        1,
+                        1
+                    ],
+                    "hide_booked_up": [
+                        1,
+                        1
+                    ],
+                    "use_no": [
+                        1,
+                        1
+                    ],
+                    "voting_variant": [
+                        "simple",
+                        2
+                    ]
+                }
+            }
+        ],
+        "logs": [
+            "Failed to create poll: Failed to retrieve created poll id"
+        ],
+        "error": [
+            "Exception",
+            "Failed to create poll: Failed to retrieve created poll id",
+            500
+        ]
+    },
+    "option insert fails": {
+        "writes": [
+            {
+                "table": "polls_polls",
+                "values": {
+                    "type": [
+                        "textPoll",
+                        2
+                    ],
+                    "title": [
+                        "T",
+                        2
+                    ],
+                    "description": [
+                        "",
+                        2
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ],
+                    "expire": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "access": [
+                        "private",
+                        2
+                    ],
+                    "anonymous": [
+                        0,
+                        1
+                    ],
+                    "allow_maybe": [
+                        1,
+                        1
+                    ],
+                    "allow_proposals": [
+                        "disallow",
+                        2
+                    ],
+                    "show_results": [
+                        "always",
+                        2
+                    ],
+                    "admin_access": [
+                        0,
+                        1
+                    ],
+                    "allow_comment": [
+                        1,
+                        1
+                    ],
+                    "hide_booked_up": [
+                        1,
+                        1
+                    ],
+                    "use_no": [
+                        1,
+                        1
+                    ],
+                    "voting_variant": [
+                        "simple",
+                        2
+                    ]
+                }
+            }
+        ],
+        "logs": [
+            "Failed to create poll: db down"
+        ],
+        "error": [
+            "Exception",
+            "Failed to create poll: db down",
+            500
+        ]
+    },
+    "text alias, long title": {
+        "writes": [
+            {
+                "table": "polls_polls",
+                "values": {
+                    "type": [
+                        "textPoll",
+                        2
+                    ],
+                    "title": [
+                        "Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange ti",
+                        2
+                    ],
+                    "description": [
+                        "",
+                        2
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ],
+                    "expire": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "access": [
+                        "private",
+                        2
+                    ],
+                    "anonymous": [
+                        0,
+                        1
+                    ],
+                    "allow_maybe": [
+                        1,
+                        1
+                    ],
+                    "allow_proposals": [
+                        "disallow",
+                        2
+                    ],
+                    "show_results": [
+                        "always",
+                        2
+                    ],
+                    "admin_access": [
+                        0,
+                        1
+                    ],
+                    "allow_comment": [
+                        1,
+                        1
+                    ],
+                    "hide_booked_up": [
+                        1,
+                        1
+                    ],
+                    "use_no": [
+                        1,
+                        1
+                    ],
+                    "voting_variant": [
+                        "simple",
+                        2
+                    ]
+                }
+            },
+            {
+                "table": "polls_options",
+                "values": {
+                    "poll_id": [
+                        7,
+                        1
+                    ],
+                    "poll_option_text": [
+                        "A",
+                        2
+                    ],
+                    "poll_option_hash": [
+                        "1004194d33a3b43ded0e5efda52e915b",
+                        2
+                    ],
+                    "order": [
+                        1,
+                        1
+                    ],
+                    "timestamp": [
+                        0,
+                        1
+                    ],
+                    "duration": [
+                        0,
+                        1
+                    ],
+                    "confirmed": [
+                        0,
+                        1
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "released": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ]
+                }
+            },
+            {
+                "table": "polls_options",
+                "values": {
+                    "poll_id": [
+                        7,
+                        1
+                    ],
+                    "poll_option_text": [
+                        "B",
+                        2
+                    ],
+                    "poll_option_hash": [
+                        "3da081a08140727ae2a3bb9493fb0d40",
+                        2
+                    ],
+                    "order": [
+                        2,
+                        1
+                    ],
+                    "timestamp": [
+                        0,
+                        1
+                    ],
+                    "duration": [
+                        0,
+                        1
+                    ],
+                    "confirmed": [
+                        0,
+                        1
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "released": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ]
+                }
+            },
+            {
+                "table": "polls_options",
+                "values": {
+                    "poll_id": [
+                        7,
+                        1
+                    ],
+                    "poll_option_text": [
+                        "C",
+                        2
+                    ],
+                    "poll_option_hash": [
+                        "ff28d81a0cf63c751ac02fe1f9055bf8",
+                        2
+                    ],
+                    "order": [
+                        3,
+                        1
+                    ],
+                    "timestamp": [
+                        0,
+                        1
+                    ],
+                    "duration": [
+                        0,
+                        1
+                    ],
+                    "confirmed": [
+                        0,
+                        1
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "released": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ]
+                }
+            }
+        ],
+        "logs": [],
+        "link": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "pollId": 7,
+            "pollTitle": "Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange titel Lange ti",
+            "pollType": "textPoll",
+            "deadline": null,
+            "voterCount": 0,
+            "optionCount": 3,
+            "closed": false,
+            "linkedBy": "alice",
+            "linkedAt": "DateTime"
+        }
+    },
+    "text poll": {
+        "writes": [
+            {
+                "table": "polls_polls",
+                "values": {
+                    "type": [
+                        "textPoll",
+                        2
+                    ],
+                    "title": [
+                        "Lunch",
+                        2
+                    ],
+                    "description": [
+                        "Where?",
+                        2
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ],
+                    "expire": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "access": [
+                        "private",
+                        2
+                    ],
+                    "anonymous": [
+                        0,
+                        1
+                    ],
+                    "allow_maybe": [
+                        1,
+                        1
+                    ],
+                    "allow_proposals": [
+                        "disallow",
+                        2
+                    ],
+                    "show_results": [
+                        "always",
+                        2
+                    ],
+                    "admin_access": [
+                        0,
+                        1
+                    ],
+                    "allow_comment": [
+                        1,
+                        1
+                    ],
+                    "hide_booked_up": [
+                        1,
+                        1
+                    ],
+                    "use_no": [
+                        1,
+                        1
+                    ],
+                    "voting_variant": [
+                        "simple",
+                        2
+                    ]
+                }
+            },
+            {
+                "table": "polls_options",
+                "values": {
+                    "poll_id": [
+                        42,
+                        1
+                    ],
+                    "poll_option_text": [
+                        "Pizza",
+                        2
+                    ],
+                    "poll_option_hash": [
+                        "a750faab92b0b6e878699b7eb520e489",
+                        2
+                    ],
+                    "order": [
+                        1,
+                        1
+                    ],
+                    "timestamp": [
+                        0,
+                        1
+                    ],
+                    "duration": [
+                        0,
+                        1
+                    ],
+                    "confirmed": [
+                        0,
+                        1
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "released": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ]
+                }
+            },
+            {
+                "table": "polls_options",
+                "values": {
+                    "poll_id": [
+                        42,
+                        1
+                    ],
+                    "poll_option_text": [
+                        "Sushi",
+                        2
+                    ],
+                    "poll_option_hash": [
+                        "5887a59158d1712d37dba79065192770",
+                        2
+                    ],
+                    "order": [
+                        2,
+                        1
+                    ],
+                    "timestamp": [
+                        0,
+                        1
+                    ],
+                    "duration": [
+                        0,
+                        1
+                    ],
+                    "confirmed": [
+                        0,
+                        1
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "released": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ]
+                }
+            }
+        ],
+        "logs": [],
+        "link": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "pollId": 42,
+            "pollTitle": "Lunch",
+            "pollType": "textPoll",
+            "deadline": null,
+            "voterCount": 0,
+            "optionCount": 3,
+            "closed": false,
+            "linkedBy": "alice",
+            "linkedAt": "DateTime"
+        }
+    },
+    "unknown type": {
+        "writes": [
+            {
+                "table": "polls_polls",
+                "values": {
+                    "type": [
+                        "rankPoll",
+                        2
+                    ],
+                    "title": [
+                        "T",
+                        2
+                    ],
+                    "description": [
+                        "",
+                        2
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ],
+                    "expire": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "access": [
+                        "private",
+                        2
+                    ],
+                    "anonymous": [
+                        0,
+                        1
+                    ],
+                    "allow_maybe": [
+                        1,
+                        1
+                    ],
+                    "allow_proposals": [
+                        "disallow",
+                        2
+                    ],
+                    "show_results": [
+                        "always",
+                        2
+                    ],
+                    "admin_access": [
+                        0,
+                        1
+                    ],
+                    "allow_comment": [
+                        1,
+                        1
+                    ],
+                    "hide_booked_up": [
+                        1,
+                        1
+                    ],
+                    "use_no": [
+                        1,
+                        1
+                    ],
+                    "voting_variant": [
+                        "simple",
+                        2
+                    ]
+                }
+            },
+            {
+                "table": "polls_options",
+                "values": {
+                    "poll_id": [
+                        5,
+                        1
+                    ],
+                    "poll_option_text": [
+                        "12",
+                        2
+                    ],
+                    "poll_option_hash": [
+                        "ea2c46fe9ce7bba21b908a1bbe290551",
+                        2
+                    ],
+                    "order": [
+                        1,
+                        1
+                    ],
+                    "timestamp": [
+                        0,
+                        1
+                    ],
+                    "duration": [
+                        0,
+                        1
+                    ],
+                    "confirmed": [
+                        0,
+                        1
+                    ],
+                    "owner": [
+                        "alice",
+                        2
+                    ],
+                    "released": [
+                        0,
+                        1
+                    ],
+                    "deleted": [
+                        0,
+                        1
+                    ],
+                    "created": [
+                        "NOW",
+                        1
+                    ]
+                }
+            }
+        ],
+        "logs": [],
+        "link": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "pollId": 5,
+            "pollTitle": "T",
+            "pollType": "rankPoll",
+            "deadline": null,
+            "voterCount": 0,
+            "optionCount": 2,
+            "closed": false,
+            "linkedBy": "alice",
+            "linkedAt": "DateTime"
+        }
+    }
+}

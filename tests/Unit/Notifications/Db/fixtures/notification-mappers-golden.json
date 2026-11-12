@@ -1,0 +1,206 @@
+{
+    "markRead found": {
+        "result": {
+            "id": 4,
+            "userId": "alice",
+            "notificationId": "n-1",
+            "hasReadAt": true
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_readstate, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = n-1, 2",
+            "#1 expr.eq(notification_id, :p2, NULL)",
+            "#1 andWhere(eq(notification_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "markRead inserts": {
+        "result": {
+            "id": 0,
+            "userId": "alice",
+            "notificationId": "n-1",
+            "hasReadAt": true
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_readstate, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = n-1, 2",
+            "#1 expr.eq(notification_id, :p2, NULL)",
+            "#1 andWhere(eq(notification_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 insert(openregister_notification_readstate)",
+            "#2 param :p3 = alice, 2",
+            "#2 setValue(user_id, :p3)",
+            "#2 param :p4 = n-1, 2",
+            "#2 setValue(notification_id, :p4)",
+            "#2 param :p5 = DateTime, datetime",
+            "#2 setValue(read_at, :p5)",
+            "#2 executeStatement()"
+        ]
+    },
+    "markRead lost race": {
+        "result": {
+            "id": 4,
+            "userId": "alice",
+            "notificationId": "n-1",
+            "hasReadAt": true
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_readstate, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = n-1, 2",
+            "#1 expr.eq(notification_id, :p2, NULL)",
+            "#1 andWhere(eq(notification_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_notification_readstate, NULL)",
+            "#2 param :p3 = alice, 2",
+            "#2 expr.eq(user_id, :p3, NULL)",
+            "#2 where(eq(user_id, :p3, NULL))",
+            "#2 param :p4 = n-1, 2",
+            "#2 expr.eq(notification_id, :p4, NULL)",
+            "#2 andWhere(eq(notification_id, :p4, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ]
+    },
+    "markRead race no row": {
+        "thrown": "OCP\\AppFramework\\Db\\DoesNotExistException: Did expect one result but found none when executing: query \"(subquery #2)\"; ",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_readstate, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = n-1, 2",
+            "#1 expr.eq(notification_id, :p2, NULL)",
+            "#1 andWhere(eq(notification_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_notification_readstate, NULL)",
+            "#2 param :p3 = alice, 2",
+            "#2 expr.eq(user_id, :p3, NULL)",
+            "#2 where(eq(user_id, :p3, NULL))",
+            "#2 param :p4 = n-1, 2",
+            "#2 expr.eq(notification_id, :p4, NULL)",
+            "#2 andWhere(eq(notification_id, :p4, NULL))",
+            "#2 setMaxResults(1)",
+            "#2 executeQuery()"
+        ]
+    },
+    "markUnread": {
+        "result": true,
+        "queries": [
+            "#1 delete(openregister_notification_readstate, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = n-1, 2",
+            "#1 expr.eq(notification_id, :p2, NULL)",
+            "#1 andWhere(eq(notification_id, :p2, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "isRead found": {
+        "result": true,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_readstate, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = n-1, 2",
+            "#1 expr.eq(notification_id, :p2, NULL)",
+            "#1 andWhere(eq(notification_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "isRead missing": {
+        "result": false,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_readstate, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user_id, :p1, NULL)",
+            "#1 where(eq(user_id, :p1, NULL))",
+            "#1 param :p2 = n-1, 2",
+            "#1 expr.eq(notification_id, :p2, NULL)",
+            "#1 andWhere(eq(notification_id, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll rows": {
+        "result": [
+            "OCA\\OpenRegister\\Notifications\\Db\\QueuedNotification#9",
+            "OCA\\OpenRegister\\Notifications\\Db\\QueuedNotification#9"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_queue, NULL)",
+            "#1 orderBy(created_at, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll read failure": {
+        "result": [],
+        "queries": []
+    },
+    "findById found": {
+        "result": "OCA\\OpenRegister\\Notifications\\Db\\QueuedNotification#9",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_queue, NULL)",
+            "#1 param :p1 = 9, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findById missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_notification_queue, NULL)",
+            "#1 param :p1 = 9, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findById read failure": {
+        "result": null,
+        "queries": []
+    },
+    "deleteById": {
+        "result": null,
+        "queries": [
+            "#1 delete(openregister_notification_queue, NULL)",
+            "#1 param :p1 = 9, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "deleteById failure": {
+        "result": null,
+        "queries": []
+    }
+}

@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -36,10 +36,12 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
@@ -53,10 +55,27 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
 /**
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleBlockExpander
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
- * @covers \OCA\OpenRegister\Service\File\ObjectFileAccess
+ * @covers \OCA\OpenRegister\Files\Service\File\ObjectFileAccess
  *
- * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\ConditionMatcher
+ * @uses \OCA\OpenRegister\Service\OperatorEvaluator
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 
@@ -136,7 +155,7 @@ class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $class) use ($registerMapper) {
-				if ($class === RegisterMapper::class) {
+				if ($class === RegisterMapperInterface::class) {
 					return $registerMapper;
 				}
 
@@ -150,16 +169,15 @@ class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 		);
 
 		$matcher = new ConditionMatcher(
-			$userSession,
+			new ConditionUserResolvers($userSession, $groupManager),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(new NullLogger()),
-			new NullLogger(),
-			$groupManager
+			new NullLogger()
 		);
 
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

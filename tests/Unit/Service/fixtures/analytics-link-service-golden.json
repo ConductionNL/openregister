@@ -1,0 +1,1479 @@
+{
+    "create analytics off": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "NC Analytics is not available",
+                "code": 503
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ]
+        ]
+    },
+    "create and link": {
+        "results": [
+            {
+                "result": {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 7,
+                        "reportTitle": "Created",
+                        "reportType": "0",
+                        "subheader": null,
+                        "createdAt": "2001-09-09T01:46:41+00:00",
+                        "modifiedAt": "2001-09-09T01:46:42+00:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "reportType",
+                        "createdAt",
+                        "modifiedAt",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            },
+            {
+                "result": {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 7,
+                        "reportTitle": "Created",
+                        "reportType": "0",
+                        "subheader": null,
+                        "createdAt": "2001-09-09T01:46:41+00:00",
+                        "modifiedAt": "2001-09-09T01:46:42+00:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "reportType",
+                        "createdAt",
+                        "modifiedAt",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.create",
+                [
+                    "New report",
+                    "",
+                    0,
+                    0,
+                    0,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ]
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                7
+            ],
+            [
+                "mapper.insert",
+                {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 7,
+                        "reportTitle": "Created",
+                        "reportType": "0",
+                        "subheader": null,
+                        "createdAt": "2001-09-09T01:46:41+00:00",
+                        "modifiedAt": "2001-09-09T01:46:42+00:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "reportType",
+                        "createdAt",
+                        "modifiedAt",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.create",
+                [
+                    "Typed",
+                    "",
+                    0,
+                    3,
+                    0,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ]
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                7
+            ],
+            [
+                "mapper.insert",
+                {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 7,
+                        "reportTitle": "Created",
+                        "reportType": "0",
+                        "subheader": null,
+                        "createdAt": "2001-09-09T01:46:41+00:00",
+                        "modifiedAt": "2001-09-09T01:46:42+00:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "reportType",
+                        "createdAt",
+                        "modifiedAt",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ]
+    },
+    "create blank name": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "Report name is required",
+                "code": 400
+            }
+        ],
+        "log": []
+    },
+    "create no user": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "No user logged in",
+                "code": 401
+            }
+        ],
+        "log": []
+    },
+    "create read empty uses draft": {
+        "results": [
+            {
+                "result": {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 10,
+                        "reportTitle": "Draft",
+                        "reportType": "0",
+                        "subheader": null,
+                        "createdAt": "<now>",
+                        "modifiedAt": "<now>",
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "reportType",
+                        "createdAt",
+                        "modifiedAt",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.create",
+                [
+                    "Draft",
+                    "",
+                    0,
+                    0,
+                    0,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ]
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                10
+            ],
+            [
+                "mapper.insert",
+                {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 10,
+                        "reportTitle": "Draft",
+                        "reportType": "0",
+                        "subheader": null,
+                        "createdAt": "<now>",
+                        "modifiedAt": "<now>",
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "reportType",
+                        "createdAt",
+                        "modifiedAt",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ]
+    },
+    "create returns zero": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "Failed to create Analytics report",
+                "code": 500
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.create",
+                [
+                    "Zero",
+                    "",
+                    0,
+                    0,
+                    0,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ]
+            ]
+        ]
+    },
+    "create throws": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "Failed to create Analytics report",
+                "code": 500
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.create",
+                [
+                    "Boom",
+                    "",
+                    0,
+                    4,
+                    0,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ]
+            ],
+            [
+                "log.warning",
+                "AnalyticsLinkService::createAndLinkReport failed: create failed",
+                []
+            ]
+        ]
+    },
+    "link analytics off": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "NC Analytics is not available",
+                "code": 503
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ]
+        ]
+    },
+    "link duplicate": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "Report already linked to this object",
+                "code": 409
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                5
+            ]
+        ]
+    },
+    "link found report": {
+        "results": [
+            {
+                "result": {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 5,
+                        "reportTitle": "Revenue",
+                        "reportType": "2",
+                        "subheader": "Q1",
+                        "createdAt": "2001-09-09T01:46:40+00:00",
+                        "modifiedAt": "2001-02-03T04:05:06+00:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "reportType",
+                        "subheader",
+                        "createdAt",
+                        "modifiedAt",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            },
+            {
+                "result": {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 6,
+                        "reportTitle": "Bare",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            },
+            {
+                "result": {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 8,
+                        "reportTitle": "",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            },
+            {
+                "result": {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 9,
+                        "reportTitle": "Bad dates",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                5
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                5
+            ],
+            [
+                "mapper.insert",
+                {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 5,
+                        "reportTitle": "Revenue",
+                        "reportType": "2",
+                        "subheader": "Q1",
+                        "createdAt": "2001-09-09T01:46:40+00:00",
+                        "modifiedAt": "2001-02-03T04:05:06+00:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "reportType",
+                        "subheader",
+                        "createdAt",
+                        "modifiedAt",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                6
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                6
+            ],
+            [
+                "mapper.insert",
+                {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 6,
+                        "reportTitle": "Bare",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                8
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                8
+            ],
+            [
+                "mapper.insert",
+                {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 8,
+                        "reportTitle": "",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                9
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                9
+            ],
+            [
+                "mapper.insert",
+                {
+                    "AnalyticsLink": {
+                        "id": null,
+                        "objectUuid": "obj-1",
+                        "registerId": 11,
+                        "schemaId": 22,
+                        "reportId": 9,
+                        "reportTitle": "Bad dates",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportId",
+                        "reportTitle",
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ]
+    },
+    "link missing report": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "Analytics report not found",
+                "code": 404
+            },
+            {
+                "exception": "Exception",
+                "message": "Analytics report not found",
+                "code": 404
+            },
+            {
+                "exception": "Exception",
+                "message": "Analytics report not found",
+                "code": 404
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                404
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                404
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                10
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                10
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                11
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                11
+            ]
+        ]
+    },
+    "link no user": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "No user logged in",
+                "code": 401
+            }
+        ],
+        "log": []
+    },
+    "link read throws": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "Analytics report not found",
+                "code": 404
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                5
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                5
+            ],
+            [
+                "log.debug",
+                "AnalyticsLinkService::fetchReportInfo read failed: read failed",
+                []
+            ]
+        ]
+    },
+    "link service unresolvable": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "Analytics report not found",
+                "code": 404
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "mapper.findByObjectAndReport",
+                "obj-1",
+                5
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "log.debug",
+                "AnalyticsLinkService: ReportService unavailable: not resolvable",
+                []
+            ]
+        ]
+    },
+    "linked reports analytics off": {
+        "results": [
+            {
+                "result": [
+                    {
+                        "id": 50,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 5,
+                        "reportTitle": "Cached 5",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": "2000-01-01T00:00:00+00:00",
+                        "modifiedAt": null,
+                        "linkedBy": null,
+                        "linkedAt": null,
+                        "url": "/index.php/apps/analytics/#/r/5"
+                    },
+                    {
+                        "id": 70,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 7,
+                        "reportTitle": "Cached 7",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": "2000-01-01T00:00:00+00:00",
+                        "modifiedAt": null,
+                        "linkedBy": null,
+                        "linkedAt": "2001-01-01T00:00:00+00:00",
+                        "url": "/index.php/apps/analytics/#/r/7"
+                    }
+                ]
+            }
+        ],
+        "log": [
+            [
+                "mapper.findByObjectUuid",
+                "obj-1"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ]
+        ]
+    },
+    "linked reports refresh stale": {
+        "results": [
+            {
+                "result": [
+                    {
+                        "id": 50,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 5,
+                        "reportTitle": "Revenue",
+                        "reportType": "2",
+                        "subheader": "Q1",
+                        "createdAt": "2001-09-09T01:46:40+00:00",
+                        "modifiedAt": "2001-02-03T04:05:06+00:00",
+                        "linkedBy": null,
+                        "linkedAt": "<now>",
+                        "url": "/index.php/apps/analytics/#/r/5"
+                    },
+                    {
+                        "id": 70,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 7,
+                        "reportTitle": "Created",
+                        "reportType": "0",
+                        "subheader": null,
+                        "createdAt": "2001-09-09T01:46:41+00:00",
+                        "modifiedAt": "2001-09-09T01:46:42+00:00",
+                        "linkedBy": null,
+                        "linkedAt": "<now>",
+                        "url": "/index.php/apps/analytics/#/r/7"
+                    },
+                    {
+                        "id": 50,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 5,
+                        "reportTitle": "Cached 5",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": "2000-01-01T00:00:00+00:00",
+                        "modifiedAt": null,
+                        "linkedBy": null,
+                        "linkedAt": "2999-01-01T00:00:00+00:00",
+                        "url": "/index.php/apps/analytics/#/r/5"
+                    },
+                    {
+                        "id": 4040,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 404,
+                        "reportTitle": "Cached 404",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": "2000-01-01T00:00:00+00:00",
+                        "modifiedAt": null,
+                        "linkedBy": null,
+                        "linkedAt": "2001-01-01T00:00:00+00:00",
+                        "url": "/index.php/apps/analytics/#/r/404"
+                    },
+                    {
+                        "id": 80,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 8,
+                        "reportTitle": "",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": "2000-01-01T00:00:00+00:00",
+                        "modifiedAt": null,
+                        "linkedBy": null,
+                        "linkedAt": "<now>",
+                        "url": "/index.php/apps/analytics/#/r/8"
+                    }
+                ]
+            }
+        ],
+        "log": [
+            [
+                "mapper.findByObjectUuid",
+                "obj-1"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                5
+            ],
+            [
+                "mapper.update",
+                {
+                    "AnalyticsLink": {
+                        "id": 50,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 5,
+                        "reportTitle": "Revenue",
+                        "reportType": "2",
+                        "subheader": "Q1",
+                        "createdAt": "2001-09-09T01:46:40+00:00",
+                        "modifiedAt": "2001-02-03T04:05:06+00:00",
+                        "linkedBy": null,
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportTitle",
+                        "reportType",
+                        "subheader",
+                        "modifiedAt",
+                        "createdAt",
+                        "linkedAt"
+                    ]
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                7
+            ],
+            [
+                "mapper.update",
+                {
+                    "AnalyticsLink": {
+                        "id": 70,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 7,
+                        "reportTitle": "Created",
+                        "reportType": "0",
+                        "subheader": null,
+                        "createdAt": "2001-09-09T01:46:41+00:00",
+                        "modifiedAt": "2001-09-09T01:46:42+00:00",
+                        "linkedBy": null,
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportTitle",
+                        "reportType",
+                        "modifiedAt",
+                        "createdAt",
+                        "linkedAt"
+                    ]
+                }
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                404
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                8
+            ],
+            [
+                "mapper.update",
+                {
+                    "AnalyticsLink": {
+                        "id": 80,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 8,
+                        "reportTitle": "",
+                        "reportType": null,
+                        "subheader": null,
+                        "createdAt": "2000-01-01T00:00:00+00:00",
+                        "modifiedAt": null,
+                        "linkedBy": null,
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportTitle",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ]
+    },
+    "linked reports update throws": {
+        "results": [
+            {
+                "result": [
+                    {
+                        "id": 50,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 5,
+                        "reportTitle": "Revenue",
+                        "reportType": "2",
+                        "subheader": "Q1",
+                        "createdAt": "2001-09-09T01:46:40+00:00",
+                        "modifiedAt": "2001-02-03T04:05:06+00:00",
+                        "linkedBy": null,
+                        "linkedAt": "<now>",
+                        "url": "/index.php/apps/analytics/#/r/5"
+                    }
+                ]
+            }
+        ],
+        "log": [
+            [
+                "mapper.findByObjectUuid",
+                "obj-1"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.read",
+                5
+            ],
+            [
+                "mapper.update",
+                {
+                    "AnalyticsLink": {
+                        "id": 50,
+                        "objectUuid": "obj-1",
+                        "registerId": null,
+                        "schemaId": null,
+                        "reportId": 5,
+                        "reportTitle": "Revenue",
+                        "reportType": "2",
+                        "subheader": "Q1",
+                        "createdAt": "2001-09-09T01:46:40+00:00",
+                        "modifiedAt": "2001-02-03T04:05:06+00:00",
+                        "linkedBy": null,
+                        "linkedAt": "<now>"
+                    },
+                    "updated": [
+                        "reportTitle",
+                        "reportType",
+                        "subheader",
+                        "modifiedAt",
+                        "createdAt",
+                        "linkedAt"
+                    ]
+                }
+            ],
+            [
+                "log.debug",
+                "AnalyticsLinkService::refreshLink update failed: update failed",
+                []
+            ]
+        ]
+    },
+    "picker all": {
+        "results": [
+            {
+                "result": [
+                    {
+                        "id": 1,
+                        "name": "Revenue",
+                        "type": "2",
+                        "subheader": "Sub",
+                        "url": "/index.php/apps/analytics/#/r/1"
+                    },
+                    {
+                        "id": 2,
+                        "name": "",
+                        "type": "1",
+                        "subheader": null,
+                        "url": "/index.php/apps/analytics/#/r/2"
+                    },
+                    {
+                        "id": 3,
+                        "name": "Object Revenue",
+                        "type": null,
+                        "subheader": null,
+                        "url": "/index.php/apps/analytics/#/r/3"
+                    }
+                ]
+            },
+            {
+                "result": [
+                    {
+                        "id": 1,
+                        "name": "Revenue",
+                        "type": "2",
+                        "subheader": "Sub",
+                        "url": "/index.php/apps/analytics/#/r/1"
+                    },
+                    {
+                        "id": 2,
+                        "name": "",
+                        "type": "1",
+                        "subheader": null,
+                        "url": "/index.php/apps/analytics/#/r/2"
+                    },
+                    {
+                        "id": 3,
+                        "name": "Object Revenue",
+                        "type": null,
+                        "subheader": null,
+                        "url": "/index.php/apps/analytics/#/r/3"
+                    }
+                ]
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.index"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.index"
+            ]
+        ]
+    },
+    "picker analytics off": {
+        "results": [
+            {
+                "result": []
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ]
+        ]
+    },
+    "picker index throws": {
+        "results": [
+            {
+                "result": []
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.index"
+            ],
+            [
+                "log.warning",
+                "AnalyticsLinkService::getAvailableReports failed: index failed",
+                []
+            ]
+        ]
+    },
+    "picker search": {
+        "results": [
+            {
+                "result": [
+                    {
+                        "id": 1,
+                        "name": "Revenue",
+                        "type": "2",
+                        "subheader": "Sub",
+                        "url": "/index.php/apps/analytics/#/r/1"
+                    },
+                    {
+                        "id": 3,
+                        "name": "Object Revenue",
+                        "type": null,
+                        "subheader": null,
+                        "url": "/index.php/apps/analytics/#/r/3"
+                    }
+                ]
+            },
+            {
+                "result": []
+            }
+        ],
+        "log": [
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.index"
+            ],
+            [
+                "apps.isEnabledForUser",
+                "analytics"
+            ],
+            [
+                "container.get",
+                "\\OCA\\Analytics\\Service\\ReportService"
+            ],
+            [
+                "reports.index"
+            ]
+        ]
+    },
+    "unlink": {
+        "results": [
+            {
+                "result": null
+            }
+        ],
+        "log": [
+            [
+                "mapper.deleteByObjectAndReport",
+                "obj-1",
+                5
+            ]
+        ]
+    },
+    "unlink missing": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "Analytics link not found",
+                "code": 404
+            }
+        ],
+        "log": [
+            [
+                "mapper.deleteByObjectAndReport",
+                "obj-1",
+                5
+            ]
+        ]
+    },
+    "unlink no user": {
+        "results": [
+            {
+                "exception": "Exception",
+                "message": "No user logged in",
+                "code": 401
+            }
+        ],
+        "log": []
+    }
+}

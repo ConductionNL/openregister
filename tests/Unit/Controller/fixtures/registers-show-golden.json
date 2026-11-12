@@ -1,0 +1,508 @@
+{
+    "admin": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven"
+        }
+    },
+    "anonymous, conditional public entry": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        }
+    },
+    "anonymous, no authorization": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        }
+    },
+    "anonymous, private register": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        }
+    },
+    "anonymous, public group entry": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven"
+        }
+    },
+    "anonymous, public register": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven"
+        }
+    },
+    "anonymous, stats on a private register": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        }
+    },
+    "anonymous, stats on a public register": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ],
+            [
+                "objectStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven",
+            "stats": {
+                "objects": {
+                    "total": 3
+                },
+                "logs": {
+                    "total": 0,
+                    "size": 0
+                },
+                "files": {
+                    "total": 0,
+                    "size": 0
+                }
+            }
+        }
+    },
+    "extend as text": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven"
+        }
+    },
+    "find fails": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ],
+            [
+                "error",
+                "[RegistersController] Failed to retrieve register",
+                {
+                    "register_id": "seven",
+                    "error_message": "find failed"
+                }
+            ]
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve register: find failed"
+        }
+    },
+    "signed in": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven"
+        }
+    },
+    "signed in, private register": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven"
+        }
+    },
+    "statistics fail": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ],
+            [
+                "objectStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "error",
+                "[RegistersController] Failed to retrieve register",
+                {
+                    "register_id": "seven",
+                    "error_message": "count failed"
+                }
+            ]
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve register: count failed"
+        }
+    },
+    "stats among others": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ],
+            [
+                "objectStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "isAdmin",
+                "member"
+            ],
+            [
+                "auditStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven",
+            "stats": {
+                "objects": {
+                    "total": 3
+                },
+                "logs": {
+                    "total": 8,
+                    "size": 80
+                },
+                "files": {
+                    "total": 0,
+                    "size": 0
+                }
+            }
+        }
+    },
+    "stats as text": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ],
+            [
+                "objectStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "isAdmin",
+                "member"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven",
+            "stats": {
+                "objects": {
+                    "total": 3
+                },
+                "logs": {
+                    "total": 0,
+                    "size": 0
+                },
+                "files": {
+                    "total": 0,
+                    "size": 0
+                }
+            }
+        }
+    },
+    "stats for a member": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ],
+            [
+                "objectStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "isAdmin",
+                "member"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven",
+            "stats": {
+                "objects": {
+                    "total": 3
+                },
+                "logs": {
+                    "total": 0,
+                    "size": 0
+                },
+                "files": {
+                    "total": 0,
+                    "size": 0
+                }
+            }
+        }
+    },
+    "stats for an admin": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ],
+            [
+                "objectStatistics",
+                [
+                    7,
+                    null
+                ]
+            ],
+            [
+                "isAdmin",
+                "member"
+            ],
+            [
+                "auditStatistics",
+                [
+                    7,
+                    null
+                ]
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "id": 7,
+            "title": "Seven",
+            "stats": {
+                "objects": {
+                    "total": 3
+                },
+                "logs": {
+                    "total": 8,
+                    "size": 80
+                },
+                "files": {
+                    "total": 0,
+                    "size": 0
+                }
+            }
+        }
+    },
+    "unknown register": {
+        "calls": [
+            [
+                "getParam",
+                "_extend",
+                []
+            ],
+            [
+                "find",
+                "seven",
+                [],
+                false
+            ]
+        ],
+        "status": 404,
+        "data": {
+            "error": "Register not found"
+        }
+    }
+}

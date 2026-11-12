@@ -55,6 +55,7 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-projection-is-idempotent-and-does-not-feed-itself
  */
 class TaskProjectionState extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The CalDAV VTODO surface.
@@ -123,24 +124,4 @@ class TaskProjectionState extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'renderedAt', type: 'datetime');
 
 	}//end __construct()
-
-	/**
-	 * Serialise for diagnostics.
-	 *
-	 * @return array<string, mixed> The row as plain data.
-	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-projection-is-idempotent-and-does-not-feed-itself
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'taskUuid' => $this->taskUuid,
-			'surface' => $this->surface,
-			'assignee' => $this->assignee,
-			'calendarId' => $this->calendarId,
-			'objectUri' => $this->objectUri,
-			'renderedHash' => $this->renderedHash,
-			'renderedAt' => $this->renderedAt?->format('c'),
-		];
-	}//end jsonSerialize()
 }//end class

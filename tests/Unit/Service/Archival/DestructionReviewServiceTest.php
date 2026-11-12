@@ -24,6 +24,8 @@ namespace Unit\Service\Archival;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
+use OCA\OpenRegister\Service\Archival\ReviewerAnswer;
+use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -36,6 +38,20 @@ class DestructionReviewServiceTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service = new DestructionReviewService();
+	}
+
+	/**
+	 * The service over a clock frozen at one moment.
+	 *
+	 * @param DateTimeImmutable $now The moment the clock tells.
+	 *
+	 * @return DestructionReviewService The service.
+	 */
+	private function clockedAt(DateTimeImmutable $now): DestructionReviewService {
+		$clock = $this->createMock(ITimeFactory::class);
+		$clock->method('now')->willReturn($now);
+
+		return new DestructionReviewService(clock: $clock);
 	}
 
 	/**
@@ -121,14 +137,10 @@ class DestructionReviewServiceTest extends TestCase {
 	 * @dataProvider answerProvider
 	 */
 	public function testEveryAnswerLandsInOneDecisionHistory(string $answer, ?string $newDate): void {
-		$listData = $this->service->recordAnswer(
+		$listData = $this->clockedAt(new DateTimeImmutable('2026-03-02T11:30:00+00:00'))->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: $answer,
-			reviewer: 'els',
-			reason: 'Reviewed against selectielijst 2020, row 11.1.2',
-			newDate: $newDate,
-			decidedAt: new DateTimeImmutable('2026-03-02T11:30:00+00:00')
+			given: new ReviewerAnswer(answer: $answer, reason: 'Reviewed against selectielijst 2020, row 11.1.2', newDate: $newDate, reviewer: 'els')
 		);
 
 		$this->assertCount(1, $listData['decisions']);
@@ -149,9 +161,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$listData = $this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: DestructionReviewService::ANSWER_TRANSFER,
-			reviewer: 'els',
-			reason: 'Blijvend bewaren, naar het e-depot',
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_TRANSFER, reason: 'Blijvend bewaren, naar het e-depot', reviewer: 'els'),
 			transferRef: 'transfer-list-7'
 		);
 
@@ -162,10 +172,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$listData = $this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: DestructionReviewService::ANSWER_RETAIN,
-			reviewer: 'els',
-			reason: 'Lopende bezwaarprocedure',
-			newDate: '2028-03-01'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_RETAIN, reason: 'Lopende bezwaarprocedure', newDate: '2028-03-01', reviewer: 'els')
 		);
 
 		$this->assertSame('2028-03-01', $listData['decisions'][0]['newArchiefactiedatum']);
@@ -178,9 +185,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: DestructionReviewService::ANSWER_RETAIN,
-			reviewer: 'els',
-			reason: 'Lopende bezwaarprocedure'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_RETAIN, reason: 'Lopende bezwaarprocedure', reviewer: 'els')
 		);
 	}
 
@@ -191,9 +196,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: DestructionReviewService::ANSWER_DESTROY,
-			reviewer: 'els',
-			reason: '   '
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_DESTROY, reason: '   ', reviewer: 'els')
 		);
 	}
 
@@ -204,9 +207,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: 'approve',
-			reviewer: 'els',
-			reason: 'Looks fine'
+			given: new ReviewerAnswer(answer: 'approve', reason: 'Looks fine', reviewer: 'els')
 		);
 	}
 
@@ -217,9 +218,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-2',
-			answer: DestructionReviewService::ANSWER_DESTROY,
-			reviewer: 'joris',
-			reason: 'Past its date'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_DESTROY, reason: 'Past its date', reviewer: 'joris')
 		);
 	}
 
@@ -230,9 +229,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: DestructionReviewService::ANSWER_DESTROY,
-			reviewer: 'joris',
-			reason: 'Past its date'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_DESTROY, reason: 'Past its date', reviewer: 'joris')
 		);
 	}
 
@@ -240,9 +237,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$listData = $this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: DestructionReviewService::ANSWER_DESTROY,
-			reviewer: 'els',
-			reason: 'Past its date'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_DESTROY, reason: 'Past its date', reviewer: 'els')
 		);
 
 		$this->expectException(InvalidArgumentException::class);
@@ -251,10 +246,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$this->service->recordAnswer(
 			listData: $listData,
 			entryUuid: 'obj-1',
-			answer: DestructionReviewService::ANSWER_RETAIN,
-			reviewer: 'els',
-			reason: 'Changed my mind',
-			newDate: '2030-01-01'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_RETAIN, reason: 'Changed my mind', newDate: '2030-01-01', reviewer: 'els')
 		);
 	}
 
@@ -262,9 +254,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$listData = $this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: DestructionReviewService::ANSWER_DESTROY,
-			reviewer: 'els',
-			reason: 'Past its date'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_DESTROY, reason: 'Past its date', reviewer: 'els')
 		);
 
 		$this->expectException(InvalidArgumentException::class);
@@ -295,9 +285,7 @@ class DestructionReviewServiceTest extends TestCase {
 		$listData = $this->service->recordAnswer(
 			listData: $this->list(),
 			entryUuid: 'obj-1',
-			answer: DestructionReviewService::ANSWER_DESTROY,
-			reviewer: 'els',
-			reason: 'Past its date'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_DESTROY, reason: 'Past its date', reviewer: 'els')
 		);
 
 		$this->assertSame(

@@ -1,0 +1,269 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DeleteSchemaProperty.initDialog opens with registers none, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers none, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers none, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers none, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers with, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers with, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers with, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+    {
+      "email": "x",
+      "id": "a2",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers with, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+    {
+      "email": "x",
+      "id": "a2",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers without, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers without, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers without, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;
+
+exports[`DeleteSchemaProperty.initDialog opens with registers without, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+}
+`;

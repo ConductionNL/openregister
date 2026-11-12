@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
  */
-class RegisterDocumentLoader {
+class RegisterDocumentLoader implements RegisterDocumentLoaderInterface {
 
 	/**
 	 * Constructor.
@@ -74,9 +74,11 @@ class RegisterDocumentLoader {
 	 *
 	 * @param string $appId The leaf app whose register document is read.
 	 *
-	 * @return array{0: array<string, mixed>|null, 1: string} `[$data, $version]`;
-	 *                                                        `$data` is `null` when
-	 *                                                        no register JSON was found.
+	 * @return array{0: array<string, mixed>|null, 1: string, 2?: bool} `[$data, $version, $complete]`;
+	 *                                                                  `$data` is `null` when no
+	 *                                                                  register JSON was found;
+	 *                                                                  `$complete` is false when a
+	 *                                                                  fragment was skipped.
 	 *
 	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
 	 */
@@ -102,17 +104,18 @@ class RegisterDocumentLoader {
 			return [null, ''];
 		}
 
-		[$configData, $fragmentSig] = $this->withFragments(
+		[$configData, $fragmentSig, $complete] = $this->withFragments(
 			base: $configData,
 			fragmentDir: $appPath . '/lib/Settings/register.d'
 		);
 
 		$version = (string)($configData['info']['version'] ?? '0.0.0');
 		if ($fragmentSig !== '') {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 			$version .= '+frag.' . substr(md5($fragmentSig), 0, 8);
 		}
 
-		return [$configData, $version];
+		return [$configData, $version, $complete];
 	}//end load()
 
 	/**
@@ -131,38 +134,44 @@ class RegisterDocumentLoader {
 	 * @param array<string, mixed> $base        The base register document.
 	 * @param string               $fragmentDir Where the fragments live.
 	 *
-	 * @return array{0: array<string, mixed>, 1: string} The merged document and the fragment signature.
+	 * @return array{0: array<string, mixed>, 1: string, 2: bool} The merged document, the fragment
+	 *                                                           signature, and whether every
+	 *                                                           fragment was merged.
 	 *
 	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
 	 */
 	private function withFragments(array $base, string $fragmentDir): array {
 		if (is_dir($fragmentDir) === false) {
-			return [$base, ''];
+			return [$base, '', true];
 		}
 
 		$fragmentFiles = glob($fragmentDir . '/*.json');
 		if ($fragmentFiles === false) {
-			return [$base, ''];
+			return [$base, '', false];
 		}
 
 		sort($fragmentFiles);
 		$fragmentSig = '';
+		$complete = true;
 		foreach ($fragmentFiles as $fragmentFile) {
 			$fragmentContent = file_get_contents($fragmentFile);
 			if ($fragmentContent === false) {
+				$complete = false;
 				continue;
 			}
 
 			$fragmentData = json_decode($fragmentContent, true);
 			if (json_last_error() !== JSON_ERROR_NONE || is_array($fragmentData) === false) {
+				$complete = false;
 				continue;
 			}
 
 			$base = self::deepMergeConfig(base: $base, overlay: $fragmentData);
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 			$fragmentSig .= basename($fragmentFile) . ':' . md5($fragmentContent) . ';';
 		}
 
-		return [$base, $fragmentSig];
+		return [$base, $fragmentSig, $complete];
 	}//end withFragments()
 
 	/**

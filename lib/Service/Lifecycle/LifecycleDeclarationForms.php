@@ -43,6 +43,18 @@ namespace OCA\OpenRegister\Service\Lifecycle;
 class LifecycleDeclarationForms {
 
 	/**
+	 * The refusal of a malformed `final`.
+	 *
+	 * @var array{code: string, message: string}
+	 */
+	private const FINAL_MALFORMED = [
+		'code' => 'lifecycle-final-malformed',
+		'message' => 'x-openregister-lifecycle.final must be a list of states, or an object '
+			. 'with non-empty "from" (the schema the lifecycle field references) and "field" '
+			. '(the property on that row saying whether it is an end) strings.',
+	];
+
+	/**
 	 * Is this value the reference form rather than a list of states?
 	 *
 	 * The two forms are told apart by shape, not by a flag: a list of state
@@ -97,31 +109,42 @@ class LifecycleDeclarationForms {
 			return null;
 		}
 
-		$malformed = [
-			'code' => 'lifecycle-final-malformed',
-			'message' => 'x-openregister-lifecycle.final must be a list of states, or an object '
-				. 'with non-empty "from" (the schema the lifecycle field references) and "field" '
-				. '(the property on that row saying whether it is an end) strings.',
-		];
-
 		if (is_array($final) === false) {
-			return $malformed;
+			return self::FINAL_MALFORMED;
 		}
 
 		if ($this->isReferenceForm(final: $final) === false) {
 			return null;
 		}
 
-		$from = ($final['from'] ?? null);
-		$field = ($final['field'] ?? null);
-		if (is_string($from) === false || trim($from) === ''
-			|| is_string($field) === false || trim($field) === ''
-		) {
-			return $malformed;
+		return $this->referenceFormError(final: $final);
+	}//end validateForm()
+
+	/**
+	 * The refusal of a reference-form `final` without its two strings.
+	 *
+	 * @param array<string, mixed> $final The reference form.
+	 *
+	 * @return array{code: string, message: string}|null Error, or null when complete.
+	 */
+	private function referenceFormError(array $final): ?array {
+		if ($this->hasText(value: $final['from'] ?? null) === true && $this->hasText(value: $final['field'] ?? null) === true) {
+			return null;
 		}
 
-		return null;
-	}//end validateForm()
+		return self::FINAL_MALFORMED;
+	}//end referenceFormError()
+
+	/**
+	 * Whether a value is a string with something besides whitespace.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private function hasText(mixed $value): bool {
+		return is_string($value) === true && trim($value) !== '';
+	}//end hasText()
 
 	/**
 	 * Shape-check the `initial` value in its two accepted forms.
@@ -145,24 +168,53 @@ class LifecycleDeclarationForms {
 			return null;
 		}
 
-		if (is_array($initial) === true) {
-			$from = ($initial['from'] ?? null);
-			$field = ($initial['field'] ?? null);
-			if (is_string($from) === false || $from === ''
-				|| is_string($field) === false || $field === ''
-			) {
-				return [
-					'code' => 'lifecycle-initial-malformed',
-					'message' => 'x-openregister-lifecycle.initial object form must declare non-empty "from" and "field" strings.',
-				];
-			}
+		if (is_array($initial) === false) {
+			$message = 'x-openregister-lifecycle.initial must be a string or an object with "from" and "field".';
+			return ['code' => 'lifecycle-initial-malformed', 'message' => $message];
+		}
 
+		if ($this->namesFromAndField(initial: $initial) === true) {
 			return null;
 		}
 
-		return [
-			'code' => 'lifecycle-initial-malformed',
-			'message' => 'x-openregister-lifecycle.initial must be a string or an object with "from" and "field".',
-		];
+		$message = 'x-openregister-lifecycle.initial object form must declare non-empty "from" and "field" strings.';
+
+		return ['code' => 'lifecycle-initial-malformed', 'message' => $message];
 	}//end validateInitialForm()
+
+	/**
+	 * Whether an object-form `initial` has non-empty `from` and `field` strings.
+	 *
+	 * @param array<string, mixed> $initial The object form.
+	 *
+	 * @return bool
+	 */
+	private function namesFromAndField(array $initial): bool {
+		$from = ($initial['from'] ?? '');
+		$field = ($initial['field'] ?? '');
+
+		return is_string($from) === true && $from !== '' && is_string($field) === true && $field !== '';
+	}//end namesFromAndField()
+
+	/**
+	 * Check the optional `initial` and `final` declarations of a field without
+	 * an enum: both are shape-checked, never enum-checked, because there the
+	 * reference form is the only one that can name either endpoint.
+	 *
+	 * @param array<string, mixed> $annotation The normalised annotation block.
+	 *
+	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+	 *
+	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/object-lifecycle/spec.md
+	 */
+	public function validateEndpoints(array $annotation): array {
+		$errors = [];
+		if (isset($annotation['initial']) === true) {
+			$errors[] = $this->validateInitialForm(initial: $annotation['initial']);
+		}
+
+		$errors[] = $this->validateForm(final: ($annotation['final'] ?? null));
+
+		return array_values(array_filter($errors, static fn (?array $error): bool => $error !== null));
+	}//end validateEndpoints()
 }//end class

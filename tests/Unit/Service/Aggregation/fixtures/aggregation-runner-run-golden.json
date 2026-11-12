@@ -1,0 +1,2064 @@
+{
+    "avg-where": {
+        "result": {
+            "name": "agg",
+            "metric": "avg",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 15
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "avg",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "avg",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "avg",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 15
+                    }
+                ]
+            }
+        ]
+    },
+    "cache-hit": {
+        "result": {
+            "name": "agg",
+            "value": 99,
+            "cached": true
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            }
+        ]
+    },
+    "cache-hit-grouped": {
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 2
+                }
+            ],
+            "cached": true
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": "status",
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            }
+        ]
+    },
+    "count-metric": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "count-select": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "current-user-placeholder": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 0
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "owner": "alice"
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": "alice",
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "owner": "alice"
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": "alice",
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 0
+                    }
+                ]
+            }
+        ]
+    },
+    "denied": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "You do not have permission to aggregate schema \"things\".",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "permission": [
+                    "list",
+                    null
+                ]
+            }
+        ]
+    },
+    "denied-but-qualifies": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 35
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "permission": [
+                    "list",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 35
+                    }
+                ]
+            }
+        ]
+    },
+    "denied-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 35
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 35
+                    }
+                ]
+            }
+        ]
+    },
+    "field-non-string": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": 7,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": 7,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "from-empty": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "governed-field": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "This aggregation reads salary, which you may not read, so it cannot be computed for you.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "governed-field-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "salary",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 0
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "salary",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "salary",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "salary",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 0
+                    }
+                ]
+            }
+        ]
+    },
+    "governed-group-by": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "This aggregation reads salary, which you may not read, so it cannot be computed for you.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "governed-metrics-field": {
+        "error": "OCA\\OpenRegister\\Exception\\NotAuthorizedException",
+        "message": "This aggregation reads salary, which you may not read, so it cannot be computed for you.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "group-by-list": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "keys": {
+                        "status": "open",
+                        "team": "a"
+                    },
+                    "value": 10
+                },
+                {
+                    "keys": {
+                        "status": "open",
+                        "team": "b"
+                    },
+                    "value": 20
+                },
+                {
+                    "keys": {
+                        "status": "done",
+                        "team": "a"
+                    },
+                    "value": 5
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status",
+                            "team"
+                        ],
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": [
+                            "status",
+                            "team"
+                        ],
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "keys": {
+                                    "status": "open",
+                                    "team": "a"
+                                },
+                                "value": 10
+                            },
+                            {
+                                "keys": {
+                                    "status": "open",
+                                    "team": "b"
+                                },
+                                "value": 20
+                            },
+                            {
+                                "keys": {
+                                    "status": "done",
+                                    "team": "a"
+                                },
+                                "value": 5
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "group-by-string": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 3
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": "status",
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": [],
+                        "groupBy": "status",
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 3
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-empty": {
+        "result": {
+            "name": "agg",
+            "metric": "min",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 5
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "min",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "min",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "min",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 5
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-grouped": {
+        "result": {
+            "name": "agg",
+            "metric": "",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "values": {
+                        "count": 2,
+                        "sum_amount": 30
+                    }
+                },
+                {
+                    "key": "done",
+                    "values": {
+                        "count": 1,
+                        "sum_amount": 5
+                    }
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "field": null,
+                        "filter": [],
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "values": {
+                                    "count": 2,
+                                    "sum_amount": 30
+                                }
+                            },
+                            {
+                                "key": "done",
+                                "values": {
+                                    "count": 1,
+                                    "sum_amount": 5
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-one": {
+        "result": {
+            "name": "agg",
+            "metric": "max",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 20
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "max",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            }
+                        ],
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "max",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            }
+                        ],
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "max",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 20
+                    }
+                ]
+            }
+        ]
+    },
+    "metrics-two": {
+        "result": {
+            "name": "agg",
+            "metric": "",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "values": {
+                "count": 3,
+                "sum_amount": 35
+            }
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "",
+                        "metrics": [
+                            {
+                                "metric": "count"
+                            },
+                            {
+                                "metric": "sum",
+                                "field": "amount"
+                            }
+                        ],
+                        "field": null,
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "values": {
+                            "count": 3,
+                            "sum_amount": 35
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "name-not-array": {
+        "error": "RuntimeException",
+        "message": "Aggregation \"agg\" is not declared on this schema.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "narrowing-declared-key": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 2
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "status": "open"
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 2
+                    }
+                ]
+            }
+        ]
+    },
+    "narrowing-new-key": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 1
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "status": "open",
+                            "team": "a"
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "status": "open",
+                            "team": "a"
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 1
+                    }
+                ]
+            }
+        ]
+    },
+    "narrowing-operator": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 35
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 35
+                    }
+                ]
+            }
+        ]
+    },
+    "native-grouped": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3
+                },
+                {
+                    "key": "done",
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"team\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "__none__",
+                    "a"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3
+                            },
+                            {
+                                "key": "done",
+                                "value": 1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "native-grouped-bypass": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3
+                },
+                {
+                    "key": "done",
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?) AND \"team\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "__none__",
+                    "a"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3
+                            },
+                            {
+                                "key": "done",
+                                "value": 1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "native-grouped-user": {
+        "result": {
+            "name": "agg",
+            "metric": "count",
+            "field": null,
+            "backend": "postgres",
+            "truncated": false,
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3
+                },
+                {
+                    "key": "done",
+                    "value": 1
+                }
+            ]
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": "alice",
+                        "org": "org-2"
+                    }
+                ]
+            },
+            {
+                "rowPredicate": true
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*oc_or_3_5\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND ((_status IS NULL OR _status <> 'draft') OR _owner = ?) AND \"_organisation\" IN (?) AND rbac_pred = 1 AND \"team\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "alice",
+                    "__none__",
+                    "a"
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "count",
+                        "metrics": null,
+                        "field": null,
+                        "filter": {
+                            "team": "a"
+                        },
+                        "groupBy": [
+                            "status"
+                        ],
+                        "join": null,
+                        "userId": "alice",
+                        "org": "org-2"
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "count",
+                        "field": null,
+                        "backend": "postgres",
+                        "truncated": false,
+                        "groups": [
+                            {
+                                "key": "open",
+                                "value": 3
+                            },
+                            {
+                                "key": "done",
+                                "value": 1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "no-annotation": {
+        "error": "RuntimeException",
+        "message": "Schema \"things\" does not declare x-openregister-aggregations.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "row-cap": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": true,
+            "value": 10000
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": true,
+                        "value": 10000
+                    }
+                ]
+            }
+        ]
+    },
+    "sum-field": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 35
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 35
+                    }
+                ]
+            }
+        ]
+    },
+    "sum-filter-operator": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 30
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "amount": {
+                                "gte": 10
+                            }
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": {
+                            "amount": {
+                                "gte": 10
+                            }
+                        },
+                        "groupBy": null,
+                        "join": null,
+                        "userId": null,
+                        "org": null
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 30
+                    }
+                ]
+            }
+        ]
+    },
+    "unknown-name": {
+        "error": "RuntimeException",
+        "message": "Aggregation \"other\" is not declared on this schema.",
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    null
+                ]
+            }
+        ]
+    },
+    "user-and-org": {
+        "result": {
+            "name": "agg",
+            "metric": "sum",
+            "field": "amount",
+            "backend": "php-fallback",
+            "truncated": false,
+            "value": 35
+        },
+        "calls": [
+            {
+                "permission": [
+                    "read",
+                    "alice"
+                ]
+            },
+            {
+                "cacheGet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": "alice",
+                        "org": "org-1"
+                    }
+                ]
+            },
+            {
+                "table": [
+                    "reg",
+                    "things",
+                    10000
+                ]
+            },
+            {
+                "cacheSet": [
+                    "reg",
+                    "things",
+                    "agg",
+                    {
+                        "metric": "sum",
+                        "metrics": null,
+                        "field": "amount",
+                        "filter": [],
+                        "groupBy": null,
+                        "join": null,
+                        "userId": "alice",
+                        "org": "org-1"
+                    },
+                    {
+                        "name": "agg",
+                        "metric": "sum",
+                        "field": "amount",
+                        "backend": "php-fallback",
+                        "truncated": false,
+                        "value": 35
+                    }
+                ]
+            }
+        ]
+    }
+}

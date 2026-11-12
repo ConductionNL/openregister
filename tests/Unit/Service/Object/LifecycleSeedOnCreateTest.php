@@ -44,6 +44,17 @@ use ReflectionClass;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  */
 class LifecycleSeedOnCreateTest extends TestCase {
 	private const PARENT = '00000000-0000-0000-0000-000000000000';
@@ -182,4 +193,24 @@ class LifecycleSeedOnCreateTest extends TestCase {
 
 		$this->assertArrayNotHasKey('status', $result);
 	}//end testLiteralStringInitialIsNotSeeded()
+
+	/**
+	 * An `initial` missing its parent field, or an annotation naming no field, seeds nothing;
+	 * `property` names the field when `field` is absent.
+	 */
+	public function testIncompleteInitialIsNotSeededAndPropertyNamesTheField(): void {
+		$this->mapper->method('find')->willReturn($this->parent(self::S1));
+		$seed = function (array $annotation): array {
+			$schema = $this->createMock(Schema::class);
+			$schema->method('getConfiguration')->willReturn(['x-openregister-lifecycle' => $annotation]);
+			return $this->sut->seedLifecycleFieldOnCreate($schema, ['caseType' => self::PARENT]);
+		};
+
+		$this->assertSame(['caseType' => self::PARENT], $seed(['field' => 'status', 'initial' => ['from' => 'caseType']]));
+		$this->assertSame(['caseType' => self::PARENT], $seed(['initial' => ['from' => 'caseType', 'field' => 'initialStatus']]));
+		$this->assertSame(
+			['caseType' => self::PARENT, 'phase' => self::S1],
+			$seed(['property' => 'phase', 'initial' => ['from' => 'caseType', 'field' => 'initialStatus']])
+		);
+	}//end testIncompleteInitialIsNotSeededAndPropertyNamesTheField()
 }//end class

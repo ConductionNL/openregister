@@ -19,6 +19,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowToolServices;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 class FlowMcpToolProviderTest extends TestCase {
 	private FlowRunService $runner;
@@ -47,11 +49,13 @@ class FlowMcpToolProviderTest extends TestCase {
 		$this->preflight->method('inspect')->willReturn(['blocking' => [], 'warnings' => []]);
 
 		$this->provider = new FlowMcpToolProvider(
-			$this->runner,
-			$this->mapper,
-			$this->flows,
-			$this->preflight,
-			$this->userSession
+			new FlowToolServices(
+				$this->runner,
+				$this->mapper,
+				$this->flows,
+				$this->preflight,
+			),
+			$this->userSession,
 		);
 	}
 
@@ -115,12 +119,8 @@ class FlowMcpToolProviderTest extends TestCase {
 		$run->setStatus(FlowRun::STATUS_QUEUED);
 
 		$this->runner->expects($this->once())
-			->method('queue')
-			->with(
-				$this->equalTo('f1'),
-				$this->callback(fn ($s) => $s['uuid'] === 'u1'),
-				$this->equalTo('mcp')
-			)
+			->method('queueRun')
+			->with($this->equalTo('f1'), $this->callback(fn (FlowRunQueueOptions $o): bool => (fn ($s) => $s['uuid'] === 'u1')($o->subject) === true && $o->trigger == 'mcp'))
 			->willReturn($run);
 
 		$result = $this->provider->invokeTool('openregister.runFlow', [
@@ -148,10 +148,10 @@ class FlowMcpToolProviderTest extends TestCase {
 
 		$seen = null;
 		$this->runner->expects($this->once())
-			->method('queue')
+			->method('queueRun')
 			->willReturnCallback(
-				function (string $flowId, array $subject, string $trigger, array $context, ?string $user) use ($run, &$seen) {
-					$seen = $user;
+				function (string $flowId, FlowRunQueueOptions $options) use ($run, &$seen) {
+					$seen = $options->user;
 					return $run;
 				}
 			);
@@ -174,10 +174,10 @@ class FlowMcpToolProviderTest extends TestCase {
 
 		$seen = 'untouched';
 		$this->runner->expects($this->once())
-			->method('queue')
+			->method('queueRun')
 			->willReturnCallback(
-				function (string $flowId, array $subject, string $trigger, array $context, ?string $user) use ($run, &$seen) {
-					$seen = $user;
+				function (string $flowId, FlowRunQueueOptions $options) use ($run, &$seen) {
+					$seen = $options->user;
 					return $run;
 				}
 			);
@@ -210,6 +210,128 @@ class FlowMcpToolProviderTest extends TestCase {
 		$result = $this->provider->invokeTool('openregister.flowRunStatus', ['runUuid' => 'ghost']);
 
 		$this->assertFalse($result['found']);
+	}
+
+	public function testFlowRunStatusNeedsARunUuid(): void {
+		$this->mapper->expects($this->never())->method('findByUuid');
+
+		$this->expectException(UnexpectedValueException::class);
+		$this->provider->invokeTool('openregister.flowRunStatus', ['runUuid' => '  ']);
+	}
+
+	public function testRunFlowRefusesAFlowTheCallerCannotSee(): void {
+		$this->flows->method('find')->willThrowException(new DoesNotExistException('hidden'));
+		$this->runner->expects($this->never())->method('queueRun');
+
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage('No such flow: f9');
+		$this->provider->invokeTool('openregister.runFlow', ['flowId' => 'f9']);
+	}
+
+	public function testRunFlowRefusesAFlowTheCallerMayNotRun(): void {
+		$this->flows->method('assertRunnable')
+			->willThrowException(new \OCA\OpenRegister\Exception\FlowRunRefused(verdict: 'unadopted', message: 'Nobody adopted this flow.'));
+		$this->runner->expects($this->never())->method('queueRun');
+
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage('Nobody adopted this flow.');
+		$this->provider->invokeTool('openregister.runFlow', ['flowId' => 'f1']);
+	}
+
+	public function testSaveFlowNeedsAName(): void {
+		$this->flows->expects($this->never())->method('save');
+
+		$this->expectException(UnexpectedValueException::class);
+		$this->provider->invokeTool('openregister.saveFlow', ['name' => '   ']);
+	}
+
+	/**
+	 * A new flow is saved through FlowService with a null uuid and the given
+	 * fields, defaults filled in for the ones the caller left out.
+	 */
+	public function testSaveFlowCreatesAFlowThroughTheService(): void {
+		$seen = [];
+		$this->flows->expects($this->once())
+			->method('save')
+			->willReturnCallback(
+				function (array $data, ?string $uuid) use (&$seen) {
+					$seen = ['data' => $data, 'uuid' => $uuid];
+					$flow = new \OCA\OpenRegister\Db\Flow();
+					$flow->setUuid('flow-1');
+					$flow->setName($data['name']);
+					$flow->setEnabled($data['enabled']);
+					$flow->setNodes([['id' => 'a'], ['id' => 'b']]);
+					$flow->setEdges([['from' => 'a', 'to' => 'b']]);
+					return $flow;
+				}
+			);
+
+		$result = $this->provider->invokeTool('openregister.saveFlow', ['name' => ' Intake ']);
+
+		$this->assertNull($seen['uuid']);
+		$this->assertSame(
+			[
+				'name' => 'Intake',
+				'description' => '',
+				'app' => 'openregister',
+				'enabled' => false,
+				'nodes' => [],
+				'edges' => [],
+			],
+			$seen['data']
+		);
+		$this->assertSame(
+			[
+				'uuid' => 'flow-1',
+				'name' => 'Intake',
+				'enabled' => false,
+				'nodes' => 2,
+				'edges' => 1,
+				'blocking' => [],
+				'warnings' => [],
+			],
+			$result
+		);
+	}
+
+	/**
+	 * A given uuid targets that flow, and the preflight runs on the saved
+	 * document so its findings come back with the result.
+	 */
+	public function testSaveFlowUpdatesTheGivenFlowAndReturnsThePreflightFindings(): void {
+		$preflight = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowNodePreflight::class);
+		$preflight->expects($this->once())
+			->method('inspect')
+			->with(['nodes' => [['id' => 'a']], 'edges' => []])
+			->willReturn(['blocking' => ['dead end at a'], 'warnings' => ['no trigger']]);
+		$provider = new FlowMcpToolProvider(new FlowToolServices($this->runner, $this->mapper, $this->flows, $preflight), $this->userSession);
+
+		$flow = new \OCA\OpenRegister\Db\Flow();
+		$flow->setUuid('flow-7');
+		$flow->setName('Intake');
+		$flow->setEnabled(true);
+		$flow->setNodes([['id' => 'a']]);
+		$flow->setEdges([]);
+		$this->flows->expects($this->once())
+			->method('save')
+			->with(
+				$this->callback(fn (array $data) => $data['enabled'] === true && $data['app'] === 'dossiq' && $data['nodes'] === [['id' => 'a']]),
+				'flow-7'
+			)
+			->willReturn($flow);
+
+		$result = $provider->invokeTool('openregister.saveFlow', [
+			'name' => 'Intake',
+			'uuid' => ' flow-7 ',
+			'app' => 'dossiq',
+			'enabled' => true,
+			'nodes' => [['id' => 'a']],
+		]);
+
+		$this->assertSame('flow-7', $result['uuid']);
+		$this->assertTrue($result['enabled']);
+		$this->assertSame(['dead end at a'], $result['blocking']);
+		$this->assertSame(['no trigger'], $result['warnings']);
 	}
 
 	public function testAnUnknownToolThrows(): void {

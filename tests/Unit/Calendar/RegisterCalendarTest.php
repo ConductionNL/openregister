@@ -15,13 +15,17 @@ declare(strict_types=1);
 
 namespace Unit\Calendar;
 
+use OCA\OpenRegister\Calendar\CalendarDefinition;
 use OCA\OpenRegister\Calendar\CalendarEventTransformer;
 use OCA\OpenRegister\Calendar\RegisterCalendar;
+use OCA\OpenRegister\Calendar\RegisterCalendarSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\Constants;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -53,13 +57,9 @@ class RegisterCalendarTest extends TestCase {
 		];
 
 		$this->calendar = new RegisterCalendar(
-			$this->schema,
-			$config,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->transformer,
+			new CalendarDefinition($this->schema, $config),
 			'principals/users/admin',
-			$this->logger
+			$this->sources()
 		);
 	}
 
@@ -77,13 +77,9 @@ class RegisterCalendarTest extends TestCase {
 
 	public function testGetDisplayNameFallsBackToSchemaTitle(): void {
 		$calendar = new RegisterCalendar(
-			$this->schema,
-			['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->transformer,
+			new CalendarDefinition($this->schema, ['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}']),
 			'principals/users/admin',
-			$this->logger
+			$this->sources()
 		);
 
 		$this->assertSame('Test Schema', $calendar->getDisplayName());
@@ -95,13 +91,9 @@ class RegisterCalendarTest extends TestCase {
 
 	public function testGetDisplayColorDefaultsWhenNotConfigured(): void {
 		$calendar = new RegisterCalendar(
-			$this->schema,
-			['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->transformer,
+			new CalendarDefinition($this->schema, ['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}']),
 			'principals/users/admin',
-			$this->logger
+			$this->sources()
 		);
 
 		$this->assertSame('#0082C9', $calendar->getDisplayColor());
@@ -117,13 +109,9 @@ class RegisterCalendarTest extends TestCase {
 
 	public function testSearchReturnsEmptyForInvalidPrincipal(): void {
 		$calendar = new RegisterCalendar(
-			$this->schema,
-			['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}'],
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->transformer,
+			new CalendarDefinition($this->schema, ['enabled' => true, 'dtstart' => 'd', 'titleTemplate' => '{t}']),
 			'principals/groups/everyone',
-			$this->logger
+			$this->sources()
 		);
 
 		$result = $calendar->search('');
@@ -215,5 +203,13 @@ class RegisterCalendarTest extends TestCase {
 		$result = $this->calendar->search('');
 
 		$this->assertSame([], $result);
+	}
+
+	private function sources(): RegisterCalendarSources {
+		return new RegisterCalendarSources(
+			new SchemaCatalog($this->registerMapper, $this->createMock(SchemaMapper::class), $this->magicMapper),
+			$this->transformer,
+			$this->logger
+		);
 	}
 }

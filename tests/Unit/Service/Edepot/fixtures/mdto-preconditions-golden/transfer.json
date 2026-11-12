@@ -1,0 +1,27 @@
+[
+    [
+        "allowed",
+        "allowed",
+        null
+    ],
+    [
+        "no period",
+        "refused",
+        "Cannot transfer object u-1 to an e-Depot: it has no retention period. MDTO allows the element to be absent; openregister refuses the transfer."
+    ],
+    [
+        "one unmapped",
+        "refused",
+        "Cannot transfer object u-1 to an e-Depot: its schema declares an MDTO mapping that does not fill the mandatory element archiefvormer. Map it in x-openregister-mdto-mapping, or the e-Depot will refuse the package."
+    ],
+    [
+        "two unmapped",
+        "refused",
+        "Cannot transfer object u-1 to an e-Depot: its schema declares an MDTO mapping that does not fill these mandatory elements: archiefvormer, naam. Map them in x-openregister-mdto-mapping, or the e-Depot will refuse the package."
+    ],
+    [
+        "empty period",
+        "allowed",
+        null
+    ]
+]

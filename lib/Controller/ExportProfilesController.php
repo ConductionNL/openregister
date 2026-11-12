@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -29,10 +29,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ExportProfilesControllerServices;
 use OCA\OpenRegister\Db\ExportProfile;
-use OCA\OpenRegister\Service\Export\ExportProfileService;
+use OCA\OpenRegister\Service\Export\ExportProfileCaller;
+use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
+use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
-use OCA\OpenRegister\Service\Export\ExportProfileWriter;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -53,31 +59,55 @@ use OCP\IUserSession;
  *     is a true statement. Pushing it one layer down would record a run for a call that had
  *     not yet succeeded.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportProfilesController extends Controller {
 
 	/**
+	 * Profile administration and runs.
+	 *
+	 * @var ExportProfileServiceInterface
+	 */
+	private readonly ExportProfileServiceInterface $service;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for the admin check.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Records the export this run served.
+	 *
+	 * @var ExportRunRecorder
+	 */
+	private readonly ExportRunRecorder $exportRuns;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string               $appName      Application name.
 	 * @param IRequest             $request      HTTP request.
-	 * @param ExportProfileService $service      Profile administration and runs.
-	 * @param IUserSession         $userSession  Current-user session.
-	 * @param IGroupManager        $groupManager Group manager for the admin check.
-	 * @param ExportRunRecorder     $exportRuns   Records the export this run served.
+	 * @param ExportProfilesControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ExportProfileService $service,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly ExportRunRecorder $exportRuns,
+		ExportProfilesControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->service = $services->service;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->exportRuns = $services->exportRuns;
 	}//end __construct()
 
 	/**
@@ -88,7 +118,7 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -114,30 +144,15 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
-
-		try {
-			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(
-				profile: $profile,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
-		} catch (DoesNotExistException $e) {
-			return $this->notFoundResponse();
-		} catch (ExportRefusedException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
-		}
-
-		return new JSONResponse(data: $profile->jsonSerialize());
+		return $this->withOwnedProfile(
+			id: $id,
+			action: static fn (ExportProfile $profile): JSONResponse => new JSONResponse(data: $profile->jsonSerialize())
+		);
 	}//end show()
 
 	/**
@@ -148,7 +163,7 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -177,33 +192,23 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function update(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
+		return $this->withOwnedProfile(
+			id: $id,
+			action: function (ExportProfile $profile): JSONResponse {
+				try {
+					$profile = $this->service->update(profile: $profile, data: $this->submitted());
+				} catch (InvalidArgumentException $e) {
+					return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+				}
 
-		try {
-			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(
-				profile: $profile,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
-			$profile = $this->service->update(profile: $profile, data: $this->submitted());
-		} catch (DoesNotExistException $e) {
-			return $this->notFoundResponse();
-		} catch (ExportRefusedException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}
-
-		return new JSONResponse(data: $profile->jsonSerialize());
+				return new JSONResponse(data: $profile->jsonSerialize());
+			}
+		);
 	}//end update()
 
 	/**
@@ -216,31 +221,19 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function destroy(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
+		return $this->withOwnedProfile(
+			id: $id,
+			action: function (ExportProfile $profile): JSONResponse {
+				$this->service->delete(profile: $profile);
 
-		try {
-			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(
-				profile: $profile,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
-			$this->service->delete(profile: $profile);
-		} catch (DoesNotExistException $e) {
-			return $this->notFoundResponse();
-		} catch (ExportRefusedException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
-		}
-
-		return new JSONResponse(data: ['deleted' => true]);
+				return new JSONResponse(data: ['deleted' => true]);
+			}
+		);
 	}//end destroy()
 
 	/**
@@ -256,37 +249,37 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
-	 * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function run(int $id): DataDownloadResponse|JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
+		return $this->withOwnedProfile(
+			id: $id,
+			action: function (ExportProfile $profile, string $userId): DataDownloadResponse {
+				$written = $this->service->run(profile: $profile, actorUid: $userId);
 
-		try {
-			$profile = $this->service->find(id: $id);
-			$this->service->assertOwnerOrAdmin(
-				profile: $profile,
-				callerUid: $userId,
-				callerIsAdmin: $this->isCurrentUserAdmin()
-			);
-			$written = $this->service->run(profile: $profile, actorUid: $userId);
-		} catch (DoesNotExistException $e) {
-			return $this->notFoundResponse();
-		} catch (ExportRefusedException $e) {
-			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
-		}
+				// Record the run before the bytes leave. This path serves the export
+				// straight to the caller, so there is no file for a sweep to delete
+				// and the retention is null: the row is the record, and it is the
+				// register handing the copy over, which is what the count counts.
+				$this->recordRun(profile: $profile, written: $written);
 
-		// Record the run before the bytes leave. This path serves the export
-		// straight to the caller, so there is no file for a sweep to delete
-		// and the retention is null: the row is the record, and it is the
-		// register handing the copy over, which is what the count counts.
-		$this->recordRun(profile: $profile, actorUid: $userId, written: $written);
+				return $this->servedExport(profile: $profile, written: $written);
+			}
+		);
+	}//end run()
 
+	/**
+	 * The export as a download, its value mode, row count and profile on the headers.
+	 *
+	 * @param mixed                $profile The profile that was run
+	 * @param array<string, mixed> $written The written export: bytes, filename, rowCount, metadata
+	 *
+	 * @return DataDownloadResponse The download
+	 */
+	private function servedExport($profile, array $written): DataDownloadResponse {
 		$contentType = 'text/csv';
 		if (($profile->getFormat() ?? 'csv') === 'json') {
 			$contentType = 'application/json';
@@ -306,7 +299,7 @@ class ExportProfilesController extends Controller {
 		$response->addHeader('X-OpenRegister-Export-Profile', (string)$written['metadata']['profileUuid']);
 
 		return $response;
-	}//end run()
+	}//end servedExport()
 
 	/**
 	 * Record what this profile run served.
@@ -319,32 +312,50 @@ class ExportProfilesController extends Controller {
 	 * of one, because the bytes went straight out rather than into a file. A
 	 * download served from the register is exactly what the count counts.
 	 *
-	 * @param mixed  $profile  The export profile.
-	 * @param string $actorUid Who asked for it.
-	 * @param array  $written  The rendered export.
+	 * The actor is the signed-in caller, who asked for it.
+	 *
+	 * @param mixed $profile The export profile.
+	 * @param array $written The rendered export.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	private function recordRun($profile, string $actorUid, array $written): void {
+	private function recordRun($profile, array $written): void {
 		try {
 			$this->exportRuns->record(
-				source: 'export-profile',
-				actor: $actorUid,
-				format: (string)($profile->getFormat() ?? 'csv'),
-				rowCount: (int)($written['rowCount'] ?? 0),
-				profile: (string)($written['metadata']['profileUuid'] ?? ''),
-				filename: (string)($written['filename'] ?? ''),
-				retentionSeconds: null,
-				downloadCount: 1,
-				status: \OCA\OpenRegister\Db\ExportRun::STATUS_SERVED
+				origin: $this->servedRunOrigin(written: $written),
+				content: new ExportRunContent(
+					format: (string)($profile->getFormat() ?? 'csv'),
+					rowCount: (int)($written['rowCount'] ?? 0)
+				),
+				file: new ExportRunFile(
+					filename: (string)($written['filename'] ?? ''),
+					downloadCount: 1
+				),
+				retentionSeconds: null
 			);
 		} catch (\Throwable $e) {
 			// Deliberately swallowed: see the docblock.
 			unset($e);
 		}
 	}//end recordRun()
+
+	/**
+	 * Where a served profile run came from: this source, the caller and the profile.
+	 *
+	 * @param array<string, mixed> $written The rendered export
+	 *
+	 * @return ExportRunOrigin The origin, with the served status
+	 */
+	private function servedRunOrigin(array $written): ExportRunOrigin {
+		return new ExportRunOrigin(
+			source: 'export-profile',
+			actor: (string)$this->resolveUserId(),
+			profile: (string)($written['metadata']['profileUuid'] ?? ''),
+			status: \OCA\OpenRegister\Db\ExportRun::STATUS_SERVED
+		);
+	}//end servedRunOrigin()
 
 	/**
 	 * The metadata line prefix a CSV export opens with, published so a consumer
@@ -355,14 +366,14 @@ class ExportProfilesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function contract(): JSONResponse {
 		return new JSONResponse(
 			data: [
-				'csvMetadataPrefix' => ExportProfileWriter::CSV_METADATA_PREFIX,
+				'csvMetadataPrefix' => ExportProfileWriterInterface::CSV_METADATA_PREFIX,
 				'valueModes' => ExportProfile::MODES,
 				'formats' => ExportProfile::FORMATS,
 				'headers' => [
@@ -413,6 +424,46 @@ class ExportProfilesController extends Controller {
 
 		return $this->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
+
+	/**
+	 * The signed-in caller as the ownership check reads them.
+	 *
+	 * @param string $userId The caller's uid.
+	 *
+	 * @return ExportProfileCaller The uid, and whether they are an administrator.
+	 */
+	private function profileCaller(string $userId): ExportProfileCaller {
+		return new ExportProfileCaller(uid: $userId, isAdmin: $this->isCurrentUserAdmin());
+	}//end profileCaller()
+
+	/**
+	 * Run an action on a profile the signed-in caller owns or administers.
+	 *
+	 * Answers 401 without a caller, 404 for a missing profile and the refusal's own
+	 * status when the caller may not touch it; the action never runs in those cases.
+	 *
+	 * @param int                                                                  $id     The profile id.
+	 * @param callable(ExportProfile, string): (JSONResponse|DataDownloadResponse) $action Gets the profile and the caller's uid.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The action's answer, or the refusal.
+	 */
+	private function withOwnedProfile(int $id, callable $action): DataDownloadResponse|JSONResponse {
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return $this->authRequiredResponse();
+		}
+
+		try {
+			$profile = $this->service->find(id: $id);
+			$this->service->assertOwnerOrAdmin(profile: $profile, caller: $this->profileCaller(userId: $userId));
+
+			return $action($profile, $userId);
+		} catch (DoesNotExistException $e) {
+			return $this->notFoundResponse();
+		} catch (ExportRefusedException $e) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getStatusCode());
+		}
+	}//end withOwnedProfile()
 
 	/**
 	 * The 401 an anonymous caller gets.

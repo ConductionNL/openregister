@@ -43,7 +43,7 @@ final class NullIdentityVerifyProvider implements IdentityVerifyProvider {
 	 *
 	 * @var string
 	 */
-	public const PROVIDER_ID = 'or.default.identity-verify.null';
+	public const PROVIDER_ID = IdentityVerifyProvider::NULL_PROVIDER_ID;
 
 	/**
 	 * {@inheritDoc}

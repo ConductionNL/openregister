@@ -1,0 +1,155 @@
+{
+    "files delivered": [
+        [
+            "notify.object",
+            "scheduled_report",
+            "7"
+        ],
+        [
+            "notify.subject",
+            "scheduled_report_delivered",
+            {
+                "reportId": 7,
+                "reportName": "Weekly cases",
+                "folder": "Reports/",
+                "filename": "weekly-cases_DATE.csv",
+                "mode": "files",
+                "emailFailureReason": null
+            }
+        ],
+        [
+            "notify.sent"
+        ],
+        [
+            "outcome",
+            "success",
+            null
+        ]
+    ],
+    "email delivered": [
+        [
+            "notify.object",
+            "scheduled_report",
+            "7"
+        ],
+        [
+            "notify.subject",
+            "scheduled_report_delivered",
+            {
+                "reportId": 7,
+                "reportName": "Weekly cases",
+                "folder": "Reports/",
+                "filename": "weekly-cases_DATE.csv",
+                "mode": "email",
+                "emailFailureReason": null
+            }
+        ],
+        [
+            "notify.sent"
+        ],
+        [
+            "outcome",
+            "success",
+            null
+        ]
+    ],
+    "both, email fails": [
+        [
+            "notify.object",
+            "scheduled_report",
+            "7"
+        ],
+        [
+            "notify.subject",
+            "scheduled_report_delivered",
+            {
+                "reportId": 7,
+                "reportName": "Weekly cases",
+                "folder": "Reports/",
+                "filename": "weekly-cases_DATE.csv",
+                "mode": "both",
+                "emailFailureReason": "Email delivery failed: smtp down"
+            }
+        ],
+        [
+            "notify.sent"
+        ],
+        [
+            "outcome",
+            "email_failed",
+            "Email delivery failed: smtp down"
+        ]
+    ],
+    "email only fails": [
+        [
+            "notify.object",
+            "scheduled_report",
+            "7"
+        ],
+        [
+            "notify.subject",
+            "scheduled_report_failed",
+            {
+                "reportId": 7,
+                "reportName": "Weekly cases",
+                "reason": "Email delivery failed: smtp down"
+            }
+        ],
+        [
+            "notify.sent"
+        ],
+        [
+            "outcome",
+            "failed",
+            "Email delivery failed: smtp down"
+        ]
+    ],
+    "export too large": [
+        [
+            "notify.object",
+            "scheduled_report",
+            "7"
+        ],
+        [
+            "notify.subject",
+            "scheduled_report_failed",
+            {
+                "reportId": 7,
+                "reportName": "Weekly cases",
+                "reason": "PDF export row count (50001) exceeds the maximum allowed (50000). Narrow the export with filters or use CSV/Excel export instead."
+            }
+        ],
+        [
+            "notify.sent"
+        ],
+        [
+            "outcome",
+            "failed",
+            "PDF export row count (50001) exceeds the maximum allowed (50000). Narrow the export with filters or use CSV/Excel export instead."
+        ]
+    ],
+    "export throws": [
+        [
+            "notify.object",
+            "scheduled_report",
+            "7"
+        ],
+        [
+            "notify.subject",
+            "scheduled_report_failed",
+            {
+                "reportId": 7,
+                "reportName": "Weekly cases",
+                "reason": "export broke"
+            }
+        ],
+        [
+            "notify.sent"
+        ],
+        [
+            "outcome",
+            "failed",
+            "export broke"
+        ]
+    ]
+}

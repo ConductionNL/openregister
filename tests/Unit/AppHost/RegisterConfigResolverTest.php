@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\Service\ConfigLookup;
 use OCA\OpenRegister\AppHost\Exception\ConfigurationMissingException;
 use OCA\OpenRegister\AppHost\Exception\FoundationUnavailableException;
 use OCA\OpenRegister\AppHost\Service\RegisterConfigResolver;
@@ -46,21 +47,14 @@ class RegisterConfigResolverTest extends TestCase {
 			) {
 			}//end __construct()
 
-			public function resolveRegisterId(string $appId, string $configKey): string {
-				if ($this->registerId === '') {
-					throw new MissingConfigException(appId: $appId, configKey: $configKey);
+			public function lookupId(ConfigLookup $lookup): string {
+				$value = str_contains($lookup->configKey, 'schema') === true ? $this->schemaId : $this->registerId;
+				if ($value === '') {
+					throw new MissingConfigException(appId: $lookup->appId, configKey: $lookup->configKey);
 				}
 
-				return $this->registerId;
-			}//end resolveRegisterId()
-
-			public function resolveSchemaId(string $appId, string $configKey): string {
-				if ($this->schemaId === '') {
-					throw new MissingConfigException(appId: $appId, configKey: $configKey);
-				}
-
-				return $this->schemaId;
-			}//end resolveSchemaId()
+				return $value;
+			}//end lookupId()
 		};
 	}//end resolverStub()
 
@@ -115,13 +109,9 @@ class RegisterConfigResolverTest extends TestCase {
 		// Defence in depth: even a resolver returning '' must not leak an
 		// empty identifier that would silently match zero objects.
 		$stub = new class {
-			public function resolveRegisterId(string $appId, string $configKey): string {
+			public function lookupId(ConfigLookup $lookup): string {
 				return '';
-			}//end resolveRegisterId()
-
-			public function resolveSchemaId(string $appId, string $configKey): string {
-				return '';
-			}//end resolveSchemaId()
+			}//end lookupId()
 		};
 
 		$this->expectException(ConfigurationMissingException::class);

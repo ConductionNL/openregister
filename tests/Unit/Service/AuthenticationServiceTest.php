@@ -726,7 +726,19 @@ class AuthenticationServiceTest extends TestCase {
 		$this->assertSame('sig', $jwk->get('use'));
 	}
 
-	public function testGetRsJwkCleansUpTempFile(): void {
+	public function testGetRsJwkRefusesASecretThatIsNoKey(): void {
+		if (class_exists('Jose\Component\Core\JWK') === false) {
+			$this->markTestSkipped('Jose JWT library not available');
+		}
+
+		$this->expectException(\Throwable::class);
+
+		$this->invokeMethod($this->service, 'getRSJWK', [
+			['secret' => base64_encode('not a key')],
+		]);
+	}
+
+	public function testGetRsJwkWritesNoKeyFile(): void {
 		if (class_exists('Jose\Component\Core\JWK') === false) {
 			$this->markTestSkipped('Jose JWT library not available');
 		}

@@ -323,7 +323,6 @@ After setup:
 2. **Explore API**: See [API Documentation](../website/docs/api/)
 3. **Set Up Access Control**: [Access Control Guide](../website/docs/features/access-control.md)
 4. **Configure AI Features**: [AI Features Guide](../website/docs/features/ai-features.md)
-5. **Create Workflows**: [n8n Integration](../website/docs/technical/n8n-mcp/)
 
 ## 🔗 Useful Links
 

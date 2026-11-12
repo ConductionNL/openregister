@@ -85,6 +85,23 @@ import UserSettings from './views/settings/UserSettings.vue'
 import { initializeAppData } from './services/AppInitializationService.js'
 import { setupDashboardStoreWatchers } from './store/modules/dashboard.js'
 
+/**
+ * The continue and restart labels of the walkthrough section: a walkthrough
+ * in progress is restarted by starting over.
+ *
+ * @param {object} root The app root
+ * @param {boolean} inProgress Whether the walkthrough is in progress
+ * @return {{continueLabel: string, restartLabel: string}} The labels
+ */
+function walkthroughLabels(root, inProgress) {
+	return {
+		continueLabel: root.continueWalkthroughLabel,
+		restartLabel: inProgress
+			? root.startOverWalkthroughLabel
+			: root.restartWalkthroughLabel,
+	}
+}
+
 export default {
 	name: 'App',
 	components: {
@@ -236,10 +253,7 @@ export default {
 				sectionName: root.restartWalkthroughSectionName,
 				hint: root.restartWalkthroughHint,
 				inProgress,
-				continueLabel: root.continueWalkthroughLabel,
-				restartLabel: inProgress
-					? root.startOverWalkthroughLabel
-					: root.restartWalkthroughLabel,
+				...walkthroughLabels(root, inProgress),
 			}
 		},
 

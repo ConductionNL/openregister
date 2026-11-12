@@ -1,0 +1,509 @@
+{
+    "generator throws": {
+        "calls": [
+            {
+                "resolveUrl": [
+                    1,
+                    2,
+                    {
+                        "title": "t",
+                        "@self": {
+                            "id": "u1",
+                            "register": 1,
+                            "schema": "2"
+                        },
+                        "uuid": "u1",
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    [
+                        "title",
+                        "@self",
+                        "uuid",
+                        "id",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            },
+            {
+                "linkToRoute": [
+                    "openregister.objects.show",
+                    {
+                        "register": 1,
+                        "schema": "2",
+                        "id": "u1"
+                    }
+                ]
+            },
+            {
+                "debug": "Relation URL resolution failed: no route"
+            }
+        ],
+        "result": {
+            "results": [
+                {
+                    "title": "t",
+                    "@self": {
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    }
+                }
+            ]
+        }
+    },
+    "id outside @self": {
+        "calls": [
+            {
+                "resolveUrl": [
+                    3,
+                    4,
+                    {
+                        "id": "u2",
+                        "@self": {
+                            "register": "3",
+                            "schema": 4
+                        },
+                        "uuid": "u2",
+                        "register": "3",
+                        "schema": 4
+                    },
+                    [
+                        "id",
+                        "@self",
+                        "uuid",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            }
+        ],
+        "result": {
+            "results": [
+                {
+                    "id": "u2",
+                    "@self": {
+                        "register": "3",
+                        "schema": 4
+                    },
+                    "url": "https://app/3/4"
+                }
+            ]
+        }
+    },
+    "no @self": {
+        "calls": [],
+        "result": {
+            "results": [
+                {
+                    "id": "u"
+                }
+            ]
+        }
+    },
+    "no id": {
+        "calls": [],
+        "result": {
+            "results": [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    }
+                }
+            ]
+        }
+    },
+    "no resolver": {
+        "calls": [],
+        "result": {
+            "results": [
+                {
+                    "title": "t",
+                    "@self": {
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    }
+                }
+            ]
+        }
+    },
+    "no results key": {
+        "calls": [],
+        "result": {
+            "total": 0
+        }
+    },
+    "no url at all": {
+        "calls": [
+            {
+                "resolveUrl": [
+                    1,
+                    2,
+                    {
+                        "title": "t",
+                        "@self": {
+                            "id": "u1",
+                            "register": 1,
+                            "schema": "2"
+                        },
+                        "uuid": "u1",
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    [
+                        "title",
+                        "@self",
+                        "uuid",
+                        "id",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            }
+        ],
+        "result": {
+            "results": [
+                {
+                    "title": "t",
+                    "@self": {
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    }
+                }
+            ]
+        }
+    },
+    "plain object stays": {
+        "calls": [],
+        "result": {
+            "results": [
+                {
+                    "kept": true
+                }
+            ]
+        }
+    },
+    "resolved": {
+        "calls": [
+            {
+                "resolveUrl": [
+                    1,
+                    2,
+                    {
+                        "title": "t",
+                        "@self": {
+                            "id": "u1",
+                            "register": 1,
+                            "schema": "2"
+                        },
+                        "uuid": "u1",
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    [
+                        "title",
+                        "@self",
+                        "uuid",
+                        "id",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            }
+        ],
+        "result": {
+            "results": [
+                {
+                    "title": "t",
+                    "@self": {
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    "url": "https://app/1/2"
+                }
+            ],
+            "total": 1
+        }
+    },
+    "resolver throws": {
+        "calls": [
+            {
+                "resolveUrl": [
+                    1,
+                    2,
+                    {
+                        "title": "t",
+                        "@self": {
+                            "id": "u1",
+                            "register": 1,
+                            "schema": "2"
+                        },
+                        "uuid": "u1",
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    [
+                        "title",
+                        "@self",
+                        "uuid",
+                        "id",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            },
+            {
+                "debug": "Relation URL resolution failed: no resolver"
+            },
+            {
+                "resolveUrl": [
+                    3,
+                    4,
+                    {
+                        "id": "u2",
+                        "@self": {
+                            "register": "3",
+                            "schema": 4
+                        },
+                        "uuid": "u2",
+                        "register": "3",
+                        "schema": 4
+                    },
+                    [
+                        "id",
+                        "@self",
+                        "uuid",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            },
+            {
+                "debug": "Relation URL resolution failed: no resolver"
+            }
+        ],
+        "result": {
+            "results": [
+                {
+                    "title": "t",
+                    "@self": {
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    }
+                },
+                {
+                    "id": "u2",
+                    "@self": {
+                        "register": "3",
+                        "schema": 4
+                    }
+                }
+            ]
+        }
+    },
+    "results not an array": {
+        "calls": [],
+        "result": {
+            "results": "x"
+        }
+    },
+    "route fallback": {
+        "calls": [
+            {
+                "resolveUrl": [
+                    1,
+                    2,
+                    {
+                        "title": "t",
+                        "@self": {
+                            "id": "u1",
+                            "register": 1,
+                            "schema": "2"
+                        },
+                        "uuid": "u1",
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    [
+                        "title",
+                        "@self",
+                        "uuid",
+                        "id",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            },
+            {
+                "linkToRoute": [
+                    "openregister.objects.show",
+                    {
+                        "register": 1,
+                        "schema": "2",
+                        "id": "u1"
+                    }
+                ]
+            }
+        ],
+        "result": {
+            "results": [
+                {
+                    "title": "t",
+                    "@self": {
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    "url": "https://route/u1"
+                }
+            ]
+        }
+    },
+    "row keeps its own keys": {
+        "calls": [
+            {
+                "resolveUrl": [
+                    1,
+                    2,
+                    {
+                        "title": "t",
+                        "@self": {
+                            "id": "u1",
+                            "register": 1,
+                            "schema": "2"
+                        },
+                        "register": 1,
+                        "uuid": "u1",
+                        "url": "old",
+                        "id": "u1",
+                        "schema": "2"
+                    },
+                    [
+                        "title",
+                        "@self",
+                        "register",
+                        "uuid",
+                        "url",
+                        "id",
+                        "schema"
+                    ]
+                ]
+            }
+        ],
+        "result": {
+            "results": {
+                "k": {
+                    "title": "t",
+                    "@self": {
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    "register": "x",
+                    "uuid": "y",
+                    "url": "https://app/1/2"
+                }
+            }
+        }
+    },
+    "row serializing to text stays": {
+        "calls": [],
+        "result": {
+            "results": [
+                "text"
+            ]
+        }
+    },
+    "scalar rows": {
+        "calls": [],
+        "result": {
+            "results": [
+                "a",
+                5,
+                null
+            ]
+        }
+    },
+    "serializable row": {
+        "calls": [
+            {
+                "resolveUrl": [
+                    1,
+                    2,
+                    {
+                        "title": "t",
+                        "@self": {
+                            "id": "u1",
+                            "register": 1,
+                            "schema": "2"
+                        },
+                        "uuid": "u1",
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    [
+                        "title",
+                        "@self",
+                        "uuid",
+                        "id",
+                        "register",
+                        "schema"
+                    ]
+                ]
+            }
+        ],
+        "result": {
+            "results": [
+                {
+                    "title": "t",
+                    "@self": {
+                        "id": "u1",
+                        "register": 1,
+                        "schema": "2"
+                    },
+                    "url": "https://app/1/2"
+                }
+            ]
+        }
+    },
+    "text register": {
+        "calls": [],
+        "result": {
+            "results": [
+                {
+                    "@self": {
+                        "id": "u",
+                        "register": "r",
+                        "schema": 2
+                    }
+                }
+            ]
+        }
+    },
+    "text schema": {
+        "calls": [],
+        "result": {
+            "results": [
+                {
+                    "@self": {
+                        "id": "u",
+                        "register": 1,
+                        "schema": "s"
+                    }
+                }
+            ]
+        }
+    }
+}

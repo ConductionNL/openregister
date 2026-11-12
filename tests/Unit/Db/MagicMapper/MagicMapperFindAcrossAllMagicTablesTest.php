@@ -30,6 +30,10 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierFind;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -37,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IPreparedStatement;
@@ -452,11 +457,11 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) {
 				return match ($id) {
-					DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+					DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 					\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(
 						\OCA\OpenRegister\Service\ConditionMatcher::class
 					),
-					\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class => $this->createMock(
+					\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(
 						\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class
 					),
 					default => null,
@@ -466,21 +471,26 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 
 		$mapper = new MagicMapper(
 			$this->db,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$config,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->schemaMapper,
+				$this->registerMapper,
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$config,
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$statisticsHandler = $this->createMock(MagicStatisticsHandler::class);
-		$statisticsHandler->method('convertRowToObjectEntity')->willReturnCallback(
+		$statisticsHandler->method('toObjectEntity')->willReturnCallback(
 			function (array $row): ObjectEntity {
 				$object = new ObjectEntity();
 				$object->setId($row['_id']);
@@ -564,7 +574,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 			rows: [$this->row(id: 42, uuid: 'uuid-abc', slug: 'my-slug', uri: 'https://example.org/42')]
 		);
 
-		$result = $this->makeMapper()->findAcrossAllMagicTables(identifier: 'uuid-abc');
+		$result = $this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-abc'));
 
 		$this->assertInstanceOf(ObjectEntity::class, $result['object']);
 		$this->assertSame('uuid-abc', $result['object']->getUuid());
@@ -589,7 +599,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 			rows: [$this->row(id: 7, uuid: 'uuid-xyz', slug: 'cowboy', uri: 'https://example.org/7')]
 		);
 
-		$result = $this->makeMapper()->findAcrossAllMagicTables(identifier: 'cowboy');
+		$result = $this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'cowboy'));
 
 		$this->assertSame('uuid-xyz', $result['object']->getUuid());
 		$this->assertSame(5, $result['register']->getId());
@@ -611,7 +621,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 			rows: [$this->row(id: 99, uuid: 'uuid-99', slug: 'slug-99', uri: 'https://example.org/99')]
 		);
 
-		$result = $this->makeMapper()->findAcrossAllMagicTables(identifier: 99);
+		$result = $this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 99));
 
 		$this->assertSame('uuid-99', $result['object']->getUuid());
 
@@ -636,7 +646,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 			rows: [$this->row(id: 1, uuid: 'uuid-1', slug: 'slug-1', uri: 'uri-1')]
 		);
 
-		$this->makeMapper()->findAcrossAllMagicTables(identifier: 'uuid-1');
+		$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-1'));
 
 		$bound = $this->boundValues[array_key_last($this->boundValues)];
 		$this->assertSame(-1, $bound[1][0], 'the bigint _id column must receive the -1 sentinel');
@@ -658,7 +668,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$this->expectException(DoesNotExistException::class);
 		$this->expectExceptionMessage("Object with identifier 'nope' not found in any magic table");
 
-		$this->makeMapper()->findAcrossAllMagicTables(identifier: 'nope');
+		$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'nope'));
 	}//end testThrowsDoesNotExistWhenNotFoundInAnyTable()
 
 	/**
@@ -684,7 +694,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 
 		// Default: the deleted row is not found.
 		try {
-			$this->makeMapper()->findAcrossAllMagicTables(identifier: 'uuid-deleted');
+			$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-deleted'));
 			$this->fail('Expected DoesNotExistException for a soft-deleted object');
 		} catch (DoesNotExistException $e) {
 			$this->assertStringContainsString('not found in any magic table', $e->getMessage());
@@ -700,9 +710,8 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$this->preparedSql = [];
 		$this->boundValues = [];
 
-		$result = $this->makeMapper()->findAcrossAllMagicTables(
-			identifier: 'uuid-deleted',
-			includeDeleted: true
+		$result = $this->makeMapper()->findAcross(
+			find: new MagicIdentifierFind(identifier: 'uuid-deleted', includeDeleted: true)
 		);
 
 		$this->assertSame('uuid-deleted', $result['object']->getUuid());
@@ -730,7 +739,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$this->givenLiveTable(registerId: 1, schemaId: 2, rows: []);
 
 		try {
-			$this->makeMapper()->findAcrossAllMagicTables(identifier: 'uuid-orphan');
+			$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-orphan'));
 			$this->fail('Expected DoesNotExistException — the orphaned table must not be searched');
 		} catch (DoesNotExistException $e) {
 			$this->assertStringContainsString('not found in any magic table', $e->getMessage());
@@ -765,7 +774,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 			rows: [$this->row(id: 3, uuid: 'uuid-last', slug: 'last', uri: 'uri-last')]
 		);
 
-		$result = $this->makeMapper()->findAcrossAllMagicTables(identifier: 'uuid-last');
+		$result = $this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'uuid-last'));
 
 		$this->assertSame('uuid-last', $result['object']->getUuid());
 
@@ -787,7 +796,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		}
 
 		try {
-			$this->makeMapper()->findAcrossAllMagicTables(identifier: 'absent');
+			$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'absent'));
 		} catch (DoesNotExistException) {
 			// Expected — we only care about the SQL shape here.
 		}
@@ -813,7 +822,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$evil = "' OR 1=1 --";
 
 		try {
-			$this->makeMapper()->findAcrossAllMagicTables(identifier: $evil);
+			$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: $evil));
 		} catch (DoesNotExistException) {
 			// Expected.
 		}
@@ -847,7 +856,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$this->givenLiveTable(registerId: 1, schemaId: 2, rows: []);
 
 		try {
-			$this->makeMapper()->findAcrossAllMagicTables(identifier: 'absent');
+			$this->makeMapper()->findAcross(find: new MagicIdentifierFind(identifier: 'absent'));
 		} catch (DoesNotExistException) {
 			// Expected.
 		}

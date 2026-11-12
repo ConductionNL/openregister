@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Controller;
 
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
+use OCA\OpenRegister\AppHost\Observability\HealthResult;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -83,19 +84,11 @@ class GenericHealthController extends Controller {
 	#[NoCSRFRequired]
 	#[AnonRateLimit(limit: 240, period: 60)]
 	public function index(): JSONResponse {
-		$appId = $this->appName;
+		$appId    = $this->appName;
 		$manifest = $this->manifestLoader->load(appId: $appId);
-		$result = $this->executor->execute(manifest: $manifest);
+		$result   = $this->executor->execute(manifest: $manifest);
 
-		$response = new JSONResponse(
-			[
-				'status' => $result->status,
-				'app' => $appId,
-				'version' => $this->manifestLoader->appVersion(appId: $appId),
-				'checks' => $result->checks,
-			],
-			$result->httpStatusCode
-		);
+		$response = new JSONResponse($this->healthBody(appId: $appId, result: $result), $result->httpStatusCode);
 
 		if ($manifest->cors === true) {
 			$response->addHeader('Access-Control-Allow-Origin', '*');
@@ -104,4 +97,21 @@ class GenericHealthController extends Controller {
 
 		return $response;
 	}//end index()
+
+	/**
+	 * The health document: overall status, app, version and each check.
+	 *
+	 * @param string       $appId  The leaf app id.
+	 * @param HealthResult $result The executed checks.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function healthBody(string $appId, HealthResult $result): array {
+		return [
+			'status' => $result->status,
+			'app' => $appId,
+			'version' => $this->manifestLoader->appVersion(appId: $appId),
+			'checks' => $result->checks,
+		];
+	}//end healthBody()
 }//end class

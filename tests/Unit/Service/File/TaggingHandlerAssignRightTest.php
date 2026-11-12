@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCP\SystemTag\ISystemTag;

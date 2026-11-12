@@ -1,0 +1,438 @@
+{
+    "new link": [
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.update",
+            3,
+            "jan.vcf",
+            "BEGIN:VCARD\nVERSION:3.0\nUID:uid-9\nFN:Jan Jansen\nEMAIL:jan@example.org\nTEL:+31 6 1234\nORG:Gemeente;Burgerzaken\nX-OPENREGISTER-OBJECT:obj-1\nX-OPENREGISTER-ROLE:applicant\nEND:VCARD\n"
+        ],
+        [
+            "link.find",
+            "obj-1",
+            "uid-9"
+        ],
+        [
+            "link.insert",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": 12,
+                "contactUid": "uid-9",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "Jan Jansen",
+                "email": "jan@example.org",
+                "phone": "+31 6 1234",
+                "org": "Gemeente",
+                "avatarUrl": "/index.php/apps/contacts/photo/uid-9",
+                "role": "applicant",
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ],
+        [
+            "result",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": 12,
+                "contactUid": "uid-9",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "Jan Jansen",
+                "email": "jan@example.org",
+                "phone": "+31 6 1234",
+                "org": "Gemeente",
+                "avatarUrl": "/index.php/apps/contacts/photo/uid-9",
+                "role": "applicant",
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ]
+    ],
+    "new link without role or schema": [
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.update",
+            3,
+            "jan.vcf",
+            "BEGIN:VCARD\nVERSION:3.0\nUID:uid-9\nFN:Jan Jansen\nEMAIL:jan@example.org\nTEL:+31 6 1234\nORG:Gemeente;Burgerzaken\nX-OPENREGISTER-OBJECT:obj-1\nEND:VCARD\n"
+        ],
+        [
+            "link.find",
+            "obj-1",
+            "uid-9"
+        ],
+        [
+            "link.insert",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": null,
+                "contactUid": "uid-9",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "Jan Jansen",
+                "email": "jan@example.org",
+                "phone": "+31 6 1234",
+                "org": "Gemeente",
+                "avatarUrl": "/index.php/apps/contacts/photo/uid-9",
+                "role": null,
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ],
+        [
+            "result",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": null,
+                "contactUid": "uid-9",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "Jan Jansen",
+                "email": "jan@example.org",
+                "phone": "+31 6 1234",
+                "org": "Gemeente",
+                "avatarUrl": "/index.php/apps/contacts/photo/uid-9",
+                "role": null,
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ]
+    ],
+    "existing link refreshed": [
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.update",
+            3,
+            "jan.vcf",
+            "BEGIN:VCARD\nVERSION:3.0\nUID:uid-9\nFN:Jan Jansen\nEMAIL:jan@example.org\nTEL:+31 6 1234\nORG:Gemeente;Burgerzaken\nX-OPENREGISTER-OBJECT:obj-1\nX-OPENREGISTER-ROLE:applicant\nEND:VCARD\n"
+        ],
+        [
+            "link.find",
+            "obj-1",
+            "uid-9"
+        ],
+        [
+            "link.update",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": 12,
+                "contactUid": "uid-9",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "Jan Jansen",
+                "email": "jan@example.org",
+                "phone": "+31 6 1234",
+                "org": "Gemeente",
+                "avatarUrl": "/index.php/apps/contacts/photo/uid-9",
+                "role": "applicant",
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ],
+        [
+            "result",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": 12,
+                "contactUid": "uid-9",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "Jan Jansen",
+                "email": "jan@example.org",
+                "phone": "+31 6 1234",
+                "org": "Gemeente",
+                "avatarUrl": "/index.php/apps/contacts/photo/uid-9",
+                "role": "applicant",
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ]
+    ],
+    "existing link without schema keeps it": [
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.update",
+            3,
+            "jan.vcf",
+            "BEGIN:VCARD\nVERSION:3.0\nUID:uid-9\nFN:Jan Jansen\nEMAIL:jan@example.org\nTEL:+31 6 1234\nORG:Gemeente;Burgerzaken\nX-OPENREGISTER-OBJECT:obj-1\nEND:VCARD\n"
+        ],
+        [
+            "link.find",
+            "obj-1",
+            "uid-9"
+        ],
+        [
+            "link.update",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": 77,
+                "contactUid": "uid-9",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "Jan Jansen",
+                "email": "jan@example.org",
+                "phone": "+31 6 1234",
+                "org": "Gemeente",
+                "avatarUrl": "/index.php/apps/contacts/photo/uid-9",
+                "role": null,
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ],
+        [
+            "result",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": 77,
+                "contactUid": "uid-9",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "Jan Jansen",
+                "email": "jan@example.org",
+                "phone": "+31 6 1234",
+                "org": "Gemeente",
+                "avatarUrl": "/index.php/apps/contacts/photo/uid-9",
+                "role": null,
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ]
+    ],
+    "card without uid, name only": [
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "card.update",
+            3,
+            "jan.vcf",
+            "BEGIN:VCARD\nVERSION:3.0\nFN:No Uid\nX-OPENREGISTER-OBJECT:obj-1\nX-OPENREGISTER-ROLE:applicant\nEND:VCARD\n"
+        ],
+        [
+            "link.insert",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": 12,
+                "contactUid": "",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "No Uid",
+                "email": null,
+                "phone": null,
+                "org": null,
+                "avatarUrl": null,
+                "role": "applicant",
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ],
+        [
+            "result",
+            {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 5,
+                "schemaId": 12,
+                "contactUid": "",
+                "addressbookId": 3,
+                "contactUri": "jan.vcf",
+                "displayName": "No Uid",
+                "email": null,
+                "phone": null,
+                "org": null,
+                "avatarUrl": null,
+                "role": "applicant",
+                "metadata": null,
+                "linkedBy": "alice",
+                "linkedAt": "CLOCK",
+                "kind": "contact",
+                "userId": null,
+                "validFrom": null,
+                "validUntil": null,
+                "note": null,
+                "active": true,
+                "partyUuid": null,
+                "partyKind": null,
+                "primaryParty": false
+            }
+        ]
+    ],
+    "contact missing": [
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "thrown",
+            "Exception",
+            "Contact not found",
+            404
+        ]
+    ],
+    "nobody logged in": [
+        [
+            "card.get",
+            3,
+            "jan.vcf"
+        ],
+        [
+            "thrown",
+            "Exception",
+            "No user logged in",
+            0
+        ]
+    ]
+}

@@ -1,0 +1,7022 @@
+{
+    "string / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false
+            }
+        }
+    ],
+    "string / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false
+            }
+        }
+    ],
+    "string maxLength / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "string maxLength / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "string maxLength / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "string maxLength / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "string maxLength / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "string maxLength / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "string maxLength / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "string maxLength / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 40,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "string maxLength / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "string long / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string long / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false
+            }
+        }
+    ],
+    "string long / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string long / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string long / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string long / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string long / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string long / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "string long / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false
+            }
+        }
+    ],
+    "date / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "date / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "date-time / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date-time / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "date-time / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date-time / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date-time / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date-time / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date-time / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date-time / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "date-time / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "datetime",
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "uuid / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "uuid / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 36,
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 36,
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "uuid / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "uuid / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "uuid / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 36,
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "uuid / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "uuid / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "uuid / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 36,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "uuid / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 36,
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 36,
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "email / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "email / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 320,
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 320,
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "email / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "email / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "email / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 320,
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "email / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "email / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "email / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 320,
+                "nullable": true,
+                "index": true
+            }
+        }
+    ],
+    "email / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 320,
+                "nullable": false,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 320,
+                "nullable": false,
+                "index": true
+            }
+        }
+    ],
+    "uri / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "uri / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false
+            }
+        }
+    ],
+    "uri / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "uri / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "uri / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "uri / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "uri / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "uri / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "uri / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false
+            }
+        }
+    ],
+    "integer / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer bounded / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer bounded / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer bounded / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer bounded / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer bounded / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer bounded / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer bounded / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer bounded / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer bounded / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer big / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer big / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "bigint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "bigint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer big / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer big / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer big / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "bigint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer big / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer big / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer big / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "bigint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer big / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "bigint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "bigint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 20,
+                "scale": 6,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number money / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number money / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number money / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number money / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number money / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number money / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number money / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number money / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "number money / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "decimal",
+                "precision": 16,
+                "scale": 2,
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "boolean / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        }
+    ],
+    "boolean / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        }
+    ],
+    "boolean default / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        }
+    ],
+    "boolean default / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": false,
+                "default": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": false,
+                "default": true
+            }
+        }
+    ],
+    "boolean default / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        }
+    ],
+    "boolean default / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": false,
+                "default": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        }
+    ],
+    "boolean default / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        }
+    ],
+    "boolean default / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        }
+    ],
+    "boolean default / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        }
+    ],
+    "boolean default / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": true
+            }
+        }
+    ],
+    "boolean default / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": false,
+                "default": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": false,
+                "default": true
+            }
+        }
+    ],
+    "boolean null default / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean null default / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        }
+    ],
+    "boolean null default / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean null default / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean null default / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean null default / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean null default / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean null default / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": true,
+                "default": null
+            }
+        }
+    ],
+    "boolean null default / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "boolean",
+                "nullable": false,
+                "default": null
+            }
+        }
+    ],
+    "file / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        }
+    ],
+    "file / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false,
+                "comment": "File ID reference"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false,
+                "comment": "File ID reference"
+            }
+        }
+    ],
+    "file / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        }
+    ],
+    "file / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false,
+                "comment": "File ID reference"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        }
+    ],
+    "file / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        }
+    ],
+    "file / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        }
+    ],
+    "file / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        }
+    ],
+    "file / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true,
+                "comment": "File ID reference"
+            }
+        }
+    ],
+    "file / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false,
+                "comment": "File ID reference"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false,
+                "comment": "File ID reference"
+            }
+        }
+    ],
+    "array / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": false
+            }
+        }
+    ],
+    "array / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": false
+            }
+        }
+    ],
+    "array of refs / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array of refs / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": false
+            }
+        }
+    ],
+    "array of refs / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array of refs / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array of refs / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array of refs / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array of refs / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array of refs / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array of refs / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": false
+            }
+        }
+    ],
+    "object / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object ref related / required not set": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref related / required true": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref related / required false": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref related / required list with name": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref related / required list with column": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref related / required list without": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref related / required string": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref related / required list loose": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref related / required list loose true": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref schema / required not set": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref schema / required true": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref schema / required false": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref schema / required list with name": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref schema / required list with column": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref schema / required list without": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref schema / required string": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref schema / required list loose": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref schema / required list loose true": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "#/a",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object ref nested / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object ref nested / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object ref nested / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object ref nested / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object ref nested / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object ref nested / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object ref nested / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object ref nested / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object ref nested / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object related no ref / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object related no ref / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object related no ref / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object related no ref / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object related no ref / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object related no ref / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object related no ref / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object related no ref / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object related no ref / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf related / required not set": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf related / required true": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf related / required false": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf related / required list with name": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf related / required list with column": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf related / required list without": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf related / required string": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf related / required list loose": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf related / required list loose true": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-object"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf no ref / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf no ref / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf no ref / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf no ref / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf no ref / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf no ref / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf no ref / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf no ref / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf no ref / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf nested then related / required not set": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf nested then related / required true": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf nested then related / required false": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf nested then related / required list with name": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf nested then related / required list with column": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf nested then related / required list without": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf nested then related / required string": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf nested then related / required list loose": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf nested then related / required list loose true": [
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "myProp",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Detected object reference property, using VARCHAR for UUID storage",
+            "context": {
+                "propertyName": "Weird Name!",
+                "$ref": "nested in items.oneOf",
+                "handling": "related-schema"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "string",
+                "length": 255,
+                "nullable": false,
+                "comment": "Object reference (UUID)"
+            }
+        }
+    ],
+    "object oneOf nested / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf nested / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf nested / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf nested / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf nested / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf nested / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf nested / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf nested / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf nested / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf with handling / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf with handling / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf with handling / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf with handling / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf with handling / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf with handling / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf with handling / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf with handling / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": true,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "object oneOf with handling / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json_ordered",
+                "nullable": false,
+                "comment": "Order-preserving JSON (object-typed schema property)"
+            }
+        }
+    ],
+    "array oneOf related / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array oneOf related / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": false
+            }
+        }
+    ],
+    "array oneOf related / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array oneOf related / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array oneOf related / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array oneOf related / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array oneOf related / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array oneOf related / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "array oneOf related / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": false
+            }
+        }
+    ],
+    "unknown / required not set": [
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "myProp",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "Weird Name!",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "unknown / required true": [
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "myProp",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "Weird Name!",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "unknown / required false": [
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "myProp",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "Weird Name!",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "unknown / required list with name": [
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "myProp",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "Weird Name!",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "unknown / required list with column": [
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "myProp",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "Weird Name!",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "unknown / required list without": [
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "myProp",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "Weird Name!",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "unknown / required string": [
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "myProp",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "Weird Name!",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "unknown / required list loose": [
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "myProp",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "Weird Name!",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "unknown / required list loose true": [
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "myProp",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "json",
+                "nullable": true
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Unknown schema property type, storing as JSON",
+            "context": {
+                "propertyName": "Weird Name!",
+                "type": "geometry"
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "json",
+                "nullable": true
+            }
+        }
+    ],
+    "untyped / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "untyped / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false
+            }
+        }
+    ],
+    "untyped / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "untyped / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "untyped / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "untyped / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "untyped / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "untyped / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": true
+            }
+        }
+    ],
+    "untyped / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "text",
+                "nullable": false
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "text",
+                "nullable": false
+            }
+        }
+    ]
+}

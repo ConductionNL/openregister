@@ -1,0 +1,526 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`registerStore.importRegister (golden) matches the recorded behaviour 1`] = `
+{
+  "csv/offline": {
+    "consoleError": [
+      [
+        "RegisterStore: Error importing register:",
+        "offline",
+      ],
+    ],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "Data.CSV",
+          ],
+          [
+            "schema",
+            "9",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import?schema=9",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 0,
+    "stopped": 1,
+    "thrown": "offline",
+    "timers": 1,
+  },
+  "csv/ok": {
+    "consoleError": [],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "Data.CSV",
+          ],
+          [
+            "schema",
+            "9",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import?schema=9",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 1,
+    "result": {
+      "keys": [
+        "response",
+        "responseData",
+      ],
+      "responseData": {
+        "imported": 3,
+      },
+      "responseStatus": 200,
+    },
+    "stopped": 1,
+    "timers": 0,
+  },
+  "csv/okNull": {
+    "consoleError": [
+      [
+        "RegisterStore: Error importing register:",
+        "Invalid response data",
+      ],
+    ],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "Data.CSV",
+          ],
+          [
+            "schema",
+            "9",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import?schema=9",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 0,
+    "stopped": 1,
+    "thrown": "Invalid response data",
+    "timers": 0,
+  },
+  "csv/okText": {
+    "consoleError": [
+      [
+        "RegisterStore: Error importing register:",
+        "Invalid response data",
+      ],
+    ],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "Data.CSV",
+          ],
+          [
+            "schema",
+            "9",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import?schema=9",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 0,
+    "stopped": 1,
+    "thrown": "Invalid response data",
+    "timers": 0,
+  },
+  "csv/refusedBare": {
+    "consoleError": [
+      [
+        "RegisterStore: Error importing register:",
+        "HTTP error! status: 500",
+      ],
+    ],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "Data.CSV",
+          ],
+          [
+            "schema",
+            "9",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import?schema=9",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 0,
+    "stopped": 1,
+    "thrown": "HTTP error! status: 500",
+    "timers": 0,
+  },
+  "csv/refusedNamed": {
+    "consoleError": [
+      [
+        "RegisterStore: Error importing register:",
+        "Bad sheet",
+      ],
+    ],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "Data.CSV",
+          ],
+          [
+            "schema",
+            "9",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import?schema=9",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 0,
+    "stopped": 1,
+    "thrown": "Bad sheet",
+    "timers": 0,
+  },
+  "csv/refusedNull": {
+    "consoleError": [
+      [
+        "RegisterStore: Error importing register:",
+        "HTTP error! status: 502",
+      ],
+    ],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "Data.CSV",
+          ],
+          [
+            "schema",
+            "9",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import?schema=9",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 0,
+    "stopped": 1,
+    "thrown": "HTTP error! status: 502",
+    "timers": 0,
+  },
+  "csvWithSchema": {
+    "consoleError": [],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "Data.CSV",
+          ],
+          [
+            "schema",
+            "9",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import?schema=9",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        true,
+      ],
+    ],
+    "refreshed": 1,
+    "result": {
+      "keys": [
+        "response",
+        "responseData",
+      ],
+      "responseData": {
+        "imported": 3,
+      },
+      "responseStatus": 200,
+    },
+    "stopped": 1,
+    "timers": 0,
+  },
+  "csvWithoutSchema": {
+    "consoleError": [],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "Data.CSV",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 1,
+    "result": {
+      "keys": [
+        "response",
+        "responseData",
+      ],
+      "responseData": {
+        "imported": 3,
+      },
+      "responseStatus": 200,
+    },
+    "stopped": 1,
+    "timers": 0,
+  },
+  "jsonWithSchema": {
+    "consoleError": [],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "pack.json",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/r-1/import",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 1,
+    "result": {
+      "keys": [
+        "response",
+        "responseData",
+      ],
+      "responseData": {
+        "imported": 3,
+      },
+      "responseStatus": 200,
+    },
+    "stopped": 1,
+    "timers": 0,
+  },
+  "noExtension": {
+    "consoleError": [],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "README",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 1,
+    "result": {
+      "keys": [
+        "response",
+        "responseData",
+      ],
+      "responseData": {
+        "imported": 3,
+      },
+      "responseStatus": 200,
+    },
+    "stopped": 1,
+    "timers": 0,
+  },
+  "noFile": {
+    "consoleError": [],
+    "fetch": [],
+    "heartbeat": [],
+    "refreshed": 0,
+    "stopped": 0,
+    "thrown": "No file to import",
+    "timers": 0,
+  },
+  "noRegister": {
+    "consoleError": [],
+    "fetch": [],
+    "heartbeat": [],
+    "refreshed": 0,
+    "stopped": 0,
+    "thrown": "No register selected for import",
+    "timers": 0,
+  },
+  "refreshFails": {
+    "consoleError": [
+      [
+        "RegisterStore: Error refreshing register list:",
+        "refresh failed",
+      ],
+    ],
+    "fetch": [
+      {
+        "body": [
+          [
+            "file",
+            "pack.json",
+          ],
+        ],
+        "keys": [
+          "method",
+          "body",
+          "signal",
+        ],
+        "method": "POST",
+        "signal": true,
+        "url": "/index.php/apps/openregister/api/registers/5/import",
+      },
+    ],
+    "heartbeat": [
+      [
+        15000,
+        false,
+      ],
+    ],
+    "refreshed": 1,
+    "result": {
+      "keys": [
+        "response",
+        "responseData",
+      ],
+      "responseData": {
+        "imported": 3,
+      },
+      "responseStatus": 200,
+    },
+    "stopped": 1,
+    "timers": 0,
+  },
+  "registerWithoutId": {
+    "consoleError": [],
+    "fetch": [],
+    "heartbeat": [],
+    "refreshed": 0,
+    "stopped": 0,
+    "thrown": "No register selected for import",
+    "timers": 0,
+  },
+}
+`;

@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\RenderContext;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\SystemTag\ISystemTag;
@@ -44,6 +45,13 @@ use ReflectionClass;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RenderObjectTest extends TestCase {
+	use InverseRelationAccess;
+
+	/**
+	 * The files the rendered test objects hold in their own folder.
+	 */
+	private const OWN_FILE_IDS = [10 => 10, 20 => 20, 42 => 42, 99 => 99, 123 => 123, 999 => 999];
+
 	/** @var RenderObject */
 	private RenderObject $handler;
 
@@ -102,25 +110,37 @@ class RenderObjectTest extends TestCase {
 			});
 
 		$this->handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->cacheHandler,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$translationHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $translationHandler,
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 	}
 
@@ -152,11 +172,57 @@ class RenderObjectTest extends TestCase {
 	 *
 	 * @return mixed
 	 */
+	/**
+	 * An extend pass at depth 0, as handleExtendDot() receives it.
+	 *
+	 * @param bool  $allFlag    Whether every relation extends.
+	 * @param array $visitedIds The ids already handled on this path.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\ExtendDotRun The pass.
+	 */
+	private function extendDotRun(bool $allFlag, array $visitedIds): \OCA\OpenRegister\Service\Object\ExtendDotRun {
+		$run = new \OCA\OpenRegister\Service\Object\ExtendDotRun();
+		$run->allFlag    = $allFlag;
+		$run->visitedIds = $visitedIds;
+
+		return $run;
+	}
+
+	/**
+	 * Expect that no inverse batch is loaded: no batch query and no preload log line.
+	 *
+	 * @return void
+	 */
+	private function expectNoInverseBatchLoad(): void {
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$this->logger->method('debug')->willReturnCallback(
+			function (string $message): void {
+				$this->assertStringNotContainsString('INVERSE_PRELOAD', $message);
+			}
+		);
+	}
+
+	/**
+	 * A wildcard pass over the data at the given depth, as handleWildcardExtends() receives it.
+	 *
+	 * @param array $data  The data to extend.
+	 * @param int   $depth The depth of the pass.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\ExtendDotRun
+	 */
+	private function wildcardRun(array $data, int $depth): \OCA\OpenRegister\Service\Object\ExtendDotRun {
+		$run = new \OCA\OpenRegister\Service\Object\ExtendDotRun();
+		$run->data  = new \Adbar\Dot($data);
+		$run->depth = $depth;
+
+		return $run;
+	}
+
 	private function invokePrivate(string $method, array $args = []) {
-		$ref = new ReflectionClass($this->handler);
-		$m = $ref->getMethod($method);
+		$owner = $this->methodOwner($this->handler, $method);
+		$m = new \ReflectionMethod($owner, $method);
 		$m->setAccessible(true);
-		return $m->invokeArgs($this->handler, $args);
+		return $m->invokeArgs($owner, $args);
 	}
 
 	/**
@@ -237,34 +303,6 @@ class RenderObjectTest extends TestCase {
 		$tag->method('getId')->willReturn($id);
 		$tag->method('getName')->willReturn($name);
 		return $tag;
-	}
-
-	// =========================================================================
-	// setUltraPreloadCache / getUltraCacheSize
-	// =========================================================================
-
-	public function testSetUltraPreloadCacheAndGetSize(): void {
-		$this->assertSame(0, $this->handler->getUltraCacheSize());
-
-		$entity1 = $this->createObjectEntity(1, 'uuid-1');
-		$entity2 = $this->createObjectEntity(2, 'uuid-2');
-
-		$this->handler->setUltraPreloadCache([
-			'uuid-1' => $entity1,
-			'uuid-2' => $entity2,
-		]);
-
-		$this->assertSame(2, $this->handler->getUltraCacheSize());
-	}
-
-	public function testSetUltraPreloadCacheReplacesExistingCache(): void {
-		$entity1 = $this->createObjectEntity(1, 'uuid-1');
-
-		$this->handler->setUltraPreloadCache(['uuid-1' => $entity1]);
-		$this->assertSame(1, $this->handler->getUltraCacheSize());
-
-		$this->handler->setUltraPreloadCache([]);
-		$this->assertSame(0, $this->handler->getUltraCacheSize());
 	}
 
 	// =========================================================================
@@ -441,6 +479,7 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame(['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'], $result->getObject());
 	}
 
 	// =========================================================================
@@ -631,6 +670,8 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// The related object does not exist, so the reference stays as it is.
+		$this->assertSame('bbbbbbbb-cccc-dddd-eeee-ffffffffffff', $result->getObject()['relatedField']);
 	}
 
 	// =========================================================================
@@ -766,15 +807,6 @@ class RenderObjectTest extends TestCase {
 	// =========================================================================
 	// getObject - private method (uses ultra preload cache)
 	// =========================================================================
-
-	public function testGetObjectFromUltraPreloadCache(): void {
-		$entity = $this->createObjectEntity(1, 'uuid-1', ['name' => 'Test']);
-
-		$this->handler->setUltraPreloadCache(['uuid-1' => $entity]);
-
-		$result = $this->invokePrivate('getObject', ['uuid-1']);
-		$this->assertSame($entity, $result);
-	}
 
 	public function testGetObjectFromObjectCacheService(): void {
 		$entity = $this->createObjectEntity(1, 'uuid-1', ['name' => 'Test']);
@@ -1339,9 +1371,9 @@ class RenderObjectTest extends TestCase {
 		$this->invokePrivate('initializeInverseCacheEntries', [$entityUuids, 'contacts']);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
 		$this->assertArrayHasKey('uuid-1_contacts', $cache);
 		$this->assertArrayHasKey('uuid-2_contacts', $cache);
@@ -1352,15 +1384,15 @@ class RenderObjectTest extends TestCase {
 		$entity = $this->createObjectEntity(1, 'obj-1');
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'uuid-1_contacts' => [$entity],
 		]);
 
 		$this->invokePrivate('initializeInverseCacheEntries', [['uuid-1', 'uuid-2'], 'contacts']);
 
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
 		// Existing entry should NOT be overwritten.
 		$this->assertCount(1, $cache['uuid-1_contacts']);
@@ -1386,6 +1418,9 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// _schema is the shorthand for @self.schema, which adds the @self block.
+		$this->assertArrayHasKey('@self', $result->getObject());
+		$this->assertSame('Test', $result->getObject()['name']);
 	}
 
 	public function testRenderEntityNormalizesRegisterShorthand(): void {
@@ -1404,6 +1439,8 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// _register is the shorthand for @self.register.
+		$this->assertArrayHasKey('register', $result->getObject()['@self']);
 	}
 
 	// =========================================================================
@@ -1427,6 +1464,9 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// Nothing resolves the reference, so extending all leaves it as it is.
+		$this->assertSame('bbbbbbbb-cccc-dddd-eeee-ffffffffffff', $result->getObject()['related']);
+		$this->assertSame('Test', $result->getObject()['name']);
 	}
 
 	// =========================================================================
@@ -1505,6 +1545,7 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame('bbbbbbbb-cccc-dddd-eeee-ffffffffffff', $result->getObject()['related']);
 	}
 
 	// =========================================================================
@@ -1624,25 +1665,37 @@ class RenderObjectTest extends TestCase {
 			->willReturn([$schema]);
 
 		$handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->cacheHandler,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 
 		$ref = new ReflectionClass($handler);
@@ -1660,25 +1713,37 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		$handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->cacheHandler,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 
 		$ref = new ReflectionClass($handler);
@@ -1864,6 +1929,7 @@ class RenderObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testRenderFilePropertiesHydratesFileId(): void {
+		$this->holdOwnFiles();
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
 			'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'avatar' => '42',
@@ -1907,6 +1973,7 @@ class RenderObjectTest extends TestCase {
 	}
 
 	public function testRenderFilePropertiesArrayOfFiles(): void {
+		$this->holdOwnFiles();
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
 			'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'docs' => ['10', '20'],
@@ -2021,7 +2088,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			'some-string',
 			['type' => 'file'],
-			'field',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertSame('some-string', $result);
@@ -2031,7 +2098,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			'not-array',
 			['type' => 'array', 'items' => ['type' => 'file']],
-			'field',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertSame('not-array', $result);
@@ -2056,7 +2123,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			42,
 			['type' => 'file'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -2082,11 +2149,90 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			'99',
 			['type' => 'file'],
-			'document',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
 		$this->assertSame('99', $result['id']);
+	}
+
+	// =========================================================================
+	// file rendering limits
+	// =========================================================================
+
+	private function fileRecord(): array {
+		return ['fileid' => 42, 'path' => '/a.txt', 'name' => 'a.txt', 'size' => 3];
+	}
+
+	private function renderFilesOf(array $objectData, array $properties): array {
+		$this->holdOwnFiles();
+		$schema = $this->createSchema(1);
+		$schema->setProperties($properties);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $objectData);
+		return $this->invokePrivate('renderFileProperties', [$entity])->getObject();
+	}
+
+	/**
+	 * Let every rendered object's own folder hold the OWN_FILE_IDS files.
+	 *
+	 * @return void
+	 */
+	private function holdOwnFiles(): void {
+		$this->fileMapper->method('getFileIdsForObjects')->willReturnCallback(
+			static fn (array $uuids): array => array_fill_keys($uuids, array_values(self::OWN_FILE_IDS))
+		);
+	}
+
+	public function testAFileOverTheCapIsNotEmbedded(): void {
+		$mockFile = $this->createMock(\OCP\Files\File::class);
+		$mockFile->method('getSize')->willReturn(10 * 1024 * 1024 + 1);
+		$mockFile->expects($this->never())->method('getContent');
+		$this->fileService->method('getFileById')->willReturn($mockFile);
+
+		$this->assertNull($this->invokePrivate('getFileAsBase64', [42]));
+	}
+
+	public function testAFileAtTheCapIsEmbedded(): void {
+		$mockFile = $this->createMock(\OCP\Files\File::class);
+		$mockFile->method('getSize')->willReturn(10 * 1024 * 1024);
+		$mockFile->method('getContent')->willReturn('x');
+		$mockFile->method('getMimeType')->willReturn('text/plain');
+		$this->fileService->method('getFileById')->willReturn($mockFile);
+
+		$this->assertSame('data:text/plain;base64,' . base64_encode('x'), $this->invokePrivate('getFileAsBase64', [42]));
+	}
+
+	public function testAPageRenderUsesTheFileReferenceInsteadOfBase64(): void {
+		(new \ReflectionProperty($this->handler, 'pageRenderActive'))->setValue($this->handler, true);
+		$this->fileMapper->method('getFile')->willReturn($this->fileRecord());
+		$this->systemTagMapper->method('getTagIdsForObjects')->willReturn([]);
+		$this->fileService->expects($this->never())->method('getFileById');
+
+		$data = $this->renderFilesOf(['avatar' => '42'], ['avatar' => ['type' => 'file', 'format' => 'base64']]);
+
+		$this->assertSame('42', $data['avatar']['id']);
+	}
+
+	public function testMetadataKeysAreNotHydratedEvenWhenDeclaredAsFiles(): void {
+		$this->fileMapper->expects($this->never())->method('getFile');
+
+		$data = $this->renderFilesOf(
+			['@logo' => '42', 'id' => '42'],
+			['@logo' => ['type' => 'file'], 'id' => ['type' => 'file']]
+		);
+
+		$this->assertEquals(['@logo' => '42', 'id' => '42'], $data);
+	}
+
+	public function testAFileObjectIsLoadedOncePerRequest(): void {
+		$this->fileMapper->expects($this->once())->method('getFile')->willReturn($this->fileRecord());
+		$this->systemTagMapper->method('getTagIdsForObjects')->willReturn([]);
+
+		$first = $this->invokePrivate('getFileObject', [42]);
+
+		$this->assertSame($first, $this->invokePrivate('getFileObject', ['42']));
 	}
 
 	// =========================================================================
@@ -2549,6 +2695,7 @@ class RenderObjectTest extends TestCase {
 		// Should not crash even without UUID.
 		$result = $this->handler->renderEntity($entity);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame(['id' => null, 'name' => 'No UUID entity'], $result->getObject());
 	}
 
 	// =========================================================================
@@ -2592,17 +2739,12 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$this->invokePrivate('initializeInverseCacheEntries', [['entity-uuid-1'], 'children']);
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['parent'],
-			['entity-uuid-1'],
-			'children',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['parent'], ['entity-uuid-1'], 'children')]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
 		$this->assertCount(1, $cache['entity-uuid-1_children']);
 		$this->assertSame($refObject, $cache['entity-uuid-1_children'][0]);
@@ -2615,17 +2757,12 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$this->invokePrivate('initializeInverseCacheEntries', [['entity-uuid-1'], 'children']);
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['fieldA', 'fieldB'],
-			['entity-uuid-1'],
-			'children',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['fieldA', 'fieldB'], ['entity-uuid-1'], 'children')]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
 		// Same object matching on 2 fields should only appear once.
 		$this->assertCount(1, $cache['entity-uuid-1_children']);
@@ -2637,17 +2774,12 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$this->invokePrivate('initializeInverseCacheEntries', [['entity-uuid-1'], 'children']);
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['parent'],
-			['entity-uuid-1'],
-			'children',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['parent'], ['entity-uuid-1'], 'children')]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
 		$this->assertCount(1, $cache['entity-uuid-1_children']);
 	}
@@ -2658,17 +2790,12 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$this->invokePrivate('initializeInverseCacheEntries', [['entity-uuid-1', 'entity-uuid-2'], 'children']);
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['parents'],
-			['entity-uuid-1', 'entity-uuid-2'],
-			'children',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['parents'], ['entity-uuid-1', 'entity-uuid-2'], 'children')]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
 		$this->assertCount(1, $cache['entity-uuid-1_children']);
 		$this->assertCount(1, $cache['entity-uuid-2_children']);
@@ -2691,9 +2818,9 @@ class RenderObjectTest extends TestCase {
 
 		// Set up inverse relation cache.
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_children' => [$childEntity],
 		]);
 
@@ -2710,11 +2837,7 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willThrowException(new Exception('Not found'));
 
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			['id' => 'entity-uuid-1', 'name' => 'Test'],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), ['id' => 'entity-uuid-1', 'name' => 'Test']]);
 
 		$this->assertArrayHasKey('children', $result);
 		$this->assertIsArray($result['children']);
@@ -2727,9 +2850,9 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_children' => [],
 		]);
 
@@ -2740,11 +2863,7 @@ class RenderObjectTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			['id' => 'entity-uuid-1'],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), ['id' => 'entity-uuid-1']]);
 
 		$this->assertArrayHasKey('children', $result);
 		$this->assertSame([], $result['children']);
@@ -2760,9 +2879,9 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_child' => [$childEntity],
 		]);
 
@@ -2780,11 +2899,7 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willThrowException(new Exception('Not found'));
 
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			['id' => 'entity-uuid-1'],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), ['id' => 'entity-uuid-1']]);
 
 		$this->assertArrayHasKey('child', $result);
 		// Single value, not array.
@@ -2803,11 +2918,7 @@ class RenderObjectTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			['id' => 'entity-uuid-1'],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), ['id' => 'entity-uuid-1']]);
 
 		// Property without inversedBy is skipped.
 		$this->assertArrayNotHasKey('normal', $result);
@@ -2819,25 +2930,24 @@ class RenderObjectTest extends TestCase {
 
 	public function testPreloadInverseRelationshipsEmptyEntities(): void {
 		// Should return early without error.
-		$this->invokePrivate('preloadInverseRelationships', [[], ['all']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[], ['all']]);
 	}
 
 	public function testPreloadInverseRelationshipsEmptyExtend(): void {
 		$entity = $this->createBasicEntity(1, 'uuid-1', []);
 
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], []]);
+		$this->expectNoInverseBatchLoad();
 
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], []]);
 	}
 
 	public function testPreloadInverseRelationshipsNonObjectEntity(): void {
 		// Non-ObjectEntity should be skipped.
-		$this->invokePrivate('preloadInverseRelationships', [['not-an-entity'], ['all']]);
+		$this->expectNoInverseBatchLoad();
 
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [['not-an-entity'], ['all']]);
 	}
 
 	// =========================================================================
@@ -2851,6 +2961,8 @@ class RenderObjectTest extends TestCase {
 
 		$result = $this->handler->renderEntity($entity);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// Empty data still gets the entity's id.
+		$this->assertSame(['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'], $result->getObject());
 	}
 
 	public function testRenderEntityFilterWithNonExistentKey(): void {
@@ -3044,7 +3156,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			10,
 			['type' => 'file', 'format' => 'base64'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertStringStartsWith('data:text/plain;base64,', $result);
@@ -3061,7 +3173,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[10, 20],
 			['type' => 'array', 'items' => ['type' => 'file', 'format' => 'base64']],
-			'images',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -3076,7 +3188,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[10],
 			['type' => 'array', 'items' => ['type' => 'file', 'format' => 'base64']],
-			'images',
+			self::OWN_FILE_IDS,
 		]);
 
 		// Null results are filtered out.
@@ -3101,7 +3213,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[10],
 			['type' => 'array', 'items' => ['type' => 'file']],
-			'docs',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertIsArray($result);
@@ -3117,7 +3229,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			[999],
 			['type' => 'array', 'items' => ['type' => 'file']],
-			'docs',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertSame([], $result);
@@ -3166,7 +3278,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['name' => 'Test', 'items' => ['a', 'b']];
 		$extend = ['name'];
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
 
 		$this->assertSame('Test', $result['name']);
 		$this->assertSame(['a', 'b'], $result['items']);
@@ -3176,7 +3288,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['items' => [['ref' => 'val']]];
 		$extend = ['items.$.ref'];
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 10]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 10), &$extend]);
 
 		// At depth 10 it should return data unchanged.
 		$this->assertSame('val', $result['items'][0]['ref']);
@@ -3198,7 +3310,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
 
 		// Items should still have the data.
 		$this->assertIsArray($result['items']);
@@ -3209,7 +3321,7 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['items' => 'not-iterable'];
 		$extend = ['items.$.ref'];
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
 
 		// Non-iterable root should be skipped gracefully.
 		$this->assertSame('not-iterable', $result['items']);
@@ -3225,9 +3337,10 @@ class RenderObjectTest extends TestCase {
 		// Use a string key override via items.$.name => overridden value.
 		$extend = ['items.$.name' => 'items.$.name'];
 
-		$result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+		$result = $this->invokePrivate('handleWildcardExtends', [$this->wildcardRun($objectData, 0), &$extend]);
 
 		$this->assertIsArray($result['items']);
+		$this->assertSame([['name' => 'a'], ['name' => 'b']], $result['items']);
 	}
 
 	// =========================================================================
@@ -3238,7 +3351,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['name' => 'Test'];
 		$extend = ['nonexistent'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertSame('Test', $result['name']);
 	}
@@ -3247,7 +3360,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['@self' => ['schema' => 1], 'name' => 'Test'];
 		$extend = ['@self'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// @self should be skipped.
 		$this->assertSame(['schema' => 1], $result['@self']);
@@ -3257,7 +3370,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['ref' => null, 'name' => 'Test'];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertNull($result['ref']);
 	}
@@ -3271,7 +3384,7 @@ class RenderObjectTest extends TestCase {
 		];
 		$extend = ['items'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Already extended objects (with 'id' or '@self') should be returned as-is.
 		$this->assertSame('uuid-1', $result['items'][0]['id']);
@@ -3287,10 +3400,11 @@ class RenderObjectTest extends TestCase {
 		];
 		$extend = ['items'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Should filter out null results (non-id arrays return null).
 		$this->assertIsArray($result['items']);
+		$this->assertSame([], $result['items']);
 	}
 
 	public function testHandleExtendDotWithUuidStringNotInCache(): void {
@@ -3303,7 +3417,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Object not found, should keep original UUID.
 		$this->assertSame($uuid, $result['ref']);
@@ -3329,7 +3443,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Should be extended to full object.
 		$this->assertIsArray($result['ref']);
@@ -3340,7 +3454,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['ref' => '_internal_value'];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Values starting with _ should be skipped.
 		$this->assertSame('_internal_value', $result['ref']);
@@ -3350,7 +3464,7 @@ class RenderObjectTest extends TestCase {
 		$data = ['ref' => '@some_value'];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertSame('@some_value', $result['ref']);
 	}
@@ -3364,7 +3478,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// URL value - last path segment used as lookup, not found, skipped.
 		$this->assertSame('http://example.com/api/objects/some-slug', $result['ref']);
@@ -3393,7 +3507,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// uuid1 should be extended, uuid2 preserved as original string.
 		$this->assertIsArray($result['items']);
@@ -3409,10 +3523,11 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// null and @-prefixed values should be filtered.
 		$this->assertIsArray($result['items']);
+		$this->assertSame(['12345678-1234-1234-1234-123456789012'], $result['items']);
 	}
 
 	public function testHandleExtendDotCircularReferenceInArray(): void {
@@ -3435,7 +3550,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// Pass uuid as visitedId to trigger circular detection.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, [$uuid]]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [$uuid])]);
 
 		$this->assertIsArray($result['items']);
 		$this->assertCount(1, $result['items']);
@@ -3462,7 +3577,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// allFlag = true should add 'all' to sub-extends.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, true, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(true, [])]);
 
 		$this->assertIsArray($result['ref']);
 		$this->assertArrayHasKey('id', $result['ref']);
@@ -3488,10 +3603,12 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// With string override, the result should be set at custom.path.
 		$this->assertIsArray($result);
+		$this->assertSame('12345678-1234-1234-1234-123456789012', $result['ref']);
+		$this->assertSame('Override', $result['custom']['path']['name']);
 	}
 
 	public function testHandleExtendDotWithArrayStringOverride(): void {
@@ -3514,9 +3631,11 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
+		$this->assertSame(['12345678-1234-1234-1234-123456789012'], $result['items']);
+		$this->assertSame('Item', $result['overridden']['items'][0]['name']);
 	}
 
 	// =========================================================================
@@ -3542,9 +3661,9 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'];
 		$extend = ['@self.register', '@self.schema'];
 
-		$result = $this->invokePrivate('extendObject', [
-			$entity, $extend, $objectData, 0, [], [], [], [],
-		]);
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Kernel\Contracts\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run->data = $objectData;
+		$result = $this->invokePrivate('extendObject', [$run]);
 
 		$this->assertArrayHasKey('@self', $result);
 		$this->assertArrayHasKey('register', $result['@self']);
@@ -3570,9 +3689,9 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
 		$extend = ['ref'];
 
-		$result = $this->invokePrivate('extendObject', [
-			$entity, $extend, $objectData, 0, [], [], [], [],
-		]);
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Kernel\Contracts\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run->data = $objectData;
+		$result = $this->invokePrivate('extendObject', [$run]);
 
 		// ref should be extended to the full object.
 		$this->assertIsArray($result['ref']);
@@ -3598,11 +3717,13 @@ class RenderObjectTest extends TestCase {
 		$objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
 		$extend = ['all'];
 
-		$result = $this->invokePrivate('extendObject', [
-			$entity, $extend, $objectData, 0, [], [], [], [],
-		]);
+		$run = new \OCA\OpenRegister\Service\Object\RenderRun($entity, new RenderContext(new \OCA\OpenRegister\Kernel\Contracts\RenderSelection($extend, [], [], []), new \OCA\OpenRegister\Service\Object\RenderPreloads(null, null, null), new \OCA\OpenRegister\Service\Object\RenderPath(0, []), true));
+		$run->data = $objectData;
+		$result = $this->invokePrivate('extendObject', [$run]);
 
 		$this->assertIsArray($result);
+		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result['id']);
+		$this->assertSame($uuid, $result['ref']);
 	}
 
 	// =========================================================================
@@ -3658,6 +3779,9 @@ class RenderObjectTest extends TestCase {
 
 		// Should not crash; id and originId should not be in _extend.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// id and originId are the entity itself, so they are never replaced by an extended object.
+		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result->getObject()['id']);
+		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result->getObject()['originId']);
 	}
 
 	// =========================================================================
@@ -3678,6 +3802,7 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame(['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'], $result->getObject());
 	}
 
 	// =========================================================================
@@ -3742,9 +3867,9 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_children' => [$childEntity],
 		]);
 
@@ -3813,9 +3938,9 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_items' => [$childEntity],
 		]);
 
@@ -3833,11 +3958,7 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willThrowException(new Exception('Not found'));
 
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			['id' => 'entity-uuid-1'],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), ['id' => 'entity-uuid-1']]);
 
 		$this->assertArrayHasKey('items', $result);
 		$this->assertIsArray($result['items']);
@@ -3850,9 +3971,9 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_parent' => [],
 		]);
 
@@ -3865,11 +3986,7 @@ class RenderObjectTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			['id' => 'entity-uuid-1'],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), ['id' => 'entity-uuid-1']]);
 
 		$this->assertArrayHasKey('parent', $result);
 		$this->assertNull($result['parent']);
@@ -3984,6 +4101,8 @@ class RenderObjectTest extends TestCase {
 		// This should not throw even if something goes wrong inside.
 		$result = $this->handler->renderEntity($entity);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		// The file id resolves to no file, so the property renders as null.
+		$this->assertNull($result->getObject()['logo']);
 	}
 
 	public function testHydrateMetadataFromFilePropertiesNoSchema(): void {
@@ -3996,6 +4115,8 @@ class RenderObjectTest extends TestCase {
 		// No schema found means hydrateMetadata returns entity unchanged.
 		$result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($entity, $result);
+		$this->assertSame(['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'], $result->getObject());
 	}
 
 	public function testHydrateMetadataDeepNestedPath(): void {
@@ -4049,6 +4170,8 @@ class RenderObjectTest extends TestCase {
 
 		$result = $this->handler->renderEntity($entity);
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($entity, $result);
+		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result->getObject()['id']);
 	}
 
 	// =========================================================================
@@ -4056,6 +4179,7 @@ class RenderObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testRenderFilePropertiesSkipsUnconfiguredProperties(): void {
+		$this->holdOwnFiles();
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
 			'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 			'avatar' => '42',
@@ -4161,7 +4285,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result['ref']);
 		$this->assertArrayHasKey('id', $result['ref']);
@@ -4183,10 +4307,9 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willReturn($schema);
 
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success; no inversed properties means early return.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
 	}
 
 	public function testPreloadInverseRelationshipsNoSchemaFound(): void {
@@ -4196,10 +4319,9 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willThrowException(new Exception('Not found'));
 
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
 	}
 
 	public function testPreloadInverseRelationshipsNoExtendMatch(): void {
@@ -4218,10 +4340,9 @@ class RenderObjectTest extends TestCase {
 			->willReturn($schema);
 
 		// Extend doesn't include 'children' or 'all'.
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['name']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['name']]);
 	}
 
 	public function testPreloadInverseRelationshipsNoEntityUuids(): void {
@@ -4245,10 +4366,9 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willReturn($schema);
 
-		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['children']]);
+		$this->expectNoInverseBatchLoad();
 
-		// No crash = success; entities without UUIDs are skipped.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadInverseRelationships', [[$entity], ['children']]);
 	}
 
 	// =========================================================================
@@ -4261,12 +4381,13 @@ class RenderObjectTest extends TestCase {
 		// Missing $ref and inversedBy.
 		$propConfig = ['type' => 'array', 'items' => ['type' => 'object']];
 
-		$this->invokePrivate('preloadSingleInverseProperty', [
-			'children', $propConfig, ['uuid-1'], $entity,
-		]);
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$batch = $this->inverseBatch([], ['uuid-1'], 'children');
 
-		// No crash = success.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadSingleInverseProperty', [$batch, $propConfig]);
+
+		$this->assertSame('', $batch->targetSchemaId);
+		$this->assertSame([], $batch->inversedByFields);
 	}
 
 	public function testPreloadSingleInversePropertyEmptySchemaId(): void {
@@ -4277,12 +4398,13 @@ class RenderObjectTest extends TestCase {
 			'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => ''],
 		];
 
-		$this->invokePrivate('preloadSingleInverseProperty', [
-			'children', $propConfig, ['uuid-1'], $entity,
-		]);
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$batch = $this->inverseBatch([], ['uuid-1'], 'children');
 
-		// Empty schema ID causes early return.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadSingleInverseProperty', [$batch, $propConfig]);
+
+		$this->assertSame('', $batch->targetSchemaId);
+		$this->assertSame([], $batch->inversedByFields);
 	}
 
 	public function testPreloadSingleInversePropertyTargetSchemaNotFound(): void {
@@ -4296,12 +4418,13 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willThrowException(new Exception('Not found'));
 
-		$this->invokePrivate('preloadSingleInverseProperty', [
-			'children', $propConfig, ['uuid-1'], $entity,
-		]);
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$batch = $this->inverseBatch([], ['uuid-1'], 'children');
 
-		// Schema not found causes early return.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadSingleInverseProperty', [$batch, $propConfig]);
+
+		$this->assertSame('', $batch->targetSchemaId);
+		$this->assertSame([], $batch->inversedByFields);
 	}
 
 	// =========================================================================
@@ -4325,7 +4448,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			42,
 			['type' => 'file', 'format' => 'base64'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertNull($result);
@@ -4342,7 +4465,7 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateFileProperty', [
 			42,
 			['type' => 'file'],
-			'avatar',
+			self::OWN_FILE_IDS,
 		]);
 
 		$this->assertNull($result);
@@ -4418,7 +4541,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// Pass uuid as visited to trigger circular detection on single value.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, [$uuid]]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [$uuid])]);
 
 		// Should detect circular and set @circular flag.
 		$this->assertIsArray($result['ref']);
@@ -4450,7 +4573,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		// Should resolve the UUID from the URL and extend.
 		$this->assertIsArray($result['ref']);
@@ -4530,25 +4653,37 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		$handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->cacheHandler,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 
 		$ref = new ReflectionClass($handler);
@@ -4581,6 +4716,8 @@ class RenderObjectTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($uuid, $result->getObject()['refA']);
+		$this->assertSame('some-value', $result->getObject()['refB']);
 	}
 
 	// =========================================================================
@@ -4607,7 +4744,7 @@ class RenderObjectTest extends TestCase {
 			->willReturn([]);
 
 		// allFlag = true should merge 'all' into sub-extend for array items.
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, true, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(true, [])]);
 
 		$this->assertIsArray($result['items']);
 		$this->assertCount(1, $result['items']);
@@ -4640,9 +4777,9 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_children' => [$childEntity],
 		]);
 
@@ -4685,9 +4822,9 @@ class RenderObjectTest extends TestCase {
 
 		// Pre-populate cache for 'contacts'.
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_contacts' => [],
 		]);
 
@@ -4729,9 +4866,9 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_children' => [],
 		]);
 
@@ -4774,12 +4911,13 @@ class RenderObjectTest extends TestCase {
 		$this->schemaMapper->method('findAll')
 			->willReturn([]);
 
-		$this->invokePrivate('preloadSingleInverseProperty', [
-			'children', $propConfig, ['uuid-1'], $entity,
-		]);
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$batch = $this->inverseBatch([], ['uuid-1'], 'children');
 
-		// resolveSchemaReference returns 'nonexistent-slug', getSchema returns null.
-		$this->assertTrue(true);
+		$this->invokePrivate('preloadSingleInverseProperty', [$batch, $propConfig]);
+
+		$this->assertSame('', $batch->targetSchemaId);
+		$this->assertSame([], $batch->inversedByFields);
 	}
 
 	// =========================================================================
@@ -4837,10 +4975,11 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
 		$this->assertIsArray($result['parent']['child']);
+		$this->assertSame('Nested', $result['parent']['child'][0]['name']);
 	}
 
 	public function testHandleExtendDotDeepNestedRef(): void {
@@ -4868,7 +5007,7 @@ class RenderObjectTest extends TestCase {
 		$this->objectCacheService->method('preloadObjects')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+		$result = $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend), $this->extendDotRun(false, [])]);
 
 		$this->assertIsArray($result);
 		$this->assertIsArray($result['level1']['level2']['ref']);
@@ -4890,25 +5029,37 @@ class RenderObjectTest extends TestCase {
 			->willReturn([$schema]);
 
 		$handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->cacheHandler,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 
 		$ref = new ReflectionClass($handler);
@@ -5217,7 +5368,7 @@ class RenderObjectTest extends TestCase {
 
 	public function testHydrateFilePropertyNonNumericStringUnchanged(): void {
 		$config = ['type' => 'file'];
-		$result = $this->invokePrivate('hydrateFileProperty', ['not-a-number', $config, 'prop']);
+		$result = $this->invokePrivate('hydrateFileProperty', ['not-a-number', $config, self::OWN_FILE_IDS]);
 
 		$this->assertSame('not-a-number', $result);
 	}
@@ -5236,7 +5387,7 @@ class RenderObjectTest extends TestCase {
 		$this->fileService->method('getFileById')
 			->willReturn($mockNode);
 
-		$result = $this->invokePrivate('hydrateFileProperty', [[123], $config, 'images']);
+		$result = $this->invokePrivate('hydrateFileProperty', [[123], $config, self::OWN_FILE_IDS]);
 
 		$this->assertIsArray($result);
 		$this->assertCount(1, $result);
@@ -5250,7 +5401,7 @@ class RenderObjectTest extends TestCase {
 		];
 
 		// Non-array value for array property — should be returned unchanged.
-		$result = $this->invokePrivate('hydrateFileProperty', ['single-string', $config, 'prop']);
+		$result = $this->invokePrivate('hydrateFileProperty', ['single-string', $config, self::OWN_FILE_IDS]);
 
 		$this->assertSame('single-string', $result);
 	}
@@ -5463,9 +5614,9 @@ class RenderObjectTest extends TestCase {
 		$entity = $this->createBasicEntity(1, 'entity-uuid-1', ['id' => 'entity-uuid-1']);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_parent' => [],
 		]);
 
@@ -5478,11 +5629,7 @@ class RenderObjectTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			['id' => 'entity-uuid-1'],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), ['id' => 'entity-uuid-1']]);
 
 		$this->assertArrayHasKey('parent', $result);
 		$this->assertNull($result['parent']);
@@ -5717,9 +5864,9 @@ class RenderObjectTest extends TestCase {
 		$this->invokePrivate('initializeInverseCacheEntries', [$uuids, 'contacts']);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
 		$this->assertSame([], $cache['uuid-1_contacts']);
 		$this->assertSame([], $cache['uuid-2_contacts']);
@@ -5733,15 +5880,15 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testInitializeInverseCacheEntriesPreservesExisting(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 
 		$existingObj = $this->createObjectEntity(99, 'existing-ref');
-		$cacheProp->setValue($this->handler, ['uuid-1_contacts' => [$existingObj]]);
+		$cacheProp->setValue($this->inversePart($this->handler), ['uuid-1_contacts' => [$existingObj]]);
 
 		$this->invokePrivate('initializeInverseCacheEntries', [['uuid-1', 'uuid-2'], 'contacts']);
 
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache['uuid-1_contacts']);
 		$this->assertSame($existingObj, $cache['uuid-1_contacts'][0]);
 		$this->assertSame([], $cache['uuid-2_contacts']);
@@ -5758,22 +5905,17 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsSimpleStringRef(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, ['target-uuid_contacts' => []]);
+		$cacheProp->setValue($this->inversePart($this->handler), ['target-uuid_contacts' => []]);
 
 		$refObject = $this->createObjectEntity(10, 'ref-obj-uuid', [
 			'orgField' => 'target-uuid',
 		]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['orgField'],
-			['target-uuid'],
-			'contacts',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['orgField'], ['target-uuid'], 'contacts')]);
 
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache['target-uuid_contacts']);
 		$this->assertSame('ref-obj-uuid', $cache['target-uuid_contacts'][0]->getUuid());
 	}
@@ -5785,22 +5927,17 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsHandlesValueObjectFormat(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, ['target-uuid_links' => []]);
+		$cacheProp->setValue($this->inversePart($this->handler), ['target-uuid_links' => []]);
 
 		$refObject = $this->createObjectEntity(11, 'ref-obj-2', [
 			'parentRef' => ['value' => 'target-uuid'],
 		]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['parentRef'],
-			['target-uuid'],
-			'links',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['parentRef'], ['target-uuid'], 'links')]);
 
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache['target-uuid_links']);
 	}
 
@@ -5811,9 +5948,9 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsMatchesArrayUuids(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			'uuid-a_members' => [],
 			'uuid-b_members' => [],
 		]);
@@ -5822,14 +5959,9 @@ class RenderObjectTest extends TestCase {
 			'memberOf' => ['uuid-a', 'uuid-b', 'uuid-c'],
 		]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['memberOf'],
-			['uuid-a', 'uuid-b'],
-			'members',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['memberOf'], ['uuid-a', 'uuid-b'], 'members')]);
 
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache['uuid-a_members']);
 		$this->assertCount(1, $cache['uuid-b_members']);
 	}
@@ -5841,23 +5973,18 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsDeduplicatesMultiField(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, ['target-uuid_contacts' => []]);
+		$cacheProp->setValue($this->inversePart($this->handler), ['target-uuid_contacts' => []]);
 
 		$refObject = $this->createObjectEntity(13, 'ref-obj-4', [
 			'fieldA' => 'target-uuid',
 			'fieldB' => 'target-uuid',
 		]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['fieldA', 'fieldB'],
-			['target-uuid'],
-			'contacts',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['fieldA', 'fieldB'], ['target-uuid'], 'contacts')]);
 
-		$cache = $cacheProp->getValue($this->handler);
+		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache['target-uuid_contacts']);
 	}
 
@@ -5868,20 +5995,15 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsPopulatesObjectsCache(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, ['target-uuid_items' => []]);
+		$cacheProp->setValue($this->inversePart($this->handler), ['target-uuid_items' => []]);
 
 		$refObject = $this->createObjectEntity(14, 'ref-obj-5', [
 			'parent' => 'target-uuid',
 		]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['parent'],
-			['target-uuid'],
-			'items',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['parent'], ['target-uuid'], 'items')]);
 
 		$objectsCacheProp = $ref->getProperty('objectsCache');
 		$objectsCacheProp->setAccessible(true);
@@ -6167,6 +6289,8 @@ class RenderObjectTest extends TestCase {
 		$result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame($entity, $result);
+		$this->assertSame(['downloadUrl' => 'http://example.com/img.png'], $result->getObject()['avatar']);
 	}
 
 	// =========================================================================
@@ -6295,9 +6419,9 @@ class RenderObjectTest extends TestCase {
 
 		// Pre-populate inverse relation cache so it takes the cache path.
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = $ref->getProperty('inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
-		$cacheProp->setValue($this->handler, [
+		$cacheProp->setValue($this->inversePart($this->handler), [
 			$entityUuid . '_contacts' => [],
 		]);
 
@@ -6493,25 +6617,37 @@ class RenderObjectTest extends TestCase {
 		$registerMapper->method('find')->willReturn($register);
 
 		return new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$registerMapper,
-			$schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->cacheHandler,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$translationHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$languageService
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->objectMapper),
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $translationHandler,
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $languageService
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 	}//end buildHandlerWithRealTranslation()
 
@@ -6572,4 +6708,585 @@ class RenderObjectTest extends TestCase {
 		);
 	}//end testResolveTranslationsForRowsKeepsRawMapWhenTranslationsAll()
 
+	// =========================================================================
+	// handleInversedProperties — uncached fallback path
+	// =========================================================================
+
+	/**
+	 * The objects of the fallback path: the referencing rows for an entity, plus the extra-field match.
+	 *
+	 * @param string $uuid The rendered entity's UUID.
+	 *
+	 * @return array{0: ObjectEntity[], 1: ObjectEntity}
+	 */
+	private function inverseFallbackRows(string $uuid): array {
+		$row = function (int $id, string $rowUuid, string $schema, array $data): ObjectEntity {
+			$entity = $this->createObjectEntity($id, $rowUuid, $data);
+			$entity->setSchema($schema);
+			$entity->setRegister(1);
+			return $entity;
+		};
+		$rows = [
+			$row(11, 'c1000000-0000-0000-0000-000000000001', '2', ['org' => $uuid]),
+			$row(12, 'c1000000-0000-0000-0000-000000000002', '2', ['org' => ['x', $uuid]]),
+			$row(13, 'c1000000-0000-0000-0000-000000000003', '3', ['org' => $uuid]),
+			$row(14, 'c1000000-0000-0000-0000-000000000004', '2', ['lead' => 'https://h/objects/' . $uuid]),
+			$row(15, 'c1000000-0000-0000-0000-000000000005', '2', ['lead' => ['value' => $uuid]]),
+			$row(16, 'c1000000-0000-0000-0000-000000000006', '2', ['lead' => 'other']),
+			$row(17, 'c1000000-0000-0000-0000-000000000007', '2', ['org' => ['value' => ['y', $uuid]]]),
+		];
+		$nameless = $row(19, 'c1000000-0000-0000-0000-000000000009', '2', ['org' => 'none']);
+		$nameless->setUuid(null);
+		$rows[] = $nameless;
+		$extra = $row(18, 'c1000000-0000-0000-0000-000000000008', '2', ['alsoOrg' => ['value' => $uuid]]);
+		return [$rows, $extra];
+	}
+
+	/**
+	 * With a cold cache and a failing batch preload, inverse properties come from the cross-table lookup.
+	 *
+	 * @return void
+	 */
+	public function testHandleInversedPropertiesFallsBackToTheCrossTableLookup(): void {
+		$uuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+		$entity = $this->createBasicEntity(1, $uuid, ['name' => 'Test']);
+		$schema = $this->createSchema(1, 'org-schema');
+		$schema->setProperties([
+			'contacts' => ['type' => 'array', 'items' => ['inversedBy' => ['org', 'alsoOrg'], '$ref' => '2']],
+			'lead' => ['type' => 'object', 'inversedBy' => 'lead', '$ref' => '2'],
+			'leads' => ['type' => 'array', 'inversedBy' => 'lead', '$ref' => '2'],
+			'own' => ['type' => 'object', 'inversedBy' => 'org'],
+			'plain' => ['type' => 'string'],
+		]);
+		$target = $this->createSchema(2, 'contact-schema');
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn ($id) => ((string)$id === '2') ? $target : $schema
+		);
+
+		[$rows, $extra] = $this->inverseFallbackRows($uuid);
+		$crossTableCalls = 0;
+		$this->objectMapper->method('findByRelation')->willReturnCallback(
+			function (string $search) use ($uuid, $rows, &$crossTableCalls): array {
+				$this->assertSame($uuid, $search);
+				$crossTableCalls++;
+				return $rows;
+			}
+		);
+		$extraCalls = [];
+		$this->objectMapper->method('findByRelationBatchInSchema')->willReturnCallback(
+			function (...$args) use (&$crossTableCalls, &$extraCalls, $extra, $rows): array {
+				if ($crossTableCalls === 0) {
+					throw new Exception('batch preload down');
+				}
+
+				$extraCalls[] = $args;
+				return [$extra, $rows[0]];
+			}
+		);
+
+		$result = $this->invokePrivate('handleInversedProperties', [$entity, ['name' => 'Test', 'own' => 'kept'], 0]);
+
+		$ids = static fn (array $rendered): array => array_map(static fn (array $one) => $one['@self']['id'] ?? $one['id'] ?? null, $rendered);
+		$this->assertSame(1, $crossTableCalls);
+		$this->assertSame([[[$uuid], 2, 1, 'org', ['alsoOrg']]], $extraCalls);
+		$this->assertSame('Test', $result['name']);
+		$this->assertSame(
+			[
+				'c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000002',
+				'c1000000-0000-0000-0000-000000000007', 'c1000000-0000-0000-0000-000000000008',
+			],
+			$ids($result['contacts'])
+		);
+		$this->assertSame('c1000000-0000-0000-0000-000000000005', $result['lead']['@self']['id'] ?? $result['lead']['id'] ?? null);
+		$this->assertSame(
+			['c1000000-0000-0000-0000-000000000004', 'c1000000-0000-0000-0000-000000000005'],
+			$ids($result['leads'])
+		);
+		$this->assertNull($result['own']);
+		$this->assertArrayNotHasKey('plain', $result);
+
+		$cache = (new ReflectionClass($this->handler))->getProperty('objectsCache');
+		$cache->setAccessible(true);
+		$cached = array_keys($cache->getValue($this->handler));
+		$this->assertSame(
+			[
+				'c1000000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-000000000002',
+				'c1000000-0000-0000-0000-000000000003', 'c1000000-0000-0000-0000-000000000004',
+				'c1000000-0000-0000-0000-000000000005', 'c1000000-0000-0000-0000-000000000006',
+				'c1000000-0000-0000-0000-000000000007', 'c1000000-0000-0000-0000-000000000008',
+			],
+			array_slice($cached, 0, 8)
+		);
+		$this->assertNotContains('', $cached);
+	}
+
+	/**
+	 * An entity whose schema has no inverse properties keeps its data and asks nothing.
+	 *
+	 * @return void
+	 */
+	public function testHandleInversedPropertiesWithoutInverseConfigurationAsksNothing(): void {
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+		$schema = $this->createSchema(1, 'plain-schema');
+		$schema->setProperties(['name' => ['type' => 'string']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectMapper->expects($this->never())->method('findByRelation');
+
+		$this->assertSame(['name' => 'Test'], $this->invokePrivate('handleInversedProperties', [$entity, ['name' => 'Test'], 0]));
+	}
+
+	// =========================================================================
+	// batchPreloadFileObjects — page-wide file and tag prefetch
+	// =========================================================================
+
+	/**
+	 * A tag double with an id and a name.
+	 *
+	 * @param string $id   The tag id.
+	 * @param string $name The tag name.
+	 *
+	 * @return ISystemTag
+	 */
+	private function preloadTag(string $id, string $name): ISystemTag {
+		$tag = $this->createMock(ISystemTag::class);
+		$tag->method('getId')->willReturn($id);
+		$tag->method('getName')->willReturn($name);
+		return $tag;
+	}
+
+	/**
+	 * The private request caches the prefetch fills.
+	 *
+	 * @param string $name The cache property.
+	 *
+	 * @return array
+	 */
+	private function preloadCache(string $name): array {
+		$prop = (new ReflectionClass($this->handler))->getProperty($name);
+		$prop->setAccessible(true);
+		return $prop->getValue($this->handler);
+	}
+
+	/**
+	 * The prefetch loads every numeric file id of every file property of the page once, with tags, skipping base64.
+	 *
+	 * @return void
+	 */
+	public function testBatchPreloadFileObjectsCachesFilesAndTagsForThePage(): void {
+		$schema = $this->createSchema(1, 'files-schema');
+		$schema->setProperties([
+			'doc' => ['type' => 'file'],
+			'docs' => ['type' => 'array', 'items' => ['type' => 'file']],
+			'raw' => ['type' => 'file', 'format' => 'base64'],
+			'raws' => ['type' => 'array', 'items' => ['type' => 'file', 'format' => 'base64']],
+			'name' => ['type' => 'string'],
+			'odd' => 'not-a-config',
+		]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$one = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['doc' => 5, 'docs' => ['7', 'x', 5, 9.0], 'raw' => 11, 'raws' => [12], 'name' => '13', 'odd' => 14]);
+		$two = $this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['doc' => '3', 'docs' => null]);
+		$three = $this->createBasicEntity(3, 'aaaaaaaa-0000-0000-0000-000000000003', ['doc' => (object)['id' => 4]]);
+
+		$this->fileMapper->expects($this->once())->method('getFilesByIds')->with([5, 7, 9, 3])->willReturn([
+			'5' => ['fileid' => 5, 'path' => '/a/five.pdf', 'name' => 'five.pdf', 'size' => '10'],
+			'3' => ['fileid' => 3, 'path' => '/a/three.txt', 'name' => 'three.txt', 'size' => 3, 'mimetype' => 'text/plain'],
+		]);
+		$this->systemTagMapper->expects($this->once())->method('getTagIdsForObjects')
+			->with(['5', '7', '9', '3'], 'files')
+			->willReturn([5 => ['t1', 't2'], 3 => ['t2', 't3'], 9 => []]);
+		$this->systemTagManager->expects($this->once())->method('getTagsByIds')->with(['t1', 't2', 't3'])->willReturn([
+			$this->preloadTag('t1', 'invoice'),
+			$this->preloadTag('t2', 'object:internal'),
+			$this->preloadTag('t3', 'public'),
+		]);
+
+		$this->invokePrivate('batchPreloadFileObjects', [[$one, 'not-an-entity', $two, $three]]);
+
+		$this->assertSame(['5' => ['invoice'], '7' => [], '9' => [], '3' => ['public']], $this->preloadCache('fileTagsCache'));
+		$files = $this->preloadCache('fileObjectCache');
+		$this->assertSame(['5', '7', '9', '3'], array_map('strval', array_keys($files)));
+		$this->assertNull($files['7']);
+		$this->assertNull($files['9']);
+		$this->assertSame(['5', 'five.pdf', 'pdf', 10, ['invoice']], [$files['5']['id'], $files['5']['title'], $files['5']['extension'], $files['5']['size'], $files['5']['labels']]);
+		$this->assertSame(['3', 'text/plain', ['public']], [$files['3']['id'], $files['3']['type'], $files['3']['labels']]);
+	}
+
+	/**
+	 * A page without file ids asks nothing, and a failing prefetch leaves the caches for per-row lookups.
+	 *
+	 * @return void
+	 */
+	public function testBatchPreloadFileObjectsAsksNothingWithoutFileIdsAndSurvivesAFailure(): void {
+		$schema = $this->createSchema(1, 'files-schema');
+		$schema->setProperties(['doc' => ['type' => 'file']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->fileMapper->expects($this->once())->method('getFilesByIds')->willThrowException(new Exception('db down'));
+		$this->systemTagMapper->expects($this->never())->method('getTagIdsForObjects');
+
+		$this->invokePrivate('batchPreloadFileObjects', [[]]);
+		$this->invokePrivate('batchPreloadFileObjects', [[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['doc' => null])]]);
+		$this->invokePrivate('batchPreloadFileObjects', [[$this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['doc' => 8])]]);
+
+		$this->assertSame([], $this->preloadCache('fileTagsCache'));
+		$this->assertSame([], $this->preloadCache('fileObjectCache'));
+	}
+
+	/**
+	 * Files without tags never ask the tag manager.
+	 *
+	 * @return void
+	 */
+	public function testBatchPreloadFileObjectsSkipsTheTagLookupWhenNoFileHasTags(): void {
+		$schema = $this->createSchema(1, 'files-schema');
+		$schema->setProperties(['doc' => ['type' => 'file']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->fileMapper->method('getFilesByIds')->willReturn([]);
+		$this->systemTagMapper->method('getTagIdsForObjects')->willReturn([]);
+		$this->systemTagManager->expects($this->never())->method('getTagsByIds');
+
+		$this->invokePrivate('batchPreloadFileObjects', [[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['doc' => 8])]]);
+
+		$this->assertSame(['8' => []], $this->preloadCache('fileTagsCache'));
+		$this->assertSame(['8' => null], $this->preloadCache('fileObjectCache'));
+	}
+
+	// =========================================================================
+	// handleExtendDot — lists, single references, cycles and link exposure
+	// =========================================================================
+
+	/**
+	 * The rendered references reduced to what the extend decided: id, name and the exposed secret.
+	 *
+	 * @param mixed $value A rendered value.
+	 *
+	 * @return mixed
+	 */
+	private function extendView(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		if (isset($value['@circular']) === true) {
+			return 'circular:' . $value['id'];
+		}
+
+		if (array_key_exists('name', $value) === true || isset($value['@self']) === true || isset($value['id']) === true) {
+			return [($value['@self']['id'] ?? $value['id'] ?? null), ($value['name'] ?? null), ($value['secret'] ?? null), $this->extendView($value['friend'] ?? null)];
+		}
+
+		return array_map(fn ($one) => $this->extendView($one), $value);
+	}
+
+	/**
+	 * Run handleExtendDot over one fixture page with the given flag and visited ids.
+	 *
+	 * @param bool $allFlag Whether everything is extended.
+	 *
+	 * @return array
+	 */
+	private function runExtendDot(bool $allFlag): array {
+		$this->setupBasicMocks();
+		$cache = [];
+		foreach (['u1' => 'One', 'u2' => 'Two', 'u3' => 'Three'] as $uuid => $name) {
+			$entity = $this->createBasicEntity(1, $uuid, ['name' => $name, 'secret' => 's-' . $uuid, 'friend' => 'u2']);
+			$cache[$uuid] = $entity;
+		}
+
+		$prop = (new ReflectionClass($this->handler))->getProperty('objectsCache');
+		$prop->setAccessible(true);
+		$prop->setValue($this->handler, $cache);
+
+		$data = [
+			'list' => ['u1', null, '@skip', 'missing', ['id' => 'pre', 'name' => 'Pre', 'secret' => 'x'], ['other' => 1], 'u3'],
+			'single' => 'https://h/api/objects/u2',
+			'under' => '_u1',
+			'at' => '@u1',
+			'circ' => 'u3',
+			'gone' => 'nowhere',
+			'dotted' => new \Adbar\Dot(['u1']),
+			'plain' => 'u1',
+		];
+		$extend = ['list', 'single', 'under', 'at', 'circ', 'gone', 'named' => 'plain', 'dotted', 'list.friend'];
+		$exposures = ['list' => ['exposes' => ['name']], 'single' => ['exposes' => ['name']]];
+
+		return $this->invokePrivate('handleExtendDot', [new \OCA\OpenRegister\Service\Object\ExtendDotRequest($data, $extend, $exposures), $this->extendDotRun($allFlag, ['u3'])]);
+	}
+
+	/**
+	 * handleExtendDot renders references where the extend list asks, applies the link exposure and marks cycles.
+	 *
+	 * @return void
+	 */
+	public function testHandleExtendDotRendersListsSinglesCyclesAndExposures(): void {
+		$plain = '{"list":[["u1","One","__withheld__","__withheld__"],"missing",["pre","Pre","__withheld__",null],"circular:u3"],'
+			. '"single":["u2","Two","__withheld__","__withheld__"],"under":"_u1","at":"@u1","circ":"circular:u3","gone":"nowhere",'
+			. '"dotted":[["u1","One","s-u1",["u2","Two","s-u2","u2"]]],"plain":"u1","named":["u1","One","s-u1",["u2","Two","s-u2","u2"]]}';
+		$this->assertSame(json_decode($plain, true), $this->extendView($this->runExtendDot(false)));
+	}
+
+	/**
+	 * With the all flag, extended references extend everything below them too.
+	 *
+	 * @return void
+	 */
+	public function testHandleExtendDotWithTheAllFlagExtendsBelowTheReference(): void {
+		$deep = '[["u2","Two","s-u2","u2"],"Two","s-u2",["u2","Two","s-u2","u2"],["u2","u2",null,null]]';
+		$all = '{"list":[["u1","One","__withheld__","__withheld__"],"missing",["pre","Pre","__withheld__",null],"circular:u3"],'
+			. '"single":["u2","Two","__withheld__","__withheld__"],"under":"_u1","at":"@u1","circ":"circular:u3","gone":"nowhere",'
+			. '"dotted":[["u1","One","s-u1",' . $deep . ']],"plain":"u1","named":["u1","One","s-u1",' . $deep . ']}';
+		$this->assertSame(json_decode($all, true), $this->extendView($this->runExtendDot(true)));
+	}
+
+	// =========================================================================
+	// renderEntities — what every row is rendered with
+	// =========================================================================
+
+	/**
+	 * A RenderObject whose render() records its request and flags, with the state of the real handler.
+	 *
+	 * @param array $calls Receives each render() call, its request flattened in renderEntity()'s parameter order.
+	 *
+	 * @return RenderObject
+	 */
+	private function renderEntitySpy(array &$calls): RenderObject {
+		$spy = $this->getMockBuilder(RenderObject::class)->disableOriginalConstructor()->onlyMethods(['render'])->getMock();
+		$values = [];
+		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true) {
+				$values[$prop->getName()] = $prop->getValue($this->handler);
+			}
+		}
+
+		\Closure::bind(function (array $values): void {
+			foreach ($values as $name => $value) {
+				$this->$name = $value;
+			}
+		}, $spy, RenderObject::class)($values);
+
+		$spy->method('render')->willReturnCallback(
+			function (ObjectEntity $entity, \OCA\OpenRegister\Service\Object\RenderRequest $request, bool $rbac, bool $multitenancy) use (&$calls, $spy): ObjectEntity {
+				$state = \Closure::bind(fn (): array => [$this->batchFileIdsCache, $this->pageRenderActive], $spy, RenderObject::class)();
+				$args = [
+					$request->selection->extend, $request->path->depth, $request->selection->filter, $request->selection->fields, $request->selection->unset,
+					$request->preloads->registers, $request->preloads->schemas, $request->preloads->objects, $request->path->visitedIds, $rbac, $multitenancy,
+				];
+				$calls[] = ['uuid' => $entity->getUuid(), 'args' => $args, 'fileIds' => $state[0], 'pageRender' => $state[1]];
+				return $entity;
+			}
+		);
+
+		return $spy;
+	}
+
+	/**
+	 * Every row gets the page's options as lists, the page caches are set during and cleared after, and no row keeps its source.
+	 *
+	 * @return void
+	 */
+	public function testRenderEntitiesRendersEveryRowWithThePageOptions(): void {
+		$this->setupBasicMocks();
+		$one = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001', ['name' => 'One']);
+		$one->setSource('src');
+		$two = $this->createBasicEntity(2, 'aaaaaaaa-0000-0000-0000-000000000002', ['name' => 'Two']);
+		$this->fileMapper->expects($this->once())->method('getFileIdsForObjects')
+			->with(['aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000002'])
+			->willReturn(['aaaaaaaa-0000-0000-0000-000000000001' => [7]]);
+
+		$calls = [];
+		$spy = $this->renderEntitySpy($calls);
+		$rendered = $spy->renderEntities([$one, $two], 'owner,lead', ' f1 , ,f2', 'name, ,title ', ' secret ', false, false);
+
+		// Positional: extend, depth, filter, fields, unset, registers, schemas, objects, visitedIds, rbac, multitenancy.
+		$expectedArgs = [['owner', 'lead'], 0, [0 => 'f1', 2 => 'f2'], [0 => 'name', 2 => 'title'], ['secret'], [], [], [], [], false, false];
+		$this->assertCount(2, $calls);
+		foreach ($calls as $call) {
+			$this->assertSame($expectedArgs, $call['args']);
+			$this->assertSame(['aaaaaaaa-0000-0000-0000-000000000001' => [7]], $call['fileIds']);
+			$this->assertTrue($call['pageRender']);
+		}
+
+		$this->assertSame([$one, $two], $rendered);
+		$this->assertNull($one->getSource());
+		$state = \Closure::bind(fn (): array => [$this->batchFileIdsCache, $this->pageRenderActive], $spy, RenderObject::class)();
+		$this->assertSame([null, false], $state);
+	}
+
+	/**
+	 * A page that extends @self.files does not prefetch the lightweight file ids; array options pass unchanged.
+	 *
+	 * @return void
+	 */
+	public function testRenderEntitiesSkipsTheFileIdPrefetchWhenFilesAreExtended(): void {
+		$this->setupBasicMocks();
+		$this->fileMapper->expects($this->never())->method('getFileIdsForObjects');
+		$calls = [];
+		$this->renderEntitySpy($calls)->renderEntities(
+			[$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001')],
+			['@self.files'],
+			['a' => ' b '],
+			[' c '],
+			null
+		);
+
+		$this->assertSame(
+			[['@self.files'], 0, ['a' => ' b '], [' c '], null, [], [], [], [], true, true],
+			$calls[0]['args']
+		);
+	}
+
+	/**
+	 * renderRows() renders every row with the selection it is given, as renderEntities() does with list options.
+	 *
+	 * @return void
+	 */
+	public function testRenderRowsRendersEveryRowWithTheSelection(): void {
+		$this->setupBasicMocks();
+		$calls = [];
+		$selection = new \OCA\OpenRegister\Kernel\Contracts\RenderSelection(['owner'], ['a' => 'b'], ['name'], ['secret']);
+		$this->renderEntitySpy($calls)->renderRows([$this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001')], $selection, false, true);
+
+		$this->assertSame([['owner'], 0, ['a' => 'b'], ['name'], ['secret'], [], [], [], [], false, true], $calls[0]['args']);
+	}
+
+	// =========================================================================
+	// extendObjectSourceRefs — references into object-source schemas
+	// =========================================================================
+
+	/**
+	 * Extended references into an object-source schema resolve through its provider and leave the extend list.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsResolvesThroughTheProvider(): void {
+		[$objectData, $extend, $asked] = $this->runSourceRefExtend();
+		$name = static fn ($rendered) => is_array($rendered) ? ($rendered['name'] ?? $rendered) : $rendered;
+		$this->assertSame('Org 1', $name($objectData['org']));
+		$this->assertSame(['Org 2', 9, ['x' => 1]], array_map($name, $objectData['orgs']));
+		$this->assertSame(['id' => 'kept', 'name' => 'Embedded'], $objectData['emb']);
+		$this->assertSame('p-1', $objectData['plain']);
+		$this->assertSame(['plain', 'blank', 'other'], $extend);
+		$this->assertSame([[1, 38, '1', ['table' => 't']], [1, 38, '2', ['table' => 't']], [1, 38, '9', ['table' => 't']]], $asked);
+	}
+
+	/**
+	 * A disabled provider resolves nothing and leaves the extend list alone.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsSkipsADisabledProvider(): void {
+		$this->sourceEnabled = false;
+		[$objectData, $extend, $asked] = $this->runSourceRefExtend();
+		$this->assertSame(1, $objectData['org']);
+		$this->assertSame(['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $extend);
+		$this->assertSame([], $asked);
+	}
+
+	/** Whether the object-source provider of the source-ref fixture is enabled. */
+	private bool $sourceEnabled = true;
+
+	/**
+	 * Run extendObjectSourceRefs() over the source-ref fixture.
+	 *
+	 * @return array{0: array, 1: array, 2: array} The object data, the remaining extends and the provider calls.
+	 */
+	private function runSourceRefExtend(): array {
+		$own = $this->createSchema(1, 'people');
+		$own->setProperties([
+			'org' => ['type' => 'object', '$ref' => 38],
+			'orgs' => ['type' => 'array', 'items' => ['$ref' => 'orgs-slug']],
+			'emb' => ['type' => 'object', '$ref' => 38],
+			'plain' => ['type' => 'object', '$ref' => 2],
+			'blank' => ['type' => 'object', '$ref' => ''],
+			'odd' => 'not-a-definition',
+		]);
+		$source = $this->createSchema(38, 'orgs-slug');
+		$source->setConfiguration(['x-openregister-object-source' => ['provider' => 'org-source', 'config' => ['table' => 't']]]);
+		$native = $this->createSchema(2, 'native');
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn ($id) => match ((string)$id) { '1' => $own, '38', 'orgs-slug' => $source, '2' => $native, default => throw new Exception('none') }
+		);
+		$register = $this->createRegister(1, 'reg');
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$asked = [];
+		$provider = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider::class);
+		$provider->method('isEnabled')->willReturn($this->sourceEnabled);
+		$provider->method('find')->willReturnCallback(function (\OCA\OpenRegister\Service\ObjectSource\SourcedTable $source, string $id) use (&$asked): ?ObjectEntity {
+			$asked[] = [$source->table->register->getId(), $source->table->schema->getId(), $id, $source->config];
+			if ($id === '9') {
+				return null;
+			}
+
+			$row = $this->createObjectEntity((int)$id, 'row-' . $id, ['name' => 'Org ' . $id]);
+			$row->setSchema(38);
+			$row->setRegister(1);
+			return $row;
+		});
+		$registry = $this->createMock(\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class);
+		$registry->method('get')->willReturnCallback(static fn (string $name) => ($name === 'org-source') ? $provider : null);
+		$handler = (new ReflectionClass(RenderObject::class))->newInstanceWithoutConstructor();
+		$runtime = (new \ReflectionProperty(RenderObject::class, 'runtime'))->getValue($this->handler);
+		$values = [
+			'runtime' => new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $runtime->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(
+					objectSourceRegistry: $registry,
+					fieldEncryptionHandler: $runtime->extensions->fieldEncryptionHandler,
+					lensResolver: $runtime->extensions->lensResolver
+				),
+				request: $runtime->request,
+				container: $runtime->container
+			),
+		];
+		foreach ((new ReflectionClass(RenderObject::class))->getProperties() as $prop) {
+			if ($prop->isStatic() === false && $prop->isInitialized($this->handler) === true && $prop->getName() !== 'runtime') {
+				$values[$prop->getName()] = $prop->getValue($this->handler);
+			}
+		}
+
+		\Closure::bind(function (array $values): void {
+			foreach ($values as $name => $value) {
+				$this->$name = $value;
+			}
+		}, $handler, RenderObject::class)($values);
+		$this->handler = $handler;
+
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
+		$data = ['org' => 1, 'orgs' => [2, 9, ['x' => 1]], 'emb' => ['id' => 'kept', 'name' => 'Embedded'], 'plain' => 'p-1', 'blank' => 'b'];
+		[$objectData, $extend] = $this->extendSourceRefs($entity, ['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $data, ['visited']);
+
+		return [$objectData, $extend, $asked];
+	}
+
+	/**
+	 * Run one extendObjectSourceRefs() pass.
+	 *
+	 * @param ObjectEntity $entity     The entity.
+	 * @param array        $extend     The extend list.
+	 * @param array        $objectData The object data.
+	 * @param array        $visitedIds The visited ids.
+	 *
+	 * @return array{0: array, 1: array} The object data and the remaining extends.
+	 */
+	private function extendSourceRefs(ObjectEntity $entity, array $extend, array $objectData, array $visitedIds = []): array {
+		$run = new \OCA\OpenRegister\Service\Object\SourceRefRun();
+		$run->entity = $entity;
+		$run->extend = $extend;
+		$run->objectData = $objectData;
+		$run->visitedIds = $visitedIds;
+		$this->invokePrivate('extendObjectSourceRefs', [$run]);
+
+		return [$run->objectData, $run->extend];
+	}
+
+	/**
+	 * Without a registry, or with nothing to extend, the data and extend list pass unchanged.
+	 *
+	 * @return void
+	 */
+	public function testExtendObjectSourceRefsWithoutARegistryChangesNothing(): void {
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
+		$this->assertSame([['org' => 1], ['org']], $this->extendSourceRefs($entity, ['org'], ['org' => 1]));
+	}
 }

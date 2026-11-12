@@ -4,24 +4,25 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileTextController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
+use OCA\OpenRegister\Files\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
-use OCA\OpenRegister\Service\File\ManualEntityService;
+use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
-use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\File\DocumentAnonymization;
 use Psr\Log\LoggerInterface;
 
 class FileTextControllerTest extends TestCase {
@@ -37,8 +38,6 @@ class FileTextControllerTest extends TestCase {
 	private EntityRelationMapper&MockObject $entityRelationMapper;
 
 	private LoggerInterface&MockObject $logger;
-
-	private IAppConfig&MockObject $config;
 
 	private ManualEntityService&MockObject $manualEntityService;
 
@@ -56,7 +55,6 @@ class FileTextControllerTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 		$this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->config = $this->createMock(IAppConfig::class);
 		$this->manualEntityService = $this->createMock(ManualEntityService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->rootFolder = $this->createMock(IRootFolder::class);
@@ -71,14 +69,13 @@ class FileTextControllerTest extends TestCase {
 		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
 		$this->groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FileTextController(
+		$this->controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$this->userSession,
 			$this->rootFolder,
@@ -129,14 +126,13 @@ class FileTextControllerTest extends TestCase {
 
 		$this->textExtractor->expects($this->never())->method('getExtractedText');
 
-		$controller = new FileTextController(
+		$controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$session,
 			$rootFolder,
@@ -148,130 +144,6 @@ class FileTextControllerTest extends TestCase {
 		$this->assertEquals(404, $result->getStatus());
 		$this->assertArrayNotHasKey('text', $result->getData());
 	}//end testGetFileTextRefusesAFileTheCallerCannotOpen()
-
-	// =========================================================================
-	// extractFileText
-	// =========================================================================
-	public function testExtractFileTextDisabledWhenNoConfig(): void {
-		$this->config->method('hasKey')->willReturn(false);
-		$this->config->method('getValueString')->willReturn('{}');
-
-		$result = $this->controller->extractFileText(1);
-
-		$this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
-		$this->assertStringContainsString('disabled', $data['message']);
-	}//end testExtractFileTextDisabledWhenNoConfig()
-
-	public function testExtractFileTextDisabledWhenScopeIsNone(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'extractionScope' => 'none',
-				]
-			)
-		);
-
-		$this->logger->expects($this->once())
-			->method('info');
-
-		$result = $this->controller->extractFileText(1);
-
-		$this->assertEquals(Http::STATUS_NOT_IMPLEMENTED, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
-		$this->assertStringContainsString('disabled', $data['message']);
-	}//end testExtractFileTextDisabledWhenScopeIsNone()
-
-	public function testExtractFileTextSuccess(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'extractionScope' => 'all',
-				]
-			)
-		);
-
-		$this->textExtractor->expects($this->once())
-			->method('extractFile')
-			->with(1, true);
-
-		$result = $this->controller->extractFileText(1);
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertStringContainsString('successfully', $data['message']);
-	}//end testExtractFileTextSuccess()
-
-	public function testExtractFileTextSuccessWithDifferentFileId(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'extractionScope' => 'all',
-				]
-			)
-		);
-
-		$this->textExtractor->expects($this->once())
-			->method('extractFile')
-			->with(99, true);
-
-		$result = $this->controller->extractFileText(99);
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-	}//end testExtractFileTextSuccessWithDifferentFileId()
-
-	public function testExtractFileTextException(): void {
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'extractionScope' => 'all',
-				]
-			)
-		);
-		$this->textExtractor->method('extractFile')
-			->willThrowException(new \Exception('Extract error'));
-
-		$this->logger->expects($this->once())
-			->method('error');
-
-		$result = $this->controller->extractFileText(1);
-
-		$this->assertEquals(500, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
-		$this->assertStringContainsString('Extract error', $data['message']);
-	}//end testExtractFileTextException()
-
-	public function testExtractFileTextWithNullExtractionScope(): void {
-		// Config has key but extractionScope is not set (null fallback).
-		$this->config->method('hasKey')->willReturn(true);
-		$this->config->method('getValueString')->willReturn(
-			json_encode(
-				[
-					'someOtherKey' => 'value',
-				]
-			)
-		);
-
-		$this->textExtractor->expects($this->once())
-			->method('extractFile')
-			->with(5, true);
-
-		$result = $this->controller->extractFileText(5);
-
-		$this->assertEquals(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-	}//end testExtractFileTextWithNullExtractionScope()
 
 	// =========================================================================
 	// bulkExtract
@@ -550,7 +422,8 @@ class FileTextControllerTest extends TestCase {
 			->with(
 				$fileNode,
 				$this->callback(
-					function ($entities) {
+					function (DocumentAnonymization $anonymization) {
+						$entities = $anonymization->entities;
 						return count($entities) === 2
 						&& $entities[0]['text'] === 'John Doe'
 						&& $entities[0]['entityType'] === 'PERSON'
@@ -563,7 +436,7 @@ class FileTextControllerTest extends TestCase {
 			->willReturn($anonymizedFileNode);
 
 		$this->entityRelationMapper->expects($this->never())
-			->method('markAsAnonymized');
+			->method('markAsAnonymizedWithPlaceholders');
 
 		$result = $this->controller->anonymizeFile(10);
 
@@ -576,6 +449,54 @@ class FileTextControllerTest extends TestCase {
 		$this->assertEquals('/files/admin/contract_anonymized.pdf', $data['anonymized_path']);
 		$this->assertEquals(2, $data['entities_replaced']);
 	}//end testAnonymizeFileSuccess()
+
+	/**
+	 * The placeholder scope, dossier key and preserveStructure option reach anonymizeDocument as parsed.
+	 *
+	 * @param array<string, mixed> $params   The request parameters.
+	 * @param array<int, mixed>    $expected The expected scope, fileKey and preserveStructure.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider anonymizeOptionsProvider
+	 */
+	public function testAnonymizeFilePassesTheRequestedOptions(array $params, array $expected): void {
+		$fileNode = $this->createMock(\OCP\Files\File::class);
+		$fileNode->method('getName')->willReturn('contract.pdf');
+		$this->fileService->method('getFileById')->willReturn($fileNode);
+		$this->entityRelationMapper->method('findEntitiesForAnonymization')
+			->willReturn([['entity_value' => 'John Doe', 'entity_type' => 'PERSON']]);
+		$this->request->method('getParam')->willReturnCallback(
+			fn (string $key, $default = null) => array_key_exists($key, $params) ? $params[$key] : $default
+		);
+
+		$anonymizedFileNode = $this->createMock(\OCP\Files\File::class);
+		$this->fileService->expects($this->once())
+			->method('anonymizeDocument')
+			->with(
+				$fileNode,
+				$this->callback(
+					fn (DocumentAnonymization $anonymization): bool => [$anonymization->scope, $anonymization->fileKey, $anonymization->preserveStructure] === $expected
+				)
+			)
+			->willReturn($anonymizedFileNode);
+
+		$this->assertSame(200, $this->controller->anonymizeFile(10)->getStatus());
+	}//end testAnonymizeFilePassesTheRequestedOptions()
+
+	/**
+	 * Request parameters and the options they resolve to.
+	 *
+	 * @return array<string, array{0: array<string, mixed>, 1: array<int, mixed>}>
+	 */
+	public static function anonymizeOptionsProvider(): array {
+		return [
+			'defaults'            => [[], ['document', null, null]],
+			'dossier with key'    => [['scope' => 'dossier', 'dossierKey' => 'folder-7', 'preserveStructure' => 'false'], ['dossier', 'folder-7', false]],
+			'unknown scope, empty' => [['scope' => 'case', 'dossierKey' => '', 'preserveStructure' => ''], ['document', null, null]],
+			'preserve true'       => [['preserveStructure' => '1'], ['document', null, true]],
+		];
+	}//end anonymizeOptionsProvider()
 
 	public function testAnonymizeFileDeduplicatesEntities(): void {
 		$fileNode = $this->createMock(\OCP\Files\File::class);
@@ -609,7 +530,8 @@ class FileTextControllerTest extends TestCase {
 			->with(
 				$fileNode,
 				$this->callback(
-					function ($entities) {
+					function (DocumentAnonymization $anonymization) {
+						$entities = $anonymization->entities;
 						// Should be deduplicated: 2 unique entities, not 3.
 						return count($entities) === 2;
 					}
@@ -618,7 +540,7 @@ class FileTextControllerTest extends TestCase {
 			->willReturn($anonymizedFileNode);
 
 		$this->entityRelationMapper->expects($this->never())
-			->method('markAsAnonymized');
+			->method('markAsAnonymizedWithPlaceholders');
 
 		$result = $this->controller->anonymizeFile(5);
 
@@ -671,7 +593,8 @@ class FileTextControllerTest extends TestCase {
 	// =========================================================================
 	// access guards
 	// =========================================================================
-	public function testExtractFileTextRejectsInaccessibleFile(): void {
+
+	public function testAnonymizeFileRejectsInaccessibleFile(): void {
 		$bob = $this->createMock(IUser::class);
 		$bob->method('getUID')->willReturn('bob');
 
@@ -683,30 +606,28 @@ class FileTextControllerTest extends TestCase {
 		$userFolder->method('getById')->willReturn([]);
 		$rootFolder->method('getUserFolder')->willReturn($userFolder);
 
-		$groupManager = $this->createMock(IGroupManager::class);
-		$groupManager->method('isAdmin')->willReturn(false);
+		$this->fileService->expects($this->never())->method('getFileById');
+		$this->fileService->expects($this->never())->method('anonymizeDocument');
+		$this->entityRelationMapper->expects($this->never())->method('findEntitiesForAnonymization');
 
-		$this->textExtractor->expects($this->never())
-			->method('extractFile');
-
-		$controller = new FileTextController(
+		$controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$userSession,
 			$rootFolder,
-			$groupManager
+			$this->groupManager
 		);
 
-		$result = $controller->extractFileText(999);
+		$result = $controller->anonymizeFile(999);
 
 		$this->assertEquals(404, $result->getStatus());
-	}//end testExtractFileTextRejectsInaccessibleFile()
+		$this->assertArrayNotHasKey('anonymized_path', $result->getData());
+	}//end testAnonymizeFileRejectsInaccessibleFile()
 
 	public function testBulkExtractRejectsNonAdmin(): void {
 		$bob = $this->createMock(IUser::class);
@@ -726,14 +647,13 @@ class FileTextControllerTest extends TestCase {
 		$this->textExtractor->expects($this->never())
 			->method('extractPendingFiles');
 
-		$controller = new FileTextController(
+		$controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$userSession,
 			$rootFolder,
@@ -787,14 +707,13 @@ class FileTextControllerTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturn(false);
 
-		$controller = new FileTextController(
+		$controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
 			$this->fileService,
 			$this->entityRelationMapper,
 			$this->logger,
-			$this->config,
 			$this->manualEntityService,
 			$userSession,
 			$rootFolder,

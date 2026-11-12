@@ -26,13 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Search\Controller\ViewsController;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
-use OCA\OpenRegister\Service\ViewPresentationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -42,8 +42,15 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * @covers \OCA\OpenRegister\Controller\ViewsController
- * @covers \OCA\OpenRegister\Service\ViewService
+ * @covers \OCA\OpenRegister\Search\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Search\Controller\Support\ViewPatch
+ * @covers \OCA\OpenRegister\Search\Service\ViewService
+ * @uses \OCA\OpenRegister\Search\Db\View
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareListValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
+ * @uses \OCA\OpenRegister\Service\View\ViewAlert
  */
 class ViewGroupShareWriteTest extends TestCase {
 
@@ -74,12 +81,13 @@ class ViewGroupShareWriteTest extends TestCase {
 
 		$logger = new NullLogger();
 		$this->controller = new ViewsController(
-			'openregister',
 			$this->request,
-			new ViewService(viewMapper: $this->mapper, logger: $logger, schemaMapper: $this->createMock(SchemaMapper::class)),
-			$this->createMock(ViewPresentationService::class),
-			$logger,
-			new ViewerReachResolver(userSession: $session, groupManager: $groups, logger: $logger)
+			new \OCA\OpenRegister\Search\Controller\Support\ViewsControllerServices(
+				new ViewService(viewMapper: $this->mapper, logger: $logger, schemaMapper: $this->createMock(SchemaMapper::class)),
+				$this->createMock(ViewPresentationService::class),
+				$logger,
+				new ViewerReachResolver(caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($session, $groups), logger: $logger)
+			)
 		);
 	}//end setUp()
 

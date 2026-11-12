@@ -308,22 +308,34 @@ class CasePlanTree {
 	public function stageMayComplete(CaseItem $stage): bool {
 		$mandatoryFound = false;
 		foreach ($this->children(parentId: (int)$stage->getId()) as $child) {
-			if ($child->getState() === CaseItem::STATE_ACTIVE) {
+			if ($this->holdsStageOpen(child: $child) === true) {
 				return false;
 			}
 
-			if ($child->getRequired() !== true) {
-				continue;
-			}
-
-			$mandatoryFound = true;
-			if ($this->isItemTerminal(item: $child) === false) {
-				return false;
-			}
+			$mandatoryFound = ($mandatoryFound || $child->getRequired() === true);
 		}
 
 		return $mandatoryFound;
 	}//end stageMayComplete()
+
+	/**
+	 * Whether one child keeps its stage open: it is active, or required and not yet terminal.
+	 *
+	 * @param CaseItem $child The child row.
+	 *
+	 * @return bool True when the stage may not complete because of it.
+	 */
+	private function holdsStageOpen(CaseItem $child): bool {
+		if ($child->getState() === CaseItem::STATE_ACTIVE) {
+			return true;
+		}
+
+		if ($child->getRequired() !== true) {
+			return false;
+		}
+
+		return $this->isItemTerminal(item: $child) === false;
+	}//end holdsStageOpen()
 
 	/**
 	 * The state of every key: the sentry document's `case.items` map. For a
@@ -336,14 +348,7 @@ class CasePlanTree {
 	public function stateMap(): array {
 		$map = [];
 		foreach ($this->keyRows as $key => $ids) {
-			$latest = null;
-			foreach ($ids as $id) {
-				$row = $this->byId[$id];
-				if ($latest === null || (int)$row->getRealisationCount() >= (int)$latest->getRealisationCount()) {
-					$latest = $row;
-				}
-			}
-
+			$latest = $this->latestRealisation(ids: $ids);
 			if ($latest !== null) {
 				$map[(string)$key] = (string)$latest->getState();
 			}
@@ -351,6 +356,25 @@ class CasePlanTree {
 
 		return $map;
 	}//end stateMap()
+
+	/**
+	 * The row with the highest realisation count; on a tie, the later row.
+	 *
+	 * @param array<int, int> $ids The row ids of one key.
+	 *
+	 * @return CaseItem|null The latest row, or null for no ids.
+	 */
+	private function latestRealisation(array $ids): ?CaseItem {
+		$latest = null;
+		foreach ($ids as $id) {
+			$row = $this->byId[$id];
+			if ($latest === null || (int)$row->getRealisationCount() >= (int)$latest->getRealisationCount()) {
+				$latest = $row;
+			}
+		}
+
+		return $latest;
+	}//end latestRealisation()
 
 	/**
 	 * The plan-level settings, carried on every row and frozen at creation.

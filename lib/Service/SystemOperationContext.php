@@ -60,7 +60,7 @@ final class SystemOperationContext {
 	 * Run a callable inside a trusted system-operation scope.
 	 *
 	 * While the callable executes, RBAC checks in MultiTenancyTrait and
-	 * PermissionHandler treat the caller as a trusted system principal —
+	 * PermissionHandlerInterface treat the caller as a trusted system principal —
 	 * mirroring the existing CLI trust. The scope is released in a finally
 	 * block, so an exception inside the operation cannot leak elevation.
 	 *
@@ -79,6 +79,31 @@ final class SystemOperationContext {
 			self::$depth--;
 		}
 	}//end run()
+
+	/**
+	 * Run a callable with any active system-operation scope lifted.
+	 *
+	 * For code that acts as a named user: that user's own permission checks
+	 * must decide, even when the caller runs inside a system scope. A run()
+	 * nested inside the callable elevates again as usual. The outer scope is
+	 * restored when the callable ends, including on exceptions.
+	 *
+	 * @param callable $operation The operation to execute without elevation.
+	 *
+	 * @return mixed Whatever the callable returns.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public static function suspend(callable $operation) {
+		$depth = self::$depth;
+		self::$depth = 0;
+
+		try {
+			return $operation();
+		} finally {
+			self::$depth = $depth;
+		}
+	}//end suspend()
 
 	/**
 	 * Declare that the write about to run is the system's, and fail if it cannot be.

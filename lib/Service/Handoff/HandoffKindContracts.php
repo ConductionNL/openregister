@@ -66,7 +66,7 @@ final class HandoffKindContracts {
 	private const CONTRACTS = [
 		self::NAMESPACE_URI . 'Case' => [
 			'mandatory' => ['title', 'summary', 'channel', 'source'],
-			'optional' => ['requester', 'priority'],
+			'optional' => ['requester', 'priority', 'caseType'],
 		],
 		self::NAMESPACE_URI . 'Quote' => [
 			'mandatory' => ['title', 'counterparty', 'currency', 'totalAmount', 'source'],

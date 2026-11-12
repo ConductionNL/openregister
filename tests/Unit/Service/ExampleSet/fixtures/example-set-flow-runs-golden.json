@@ -1,0 +1,351 @@
+{
+    "refusal": {
+        "not an array": "runs is a list",
+        "not a list": "runs is a list",
+        "empty": "",
+        "finished": "",
+        "each terminal": "a run is finished (status is one of completed, stopped, dead_letter, failed) or waits on a step (suspended)",
+        "unknown field": "field \"foo\", \"bar\" is not a run field a set may write",
+        "queued": "a run is finished (status is one of completed, stopped, dead_letter, failed) or waits on a step (suspended)",
+        "no status": "a run is finished (status is one of completed, stopped, dead_letter, failed) or waits on a step (suspended)",
+        "no subject": "a run needs the object it ran on (subject)",
+        "blank subject": "a run needs the object it ran on (subject)",
+        "subject not text": "a run needs the object it ran on (subject)",
+        "bad created": "run created \"not a date\" is not a date",
+        "bad updated": "run updated \"nope\" is not a date",
+        "good dates": "",
+        "second run refused": "a run is finished (status is one of completed, stopped, dead_letter, failed) or waits on a step (suspended)",
+        "run not array": "field \"0\" is not a run field a set may write",
+        "waiting": "",
+        "waiting without key": "a waiting run needs a key, so a task can name it",
+        "waiting blank key": "a waiting run needs a key, so a task can name it",
+        "waiting on other type": "waiting run \"w\" waits on an openregister.user-task step of its flow (node), not \"mail\"",
+        "waiting on no node": "waiting run \"w\" waits on an openregister.user-task step of its flow (node), not \"\"",
+        "waiting nodes scalar": "waiting run \"w\" waits on an openregister.user-task step of its flow (node), not \"ask\"",
+        "waiting no subject": "a run needs the object it ran on (subject)"
+    },
+    "unnamedRefusals": {
+        "mixed": [
+            "app/demo.json: flow \"f1\": waiting run \"w2\": no task of its fragment names it ({{flow:f1.runs.w2}} as runUuid)",
+            "app/demo.json: flow \"f2\": waiting run \"w1\": no task of its fragment names it ({{flow:f2.runs.w1}} as runUuid)"
+        ],
+        "no flows": [],
+        "no tasks": [
+            "f: flow \"k\": waiting run \"w1\": no task of its fragment names it ({{flow:k.runs.w1}} as runUuid)"
+        ]
+    },
+    "taskRefusal": {
+        "neither": "",
+        "blank both": "",
+        "run only": "runUuid and nodeId go together: the run the task waits in, and the step",
+        "node only": "runUuid and nodeId go together: the run the task waits in, and the step",
+        "matches": "",
+        "matches trimmed": "",
+        "other step": "nodeId \"mail\" is not the step run \"run-1\" waits on (\"ask\")",
+        "unknown run": "runUuid \"run-2\" is not a waiting run a flow of the set declares",
+        "no flows": "runUuid \"run-1\" is not a waiting run a flow of the set declares"
+    },
+    "write": {
+        "published": {
+            "entry": {
+                "runs": {
+                    "done": "uuid-1",
+                    "wait": "uuid-3",
+                    "wait2": "uuid-4"
+                },
+                "waitsOn": {
+                    "uuid-3": "ask",
+                    "uuid-4": "ask2"
+                }
+            },
+            "inserted": [
+                {
+                    "id": null,
+                    "uuid": "uuid-1",
+                    "flowId": "flow-uuid",
+                    "flowVersion": 3,
+                    "status": "completed",
+                    "outcome": "completed",
+                    "marking": [],
+                    "placeItems": null,
+                    "firings": 0,
+                    "items": [],
+                    "context": [],
+                    "log": [],
+                    "subjectUuid": "s1",
+                    "subjects": {},
+                    "subjectRegister": "r",
+                    "subjectSchema": "sc",
+                    "triggeredBy": "admin",
+                    "runAs": null,
+                    "trigger": "manual",
+                    "organisation": "org-1",
+                    "error": null,
+                    "resumeAt": null,
+                    "parentRunUuid": null,
+                    "correlationKey": null,
+                    "created": "2024-01-01T10:00:00+02:00",
+                    "updated": "2024-01-01T11:00:00+00:00"
+                },
+                {
+                    "id": null,
+                    "uuid": "uuid-2",
+                    "flowId": "flow-uuid",
+                    "flowVersion": 3,
+                    "status": "failed",
+                    "outcome": "failed",
+                    "marking": [],
+                    "placeItems": null,
+                    "firings": 0,
+                    "items": [],
+                    "context": [],
+                    "log": [],
+                    "subjectUuid": "s2",
+                    "subjects": {},
+                    "subjectRegister": null,
+                    "subjectSchema": null,
+                    "triggeredBy": null,
+                    "runAs": null,
+                    "trigger": "object.created",
+                    "organisation": "org-1",
+                    "error": "boom",
+                    "resumeAt": null,
+                    "parentRunUuid": null,
+                    "correlationKey": null,
+                    "created": "2024-02-01T10:00:00+00:00",
+                    "updated": "2024-02-01T10:00:00+00:00"
+                },
+                {
+                    "id": null,
+                    "uuid": "uuid-3",
+                    "flowId": "flow-uuid",
+                    "flowVersion": 3,
+                    "status": "suspended",
+                    "outcome": "suspended",
+                    "marking": {
+                        "ask": 1
+                    },
+                    "placeItems": {
+                        "ask": [
+                            {
+                                "json": [],
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "firings": 0,
+                    "items": [
+                        {
+                            "json": [],
+                            "binary": [],
+                            "pairedItem": {
+                                "item": 0
+                            }
+                        }
+                    ],
+                    "context": {
+                        "runUuid": "uuid-3",
+                        "flowId": "flow-uuid",
+                        "triggeredBy": "sanne",
+                        "runAs": "sanne",
+                        "resumeState": {
+                            "ask": []
+                        }
+                    },
+                    "log": [],
+                    "subjectUuid": "s3",
+                    "subjects": {},
+                    "subjectRegister": null,
+                    "subjectSchema": null,
+                    "triggeredBy": "sanne",
+                    "runAs": "sanne",
+                    "trigger": "object.created",
+                    "organisation": "org-1",
+                    "error": null,
+                    "resumeAt": null,
+                    "parentRunUuid": null,
+                    "correlationKey": null,
+                    "created": "2024-03-01T10:00:00+00:00",
+                    "updated": "2024-03-01T10:00:00+00:00"
+                },
+                {
+                    "id": null,
+                    "uuid": "uuid-4",
+                    "flowId": "flow-uuid",
+                    "flowVersion": 3,
+                    "status": "suspended",
+                    "outcome": "suspended",
+                    "marking": {
+                        "ask2": 1
+                    },
+                    "placeItems": {
+                        "ask2": [
+                            {
+                                "json": [],
+                                "binary": [],
+                                "pairedItem": {
+                                    "item": 0
+                                }
+                            }
+                        ]
+                    },
+                    "firings": 0,
+                    "items": [
+                        {
+                            "json": [],
+                            "binary": [],
+                            "pairedItem": {
+                                "item": 0
+                            }
+                        }
+                    ],
+                    "context": {
+                        "runUuid": "uuid-4",
+                        "flowId": "flow-uuid",
+                        "triggeredBy": null,
+                        "runAs": null,
+                        "resumeState": {
+                            "ask2": []
+                        }
+                    },
+                    "log": [],
+                    "subjectUuid": "s4",
+                    "subjects": {},
+                    "subjectRegister": null,
+                    "subjectSchema": null,
+                    "triggeredBy": null,
+                    "runAs": null,
+                    "trigger": "object.created",
+                    "organisation": "org-1",
+                    "error": null,
+                    "resumeAt": null,
+                    "parentRunUuid": null,
+                    "correlationKey": null,
+                    "created": "2024-03-02T10:00:00+00:00",
+                    "updated": "2024-03-03T00:00:00+00:00"
+                }
+            ]
+        },
+        "draft": {
+            "entry": [],
+            "inserted": [
+                {
+                    "id": null,
+                    "uuid": "uuid-1",
+                    "flowId": "flow-uuid",
+                    "flowVersion": null,
+                    "status": "failed",
+                    "outcome": "failed",
+                    "marking": [],
+                    "placeItems": null,
+                    "firings": 0,
+                    "items": [],
+                    "context": [],
+                    "log": [],
+                    "subjectUuid": "s2",
+                    "subjects": {},
+                    "subjectRegister": null,
+                    "subjectSchema": null,
+                    "triggeredBy": null,
+                    "runAs": null,
+                    "trigger": "object.created",
+                    "organisation": "org-1",
+                    "error": "boom",
+                    "resumeAt": null,
+                    "parentRunUuid": null,
+                    "correlationKey": null,
+                    "created": "2024-02-01T10:00:00+00:00",
+                    "updated": "2024-02-01T10:00:00+00:00"
+                }
+            ]
+        },
+        "bare flow": {
+            "entry": [],
+            "inserted": [
+                {
+                    "id": null,
+                    "uuid": "uuid-1",
+                    "flowId": "bare",
+                    "flowVersion": null,
+                    "status": "failed",
+                    "outcome": "failed",
+                    "marking": [],
+                    "placeItems": null,
+                    "firings": 0,
+                    "items": [],
+                    "context": [],
+                    "log": [],
+                    "subjectUuid": "s2",
+                    "subjects": {},
+                    "subjectRegister": null,
+                    "subjectSchema": null,
+                    "triggeredBy": null,
+                    "runAs": null,
+                    "trigger": "manual",
+                    "organisation": null,
+                    "error": "boom",
+                    "resumeAt": null,
+                    "parentRunUuid": null,
+                    "correlationKey": null,
+                    "created": "2024-02-01T10:00:00+00:00",
+                    "updated": "2024-02-01T10:00:00+00:00"
+                }
+            ]
+        },
+        "none": {
+            "entry": [],
+            "inserted": []
+        }
+    },
+    "fill": {
+        "no run": {
+            "gets": 0,
+            "updated": []
+        },
+        "fresh slot": {
+            "gets": 1,
+            "updated": [
+                {
+                    "context": {
+                        "keep": 1,
+                        "resumeState": {
+                            "step": {
+                                "taskUuid": "task-1",
+                                "askedAt": "<now>"
+                            }
+                        }
+                    },
+                    "updatedIsNotTheOld": true,
+                    "resumeMinutesAfter": 15,
+                    "askedSecondsBeforeUp": true
+                }
+            ]
+        },
+        "existing slot": {
+            "gets": 1,
+            "updated": [
+                {
+                    "context": {
+                        "keep": 1,
+                        "resumeState": {
+                            "step": {
+                                "taskUuid": "task-2",
+                                "askedAt": "<now>",
+                                "extra": "kept"
+                            },
+                            "other": {
+                                "x": 1
+                            }
+                        }
+                    },
+                    "updatedIsNotTheOld": true,
+                    "resumeMinutesAfter": 15,
+                    "askedSecondsBeforeUp": true
+                }
+            ]
+        }
+    }
+}

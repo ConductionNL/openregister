@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Flow;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -116,13 +117,12 @@ class UndeclaredNode implements IFlowNode {
 	/**
 	 * Execution.
 	 *
-	 * @param array $items The items.
-	 * @param array $config The config.
-	 * @param array $context The context.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, untouched.
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
 		return $items;
 	}//end execute()
 }//end class

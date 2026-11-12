@@ -1,7 +1,7 @@
 <?php
 
 /**
- * FlowRunService::advanceStream(): the in-request advance budget follows the
+ * FlowRunService::advanceBranch(): the in-request advance budget follows the
  * completing branch and never blocks the request.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -31,7 +31,12 @@ use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunStores;
+use OCA\OpenRegister\Service\Flow\FlowRunStreamStores;
+use OCA\OpenRegister\Service\Flow\FlowRunWalkServices;
+use OCA\OpenRegister\Service\Flow\FlowStreamAdvance;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -69,27 +74,25 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 
 		if ($withStreams === false) {
 			return new FlowRunService(
-				$this->mapper,
-				$this->createMock(FlowStateMapper::class),
-				$this->engine,
-				$registry,
-				$this->createMock(LoggerInterface::class),
-				$container
+				stores: new FlowRunStores(
+					mapper: $this->mapper,
+					stateMapper: $this->createMock(FlowStateMapper::class)
+				),
+				walk: new FlowRunWalkServices(engine: $this->engine, registry: $registry),
+				logger: $this->createMock(LoggerInterface::class),
+				container: $container
 			);
 		}
 
 		return new FlowRunService(
-			$this->mapper,
-			$this->createMock(FlowStateMapper::class),
-			$this->engine,
-			$registry,
-			$this->createMock(LoggerInterface::class),
-			$container,
-			null,
-			null,
-			$this->createMock(FlowStreamMapper::class),
-			$this->createMock(FlowPlaceClaims::class),
-			$this->createMock(FlowRunCommit::class)
+			stores: new FlowRunStores(
+				mapper: $this->mapper,
+				stateMapper: $this->createMock(FlowStateMapper::class),
+				streams: new FlowRunStreamStores(streamMapper: $this->createMock(FlowStreamMapper::class), claims: $this->createMock(FlowPlaceClaims::class), commit: $this->createMock(FlowRunCommit::class))
+			),
+			walk: new FlowRunWalkServices(engine: $this->engine, registry: $registry),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container
 		);
 	}//end service()
 
@@ -112,7 +115,7 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 	public function testABudgetOfZeroLeavesTheRunToTheQueue(): void {
 		$this->engine->expects($this->never())->method('run');
 
-		$run = $this->service(withStreams: true)->advanceStream(run: $this->aRun(), flow: ['id' => 'flow-1'], subject: new stdClass(), streamId: 's1', budget: 0);
+		$run = $this->service(withStreams: true)->advanceBranch(pass: new FlowRunPass(run: $this->aRun(), flow: ['id' => 'flow-1'], subject: new stdClass()), advance: new FlowStreamAdvance(streamId: 's1', budget: 0));
 
 		$this->assertSame(FlowRun::STATUS_QUEUED, $run->getStatus());
 	}//end testABudgetOfZeroLeavesTheRunToTheQueue()
@@ -120,7 +123,7 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 	public function testWithoutTheStreamLayerThereIsNoBranchToScopeToSoTheQueueAdvances(): void {
 		$this->engine->expects($this->never())->method('run');
 
-		$run = $this->service(withStreams: false)->advanceStream(run: $this->aRun(), flow: ['id' => 'flow-1'], subject: new stdClass(), streamId: 's1', budget: 'all');
+		$run = $this->service(withStreams: false)->advanceBranch(pass: new FlowRunPass(run: $this->aRun(), flow: ['id' => 'flow-1'], subject: new stdClass()), advance: new FlowStreamAdvance(streamId: 's1', budget: 'all'));
 
 		$this->assertSame(FlowRun::STATUS_QUEUED, $run->getStatus());
 	}//end testWithoutTheStreamLayerThereIsNoBranchToScopeToSoTheQueueAdvances()
@@ -140,9 +143,9 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 		$this->engine->expects($this->once())->method('run')->willReturnCallback(
 			function () use (&$seenItems): array {
 				$args = func_get_args();
-				// run(flow, store, subject, dispatcher, context, items, startAt, streams):
+				// run(start, origin):
 				// PHPUnit hands named arguments through positionally.
-				$seenItems = $args[5];
+				$seenItems = $args[1]->items;
 
 				return [
 					'status' => FlowEngine::STATUS_COMPLETED,
@@ -156,13 +159,7 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 		$run = $this->aRun();
 		$run->setItems([\OCA\OpenRegister\Service\Flow\FlowItems::item(json: ['name' => 'Case 7'])]);
 
-		$after = $this->service(withStreams: true)->advanceStream(
-			run: $run,
-			flow: ['id' => 'flow-1'],
-			subject: new stdClass(),
-			streamId: 's1',
-			budget: 'all'
-		);
+		$after = $this->service(withStreams: true)->advanceBranch(pass: new FlowRunPass(run: $run, flow: ['id' => 'flow-1'], subject: new stdClass()), advance: new FlowStreamAdvance(streamId: 's1', budget: 'all'));
 
 		$this->assertSame('Case 7', ($seenItems[0]['json']['name'] ?? null), 'the walk resumes from the STORED items');
 		$this->assertSame('rejected', ($after->getItems()[0]['json']['branch'] ?? null), 'the walk\'s items are persisted, never dropped');
@@ -173,14 +170,14 @@ class FlowRunServiceAdvanceStreamTest extends TestCase {
 		$this->engine->expects($this->once())->method('run')->willReturnCallback(
 			function () use (&$seen): array {
 				$args = func_get_args();
-				// `streams` is the last argument of run(); PHPUnit hands named
-				// arguments through positionally.
-				$seen = end($args);
+				// `streams` travels on the run start, the first argument of run();
+				// PHPUnit hands named arguments through positionally.
+				$seen = $args[0]->streams;
 				return ['status' => FlowEngine::STATUS_QUEUED, 'log' => [], 'context' => [], 'items' => []];
 			}
 		);
 
-		$run = $this->service(withStreams: true)->advanceStream(run: $this->aRun(), flow: ['id' => 'flow-1', 'limits' => ['streams' => 3]], subject: new stdClass(), streamId: 's1', budget: 2);
+		$run = $this->service(withStreams: true)->advanceBranch(pass: new FlowRunPass(run: $this->aRun(), flow: ['id' => 'flow-1', 'limits' => ['streams' => 3]], subject: new stdClass()), advance: new FlowStreamAdvance(streamId: 's1', budget: 2));
 
 		$this->assertInstanceOf(FlowStreamWalk::class, $seen);
 		// The walk is scoped: two firings at most, one stream only.

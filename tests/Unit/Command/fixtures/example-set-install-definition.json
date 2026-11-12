@@ -1,0 +1,68 @@
+{
+    "name": "openregister:example-set:install",
+    "description": "Install a story example set across every enabled app, for a demo or test instance",
+    "arguments": [
+        [
+            "set",
+            true,
+            false,
+            "The set id; openregister:example-set:list shows them"
+        ]
+    ],
+    "options": [
+        [
+            "check",
+            null,
+            false,
+            false,
+            false,
+            "Validate every object against its schema; writes no account, group or object (a missing required register is still imported, and a missing cast organisation created)",
+            false
+        ],
+        [
+            "adopt",
+            null,
+            true,
+            true,
+            true,
+            "An existing account id the set may use although it did not create it; remove leaves it in place",
+            []
+        ],
+        [
+            "refresh",
+            null,
+            false,
+            false,
+            false,
+            "Rewrite every object the set declares and already holds to its current values (dates against today, cast, lookups); objects the set did not write are left alone",
+            false
+        ],
+        [
+            "daily",
+            null,
+            false,
+            false,
+            false,
+            "Also refresh the set once a day from now on, so its dates follow the day it is viewed (a demo instance)",
+            false
+        ],
+        [
+            "no-daily",
+            null,
+            false,
+            false,
+            false,
+            "Stop the daily refresh of the set",
+            false
+        ],
+        [
+            "password-from-env",
+            null,
+            false,
+            false,
+            false,
+            "Use the environment variable OC_PASS as the password of every new account instead of making one each",
+            false
+        ]
+    ]
+}

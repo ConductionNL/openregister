@@ -35,6 +35,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
 use stdClass;
@@ -43,7 +45,7 @@ use Throwable;
 /**
  * Queues a flow run for every flow wired to a fired event.
  */
-class FlowTriggerService {
+class FlowTriggerService implements FlowTriggerServiceInterface {
 
 	/**
 	 * The execution mode that runs a flow inline rather than queueing it.
@@ -53,18 +55,35 @@ class FlowTriggerService {
 	private const MODE_SYNC = 'sync';
 
 	/**
+	 * Finds flows wired to an event.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $resolvers;
+
+	/**
+	 * Queues the runs.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowLocator $resolvers Finds flows wired to an event.
-	 * @param FlowRunService $runner Queues the runs.
-	 * @param LoggerInterface $logger The logger.
+	 * @param FlowExecution $execution Finds flows wired to an event, queues the runs and logs.
 	 */
-	public function __construct(
-		private readonly FlowLocator $resolvers,
-		private readonly FlowRunService $runner,
-		private readonly LoggerInterface $logger,
-	) {
-
+	public function __construct(FlowExecution $execution) {
+		$this->resolvers = $execution->resolvers;
+		$this->runner    = $execution->runner;
+		$this->logger    = $execution->logger;
 	}//end __construct()
 
 	/**
@@ -84,10 +103,25 @@ class FlowTriggerService {
 	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
 	 */
 	public function fire(string $event, array $subject = [], ?string $user = null, array $context = []): int {
+		return $this->trigger(trigger: new FlowTrigger(event: $event, subject: $subject, user: $user, context: $context));
+	}//end fire()
+
+	/**
+	 * Fire an event: queue a run for every flow wired to it, as {@see fire()} documents.
+	 *
+	 * @param FlowTrigger $trigger The event id, its subject, the acting user and extra run context.
+	 *
+	 * @return int The number of runs queued.
+	 *
+	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+	 */
+	public function trigger(FlowTrigger $trigger): int {
+		$event   = $trigger->event;
+		$subject = $trigger->subject;
 		try {
 			$register = (string)($subject['register'] ?? '');
 			$schema = (string)($subject['schema'] ?? '');
-			$flowIds = $this->resolvers->flowsForTrigger($event, $register, $schema);
+			$flowIds = $this->resolvers->flowsForEvent(event: $event, table: new RegisterSchemaRef(register: $register, schema: $schema));
 			if ($flowIds === []) {
 				return 0;
 			}
@@ -102,12 +136,14 @@ class FlowTriggerService {
 				// flow wired to the same event. Log it against the flow and
 				// keep queuing the rest.
 				try {
-					$run = $this->runner->queue(
+					$run = $this->runner->queueRun(
 						flowId: $flowId,
-						subject: $subject,
-						trigger: $event,
-						context: $context,
-						user: $user
+						options: new FlowRunQueueOptions(
+							subject: $subject,
+							trigger: $event,
+							context: $trigger->context,
+							user: $trigger->user
+						)
 					);
 				} catch (Throwable $one) {
 					$this->logger->error(
@@ -156,7 +192,7 @@ class FlowTriggerService {
 			return 0;
 		}//end try
 
-	}//end fire()
+	}//end trigger()
 
 	/**
 	 * Execute a just-queued run inline when its flow asked to be synchronous.
@@ -175,7 +211,7 @@ class FlowTriggerService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-execution-mode/spec.md
+	 * @spec openspec/specs/flow-execution-mode/spec.md
 	 */
 	private function runInline(FlowRun $run, string $flowId, array $subject): void {
 		$flow = $this->resolvers->resolveFlow($flowId);
@@ -194,10 +230,12 @@ class FlowTriggerService {
 		$object = null;
 		$uuid = trim((string)($subject['uuid'] ?? ''));
 		if ($uuid !== '') {
-			$object = $this->resolvers->resolveSubject(
-				$uuid,
-				(string)($subject['register'] ?? ''),
-				(string)($subject['schema'] ?? '')
+			$object = $this->resolvers->resolveObject(
+				ref: new ObjectRef(
+					register: (string)($subject['register'] ?? ''),
+					schema: (string)($subject['schema'] ?? ''),
+					id: $uuid
+				)
 			);
 
 			if ($object === null) {
@@ -213,7 +251,7 @@ class FlowTriggerService {
 			}
 		}
 
-		$this->runner->execute(run: $run, flow: $flow, subject: $object, seedItems: $seed);
+		$this->runner->executePass(pass: new FlowRunPass(run: $run, flow: $flow, subject: $object), origin: new FlowRunOrigin(items: $seed));
 
 	}//end runInline()
 }//end class

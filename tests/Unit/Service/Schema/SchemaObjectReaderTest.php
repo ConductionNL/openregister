@@ -18,6 +18,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Schema\SchemaObjectReader;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -36,11 +38,11 @@ class SchemaObjectReaderTest extends TestCase {
 	}
 
 	private function reader(?MagicMapper $objects): SchemaObjectReader {
-		return new SchemaObjectReader($this->registerMapper, $this->request, $objects);
+		$catalog = new SchemaCatalog($this->registerMapper, $this->createMock(SchemaMapper::class), ($objects ?? $this->createMock(MagicMapper::class)));
+		return new SchemaObjectReader($catalog, $this->request);
 	}
 
-	public function testCanReadValuesReflectsObjectMapperPresence(): void {
-		$this->assertFalse($this->reader(null)->canReadValues());
+	public function testCanReadValuesThroughTheCatalogTables(): void {
 		$this->assertTrue($this->reader($this->createMock(MagicMapper::class))->canReadValues());
 	}
 
@@ -70,7 +72,7 @@ class SchemaObjectReaderTest extends TestCase {
 		$this->assertNull($this->reader(null)->resolveRegisterId(42));
 	}
 
-	public function testStoredValuesEmptyWhenNoObjectMapper(): void {
+	public function testStoredValuesEmptyWhenNoRegisterHoldsTheSchema(): void {
 		$this->assertSame([], $this->reader(null)->storedValues(42, 'name'));
 	}
 

@@ -44,19 +44,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
+use OCA\OpenRegister\Controller\Support\RelationsObjectLookup;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCA\OpenRegister\Service\Integration\PaginatedResult;
+use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
+use OCA\OpenRegister\Service\Integration\PaginatedResults;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -64,28 +70,76 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectIntegrationsController extends Controller {
 	/**
+	 * Integration registry.
+	 *
+	 * @var IntegrationCatalogueInterface
+	 */
+	private IntegrationCatalogueInterface $registry;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * OpenRegister object service (RBAC boundary).
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private ObjectOperationsInterface $objectService;
+
+	/**
+	 * Schema loader (external-source detection).
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Internal/public filter for the timeline leaves.
+	 *
+	 * @var TimelineVisibilityServiceInterface
+	 */
+	private TimelineVisibilityServiceInterface $visibility;
+
+	/**
+	 * Answers the object update right for integration writes.
+	 *
+	 * @var PermissionCheckInterface
+	 */
+	private PermissionCheckInterface $permissions;
+
+	/**
+	 * Resolves the target object through the object service's RBAC boundary.
+	 *
+	 * @var RelationsObjectLookup
+	 */
+	private RelationsObjectLookup $lookup;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name (injected by NC).
-	 * @param IRequest $request Current request.
-	 * @param IntegrationRegistry $registry Integration registry.
-	 * @param LoggerInterface $logger Logger.
-	 * @param ObjectService $objectService OpenRegister object service (RBAC boundary).
-	 * @param SchemaMapper $schemaMapper Schema loader (external-source detection).
-	 * @param TimelineVisibilityService $visibility Internal/public filter for the timeline leaves.
+	 * @param IRequest                             $request  Current request.
+	 * @param ObjectIntegrationsControllerServices $services The registry, object services, access checks and logger.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-19
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private IntegrationRegistry $registry,
-		private LoggerInterface $logger,
-		private ObjectService $objectService,
-		private SchemaMapper $schemaMapper,
-		private TimelineVisibilityService $visibility,
+		ObjectIntegrationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->registry = $services->domain->registry;
+		$this->objectService = $services->domain->objectService;
+		$this->schemaMapper = $services->domain->schemaMapper;
+		$this->visibility = $services->access->visibility;
+		$this->permissions = $services->access->permissions;
+		$this->logger = $services->logger;
+		$this->lookup = new RelationsObjectLookup(objects: $services->domain->objectService);
 	}//end __construct()
 
 	/**
@@ -114,8 +168,7 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	private function isObjectSourcedSchema(string $register, string $schema): bool {
 		try {
-			$this->objectService->setRegister($register);
-			$this->objectService->setSchema($schema);
+			$this->lookup->scope(register: $register, schema: $schema);
 			$resolved = $this->schemaMapper->find($this->objectService->getSchema());
 		} catch (\Throwable) {
 			return false;
@@ -145,24 +198,18 @@ class ObjectIntegrationsController extends Controller {
 	 * has already succeeded, so the catch was placed one line past the throw it
 	 * needed to cover.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $id Object uuid.
+	 * @param ObjectLinkRoute $route Register slug or numeric id, schema slug or numeric id, and object uuid.
 	 *
 	 * @return JSONResponse|null 404 response when access is denied, null when allowed.
 	 */
-	private function guardObjectAccess(string $register, string $schema, string $id): ?JSONResponse {
+	private function guardObjectAccess(ObjectLinkRoute $route): ?JSONResponse {
 		try {
-			$this->objectService->setRegister($register);
-			$this->objectService->setSchema($schema);
-			$this->objectService->setObject($id);
-
-			$object = $this->objectService->getObject();
+			$object = $this->lookup->find(register: $route->register, schema: $route->schema, id: $route->id);
 		} catch (\Throwable $e) {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
 		}
 
-		if ($object === null) {
+		if ($object === null || (string)$object->getUuid() === '') {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
 		}
 
@@ -170,6 +217,70 @@ class ObjectIntegrationsController extends Controller {
 
 		return null;
 	}//end guardObjectAccess()
+
+	/**
+	 * Guard a write to the object's integrations: the object must be readable
+	 * (404 otherwise) and the caller must hold the `update` right editing the
+	 * object requires (403 otherwise).
+	 *
+	 * @param ObjectLinkRoute $route Register slug or numeric id, schema slug or numeric id, and object uuid.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the write may proceed.
+	 */
+	private function guardObjectUpdate(ObjectLinkRoute $route): ?JSONResponse {
+		$denial = $this->guardObjectAccess(route: $route);
+		if ($denial !== null) {
+			return $denial;
+		}
+
+		if ($this->mayUpdateGuardedObject() === true) {
+			return null;
+		}
+
+		return new JSONResponse(['message' => 'You may not change this object, so you cannot change its integrations.'], Http::STATUS_FORBIDDEN);
+	}//end guardObjectUpdate()
+
+	/**
+	 * Whether the caller holds the `update` right on the object the guard resolved.
+	 *
+	 * @return bool False when the schema does not resolve or the right is not held.
+	 */
+	private function mayUpdateGuardedObject(): bool {
+		$schemaEntity = $this->objectService->getCurrentSchemaEntity();
+		if ($schemaEntity === null) {
+			return false;
+		}
+
+		return $this->permissions->hasPermission(
+			schema: $schemaEntity,
+			action: 'update',
+			objectOwner: $this->guardedObject?->getOwner(),
+			object: $this->guardedObject
+		) === true;
+	}//end mayUpdateGuardedObject()
+
+	/**
+	 * The uuid of the object the guard resolved, which is what providers key their links on.
+	 *
+	 * The route id may be a uuid, a slug or a numeric id; only the resolved
+	 * object's uuid matches the links a provider stored.
+	 *
+	 * @return string The uuid.
+	 */
+	private function guardedUuid(): string {
+		return (string)$this->guardedObject?->getUuid();
+	}//end guardedUuid()
+
+	/**
+	 * Whether a provider failure means "no such linked thing" (an exception carrying code 404).
+	 *
+	 * @param \Throwable $exception The failure.
+	 *
+	 * @return bool True for a not-found.
+	 */
+	private static function isNotFound(\Throwable $exception): bool {
+		return $exception instanceof \Exception && $exception->getCode() === Http::STATUS_NOT_FOUND;
+	}//end isNotFound()
 
 	/**
 	 * GET /api/objects/{register}/{schema}/{id}/integrations/{integrationId}
@@ -204,24 +315,31 @@ class ObjectIntegrationsController extends Controller {
 		// tabs render cleanly. The result is a constant empty set, so skipping the
 		// per-object RBAC guard leaks nothing.
 		if ($this->isObjectSourcedSchema(register: $register, schema: $schema) === true) {
-			return new JSONResponse(PaginatedResult::fromMixed([])->toArray());
+			return new JSONResponse(PaginatedResults::envelope([]));
 		}
 
-		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
-		if ($denial !== null) {
-			return $denial;
-		}
-
-		return $this->dispatch(
+		return $this->guardObjectAccess(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatch(
 			integrationId: $integrationId,
-			callback: fn ($provider) => PaginatedResult::fromMixed(
-				$this->applyTimelineVisibility(
-					integrationId: $integrationId,
-					rows: $provider->list($register, $schema, $id, $this->collectFilters())
-				)
-			)->toArray()
+			callback: fn ($provider) => $this->listed(
+				integrationId: $integrationId,
+				rows: $provider->list(new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $this->collectFilters())
+			)
 		);
 	}//end index()
+
+	/**
+	 * What a provider listed for the guarded object, filtered for the caller, as the canonical envelope.
+	 *
+	 * @param string $integrationId Integration id.
+	 * @param array<int,mixed> $rows    What the provider's `list()` returned.
+	 *
+	 * @return array<string, mixed> The `{items, total, nextCursor}` envelope.
+	 */
+	private function listed(string $integrationId, array $rows): array {
+		return PaginatedResults::envelope(
+			$this->applyTimelineVisibility(integrationId: $integrationId, rows: $rows)
+		);
+	}//end listed()
 
 	/**
 	 * Keep a timeline leaf's rows on the side of the counter the caller belongs on.
@@ -271,14 +389,9 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
-		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
-		if ($denial !== null) {
-			return $denial;
-		}
-
-		return $this->dispatch(
+		return $this->guardObjectAccess(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatch(
 			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->get($register, $schema, $id, $entityId)
+			callback: fn ($provider) => $provider->get(new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $entityId)
 		);
 	}//end show()
 
@@ -298,16 +411,14 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(string $register, string $schema, string $id, string $integrationId): JSONResponse {
-		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
-		if ($denial !== null) {
-			return $denial;
-		}
-
-		$payload = $this->collectPayload();
-		return $this->dispatch(
-			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->create($register, $schema, $id, $payload),
-			okStatus: Http::STATUS_CREATED
+		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? self::created(
+			response: $this->dispatch(
+				integrationId: $integrationId,
+				callback: fn ($provider) => $provider->create(
+					new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+					$this->collectPayload()
+				)
+			)
 		);
 	}//end create()
 
@@ -328,15 +439,13 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function update(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
-		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
-		if ($denial !== null) {
-			return $denial;
-		}
-
-		$payload = $this->collectPayload();
-		return $this->dispatch(
+		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatch(
 			integrationId: $integrationId,
-			callback: fn ($provider) => $provider->update($register, $schema, $id, $entityId, $payload)
+			callback: fn ($provider) => $provider->update(
+				new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
+				$entityId,
+				$this->collectPayload()
+			)
 		);
 	}//end update()
 
@@ -357,49 +466,91 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
-		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
-		if ($denial !== null) {
-			return $denial;
+		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->dispatchDelete(
+			integrationId: $integrationId,
+			callback: fn ($provider) => $provider->delete(new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()), $entityId)
+		);
+	}//end destroy()
+
+	/**
+	 * Dispatch a delete: 204 when the provider deleted, the failure's status otherwise.
+	 *
+	 * Unlike dispatch(), an invalid argument is not a 400 here: every failure
+	 * is answered by respondThrown(), as the delete endpoint always has.
+	 *
+	 * @param string   $integrationId Integration id.
+	 * @param callable $callback      Function that receives the resolved provider and deletes.
+	 *
+	 * @return JSONResponse
+	 */
+	private function dispatchDelete(string $integrationId, callable $callback): JSONResponse {
+		try {
+			$callback($this->resolveProvider(integrationId: $integrationId));
+			return new JSONResponse(null, Http::STATUS_NO_CONTENT);
+		} catch (\Throwable $e) {
+			return $this->respondThrown(exception: $e, integrationId: $integrationId);
+		}
+	}//end dispatchDelete()
+
+	/**
+	 * A successful dispatch answered as a creation (201); a failure keeps its own status.
+	 *
+	 * @param JSONResponse $response The dispatch's answer.
+	 *
+	 * @return JSONResponse The same answer, 201 when it succeeded.
+	 */
+	private static function created(JSONResponse $response): JSONResponse {
+		if ($response->getStatus() === Http::STATUS_OK) {
+			$response->setStatus(Http::STATUS_CREATED);
 		}
 
-		try {
-			$provider = $this->resolveProvider(integrationId: $integrationId);
-			$provider->delete($register, $schema, $id, $entityId);
-			return new JSONResponse(null, Http::STATUS_NO_CONTENT);
-		} catch (NotImplementedException $e) {
-			return $this->respondNotImplemented(exception: $e, integrationId: $integrationId);
-		} catch (ProviderUnavailableException $e) {
-			return $this->respondUnavailable(exception: $e);
-		} catch (\Throwable $e) {
-			return $this->respondInternalError(exception: $e, integrationId: $integrationId);
-		}
-	}//end destroy()
+		return $response;
+	}//end created()
 
 	/**
 	 * Shared dispatch helper for the non-DELETE methods.
 	 *
+	 * Called only once the access guard allowed the call (`guard ?? dispatch`),
+	 * so the access check always comes before any provider call.
+	 *
 	 * @param string $integrationId Integration id.
 	 * @param callable $callback Function that receives the resolved
 	 *                           provider and returns the response body.
-	 * @param int $okStatus HTTP status on success (200 / 201).
 	 *
-	 * @return JSONResponse
+	 * @return JSONResponse 200 with the body, or the failure's status.
 	 */
-	private function dispatch(string $integrationId, callable $callback, int $okStatus = Http::STATUS_OK): JSONResponse {
+	private function dispatch(string $integrationId, callable $callback): JSONResponse {
 		try {
 			$provider = $this->resolveProvider(integrationId: $integrationId);
 			$body = $callback($provider);
-			return new JSONResponse($body, $okStatus);
-		} catch (NotImplementedException $e) {
-			return $this->respondNotImplemented(exception: $e, integrationId: $integrationId);
-		} catch (ProviderUnavailableException $e) {
-			return $this->respondUnavailable(exception: $e);
+			return new JSONResponse($body, Http::STATUS_OK);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		} catch (\Throwable $e) {
-			return $this->respondInternalError(exception: $e, integrationId: $integrationId);
+			return $this->respondThrown(exception: $e, integrationId: $integrationId);
 		}
 	}//end dispatch()
+
+	/**
+	 * A provider call that threw, as its response: 501 or 404 for an unsupported or unknown
+	 * integration, 503 for an unavailable provider, 404 or 500 for any other failure.
+	 *
+	 * @param \Throwable $exception     The failure.
+	 * @param string     $integrationId Integration id.
+	 *
+	 * @return JSONResponse
+	 */
+	private function respondThrown(\Throwable $exception, string $integrationId): JSONResponse {
+		if ($exception instanceof NotImplementedException) {
+			return $this->respondNotImplemented(exception: $exception, integrationId: $integrationId);
+		}
+
+		if ($exception instanceof ProviderUnavailableException) {
+			return $this->respondUnavailable(exception: $exception);
+		}
+
+		return $this->respondFailure(exception: $exception, integrationId: $integrationId);
+	}//end respondThrown()
 
 	/**
 	 * Resolve the named integration or throw an HttpException-ish
@@ -484,6 +635,22 @@ class ObjectIntegrationsController extends Controller {
 	}//end respondUnavailable()
 
 	/**
+	 * A provider failure as a response: 404 for a linked thing that is not found, 500 otherwise.
+	 *
+	 * @param \Throwable $exception Exception.
+	 * @param string $integrationId Integration id.
+	 *
+	 * @return JSONResponse
+	 */
+	private function respondFailure(\Throwable $exception, string $integrationId): JSONResponse {
+		if (self::isNotFound(exception: $exception) === true) {
+			return new JSONResponse(['message' => $exception->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return $this->respondInternalError(exception: $exception, integrationId: $integrationId);
+	}//end respondFailure()
+
+	/**
 	 * Translate any other throwable to a generic 500.
 	 *
 	 * Per ADR-005 the real exception is logged server-side; the
@@ -495,6 +662,10 @@ class ObjectIntegrationsController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function respondInternalError(\Throwable $exception, string $integrationId): JSONResponse {
+		if ($exception->getCode() === Http::STATUS_NOT_FOUND) {
+			return new JSONResponse(['message' => $exception->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
 		$this->logger->error(
 			sprintf('[ObjectIntegrationsController] dispatch failed for %s', $integrationId),
 			['exception' => $exception]

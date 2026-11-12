@@ -37,9 +37,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectSource;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -51,12 +48,25 @@ use Throwable;
  */
 class DeckObjectSourceProvider implements ObjectSourceProvider {
 
+	use CountsThroughFindAll;
+	use ReadsRowsById;
+	use InstalledAppCheck;
+	use ContainerServiceLookup;
+	use DefensiveGetters;
+
 	/**
 	 * NC app id whose install-state gates this provider.
 	 *
 	 * @var string
 	 */
 	private const REQUIRED_APP = 'deck';
+
+	/**
+	 * Label the warnings of this provider carry.
+	 *
+	 * @var string
+	 */
+	private const SOURCE_LABEL = 'deck-source';
 
 	/**
 	 * Deck's per-user board service (resolved dynamically — Deck's namespace).
@@ -73,21 +83,41 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 	private const STACK_SERVICE = 'OCA\\Deck\\Service\\StackService';
 
 	/**
+	 * App availability checks.
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * Server container (lazy app-service lookup).
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Logger for read failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager $appManager App availability checks.
-	 * @param IUserSession $userSession The acting-user session.
-	 * @param ContainerInterface $container Server container (lazy Deck-service lookup).
-	 * @param LoggerInterface $logger Logger for read failures.
+	 * @param OptionalAppBridge $app         Whether the app is installed, its services, and the log of failed reads.
+	 * @param IUserSession      $userSession The acting-user session.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
+		OptionalAppBridge $app,
 		private readonly IUserSession $userSession,
-		private readonly ContainerInterface $container,
-		private readonly LoggerInterface $logger,
 	) {
+		$this->appManager = $app->appManager;
+		$this->container = $app->container;
+		$this->logger = $app->logger;
 	}//end __construct()
 
 	/**
@@ -102,98 +132,6 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 	}//end getId()
 
 	/**
-	 * {@inheritDoc}
-	 *
-	 * Gated on the Deck app: when it is not installed the bound schema degrades
-	 * to an empty list rather than erroring.
-	 *
-	 * @return bool True when the Deck app is installed.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function isEnabled(): bool {
-		try {
-			return $this->appManager->isInstalled(self::REQUIRED_APP);
-		} catch (Throwable $e) {
-			return false;
-		}
-	}//end isEnabled()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * MUST return null when the card is absent OR the acting user may not read
-	 * it, so the two cases are indistinguishable (no enumeration oracle).
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param string $id The Deck card id.
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return ObjectEntity|null The virtual object, or null when absent/denied.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $config reserved for future scoping options.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function find(Register $register, Schema $schema, string $id, array $config = []): ?ObjectEntity {
-		foreach ($this->readCards() as $card) {
-			if ((string)($card['id'] ?? '') === $id) {
-				return $this->toObjectEntity(register: $register, schema: $schema, card: $card);
-			}
-		}
-
-		return null;
-	}//end find()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * Honours `limit` and `offset`. The result is scoped by Deck's own
-	 * per-user services to the acting user's readable boards.
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (limit/offset).
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return ObjectEntity[] The matching virtual objects.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $config reserved for future scoping options.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function findAll(Register $register, Schema $schema, array $query = [], array $config = []): array {
-		$limit = (int)($query['limit'] ?? 200);
-		$offset = (int)($query['offset'] ?? 0);
-
-		$cards = array_slice($this->readCards(), $offset, $limit);
-
-		$objects = [];
-		foreach ($cards as $card) {
-			$objects[] = $this->toObjectEntity(register: $register, schema: $schema, card: $card);
-		}
-
-		return $objects;
-	}//end findAll()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (limit/offset).
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
-
-	/**
 	 * Read the Deck cards visible to the acting user, failing closed to an empty
 	 * list.
 	 *
@@ -206,7 +144,7 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
-	private function readCards(): array {
+	protected function readRows(): array {
 		if ($this->userSession->getUser() === null) {
 			return [];
 		}
@@ -217,46 +155,111 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}
 
+		return $this->cardsOfBoards(boardService: $boardService, stackService: $stackService);
+	}//end readRows()
+
+	/**
+	 * The cards on every board of the acting user.
+	 *
+	 * @param object $boardService Deck's BoardService.
+	 * @param object $stackService Deck's StackService.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised cards.
+	 */
+	private function cardsOfBoards(object $boardService, object $stackService): array {
+		$cards = [];
+		foreach ($this->listBoards(boardService: $boardService) as $board) {
+			$cards = array_merge($cards, $this->boardCards(stackService: $stackService, board: $board));
+		}
+
+		return $cards;
+	}//end cardsOfBoards()
+
+	/**
+	 * The acting user's boards, failing closed to an empty list.
+	 *
+	 * @param object $boardService Deck's BoardService.
+	 *
+	 * @return mixed The boards (whatever BoardService::findAll() returns), or [].
+	 */
+	private function listBoards(object $boardService): mixed {
 		try {
-			$boards = $boardService->findAll();
+			return $boardService->findAll();
 		} catch (Throwable $e) {
 			$this->logger->warning('[ObjectSource:deck-source] could not list boards: ' . $e->getMessage());
 			return [];
 		}
+	}//end listBoards()
+
+	/**
+	 * The cards of every stack on one board; none when the board has no id
+	 * or its stacks cannot be listed.
+	 *
+	 * @param object $stackService Deck's StackService.
+	 * @param mixed  $board        A Deck board.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised cards.
+	 */
+	private function boardCards(object $stackService, mixed $board): array {
+		$boardId = $this->intGetter(entity: $board, getter: 'getId');
+		if ($boardId === null) {
+			return [];
+		}
 
 		$cards = [];
-		foreach ($boards as $board) {
-			$boardId = $this->intGetter(entity: $board, getter: 'getId');
-			if ($boardId === null) {
-				continue;
-			}
-
-			try {
-				$stacks = $stackService->findAll($boardId);
-			} catch (Throwable $e) {
-				$this->logger->warning('[ObjectSource:deck-source] could not list stacks for board ' . $boardId . ': ' . $e->getMessage());
-				continue;
-			}
-
-			foreach ($stacks as $stack) {
-				$cards = array_merge($cards, $this->cardsFromStack(stack: $stack, boardId: $boardId));
-			}
+		foreach ($this->listStacks(stackService: $stackService, boardId: $boardId) as $stack) {
+			$cards = array_merge($cards, $this->cardsFromStack(stack: $stack, boardId: $boardId));
 		}
 
 		return $cards;
-	}//end readCards()
+	}//end boardCards()
 
 	/**
-	 * Extract the normalised card arrays from a single Deck stack.
+	 * The stacks of one board, failing closed to an empty list.
 	 *
-	 * @param object $stack The Deck stack entity (carries getCards()).
-	 * @param int $boardId The parent board id (Deck cards expose only stackId).
+	 * @param object $stackService Deck's StackService.
+	 * @param int    $boardId      The board id.
 	 *
-	 * @return array<int, array<string, mixed>> The normalised card arrays.
+	 * @return mixed The stacks (whatever StackService::findAll() returns), or [].
+	 */
+	private function listStacks(object $stackService, int $boardId): mixed {
+		try {
+			return $stackService->findAll($boardId);
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:deck-source] could not list stacks for board ' . $boardId . ': ' . $e->getMessage());
+			return [];
+		}
+	}//end listStacks()
+
+	/**
+	 * Normalise the cards of one stack, skipping non-object entries.
+	 *
+	 * @param object $stack   A Deck stack entity.
+	 * @param int    $boardId The owning board id.
+	 *
+	 * @return array<int, array<string, mixed>> The normalised cards.
 	 *
 	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
 	 */
 	private function cardsFromStack(object $stack, int $boardId): array {
+		$result = [];
+		foreach ($this->stackCards(stack: $stack) as $card) {
+			if (is_object($card) === true) {
+				$result[] = $this->cardRow(card: $card, boardId: $boardId);
+			}
+		}
+
+		return $result;
+	}//end cardsFromStack()
+
+	/**
+	 * The raw cards of a stack; none when getCards() is missing, throws or is not a list.
+	 *
+	 * @param object $stack A Deck stack entity.
+	 *
+	 * @return array<mixed> The raw cards.
+	 */
+	private function stackCards(object $stack): array {
 		try {
 			$stackCards = $stack->getCards();
 		} catch (Throwable $e) {
@@ -267,93 +270,27 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}
 
-		$result = [];
-		foreach ($stackCards as $card) {
-			if (is_object($card) === false) {
-				continue;
-			}
-
-			$result[] = [
-				'id' => (string)($this->intGetter(entity: $card, getter: 'getId') ?? ''),
-				'title' => $this->stringGetter(entity: $card, getter: 'getTitle'),
-				'description' => $this->stringGetter(entity: $card, getter: 'getDescription'),
-				'stackId' => $this->intGetter(entity: $card, getter: 'getStackId'),
-				'boardId' => $boardId,
-				'duedate' => $this->dueDate(card: $card),
-			];
-		}
-
-		return $result;
-	}//end cardsFromStack()
+		return $stackCards;
+	}//end stackCards()
 
 	/**
-	 * Resolve one of Deck's service classes from the container, or null when
-	 * Deck is not installed / its service cannot be resolved.
+	 * Normalise one card.
 	 *
-	 * @param string $class The fully-qualified Deck service class name.
+	 * @param object $card    A Deck card entity.
+	 * @param int    $boardId The owning board id.
 	 *
-	 * @return object|null The resolved service, or null.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
+	 * @return array<string, mixed> The card row.
 	 */
-	private function resolveService(string $class): ?object {
-		if (class_exists($class) === false) {
-			return null;
-		}
-
-		try {
-			$service = $this->container->get($class);
-			if (is_object($service) === true) {
-				return $service;
-			}
-		} catch (Throwable $e) {
-			$this->logger->warning('[ObjectSource:deck-source] could not resolve ' . $class . ': ' . $e->getMessage());
-		}
-
-		return null;
-	}//end resolveService()
-
-	/**
-	 * Read an integer getter from a Deck entity (getters resolve via OCP Entity
-	 * magic, so method_exists is unreliable — each call is guarded).
-	 *
-	 * @param object $entity The Deck entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return int|null The integer value, or null when unavailable.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	private function intGetter(object $entity, string $getter): ?int {
-		try {
-			$value = $entity->$getter();
-			if ($value === null) {
-				return null;
-			}
-
-			return (int)$value;
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end intGetter()
-
-	/**
-	 * Read a string getter from a Deck entity, defaulting to '' on failure.
-	 *
-	 * @param object $entity The Deck entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return string The string value, or ''.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	private function stringGetter(object $entity, string $getter): string {
-		try {
-			return (string)$entity->$getter();
-		} catch (Throwable $e) {
-			return '';
-		}
-	}//end stringGetter()
+	private function cardRow(object $card, int $boardId): array {
+		return [
+			'id' => (string)($this->intGetter(entity: $card, getter: 'getId') ?? ''),
+			'title' => $this->stringGetter(entity: $card, getter: 'getTitle'),
+			'description' => $this->stringGetter(entity: $card, getter: 'getDescription'),
+			'stackId' => $this->intGetter(entity: $card, getter: 'getStackId'),
+			'boardId' => $boardId,
+			'duedate' => $this->dueDate(card: $card),
+		];
+	}//end cardRow()
 
 	/**
 	 * Read a Deck card's due date as an ISO-8601 string, or null.
@@ -366,37 +303,17 @@ class DeckObjectSourceProvider implements ObjectSourceProvider {
 	 */
 	private function dueDate(object $card): ?string {
 		try {
-			$due = $card->getDuedate();
-			if ($due instanceof \DateTimeInterface) {
-				return $due->format(\DateTime::ATOM);
-			}
+			return AtomMoment::of(value: $card->getDuedate());
 		} catch (Throwable $e) {
 			// Getter missing on this Deck version — leave null.
+			$this->logger->debug(
+				message: '[DeckObjectSourceProvider] Card due date not readable',
+				context: [
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;
 	}//end dueDate()
-
-	/**
-	 * Map a normalised Deck card array onto a non-persisted virtual ObjectEntity.
-	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $card The normalised card array.
-	 *
-	 * @return ObjectEntity The virtual object (never saved).
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	private function toObjectEntity(Register $register, Schema $schema, array $card): ObjectEntity {
-		$id = (string)($card['id'] ?? '');
-
-		$entity = new ObjectEntity();
-		$entity->setUuid($id);
-		$entity->setRegister((string)$register->getId());
-		$entity->setSchema((string)$schema->getId());
-		$entity->setObject($card);
-
-		return $entity;
-	}//end toObjectEntity()
 }//end class

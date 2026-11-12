@@ -16,7 +16,6 @@
  * - count
  * - findByRelations
  * - deleteObject
- * - getActiveOrganisationForContext
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service
@@ -30,7 +29,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -68,6 +68,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Deep coverage tests for ObjectService
@@ -160,7 +161,7 @@ class ObjectServiceDeepTest extends TestCase {
 		);
 		$this->container = $this->createMock(IAppContainer::class);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$dataManipHandler,
 			$this->deleteHandler,
 			$this->getHandler,
@@ -199,7 +200,7 @@ class ObjectServiceDeepTest extends TestCase {
 			$dateTimeNormalizer,
 			$this->container,
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 	}//end setUp()
 
@@ -516,7 +517,6 @@ class ObjectServiceDeepTest extends TestCase {
 				$this->identicalTo($schema),
 				$this->equalTo('create'),
 				$this->anything(),
-				$this->anything(),
 				$this->anything()
 			);
 
@@ -546,8 +546,7 @@ class ObjectServiceDeepTest extends TestCase {
 			->with(
 				$this->anything(),
 				$this->equalTo('update'),
-				$this->anything(),
-				$this->equalTo('admin'),
+				$this->callback(fn (PermissionCheckOptions $options): bool => $options->objectOwner === 'admin'),
 				$this->anything()
 			);
 
@@ -574,7 +573,6 @@ class ObjectServiceDeepTest extends TestCase {
 			->with(
 				$this->identicalTo($schema),
 				$this->equalTo('create'),
-				$this->anything(),
 				$this->anything(),
 				$this->anything()
 			);
@@ -735,54 +733,5 @@ class ObjectServiceDeepTest extends TestCase {
 	// =========================================================================
 	// getActiveOrganisationForContext (private)
 	// =========================================================================
-
-	/**
-	 * Test getActiveOrganisationForContext returns UUID
-	 *
-	 * @return void
-	 */
-	public function testGetActiveOrganisationForContextReturnsUuid(): void {
-		$method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
-
-		$org = new \OCA\OpenRegister\Db\Organisation();
-		$org->setUuid('org-uuid');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn($org);
-
-		$result = $method->invoke($this->service);
-		$this->assertEquals('org-uuid', $result);
-
-	}//end testGetActiveOrganisationForContextReturnsUuid()
-
-	/**
-	 * Test getActiveOrganisationForContext returns null when no org
-	 *
-	 * @return void
-	 */
-	public function testGetActiveOrganisationForContextReturnsNull(): void {
-		$method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
-
-		$result = $method->invoke($this->service);
-		$this->assertNull($result);
-
-	}//end testGetActiveOrganisationForContextReturnsNull()
-
-	/**
-	 * Test getActiveOrganisationForContext handles exception
-	 *
-	 * @return void
-	 */
-	public function testGetActiveOrganisationForContextException(): void {
-		$method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
-
-		$this->organisationService->method('getActiveOrganisation')
-			->willThrowException(new \Exception('Service error'));
-
-		$result = $method->invoke($this->service);
-		$this->assertNull($result);
-
-	}//end testGetActiveOrganisationForContextException()
 
 }//end class

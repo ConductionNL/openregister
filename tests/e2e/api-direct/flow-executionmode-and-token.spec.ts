@@ -18,8 +18,8 @@ import type { APIRequestContext } from '@playwright/test'
  * Auth is the Basic-auth admin context from the playwright config, so no browser
  * session is needed. Everything created here is torn down in afterAll.
  *
- * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-execution-mode/spec.md
- * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-token/spec.md
+ * @spec openspec/specs/flow-execution-mode/spec.md
+ * @spec openspec/specs/flow-token/spec.md
  */
 import { expect, test } from '@playwright/test'
 

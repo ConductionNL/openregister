@@ -7,7 +7,8 @@ namespace Unit\Service\File;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\BulkDownloadArchive;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -44,32 +45,6 @@ class FileAuditHandlerTest extends TestCase {
 	}//end setUp()
 
 	/**
-	 * Test authenticated download logging.
-	 */
-	public function testLogDownloadAuthenticated(): void {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn('behandelaar-1');
-		$this->userSession->method('getUser')->willReturn($user);
-
-		$this->logger->expects($this->once())->method('info');
-
-		$this->handler->logDownload(42, 'rapport.pdf', 245760, 'application/pdf', 'abc-123');
-	}//end testLogDownloadAuthenticated()
-
-	/**
-	 * Test anonymous download logging includes IP and user-agent.
-	 */
-	public function testLogDownloadAnonymous(): void {
-		$this->userSession->method('getUser')->willReturn(null);
-		$this->request->method('getRemoteAddress')->willReturn('192.168.1.1');
-		$this->request->method('getHeader')->willReturn('Mozilla/5.0');
-
-		$this->logger->expects($this->once())->method('info');
-
-		$this->handler->logDownload(42, 'rapport.pdf', 245760, 'application/pdf', 'abc-123');
-	}//end testLogDownloadAnonymous()
-
-	/**
 	 * Test bulk download logging persists a SINGLE audit row for the ZIP,
 	 * not one row per file inside the archive.
 	 */
@@ -97,11 +72,13 @@ class FileAuditHandlerTest extends TestCase {
 			->willReturnArgument(0);
 
 		$result = $this->handler->logBulkDownload(
-			$object,
-			[42, 43, 44],
-			['file1.pdf', 'file2.pdf', 'file3.pdf'],
-			'object_abc-123_files.zip',
-			512000
+			object: $object,
+			archive: new BulkDownloadArchive(
+				fileIds: [42, 43, 44],
+				fileNames: ['file1.pdf', 'file2.pdf', 'file3.pdf'],
+				zipName: 'object_abc-123_files.zip',
+				totalBytes: 512000
+			)
 		);
 
 		$this->assertInstanceOf(AuditTrail::class, $result);
@@ -141,26 +118,17 @@ class FileAuditHandlerTest extends TestCase {
 			->willReturnArgument(0);
 
 		$this->handler->logBulkDownload(
-			$object,
-			[42],
-			['only.pdf'],
-			'one.zip'
+			object: $object,
+			archive: new BulkDownloadArchive(
+				fileIds: [42],
+				fileNames: ['only.pdf'],
+				zipName: 'one.zip'
+			)
 		);
 
 		$this->assertSame('Anonymous', $captured->getUser());
 		$this->assertStringContainsString('192.168.1.50', $captured->getUserName());
 	}//end testLogBulkDownloadAnonymous()
-
-	/**
-	 * Test download logging does not throw even if internal error.
-	 */
-	public function testLogDownloadDoesNotThrow(): void {
-		$this->userSession->method('getUser')->willThrowException(new \Exception('Session error'));
-
-		// Should not propagate exception.
-		$this->handler->logDownload(42, 'test.pdf', 1024, 'application/pdf', 'abc-123');
-		$this->assertTrue(true);
-	}//end testLogDownloadDoesNotThrow()
 
 	/**
 	 * Test that logFileAction persists an AuditTrail row tagged to the

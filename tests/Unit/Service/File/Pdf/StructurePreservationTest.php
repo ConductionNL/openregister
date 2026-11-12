@@ -3,7 +3,7 @@
 /**
  * StructurePreservationTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\Pdf\StructurePreservation}
+ * Unit tests for {@see \OCA\OpenRegister\Kernel\Contracts\StructurePreservation}
  * — the `structurePreservation` result contract's field-set (design.md D2).
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\File\Pdf;
 
-use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use PHPUnit\Framework\TestCase;
 
 /**

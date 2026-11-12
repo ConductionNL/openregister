@@ -6,7 +6,7 @@ namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
 use GraphQL\Language\Parser;
-use OCA\OpenRegister\Service\GraphQL\QueryComplexityAnalyzer;
+use OCA\OpenRegister\Search\Service\GraphQL\QueryComplexityAnalyzer;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

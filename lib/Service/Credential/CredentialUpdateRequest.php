@@ -52,7 +52,7 @@ use OCP\IRequest;
 /**
  * Reads the decisions an update request carries.
  */
-class CredentialUpdateRequest {
+class CredentialUpdateRequest implements CredentialUpdateRequestInterface {
 	/**
 	 * The `brokeredcredential` schema's maxLength for `name`.
 	 */
@@ -130,18 +130,7 @@ class CredentialUpdateRequest {
 			return true;
 		}
 
-		$apps = $data['allowedApps'] ?? [];
-		if (is_array($apps) === false) {
-			return false;
-		}
-
-		foreach ($apps as $app) {
-			if (is_string($app) === true && mb_strlen($app) > self::APP_ID_MAX_LENGTH) {
-				return true;
-			}
-		}
-
-		return false;
+		return $this->anyLongerThan(values: ($data['allowedApps'] ?? []), max: self::APP_ID_MAX_LENGTH);
 	}//end exceedsBounds()
 
 	/**
@@ -159,16 +148,11 @@ class CredentialUpdateRequest {
 	 */
 	public function rotatedSecret(): ?string {
 		$secret = $this->request->getParam('secret');
-		if (is_string($secret) === false) {
+		if (is_string($secret) === false || trim($secret) === '') {
 			return null;
 		}
 
-		$secret = trim($secret);
-		if ($secret === '') {
-			return null;
-		}
-
-		return $secret;
+		return trim($secret);
 	}//end rotatedSecret()
 
 	/**
@@ -184,13 +168,30 @@ class CredentialUpdateRequest {
 			return [];
 		}
 
-		$apps = [];
-		foreach ($value as $entry) {
-			if (is_string($entry) === true && $entry !== '') {
-				$apps[] = $entry;
+		return array_values(array_filter($value, static fn (mixed $entry): bool => is_string($entry) === true && $entry !== ''));
+	}//end allowedApps()
+
+	/**
+	 * Whether any string in a list is longer than the bound, in characters.
+	 *
+	 * @param mixed $values The candidate list; anything else is within bounds.
+	 * @param integer $max The maximum length.
+	 *
+	 * @return boolean True when a string entry exceeds the bound.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	private function anyLongerThan(mixed $values, int $max): bool {
+		if (is_array($values) === false) {
+			return false;
+		}
+
+		foreach ($values as $value) {
+			if (is_string($value) === true && mb_strlen($value) > $max) {
+				return true;
 			}
 		}
 
-		return $apps;
-	}//end allowedApps()
+		return false;
+	}//end anyLongerThan()
 }//end class

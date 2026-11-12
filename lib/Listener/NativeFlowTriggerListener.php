@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Service\Flow\FlowTriggerService;
+use OCA\OpenRegister\Service\Flow\FlowTriggerServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Files\Events\Node\NodeCreatedEvent;
@@ -60,11 +60,11 @@ class NativeFlowTriggerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerService $triggers Queues the runs.
+	 * @param FlowTriggerServiceInterface $triggers Queues the runs.
 	 * @param IUserSession $userSession The acting user, for attribution.
 	 */
 	public function __construct(
-		private readonly FlowTriggerService $triggers,
+		private readonly FlowTriggerServiceInterface $triggers,
 		private readonly IUserSession $userSession,
 	) {
 
@@ -85,18 +85,12 @@ class NativeFlowTriggerListener implements IEventListener {
 			return;
 		}
 
-		$user = null;
-		if ($this->userSession->getUser() !== null) {
-			$user = $this->userSession->getUser()->getUID();
-		}
-
 		$this->triggers->fire(
 			event: $eventId,
 			subject: [],
-			user: $user,
+			user: $this->userSession->getUser()?->getUID(),
 			context: ['payload' => $payload]
 		);
-
 	}//end handle()
 
 	/**
@@ -108,18 +102,42 @@ class NativeFlowTriggerListener implements IEventListener {
 	 * @return array{0: string|null, 1: array} The trigger id and its payload.
 	 */
 	private function describe(Event $event): array {
-		if ($event instanceof NodeCreatedEvent) {
-			return ['file.created', $this->filePayload(node: $event->getNode())];
+		return $this->describeFile(event: $event)
+			?? $this->describeUser(event: $event)
+			?? $this->describeShare(event: $event)
+			?? $this->describeTag(event: $event)
+			?? [null, []];
+	}//end describe()
+
+	/**
+	 * The trigger id and payload of a file event, or null for another event.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>}|null
+	 */
+	private function describeFile(Event $event): ?array {
+		$id = match (true) {
+			$event instanceof NodeCreatedEvent => 'file.created',
+			$event instanceof NodeWrittenEvent => 'file.updated',
+			$event instanceof NodeDeletedEvent => 'file.deleted',
+			default => null,
+		};
+		if ($id === null) {
+			return null;
 		}
 
-		if ($event instanceof NodeWrittenEvent) {
-			return ['file.updated', $this->filePayload(node: $event->getNode())];
-		}
+		return [$id, $this->filePayload(node: $event->getNode())];
+	}//end describeFile()
 
-		if ($event instanceof NodeDeletedEvent) {
-			return ['file.deleted', $this->filePayload(node: $event->getNode())];
-		}
-
+	/**
+	 * The trigger id and payload of a user event, or null for another event.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>}|null
+	 */
+	private function describeUser(Event $event): ?array {
 		if ($event instanceof UserCreatedEvent) {
 			return ['user.created', ['uid' => $event->getUid()]];
 		}
@@ -128,6 +146,17 @@ class NativeFlowTriggerListener implements IEventListener {
 			return ['user.deleted', ['uid' => $event->getUser()->getUID()]];
 		}
 
+		return null;
+	}//end describeUser()
+
+	/**
+	 * The trigger id and payload of a share event, or null for another event.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>}|null
+	 */
+	private function describeShare(Event $event): ?array {
 		if ($event instanceof ShareCreatedEvent) {
 			return ['share.created', $this->sharePayload(share: $event->getShare())];
 		}
@@ -136,6 +165,17 @@ class NativeFlowTriggerListener implements IEventListener {
 			return ['share.deleted', $this->sharePayload(share: $event->getShare())];
 		}
 
+		return null;
+	}//end describeShare()
+
+	/**
+	 * The trigger id and payload of a tag event, or null for another event.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return array{0: string, 1: array<string, mixed>}|null
+	 */
+	private function describeTag(Event $event): ?array {
 		if ($event instanceof TagAssignedEvent) {
 			return ['tag.assigned', $this->tagPayload(event: $event)];
 		}
@@ -144,8 +184,8 @@ class NativeFlowTriggerListener implements IEventListener {
 			return ['tag.unassigned', $this->tagPayload(event: $event)];
 		}
 
-		return [null, []];
-	}//end describe()
+		return null;
+	}//end describeTag()
 
 	/**
 	 * The payload describing a share event.
@@ -155,23 +195,15 @@ class NativeFlowTriggerListener implements IEventListener {
 	 * @return array<string, mixed> The share payload.
 	 */
 	private function sharePayload(IShare $share): array {
-		$payload = [];
-		foreach ([
-			'shareId' => static fn (): string => (string)$share->getId(),
-			'nodeId' => static fn (): int => $share->getNodeId(),
-			'shareType' => static fn (): int => (int)$share->getShareType(),
-			'sharedWith' => static fn (): string => (string)$share->getSharedWith(),
-			'path' => static fn (): string => $share->getNode()->getPath(),
-		] as $key => $read
-		) {
-			try {
-				$payload[$key] = $read();
-			} catch (Throwable $e) {
-				continue;
-			}
-		}
-
-		return $payload;
+		return $this->readEach(
+			readers: [
+				'shareId' => static fn (): string => (string)$share->getId(),
+				'nodeId' => static fn (): int => $share->getNodeId(),
+				'shareType' => static fn (): int => (int)$share->getShareType(),
+				'sharedWith' => static fn (): string => (string)$share->getSharedWith(),
+				'path' => static fn (): string => $share->getNode()->getPath(),
+			]
+		);
 	}//end sharePayload()
 
 	/**
@@ -182,24 +214,16 @@ class NativeFlowTriggerListener implements IEventListener {
 	 * @return array<string, mixed> The tag payload.
 	 */
 	private function tagPayload(TagAssignedEvent|TagUnassignedEvent $event): array {
-		$payload = [];
-		foreach ([
-			'objectType' => static fn (): string => $event->getObjectType(),
-			'objectIds' => static fn (): array => $event->getObjectIds(),
-			'tags' => static fn (): array => array_map(
-				static fn ($tag): array => ['id' => $tag->getId(), 'name' => $tag->getName()],
-				$event->getTags()
-			),
-		] as $key => $read
-		) {
-			try {
-				$payload[$key] = $read();
-			} catch (Throwable $e) {
-				continue;
-			}
-		}
-
-		return $payload;
+		return $this->readEach(
+			readers: [
+				'objectType' => static fn (): string => $event->getObjectType(),
+				'objectIds' => static fn (): array => $event->getObjectIds(),
+				'tags' => static fn (): array => array_map(
+					static fn ($tag): array => ['id' => $tag->getId(), 'name' => $tag->getName()],
+					$event->getTags()
+				),
+			]
+		);
 	}//end tagPayload()
 
 	/**
@@ -214,22 +238,37 @@ class NativeFlowTriggerListener implements IEventListener {
 	 * @return array<string, mixed> The file payload.
 	 */
 	private function filePayload(Node $node): array {
+		return $this->readEach(
+			readers: [
+				'fileId' => static fn (): int => $node->getId(),
+				'path' => static fn (): string => $node->getPath(),
+				'name' => static fn (): string => $node->getName(),
+				'mimetype' => static fn (): string => $node->getMimetype(),
+			]
+		);
+	}//end filePayload()
+
+	/**
+	 * Read each field of a payload, leaving out a field whose reader throws.
+	 *
+	 * Fields are read defensively: a node in mid-delete can throw on some
+	 * accessors, and losing the whole trigger over one unreadable field would be
+	 * worse than a payload with a gap.
+	 *
+	 * @param array<string, callable(): mixed> $readers The field readers, by key.
+	 *
+	 * @return array<string, mixed> The fields that could be read.
+	 */
+	private function readEach(array $readers): array {
 		$payload = [];
-		foreach ([
-			'fileId' => static fn (): int => $node->getId(),
-			'path' => static fn (): string => $node->getPath(),
-			'name' => static fn (): string => $node->getName(),
-			'mimetype' => static fn (): string => $node->getMimetype(),
-		] as $key => $read
-		) {
+		foreach ($readers as $key => $read) {
 			try {
 				$payload[$key] = $read();
 			} catch (Throwable $e) {
-				// Field unavailable for this node; leave it out.
 				continue;
 			}
 		}
 
 		return $payload;
-	}//end filePayload()
+	}//end readEach()
 }//end class

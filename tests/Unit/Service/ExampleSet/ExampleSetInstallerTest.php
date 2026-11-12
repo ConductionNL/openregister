@@ -21,10 +21,56 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetInstallerTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -73,17 +119,72 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->assertSame(['esra.demir'], $this->accounts->groups['cases-handlers']);
 		$this->assertSame(3, $this->store->creates);
 
-		$person = $this->store->find(register: 'brp', schema: 'person', filters: [])[0];
+		$person = $this->store->find(table: new RegisterSchemaRef(register: 'brp', schema: 'person'), filters: [])[0];
 		$this->assertSame(14, $person['number'], 'a whole-value placeholder keeps its type');
-		$case = $this->store->find(register: 'cases', schema: 'case', filters: [])[0];
+		$case = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0];
 		$this->assertSame($person['id'], $case['applicant'], 'a lookup reaches an object an earlier fragment wrote');
 		$this->assertSame('2026-10-11', $case['start']);
-		$note = $this->store->find(register: 'cases', schema: 'case', filters: [])[1];
+		$note = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[1];
 		$this->assertSame($case['id'], $note['case']);
 
 		$stored = json_decode($this->config['example_set_demo'], true);
 		$this->assertSame(['openregister/brp-sanne', 'cases/case-1', 'cases/note-1'], array_keys($stored['objects']));
 		$this->assertStringNotContainsString('generated-', $this->config['example_set_demo'], 'a password is never in the record');
+	}
+
+	public function testAReadErrorOnAKeptObjectWritesNothingAndKeepsTheRecordedId(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$before  = json_decode($this->config['example_set_demo'], true);
+		$caseId  = $before['objects']['cases/case-1']['id'];
+		$creates = $this->store->creates;
+
+		// The database cannot be read right now: the object is on the instance, but the read says nothing.
+		$this->store->unreadable = [$caseId];
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame($creates, $this->store->creates, 'nothing is written again');
+		$after = json_decode($this->config['example_set_demo'], true);
+		$this->assertSame($caseId, $after['objects']['cases/case-1']['id'], 'the original stays in the record');
+		$this->assertSame($before['objects'], $after['objects']);
+		$this->assertFalse($report['ok']);
+		$this->assertStringContainsString('could not be read (database is gone)', implode("\n", $report['dropped']));
+
+		// Once it can be read again the next install finds it and writes nothing.
+		$this->store->unreadable = [];
+		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertSame($creates, $this->store->creates);
+	}
+
+	public function testTheRecordIsALazyValueAndAnEarlierNonLazyRecordIsStillFound(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue($this->lazyKeys['example_set_demo'], 'the record stays out of every request');
+
+		// A record an earlier version stored as a non-lazy value is read, and is lazy again after the next write.
+		$this->lazyKeys['example_set_demo'] = false;
+		$creates = $this->store->creates;
+		$this->assertSame(['sanne.devries' => 'kept', 'esra.demir' => 'kept'], $this->installer->install(plan: $plan, today: $this->today())['users']);
+		$this->assertSame($creates, $this->store->creates, 'the old record is found, so nothing is written twice');
+
+		$this->remover->remove(set: 'demo');
+		$this->assertSame([], $this->config);
+	}
+
+	public function testALookupThatTwoRowsAnswerRefusesTheCheckAndWritesNothing(): void {
+		// Another organisation holds a case type with the same business key.
+		$this->store->seed(register: 'cases', schema: 'caseType', data: ['identifier' => 'woo']);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(plan: $plan, today: $this->today());
+
+		$this->assertCount(1, $check['refusals']);
+		$this->assertStringContainsString('2 cases caseType rows with identifier "woo"; a lookup needs exactly one', $check['refusals'][0]);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertCount(1, $report['refusals']);
+		$this->assertSame(0, $this->store->creates, 'a refused set writes nothing');
 	}
 
 	public function testASecondInstallWritesNothingAndSaysAlreadyThere(): void {
@@ -101,6 +202,63 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->assertSame(['sanne.devries' => 'kept', 'esra.demir' => 'kept'], $report['users']);
 		$this->assertSame(['declared' => 2, 'created' => 0, 'kept' => 2, 'arrived' => 2], $report['types']['cases case']);
 	}
+
+	/**
+	 * `--refresh` rewrites every object the set declares to today's values, keeps a field the declaration does not
+	 * name, and leaves an object the set did not write alone.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	/**
+	 * Every object an install or a refresh writes is caused by the set, as an import with the set as its run, so a
+	 * history can tell the set's upkeep from a person's change and the audit trail can find one load as a whole.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-example-sets-writes-are-caused-as-an-import-of-that-set
+	 */
+	public function testEveryWriteOfAnInstallAndARefreshIsCausedByTheSet(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days'));
+
+		$this->assertGreaterThan(expected: 3, actual: count($this->store->causes));
+		foreach ($this->store->causes as $cause) {
+			$this->assertSame(expected: ['cause' => 'import', 'run' => 'example-set:demo'], actual: $cause);
+		}
+
+		$this->assertSame(expected: 'person', actual: \OCA\OpenRegister\Service\WriteCause::current()['cause'], message: 'the cause ends with the run');
+	}//end testEveryWriteOfAnInstallAndARefreshIsCausedByTheSet()
+
+	public function testARefreshRewritesTheDeclaredObjectsToTodaysValues(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: ['start' => '2026-10-11'])[0];
+		$extra  = ($case + ['remark' => 'added on the instance']);
+		$this->store->update(ref: new ObjectRef(register: 'cases', schema: 'case', id: $case['id']), data: $extra);
+		$type    = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'caseType'), filters: [])[0];
+		$updates = $this->store->updates;
+
+		$later  = $this->today()->modify('+5 days');
+		$plain  = $this->installer->install(plan: $plan, today: $later);
+		$this->assertSame('2026-10-11', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $case['id']))['start'], 'a plain install keeps the stored value');
+
+		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $later);
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertTrue($plain['ok']);
+		$refreshed = $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $case['id']));
+		$this->assertSame('2026-10-16', $refreshed['start'], 'the date is resolved against the new day');
+		$this->assertSame('added on the instance', $refreshed['remark'], 'a field the declaration does not name stays');
+		// The case whose dates moved is written; the one whose declaration resolves as stored is not.
+		$this->assertSame(1, $report['types']['cases case']['refreshed']);
+		$this->assertSame(1, $report['types']['cases case']['unchanged']);
+		$this->assertSame($type, $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'caseType'), filters: [])[0], 'an object the set did not write is untouched');
+		$this->assertGreaterThan($updates, $this->store->updates);
+	}//end testARefreshRewritesTheDeclaredObjectsToTodaysValues()
 
 	public function testAForeignAccountRefusesTheInstallBeforeAnyWrite(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Somebody', 'email' => '', 'password' => 'theirs'];
@@ -147,6 +305,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 
 		$this->assertSame(['brp person' => 1, 'cases case' => 2], $result['checked']);
+		$this->assertSame([], $result['checkedChanges']);
 		$this->assertSame(['cases/lib/Settings/example-sets/demo.json: object "case-1" (cases case): The property start is not allowed'], $result['refusals']);
 		$this->assertSame(0, $this->store->creates);
 		$this->assertSame(3, $this->store->validations, 'the check validates every object, hard validation or not');
@@ -187,6 +346,13 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 				'changes'          => 0,
 				'app config'       => 0,
 				'user preferences' => 0,
+				'tasks'            => 0,
+				'views'            => 0,
+				'watchers'         => 0,
+				'parties'          => 0,
+				'notes'            => 0,
+				'readStates'       => 0,
+				'flows'            => 0,
 				'memberships'      => 2,
 				'groups'           => 1,
 				'accounts'         => 2,

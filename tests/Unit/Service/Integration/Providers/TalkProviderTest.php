@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use OCP\IUser;
@@ -41,12 +42,7 @@ class TalkProviderTest extends TestCase {
 		$this->l10n = $this->createMock(IL10N::class);
 		$this->l10n->method('t')->willReturnArgument(0);
 
-		$this->provider = new TalkProvider(
-			$this->container,
-			$this->appManager,
-			$this->userSession,
-			$this->l10n,
-		);
+		$this->provider = new TalkProvider($this->container, new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription($this->appManager, $this->l10n), $this->userSession);
 	}
 
 	/**
@@ -141,7 +137,7 @@ class TalkProviderTest extends TestCase {
 	public function testListReturnsEmptyWhenTalkDisabled(): void {
 		$this->appManager->method('isInstalled')->with('spreed')->willReturn(false);
 
-		$this->assertSame([], $this->provider->list('r', 's', 'uuid', []));
+		$this->assertSame([], $this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'uuid'), []));
 	}
 
 	public function testListFiltersByMarkerAndShipsWidenedPayload(): void {
@@ -186,7 +182,7 @@ class TalkProviderTest extends TestCase {
 			]
 		);
 
-		$rows = $this->provider->list('r', 's', 'abc-123', []);
+		$rows = $this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'abc-123'), []);
 
 		$this->assertCount(1, $rows);
 		$row = $rows[0];
@@ -241,9 +237,9 @@ class TalkProviderTest extends TestCase {
 				}
 			);
 
-			$provider = new TalkProvider($container, $this->appManager, $this->userSession, $this->l10n);
+			$provider = new TalkProvider($container, new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription($this->appManager, $this->l10n), $this->userSession);
 
-			$rows = $provider->list('r', 's', 'x', []);
+			$rows = $provider->list(new ObjectRef(register: 'r', schema: 's', id: 'x'), []);
 
 			$this->assertCount(1, $rows, 'type=' . $case['type']);
 			$this->assertSame($case['expected'], $rows[0]['subtitle']);
@@ -277,7 +273,7 @@ class TalkProviderTest extends TestCase {
 			}
 		);
 
-		$rows = $this->provider->list('r', 's', 'y', []);
+		$rows = $this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'y'), []);
 		$this->assertSame('Custom description', $rows[0]['subtitle']);
 	}
 
@@ -308,7 +304,7 @@ class TalkProviderTest extends TestCase {
 			}
 		);
 
-		$rows = $this->provider->list('r', 's', 'y', []);
+		$rows = $this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'y'), []);
 		$this->assertNull($rows[0]['participantCount']);
 		// Participant lookup failure must not propagate.
 		$this->assertSame('t', $rows[0]['id']);
@@ -339,7 +335,7 @@ class TalkProviderTest extends TestCase {
 			}
 		);
 
-		$rows = $this->provider->list('r', 's', 'z', []);
+		$rows = $this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'z'), []);
 		$this->assertNull($rows[0]['lastMessage']);
 		$this->assertNull($rows[0]['lastActivity']);
 	}
@@ -350,6 +346,6 @@ class TalkProviderTest extends TestCase {
 
 		$this->container->method('get')->willThrowException(new \RuntimeException('schema mismatch'));
 
-		$this->assertSame([], $this->provider->list('r', 's', 'uuid', []));
+		$this->assertSame([], $this->provider->list(new ObjectRef(register: 'r', schema: 's', id: 'uuid'), []));
 	}
 }

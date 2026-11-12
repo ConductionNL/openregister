@@ -35,9 +35,12 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
+use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
+use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
@@ -49,9 +52,15 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\LifecycleValidationListener
+ * @uses \OCA\OpenRegister\Listener\LifecycleAttempt
+ * @uses \OCA\OpenRegister\Listener\LifecycleDeclaration
+ * @uses \OCA\OpenRegister\Listener\LifecycleEdit
+ * @uses \OCA\OpenRegister\Listener\LifecycleEditReader
  */
 class LifecycleValidationListenerTest extends TestCase {
 
@@ -64,12 +73,12 @@ class LifecycleValidationListenerTest extends TestCase {
 	 *
 	 * @return \OCA\OpenRegister\Service\Rules\ConditionDialect The dialect over the real AST evaluator.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function realConditionDialect(): \OCA\OpenRegister\Service\Rules\ConditionDialect {
 		return new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 			ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
-				placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+				placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
 					userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
 				)
 			)
@@ -123,35 +132,19 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->guardContainer = $this->createMock(ContainerInterface::class);
 		$serverContainer = $this->createMock(IServerContainer::class);
 		$serverContainer->method('get')->willThrowException(new \RuntimeException('not found'));
-		$this->guardRegistry = new LifecycleGuardRegistry(
-			$this->guardContainer,
-			$serverContainer,
-			$logger
-		);
+		$this->guardRegistry = new LifecycleGuardRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->guardContainer, $serverContainer, $logger));
 
 		$this->listener = new LifecycleValidationListener(
-			$this->schemaMapper,
-			$this->guardRegistry,
-			$this->userSession,
-			$this->permissionHandler,
-			$logger,
-			new LifecycleConditionEvaluator(
-				$this->userSession,
-				$this->groupManager,
-				$this->l10n,
-				$this->logger,
-				$this->realConditionDialect()
-			),
-			new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()),
-			new \OCA\OpenRegister\Service\Rules\ConditionTracer(
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext())), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionChecks($this->guardRegistry, new LifecycleConditionEvaluator(new LifecycleConditionReporting($this->l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->userSession, $this->groupManager))), new \OCA\OpenRegister\Service\Rules\ConditionTracer(
 				dialect: new \OCA\OpenRegister\Service\Rules\ConditionDialect(
 					ast: new \OCA\OpenRegister\Service\Calculation\CalculationEvaluator(
-						placeholders: new \OCA\OpenRegister\Service\Search\PlaceholderResolver(
+						placeholders: new \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver(
 							userSession: $this->createMock(originalClassName: \OCP\IUserSession::class)
 						)
 					)
 				)
-			),
+			)),
 			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
 		);
 	}//end setUp()
@@ -249,6 +242,42 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->assertSame('lifecycle-invalid-transition', $event->getErrors()['code']);
 	}//end testIllegalTransitionIsRejected()
 
+	/**
+	 * A trusted write of declared state (an example-set refresh) may set the
+	 * declared status without a transition, but only as the system: the same
+	 * mark outside the system scope is judged like any other edit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 */
+	public function testADeclaredStateWriteAsTheSystemSkipsTheTransitionCheck(): void {
+		$this->schemaWithLifecycle(self::VOORSTEL_LIFECYCLE);
+		$actions  = new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext();
+		$listener = new LifecycleValidationListener(
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader(new \OCA\OpenRegister\Service\Lifecycle\SchemaReading($this->schemaMapper, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver($actions)), $this->userSession, $this->permissionHandler),
+			new LifecycleTransitionChecks($this->guardRegistry, $this->createMock(LifecycleConditionEvaluator::class), new \OCA\OpenRegister\Service\Rules\ConditionTracer(dialect: $this->realConditionDialect())),
+			$this->createMock(\OCA\OpenRegister\Service\Rules\RuleRunRecorder::class)
+		);
+
+		$outside = $this->event('lifecycle', 'geparafeerd', 'concept');
+		$outside->getNewObject()->setUuid('voorstel-1');
+		$actions->enterDeclaredState(uuid: 'voorstel-1');
+		$listener->handle($outside);
+		$this->assertTrue($outside->isPropagationStopped(), 'the mark alone is not enough');
+
+		$inside = $this->event('lifecycle', 'geparafeerd', 'concept');
+		$inside->getNewObject()->setUuid('voorstel-1');
+		\OCA\OpenRegister\Service\SystemOperationContext::run(static fn () => $listener->handle($inside));
+		$this->assertFalse($inside->isPropagationStopped());
+
+		$actions->leaveDeclaredState(uuid: 'voorstel-1');
+		$after = $this->event('lifecycle', 'geparafeerd', 'concept');
+		$after->getNewObject()->setUuid('voorstel-1');
+		\OCA\OpenRegister\Service\SystemOperationContext::run(static fn () => $listener->handle($after));
+		$this->assertTrue($after->isPropagationStopped(), 'released, the system is judged like anybody');
+	}//end testADeclaredStateWriteAsTheSystemSkipsTheTransitionCheck()
+
 	public function testGuardDeniedIsRejected(): void {
 		$lifecycle = self::VOORSTEL_LIFECYCLE;
 		$lifecycle['transitions']['indienen']['requires'] = 'procest.voorstel.submitGuard';
@@ -342,4 +371,121 @@ class LifecycleValidationListenerTest extends TestCase {
 		$this->assertTrue($event->isPropagationStopped());
 		$this->assertSame('lifecycle-invalid-transition', $event->getErrors()['code']);
 	}//end testPropertyAliasDrivesEnforcement()
+	public function testAGuardThatAsksForTheStoredObjectReceivesIt(): void {
+		$lifecycle = self::VOORSTEL_LIFECYCLE;
+		$lifecycle['transitions']['indienen']['requires'] = 'app.request.noSelfApproval';
+		$this->schemaWithLifecycle($lifecycle);
+		$this->loginAs('alice');
+
+		$guard = new class implements LifecycleTransitionGuardInterface {
+			public ?LifecycleGuardContext $seen = null;
+
+			public function check(array $object, string $action, string $userId): GuardResult {
+				return GuardResult::deny('the payload-only check must not run');
+			}
+
+			public function checkTransition(LifecycleGuardContext $context): GuardResult {
+				$this->seen = $context;
+				return GuardResult::allow();
+			}
+		};
+		$this->registerGuard('app.request.noSelfApproval', $guard);
+
+		$event = $this->event('lifecycle', 'concept', 'in_parafering');
+		$event->getOldObject()->setObject(['lifecycle' => 'concept', 'requestedBy' => 'alice']);
+		$event->getNewObject()->setObject(['lifecycle' => 'in_parafering', 'requestedBy' => 'bob']);
+		$this->listener->handle($event);
+
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame('alice', $guard->seen?->storedData()['requestedBy']);
+		$this->assertSame('bob', $guard->seen?->object['requestedBy']);
+		$this->assertSame('indienen', $guard->seen?->action);
+		$this->assertSame('alice', $guard->seen?->userId);
+	}//end testAGuardThatAsksForTheStoredObjectReceivesIt()
+
+	public function testAStoredObjectGuardCannotBeFooledByThePayload(): void {
+		$lifecycle = self::VOORSTEL_LIFECYCLE;
+		$lifecycle['transitions']['indienen']['requires'] = 'app.request.noSelfApproval';
+		$this->schemaWithLifecycle($lifecycle);
+		$this->loginAs('alice');
+
+		$guard = new class implements LifecycleTransitionGuardInterface {
+			public function check(array $object, string $action, string $userId): GuardResult {
+				return GuardResult::allow();
+			}
+
+			public function checkTransition(LifecycleGuardContext $context): GuardResult {
+				if (($context->storedData()['requestedBy'] ?? null) === $context->userId) {
+					return GuardResult::deny('You cannot approve your own request.');
+				}
+
+				return GuardResult::allow();
+			}
+		};
+		$this->registerGuard('app.request.noSelfApproval', $guard);
+
+		$event = $this->event('lifecycle', 'concept', 'in_parafering');
+		$event->getOldObject()->setObject(['lifecycle' => 'concept', 'requestedBy' => 'alice']);
+		$event->getNewObject()->setObject(['lifecycle' => 'in_parafering', 'requestedBy' => 'bob']);
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('You cannot approve your own request.', $event->getErrors()['message']);
+	}//end testAStoredObjectGuardCannotBeFooledByThePayload()
+
+	public function testAPayloadIdNamingAnotherObjectDoesNotMoveTheGuard(): void {
+		$lifecycle = self::VOORSTEL_LIFECYCLE;
+		$lifecycle['transitions']['indienen']['requires'] = 'app.request.noSelfApproval';
+		$this->schemaWithLifecycle($lifecycle);
+		$this->loginAs('alice');
+
+		$guard = new class implements LifecycleTransitionGuardInterface {
+			public ?LifecycleGuardContext $seen = null;
+
+			public function check(array $object, string $action, string $userId): GuardResult {
+				return GuardResult::allow();
+			}
+
+			public function checkTransition(LifecycleGuardContext $context): GuardResult {
+				$this->seen = $context;
+				return GuardResult::allow();
+			}
+		};
+		$this->registerGuard('app.request.noSelfApproval', $guard);
+
+		$event = $this->event('lifecycle', 'concept', 'in_parafering');
+		$event->getOldObject()->setUuid('real-request');
+		$event->getOldObject()->setObject(['lifecycle' => 'concept', 'requestedBy' => 'alice']);
+		$event->getNewObject()->setUuid('real-request');
+		$event->getNewObject()->setObject(['lifecycle' => 'in_parafering', 'id' => 'someone-elses-request']);
+		$this->listener->handle($event);
+
+		$this->assertSame('someone-elses-request', $guard->seen?->object['id']);
+		$this->assertSame('real-request', $guard->seen?->uuid());
+		$this->assertSame('real-request', $guard->seen?->stored->getUuid());
+		$this->assertSame('alice', $guard->seen?->storedData()['requestedBy']);
+	}//end testAPayloadIdNamingAnotherObjectDoesNotMoveTheGuard()
+
+	public function testAPayloadGuardStillReceivesThePayload(): void {
+		$lifecycle = self::VOORSTEL_LIFECYCLE;
+		$lifecycle['transitions']['indienen']['requires'] = 'procest.voorstel.submitGuard';
+		$this->schemaWithLifecycle($lifecycle);
+		$this->loginAs('alice');
+
+		$seen = [];
+		$guard = $this->createMock(LifecycleGuardInterface::class);
+		$guard->method('check')->willReturnCallback(
+			static function (array $object, string $action, string $userId) use (&$seen): GuardResult {
+				$seen = [$object['lifecycle'] ?? null, $action, $userId];
+				return GuardResult::allow();
+			}
+		);
+		$this->registerGuard('procest.voorstel.submitGuard', $guard);
+
+		$event = $this->event('lifecycle', 'concept', 'in_parafering');
+		$this->listener->handle($event);
+
+		$this->assertFalse($event->isPropagationStopped());
+		$this->assertSame(['in_parafering', 'indienen', 'alice'], $seen);
+	}//end testAPayloadGuardStillReceivesThePayload()
 }//end class

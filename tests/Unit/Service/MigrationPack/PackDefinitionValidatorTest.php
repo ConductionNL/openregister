@@ -30,11 +30,13 @@ use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
 use PHPUnit\Framework\TestCase;
 
 class PackDefinitionValidatorTest extends TestCase {
+	use PassThroughL10nTrait;
+
 	private PackDefinitionValidator $validator;
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->validator = new PackDefinitionValidator();
+		$this->validator = new PackDefinitionValidator($this->passThroughL10n());
 	}
 
 	/**
@@ -282,4 +284,43 @@ class PackDefinitionValidatorTest extends TestCase {
 		$this->validator->assertValid($this->validPack());
 		$this->addToAssertionCount(1);
 	}
+
+	/**
+	 * Every finding goes through the app's translations: the pack editor lists them under the save error, and a
+	 * Dutch administrator would otherwise read English findings on a Dutch page.
+	 *
+	 * @return void
+	 */
+	public function testEveryFindingIsTranslated(): void {
+		$validator = new PackDefinitionValidator($this->passThroughL10n(prefix: 'NL:'));
+		$errors = $validator->validate(
+			[
+				'id' => 'Not A Slug',
+				'name' => '',
+				'sourceFormat' => 'xml',
+				'version' => '1',
+				'fieldMappings' => [
+					'not an object',
+					['source' => '', 'target' => '', 'required' => 'yes', 'transform' => 'nope'],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'weird']],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'date', 'sourceFormat' => 5, 'targetFormat' => 5]],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'lookup']],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'concat', 'fields' => ['']]],
+					['source' => 'a', 'target' => 'b', 'transform' => ['type' => 'const']],
+				],
+				'defaults' => 'x',
+				'skipRows' => [0],
+				'idStrategy' => ['type' => 'sourceField'],
+			]
+		);
+
+		$this->assertGreaterThan(15, count($errors));
+		foreach ($errors as $error) {
+			$this->assertStringStartsWith('NL:', $error);
+		}
+
+		// The row label is part of the translated message, with the 1-based number the editor shows.
+		$this->assertContains('NL:Mapping row 1 must be an object', $errors);
+		$this->assertContains('NL:Mapping row 2: source is required and must be a non-empty string', $errors);
+	}//end testEveryFindingIsTranslated()
 }

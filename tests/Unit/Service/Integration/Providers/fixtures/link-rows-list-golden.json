@@ -1,0 +1,2249 @@
+{
+    "bookmarks, app missing": {
+        "rows": [],
+        "queries": []
+    },
+    "bookmarks, linked rows": {
+        "rows": [
+            {
+                "id": "11",
+                "bookmarkId": 11,
+                "title": "T",
+                "description": "D",
+                "url": "https://u",
+                "tags": [
+                    "a",
+                    "b"
+                ],
+                "added": 1700000000,
+                "linkId": 1
+            },
+            {
+                "id": "0",
+                "bookmarkId": 0,
+                "title": "https://only-url",
+                "description": "",
+                "url": "https://only-url",
+                "tags": [],
+                "added": null,
+                "linkId": 2
+            }
+        ],
+        "queries": []
+    },
+    "bookmarks, linked rows, empty database": {
+        "rows": [
+            {
+                "id": "11",
+                "bookmarkId": 11,
+                "title": "T",
+                "description": "D",
+                "url": "https://u",
+                "tags": [
+                    "a",
+                    "b"
+                ],
+                "added": 1700000000,
+                "linkId": 1
+            },
+            {
+                "id": "0",
+                "bookmarkId": 0,
+                "title": "https://only-url",
+                "description": "",
+                "url": "https://only-url",
+                "tags": [],
+                "added": null,
+                "linkId": 2
+            }
+        ],
+        "queries": []
+    },
+    "bookmarks, linked rows, failing database": {
+        "rows": [
+            {
+                "id": "11",
+                "bookmarkId": 11,
+                "title": "T",
+                "description": "D",
+                "url": "https://u",
+                "tags": [
+                    "a",
+                    "b"
+                ],
+                "added": 1700000000,
+                "linkId": 1
+            },
+            {
+                "id": "0",
+                "bookmarkId": 0,
+                "title": "https://only-url",
+                "description": "",
+                "url": "https://only-url",
+                "tags": [],
+                "added": null,
+                "linkId": 2
+            }
+        ],
+        "queries": []
+    },
+    "bookmarks, linked rows, failing vote tables": {
+        "rows": [
+            {
+                "id": "11",
+                "bookmarkId": 11,
+                "title": "T",
+                "description": "D",
+                "url": "https://u",
+                "tags": [
+                    "a",
+                    "b"
+                ],
+                "added": 1700000000,
+                "linkId": 1
+            },
+            {
+                "id": "0",
+                "bookmarkId": 0,
+                "title": "https://only-url",
+                "description": "",
+                "url": "https://only-url",
+                "tags": [],
+                "added": null,
+                "linkId": 2
+            }
+        ],
+        "queries": []
+    },
+    "bookmarks, mapper fails": {
+        "rows": {
+            "thrown": "RuntimeException",
+            "message": "no table"
+        },
+        "queries": []
+    },
+    "bookmarks, no links": {
+        "rows": [],
+        "queries": []
+    },
+    "flow, app missing": {
+        "rows": [],
+        "queries": []
+    },
+    "flow, linked rows": {
+        "rows": [
+            {
+                "id": "9",
+                "title": "Op",
+                "class": "C",
+                "entity": "E",
+                "operation": "o",
+                "events": [
+                    "e1"
+                ],
+                "checks": [],
+                "enabled": true,
+                "url": "/index.php/settings/admin/workflow#9",
+                "linkId": 1,
+                "data": {
+                    "id": 9,
+                    "class": "C",
+                    "name": "Op",
+                    "entity": "E",
+                    "operation": "o",
+                    "events": "[\"e1\"]",
+                    "checks": "not json"
+                }
+            },
+            {
+                "id": "0",
+                "title": "Op",
+                "class": "C",
+                "entity": "E",
+                "operation": "o",
+                "events": [
+                    "e1"
+                ],
+                "checks": [],
+                "enabled": true,
+                "url": "/index.php/settings/admin/workflow#0",
+                "linkId": 2,
+                "data": {
+                    "id": 9,
+                    "class": "C",
+                    "name": "Op",
+                    "entity": "E",
+                    "operation": "o",
+                    "events": "[\"e1\"]",
+                    "checks": "not json"
+                }
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "class",
+                            "name",
+                            "entity",
+                            "operation",
+                            "events",
+                            "checks"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "flow_operations",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            9,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p9)"
+                        ]
+                    ]
+                ],
+                "table": "flow_operations"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "class",
+                            "name",
+                            "entity",
+                            "operation",
+                            "events",
+                            "checks"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "flow_operations",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "flow_operations"
+            }
+        ]
+    },
+    "flow, linked rows, empty database": {
+        "rows": [
+            {
+                "id": "9",
+                "title": "cached",
+                "class": "CC",
+                "entity": "CE",
+                "operation": "",
+                "events": [],
+                "checks": [],
+                "enabled": false,
+                "url": "/index.php/settings/admin/workflow#9",
+                "linkId": 1,
+                "data": []
+            },
+            {
+                "id": "0",
+                "title": "",
+                "class": "",
+                "entity": "",
+                "operation": "",
+                "events": [],
+                "checks": [],
+                "enabled": false,
+                "url": "/index.php/settings/admin/workflow#0",
+                "linkId": 2,
+                "data": []
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "class",
+                            "name",
+                            "entity",
+                            "operation",
+                            "events",
+                            "checks"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "flow_operations",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            9,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p9)"
+                        ]
+                    ]
+                ],
+                "table": "flow_operations"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "class",
+                            "name",
+                            "entity",
+                            "operation",
+                            "events",
+                            "checks"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "flow_operations",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "flow_operations"
+            }
+        ]
+    },
+    "flow, linked rows, failing database": {
+        "rows": [
+            {
+                "id": "9",
+                "title": "cached",
+                "class": "CC",
+                "entity": "CE",
+                "operation": "",
+                "events": [],
+                "checks": [],
+                "enabled": false,
+                "url": "/index.php/settings/admin/workflow#9",
+                "linkId": 1,
+                "data": []
+            },
+            {
+                "id": "0",
+                "title": "",
+                "class": "",
+                "entity": "",
+                "operation": "",
+                "events": [],
+                "checks": [],
+                "enabled": false,
+                "url": "/index.php/settings/admin/workflow#0",
+                "linkId": 2,
+                "data": []
+            }
+        ],
+        "queries": [
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            }
+        ]
+    },
+    "flow, linked rows, failing vote tables": {
+        "rows": [
+            {
+                "id": "9",
+                "title": "Op",
+                "class": "C",
+                "entity": "E",
+                "operation": "o",
+                "events": [
+                    "e1"
+                ],
+                "checks": [],
+                "enabled": true,
+                "url": "/index.php/settings/admin/workflow#9",
+                "linkId": 1,
+                "data": {
+                    "id": 9,
+                    "class": "C",
+                    "name": "Op",
+                    "entity": "E",
+                    "operation": "o",
+                    "events": "[\"e1\"]",
+                    "checks": "not json"
+                }
+            },
+            {
+                "id": "0",
+                "title": "Op",
+                "class": "C",
+                "entity": "E",
+                "operation": "o",
+                "events": [
+                    "e1"
+                ],
+                "checks": [],
+                "enabled": true,
+                "url": "/index.php/settings/admin/workflow#0",
+                "linkId": 2,
+                "data": {
+                    "id": 9,
+                    "class": "C",
+                    "name": "Op",
+                    "entity": "E",
+                    "operation": "o",
+                    "events": "[\"e1\"]",
+                    "checks": "not json"
+                }
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "class",
+                            "name",
+                            "entity",
+                            "operation",
+                            "events",
+                            "checks"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "flow_operations",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            9,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p9)"
+                        ]
+                    ]
+                ],
+                "table": "flow_operations"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "class",
+                            "name",
+                            "entity",
+                            "operation",
+                            "events",
+                            "checks"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "flow_operations",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "flow_operations"
+            }
+        ]
+    },
+    "flow, mapper fails": {
+        "rows": {
+            "thrown": "RuntimeException",
+            "message": "no table"
+        },
+        "queries": []
+    },
+    "flow, no links": {
+        "rows": [],
+        "queries": []
+    },
+    "polls, app missing": {
+        "rows": [],
+        "queries": []
+    },
+    "polls, linked rows": {
+        "rows": [
+            {
+                "id": "5",
+                "pollId": 5,
+                "title": "P",
+                "description": "D",
+                "type": "datePoll",
+                "url": "/index.php/apps/polls/vote/5",
+                "deadline": 1,
+                "closed": true,
+                "voterCount": 2,
+                "options": [
+                    {
+                        "id": 1,
+                        "text": "A",
+                        "votes": 3
+                    },
+                    {
+                        "id": 0,
+                        "text": "B",
+                        "votes": 3
+                    }
+                ],
+                "linkId": 1
+            },
+            {
+                "id": "0",
+                "pollId": 0,
+                "title": "P",
+                "description": "D",
+                "type": "datePoll",
+                "url": "/index.php/apps/polls/vote/0",
+                "deadline": 1,
+                "closed": true,
+                "voterCount": 2,
+                "options": [
+                    {
+                        "id": 1,
+                        "text": "A",
+                        "votes": 3
+                    },
+                    {
+                        "id": 0,
+                        "text": "B",
+                        "votes": 3
+                    }
+                ],
+                "linkId": 2
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "title",
+                            "description",
+                            "type",
+                            "expire"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_polls",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_polls"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "poll_option_text",
+                            "poll_option_hash"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_options",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "order",
+                            "ASC"
+                        ]
+                    ]
+                ],
+                "table": "polls_options"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "ha",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_option_hash,:p\"ha\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "yes",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_answer,:p\"yes\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_option_hash,:p\"\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "yes",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_answer,:p\"yes\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "selectDistinct",
+                        [
+                            "user_id"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "title",
+                            "description",
+                            "type",
+                            "expire"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_polls",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_polls"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "poll_option_text",
+                            "poll_option_hash"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_options",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "order",
+                            "ASC"
+                        ]
+                    ]
+                ],
+                "table": "polls_options"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "ha",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_option_hash,:p\"ha\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "yes",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_answer,:p\"yes\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_option_hash,:p\"\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "yes",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_answer,:p\"yes\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "selectDistinct",
+                        [
+                            "user_id"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            }
+        ]
+    },
+    "polls, linked rows, empty database": {
+        "rows": [
+            {
+                "id": "5",
+                "pollId": 5,
+                "title": "cached",
+                "description": "",
+                "type": "textPoll",
+                "url": "/index.php/apps/polls/vote/5",
+                "deadline": null,
+                "closed": false,
+                "voterCount": 0,
+                "options": [],
+                "linkId": 1
+            },
+            {
+                "id": "0",
+                "pollId": 0,
+                "title": "",
+                "description": "",
+                "type": "",
+                "url": "/index.php/apps/polls/vote/0",
+                "deadline": null,
+                "closed": false,
+                "voterCount": 0,
+                "options": [],
+                "linkId": 2
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "title",
+                            "description",
+                            "type",
+                            "expire"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_polls",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_polls"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "poll_option_text",
+                            "poll_option_hash"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_options",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "order",
+                            "ASC"
+                        ]
+                    ]
+                ],
+                "table": "polls_options"
+            },
+            {
+                "calls": [
+                    [
+                        "selectDistinct",
+                        [
+                            "user_id"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "title",
+                            "description",
+                            "type",
+                            "expire"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_polls",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_polls"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "poll_option_text",
+                            "poll_option_hash"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_options",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "order",
+                            "ASC"
+                        ]
+                    ]
+                ],
+                "table": "polls_options"
+            },
+            {
+                "calls": [
+                    [
+                        "selectDistinct",
+                        [
+                            "user_id"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            }
+        ]
+    },
+    "polls, linked rows, failing database": {
+        "rows": [
+            {
+                "id": "5",
+                "pollId": 5,
+                "title": "cached",
+                "description": "",
+                "type": "textPoll",
+                "url": "/index.php/apps/polls/vote/5",
+                "deadline": null,
+                "closed": false,
+                "voterCount": 0,
+                "options": [],
+                "linkId": 1
+            },
+            {
+                "id": "0",
+                "pollId": 0,
+                "title": "",
+                "description": "",
+                "type": "",
+                "url": "/index.php/apps/polls/vote/0",
+                "deadline": null,
+                "closed": false,
+                "voterCount": 0,
+                "options": [],
+                "linkId": 2
+            }
+        ],
+        "queries": [
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            }
+        ]
+    },
+    "polls, linked rows, failing vote tables": {
+        "rows": [
+            {
+                "id": "5",
+                "pollId": 5,
+                "title": "P",
+                "description": "D",
+                "type": "datePoll",
+                "url": "/index.php/apps/polls/vote/5",
+                "deadline": 1,
+                "closed": true,
+                "voterCount": 0,
+                "options": [
+                    {
+                        "id": 1,
+                        "text": "A",
+                        "votes": 0
+                    },
+                    {
+                        "id": 0,
+                        "text": "B",
+                        "votes": 0
+                    }
+                ],
+                "linkId": 1
+            },
+            {
+                "id": "0",
+                "pollId": 0,
+                "title": "P",
+                "description": "D",
+                "type": "datePoll",
+                "url": "/index.php/apps/polls/vote/0",
+                "deadline": 1,
+                "closed": true,
+                "voterCount": 0,
+                "options": [
+                    {
+                        "id": 1,
+                        "text": "A",
+                        "votes": 0
+                    },
+                    {
+                        "id": 0,
+                        "text": "B",
+                        "votes": 0
+                    }
+                ],
+                "linkId": 2
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "title",
+                            "description",
+                            "type",
+                            "expire"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_polls",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_polls"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "poll_option_text",
+                            "poll_option_hash"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_options",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "order",
+                            "ASC"
+                        ]
+                    ]
+                ],
+                "table": "polls_options"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "ha",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_option_hash,:p\"ha\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "yes",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_answer,:p\"yes\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_option_hash,:p\"\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "yes",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_answer,:p\"yes\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "selectDistinct",
+                        [
+                            "user_id"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            5,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p5)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "title",
+                            "description",
+                            "type",
+                            "expire"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_polls",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_polls"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "poll_option_text",
+                            "poll_option_hash"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_options",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "order",
+                            "ASC"
+                        ]
+                    ]
+                ],
+                "table": "polls_options"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "ha",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_option_hash,:p\"ha\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "yes",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_answer,:p\"yes\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_option_hash,:p\"\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "yes",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(vote_answer,:p\"yes\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            },
+            {
+                "calls": [
+                    [
+                        "selectDistinct",
+                        [
+                            "user_id"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "polls_votes",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(poll_id,:p0)"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            1,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ]
+                ],
+                "table": "polls_votes"
+            }
+        ]
+    },
+    "polls, mapper fails": {
+        "rows": {
+            "thrown": "RuntimeException",
+            "message": "no table"
+        },
+        "queries": []
+    },
+    "polls, no links": {
+        "rows": [],
+        "queries": []
+    }
+}

@@ -27,10 +27,13 @@ namespace Unit\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\AutoTransitionJob;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
+use OCA\OpenRegister\BackgroundJob\Support\AutoTransitionServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Lifecycle\CarriedLineage;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -73,13 +76,13 @@ class AutoTransitionJobTest extends TestCase {
 
 		$this->job = new AutoTransitionJob(
 			$this->createMock(ITimeFactory::class),
-			$this->createMock(IUserSession::class),
-			$this->userManager,
-			$this->createMock(OrganisationService::class),
-			$this->logger,
-			$this->resolver,
-			$this->engine,
-			$this->pass
+			new ActorForwardingServices(
+				$this->createMock(IUserSession::class),
+				$this->userManager,
+				$this->createMock(OrganisationService::class),
+				$this->logger
+			),
+			new AutoTransitionServices($this->resolver, $this->engine, $this->pass)
 		);
 	}//end setUp()
 
@@ -218,8 +221,8 @@ class AutoTransitionJobTest extends TestCase {
 		$this->stored();
 
 		$this->pass->expects($this->once())
-			->method('resume')
-			->with(uuid: 'obj-1', moves: 9, visited: ['s0', 's9']);
+			->method('resumeLineage')
+			->with('obj-1', new CarriedLineage(moves: 9, visited: ['s0', 's9']));
 
 		$this->runDeferred([$this->entry(['moves' => 9, 'visited' => ['s0', 's9']])]);
 	}//end testTheCarriedLineageResumesThePass()

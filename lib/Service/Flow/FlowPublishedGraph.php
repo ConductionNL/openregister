@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Db\FlowVersionMapperInterface;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -38,7 +38,7 @@ use Psr\Container\ContainerInterface;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowPublishedGraph {
+class FlowPublishedGraph implements FlowPublishedGraphInterface {
 	/**
 	 * Constructor.
 	 *
@@ -60,7 +60,7 @@ class FlowPublishedGraph {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphOf(string $flowId): ?array {
-		$published = $this->container->get(FlowVersionMapper::class)->findPublished(flowUuid: $flowId);
+		$published = $this->container->get(FlowVersionMapperInterface::class)->findPublished(flowUuid: $flowId);
 		if ($published === null) {
 			return null;
 		}
@@ -91,7 +91,7 @@ class FlowPublishedGraph {
 			return null;
 		}
 
-		$row = $this->container->get(FlowVersionMapper::class)
+		$row = $this->container->get(FlowVersionMapperInterface::class)
 			->find(flowUuid: (string)$run->getFlowId(), version: (int)$version);
 
 		if ($row === null) {
@@ -132,6 +132,19 @@ class FlowPublishedGraph {
 			return null;
 		}
 
+		return self::withPinnedDefinition(live: $live, pinned: $pinned);
+
+	}//end overlayOnto()
+
+	/**
+	 * The live flow with the definition keys the pinned graph carries laid over it.
+	 *
+	 * @param array<string, mixed> $live   The live flow.
+	 * @param array<string, mixed> $pinned The pinned graph.
+	 *
+	 * @return array<string, mixed> The flow to walk.
+	 */
+	private static function withPinnedDefinition(array $live, array $pinned): array {
 		foreach (['nodes', 'edges', 'limits', 'executionMode'] as $key) {
 			if (array_key_exists($key, $pinned) === true) {
 				$live[$key] = $pinned[$key];
@@ -139,7 +152,6 @@ class FlowPublishedGraph {
 		}
 
 		return $live;
-
-	}//end overlayOnto()
+	}//end withPinnedDefinition()
 
 }//end class

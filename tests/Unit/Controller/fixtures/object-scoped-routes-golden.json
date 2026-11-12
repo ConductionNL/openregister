@@ -1,0 +1,1018 @@
+{
+    "calendar create r/s/o": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 403,
+            "data": {
+                "error": "You may not change this object, so you cannot change its events."
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "calendar destroy r/s/o/ev.ics": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 404,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 403,
+            "data": {
+                "error": "You may not change this object, so you cannot change its events."
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 404,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "calendar index r/s/o": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 500,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 500,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 200,
+            "data": {
+                "results": [
+                    {
+                        "id": "ev.ics",
+                        "calendarId": 7,
+                        "uid": "ev-uid"
+                    }
+                ],
+                "total": 1
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 200,
+            "data": {
+                "results": [
+                    {
+                        "id": "ev.ics",
+                        "calendarId": 7,
+                        "uid": "ev-uid"
+                    }
+                ],
+                "total": 1
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 200,
+            "data": {
+                "results": [
+                    {
+                        "id": "ev.ics",
+                        "calendarId": 7,
+                        "uid": "ev-uid"
+                    }
+                ],
+                "total": 1
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 200,
+            "data": {
+                "results": [
+                    {
+                        "id": "ev.ics",
+                        "calendarId": 7,
+                        "uid": "ev-uid"
+                    }
+                ],
+                "total": 1
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "calendar link r/s/o": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 403,
+            "data": {
+                "error": "You may not change this object, so you cannot change its events."
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "calendar unlink r/s/o/ev-uid": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 403,
+            "data": {
+                "error": "You may not change this object, so you cannot change its events."
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "contacts create r/s/o": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 404,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 403,
+            "data": {
+                "error": "You may not change this object, so you cannot change its contacts."
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 404,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 409,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "contacts createNew r/s/o": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 404,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 403,
+            "data": {
+                "error": "You may not change this object, so you cannot change its contacts."
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 404,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 409,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "contacts destroy r/s/o/12": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 404,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 403,
+            "data": {
+                "error": "You may not change this object, so you cannot change its contacts."
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 404,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 409,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "contacts destroy r/s/o/c-uid": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 404,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 403,
+            "data": {
+                "error": "You may not change this object, so you cannot change its contacts."
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 404,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 409,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "contacts index r/s/o": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 500,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 404,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 200,
+            "data": [],
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 500,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 404,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 409,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    },
+    "contacts update r/s/o/c-uid": {
+        "null": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "notfound": {
+            "status": 404,
+            "data": {
+                "error": "Object not found"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-0": {
+            "status": 400,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "load-404": {
+            "status": 404,
+            "data": {
+                "error": "load failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "refused": {
+            "status": 403,
+            "data": {
+                "error": "You may not change this object, so you cannot change its contacts."
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-0": {
+            "status": 400,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-404": {
+            "status": 404,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        },
+        "svc-409": {
+            "status": 409,
+            "data": {
+                "error": "service failed"
+            },
+            "resolved": [
+                "setRegister r",
+                "setSchema s",
+                "setObject o"
+            ]
+        }
+    }
+}

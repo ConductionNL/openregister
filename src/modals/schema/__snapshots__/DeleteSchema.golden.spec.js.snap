@@ -1,0 +1,2441 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats noObjects, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats nullStats, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats rejects, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats textCount, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats three, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats three, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats three, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats three, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats three, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats three, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers none, stats zero, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats noObjects, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+    {
+      "id": "o2",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+    {
+      "id": "o2",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats nullStats, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats rejects, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats rejects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats rejects, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats rejects, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 3,
+        "schema": 7,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+    {
+      "id": "o2",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats rejects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+    [
+      "refreshObjectList",
+      {
+        "register": 2,
+        "schema": 9,
+        "search": "",
+      },
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+    [
+      "getCollection",
+      "current",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+    {
+      "id": "o2",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats rejects, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats textCount, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats textCount, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats textCount, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats textCount, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats textCount, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats textCount, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats three, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats three, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats three, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats three, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats three, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+    {
+      "id": "...",
+      "name": "Object",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "Two",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats three, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats zero, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats zero, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats zero, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats zero, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats zero, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers with, stats zero, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats noObjects, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'objects')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats nullStats, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats rejects, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats rejects, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats rejects, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats rejects, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats rejects, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "Error: stats down",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats rejects, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats textCount, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats textCount, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats textCount, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats textCount, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats textCount, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats textCount, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats three, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats three, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats three, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats three, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats three, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats three, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats zero, collections empty, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats zero, collections empty, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats zero, collections empty, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats zero, collections perRegister, schema 7 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      7,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats zero, collections perRegister, schema 9 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "getSchemaStats",
+      9,
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "resolved",
+  "registerName": "",
+}
+`;
+
+exports[`DeleteSchema.initDialog opens with registers without, stats zero, collections perRegister, schema undefined 1`] = `
+{
+  "log": [
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "console.warn",
+      "Could not load schema stats, falling back to individual register checks:",
+      "TypeError: Cannot read properties of null (reading 'id')",
+    ],
+  ],
+  "objects": [
+    {
+      "id": "before",
+    },
+  ],
+  "outcome": "rejected: Cannot read properties of null (reading 'id')",
+  "registerName": "",
+}
+`;

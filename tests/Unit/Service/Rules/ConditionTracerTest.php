@@ -21,11 +21,12 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Rules\ConditionJudgement;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
@@ -34,7 +35,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class ConditionTracerTest extends TestCase {
 
@@ -71,14 +72,10 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARuleThatDidNotFireNamesTheOperandAndTheValueItRead(): void {
-		$trace = $this->tracer->trace(
-			condition: ['>' => [['var' => 'bedrag'], 500]],
-			document: ['bedrag' => 120],
-			verdict: RuleVocabulary::VERDICT_NO_MATCH
-		);
+		$trace = $this->tracer->trace(judgement: new ConditionJudgement(condition: ['>' => [['var' => 'bedrag'], 500]], document: ['bedrag' => 120], verdict: RuleVocabulary::VERDICT_NO_MATCH));
 
 		$this->assertSame(expected: RuleVocabulary::VERDICT_NO_MATCH, actual: $trace->getVerdict());
 		$this->assertSame(expected: 'bedrag', actual: $trace->getOperand());
@@ -91,14 +88,10 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheAstDialectTracesToTheSameOperand(): void {
-		$trace = $this->tracer->trace(
-			condition: ['gt' => [['prop' => 'bedrag'], 500]],
-			document: ['bedrag' => 120],
-			verdict: RuleVocabulary::VERDICT_NO_MATCH
-		);
+		$trace = $this->tracer->trace(judgement: new ConditionJudgement(condition: ['gt' => [['prop' => 'bedrag'], 500]], document: ['bedrag' => 120], verdict: RuleVocabulary::VERDICT_NO_MATCH));
 
 		$this->assertSame(expected: 'bedrag', actual: $trace->getOperand());
 		$this->assertSame(expected: '120', actual: $trace->getOperandValue());
@@ -110,19 +103,15 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnAndNamesTheClauseThatActuallyFailed(): void {
-		$trace = $this->tracer->trace(
-			condition: [
+		$trace = $this->tracer->trace(judgement: new ConditionJudgement(condition: [
 				'and' => [
 					['>' => [['var' => 'bedrag'], 100]],
 					['==' => [['var' => 'status'], 'open']],
 				],
-			],
-			document: ['bedrag' => 400, 'status' => 'gesloten'],
-			verdict: RuleVocabulary::VERDICT_NO_MATCH
-		);
+			], document: ['bedrag' => 400, 'status' => 'gesloten'], verdict: RuleVocabulary::VERDICT_NO_MATCH));
 
 		$this->assertSame(expected: 'status', actual: $trace->getOperand());
 		$this->assertSame(expected: 'gesloten', actual: $trace->getOperandValue());
@@ -135,14 +124,10 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnAbsentPropertyIsReportedAsNull(): void {
-		$trace = $this->tracer->trace(
-			condition: ['==' => [['var' => 'object.outcome'], 'toegewezen']],
-			document: ['object' => ['status' => 'closed']],
-			verdict: RuleVocabulary::VERDICT_REFUSED
-		);
+		$trace = $this->tracer->trace(judgement: new ConditionJudgement(condition: ['==' => [['var' => 'object.outcome'], 'toegewezen']], document: ['object' => ['status' => 'closed']], verdict: RuleVocabulary::VERDICT_REFUSED));
 
 		$this->assertSame(expected: 'object.outcome', actual: $trace->getOperand());
 		$this->assertSame(expected: 'null', actual: $trace->getOperandValue());
@@ -155,14 +140,10 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFiredRuleCarriesNoOperand(): void {
-		$trace = $this->tracer->trace(
-			condition: ['>' => [['var' => 'bedrag'], 500]],
-			document: ['bedrag' => 900],
-			verdict: RuleVocabulary::VERDICT_FIRED
-		);
+		$trace = $this->tracer->trace(judgement: new ConditionJudgement(condition: ['>' => [['var' => 'bedrag'], 500]], document: ['bedrag' => 900], verdict: RuleVocabulary::VERDICT_FIRED));
 
 		$this->assertNull(actual: $trace->getOperand());
 		$this->assertNull(actual: $trace->getOperandValue());
@@ -178,15 +159,10 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnUnreadableConditionKeepsTheVerdict(): void {
-		$trace = $this->tracer->trace(
-			condition: 'not a rule object',
-			document: ['bedrag' => 120],
-			verdict: RuleVocabulary::VERDICT_REFUSED,
-			message: 'Refused by the engine.'
-		);
+		$trace = $this->tracer->trace(judgement: new ConditionJudgement(condition: 'not a rule object', document: ['bedrag' => 120], verdict: RuleVocabulary::VERDICT_REFUSED, message: 'Refused by the engine.'));
 
 		$this->assertSame(expected: RuleVocabulary::VERDICT_REFUSED, actual: $trace->getVerdict());
 		$this->assertSame(expected: 'Refused by the engine.', actual: $trace->getMessage());
@@ -200,16 +176,12 @@ class ConditionTracerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testALongValueIsCutAndSaysSo(): void {
 		$long = str_repeat('a', (RuleTrace::VALUE_LIMIT + 50));
 
-		$trace = $this->tracer->trace(
-			condition: ['==' => [['var' => 'toelichting'], 'kort']],
-			document: ['toelichting' => $long],
-			verdict: RuleVocabulary::VERDICT_NO_MATCH
-		);
+		$trace = $this->tracer->trace(judgement: new ConditionJudgement(condition: ['==' => [['var' => 'toelichting'], 'kort']], document: ['toelichting' => $long], verdict: RuleVocabulary::VERDICT_NO_MATCH));
 
 		$this->assertSame(expected: (RuleTrace::VALUE_LIMIT + 1), actual: mb_strlen((string)$trace->getOperandValue()));
 		$this->assertStringEndsWith(suffix: '…', string: (string)$trace->getOperandValue());

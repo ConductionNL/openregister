@@ -18,7 +18,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use OCP\IAppConfig;
  * predict the behaviour of. Refusing to store one is better than storing one
  * that means something different every five minutes.
  */
-class AuditAggregationService {
+class AuditAggregationService implements AuditAggregationServiceInterface {
 
 	/**
 	 * The app-config key holding the window, in seconds.
@@ -62,16 +62,6 @@ class AuditAggregationService {
 	 * @var string
 	 */
 	public const CONFIG_KEY = 'audit_aggregation_window_seconds';
-
-	/**
-	 * The longest window an administrator may set, in seconds.
-	 *
-	 * Equal to `AuditSealJob::INTERVAL_SECONDS`. See the class docblock for
-	 * why that is the ceiling rather than a round number.
-	 *
-	 * @var integer
-	 */
-	public const MAXIMUM_WINDOW_SECONDS = 300;
 
 	/**
 	 * Constructor.
@@ -86,7 +76,7 @@ class AuditAggregationService {
 	 *
 	 * @return integer The window, clamped to the seal interval.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function windowSeconds(): int {
 		$stored = $this->appConfig->getValueInt('openregister', self::CONFIG_KEY, 0);
@@ -101,7 +91,7 @@ class AuditAggregationService {
 	 *
 	 * @return integer The window that was stored.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function setWindowSeconds(int $seconds): int {
 		$clamped = $this->clamp(seconds: $seconds);
@@ -117,7 +107,7 @@ class AuditAggregationService {
 	 *
 	 * @return integer A window between zero and the seal interval.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function clamp(int $seconds): int {
 		if ($seconds <= 0) {
@@ -128,21 +118,21 @@ class AuditAggregationService {
 	}//end clamp()
 
 	/**
-	 * Whether two entries are close enough in time to be one.
+	 * Whether two entries are close enough in time to be one, under the administered window.
 	 *
 	 * Takes both instants rather than reading the clock, so the behaviour is
 	 * testable without waiting five minutes for the answer.
 	 *
 	 * @param DateTimeInterface|null $previous When the entry already written was written.
 	 * @param DateTimeInterface $now When the edit being recorded happened.
-	 * @param integer $window The administered window, in seconds.
 	 *
 	 * @return boolean Whether the two merge.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function isWithinWindow(?DateTimeInterface $previous, DateTimeInterface $now, int $window): bool {
-		if ($window <= 0 || $previous === null) {
+	public function isWithinWindow(?DateTimeInterface $previous, DateTimeInterface $now): bool {
+		$window = $this->windowSeconds();
+		if ($window === 0 || $previous === null) {
 			return false;
 		}
 
@@ -168,42 +158,63 @@ class AuditAggregationService {
 	 *
 	 * @return array The merged `changed` column.
 	 *
-	 * @spec openspec/changes/repeating-groups-and-recorded-corrections/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function fold(array $previous, array $incoming): array {
-		$aggregation = ($previous['aggregation'] ?? null);
-		$edits = 1;
-		if (is_array($aggregation) === true && is_numeric($aggregation['edits'] ?? null) === true) {
-			$edits = (int)$aggregation['edits'];
-		}
+		$edits = $this->editCount(previous: $previous);
 
 		unset($previous['aggregation'], $incoming['aggregation']);
 
 		$merged = $previous;
 		foreach ($incoming as $property => $change) {
-			$existing = ($merged[$property] ?? null);
-
-			// A property this entry has not seen before joins as it arrived.
-			if (is_array($existing) === false || array_key_exists('old', $existing) === false) {
-				$merged[$property] = $change;
-				continue;
-			}
-
-			if (is_array($change) === false || array_key_exists('new', $change) === false) {
-				continue;
-			}
-
-			// The first `old` is what the value was when the span began, and
-			// the last `new` is what it is now. Keeping the later `old` would
-			// describe a change nobody made.
-			$merged[$property] = [
-				'old' => $existing['old'],
-				'new' => $change['new'],
-			];
-		}//end foreach
+			$merged[$property] = $this->foldedChange(existing: ($merged[$property] ?? null), change: $change);
+		}
 
 		$merged['aggregation'] = ['edits' => ($edits + 1)];
 
 		return $merged;
 	}//end fold()
+
+	/**
+	 * The edits an entry already covers: its aggregation count, else one.
+	 *
+	 * @param array<string, mixed> $previous The stored entry's changed map.
+	 *
+	 * @return int The edit count.
+	 */
+	private function editCount(array $previous): int {
+		$aggregation = ($previous['aggregation'] ?? null);
+		if (is_array($aggregation) === true && is_numeric($aggregation['edits'] ?? null) === true) {
+			return (int)$aggregation['edits'];
+		}
+
+		return 1;
+	}//end editCount()
+
+	/**
+	 * One property after a fold: the span from the first old value to the last new one.
+	 *
+	 * @param mixed $existing The property's change in the stored entry, if any.
+	 * @param mixed $change   The property's incoming change.
+	 *
+	 * @return mixed The folded change.
+	 */
+	private function foldedChange(mixed $existing, mixed $change): mixed {
+		// A property this entry has not seen before joins as it arrived.
+		if (is_array($existing) === false || array_key_exists('old', $existing) === false) {
+			return $change;
+		}
+
+		if (is_array($change) === false || array_key_exists('new', $change) === false) {
+			return $existing;
+		}
+
+		// The first `old` is what the value was when the span began, and
+		// the last `new` is what it is now. Keeping the later `old` would
+		// describe a change nobody made.
+		return [
+			'old' => $existing['old'],
+			'new' => $change['new'],
+		];
+	}//end foldedChange()
 }//end class

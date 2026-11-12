@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -39,7 +40,7 @@ class RouterNodeTest extends TestCase {
 	}
 
 	public function testItTagsEachItemForTheOutputItMatches(): void {
-		$out = $this->node->execute($this->items([1, 7, 3]), $this->config(), []);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items([1, 7, 3]), config: $this->config(), context: []));
 
 		$this->assertCount(3, $out);
 		$this->assertSame('low', $out[0][FlowItems::OUTPUT]);
@@ -57,7 +58,7 @@ class RouterNodeTest extends TestCase {
 			],
 		];
 
-		$out = $this->node->execute($this->items([7]), $config, []);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items([7]), config: $config, context: []));
 		// 7 matches both, but the first rule (positive) wins.
 		$this->assertSame('positive', $out[0][FlowItems::OUTPUT]);
 	}
@@ -68,7 +69,7 @@ class RouterNodeTest extends TestCase {
 		];
 
 		// 1 matches no rule and there is no default -> it is dropped.
-		$out = $this->node->execute($this->items([1, 7]), $config, []);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items([1, 7]), config: $config, context: []));
 
 		$this->assertCount(1, $out);
 		$this->assertSame('high', $out[0][FlowItems::OUTPUT]);

@@ -35,15 +35,17 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\AnalyticsLink;
-use OCA\OpenRegister\Db\AnalyticsLinkMapper;
+use OCA\OpenRegister\Db\AnalyticsLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 class AnalyticsProvider extends AbstractIntegrationProvider {
+
+	use NcAppLinkTableProvider;
+	use MarkerSourceFallback;
 	use MarkerLookupTrait;
 
 	private const REQUIRED_APP = 'analytics';
@@ -51,21 +53,61 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 	private const MARKER_PREFIX = '[or:';
 
 	/**
+	 * Where the legacy `[or:{uuid}]` marker lives: table, marker column, extra
+	 * columns, id column, and the app URL a row's id is appended to.
+	 *
+	 * @var array{table: string, column: string, extra: list<string>, id: string, url: string}
+	 */
+	private const MARKER_SOURCE = [
+		'table' => 'analytics_report',
+		'column' => 'name',
+		'extra' => ['subheader', 'type'],
+		'id' => 'id',
+		'url' => '/index.php/apps/analytics/#/r/',
+	];
+
+	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param AnalyticsLinkMapper $analyticsLinkMapper Analytics-link mapper (Tier-2 link table).
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafMarkerScanning           $leaf                The DB connection, app manager, localisation and marker-scan logger.
+	 * @param AnalyticsLinkMapperInterface $analyticsLinkMapper Analytics-link mapper (Tier-2 link table).
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private AnalyticsLinkMapper $analyticsLinkMapper,
-		private LoggerInterface $logger,
+		LeafMarkerScanning $leaf,
+		private AnalyticsLinkMapperInterface $analyticsLinkMapper,
 	) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	public function getId(): string {
@@ -84,78 +126,14 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 		return 'workflow';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
 	/**
-	 * List linked Analytics reports for an OR object.
+	 * The link mapper this provider reads first.
 	 *
-	 * Reads the Tier-2 link table first; if no link rows exist it falls
-	 * back to the legacy `[or:{uuid}]` marker scan in
-	 * `analytics_report.name` (wave-2.2 convention) so reports that
-	 * pre-date the link table still surface.
-	 *
-	 * @param string $register Register slug for the parent object.
-	 * @param string $schema Schema slug for the parent object.
-	 * @param string $objectId UUID of the OR object whose rows we want.
-	 * @param array $filters Optional registry filters (unused).
-	 *
-	 * @return array List of registry leaf rows.
-	 *
-	 * @spec openspec/specs/integration-analytics/spec.md
+	 * @return AnalyticsLinkMapperInterface
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
-
-		// Tier-2 path: read from the link table.
-		try {
-			$linkRows = $this->analyticsLinkMapper->findByObjectUuid($objectId);
-		} catch (Throwable $e) {
-			$linkRows = [];
-		}
-
-		if (count($linkRows) > 0) {
-			return array_map(
-				fn (AnalyticsLink $link): array => $this->rowFromLink(link: $link),
-				$linkRows
-			);
-		}
-
-		// Backwards-compat fallback: scan the legacy `[or:{uuid}]` marker
-		// in `analytics_report.name` (wave-2.2 marker-on-name convention).
-		$marker = self::MARKER_PREFIX . $objectId . ']';
-		$rows = $this->findByMarker(
-			db: $this->db,
-			table: 'analytics_report',
-			markerColumn: 'name',
-			marker: $marker,
-			extraColumns: ['subheader', 'type'],
-			idColumn: 'id',
-		);
-
-		return array_map(
-			static function (array $row): array {
-				return [
-					'id' => (string)($row['id'] ?? ''),
-					'title' => (string)($row['name'] ?? ''),
-					'url' => '/index.php/apps/analytics/#/r/' . (string)($row['id'] ?? ''),
-					'data' => $row,
-				];
-			},
-			$rows
-		);
-	}//end list()
+	protected function linkMapper(): AnalyticsLinkMapperInterface {
+		return $this->analyticsLinkMapper;
+	}//end linkMapper()
 
 	/**
 	 * Convert an AnalyticsLink row into the registry leaf-row shape.
@@ -164,7 +142,7 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function rowFromLink(AnalyticsLink $link): array {
+	protected function rowFromLink(AnalyticsLink $link): array {
 		$reportId = (int)$link->getReportId();
 		$data = $link->jsonSerialize();
 
@@ -186,22 +164,6 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$available = $this->isEnabled();
-
-		$status = 'unavailable';
-		if ($available === true) {
-			$status = 'ok';
-		}
-
-		$message = 'NC Analytics app is not installed';
-		if ($available === true) {
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->isEnabled(), missing: 'NC Analytics app is not installed');
 	}//end health()
 }//end class

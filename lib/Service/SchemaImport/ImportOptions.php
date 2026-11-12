@@ -57,31 +57,75 @@ final class ImportOptions {
 	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public static function fromArray(array $payload): self {
-		$subset = [];
-		if (isset($payload['propertySubset']) === true && is_array($payload['propertySubset']) === true) {
-			foreach ($payload['propertySubset'] as $name) {
-				if (is_string($name) === true && $name !== '') {
-					$subset[] = $name;
-				}
+		return new self(
+			propertySubset: self::subsetFrom(payload: $payload),
+			includeAncestors: self::includeAncestorsFrom(payload: $payload),
+			targetRegister: self::targetRegisterFrom(payload: $payload)
+		);
+	}//end fromArray()
+
+	/**
+	 * The non-empty string property names of the payload's `propertySubset`.
+	 *
+	 * @param array<string, mixed> $payload The request body / parameters.
+	 *
+	 * @return array<int, string> The requested property names, in order.
+	 */
+	private static function subsetFrom(array $payload): array {
+		if (isset($payload['propertySubset']) === false || is_array($payload['propertySubset']) === false) {
+			return [];
+		}
+
+		return self::nonEmptyStrings(values: $payload['propertySubset']);
+	}//end subsetFrom()
+
+	/**
+	 * The non-empty string members of a list, in order and reindexed.
+	 *
+	 * @param array<int|string, mixed> $values The candidate values.
+	 *
+	 * @return array<int, string> The non-empty strings.
+	 */
+	private static function nonEmptyStrings(array $values): array {
+		$strings = [];
+		foreach ($values as $value) {
+			if (is_string($value) === true && $value !== '') {
+				$strings[] = $value;
 			}
 		}
 
-		$includeAncestors = false;
+		return $strings;
+	}//end nonEmptyStrings()
+
+	/**
+	 * The payload's `includeAncestors` flag as a boolean (absent = false).
+	 *
+	 * @param array<string, mixed> $payload The request body / parameters.
+	 *
+	 * @return bool Whether ancestor properties are requested.
+	 */
+	private static function includeAncestorsFrom(array $payload): bool {
 		if (isset($payload['includeAncestors']) === true) {
-			$includeAncestors = filter_var($payload['includeAncestors'], FILTER_VALIDATE_BOOLEAN);
+			return filter_var($payload['includeAncestors'], FILTER_VALIDATE_BOOLEAN);
 		}
 
-		$targetRegister = null;
+		return false;
+	}//end includeAncestorsFrom()
+
+	/**
+	 * The payload's numeric `targetRegister` as an int, or null.
+	 *
+	 * @param array<string, mixed> $payload The request body / parameters.
+	 *
+	 * @return int|null The target register id.
+	 */
+	private static function targetRegisterFrom(array $payload): ?int {
 		if (isset($payload['targetRegister']) === true && is_numeric($payload['targetRegister']) === true) {
-			$targetRegister = (int)$payload['targetRegister'];
+			return (int)$payload['targetRegister'];
 		}
 
-		return new self(
-			propertySubset: $subset,
-			includeAncestors: $includeAncestors,
-			targetRegister: $targetRegister
-		);
-	}//end fromArray()
+		return null;
+	}//end targetRegisterFrom()
 
 	/**
 	 * Whether an explicit property subset was requested.

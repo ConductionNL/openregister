@@ -1,0 +1,165 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FlowOverview.load goes on with an empty flow answer 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "/gen/apps/openregister/api/flows/f-1",
+      undefined,
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/flows/f-1/versions",
+      undefined,
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/flow/node-catalog",
+      undefined,
+      true,
+      "",
+    ],
+    [
+      "loadRuns",
+      true,
+    ],
+  ],
+  "page": {
+    "actionError": "",
+    "flow": null,
+    "id": "f-1",
+    "loading": false,
+    "names": {
+      "n.a": "Node A",
+    },
+    "versions": [
+      {
+        "version": 2,
+      },
+    ],
+  },
+}
+`;
+
+exports[`FlowOverview.load leaves the panels empty when only the flow can be read 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "/gen/apps/openregister/api/flows/f-1",
+      undefined,
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/flows/f-1/versions",
+      undefined,
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/flow/node-catalog",
+      undefined,
+      true,
+      "",
+    ],
+    [
+      "loadRuns",
+      true,
+    ],
+  ],
+  "page": {
+    "actionError": "",
+    "flow": {
+      "id": "f-1",
+      "name": "Enquiry",
+    },
+    "id": "f-1",
+    "loading": false,
+    "names": {},
+    "versions": [],
+  },
+}
+`;
+
+exports[`FlowOverview.load reads the flow, then its versions, catalog and runs 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "/gen/apps/openregister/api/flows/f-1",
+      undefined,
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/flows/f-1/versions",
+      undefined,
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/flow/node-catalog",
+      undefined,
+      true,
+      "",
+    ],
+    [
+      "loadRuns",
+      true,
+    ],
+  ],
+  "page": {
+    "actionError": "",
+    "flow": {
+      "id": "f-1",
+      "name": "Enquiry",
+    },
+    "id": "f-1",
+    "loading": false,
+    "names": {
+      "n.a": "Node A",
+    },
+    "versions": [
+      {
+        "version": 2,
+      },
+    ],
+  },
+}
+`;
+
+exports[`FlowOverview.load stops with no flow when the flow cannot be read 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "/gen/apps/openregister/api/flows/f-1",
+      undefined,
+      true,
+      "",
+    ],
+  ],
+  "page": {
+    "actionError": "",
+    "flow": null,
+    "id": "f-1",
+    "loading": false,
+    "names": {
+      "old": 1,
+    },
+    "versions": [
+      "old",
+    ],
+  },
+}
+`;

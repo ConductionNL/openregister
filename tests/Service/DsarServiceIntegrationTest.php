@@ -5,20 +5,20 @@
  * (`DsarService`) shipped in Phase 2b.
  *
  * Covers:
- *   1. `findObjectsForSubject()` joins GdprEntity → entity_relations →
+ *   1. `findObjectsFor()` joins GdprEntity → entity_relations →
  *      MagicMapper correctly and dedupes by object_id.
  *   2. `getDsarProcessingActivityUuid()` resolves the configured
  *      activity reference (code or uuid) via the existing
  *      VerwerkingsactiviteitMapper resolver.
- *   3. `eraseObjectsForSubject(dryRun: true)` returns the matched-set
+ *   3. `eraseObjectsFor(dryRun: true)` returns the matched-set
  *      summary without touching the underlying objects.
- *   4. `eraseObjectsForSubject(dryRun: false)` flips the `deleted`
+ *   4. `eraseObjectsFor(dryRun: false)` flips the `deleted`
  *      metadata on the matched object AND tags the audit row with the
  *      configured DSAR processing activity (proves Phase 1 hook
  *      composes with the per-action override the service sets).
  *   5. `rectifyObjectForSubject()` updates the object's payload AND
  *      tags the audit row with the DSAR processing activity.
- *   6. `findObjectsForSubject()` with an unknown subject yields an
+ *   6. `findObjectsFor()` with an unknown subject yields an
  *      empty list rather than 500.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
 use OCA\OpenRegister\Service\DsarService;
+use OCA\OpenRegister\Service\DsarSubjectQuery;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -235,7 +236,7 @@ class DsarServiceIntegrationTest extends TestCase {
 		$entityId = $this->insertGdprEntity(type: 'email', value: $subject);
 		$this->insertEntityRelation(entityId: $entityId, objectId: (int)$object->getId(), object: $object);
 
-		$results = $this->dsar->findObjectsForSubject(subject: $subject, type: 'email');
+		$results = $this->dsar->findObjectsFor(query: new DsarSubjectQuery(subject: $subject, type: 'email', mode: 'exact'));
 
 		// With the post-foundation-fix entity_relations now carrying
 		// object_uuid, lookup is deterministic — exactly one envelope
@@ -265,9 +266,8 @@ class DsarServiceIntegrationTest extends TestCase {
 		$this->insertEntityRelation(entityId: $emailId, objectId: (int)$object->getId(), object: $object);
 		$this->insertEntityRelation(entityId: $nameId, objectId: (int)$object->getId(), object: $object);
 
-		$results = $this->dsar->findObjectsForSubject(
-			subject: $subjectEmail,
-			mode: 'exact'
+		$results = $this->dsar->findObjectsFor(
+			query: new DsarSubjectQuery(subject: $subjectEmail, type: null, mode: 'exact')
 		);
 		$this->assertCount(1, $results, 'object with two matching PII rows MUST still render once');
 
@@ -281,8 +281,8 @@ class DsarServiceIntegrationTest extends TestCase {
 	}//end testFindObjectsForSubjectDedupesByObject()
 
 	public function testFindObjectsForSubjectReturnsEmptyForUnknown(): void {
-		$results = $this->dsar->findObjectsForSubject(
-			subject: 'phpunit-no-such-subject-' . uniqid() . '@nowhere.test'
+		$results = $this->dsar->findObjectsFor(
+			query: new DsarSubjectQuery(subject: 'phpunit-no-such-subject-' . uniqid() . '@nowhere.test', type: null, mode: 'exact')
 		);
 		$this->assertSame([], $results);
 
@@ -310,9 +310,8 @@ class DsarServiceIntegrationTest extends TestCase {
 		$entityId = $this->insertGdprEntity(type: 'email', value: $subject);
 		$this->insertEntityRelation(entityId: $entityId, objectId: (int)$object->getId(), object: $object);
 
-		$summary = $this->dsar->eraseObjectsForSubject(
-			subject: $subject,
-			type: 'email',
+		$summary = $this->dsar->eraseObjectsFor(
+			query: new DsarSubjectQuery(subject: $subject, type: 'email', mode: 'exact'),
 			dryRun: true
 		);
 
@@ -370,9 +369,8 @@ class DsarServiceIntegrationTest extends TestCase {
 
 		// Now actually drive the erase; the object should be marked
 		// deleted via the soft-delete metadata.
-		$summary = $this->dsar->eraseObjectsForSubject(
-			subject: $subject,
-			type: 'email',
+		$summary = $this->dsar->eraseObjectsFor(
+			query: new DsarSubjectQuery(subject: $subject, type: 'email', mode: 'exact'),
 			dryRun: false
 		);
 

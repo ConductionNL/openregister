@@ -32,6 +32,9 @@ class FakeExampleSetRegisters extends ExampleSetRegisters {
 	/** @var array<string, bool> Register slugs OpenRegister ships a descriptor for. */
 	public array $importable = [];
 
+	/** @var array<string, bool> Register slugs OpenRegister ships a mock descriptor for. */
+	public array $mockImportable = [];
+
 	/** @var array<string, string> Live import job ids, mapped to their register. */
 	public array $jobs = [];
 
@@ -42,6 +45,25 @@ class FakeExampleSetRegisters extends ExampleSetRegisters {
 	private int $next = 1;
 
 	/**
+	 * Slugs whose descriptor ships a newer version than the instance holds.
+	 *
+	 * @var array<string, true>
+	 */
+	public array $behind = [];
+
+	/**
+	 * Whether the slug is in `behind`.
+	 *
+	 * @param string $slug The register slug.
+	 * @param bool   $mock Whether the mock descriptor is meant.
+	 *
+	 * @return bool
+	 */
+	public function isBehind(string $slug, bool $mock): bool {
+		return isset($this->behind[$slug]);
+	}
+
+	/**
 	 * No container.
 	 */
 	public function __construct() {
@@ -49,6 +71,17 @@ class FakeExampleSetRegisters extends ExampleSetRegisters {
 
 	public function exists(string $slug): bool {
 		return isset($this->present[$slug]);
+	}
+
+	public function importMock(string $slug): array {
+		if (isset($this->mockImportable[$slug]) === false) {
+			$this->imports++;
+			return ['error' => 'openregister ships no mock descriptor declaring register "'.$slug.'".', 'jobs' => []];
+		}
+
+		$this->importable[$slug] = true;
+
+		return $this->import(slug: $slug);
 	}
 
 	public function import(string $slug): array {

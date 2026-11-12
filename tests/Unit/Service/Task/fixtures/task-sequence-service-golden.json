@@ -1,0 +1,2486 @@
+{
+    "provision:approving set": {
+        "calls": [
+            [
+                "insert",
+                {
+                    "uuid": "<seq>",
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ],
+                        "approvingOutcomes": [
+                            " Approved ",
+                            "ok",
+                            3
+                        ]
+                    },
+                    "anchorObjectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "chainKey": "submit-approval",
+                    "requesterId": "alice",
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "running",
+                    "outcome": null,
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": true,
+                    "closed": false
+                }
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 1 of 3)",
+                    "description": "Approval step 1 of 3 for submit-approval on object obj-1.",
+                    "state": "enabled",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "clerks"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "order": 1,
+                        "role": " clerks ",
+                        "approvingOutcomes": [
+                            "approved",
+                            "ok"
+                        ]
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 1,
+                    "runUuid": null,
+                    "nodeId": null
+                },
+                "alice"
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 2 of 3)",
+                    "description": "Approval step 2 of 3 for submit-approval on object obj-1.",
+                    "state": "available",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "managers"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft",
+                        "approvingOutcomes": [
+                            "approved",
+                            "ok"
+                        ]
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 2,
+                    "runUuid": null,
+                    "nodeId": null
+                },
+                "alice"
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 3 of 3)",
+                    "description": "Approval step 3 of 3 for submit-approval on object obj-1.",
+                    "state": "available",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "directors"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "role": "directors",
+                        "approvingOutcomes": [
+                            "approved",
+                            "ok"
+                        ]
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 3,
+                    "runUuid": null,
+                    "nodeId": null
+                },
+                "alice"
+            ]
+        ],
+        "returned": {
+            "uuid": "<seq>",
+            "templateId": "tpl-1",
+            "templateVersion": 3,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ],
+                "approvingOutcomes": [
+                    " Approved ",
+                    "ok",
+                    3
+                ]
+            },
+            "anchorObjectUuid": "obj-1",
+            "registerId": null,
+            "schemaId": 5,
+            "chainKey": "submit-approval",
+            "requesterId": "alice",
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "running",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": true,
+            "closed": false
+        }
+    },
+    "provision:empty template": {
+        "calls": [
+            [
+                "insert",
+                {
+                    "uuid": "<seq>",
+                    "templateId": "",
+                    "templateVersion": 1,
+                    "templateSnapshot": [],
+                    "anchorObjectUuid": "obj-2",
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": "",
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "running",
+                    "outcome": null,
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": true,
+                    "closed": false
+                }
+            ]
+        ],
+        "returned": {
+            "uuid": "<seq>",
+            "templateId": "",
+            "templateVersion": 1,
+            "templateSnapshot": [],
+            "anchorObjectUuid": "obj-2",
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": "",
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "running",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": true,
+            "closed": false
+        }
+    },
+    "provision:everything": {
+        "calls": [
+            [
+                "insert",
+                {
+                    "uuid": "<seq>",
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": "obj-1",
+                    "registerId": 7,
+                    "schemaId": 5,
+                    "chainKey": "submit-approval",
+                    "requesterId": "alice",
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "running",
+                    "outcome": null,
+                    "runUuid": "run-1",
+                    "nodeId": "node-1",
+                    "opened": true,
+                    "closed": false
+                }
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 1 of 3)",
+                    "description": "Approval step 1 of 3 for submit-approval on object obj-1.",
+                    "state": "enabled",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "clerks"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": 7,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 1,
+                    "runUuid": "run-1",
+                    "nodeId": "node-1"
+                },
+                "alice"
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 2 of 3)",
+                    "description": "Approval step 2 of 3 for submit-approval on object obj-1.",
+                    "state": "available",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "managers"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": 7,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 2,
+                    "runUuid": "run-1",
+                    "nodeId": "node-1"
+                },
+                "alice"
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 3 of 3)",
+                    "description": "Approval step 3 of 3 for submit-approval on object obj-1.",
+                    "state": "available",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "directors"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": 7,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "role": "directors"
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 3,
+                    "runUuid": "run-1",
+                    "nodeId": "node-1"
+                },
+                "alice"
+            ]
+        ],
+        "returned": {
+            "uuid": "<seq>",
+            "templateId": "tpl-1",
+            "templateVersion": 3,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": "obj-1",
+            "registerId": 7,
+            "schemaId": 5,
+            "chainKey": "submit-approval",
+            "requesterId": "alice",
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "running",
+            "outcome": null,
+            "runUuid": "run-1",
+            "nodeId": "node-1",
+            "opened": true,
+            "closed": false
+        }
+    },
+    "provision:minimal": {
+        "calls": [
+            [
+                "insert",
+                {
+                    "uuid": "<seq>",
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "chainKey": "submit-approval",
+                    "requesterId": "alice",
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "running",
+                    "outcome": null,
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": true,
+                    "closed": false
+                }
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 1 of 3)",
+                    "description": "Approval step 1 of 3 for submit-approval on object obj-1.",
+                    "state": "enabled",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "clerks"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 1,
+                    "runUuid": null,
+                    "nodeId": null
+                },
+                "alice"
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 2 of 3)",
+                    "description": "Approval step 2 of 3 for submit-approval on object obj-1.",
+                    "state": "available",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "managers"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 2,
+                    "runUuid": null,
+                    "nodeId": null
+                },
+                "alice"
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 3 of 3)",
+                    "description": "Approval step 3 of 3 for submit-approval on object obj-1.",
+                    "state": "available",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "directors"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "role": "directors"
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 3,
+                    "runUuid": null,
+                    "nodeId": null
+                },
+                "alice"
+            ]
+        ],
+        "returned": {
+            "uuid": "<seq>",
+            "templateId": "tpl-1",
+            "templateVersion": 3,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": "obj-1",
+            "registerId": null,
+            "schemaId": 5,
+            "chainKey": "submit-approval",
+            "requesterId": "alice",
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "running",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": true,
+            "closed": false
+        }
+    },
+    "provision:no requester": {
+        "calls": [
+            [
+                "insert",
+                {
+                    "uuid": "<seq>",
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "chainKey": "submit-approval",
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "running",
+                    "outcome": null,
+                    "runUuid": "run-2",
+                    "nodeId": null,
+                    "opened": true,
+                    "closed": false
+                }
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 1 of 3)",
+                    "description": "Approval step 1 of 3 for submit-approval on object obj-1.",
+                    "state": "enabled",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "clerks"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": null,
+                    "objectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 1,
+                    "runUuid": "run-2",
+                    "nodeId": null
+                },
+                "task-sequence:<seq>"
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 2 of 3)",
+                    "description": "Approval step 2 of 3 for submit-approval on object obj-1.",
+                    "state": "available",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "managers"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": null,
+                    "objectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 2,
+                    "runUuid": "run-2",
+                    "nodeId": null
+                },
+                "task-sequence:<seq>"
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 3 of 3)",
+                    "description": "Approval step 3 of 3 for submit-approval on object obj-1.",
+                    "state": "available",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "directors"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": null,
+                    "objectUuid": "obj-1",
+                    "registerId": null,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "role": "directors"
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 3,
+                    "runUuid": "run-2",
+                    "nodeId": null
+                },
+                "task-sequence:<seq>"
+            ]
+        ],
+        "returned": {
+            "uuid": "<seq>",
+            "templateId": "tpl-1",
+            "templateVersion": 3,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": "obj-1",
+            "registerId": null,
+            "schemaId": 5,
+            "chainKey": "submit-approval",
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "running",
+            "outcome": null,
+            "runUuid": "run-2",
+            "nodeId": null,
+            "opened": true,
+            "closed": false
+        }
+    },
+    "provision:tier": {
+        "calls": [
+            [
+                "insert",
+                {
+                    "uuid": "<seq>",
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": "obj-1",
+                    "registerId": 7,
+                    "schemaId": 5,
+                    "chainKey": "submit-approval",
+                    "requesterId": "alice",
+                    "resolvedTier": {
+                        "positions": [
+                            {
+                                "order": 4,
+                                "role": "board",
+                                "statusOnApprove": "x"
+                            }
+                        ]
+                    },
+                    "positionCursor": 4,
+                    "status": "running",
+                    "outcome": null,
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": true,
+                    "closed": false
+                }
+            ],
+            [
+                "import",
+                {
+                    "title": "Approve submit-approval (step 4 of 1)",
+                    "description": "Approval step 4 of 1 for submit-approval on object obj-1.",
+                    "state": "enabled",
+                    "performerType": "group",
+                    "candidateGroups": [
+                        "board"
+                    ],
+                    "routingStrategy": "single-role",
+                    "requester": "alice",
+                    "objectUuid": "obj-1",
+                    "registerId": 7,
+                    "schemaId": 5,
+                    "templateId": "tpl-1",
+                    "templateVersion": 3,
+                    "templateSnapshot": {
+                        "order": 4,
+                        "role": "board",
+                        "statusOnApprove": "x"
+                    },
+                    "sequenceUuid": "<seq>",
+                    "sequencePosition": 4,
+                    "runUuid": null,
+                    "nodeId": null
+                },
+                "alice"
+            ]
+        ],
+        "returned": {
+            "uuid": "<seq>",
+            "templateId": "tpl-1",
+            "templateVersion": 3,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": "obj-1",
+            "registerId": 7,
+            "schemaId": 5,
+            "chainKey": "submit-approval",
+            "requesterId": "alice",
+            "resolvedTier": {
+                "positions": [
+                    {
+                        "order": 4,
+                        "role": "board",
+                        "statusOnApprove": "x"
+                    }
+                ]
+            },
+            "positionCursor": 4,
+            "status": "running",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": true,
+            "closed": false
+        }
+    },
+    "terminal:approved declared status on approve": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "completed",
+                    "outcome": "published",
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": true
+                }
+            ],
+            [
+                "dispatch",
+                "OCA\\OpenRegister\\Event\\TaskSequenceCompletedEvent",
+                [
+                    {
+                        "uuid": "seq-1",
+                        "templateId": null,
+                        "templateVersion": null,
+                        "templateSnapshot": {
+                            "templateId": "tpl-1",
+                            "templateVersion": 3,
+                            "name": "submit-approval",
+                            "schemaId": "5",
+                            "positions": [
+                                {
+                                    "order": 1,
+                                    "role": " clerks "
+                                },
+                                {
+                                    "order": 2,
+                                    "role": "managers",
+                                    "statusOnApprove": "published",
+                                    "statusOnReject": "returned-to-draft"
+                                },
+                                {
+                                    "role": "directors"
+                                }
+                            ]
+                        },
+                        "anchorObjectUuid": null,
+                        "registerId": null,
+                        "schemaId": null,
+                        "chainKey": null,
+                        "requesterId": null,
+                        "resolvedTier": null,
+                        "positionCursor": 1,
+                        "status": "completed",
+                        "outcome": "published",
+                        "runUuid": null,
+                        "nodeId": null,
+                        "opened": false,
+                        "closed": true
+                    },
+                    "task-2",
+                    "decider-2",
+                    "published"
+                ]
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "completed",
+            "outcome": "published",
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": true
+        }
+    },
+    "terminal:approved first enables second": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "enable",
+                "task-2",
+                "task-sequence:seq-1",
+                "Position 1 approved; position 2 is now enabled."
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 2,
+                    "status": "running",
+                    "outcome": null,
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": false
+                }
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 2,
+            "status": "running",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": false
+        }
+    },
+    "terminal:approved from tier": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": {
+                        "positions": [
+                            {
+                                "order": 1,
+                                "statusOnApprove": " tiered "
+                            }
+                        ]
+                    },
+                    "positionCursor": 1,
+                    "status": "completed",
+                    "outcome": "tiered",
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": true
+                }
+            ],
+            [
+                "dispatch",
+                "OCA\\OpenRegister\\Event\\TaskSequenceCompletedEvent",
+                [
+                    {
+                        "uuid": "seq-1",
+                        "templateId": null,
+                        "templateVersion": null,
+                        "templateSnapshot": {
+                            "templateId": "tpl-1",
+                            "templateVersion": 3,
+                            "name": "submit-approval",
+                            "schemaId": "5",
+                            "positions": [
+                                {
+                                    "order": 1,
+                                    "role": " clerks "
+                                },
+                                {
+                                    "order": 2,
+                                    "role": "managers",
+                                    "statusOnApprove": "published",
+                                    "statusOnReject": "returned-to-draft"
+                                },
+                                {
+                                    "role": "directors"
+                                }
+                            ]
+                        },
+                        "anchorObjectUuid": null,
+                        "registerId": null,
+                        "schemaId": null,
+                        "chainKey": null,
+                        "requesterId": null,
+                        "resolvedTier": {
+                            "positions": [
+                                {
+                                    "order": 1,
+                                    "statusOnApprove": " tiered "
+                                }
+                            ]
+                        },
+                        "positionCursor": 1,
+                        "status": "completed",
+                        "outcome": "tiered",
+                        "runUuid": null,
+                        "nodeId": null,
+                        "opened": false,
+                        "closed": true
+                    },
+                    "task-1",
+                    "decider-1",
+                    "tiered"
+                ]
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": {
+                "positions": [
+                    {
+                        "order": 1,
+                        "statusOnApprove": " tiered "
+                    }
+                ]
+            },
+            "positionCursor": 1,
+            "status": "completed",
+            "outcome": "tiered",
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": true
+        }
+    },
+    "terminal:approved last completes": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "completed",
+                    "outcome": "approved",
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": true
+                }
+            ],
+            [
+                "dispatch",
+                "OCA\\OpenRegister\\Event\\TaskSequenceCompletedEvent",
+                [
+                    {
+                        "uuid": "seq-1",
+                        "templateId": null,
+                        "templateVersion": null,
+                        "templateSnapshot": {
+                            "templateId": "tpl-1",
+                            "templateVersion": 3,
+                            "name": "submit-approval",
+                            "schemaId": "5",
+                            "positions": [
+                                {
+                                    "order": 1,
+                                    "role": " clerks "
+                                },
+                                {
+                                    "order": 2,
+                                    "role": "managers",
+                                    "statusOnApprove": "published",
+                                    "statusOnReject": "returned-to-draft"
+                                },
+                                {
+                                    "role": "directors"
+                                }
+                            ]
+                        },
+                        "anchorObjectUuid": null,
+                        "registerId": null,
+                        "schemaId": null,
+                        "chainKey": null,
+                        "requesterId": null,
+                        "resolvedTier": null,
+                        "positionCursor": 1,
+                        "status": "completed",
+                        "outcome": "approved",
+                        "runUuid": null,
+                        "nodeId": null,
+                        "opened": false,
+                        "closed": true
+                    },
+                    "task-3",
+                    "decider-3",
+                    "approved"
+                ]
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "completed",
+            "outcome": "approved",
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": true
+        }
+    },
+    "terminal:approved skips terminal later": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "enable",
+                "task-3",
+                "task-sequence:seq-1",
+                "Position 1 approved; position 3 is now enabled."
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 3,
+                    "status": "running",
+                    "outcome": null,
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": false
+                }
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 3,
+            "status": "running",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": false
+        }
+    },
+    "terminal:cancelled position": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "terminated",
+                    "outcome": "terminated",
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": true
+                }
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-1",
+                "Position 2 ended as 'disabled' without a decision.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-2",
+                "Position 2 ended as 'disabled' without a decision.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-3",
+                "Position 2 ended as 'disabled' without a decision.",
+                "task-sequence:seq-1"
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "terminated",
+            "outcome": "terminated",
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": true
+        }
+    },
+    "terminal:dangling sequence": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "log:warning",
+                "[TaskSequenceService] Task task-1 names sequence seq-1, which does not resolve: no sequence seq-1",
+                []
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "running",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": false
+        }
+    },
+    "terminal:declared approving set": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "enable",
+                "task-2",
+                "task-sequence:seq-1",
+                "Position 1 approved; position 2 is now enabled."
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ],
+                        "approvingOutcomes": [
+                            "ok"
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 2,
+                    "status": "running",
+                    "outcome": null,
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": false
+                }
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ],
+                "approvingOutcomes": [
+                    "ok"
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 2,
+            "status": "running",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": false
+        }
+    },
+    "terminal:outside any sequence": {
+        "calls": [],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "running",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": false
+        }
+    },
+    "terminal:rejected declared position": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "rejected",
+                    "outcome": "returned-to-draft",
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": true
+                }
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-1",
+                "Rejected at position 2 by decider-2.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-2",
+                "Rejected at position 2 by decider-2.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-3",
+                "Rejected at position 2 by decider-2.",
+                "task-sequence:seq-1"
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "rejected",
+            "outcome": "returned-to-draft",
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": true
+        }
+    },
+    "terminal:rejected first position": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "rejected",
+                    "outcome": "rejected",
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": true
+                }
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-1",
+                "Rejected at position 1 by decider-1.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-2",
+                "Rejected at position 1 by decider-1.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-3",
+                "Rejected at position 1 by decider-1.",
+                "task-sequence:seq-1"
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "rejected",
+            "outcome": "rejected",
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": true
+        }
+    },
+    "terminal:rejected without decider": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "rejected",
+                    "outcome": "rejected",
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": true
+                }
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-1",
+                "Rejected at position 1 by an unnamed decider.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-2",
+                "Rejected at position 1 by an unnamed decider.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-3",
+                "Rejected at position 1 by an unnamed decider.",
+                "task-sequence:seq-1"
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "rejected",
+            "outcome": "rejected",
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": true
+        }
+    },
+    "terminal:terminal sequence": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "rejected",
+            "outcome": null,
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": false
+        }
+    },
+    "terminal:termination failure is logged": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "rejected",
+                    "outcome": "rejected",
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": true
+                }
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-1",
+                "Rejected at position 1 by decider-1.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-2",
+                "Rejected at position 1 by decider-1.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "log:error",
+                "[TaskSequenceService] Could not terminate task task-2 of closed sequence seq-1: cannot terminate task-2",
+                [
+                    "exception"
+                ]
+            ],
+            [
+                "terminateAsMoot",
+                "task-3",
+                "Rejected at position 1 by decider-1.",
+                "task-sequence:seq-1"
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "rejected",
+            "outcome": "rejected",
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": true
+        }
+    },
+    "terminal:undecided outcome": {
+        "calls": [
+            [
+                "findByUuid",
+                "seq-1"
+            ],
+            [
+                "update",
+                {
+                    "uuid": "seq-1",
+                    "templateId": null,
+                    "templateVersion": null,
+                    "templateSnapshot": {
+                        "templateId": "tpl-1",
+                        "templateVersion": 3,
+                        "name": "submit-approval",
+                        "schemaId": "5",
+                        "positions": [
+                            {
+                                "order": 1,
+                                "role": " clerks "
+                            },
+                            {
+                                "order": 2,
+                                "role": "managers",
+                                "statusOnApprove": "published",
+                                "statusOnReject": "returned-to-draft"
+                            },
+                            {
+                                "role": "directors"
+                            }
+                        ]
+                    },
+                    "anchorObjectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "chainKey": null,
+                    "requesterId": null,
+                    "resolvedTier": null,
+                    "positionCursor": 1,
+                    "status": "undecided",
+                    "outcome": "undecided",
+                    "runUuid": null,
+                    "nodeId": null,
+                    "opened": false,
+                    "closed": true
+                }
+            ],
+            [
+                "findBySequence",
+                "seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-1",
+                "Position 1 completed with outcome 'maybe', which neither approves nor rejects.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-2",
+                "Position 1 completed with outcome 'maybe', which neither approves nor rejects.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "terminateAsMoot",
+                "task-3",
+                "Position 1 completed with outcome 'maybe', which neither approves nor rejects.",
+                "task-sequence:seq-1"
+            ],
+            [
+                "dispatch",
+                "OCA\\OpenRegister\\Event\\TaskSequenceUndecidedEvent",
+                [
+                    {
+                        "uuid": "seq-1",
+                        "templateId": null,
+                        "templateVersion": null,
+                        "templateSnapshot": {
+                            "templateId": "tpl-1",
+                            "templateVersion": 3,
+                            "name": "submit-approval",
+                            "schemaId": "5",
+                            "positions": [
+                                {
+                                    "order": 1,
+                                    "role": " clerks "
+                                },
+                                {
+                                    "order": 2,
+                                    "role": "managers",
+                                    "statusOnApprove": "published",
+                                    "statusOnReject": "returned-to-draft"
+                                },
+                                {
+                                    "role": "directors"
+                                }
+                            ]
+                        },
+                        "anchorObjectUuid": null,
+                        "registerId": null,
+                        "schemaId": null,
+                        "chainKey": null,
+                        "requesterId": null,
+                        "resolvedTier": null,
+                        "positionCursor": 1,
+                        "status": "undecided",
+                        "outcome": "undecided",
+                        "runUuid": null,
+                        "nodeId": null,
+                        "opened": false,
+                        "closed": true
+                    },
+                    "task-1"
+                ]
+            ]
+        ],
+        "sequence": {
+            "uuid": "seq-1",
+            "templateId": null,
+            "templateVersion": null,
+            "templateSnapshot": {
+                "templateId": "tpl-1",
+                "templateVersion": 3,
+                "name": "submit-approval",
+                "schemaId": "5",
+                "positions": [
+                    {
+                        "order": 1,
+                        "role": " clerks "
+                    },
+                    {
+                        "order": 2,
+                        "role": "managers",
+                        "statusOnApprove": "published",
+                        "statusOnReject": "returned-to-draft"
+                    },
+                    {
+                        "role": "directors"
+                    }
+                ]
+            },
+            "anchorObjectUuid": null,
+            "registerId": null,
+            "schemaId": null,
+            "chainKey": null,
+            "requesterId": null,
+            "resolvedTier": null,
+            "positionCursor": 1,
+            "status": "undecided",
+            "outcome": "undecided",
+            "runUuid": null,
+            "nodeId": null,
+            "opened": false,
+            "closed": true
+        }
+    }
+}

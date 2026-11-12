@@ -38,7 +38,7 @@ The orchestrator (`PdfOdtFallbackOrchestrator::attempt()`) enforces these guards
 
 ### Requirement: Path B is gated by tenant configuration
 
-A new config flag (`pdf-anonymisation.path-b-enabled`, default `false`) MUST be set explicitly per-tenant before Path B activates. Tenants without NC Office installed (the default DI binding is `NullNcOfficeConverter` which always reports `isAvailable() = false`) never see the flag honoured — `isEnabled()` returns `false` even with the flag on until a concrete `NcOfficeConverterInterface` implementation is bound.
+A new config flag (`pdf-anonymisation.path-b-enabled`, default `false`) MUST be set explicitly per-tenant before Path B activates. Tenants without NC Office installed (the DI binding is `ConversionManagerConverter`, which reports `isAvailable() = false` when no conversion provider handles ODT and PDF) never see the flag honoured — `isEnabled()` returns `false` even with the flag on until a conversion provider is installed.
 
 #### Scenario: Default behaviour preserves v1 fail-closed
 

@@ -1,0 +1,2966 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`item request actions golden application.deleteApplication([{"id":"a1"}]): network failure 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error deleting application:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": "Network down",
+    "thrown": "Failed to delete application: Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Network down",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.deleteApplication([{"id":"a1"}]): ok 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "method": "DELETE",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [
+      {
+        "active": true,
+        "authorization": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configurations": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": "r1",
+        "name": "",
+        "owner": "",
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "registers": [],
+        "schemas": [],
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "uuid": "",
+        "version": "1.0.0",
+      },
+    ],
+    "error": null,
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.deleteApplication([{"id":"a1"}]): ok without results 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(Cannot read properties of undefined (reading 'map'))",
+    ],
+    [
+      "Error deleting application:",
+      "Error(Cannot read properties of undefined (reading 'map'))",
+    ],
+  ],
+  "outcome": {
+    "cause": "Cannot read properties of undefined (reading 'map')",
+    "thrown": "Failed to delete application: Cannot read properties of undefined (reading 'map')",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "method": "DELETE",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Cannot read properties of undefined (reading 'map')",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.deleteApplication([{"id":"a1"}]): refused 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error deleting application:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to delete application: HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "method": "DELETE",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "HTTP error! status: 500",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.deleteApplication([{}]): network failure 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No application to delete",
+  },
+  "requests": [],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "earlier",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.deleteApplication([{}]): ok 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No application to delete",
+  },
+  "requests": [],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "earlier",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.deleteApplication([{}]): ok without results 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No application to delete",
+  },
+  "requests": [],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "earlier",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.deleteApplication([{}]): refused 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No application to delete",
+  },
+  "requests": [],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "earlier",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.getApplication(["a1"]): network failure 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Network down",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.getApplication(["a1"]): ok 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "id": "srv",
+      "name": "Server",
+      "results": [
+        {
+          "id": "r1",
+        },
+      ],
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": {
+      "active": true,
+      "authorization": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configurations": [],
+      "created": "",
+      "description": "",
+      "groups": [],
+      "id": "srv",
+      "name": "Server",
+      "owner": "",
+      "quota": {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+      "registers": [],
+      "schemas": [],
+      "updated": "",
+      "usage": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "uuid": "",
+      "version": "1.0.0",
+    },
+    "applicationList": [],
+    "error": null,
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.getApplication(["a1"]): ok without results 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "id": "srv",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": {
+      "active": true,
+      "authorization": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configurations": [],
+      "created": "",
+      "description": "",
+      "groups": [],
+      "id": "srv",
+      "name": "",
+      "owner": "",
+      "quota": {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+      "registers": [],
+      "schemas": [],
+      "updated": "",
+      "usage": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "uuid": "",
+      "version": "1.0.0",
+    },
+    "applicationList": [],
+    "error": null,
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.getApplication(["a1"]): refused 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "HTTP error! status: 500",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList(["",false]): network failure 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Network down",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList(["",false]): ok 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": [
+        {
+          "id": "r1",
+        },
+      ],
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [
+      {
+        "active": true,
+        "authorization": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configurations": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": "r1",
+        "name": "",
+        "owner": "",
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "registers": [],
+        "schemas": [],
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "uuid": "",
+        "version": "1.0.0",
+      },
+    ],
+    "error": null,
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList(["",false]): ok without results 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(Cannot read properties of undefined (reading 'map'))",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Cannot read properties of undefined (reading 'map')",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Cannot read properties of undefined (reading 'map')",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList(["",false]): refused 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "HTTP error! status: 500",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList(["find me",true]): network failure 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications?_search=find%20me",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Network down",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList(["find me",true]): ok 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": [
+        {
+          "id": "r1",
+        },
+      ],
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications?_search=find%20me",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [
+      {
+        "active": true,
+        "authorization": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configurations": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": "r1",
+        "name": "",
+        "owner": "",
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "registers": [],
+        "schemas": [],
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "uuid": "",
+        "version": "1.0.0",
+      },
+    ],
+    "error": null,
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList(["find me",true]): ok without results 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(Cannot read properties of undefined (reading 'map'))",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Cannot read properties of undefined (reading 'map')",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications?_search=find%20me",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Cannot read properties of undefined (reading 'map')",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList(["find me",true]): refused 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications?_search=find%20me",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "HTTP error! status: 500",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList([]): network failure 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Network down",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList([]): ok 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": [
+        {
+          "id": "r1",
+        },
+      ],
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [
+      {
+        "active": true,
+        "authorization": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configurations": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": "r1",
+        "name": "",
+        "owner": "",
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "registers": [],
+        "schemas": [],
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "uuid": "",
+        "version": "1.0.0",
+      },
+    ],
+    "error": null,
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList([]): ok without results 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(Cannot read properties of undefined (reading 'map'))",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Cannot read properties of undefined (reading 'map')",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Cannot read properties of undefined (reading 'map')",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.refreshApplicationList([]): refused 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "HTTP error! status: 500",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([{"id":"a1","name":"App","uuid":"u","usage":1,"owner":"o","active":""}]): network failure 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error saving application:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": "Network down",
+    "thrown": "Failed to save application: Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "body": "{"name":"App","active":true}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Network down",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([{"id":"a1","name":"App","uuid":"u","usage":1,"owner":"o","active":""}]): ok 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "active": true,
+        "authorization": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configurations": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": "srv",
+        "name": "Server",
+        "owner": "",
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "registers": [],
+        "schemas": [],
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "uuid": "",
+        "version": "1.0.0",
+      },
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "body": "{"name":"App","active":true}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": {
+      "active": true,
+      "authorization": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configurations": [],
+      "created": "",
+      "description": "",
+      "groups": [],
+      "id": "srv",
+      "name": "Server",
+      "owner": "",
+      "quota": {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+      "registers": [],
+      "schemas": [],
+      "updated": "",
+      "usage": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "uuid": "",
+      "version": "1.0.0",
+    },
+    "applicationList": [
+      {
+        "active": true,
+        "authorization": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configurations": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": "r1",
+        "name": "",
+        "owner": "",
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "registers": [],
+        "schemas": [],
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "uuid": "",
+        "version": "1.0.0",
+      },
+    ],
+    "error": null,
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([{"id":"a1","name":"App","uuid":"u","usage":1,"owner":"o","active":""}]): ok without results 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(Cannot read properties of undefined (reading 'map'))",
+    ],
+    [
+      "Error saving application:",
+      "Error(Cannot read properties of undefined (reading 'map'))",
+    ],
+  ],
+  "outcome": {
+    "cause": "Cannot read properties of undefined (reading 'map')",
+    "thrown": "Failed to save application: Cannot read properties of undefined (reading 'map')",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "body": "{"name":"App","active":true}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": {
+      "active": true,
+      "authorization": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configurations": [],
+      "created": "",
+      "description": "",
+      "groups": [],
+      "id": "srv",
+      "name": "",
+      "owner": "",
+      "quota": {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+      "registers": [],
+      "schemas": [],
+      "updated": "",
+      "usage": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "uuid": "",
+      "version": "1.0.0",
+    },
+    "applicationList": [],
+    "error": "Cannot read properties of undefined (reading 'map')",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([{"id":"a1","name":"App","uuid":"u","usage":1,"owner":"o","active":""}]): refused 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error saving application:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to save application: HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications/a1",
+      {
+        "body": "{"name":"App","active":true}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "HTTP error! status: 500",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([{"name":"New"}]): network failure 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error saving application:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": "Network down",
+    "thrown": "Failed to save application: Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "body": "{"name":"New"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "Network down",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([{"name":"New"}]): ok 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "active": true,
+        "authorization": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configurations": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": "srv",
+        "name": "Server",
+        "owner": "",
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "registers": [],
+        "schemas": [],
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "uuid": "",
+        "version": "1.0.0",
+      },
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "body": "{"name":"New"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": {
+      "active": true,
+      "authorization": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configurations": [],
+      "created": "",
+      "description": "",
+      "groups": [],
+      "id": "srv",
+      "name": "Server",
+      "owner": "",
+      "quota": {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+      "registers": [],
+      "schemas": [],
+      "updated": "",
+      "usage": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "uuid": "",
+      "version": "1.0.0",
+    },
+    "applicationList": [
+      {
+        "active": true,
+        "authorization": {
+          "create": [],
+          "delete": [],
+          "read": [],
+          "update": [],
+        },
+        "configurations": [],
+        "created": "",
+        "description": "",
+        "groups": [],
+        "id": "r1",
+        "name": "",
+        "owner": "",
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "registers": [],
+        "schemas": [],
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+        "uuid": "",
+        "version": "1.0.0",
+      },
+    ],
+    "error": null,
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([{"name":"New"}]): ok without results 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching applications:",
+      "Error(Cannot read properties of undefined (reading 'map'))",
+    ],
+    [
+      "Error saving application:",
+      "Error(Cannot read properties of undefined (reading 'map'))",
+    ],
+  ],
+  "outcome": {
+    "cause": "Cannot read properties of undefined (reading 'map')",
+    "thrown": "Failed to save application: Cannot read properties of undefined (reading 'map')",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "body": "{"name":"New"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": {
+      "active": true,
+      "authorization": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configurations": [],
+      "created": "",
+      "description": "",
+      "groups": [],
+      "id": "srv",
+      "name": "",
+      "owner": "",
+      "quota": {
+        "bandwidth": null,
+        "groups": null,
+        "requests": null,
+        "storage": null,
+        "users": null,
+      },
+      "registers": [],
+      "schemas": [],
+      "updated": "",
+      "usage": {
+        "bandwidth": 0,
+        "groups": 0,
+        "requests": 0,
+        "storage": 0,
+        "users": 0,
+      },
+      "uuid": "",
+      "version": "1.0.0",
+    },
+    "applicationList": [],
+    "error": "Cannot read properties of undefined (reading 'map')",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([{"name":"New"}]): refused 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error saving application:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to save application: HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/applications",
+      {
+        "body": "{"name":"New"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "HTTP error! status: 500",
+    "filters": [],
+    "loading": false,
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([null]): network failure 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No application to save",
+  },
+  "requests": [],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "earlier",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([null]): ok 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No application to save",
+  },
+  "requests": [],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "earlier",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([null]): ok without results 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No application to save",
+  },
+  "requests": [],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "earlier",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden application.saveApplication([null]): refused 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No application to save",
+  },
+  "requests": [],
+  "state": {
+    "applicationItem": null,
+    "applicationList": [],
+    "error": "earlier",
+    "filters": [],
+    "loading": "earlier",
+    "nextcloudGroups": [],
+    "pagination": {
+      "limit": 20,
+      "page": 1,
+    },
+    "viewMode": "cards",
+  },
+}
+`;
+
+exports[`item request actions golden webhook.deleteWebhook(["w1"]): network failure 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [
+    [
+      "Error deleting webhook:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+    ],
+  ],
+  "state": {
+    "error": "Network down",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.deleteWebhook(["w1"]): ok 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+    ],
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [
+      {
+        "id": "r1",
+      },
+    ],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.deleteWebhook(["w1"]): ok without results 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+    ],
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.deleteWebhook(["w1"]): refused 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [
+    [
+      "Error deleting webhook:",
+      "Error(Request failed with status code 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Request failed with status code 500",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+    ],
+  ],
+  "state": {
+    "error": "Request failed with status code 500",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.deleteWebhook([0]): network failure 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to delete",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.deleteWebhook([0]): ok 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to delete",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.deleteWebhook([0]): ok without results 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to delete",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.deleteWebhook([0]): refused 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to delete",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.refreshWebhookList([]): network failure 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching webhooks:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": "Network down",
+    "loading": false,
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.refreshWebhookList([]): ok 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": [
+        {
+          "id": "r1",
+        },
+      ],
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "webhookItem": null,
+    "webhookList": [
+      {
+        "id": "r1",
+      },
+    ],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.refreshWebhookList([]): ok without results 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": [],
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.refreshWebhookList([]): refused 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error fetching webhooks:",
+      "Error(Request failed with status code 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Request failed with status code 500",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": "Request failed with status code 500",
+    "loading": false,
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.refreshWebhookList([true]): network failure 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [
+    [
+      "Error fetching webhooks:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": "Network down",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.refreshWebhookList([true]): ok 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": [
+        {
+          "id": "r1",
+        },
+      ],
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [
+      {
+        "id": "r1",
+      },
+    ],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.refreshWebhookList([true]): ok without results 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": [],
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.refreshWebhookList([true]): refused 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [
+    [
+      "Error fetching webhooks:",
+      "Error(Request failed with status code 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Request failed with status code 500",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": "Request failed with status code 500",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([{"id":"w1","name":"Hook"}]): network failure 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error saving webhook:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+      {
+        "name": "Hook",
+      },
+    ],
+  ],
+  "state": {
+    "error": "Network down",
+    "loading": false,
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([{"id":"w1","name":"Hook"}]): ok 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "id": "srv",
+        "name": "Server",
+        "results": [
+          {
+            "id": "r1",
+          },
+        ],
+      },
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+      {
+        "name": "Hook",
+      },
+    ],
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "webhookItem": {
+      "id": "srv",
+      "name": "Server",
+      "results": [
+        {
+          "id": "r1",
+        },
+      ],
+    },
+    "webhookList": [
+      {
+        "id": "r1",
+      },
+    ],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([{"id":"w1","name":"Hook"}]): ok without results 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "id": "srv",
+      },
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+      {
+        "name": "Hook",
+      },
+    ],
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "webhookItem": {
+      "id": "srv",
+    },
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([{"id":"w1","name":"Hook"}]): refused 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error saving webhook:",
+      "Error(Request failed with status code 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Request failed with status code 500",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+      {
+        "name": "Hook",
+      },
+    ],
+  ],
+  "state": {
+    "error": "Request failed with status code 500",
+    "loading": false,
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([{"name":"New"}]): network failure 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error saving webhook:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+      {
+        "name": "New",
+      },
+    ],
+  ],
+  "state": {
+    "error": "Network down",
+    "loading": false,
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([{"name":"New"}]): ok 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "id": "srv",
+        "name": "Server",
+        "results": [
+          {
+            "id": "r1",
+          },
+        ],
+      },
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+      {
+        "name": "New",
+      },
+    ],
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "webhookItem": {
+      "id": "srv",
+      "name": "Server",
+      "results": [
+        {
+          "id": "r1",
+        },
+      ],
+    },
+    "webhookList": [
+      {
+        "id": "r1",
+      },
+    ],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([{"name":"New"}]): ok without results 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "data": {
+        "id": "srv",
+      },
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+      {
+        "name": "New",
+      },
+    ],
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "webhookItem": {
+      "id": "srv",
+    },
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([{"name":"New"}]): refused 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": true,
+  },
+  "logged": [
+    [
+      "Error saving webhook:",
+      "Error(Request failed with status code 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Request failed with status code 500",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks",
+      {
+        "name": "New",
+      },
+    ],
+  ],
+  "state": {
+    "error": "Request failed with status code 500",
+    "loading": false,
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([null]): network failure 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to save",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([null]): ok 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to save",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([null]): ok without results 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to save",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.saveWebhook([null]): refused 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to save",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.toggleWebhookEnabled([{"id":"w1","enabled":true}]): network failure 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [
+    [
+      "Error toggling webhook:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+      {
+        "enabled": false,
+      },
+    ],
+  ],
+  "state": {
+    "error": "Network down",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.toggleWebhookEnabled([{"id":"w1","enabled":true}]): ok 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+      {
+        "enabled": false,
+      },
+    ],
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [
+      {
+        "id": "r1",
+      },
+    ],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.toggleWebhookEnabled([{"id":"w1","enabled":true}]): ok without results 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "response": "<response>",
+    },
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+      {
+        "enabled": false,
+      },
+    ],
+    [
+      "url:/apps/openregister/api/webhooks",
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.toggleWebhookEnabled([{"id":"w1","enabled":true}]): refused 1`] = `
+{
+  "during": {
+    "error": null,
+    "loading": "earlier",
+  },
+  "logged": [
+    [
+      "Error toggling webhook:",
+      "Error(Request failed with status code 500)",
+    ],
+  ],
+  "outcome": {
+    "cause": null,
+    "thrown": "Request failed with status code 500",
+  },
+  "requests": [
+    [
+      "url:/apps/openregister/api/webhooks/w1",
+      {
+        "enabled": false,
+      },
+    ],
+  ],
+  "state": {
+    "error": "Request failed with status code 500",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.toggleWebhookEnabled([{}]): network failure 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to toggle",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.toggleWebhookEnabled([{}]): ok 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to toggle",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.toggleWebhookEnabled([{}]): ok without results 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to toggle",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;
+
+exports[`item request actions golden webhook.toggleWebhookEnabled([{}]): refused 1`] = `
+{
+  "during": {
+    "error": "earlier",
+    "loading": "earlier",
+  },
+  "logged": [],
+  "outcome": {
+    "cause": null,
+    "thrown": "No webhook to toggle",
+  },
+  "requests": [],
+  "state": {
+    "error": "earlier",
+    "loading": "earlier",
+    "webhookItem": null,
+    "webhookList": [],
+  },
+}
+`;

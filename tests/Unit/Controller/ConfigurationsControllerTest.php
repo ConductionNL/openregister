@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationsControllerFactory;
 use OCA\OpenRegister\Controller\ConfigurationsController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -39,13 +40,11 @@ class ConfigurationsControllerTest extends TestCase {
 		$groupManager = $this->createMock(\OCP\IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new ConfigurationsController(
-			'openregister',
+		$this->controller = ConfigurationsControllerFactory::create(
 			$this->request,
 			$this->configurationMapper,
 			$this->configurationService,
 			$this->uploadService,
-			'admin',
 			$userSession,
 			$groupManager
 		);
@@ -179,22 +178,6 @@ class ConfigurationsControllerTest extends TestCase {
 		$this->assertEquals(400, $result->getStatus());
 	}
 
-	public function testExportSuccess(): void {
-		$config = new \OCA\OpenRegister\Db\Configuration();
-		$ref = new \ReflectionClass($config);
-		$prop = $ref->getProperty('id');
-		$prop->setAccessible(true);
-		$prop->setValue($config, 1);
-		$config->setTitle('TestConfig');
-		$this->configurationMapper->method('find')->willReturn($config);
-		$this->configurationService->method('exportConfig')->willReturn(['data' => 'test']);
-
-		$result = $this->controller->export(1);
-
-		// Returns DataDownloadResponse on success
-		$this->assertNotNull($result);
-	}
-
 	// ── create() sourceType / isLocal branches ──
 
 	public function testCreateWithGithubSourceTypeSetsIsLocalFalse(): void {
@@ -324,16 +307,6 @@ class ConfigurationsControllerTest extends TestCase {
 	}
 
 	// ── export() ──
-
-	public function testExportException(): void {
-		$this->configurationMapper->method('find')
-			->willThrowException(new \Exception('Not found'));
-
-		$result = $this->controller->export(999);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertEquals(400, $result->getStatus());
-	}
 
 	// ── import() ──
 

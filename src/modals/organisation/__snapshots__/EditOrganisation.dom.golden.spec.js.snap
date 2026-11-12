@@ -1,0 +1,1758 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditOrganisation groups fetches the groups when none are cached and maps them afterwards 1`] = `
+[
+  {
+    "id": "admin",
+    "name": "Admins",
+    "userCount": 2,
+  },
+  {
+    "id": "gone",
+    "name": "gone",
+    "userCount": 0,
+  },
+]
+`;
+
+exports[`EditOrganisation leaving and creating another clears the form after a save with create another 1`] = `
+{
+  "active": true,
+  "description": "",
+  "groups": [],
+  "name": "",
+  "quota": {
+    "bandwidth": null,
+    "requests": null,
+    "storage": null,
+  },
+  "slug": "",
+}
+`;
+
+exports[`EditOrganisation markup renders a stored organisation 1`] = `
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <div class="tabContainer">
+        <x-apptabs modelvalue="0" contentclass="mt-3" justified="" data-on="onUpdate:modelValue">
+          <slot-default>
+            <x-apptab active="">
+              <slot-title>
+                <x-cog size="16"></x-cog><span>Settings</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield modelvalue="Org" disabled="false" label="Name *" error="false" placeholder="Enter organisation name" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield modelvalue="org" disabled="false" label="Slug" placeholder="Optional URL-friendly identifier" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextarea modelvalue="d" disabled="false" label="Description" placeholder="Enter organisation description (optional)" rows="4" data-on="onUpdate:modelValue"></x-nctextarea>
+                  <div class="groups-select-container"><label class="groups-label">Nextcloud Groups</label>
+                    <x-ncselect modelvalue="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;gone&quot;,&quot;name&quot;:&quot;gone&quot;,&quot;userCount&quot;:0}]" inputlabel="Selected Groups" disabled="false" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups..." data-on="onUpdate:modelValue onSearchChange">
+                      <slot-option>
+                        <div class="group-option"><span class="group-name"></span></div>
+                      </slot-option>
+                      <slot-no-options><span>No groups found. Try a different search.</span></slot-no-options>
+                    </x-ncselect>
+                    <p class="field-hint">Only members of selected groups can access this organisation</p>
+                  </div>
+                  <x-nccheckboxradioswitch modelvalue="false" disabled="false" data-on="onUpdate:modelValue">
+                    <slot-default>Active</slot-default>
+                  </x-nccheckboxradioswitch>
+                  <x-ncnotecard type="warning">
+                    <slot-default>
+                      <p>Inactive organisations cannot be used</p>
+                    </slot-default>
+                  </x-ncnotecard>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-database size="16"></x-database><span>Quota</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield disabled="false" label="Storage Quota (MB)" type="number" placeholder="0 = unlimited" modelvalue="3" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Bandwidth Quota (MB/month)" type="number" placeholder="0 = unlimited" modelvalue="1" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="API Request Quota (requests/day)" type="number" placeholder="0 = unlimited" modelvalue="7" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="User Quota" type="number" placeholder="0 = unlimited" modelvalue="8" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Group Quota" type="number" placeholder="0 = unlimited" modelvalue="9" data-on="onUpdate:modelValue"></x-nctextfield>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab disabled="false">
+              <slot-title>
+                <x-accountmultiple size="16"></x-accountmultiple><span>Users</span>
+              </slot-title>
+              <slot-default>
+                <div class="users-section">
+                  <div class="users-header">
+                    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+                      <slot-icon>
+                        <x-accountplus size="20"></x-accountplus>
+                      </slot-icon>
+                      <slot-default> Add User</slot-default>
+                    </x-ncbutton>
+                  </div>
+                  <div class="users-list">
+                    <h3>Members ({count}) {"count":2}</h3>
+                    <div class="user-items">
+                      <div class="user-item">
+                        <div class="user-info">
+                          <x-accountcircle size="20" class="user-icon"></x-accountcircle><span class="user-id">owner</span><span class="owner-badge">Owner</span></div>
+                      </div>
+                      <div class="user-item">
+                        <div class="user-info">
+                          <x-accountcircle size="20" class="user-icon"></x-accountcircle><span class="user-id">member</span></div>
+                        <x-ncbutton variant="tertiary" disabled="false" data-on="onClick">
+                          <slot-icon>
+                            <x-accountminus size="16"></x-accountminus>
+                          </slot-icon>
+                          <slot-default> Remove</slot-default>
+                        </x-ncbutton>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-shield size="16"></x-shield><span>Security</span>
+              </slot-title>
+              <slot-default>
+                <div class="security-section">
+                  <div class="rbac-container">
+                    <x-apptabs contentclass="mt-3" pills="">
+                      <slot-default>
+                        <x-apptab title="Registers">
+                          <slot-default>
+                            <x-rbactable entitytype="register" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Schemas">
+                          <slot-default>
+                            <x-rbactable entitytype="schema" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Objects">
+                          <slot-default>
+                            <x-rbactable entitytype="object" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Views">
+                          <slot-default>
+                            <x-rbactable entitytype="view" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Agents">
+                          <slot-default>
+                            <x-rbactable entitytype="agent" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Configurations">
+                          <slot-default>
+                            <x-rbactable entitytype="configuration" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Applications">
+                          <slot-default>
+                            <x-rbactable entitytype="application" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Special Rights">
+                          <slot-default>
+                            <div class="special-rights-container">
+                              <p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+                              <table class="rbac-table special-rights-table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">Right</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Groups</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">agent_use</span></td>
+                                    <td class="right-description">Use AI agents for processing and analysis</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">llm_use</span></td>
+                                    <td class="right-description">Use Large Language Model features</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </slot-default>
+                        </x-apptab>
+                      </slot-default>
+                    </x-apptabs>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+          </slot-default>
+        </x-apptabs>
+      </div>
+    </div>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders an error 1`] = `
+"<x-ncdialog name="Create Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-nccheckboxradioswitch modelvalue="false" class="create-another-checkbox" disabled="false" data-on="onUpdate:modelValue">
+      <slot-default>Create another</slot-default>
+    </x-nccheckboxradioswitch>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-plus size="20"></x-plus>
+      </slot-icon>
+      <slot-default> Create</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>Nope</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div>
+      <div class="tabContainer">
+        <x-apptabs modelvalue="0" contentclass="mt-3" justified="" data-on="onUpdate:modelValue">
+          <slot-default>
+            <x-apptab active="">
+              <slot-title>
+                <x-cog size="16"></x-cog><span>Settings</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield modelvalue="" disabled="false" label="Name *" error="true" placeholder="Enter organisation name" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield modelvalue="" disabled="false" label="Slug" placeholder="Optional URL-friendly identifier" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextarea modelvalue="" disabled="false" label="Description" placeholder="Enter organisation description (optional)" rows="4" data-on="onUpdate:modelValue"></x-nctextarea>
+                  <div class="groups-select-container"><label class="groups-label">Nextcloud Groups</label>
+                    <x-ncselect modelvalue="[]" inputlabel="Selected Groups" disabled="false" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups..." data-on="onUpdate:modelValue onSearchChange">
+                      <slot-option>
+                        <div class="group-option"><span class="group-name"></span></div>
+                      </slot-option>
+                      <slot-no-options><span>No groups found. Try a different search.</span></slot-no-options>
+                    </x-ncselect>
+                    <p class="field-hint">Only members of selected groups can access this organisation</p>
+                  </div>
+                  <x-nccheckboxradioswitch modelvalue="true" disabled="false" data-on="onUpdate:modelValue">
+                    <slot-default>Active</slot-default>
+                  </x-nccheckboxradioswitch>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-database size="16"></x-database><span>Quota</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield disabled="false" label="Storage Quota (MB)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Bandwidth Quota (MB/month)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="API Request Quota (requests/day)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="User Quota" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Group Quota" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab disabled="true">
+              <slot-title>
+                <x-accountmultiple size="16"></x-accountmultiple><span>Users</span>
+              </slot-title>
+              <slot-default>
+                <div class="users-section">
+                  <div class="users-header">
+                  </div>
+                  <div class="no-users">
+                    <p>No users in this organisation.</p>
+                  </div>
+                  <x-ncnotecard type="warning">
+                    <slot-default>
+                      <p>Save the organisation first to manage users.</p>
+                    </slot-default>
+                  </x-ncnotecard>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-shield size="16"></x-shield><span>Security</span>
+              </slot-title>
+              <slot-default>
+                <div class="security-section">
+                  <div class="rbac-container">
+                    <x-apptabs contentclass="mt-3" pills="">
+                      <slot-default>
+                        <x-apptab title="Registers">
+                          <slot-default>
+                            <x-rbactable entitytype="register" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Schemas">
+                          <slot-default>
+                            <x-rbactable entitytype="schema" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Objects">
+                          <slot-default>
+                            <x-rbactable entitytype="object" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Views">
+                          <slot-default>
+                            <x-rbactable entitytype="view" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Agents">
+                          <slot-default>
+                            <x-rbactable entitytype="agent" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Configurations">
+                          <slot-default>
+                            <x-rbactable entitytype="configuration" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Applications">
+                          <slot-default>
+                            <x-rbactable entitytype="application" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Special Rights">
+                          <slot-default>
+                            <div class="special-rights-container">
+                              <p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+                              <table class="rbac-table special-rights-table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">Right</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Groups</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">agent_use</span></td>
+                                    <td class="right-description">Use AI agents for processing and analysis</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">llm_use</span></td>
+                                    <td class="right-description">Use Large Language Model features</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </slot-default>
+                        </x-apptab>
+                      </slot-default>
+                    </x-apptabs>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+          </slot-default>
+        </x-apptabs>
+      </div>
+    </div>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders create another 1`] = `
+"<x-ncdialog name="Create Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-nccheckboxradioswitch modelvalue="true" class="create-another-checkbox" disabled="false" data-on="onUpdate:modelValue">
+      <slot-default>Create another</slot-default>
+    </x-nccheckboxradioswitch>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-plus size="20"></x-plus>
+      </slot-icon>
+      <slot-default> Create</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Organisation successfully created</p>
+      </slot-default>
+    </x-ncnotecard>
+    <div>
+      <div class="tabContainer">
+        <x-apptabs modelvalue="0" contentclass="mt-3" justified="" data-on="onUpdate:modelValue">
+          <slot-default>
+            <x-apptab active="">
+              <slot-title>
+                <x-cog size="16"></x-cog><span>Settings</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield modelvalue="" disabled="false" label="Name *" error="true" placeholder="Enter organisation name" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield modelvalue="" disabled="false" label="Slug" placeholder="Optional URL-friendly identifier" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextarea modelvalue="" disabled="false" label="Description" placeholder="Enter organisation description (optional)" rows="4" data-on="onUpdate:modelValue"></x-nctextarea>
+                  <div class="groups-select-container"><label class="groups-label">Nextcloud Groups</label>
+                    <x-ncselect modelvalue="[]" inputlabel="Selected Groups" disabled="false" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups..." data-on="onUpdate:modelValue onSearchChange">
+                      <slot-option>
+                        <div class="group-option"><span class="group-name"></span></div>
+                      </slot-option>
+                      <slot-no-options><span>No groups found. Try a different search.</span></slot-no-options>
+                    </x-ncselect>
+                    <p class="field-hint">Only members of selected groups can access this organisation</p>
+                  </div>
+                  <x-nccheckboxradioswitch modelvalue="true" disabled="false" data-on="onUpdate:modelValue">
+                    <slot-default>Active</slot-default>
+                  </x-nccheckboxradioswitch>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-database size="16"></x-database><span>Quota</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield disabled="false" label="Storage Quota (MB)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Bandwidth Quota (MB/month)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="API Request Quota (requests/day)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="User Quota" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Group Quota" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab disabled="true">
+              <slot-title>
+                <x-accountmultiple size="16"></x-accountmultiple><span>Users</span>
+              </slot-title>
+              <slot-default>
+                <div class="users-section">
+                  <div class="users-header">
+                  </div>
+                  <div class="no-users">
+                    <p>No users in this organisation.</p>
+                  </div>
+                  <x-ncnotecard type="warning">
+                    <slot-default>
+                      <p>Save the organisation first to manage users.</p>
+                    </slot-default>
+                  </x-ncnotecard>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-shield size="16"></x-shield><span>Security</span>
+              </slot-title>
+              <slot-default>
+                <div class="security-section">
+                  <div class="rbac-container">
+                    <x-apptabs contentclass="mt-3" pills="">
+                      <slot-default>
+                        <x-apptab title="Registers">
+                          <slot-default>
+                            <x-rbactable entitytype="register" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Schemas">
+                          <slot-default>
+                            <x-rbactable entitytype="schema" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Objects">
+                          <slot-default>
+                            <x-rbactable entitytype="object" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Views">
+                          <slot-default>
+                            <x-rbactable entitytype="view" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Agents">
+                          <slot-default>
+                            <x-rbactable entitytype="agent" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Configurations">
+                          <slot-default>
+                            <x-rbactable entitytype="configuration" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Applications">
+                          <slot-default>
+                            <x-rbactable entitytype="application" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Special Rights">
+                          <slot-default>
+                            <div class="special-rights-container">
+                              <p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+                              <table class="rbac-table special-rights-table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">Right</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Groups</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">agent_use</span></td>
+                                    <td class="right-description">Use AI agents for processing and analysis</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">llm_use</span></td>
+                                    <td class="right-description">Use Large Language Model features</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </slot-default>
+                        </x-apptab>
+                      </slot-default>
+                    </x-apptabs>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+          </slot-default>
+        </x-apptabs>
+      </div>
+    </div>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders loading 1`] = `
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <div class="tabContainer">
+        <x-apptabs modelvalue="0" contentclass="mt-3" justified="" data-on="onUpdate:modelValue">
+          <slot-default>
+            <x-apptab active="">
+              <slot-title>
+                <x-cog size="16"></x-cog><span>Settings</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield modelvalue="Org" disabled="true" label="Name *" error="false" placeholder="Enter organisation name" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield modelvalue="org" disabled="true" label="Slug" placeholder="Optional URL-friendly identifier" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextarea modelvalue="d" disabled="true" label="Description" placeholder="Enter organisation description (optional)" rows="4" data-on="onUpdate:modelValue"></x-nctextarea>
+                  <div class="groups-select-container"><label class="groups-label">Nextcloud Groups</label>
+                    <x-ncselect modelvalue="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;gone&quot;,&quot;name&quot;:&quot;gone&quot;,&quot;userCount&quot;:0}]" inputlabel="Selected Groups" disabled="true" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups..." data-on="onUpdate:modelValue onSearchChange">
+                      <slot-option>
+                        <div class="group-option"><span class="group-name"></span></div>
+                      </slot-option>
+                      <slot-no-options><span>No groups found. Try a different search.</span></slot-no-options>
+                    </x-ncselect>
+                    <p class="field-hint">Only members of selected groups can access this organisation</p>
+                  </div>
+                  <x-nccheckboxradioswitch modelvalue="false" disabled="true" data-on="onUpdate:modelValue">
+                    <slot-default>Active</slot-default>
+                  </x-nccheckboxradioswitch>
+                  <x-ncnotecard type="warning">
+                    <slot-default>
+                      <p>Inactive organisations cannot be used</p>
+                    </slot-default>
+                  </x-ncnotecard>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-database size="16"></x-database><span>Quota</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield disabled="true" label="Storage Quota (MB)" type="number" placeholder="0 = unlimited" modelvalue="3" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="true" label="Bandwidth Quota (MB/month)" type="number" placeholder="0 = unlimited" modelvalue="1" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="true" label="API Request Quota (requests/day)" type="number" placeholder="0 = unlimited" modelvalue="7" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="true" label="User Quota" type="number" placeholder="0 = unlimited" modelvalue="8" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="true" label="Group Quota" type="number" placeholder="0 = unlimited" modelvalue="9" data-on="onUpdate:modelValue"></x-nctextfield>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab disabled="false">
+              <slot-title>
+                <x-accountmultiple size="16"></x-accountmultiple><span>Users</span>
+              </slot-title>
+              <slot-default>
+                <div class="users-section">
+                  <div class="users-header">
+                    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+                      <slot-icon>
+                        <x-accountplus size="20"></x-accountplus>
+                      </slot-icon>
+                      <slot-default> Add User</slot-default>
+                    </x-ncbutton>
+                  </div>
+                  <div class="users-list">
+                    <h3>Members ({count}) {"count":2}</h3>
+                    <div class="user-items">
+                      <div class="user-item">
+                        <div class="user-info">
+                          <x-accountcircle size="20" class="user-icon"></x-accountcircle><span class="user-id">owner</span><span class="owner-badge">Owner</span></div>
+                      </div>
+                      <div class="user-item">
+                        <div class="user-info">
+                          <x-accountcircle size="20" class="user-icon"></x-accountcircle><span class="user-id">member</span></div>
+                        <x-ncbutton variant="tertiary" disabled="true" data-on="onClick">
+                          <slot-icon>
+                            <x-accountminus size="16"></x-accountminus>
+                          </slot-icon>
+                          <slot-default> Remove</slot-default>
+                        </x-ncbutton>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-shield size="16"></x-shield><span>Security</span>
+              </slot-title>
+              <slot-default>
+                <div class="security-section">
+                  <div class="rbac-container">
+                    <x-apptabs contentclass="mt-3" pills="">
+                      <slot-default>
+                        <x-apptab title="Registers">
+                          <slot-default>
+                            <x-rbactable entitytype="register" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Schemas">
+                          <slot-default>
+                            <x-rbactable entitytype="schema" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Objects">
+                          <slot-default>
+                            <x-rbactable entitytype="object" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Views">
+                          <slot-default>
+                            <x-rbactable entitytype="view" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Agents">
+                          <slot-default>
+                            <x-rbactable entitytype="agent" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Configurations">
+                          <slot-default>
+                            <x-rbactable entitytype="configuration" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Applications">
+                          <slot-default>
+                            <x-rbactable entitytype="application" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Special Rights">
+                          <slot-default>
+                            <div class="special-rights-container">
+                              <p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+                              <table class="rbac-table special-rights-table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">Right</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Groups</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">agent_use</span></td>
+                                    <td class="right-description">Use AI agents for processing and analysis</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">llm_use</span></td>
+                                    <td class="right-description">Use Large Language Model features</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </slot-default>
+                        </x-apptab>
+                      </slot-default>
+                    </x-apptabs>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+          </slot-default>
+        </x-apptabs>
+      </div>
+    </div>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders loading groups 1`] = `
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <div class="tabContainer">
+        <x-apptabs modelvalue="0" contentclass="mt-3" justified="" data-on="onUpdate:modelValue">
+          <slot-default>
+            <x-apptab active="">
+              <slot-title>
+                <x-cog size="16"></x-cog><span>Settings</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield modelvalue="Org" disabled="false" label="Name *" error="false" placeholder="Enter organisation name" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield modelvalue="org" disabled="false" label="Slug" placeholder="Optional URL-friendly identifier" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextarea modelvalue="d" disabled="false" label="Description" placeholder="Enter organisation description (optional)" rows="4" data-on="onUpdate:modelValue"></x-nctextarea>
+                  <div class="groups-select-container"><label class="groups-label">Nextcloud Groups</label>
+                    <x-ncselect modelvalue="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;gone&quot;,&quot;name&quot;:&quot;gone&quot;,&quot;userCount&quot;:0}]" inputlabel="Selected Groups" disabled="true" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups..." data-on="onUpdate:modelValue onSearchChange">
+                      <slot-option>
+                        <div class="group-option"><span class="group-name"></span></div>
+                      </slot-option>
+                      <slot-no-options><span>Loading groups...</span></slot-no-options>
+                    </x-ncselect>
+                    <p class="field-hint">Only members of selected groups can access this organisation</p>
+                  </div>
+                  <x-nccheckboxradioswitch modelvalue="false" disabled="false" data-on="onUpdate:modelValue">
+                    <slot-default>Active</slot-default>
+                  </x-nccheckboxradioswitch>
+                  <x-ncnotecard type="warning">
+                    <slot-default>
+                      <p>Inactive organisations cannot be used</p>
+                    </slot-default>
+                  </x-ncnotecard>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-database size="16"></x-database><span>Quota</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield disabled="false" label="Storage Quota (MB)" type="number" placeholder="0 = unlimited" modelvalue="3" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Bandwidth Quota (MB/month)" type="number" placeholder="0 = unlimited" modelvalue="1" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="API Request Quota (requests/day)" type="number" placeholder="0 = unlimited" modelvalue="7" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="User Quota" type="number" placeholder="0 = unlimited" modelvalue="8" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Group Quota" type="number" placeholder="0 = unlimited" modelvalue="9" data-on="onUpdate:modelValue"></x-nctextfield>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab disabled="false">
+              <slot-title>
+                <x-accountmultiple size="16"></x-accountmultiple><span>Users</span>
+              </slot-title>
+              <slot-default>
+                <div class="users-section">
+                  <div class="users-header">
+                    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+                      <slot-icon>
+                        <x-accountplus size="20"></x-accountplus>
+                      </slot-icon>
+                      <slot-default> Add User</slot-default>
+                    </x-ncbutton>
+                  </div>
+                  <div class="users-list">
+                    <h3>Members ({count}) {"count":2}</h3>
+                    <div class="user-items">
+                      <div class="user-item">
+                        <div class="user-info">
+                          <x-accountcircle size="20" class="user-icon"></x-accountcircle><span class="user-id">owner</span><span class="owner-badge">Owner</span></div>
+                      </div>
+                      <div class="user-item">
+                        <div class="user-info">
+                          <x-accountcircle size="20" class="user-icon"></x-accountcircle><span class="user-id">member</span></div>
+                        <x-ncbutton variant="tertiary" disabled="false" data-on="onClick">
+                          <slot-icon>
+                            <x-accountminus size="16"></x-accountminus>
+                          </slot-icon>
+                          <slot-default> Remove</slot-default>
+                        </x-ncbutton>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-shield size="16"></x-shield><span>Security</span>
+              </slot-title>
+              <slot-default>
+                <div class="security-section">
+                  <div class="loading-groups">
+                    <x-ncloadingicon size="20"></x-ncloadingicon><span>Loading user groups...</span></div>
+                </div>
+              </slot-default>
+            </x-apptab>
+          </slot-default>
+        </x-apptabs>
+      </div>
+    </div>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders loading users 1`] = `
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <div class="tabContainer">
+        <x-apptabs modelvalue="0" contentclass="mt-3" justified="" data-on="onUpdate:modelValue">
+          <slot-default>
+            <x-apptab active="">
+              <slot-title>
+                <x-cog size="16"></x-cog><span>Settings</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield modelvalue="Org" disabled="false" label="Name *" error="false" placeholder="Enter organisation name" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield modelvalue="org" disabled="false" label="Slug" placeholder="Optional URL-friendly identifier" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextarea modelvalue="d" disabled="false" label="Description" placeholder="Enter organisation description (optional)" rows="4" data-on="onUpdate:modelValue"></x-nctextarea>
+                  <div class="groups-select-container"><label class="groups-label">Nextcloud Groups</label>
+                    <x-ncselect modelvalue="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;gone&quot;,&quot;name&quot;:&quot;gone&quot;,&quot;userCount&quot;:0}]" inputlabel="Selected Groups" disabled="false" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups..." data-on="onUpdate:modelValue onSearchChange">
+                      <slot-option>
+                        <div class="group-option"><span class="group-name"></span></div>
+                      </slot-option>
+                      <slot-no-options><span>No groups found. Try a different search.</span></slot-no-options>
+                    </x-ncselect>
+                    <p class="field-hint">Only members of selected groups can access this organisation</p>
+                  </div>
+                  <x-nccheckboxradioswitch modelvalue="false" disabled="false" data-on="onUpdate:modelValue">
+                    <slot-default>Active</slot-default>
+                  </x-nccheckboxradioswitch>
+                  <x-ncnotecard type="warning">
+                    <slot-default>
+                      <p>Inactive organisations cannot be used</p>
+                    </slot-default>
+                  </x-ncnotecard>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-database size="16"></x-database><span>Quota</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield disabled="false" label="Storage Quota (MB)" type="number" placeholder="0 = unlimited" modelvalue="3" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Bandwidth Quota (MB/month)" type="number" placeholder="0 = unlimited" modelvalue="1" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="API Request Quota (requests/day)" type="number" placeholder="0 = unlimited" modelvalue="7" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="User Quota" type="number" placeholder="0 = unlimited" modelvalue="8" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Group Quota" type="number" placeholder="0 = unlimited" modelvalue="9" data-on="onUpdate:modelValue"></x-nctextfield>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab disabled="false">
+              <slot-title>
+                <x-accountmultiple size="16"></x-accountmultiple><span>Users</span>
+              </slot-title>
+              <slot-default>
+                <div class="users-section">
+                  <div class="users-header">
+                    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+                      <slot-icon>
+                        <x-accountplus size="20"></x-accountplus>
+                      </slot-icon>
+                      <slot-default> Add User</slot-default>
+                    </x-ncbutton>
+                  </div>
+                  <div class="loading-users">
+                    <x-ncloadingicon size="20"></x-ncloadingicon><span>Loading users...</span></div>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-shield size="16"></x-shield><span>Security</span>
+              </slot-title>
+              <slot-default>
+                <div class="security-section">
+                  <div class="rbac-container">
+                    <x-apptabs contentclass="mt-3" pills="">
+                      <slot-default>
+                        <x-apptab title="Registers">
+                          <slot-default>
+                            <x-rbactable entitytype="register" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Schemas">
+                          <slot-default>
+                            <x-rbactable entitytype="schema" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Objects">
+                          <slot-default>
+                            <x-rbactable entitytype="object" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Views">
+                          <slot-default>
+                            <x-rbactable entitytype="view" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Agents">
+                          <slot-default>
+                            <x-rbactable entitytype="agent" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Configurations">
+                          <slot-default>
+                            <x-rbactable entitytype="configuration" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Applications">
+                          <slot-default>
+                            <x-rbactable entitytype="application" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Special Rights">
+                          <slot-default>
+                            <div class="special-rights-container">
+                              <p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+                              <table class="rbac-table special-rights-table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">Right</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Groups</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">agent_use</span></td>
+                                    <td class="right-description">Use AI agents for processing and analysis</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">llm_use</span></td>
+                                    <td class="right-description">Use Large Language Model features</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </slot-default>
+                        </x-apptab>
+                      </slot-default>
+                    </x-apptabs>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+          </slot-default>
+        </x-apptabs>
+      </div>
+    </div>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders no members 1`] = `
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <div class="tabContainer">
+        <x-apptabs modelvalue="0" contentclass="mt-3" justified="" data-on="onUpdate:modelValue">
+          <slot-default>
+            <x-apptab active="">
+              <slot-title>
+                <x-cog size="16"></x-cog><span>Settings</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield modelvalue="Org" disabled="false" label="Name *" error="false" placeholder="Enter organisation name" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield modelvalue="" disabled="false" label="Slug" placeholder="Optional URL-friendly identifier" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextarea modelvalue="" disabled="false" label="Description" placeholder="Enter organisation description (optional)" rows="4" data-on="onUpdate:modelValue"></x-nctextarea>
+                  <div class="groups-select-container"><label class="groups-label">Nextcloud Groups</label>
+                    <x-ncselect modelvalue="[]" inputlabel="Selected Groups" disabled="false" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups..." data-on="onUpdate:modelValue onSearchChange">
+                      <slot-option>
+                        <div class="group-option"><span class="group-name"></span></div>
+                      </slot-option>
+                      <slot-no-options><span>No groups found. Try a different search.</span></slot-no-options>
+                    </x-ncselect>
+                    <p class="field-hint">Only members of selected groups can access this organisation</p>
+                  </div>
+                  <x-nccheckboxradioswitch modelvalue="true" disabled="false" data-on="onUpdate:modelValue">
+                    <slot-default>Active</slot-default>
+                  </x-nccheckboxradioswitch>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-database size="16"></x-database><span>Quota</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield disabled="false" label="Storage Quota (MB)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Bandwidth Quota (MB/month)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="API Request Quota (requests/day)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="User Quota" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Group Quota" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab disabled="false">
+              <slot-title>
+                <x-accountmultiple size="16"></x-accountmultiple><span>Users</span>
+              </slot-title>
+              <slot-default>
+                <div class="users-section">
+                  <div class="users-header">
+                    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+                      <slot-icon>
+                        <x-accountplus size="20"></x-accountplus>
+                      </slot-icon>
+                      <slot-default> Add User</slot-default>
+                    </x-ncbutton>
+                  </div>
+                  <div class="no-users">
+                    <p>No users in this organisation.</p>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-shield size="16"></x-shield><span>Security</span>
+              </slot-title>
+              <slot-default>
+                <div class="security-section">
+                  <div class="rbac-container">
+                    <x-apptabs contentclass="mt-3" pills="">
+                      <slot-default>
+                        <x-apptab title="Registers">
+                          <slot-default>
+                            <x-rbactable entitytype="register" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Schemas">
+                          <slot-default>
+                            <x-rbactable entitytype="schema" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Objects">
+                          <slot-default>
+                            <x-rbactable entitytype="object" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Views">
+                          <slot-default>
+                            <x-rbactable entitytype="view" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Agents">
+                          <slot-default>
+                            <x-rbactable entitytype="agent" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Configurations">
+                          <slot-default>
+                            <x-rbactable entitytype="configuration" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Applications">
+                          <slot-default>
+                            <x-rbactable entitytype="application" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Special Rights">
+                          <slot-default>
+                            <div class="special-rights-container">
+                              <p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+                              <table class="rbac-table special-rights-table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">Right</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Groups</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">agent_use</span></td>
+                                    <td class="right-description">Use AI agents for processing and analysis</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">llm_use</span></td>
+                                    <td class="right-description">Use Large Language Model features</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </slot-default>
+                        </x-apptab>
+                      </slot-default>
+                    </x-apptabs>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+          </slot-default>
+        </x-apptabs>
+      </div>
+    </div>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders removing a user 1`] = `
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-contentsaveoutline size="20"></x-contentsaveoutline>
+      </slot-icon>
+      <slot-default> Save</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <div class="tabContainer">
+        <x-apptabs modelvalue="0" contentclass="mt-3" justified="" data-on="onUpdate:modelValue">
+          <slot-default>
+            <x-apptab active="">
+              <slot-title>
+                <x-cog size="16"></x-cog><span>Settings</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield modelvalue="Org" disabled="false" label="Name *" error="false" placeholder="Enter organisation name" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield modelvalue="org" disabled="false" label="Slug" placeholder="Optional URL-friendly identifier" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextarea modelvalue="d" disabled="false" label="Description" placeholder="Enter organisation description (optional)" rows="4" data-on="onUpdate:modelValue"></x-nctextarea>
+                  <div class="groups-select-container"><label class="groups-label">Nextcloud Groups</label>
+                    <x-ncselect modelvalue="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;gone&quot;,&quot;name&quot;:&quot;gone&quot;,&quot;userCount&quot;:0}]" inputlabel="Selected Groups" disabled="false" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups..." data-on="onUpdate:modelValue onSearchChange">
+                      <slot-option>
+                        <div class="group-option"><span class="group-name"></span></div>
+                      </slot-option>
+                      <slot-no-options><span>No groups found. Try a different search.</span></slot-no-options>
+                    </x-ncselect>
+                    <p class="field-hint">Only members of selected groups can access this organisation</p>
+                  </div>
+                  <x-nccheckboxradioswitch modelvalue="false" disabled="false" data-on="onUpdate:modelValue">
+                    <slot-default>Active</slot-default>
+                  </x-nccheckboxradioswitch>
+                  <x-ncnotecard type="warning">
+                    <slot-default>
+                      <p>Inactive organisations cannot be used</p>
+                    </slot-default>
+                  </x-ncnotecard>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-database size="16"></x-database><span>Quota</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield disabled="false" label="Storage Quota (MB)" type="number" placeholder="0 = unlimited" modelvalue="3" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Bandwidth Quota (MB/month)" type="number" placeholder="0 = unlimited" modelvalue="1" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="API Request Quota (requests/day)" type="number" placeholder="0 = unlimited" modelvalue="7" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="User Quota" type="number" placeholder="0 = unlimited" modelvalue="8" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Group Quota" type="number" placeholder="0 = unlimited" modelvalue="9" data-on="onUpdate:modelValue"></x-nctextfield>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab disabled="false">
+              <slot-title>
+                <x-accountmultiple size="16"></x-accountmultiple><span>Users</span>
+              </slot-title>
+              <slot-default>
+                <div class="users-section">
+                  <div class="users-header">
+                    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+                      <slot-icon>
+                        <x-accountplus size="20"></x-accountplus>
+                      </slot-icon>
+                      <slot-default> Add User</slot-default>
+                    </x-ncbutton>
+                  </div>
+                  <div class="users-list">
+                    <h3>Members ({count}) {"count":2}</h3>
+                    <div class="user-items">
+                      <div class="user-item">
+                        <div class="user-info">
+                          <x-accountcircle size="20" class="user-icon"></x-accountcircle><span class="user-id">owner</span><span class="owner-badge">Owner</span></div>
+                      </div>
+                      <div class="user-item">
+                        <div class="user-info">
+                          <x-accountcircle size="20" class="user-icon"></x-accountcircle><span class="user-id">member</span></div>
+                        <x-ncbutton variant="tertiary" disabled="true" data-on="onClick">
+                          <slot-icon>
+                            <x-ncloadingicon size="16"></x-ncloadingicon>
+                          </slot-icon>
+                          <slot-default> Remove</slot-default>
+                        </x-ncbutton>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-shield size="16"></x-shield><span>Security</span>
+              </slot-title>
+              <slot-default>
+                <div class="security-section">
+                  <div class="rbac-container">
+                    <x-apptabs contentclass="mt-3" pills="">
+                      <slot-default>
+                        <x-apptab title="Registers">
+                          <slot-default>
+                            <x-rbactable entitytype="register" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Schemas">
+                          <slot-default>
+                            <x-rbactable entitytype="schema" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Objects">
+                          <slot-default>
+                            <x-rbactable entitytype="object" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Views">
+                          <slot-default>
+                            <x-rbactable entitytype="view" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Agents">
+                          <slot-default>
+                            <x-rbactable entitytype="agent" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Configurations">
+                          <slot-default>
+                            <x-rbactable entitytype="configuration" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Applications">
+                          <slot-default>
+                            <x-rbactable entitytype="application" authorization="{&quot;register&quot;:{&quot;read&quot;:[&quot;admin&quot;]},&quot;object_publish&quot;:[&quot;admin&quot;,&quot;gone&quot;],&quot;agent_use&quot;:&quot;odd&quot;}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[&quot;admin&quot;,&quot;gone&quot;]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Special Rights">
+                          <slot-default>
+                            <div class="special-rights-container">
+                              <p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+                              <table class="rbac-table special-rights-table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">Right</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Groups</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">agent_use</span></td>
+                                    <td class="right-description">Use AI agents for processing and analysis</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">llm_use</span></td>
+                                    <td class="right-description">Use Large Language Model features</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </slot-default>
+                        </x-apptab>
+                      </slot-default>
+                    </x-apptabs>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+          </slot-default>
+        </x-apptabs>
+      </div>
+    </div>
+    <x-removeuserdialog show="false" userid="null" removing="true" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders success on create 1`] = `
+"<x-ncdialog name="Create Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-nccheckboxradioswitch modelvalue="false" class="create-another-checkbox" disabled="false" data-on="onUpdate:modelValue">
+      <slot-default>Create another</slot-default>
+    </x-nccheckboxradioswitch>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Organisation successfully created</p>
+      </slot-default>
+    </x-ncnotecard>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders success on edit 1`] = `
+"<x-ncdialog name="Edit Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Close</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Organisation successfully updated</p>
+      </slot-default>
+    </x-ncnotecard>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation markup renders the empty create form 1`] = `
+"<x-ncdialog name="Create Organisation" size="large" data-on="onUpdate:open">
+  <slot-actions>
+    <x-nccheckboxradioswitch modelvalue="false" class="create-another-checkbox" disabled="false" data-on="onUpdate:modelValue">
+      <slot-default>Create another</slot-default>
+    </x-nccheckboxradioswitch>
+    <x-ncbutton data-on="onClick">
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+      <slot-default> Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="primary" data-on="onClick">
+      <slot-icon>
+        <x-plus size="20"></x-plus>
+      </slot-icon>
+      <slot-default> Create</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div>
+      <div class="tabContainer">
+        <x-apptabs modelvalue="0" contentclass="mt-3" justified="" data-on="onUpdate:modelValue">
+          <slot-default>
+            <x-apptab active="">
+              <slot-title>
+                <x-cog size="16"></x-cog><span>Settings</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield modelvalue="" disabled="false" label="Name *" error="true" placeholder="Enter organisation name" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield modelvalue="" disabled="false" label="Slug" placeholder="Optional URL-friendly identifier" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextarea modelvalue="" disabled="false" label="Description" placeholder="Enter organisation description (optional)" rows="4" data-on="onUpdate:modelValue"></x-nctextarea>
+                  <div class="groups-select-container"><label class="groups-label">Nextcloud Groups</label>
+                    <x-ncselect modelvalue="[]" inputlabel="Selected Groups" disabled="false" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups..." data-on="onUpdate:modelValue onSearchChange">
+                      <slot-option>
+                        <div class="group-option"><span class="group-name"></span></div>
+                      </slot-option>
+                      <slot-no-options><span>No groups found. Try a different search.</span></slot-no-options>
+                    </x-ncselect>
+                    <p class="field-hint">Only members of selected groups can access this organisation</p>
+                  </div>
+                  <x-nccheckboxradioswitch modelvalue="true" disabled="false" data-on="onUpdate:modelValue">
+                    <slot-default>Active</slot-default>
+                  </x-nccheckboxradioswitch>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-database size="16"></x-database><span>Quota</span>
+              </slot-title>
+              <slot-default>
+                <div class="form-editor">
+                  <x-nctextfield disabled="false" label="Storage Quota (MB)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Bandwidth Quota (MB/month)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="API Request Quota (requests/day)" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="User Quota" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                  <x-nctextfield disabled="false" label="Group Quota" type="number" placeholder="0 = unlimited" modelvalue="0" data-on="onUpdate:modelValue"></x-nctextfield>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab disabled="true">
+              <slot-title>
+                <x-accountmultiple size="16"></x-accountmultiple><span>Users</span>
+              </slot-title>
+              <slot-default>
+                <div class="users-section">
+                  <div class="users-header">
+                  </div>
+                  <div class="no-users">
+                    <p>No users in this organisation.</p>
+                  </div>
+                  <x-ncnotecard type="warning">
+                    <slot-default>
+                      <p>Save the organisation first to manage users.</p>
+                    </slot-default>
+                  </x-ncnotecard>
+                </div>
+              </slot-default>
+            </x-apptab>
+            <x-apptab>
+              <slot-title>
+                <x-shield size="16"></x-shield><span>Security</span>
+              </slot-title>
+              <slot-default>
+                <div class="security-section">
+                  <div class="rbac-container">
+                    <x-apptabs contentclass="mt-3" pills="">
+                      <slot-default>
+                        <x-apptab title="Registers">
+                          <slot-default>
+                            <x-rbactable entitytype="register" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Schemas">
+                          <slot-default>
+                            <x-rbactable entitytype="schema" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Objects">
+                          <slot-default>
+                            <x-rbactable entitytype="object" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Views">
+                          <slot-default>
+                            <x-rbactable entitytype="view" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Agents">
+                          <slot-default>
+                            <x-rbactable entitytype="agent" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Configurations">
+                          <slot-default>
+                            <x-rbactable entitytype="configuration" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Applications">
+                          <slot-default>
+                            <x-rbactable entitytype="application" authorization="{}" availablegroups="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" organisationgroups="[]" data-on="onUpdate"></x-rbactable>
+                          </slot-default>
+                        </x-apptab>
+                        <x-apptab title="Special Rights">
+                          <slot-default>
+                            <div class="special-rights-container">
+                              <p class="rbac-description">Grant additional permissions beyond standard CRUD operations</p>
+                              <table class="rbac-table special-rights-table">
+                                <thead>
+                                  <tr>
+                                    <th scope="col">Right</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Groups</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">agent_use</span></td>
+                                    <td class="right-description">Use AI agents for processing and analysis</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Agent Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">llm_use</span></td>
+                                    <td class="right-description">Use Large Language Model features</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </slot-default>
+                        </x-apptab>
+                      </slot-default>
+                    </x-apptabs>
+                  </div>
+                </div>
+              </slot-default>
+            </x-apptab>
+          </slot-default>
+        </x-apptabs>
+      </div>
+    </div>
+    <x-removeuserdialog show="false" userid="null" removing="false" data-on="onCancel onConfirm"></x-removeuserdialog>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`EditOrganisation quota updateBandwidthQuota creates a missing quota 1`] = `
+{
+  "bandwidth": 1048576,
+  "groups": 0,
+  "requests": 0,
+  "storage": 0,
+  "users": 0,
+}
+`;
+
+exports[`EditOrganisation quota updateGroupQuota creates a missing quota 1`] = `
+{
+  "bandwidth": 0,
+  "groups": 1,
+  "requests": 0,
+  "storage": 0,
+  "users": 0,
+}
+`;
+
+exports[`EditOrganisation quota updateRequestQuota creates a missing quota 1`] = `
+{
+  "bandwidth": 0,
+  "groups": 0,
+  "requests": 1,
+  "storage": 0,
+  "users": 0,
+}
+`;
+
+exports[`EditOrganisation quota updateStorageQuota creates a missing quota 1`] = `
+{
+  "bandwidth": 0,
+  "groups": 0,
+  "requests": 0,
+  "storage": 1048576,
+  "users": 0,
+}
+`;
+
+exports[`EditOrganisation quota updateUserQuota creates a missing quota 1`] = `
+{
+  "bandwidth": 0,
+  "groups": 0,
+  "requests": 0,
+  "storage": 0,
+  "users": 1,
+}
+`;
+
+exports[`EditOrganisation special rights loads the rights a stored organisation grants 1`] = `
+{
+  "agent_use": [],
+  "llm_use": [],
+}
+`;
+
+exports[`EditOrganisation special rights passes each permission table on to the entity update 1`] = `
+{
+  "agent": {
+    "read": [
+      "g",
+    ],
+  },
+  "application": {
+    "read": [
+      "g",
+    ],
+  },
+  "configuration": {
+    "read": [
+      "g",
+    ],
+  },
+  "object": {
+    "read": [
+      "g",
+    ],
+  },
+  "register": {
+    "read": [
+      "g",
+    ],
+  },
+  "schema": {
+    "read": [
+      "g",
+    ],
+  },
+  "view": {
+    "read": [
+      "g",
+    ],
+  },
+}
+`;
+
+exports[`EditOrganisation special rights passes each select of the table on to its right 1`] = `
+{
+  "agent_use": [
+    "admin",
+    "staff",
+  ],
+  "llm_use": [
+    "admin",
+    "staff",
+  ],
+  "object_publish": [
+    "admin",
+    "gone",
+  ],
+  "register": {
+    "read": [
+      "admin",
+    ],
+  },
+}
+`;

@@ -7,7 +7,7 @@ namespace Unit\Service\Calculation;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  * The fixture is a neutral one, a parking fee that steps up: 2 per hour for
  * the first 3 hours, 3 per hour up to hour 8, then 5 per hour, capped at 40.
  *
- * @spec openspec/changes/graduated-rate-calculation/specs/computed-fields/spec.md
+ * @spec openspec/specs/computed-fields/spec.md
  */
 class GraduatedRateTest extends TestCase {
 
@@ -125,6 +125,22 @@ class GraduatedRateTest extends TestCase {
 	public function testAMalformedScheduleIsRefused(mixed $bands): void {
 		$this->expectException(EvaluationException::class);
 		$this->fee(4, $bands);
+	}
+
+	/**
+	 * `bandRate` refuses a malformed schedule at a unit of zero or less too, as `graduated` does at any quantity.
+	 *
+	 * @dataProvider malformedSchedules
+	 */
+	public function testAMalformedScheduleIsRefusedByBandRateAtAUnitOfZero(mixed $bands): void {
+		$this->expectException(EvaluationException::class);
+		$this->eval->evaluate(['u' => 0, 'b' => $bands], ['bandRate' => [['prop' => 'u'], ['prop' => 'b']]]);
+	}
+
+	public function testBandRateRefusesAMalformedScheduleAtANegativeUnitAndStillAnswersNullForAGoodOne(): void {
+		$this->assertNull($this->eval->evaluate(['u' => -2, 'b' => self::BANDS], ['bandRate' => [['prop' => 'u'], ['prop' => 'b']]]));
+		$this->expectException(EvaluationException::class);
+		$this->eval->evaluate(['u' => -2, 'b' => []], ['bandRate' => [['prop' => 'u'], ['prop' => 'b']]]);
 	}
 
 	public function testANonNumericQuantityIsRefused(): void {

@@ -244,9 +244,34 @@ The following metadata fields are available for filtering on all objects:
 | Field | Description | Type | Example |
 |-------|-------------|------|---------|
 | `created` | Creation timestamp | DateTime | `@self[created][gte]=2025-06-25T00:00:00` |
-| `updated` | Last update timestamp | DateTime | `@self[updated][lt]=2025-06-30T23:59:59` |
+| `updated` | Last write, by anyone or anything | DateTime | `@self[updated][lt]=2025-06-30T23:59:59` |
+| `lastUserActivity` | Last write by a person (empty until a person writes) | DateTime | `@self[lastUserActivity][lt]=2025-06-30T23:59:59` |
 | `published` | Publication timestamp | DateTime | `@self[published][gte]=2025-01-01T00:00:00` |
 | `depublished` | Depublication timestamp | DateTime | `@self[depublished][lte]=2025-12-31T23:59:59` |
+
+`updated` moves on every write, including background jobs, listeners and
+other system writes that recompute a field. `lastUserActivity` moves only when a
+signed-in user writes the object in a web request. Use it to find objects nobody
+has worked on, for example cases that stalled:
+
+```
+GET /api/objects/5/24?@self[lastUserActivity][lt]=2026-10-01T00:00:00&_order[@self.lastUserActivity]=asc
+```
+
+These writes leave `lastUserActivity` as it was:
+
+- anything on the command line: occ commands, CLI cron and repair steps;
+- Nextcloud's web or AJAX cron (`cron.php`), including jobs that act as a user;
+- a write without a signed-in user;
+- a write inside `SystemOperationContext`;
+- a write labelled with a `WriteCause` other than `person` (`scheduled`, `rule`,
+  `import`, `migration`, `cascade`). A listener that recomputes fields during a
+  user's request can wrap its save in
+  `WriteCause::runAs(cause: WriteCause::RULE, run: null, operation: fn () => ...)`
+  to stay out of it.
+
+Bulk saves (`saveObjects`, imports) do not set it either. Objects that existed
+before the field was added have no value until a person writes them.
 
 #### Content Fields
 | Field | Description | Type | Example |
@@ -291,6 +316,39 @@ All metadata fields support the following operators for precise filtering:
 | `exists` | Property exists check | `@self[published][exists]=true` |
 | `empty` | Empty value check | `@self[summary][empty]=true` |
 | `null` | Null value check | `@self[depublished][null]=true` |
+| `isnull` | Empty (`true`) or filled (`false`) | `@self[expires][isnull]=true` |
+| `orNull` | Also match rows where the field is empty (a modifier, see below) | `@self[expires][lt]=2026-01-01&@self[expires][orNull]=true` |
+
+#### Including empty values with `orNull`
+
+Every comparison leaves out rows where the field is empty, because SQL treats a
+comparison with NULL as unknown. So `isFinalStatus[ne]=true` does not return a
+case whose `isFinalStatus` was never written, and neither does
+`isFinalStatus=false`.
+
+Add `orNull=true` to the same field to get those rows as well. The other
+operators on that field still apply together, and the field also matches when it
+is empty:
+
+```
+GET /api/objects/5/24?isFinalStatus[ne]=true&isFinalStatus[orNull]=true
+GET /api/objects/5/24?isFinalStatus_ne=true&isFinalStatus_orNull=true
+```
+
+From PHP, through `ObjectService::searchObjects()`:
+
+```php
+['isFinalStatus' => ['ne' => true, 'orNull' => true]]
+['isFinalStatus' => ['in' => [false], 'orNull' => true]]
+['@self' => ['expires' => ['lt' => '2026-01-01', 'orNull' => true]]]
+```
+
+`orNull` works on schema properties, on `@self` metadata fields and on paths
+inside object properties (`dwell.breached[ne]=true&dwell.breached[orNull]=true`).
+It reads its value like `isnull`: `true`, `1`, `on` and `yes` switch it on,
+anything else leaves the filter as it was. On its own, without another operator,
+it adds no condition. `ne` and the other operators keep their meaning when
+`orNull` is absent.
 
 :::info Why Operator Names Instead of Mathematical Symbols?
 

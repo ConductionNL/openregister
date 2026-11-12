@@ -1,0 +1,3821 @@
+{
+    "deploy-approved-four-eyes-nobody-changes": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-nobody-empty": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-nobody-refused": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-nobody-write-fails": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-other-changes": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "september tuning",
+            "setUuid": "set-1",
+            "author": "alice",
+            "approver": "bob",
+            "deployedBy": "deployer",
+            "restoresUuid": null,
+            "state": "applied",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "old-a",
+                    "previousPresent": true,
+                    "value": "new-a",
+                    "removes": false
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "fail-b",
+                    "previous": "old-fail-b",
+                    "previousPresent": true,
+                    "value": "new-fail-b",
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "old-c",
+                    "previousPresent": false,
+                    "value": "new-c",
+                    "removes": false
+                }
+            ]
+        },
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "c",
+                "new-c",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "september tuning",
+                    "setUuid": "set-1",
+                    "author": "alice",
+                    "approver": "bob",
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": null,
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "old-a",
+                            "previousPresent": true,
+                            "value": "new-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "fail-b",
+                            "previous": "old-fail-b",
+                            "previousPresent": true,
+                            "value": "new-fail-b",
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "old-c",
+                            "previousPresent": false,
+                            "value": "new-c",
+                            "removes": false
+                        }
+                    ],
+                    "state": "applied"
+                }
+            ],
+            [
+                "sets.save",
+                "set-1",
+                "deployed",
+                "GENERATED-UUID"
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-other-empty": {
+        "refused": [
+            "empty",
+            409,
+            "draft set \"september tuning\" would change nothing",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-other-refused": {
+        "refused": [
+            "value-refused",
+            409,
+            "nothing was applied: \"a\" refused (not allowed)",
+            [
+                {
+                    "key": "a",
+                    "reason": "not allowed"
+                },
+                {
+                    "key": "b"
+                }
+            ]
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-other-write-fails": {
+        "refused": [
+            "value-refused",
+            500,
+            "the deployment was undone in full after a write refused: disk full",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "db.rollBack"
+            ],
+            [
+                "store.restore",
+                [
+                    {
+                        "undo": "a"
+                    }
+                ]
+            ],
+            [
+                "log.error",
+                "Configuration deployment refused mid-apply and was undone",
+                {
+                    "app": "openregister",
+                    "deployment": "GENERATED-UUID",
+                    "restored": 1,
+                    "exception": "RuntimeException"
+                }
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-self-changes": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approver other than the author, and \"alice\" is both",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-self-empty": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approver other than the author, and \"alice\" is both",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-self-refused": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approver other than the author, and \"alice\" is both",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-approved-four-eyes-self-write-fails": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approver other than the author, and \"alice\" is both",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-approved-single-nobody-changes": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "september tuning",
+            "setUuid": "set-1",
+            "author": "alice",
+            "approver": null,
+            "deployedBy": "deployer",
+            "restoresUuid": null,
+            "state": "applied",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "old-a",
+                    "previousPresent": true,
+                    "value": "new-a",
+                    "removes": false
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "fail-b",
+                    "previous": "old-fail-b",
+                    "previousPresent": true,
+                    "value": "new-fail-b",
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "old-c",
+                    "previousPresent": false,
+                    "value": "new-c",
+                    "removes": false
+                }
+            ]
+        },
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "c",
+                "new-c",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "september tuning",
+                    "setUuid": "set-1",
+                    "author": "alice",
+                    "approver": null,
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": null,
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "old-a",
+                            "previousPresent": true,
+                            "value": "new-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "fail-b",
+                            "previous": "old-fail-b",
+                            "previousPresent": true,
+                            "value": "new-fail-b",
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "old-c",
+                            "previousPresent": false,
+                            "value": "new-c",
+                            "removes": false
+                        }
+                    ],
+                    "state": "applied"
+                }
+            ],
+            [
+                "sets.save",
+                "set-1",
+                "deployed",
+                "GENERATED-UUID"
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "deploy-approved-single-nobody-empty": {
+        "refused": [
+            "empty",
+            409,
+            "draft set \"september tuning\" would change nothing",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-approved-single-nobody-refused": {
+        "refused": [
+            "value-refused",
+            409,
+            "nothing was applied: \"a\" refused (not allowed)",
+            [
+                {
+                    "key": "a",
+                    "reason": "not allowed"
+                },
+                {
+                    "key": "b"
+                }
+            ]
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-approved-single-nobody-write-fails": {
+        "refused": [
+            "value-refused",
+            500,
+            "the deployment was undone in full after a write refused: disk full",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "db.rollBack"
+            ],
+            [
+                "store.restore",
+                [
+                    {
+                        "undo": "a"
+                    }
+                ]
+            ],
+            [
+                "log.error",
+                "Configuration deployment refused mid-apply and was undone",
+                {
+                    "app": "openregister",
+                    "deployment": "GENERATED-UUID",
+                    "restored": 1,
+                    "exception": "RuntimeException"
+                }
+            ]
+        ]
+    },
+    "deploy-approved-single-other-changes": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "september tuning",
+            "setUuid": "set-1",
+            "author": "alice",
+            "approver": "bob",
+            "deployedBy": "deployer",
+            "restoresUuid": null,
+            "state": "applied",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "old-a",
+                    "previousPresent": true,
+                    "value": "new-a",
+                    "removes": false
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "fail-b",
+                    "previous": "old-fail-b",
+                    "previousPresent": true,
+                    "value": "new-fail-b",
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "old-c",
+                    "previousPresent": false,
+                    "value": "new-c",
+                    "removes": false
+                }
+            ]
+        },
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "c",
+                "new-c",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "september tuning",
+                    "setUuid": "set-1",
+                    "author": "alice",
+                    "approver": "bob",
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": null,
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "old-a",
+                            "previousPresent": true,
+                            "value": "new-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "fail-b",
+                            "previous": "old-fail-b",
+                            "previousPresent": true,
+                            "value": "new-fail-b",
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "old-c",
+                            "previousPresent": false,
+                            "value": "new-c",
+                            "removes": false
+                        }
+                    ],
+                    "state": "applied"
+                }
+            ],
+            [
+                "sets.save",
+                "set-1",
+                "deployed",
+                "GENERATED-UUID"
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "deploy-approved-single-other-empty": {
+        "refused": [
+            "empty",
+            409,
+            "draft set \"september tuning\" would change nothing",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-approved-single-other-refused": {
+        "refused": [
+            "value-refused",
+            409,
+            "nothing was applied: \"a\" refused (not allowed)",
+            [
+                {
+                    "key": "a",
+                    "reason": "not allowed"
+                },
+                {
+                    "key": "b"
+                }
+            ]
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-approved-single-other-write-fails": {
+        "refused": [
+            "value-refused",
+            500,
+            "the deployment was undone in full after a write refused: disk full",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "db.rollBack"
+            ],
+            [
+                "store.restore",
+                [
+                    {
+                        "undo": "a"
+                    }
+                ]
+            ],
+            [
+                "log.error",
+                "Configuration deployment refused mid-apply and was undone",
+                {
+                    "app": "openregister",
+                    "deployment": "GENERATED-UUID",
+                    "restored": 1,
+                    "exception": "RuntimeException"
+                }
+            ]
+        ]
+    },
+    "deploy-approved-single-self-changes": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "september tuning",
+            "setUuid": "set-1",
+            "author": "alice",
+            "approver": "alice",
+            "deployedBy": "deployer",
+            "restoresUuid": null,
+            "state": "applied",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "old-a",
+                    "previousPresent": true,
+                    "value": "new-a",
+                    "removes": false
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "fail-b",
+                    "previous": "old-fail-b",
+                    "previousPresent": true,
+                    "value": "new-fail-b",
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "old-c",
+                    "previousPresent": false,
+                    "value": "new-c",
+                    "removes": false
+                }
+            ]
+        },
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "c",
+                "new-c",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "september tuning",
+                    "setUuid": "set-1",
+                    "author": "alice",
+                    "approver": "alice",
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": null,
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "old-a",
+                            "previousPresent": true,
+                            "value": "new-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "fail-b",
+                            "previous": "old-fail-b",
+                            "previousPresent": true,
+                            "value": "new-fail-b",
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "old-c",
+                            "previousPresent": false,
+                            "value": "new-c",
+                            "removes": false
+                        }
+                    ],
+                    "state": "applied"
+                }
+            ],
+            [
+                "sets.save",
+                "set-1",
+                "deployed",
+                "GENERATED-UUID"
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "deploy-approved-single-self-empty": {
+        "refused": [
+            "empty",
+            409,
+            "draft set \"september tuning\" would change nothing",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-approved-single-self-refused": {
+        "refused": [
+            "value-refused",
+            409,
+            "nothing was applied: \"a\" refused (not allowed)",
+            [
+                {
+                    "key": "a",
+                    "reason": "not allowed"
+                },
+                {
+                    "key": "b"
+                }
+            ]
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-approved-single-self-write-fails": {
+        "refused": [
+            "value-refused",
+            500,
+            "the deployment was undone in full after a write refused: disk full",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "db.rollBack"
+            ],
+            [
+                "store.restore",
+                [
+                    {
+                        "undo": "a"
+                    }
+                ]
+            ],
+            [
+                "log.error",
+                "Configuration deployment refused mid-apply and was undone",
+                {
+                    "app": "openregister",
+                    "deployment": "GENERATED-UUID",
+                    "restored": 1,
+                    "exception": "RuntimeException"
+                }
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-nobody-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-nobody-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-nobody-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-nobody-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-other-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-other-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-other-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-other-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-self-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-self-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-self-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-four-eyes-self-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-nobody-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-nobody-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-nobody-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-nobody-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-other-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-other-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-other-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-other-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-self-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-self-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-self-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-deployed-single-self-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is deployed and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-nobody-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-nobody-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-nobody-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-nobody-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-other-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-other-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-other-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-other-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-self-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-self-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-self-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-four-eyes-self-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-nobody-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-nobody-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-nobody-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-nobody-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-other-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-other-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-other-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-other-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-self-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-self-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-self-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-discarded-single-self-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is discarded and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-named": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "given name",
+            "setUuid": "set-1",
+            "author": "alice",
+            "approver": null,
+            "deployedBy": "deployer",
+            "restoresUuid": null,
+            "state": "applied",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "old-a",
+                    "previousPresent": true,
+                    "value": "new-a",
+                    "removes": false
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "fail-b",
+                    "previous": "old-fail-b",
+                    "previousPresent": true,
+                    "value": "new-fail-b",
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "old-c",
+                    "previousPresent": false,
+                    "value": "new-c",
+                    "removes": false
+                }
+            ]
+        },
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "c",
+                "new-c",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "given name",
+                    "setUuid": "set-1",
+                    "author": "alice",
+                    "approver": null,
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": null,
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "old-a",
+                            "previousPresent": true,
+                            "value": "new-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "fail-b",
+                            "previous": "old-fail-b",
+                            "previousPresent": true,
+                            "value": "new-fail-b",
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "old-c",
+                            "previousPresent": false,
+                            "value": "new-c",
+                            "removes": false
+                        }
+                    ],
+                    "state": "applied"
+                }
+            ],
+            [
+                "sets.save",
+                "set-1",
+                "deployed",
+                "GENERATED-UUID"
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-nobody-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-nobody-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-nobody-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-nobody-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-other-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-other-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-other-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-other-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-self-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-self-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-self-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-four-eyes-self-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-nobody-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-nobody-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-nobody-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-nobody-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-other-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-other-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-other-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-other-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-self-changes": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-self-empty": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-self-refused": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-none-single-self-write-fails": {
+        "refused": [
+            "state",
+            409,
+            "draft set \"september tuning\" is  and cannot be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-nobody-changes": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-nobody-empty": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-nobody-refused": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-nobody-write-fails": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-other-changes": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-other-empty": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-other-refused": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-other-write-fails": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-self-changes": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-self-empty": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-self-refused": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-four-eyes-self-write-fails": {
+        "refused": [
+            "four-eyes",
+            403,
+            "this instance requires an approval before a set can be deployed",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ]
+        ]
+    },
+    "deploy-open-single-nobody-changes": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "september tuning",
+            "setUuid": "set-1",
+            "author": "alice",
+            "approver": null,
+            "deployedBy": "deployer",
+            "restoresUuid": null,
+            "state": "applied",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "old-a",
+                    "previousPresent": true,
+                    "value": "new-a",
+                    "removes": false
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "fail-b",
+                    "previous": "old-fail-b",
+                    "previousPresent": true,
+                    "value": "new-fail-b",
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "old-c",
+                    "previousPresent": false,
+                    "value": "new-c",
+                    "removes": false
+                }
+            ]
+        },
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "c",
+                "new-c",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "september tuning",
+                    "setUuid": "set-1",
+                    "author": "alice",
+                    "approver": null,
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": null,
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "old-a",
+                            "previousPresent": true,
+                            "value": "new-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "fail-b",
+                            "previous": "old-fail-b",
+                            "previousPresent": true,
+                            "value": "new-fail-b",
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "old-c",
+                            "previousPresent": false,
+                            "value": "new-c",
+                            "removes": false
+                        }
+                    ],
+                    "state": "applied"
+                }
+            ],
+            [
+                "sets.save",
+                "set-1",
+                "deployed",
+                "GENERATED-UUID"
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "deploy-open-single-nobody-empty": {
+        "refused": [
+            "empty",
+            409,
+            "draft set \"september tuning\" would change nothing",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-open-single-nobody-refused": {
+        "refused": [
+            "value-refused",
+            409,
+            "nothing was applied: \"a\" refused (not allowed)",
+            [
+                {
+                    "key": "a",
+                    "reason": "not allowed"
+                },
+                {
+                    "key": "b"
+                }
+            ]
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-open-single-nobody-write-fails": {
+        "refused": [
+            "value-refused",
+            500,
+            "the deployment was undone in full after a write refused: disk full",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "db.rollBack"
+            ],
+            [
+                "store.restore",
+                [
+                    {
+                        "undo": "a"
+                    }
+                ]
+            ],
+            [
+                "log.error",
+                "Configuration deployment refused mid-apply and was undone",
+                {
+                    "app": "openregister",
+                    "deployment": "GENERATED-UUID",
+                    "restored": 1,
+                    "exception": "RuntimeException"
+                }
+            ]
+        ]
+    },
+    "deploy-open-single-other-changes": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "september tuning",
+            "setUuid": "set-1",
+            "author": "alice",
+            "approver": "bob",
+            "deployedBy": "deployer",
+            "restoresUuid": null,
+            "state": "applied",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "old-a",
+                    "previousPresent": true,
+                    "value": "new-a",
+                    "removes": false
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "fail-b",
+                    "previous": "old-fail-b",
+                    "previousPresent": true,
+                    "value": "new-fail-b",
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "old-c",
+                    "previousPresent": false,
+                    "value": "new-c",
+                    "removes": false
+                }
+            ]
+        },
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "c",
+                "new-c",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "september tuning",
+                    "setUuid": "set-1",
+                    "author": "alice",
+                    "approver": "bob",
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": null,
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "old-a",
+                            "previousPresent": true,
+                            "value": "new-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "fail-b",
+                            "previous": "old-fail-b",
+                            "previousPresent": true,
+                            "value": "new-fail-b",
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "old-c",
+                            "previousPresent": false,
+                            "value": "new-c",
+                            "removes": false
+                        }
+                    ],
+                    "state": "applied"
+                }
+            ],
+            [
+                "sets.save",
+                "set-1",
+                "deployed",
+                "GENERATED-UUID"
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "deploy-open-single-other-empty": {
+        "refused": [
+            "empty",
+            409,
+            "draft set \"september tuning\" would change nothing",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-open-single-other-refused": {
+        "refused": [
+            "value-refused",
+            409,
+            "nothing was applied: \"a\" refused (not allowed)",
+            [
+                {
+                    "key": "a",
+                    "reason": "not allowed"
+                },
+                {
+                    "key": "b"
+                }
+            ]
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-open-single-other-write-fails": {
+        "refused": [
+            "value-refused",
+            500,
+            "the deployment was undone in full after a write refused: disk full",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "db.rollBack"
+            ],
+            [
+                "store.restore",
+                [
+                    {
+                        "undo": "a"
+                    }
+                ]
+            ],
+            [
+                "log.error",
+                "Configuration deployment refused mid-apply and was undone",
+                {
+                    "app": "openregister",
+                    "deployment": "GENERATED-UUID",
+                    "restored": 1,
+                    "exception": "RuntimeException"
+                }
+            ]
+        ]
+    },
+    "deploy-open-single-self-changes": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "september tuning",
+            "setUuid": "set-1",
+            "author": "alice",
+            "approver": "alice",
+            "deployedBy": "deployer",
+            "restoresUuid": null,
+            "state": "applied",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "old-a",
+                    "previousPresent": true,
+                    "value": "new-a",
+                    "removes": false
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "fail-b",
+                    "previous": "old-fail-b",
+                    "previousPresent": true,
+                    "value": "new-fail-b",
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "old-c",
+                    "previousPresent": false,
+                    "value": "new-c",
+                    "removes": false
+                }
+            ]
+        },
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "c",
+                "new-c",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "september tuning",
+                    "setUuid": "set-1",
+                    "author": "alice",
+                    "approver": "alice",
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": null,
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "old-a",
+                            "previousPresent": true,
+                            "value": "new-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "fail-b",
+                            "previous": "old-fail-b",
+                            "previousPresent": true,
+                            "value": "new-fail-b",
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "old-c",
+                            "previousPresent": false,
+                            "value": "new-c",
+                            "removes": false
+                        }
+                    ],
+                    "state": "applied"
+                }
+            ],
+            [
+                "sets.save",
+                "set-1",
+                "deployed",
+                "GENERATED-UUID"
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "deploy-open-single-self-empty": {
+        "refused": [
+            "empty",
+            409,
+            "draft set \"september tuning\" would change nothing",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-open-single-self-refused": {
+        "refused": [
+            "value-refused",
+            409,
+            "nothing was applied: \"a\" refused (not allowed)",
+            [
+                {
+                    "key": "a",
+                    "reason": "not allowed"
+                },
+                {
+                    "key": "b"
+                }
+            ]
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ]
+        ]
+    },
+    "deploy-open-single-self-write-fails": {
+        "refused": [
+            "value-refused",
+            500,
+            "the deployment was undone in full after a write refused: disk full",
+            []
+        ],
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "db.rollBack"
+            ],
+            [
+                "store.restore",
+                [
+                    {
+                        "undo": "a"
+                    }
+                ]
+            ],
+            [
+                "log.error",
+                "Configuration deployment refused mid-apply and was undone",
+                {
+                    "app": "openregister",
+                    "deployment": "GENERATED-UUID",
+                    "restored": 1,
+                    "exception": "RuntimeException"
+                }
+            ]
+        ]
+    },
+    "deploy-unnamed-set": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "configuration deployment",
+            "setUuid": "set-1",
+            "author": "alice",
+            "approver": "bob",
+            "deployedBy": "deployer",
+            "restoresUuid": null,
+            "state": "applied",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "old-a",
+                    "previousPresent": true,
+                    "value": "new-a",
+                    "removes": false
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "fail-b",
+                    "previous": "old-fail-b",
+                    "previousPresent": true,
+                    "value": "new-fail-b",
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "old-c",
+                    "previousPresent": false,
+                    "value": "new-c",
+                    "removes": false
+                }
+            ]
+        },
+        "calls": [
+            [
+                "drafts.loadSet",
+                "set-1"
+            ],
+            [
+                "drafts.requiresFourEyes"
+            ],
+            [
+                "previews.preview",
+                "set-1"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "new-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "fail-b"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "c",
+                "new-c",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "configuration deployment",
+                    "setUuid": "set-1",
+                    "author": "alice",
+                    "approver": "bob",
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": null,
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "old-a",
+                            "previousPresent": true,
+                            "value": "new-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "fail-b",
+                            "previous": "old-fail-b",
+                            "previousPresent": true,
+                            "value": "new-fail-b",
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "old-c",
+                            "previousPresent": false,
+                            "value": "new-c",
+                            "removes": false
+                        }
+                    ],
+                    "state": "applied"
+                }
+            ],
+            [
+                "sets.save",
+                "set-1",
+                "deployed",
+                "GENERATED-UUID"
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "rollback-empty": {
+        "refused": [
+            "empty",
+            409,
+            "deployment \"september\" changed no value, so there is nothing to restore",
+            []
+        ],
+        "calls": [
+            [
+                "deployments.findByUuid",
+                "dep-1"
+            ]
+        ]
+    },
+    "rollback-named": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "given name",
+            "setUuid": null,
+            "author": "deployer",
+            "approver": null,
+            "deployedBy": "deployer",
+            "restoresUuid": "dep-1",
+            "state": "rolled-back",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "live-a",
+                    "previousPresent": true,
+                    "value": "old-a",
+                    "removes": false
+                },
+                {
+                    "layer": "organisation",
+                    "layerRef": "org-1",
+                    "key": "fail-b",
+                    "previous": "live-fail-b",
+                    "previousPresent": true,
+                    "value": null,
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "live-c",
+                    "previousPresent": true,
+                    "value": null,
+                    "removes": true
+                }
+            ]
+        },
+        "calls": [
+            [
+                "deployments.findByUuid",
+                "dep-1"
+            ],
+            [
+                "store.read",
+                "instance",
+                null,
+                "a"
+            ],
+            [
+                "store.read",
+                "organisation",
+                "org-1",
+                "fail-b"
+            ],
+            [
+                "store.read",
+                "instance",
+                null,
+                "c"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "old-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "organisation",
+                "org-1",
+                "fail-b"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "c"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "given name",
+                    "setUuid": null,
+                    "author": "deployer",
+                    "approver": null,
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": "dep-1",
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "live-a",
+                            "previousPresent": true,
+                            "value": "old-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "organisation",
+                            "layerRef": "org-1",
+                            "key": "fail-b",
+                            "previous": "live-fail-b",
+                            "previousPresent": true,
+                            "value": null,
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "live-c",
+                            "previousPresent": true,
+                            "value": null,
+                            "removes": true
+                        }
+                    ],
+                    "state": "rolled-back"
+                }
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "rollback-no-session": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "rollback of september",
+            "setUuid": null,
+            "author": null,
+            "approver": null,
+            "deployedBy": null,
+            "restoresUuid": "dep-1",
+            "state": "rolled-back",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "live-a",
+                    "previousPresent": true,
+                    "value": "old-a",
+                    "removes": false
+                },
+                {
+                    "layer": "organisation",
+                    "layerRef": "org-1",
+                    "key": "fail-b",
+                    "previous": "live-fail-b",
+                    "previousPresent": true,
+                    "value": null,
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "live-c",
+                    "previousPresent": true,
+                    "value": null,
+                    "removes": true
+                }
+            ]
+        },
+        "calls": [
+            [
+                "deployments.findByUuid",
+                "dep-1"
+            ],
+            [
+                "store.read",
+                "instance",
+                null,
+                "a"
+            ],
+            [
+                "store.read",
+                "organisation",
+                "org-1",
+                "fail-b"
+            ],
+            [
+                "store.read",
+                "instance",
+                null,
+                "c"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "old-a",
+                "GENERATED-UUID",
+                null
+            ],
+            [
+                "store.remove",
+                "organisation",
+                "org-1",
+                "fail-b"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "c"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "rollback of september",
+                    "setUuid": null,
+                    "author": null,
+                    "approver": null,
+                    "deployedBy": null,
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": "dep-1",
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "live-a",
+                            "previousPresent": true,
+                            "value": "old-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "organisation",
+                            "layerRef": "org-1",
+                            "key": "fail-b",
+                            "previous": "live-fail-b",
+                            "previousPresent": true,
+                            "value": null,
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "live-c",
+                            "previousPresent": true,
+                            "value": null,
+                            "removes": true
+                        }
+                    ],
+                    "state": "rolled-back"
+                }
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "rollback-restore": {
+        "deployed": {
+            "uuid": "GENERATED-UUID",
+            "name": "rollback of september",
+            "setUuid": null,
+            "author": "deployer",
+            "approver": null,
+            "deployedBy": "deployer",
+            "restoresUuid": "dep-1",
+            "state": "rolled-back",
+            "changes": [
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "a",
+                    "previous": "live-a",
+                    "previousPresent": true,
+                    "value": "old-a",
+                    "removes": false
+                },
+                {
+                    "layer": "organisation",
+                    "layerRef": "org-1",
+                    "key": "fail-b",
+                    "previous": "live-fail-b",
+                    "previousPresent": true,
+                    "value": null,
+                    "removes": true
+                },
+                {
+                    "layer": "instance",
+                    "layerRef": null,
+                    "key": "c",
+                    "previous": "live-c",
+                    "previousPresent": true,
+                    "value": null,
+                    "removes": true
+                }
+            ]
+        },
+        "calls": [
+            [
+                "deployments.findByUuid",
+                "dep-1"
+            ],
+            [
+                "store.read",
+                "instance",
+                null,
+                "a"
+            ],
+            [
+                "store.read",
+                "organisation",
+                "org-1",
+                "fail-b"
+            ],
+            [
+                "store.read",
+                "instance",
+                null,
+                "c"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "old-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "organisation",
+                "org-1",
+                "fail-b"
+            ],
+            [
+                "store.remove",
+                "instance",
+                null,
+                "c"
+            ],
+            [
+                "deployments.createFromArray",
+                {
+                    "uuid": "GENERATED-UUID",
+                    "name": "rollback of september",
+                    "setUuid": null,
+                    "author": "deployer",
+                    "approver": null,
+                    "deployedBy": "deployer",
+                    "deployedAt": "DATETIME",
+                    "restoresUuid": "dep-1",
+                    "changes": [
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "a",
+                            "previous": "live-a",
+                            "previousPresent": true,
+                            "value": "old-a",
+                            "removes": false
+                        },
+                        {
+                            "layer": "organisation",
+                            "layerRef": "org-1",
+                            "key": "fail-b",
+                            "previous": "live-fail-b",
+                            "previousPresent": true,
+                            "value": null,
+                            "removes": true
+                        },
+                        {
+                            "layer": "instance",
+                            "layerRef": null,
+                            "key": "c",
+                            "previous": "live-c",
+                            "previousPresent": true,
+                            "value": null,
+                            "removes": true
+                        }
+                    ],
+                    "state": "rolled-back"
+                }
+            ],
+            [
+                "db.commit"
+            ]
+        ]
+    },
+    "rollback-unknown": {
+        "refused": [
+            "unknown",
+            404,
+            "no deployment \"dep-1\"",
+            []
+        ],
+        "calls": [
+            [
+                "deployments.findByUuid",
+                "dep-1"
+            ]
+        ]
+    },
+    "rollback-write-fails": {
+        "refused": [
+            "value-refused",
+            500,
+            "the deployment was undone in full after a write refused: disk full",
+            []
+        ],
+        "calls": [
+            [
+                "deployments.findByUuid",
+                "dep-1"
+            ],
+            [
+                "store.read",
+                "instance",
+                null,
+                "a"
+            ],
+            [
+                "store.read",
+                "organisation",
+                "org-1",
+                "fail-b"
+            ],
+            [
+                "store.read",
+                "instance",
+                null,
+                "c"
+            ],
+            [
+                "db.beginTransaction"
+            ],
+            [
+                "store.write",
+                "instance",
+                null,
+                "a",
+                "old-a",
+                "GENERATED-UUID",
+                "deployer"
+            ],
+            [
+                "store.remove",
+                "organisation",
+                "org-1",
+                "fail-b"
+            ],
+            [
+                "db.rollBack"
+            ],
+            [
+                "store.restore",
+                [
+                    {
+                        "undo": "a"
+                    }
+                ]
+            ],
+            [
+                "log.error",
+                "Configuration deployment refused mid-apply and was undone",
+                {
+                    "app": "openregister",
+                    "deployment": "GENERATED-UUID",
+                    "restored": 1,
+                    "exception": "RuntimeException"
+                }
+            ]
+        ]
+    }
+}

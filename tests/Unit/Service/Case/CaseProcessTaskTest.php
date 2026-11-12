@@ -31,13 +31,16 @@ use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
+use OCA\OpenRegister\Service\Case\CaseRealisationRuns;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
+use OCA\OpenRegister\Service\Case\CaseRealisationTasks;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Real transition table, real definition validator, real realisation
@@ -117,23 +120,15 @@ class CaseProcessTaskTest extends TestCase {
 		$runs = $this->createMock(FlowRunService::class);
 		$run = new FlowRun();
 		$run->setUuid('run-9');
-		$runs->expects($this->once())->method('queue')->with(
-			'advice-flow',
-			['uuid' => CaseFixtures::OBJECT, 'register' => '1', 'schema' => '1'],
-			CaseRealisationService::RUN_TRIGGER,
-			['caseItem' => 'item-4'],
-			'alice'
-		)->willReturn($run);
+		$runs->expects($this->once())->method('queueRun')->with('advice-flow', $this->equalTo(new FlowRunQueueOptions(subject: ['uuid' => CaseFixtures::OBJECT, 'register' => '1', 'schema' => '1'], trigger: CaseRealisationService::RUN_TRIGGER, context: ['caseItem' => 'item-4'], user: 'alice')))->willReturn($run);
 		$tasks = $this->createMock(TaskService::class);
 		$tasks->expects($this->never())->method('import');
 
 		$item = CaseFixtures::row(id: 4, key: 'advies', type: CaseItem::TYPE_PROCESS_TASK, state: CaseItem::STATE_ENABLED);
 		$item->setPlanSettings(['flows' => ['advies' => 'advice-flow']]);
 		$service = new CaseRealisationService(
-			tasks: $tasks,
-			taskRows: $this->createMock(TaskMapper::class),
-			runs: $runs,
-			runRows: $this->createMock(FlowRunMapper::class),
+			tasks: new CaseRealisationTasks(tasks: $tasks, taskRows: $this->createMock(TaskMapper::class)),
+			runs: new CaseRealisationRuns(runs: $runs, runRows: $this->createMock(FlowRunMapper::class)),
 			logger: new NullLogger()
 		);
 		$service->realise(item: $item, actor: 'alice');

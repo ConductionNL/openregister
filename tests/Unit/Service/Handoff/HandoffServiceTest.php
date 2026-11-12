@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Handoff;
 
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\HandoffQueueEntry;
 use OCA\OpenRegister\Db\HandoffQueueEntryMapper;
@@ -47,12 +48,19 @@ use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
+use OCA\OpenRegister\Service\Handoff\HandoffLedger;
 use OCA\OpenRegister\Service\Handoff\HandoffMappingEvaluator;
+use OCA\OpenRegister\Service\Handoff\HandoffObjectAccess;
+use OCA\OpenRegister\Service\Handoff\HandoffProviders;
+use OCA\OpenRegister\Service\Handoff\HandoffRequesters;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Handoff\HandoffSourceRef;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -64,6 +72,7 @@ use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * HandoffServiceTest.
@@ -120,11 +129,10 @@ class HandoffServiceTest extends TestCase {
 		$appManager->method('isInstalled')->willReturn(true);
 
 		$resolver = new SemanticTypeResolver(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
 			jsonLdContextService: new JsonLdContextService($this->createMock(IURLGenerator::class)),
 			logger: $this->createMock(LoggerInterface::class),
-			appManager: $appManager,
+			appManager: $appManager
 		);
 
 		$user = $this->createMock(IUser::class);
@@ -132,20 +140,28 @@ class HandoffServiceTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->service = new HandoffService(
-			objectService: $this->objectService,
-			semanticTypeResolver: $resolver,
-			schemaMapper: $this->schemaMapper,
-			objectMapper: $this->objectMapper,
-			auditTrailMapper: $this->auditTrailMapper,
-			permissionHandler: $this->permissionHandler,
-			mappingEvaluator: new HandoffMappingEvaluator(),
-			queueMapper: $this->queueMapper,
-			db: $this->db,
-			eventDispatcher: $this->eventDispatcher,
-			userSession: $this->userSession,
-			userManager: $this->userManager,
-			notificationManager: $this->notificationManager,
-			logger: $this->createMock(LoggerInterface::class),
+			objects: new HandoffObjectAccess(
+				objectService: $this->objectService,
+				schemaMapper: $this->schemaMapper,
+				objectMapper: $this->objectMapper,
+				permissionHandler: $this->permissionHandler,
+			),
+			providers: new HandoffProviders(
+				semanticTypeResolver: $resolver,
+				mappingEvaluator: new HandoffMappingEvaluator(),
+			),
+			ledger: new HandoffLedger(
+				auditTrailMapper: $this->auditTrailMapper,
+				queueMapper: $this->queueMapper,
+				db: $this->db,
+				logger: $this->createMock(LoggerInterface::class),
+			),
+			requesters: new HandoffRequesters(
+				userSession: $this->userSession,
+				userManager: $this->userManager,
+				notificationManager: $this->notificationManager,
+				eventDispatcher: $this->eventDispatcher,
+			),
 		);
 
 	}//end setUp()
@@ -166,13 +182,8 @@ class HandoffServiceTest extends TestCase {
 		$savedSourceData = null;
 		$savedTargetData = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				$object,
-				$extend = [],
-				$register = null,
-				$schema = null,
-				$uuid = null,
-			) use ($target, $source, &$savedSourceData, &$savedTargetData) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source, &$savedSourceData, &$savedTargetData) {
+				$uuid = $options->uuid;
 				if ($uuid === 'src-uuid') {
 					$savedSourceData = $object;
 					return $source;
@@ -200,7 +211,7 @@ class HandoffServiceTest extends TestCase {
 		);
 
 		$auditActions = [];
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = []) use (&$auditActions) {
 				$auditActions[] = [
 					'uuid' => (string)$object->getUuid(),
@@ -209,7 +220,7 @@ class HandoffServiceTest extends TestCase {
 				];
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 
 		$this->db->expects($this->once())->method('beginTransaction');
 		$this->db->expects($this->once())->method('commit');
@@ -327,12 +338,12 @@ class HandoffServiceTest extends TestCase {
 		);
 
 		$auditActions = [];
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context = []) use (&$auditActions) {
 				$auditActions[] = $action;
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 
 		$this->db->expects($this->never())->method('beginTransaction');
 
@@ -393,7 +404,7 @@ class HandoffServiceTest extends TestCase {
 		$this->db->expects($this->never())->method('commit');
 		$this->objectMapper->expects($this->never())->method('update');
 		$this->objectMapper->expects($this->never())->method('delete');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 		$this->eventDispatcher->expects($this->never())->method('dispatchTyped');
 
 		$this->expectException(ValidationException::class);
@@ -417,7 +428,8 @@ class HandoffServiceTest extends TestCase {
 		$target = $this->targetObject();
 		$sourceSaves = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($target, $source, &$sourceSaves) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source, &$sourceSaves) {
+				$uuid = $options->uuid;
 				if ($uuid === 'src-uuid') {
 					$sourceSaves[] = $object;
 					return $source;
@@ -541,7 +553,8 @@ class HandoffServiceTest extends TestCase {
 
 		$target = $this->targetObject();
 		$this->objectService->method('saveObject')->willReturnCallback(
-			static function ($object, $extend = [], $register = null, $schema = null, $uuid = null) use ($target, $source) {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source) {
+				$uuid = $options->uuid;
 				if ($uuid === 'src-uuid') {
 					return $source;
 				}
@@ -558,9 +571,9 @@ class HandoffServiceTest extends TestCase {
 			static fn ($identifier) => $rawEntities[$identifier]
 		);
 		$this->objectMapper->method('update')->willReturnArgument(0);
-		$this->auditTrailMapper->method('createAuditTrailEntry')->willReturnCallback(
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			fn () => $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class)
-		);
+		));
 
 		$entry = $this->queueEntry();
 		$this->queueMapper->method('findParked')->willReturn([$entry]);
@@ -594,6 +607,441 @@ class HandoffServiceTest extends TestCase {
 		$this->assertSame('corr-park-1', $dispatched->getCorrelationId());
 
 	}//end testDrainSuccessIsDeferredExecution()
+
+	/**
+	 * A drain reached inside a system-operation scope leaves every entry
+	 * parked: the requester's rights cannot be re-evaluated there.
+	 *
+	 * @return void
+	 */
+	public function testDrainInsideASystemScopeLeavesEntriesParked(): void {
+		$this->wireSourceSchema(whenUnavailable: 'queue');
+		$this->wireProvider();
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+		$this->objectService->method('saveObject')->willReturn($this->targetObject());
+		$this->objectMapper->method('find')->willReturnCallback(fn ($identifier) => $this->rawEntity(uuid: (string)$identifier));
+		$this->objectMapper->method('update')->willReturnArgument(0);
+
+		$entry = $this->queueEntry();
+		$this->queueMapper->method('findParked')->willReturn([$entry]);
+
+		$requester = $this->createMock(originalClassName: IUser::class);
+		$requester->method('getUID')->willReturn('alice');
+		$this->userManager->method('get')->willReturn($requester);
+
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->permissionHandler->expects($this->never())->method('checkPermission');
+		$this->queueMapper->expects($this->never())->method('update');
+
+		$summary = SystemOperationContext::run(fn () => $this->service->drainParked());
+
+		$this->assertSame(expected: ['drained' => 0, 'failed' => 0, 'skipped' => 1], actual: $summary);
+		$this->assertSame(expected: HandoffQueueEntry::STATUS_PARKED, actual: $entry->getStatus());
+
+	}//end testDrainInsideASystemScopeLeavesEntriesParked()
+
+	/**
+	 * Availability lists an installed provider as `available`, with the
+	 * record keys in their documented order.
+	 *
+	 * @return void
+	 */
+	public function testListAvailabilityReportsAvailableProvider(): void {
+		$this->wireSourceSchema();
+		$this->wireProvider();
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+		$this->queueMapper->method('findParkedForObject')->willReturn([]);
+
+		$this->assertSame(
+			[
+				[
+					'id' => 'request-to-case',
+					'targetSemanticType' => self::CASE_URI,
+					'trigger' => 'manual',
+					'whenUnavailable' => 'hide',
+					'state' => 'available',
+					'provider' => ['schema' => 'case', 'title' => 'Case'],
+				],
+			],
+			$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))
+		);
+
+	}//end testListAvailabilityReportsAvailableProvider()
+
+	/**
+	 * Availability lists a kind without a provider as `unavailable` with the
+	 * machine-readable reason.
+	 *
+	 * @return void
+	 */
+	public function testListAvailabilityReportsUnavailableProvider(): void {
+		$this->wireSourceSchema(whenUnavailable: 'queue');
+		$this->schemaMapper->method('findAll')->willReturn([]);
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+		$this->queueMapper->method('findParkedForObject')->willReturn([]);
+
+		$this->assertSame(
+			[
+				[
+					'id' => 'request-to-case',
+					'targetSemanticType' => self::CASE_URI,
+					'trigger' => 'manual',
+					'whenUnavailable' => 'queue',
+					'state' => 'unavailable',
+					'reason' => HandoffException::PROVIDER_UNAVAILABLE,
+				],
+			],
+			$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))
+		);
+
+	}//end testListAvailabilityReportsUnavailableProvider()
+
+	/**
+	 * A parked entry wins over provider resolution: the record is `queued`
+	 * and carries the serialised queue entry.
+	 *
+	 * @return void
+	 */
+	public function testListAvailabilityReportsQueuedEntry(): void {
+		$this->wireSourceSchema(whenUnavailable: 'queue');
+		$this->wireProvider();
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+		$parked = $this->queueEntry();
+		$this->queueMapper->method('findParkedForObject')->with('src-uuid')->willReturn([$parked]);
+
+		$this->assertSame(
+			[
+				[
+					'id' => 'request-to-case',
+					'targetSemanticType' => self::CASE_URI,
+					'trigger' => 'manual',
+					'whenUnavailable' => 'queue',
+					'state' => 'queued',
+					'queueEntry' => $parked->jsonSerialize(),
+				],
+			],
+			$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))
+		);
+
+	}//end testListAvailabilityReportsQueuedEntry()
+
+	/**
+	 * A source the caller cannot find is refused as not-declared by both
+	 * the availability listing and execution, before anything is read or written.
+	 *
+	 * @return void
+	 */
+	public function testMissingSourceIsRefusedByListingAndExecution(): void {
+		$this->objectService->method('find')->willReturn(null);
+		$this->schemaMapper->expects($this->never())->method('find');
+		$this->permissionHandler->expects($this->never())->method('checkPermission');
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		foreach (['list', 'execute'] as $call) {
+			try {
+				if ($call === 'list') {
+					$this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'gone'));
+				} else {
+					$this->service->execute(register: '7', schema: '12', id: 'gone', handoffId: 'request-to-case');
+				}
+
+				$this->fail('Expected HandoffException from '.$call);
+			} catch (HandoffException $e) {
+				$this->assertSame(HandoffException::NOT_DECLARED, $e->getErrorCode());
+				$this->assertSame('Object not found.', $e->getMessage());
+			}
+		}
+
+	}//end testMissingSourceIsRefusedByListingAndExecution()
+
+	/**
+	 * Not-declared names the schema and the handoff id in its message.
+	 *
+	 * @return void
+	 */
+	public function testNotDeclaredMessageNamesSchemaAndHandoff(): void {
+		$this->wireSourceSchema();
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+		$this->permissionHandler->expects($this->never())->method('checkPermission');
+
+		try {
+			$this->service->execute(register: '7', schema: '12', id: 'src-uuid', handoffId: 'ghost');
+			$this->fail('Expected HandoffException');
+		} catch (HandoffException $e) {
+			$this->assertSame('Schema "request" declares no handoff with id "ghost".', $e->getMessage());
+		}
+
+	}//end testNotDeclaredMessageNamesSchemaAndHandoff()
+
+	/**
+	 * Refused: the caller may not update the source → typed 403 before the
+	 * provider is resolved and before any write or park.
+	 *
+	 * @return void
+	 */
+	public function testSourceUpdateRefusalHappensBeforeAnyWrite(): void {
+		$this->wireSourceSchema(whenUnavailable: 'queue');
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+
+		$this->permissionHandler->method('checkPermission')->willReturnCallback(
+			static function (Schema $schema, string $action, ...$rest): void {
+				if ($action === 'update') {
+					throw new NotAuthorizedException(message: 'update denied');
+				}
+			}
+		);
+
+		$this->schemaMapper->expects($this->never())->method('findAll');
+		$this->queueMapper->expects($this->never())->method('insert');
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->db->expects($this->never())->method('beginTransaction');
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->expectExceptionMessage('update denied');
+		$this->service->execute(register: '7', schema: '12', id: 'src-uuid', handoffId: 'request-to-case');
+
+	}//end testSourceUpdateRefusalHappensBeforeAnyWrite()
+
+	/**
+	 * Allowed: both checks run as the caller, update-on-source (with owner and
+	 * object) first, then create-on-target, and both before the first write.
+	 *
+	 * @return void
+	 */
+	public function testPermissionChecksRunInOrderBeforeTheFirstWrite(): void {
+		$this->wireSourceSchema();
+		$this->wireProvider();
+		$source = $this->sourceObject();
+		$this->objectService->method('find')->willReturn($source);
+
+		$log = [];
+		$this->permissionHandler->method('checkPermission')->willReturnCallback(
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions()) use (&$log): bool {
+				$log[] = ['check', $action, (int)$schema->getId(), $options->objectOwner, $options->object?->getUuid()];
+				return true;
+			}
+		);
+
+		$target = $this->targetObject();
+		$this->objectService->method('saveObject')->willReturnCallback(
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target, $source, &$log) {
+				$uuid = $options->uuid;
+				$log[] = ['save', $uuid];
+				if ($uuid === 'src-uuid') {
+					return $source;
+				}
+
+				return $target;
+			}
+		);
+
+		$rawEntities = [
+			'src-uuid' => $this->rawEntity('src-uuid'),
+			'tgt-uuid' => $this->rawEntity('tgt-uuid'),
+		];
+		$this->objectMapper->method('find')->willReturnCallback(
+			static fn ($identifier) => $rawEntities[$identifier]
+		);
+		$this->objectMapper->method('update')->willReturnArgument(0);
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+			fn () => $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class)
+		));
+
+		$result = $this->service->execute(register: '7', schema: '12', id: 'src-uuid', handoffId: 'request-to-case', correlationId: 'corr-fixed');
+
+		$this->assertSame(
+			[
+				['check', 'update', 12, 'alice', 'src-uuid'],
+				['check', 'create', 42, null, null],
+				['save', null],
+				['save', 'src-uuid'],
+			],
+			$log
+		);
+		$this->assertSame(
+			[
+				'status' => 'executed',
+				'correlationId' => 'corr-fixed',
+				'target' => ['register' => 9, 'schema' => 42, 'uuid' => 'tgt-uuid'],
+			],
+			$result
+		);
+
+	}//end testPermissionChecksRunInOrderBeforeTheFirstWrite()
+
+	/**
+	 * A provider schema no register holds cannot receive objects: it takes
+	 * the same degradation path as a missing provider (hide → typed error).
+	 *
+	 * @return void
+	 */
+	public function testOrphanedProviderDegradesLikeAMissingOne(): void {
+		$this->wireSourceSchema();
+		$this->wireProvider(withRegister: false);
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->queueMapper->expects($this->never())->method('insert');
+
+		try {
+			$this->service->execute(register: '7', schema: '12', id: 'src-uuid', handoffId: 'request-to-case');
+			$this->fail('Expected HandoffException');
+		} catch (HandoffException $e) {
+			$this->assertSame(HandoffException::PROVIDER_UNAVAILABLE, $e->getErrorCode());
+			$this->assertSame(
+				'No installed schema implements "'.self::CASE_URI.'"; the source object keeps working standalone.',
+				$e->getMessage()
+			);
+		}
+
+	}//end testOrphanedProviderDegradesLikeAMissingOne()
+
+	/**
+	 * Queue mode parks an entry carrying the source, kind, requester and
+	 * mapping hash, and audits the park on the source.
+	 *
+	 * @return void
+	 */
+	public function testQueueModeParkedEntryAndAuditContext(): void {
+		$this->wireSourceSchema(whenUnavailable: 'queue');
+		$this->schemaMapper->method('findAll')->willReturn([]);
+		$source = $this->sourceObject();
+		$this->objectService->method('find')->willReturn($source);
+
+		$inserted = null;
+		$this->queueMapper->method('insert')->willReturnCallback(
+			static function (HandoffQueueEntry $entry) use (&$inserted) {
+				$inserted = $entry;
+				return $entry;
+			}
+		);
+
+		$audits = [];
+		$this->auditTrailMapper->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+			function (ObjectEntity $object, string $action, array $context = []) use (&$audits) {
+				$audits[] = [(string)$object->getUuid(), $action, array_keys($context), $context['deferred'], $context['handoffId']];
+				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
+			}
+		));
+
+		$result = $this->service->execute(register: '7', schema: '12', id: 'src-uuid', handoffId: 'request-to-case', correlationId: 'ignored-on-park');
+
+		$this->assertSame('src-uuid', $inserted->getSourceObjectUuid());
+		$this->assertSame(7, $inserted->getSourceRegister());
+		$this->assertSame(12, $inserted->getSourceSchema());
+		$this->assertSame('request-to-case', $inserted->getHandoffId());
+		$this->assertSame(self::CASE_URI, $inserted->getTargetKind());
+		$this->assertSame('alice', $inserted->getRequestingUser());
+		$this->assertSame(HandoffQueueEntry::STATUS_PARKED, $inserted->getStatus());
+		$mapping = $this->schemaMapper->find(id: '12')->getConfiguration()['x-openregister-handoff'][0]['mapping'];
+		$this->assertSame(hash('sha256', (string)json_encode($mapping)), $inserted->getMappingHash());
+		// Parking mints its own correlation id; a passed one is not reused.
+		$this->assertNotSame('ignored-on-park', $inserted->getCorrelationId());
+		$this->assertSame($inserted->getCorrelationId(), $result['correlationId']);
+		$this->assertSame(['status', 'correlationId', 'queueEntry'], array_keys($result));
+		$this->assertSame(
+			[['src-uuid', HandoffService::AUDIT_QUEUED, ['handoffId', 'targetKind', 'correlationId', 'deferred', 'parkedAt'], true, 'request-to-case']],
+			$audits
+		);
+
+	}//end testQueueModeParkedEntryAndAuditContext()
+
+	/**
+	 * A failing `onSuccess.set` source update removes the created target and
+	 * surfaces the error; no transaction, no relations, no event.
+	 *
+	 * @return void
+	 */
+	public function testOnSuccessFailureRemovesTheTarget(): void {
+		$this->wireSourceSchema();
+		$this->wireProvider();
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+
+		$target = $this->targetObject();
+		$this->objectService->method('saveObject')->willReturnCallback(
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($target) {
+				$uuid = $options->uuid;
+				if ($uuid === 'src-uuid') {
+					throw new \RuntimeException('source update failed');
+				}
+
+				return $target;
+			}
+		);
+		$this->objectMapper->method('find')->willReturnCallback(fn ($identifier) => $this->rawEntity($identifier));
+
+		$deleted = [];
+		$this->objectMapper->method('delete')->willReturnCallback(
+			static function (ObjectEntity $entity) use (&$deleted) {
+				$deleted[] = (string)$entity->getUuid();
+				return $entity;
+			}
+		);
+
+		$this->db->expects($this->never())->method('beginTransaction');
+		$this->objectMapper->expects($this->never())->method('update');
+		$this->eventDispatcher->expects($this->never())->method('dispatchTyped');
+
+		try {
+			$this->service->execute(register: '7', schema: '12', id: 'src-uuid', handoffId: 'request-to-case');
+			$this->fail('Expected RuntimeException');
+		} catch (\RuntimeException $e) {
+			$this->assertSame('source update failed', $e->getMessage());
+		}
+
+		$this->assertSame(['tgt-uuid'], $deleted);
+
+	}//end testOnSuccessFailureRemovesTheTarget()
+
+	/**
+	 * A schema implementing the kind whose `handoffContract` is not an array
+	 * is not a provider.
+	 *
+	 * @return void
+	 */
+	public function testProviderWithNonArrayBindingIsUnavailable(): void {
+		$this->assertSame('unavailable', $this->availabilityWithBinding(binding: 'not an array'));
+
+	}//end testProviderWithNonArrayBindingIsUnavailable()
+
+	/**
+	 * A schema implementing the kind with an incomplete binding is not a
+	 * provider; the same schema with the complete binding is.
+	 *
+	 * @return void
+	 */
+	public function testProviderWithIncompleteBindingIsUnavailable(): void {
+		$this->assertSame('unavailable', $this->availabilityWithBinding(binding: [self::CASE_URI => ['title' => 'onderwerp']]));
+
+	}//end testProviderWithIncompleteBindingIsUnavailable()
+
+	/**
+	 * The availability state of the canonical handoff when the only schema
+	 * implementing the kind carries the given binding.
+	 *
+	 * @param mixed $binding The `handoffContract` configuration value.
+	 *
+	 * @return string The reported state.
+	 */
+	private function availabilityWithBinding(mixed $binding): string {
+		$this->wireSourceSchema();
+		$this->objectService->method('find')->willReturn($this->sourceObject());
+		$this->queueMapper->method('findParkedForObject')->willReturn([]);
+
+		$candidate = new Schema();
+		$candidate->setId(50);
+		$candidate->setSlug('candidate');
+		$candidate->setProperties(['onderwerp' => ['type' => 'string']]);
+		$candidate->setConfiguration(['implements' => [self::CASE_URI], 'handoffContract' => $binding]);
+		$this->schemaMapper->method('findAll')->willReturn([$candidate]);
+
+		$register = new Register();
+		$register->setId(9);
+		$register->setSchemas([50]);
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+
+		return $this->service->listAvailability(new HandoffSourceRef(register: '7', schema: '12', id: 'src-uuid'))[0]['state'];
+	}//end availabilityWithBinding()
 
 	/**
 	 * Wire the source schema (id 12) into the schema mapper's find().
@@ -656,9 +1104,11 @@ class HandoffServiceTest extends TestCase {
 	 * procest) with a complete handoffContract binding into the resolver's
 	 * enumeration path.
 	 *
+	 * @param bool $withRegister False to leave the provider in no register (orphaned).
+	 *
 	 * @return Schema The provider schema.
 	 */
-	private function wireProvider(): Schema {
+	private function wireProvider(bool $withRegister = true): Schema {
 		$provider = new Schema();
 		$provider->setId(42);
 		$provider->setSlug('case');
@@ -698,7 +1148,7 @@ class HandoffServiceTest extends TestCase {
 		$register->setSlug('procest-register');
 		$register->setApplication('procest');
 		$register->setSchemas([42]);
-		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->registerMapper->method('findAll')->willReturn($withRegister === true ? [$register] : []);
 
 		return $provider;
 	}//end wireProvider()

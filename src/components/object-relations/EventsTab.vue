@@ -26,14 +26,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load linked events')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Calendar app missing (HTTP 501 graceful degradation) -->
 		<NcEmptyContent
@@ -52,7 +48,7 @@ SPDX-License-Identifier: EUPL-1.2
 
 		<!-- Empty state -->
 		<NcEmptyContent
-			v-else-if="events.length === 0"
+			v-else-if="items.length === 0"
 			:name="t('openregister', 'No events linked to this object')"
 			:description="
 				t(
@@ -67,7 +63,7 @@ SPDX-License-Identifier: EUPL-1.2
 
 		<!-- Linked events list -->
 		<ul v-else class="events-tab__list">
-			<li v-for="event in events" :key="event.id" class="events-tab__item">
+			<li v-for="event in items" :key="event.id" class="events-tab__item">
 				<div class="events-tab__icon">
 					<CalendarOutline :size="20" />
 				</div>
@@ -93,29 +89,24 @@ SPDX-License-Identifier: EUPL-1.2
 						</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Unlink event')"
-					@click="unlinkEvent(event)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Unlink event')"
+					@unlink="unlinkEvent(event)" />
 			</li>
 		</ul>
 	</div>
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
 import CalendarPlus from 'vue-material-design-icons/CalendarPlus.vue'
 import CalendarRemove from 'vue-material-design-icons/CalendarRemove.vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { useEventRelationsStore } from '../../store/modules/object-relations/events.js'
+import { storeRelationTab } from './relationTab.js'
 
 /**
  * EventsTab — display + manage calendar events linked to an OpenRegister object.
@@ -133,64 +124,20 @@ export default {
 	name: 'EventsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcButton,
-		AlertCircleOutline,
 		CalendarOutline,
 		CalendarPlus,
 		CalendarRemove,
-		CloseCircleOutline,
+		UnlinkButton,
 		LinkVariant,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
-
-	data() {
-		return {
-			error: false,
-			errorMessage: '',
-			store: useEventRelationsStore(),
-		}
-	},
+	mixins: [storeRelationTab(useEventRelationsStore)],
 
 	computed: {
-		/**
-		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
-		 */
-		key() {
-			return `${this.register}:${this.schema}:${this.objectId}`
-		},
-
-		/**
-		 * @spec exclude computed read of linked events from store; event-relations contract owned by integration-calendar capability
-		 */
-		events() {
-			return this.store.byObject[this.key] || []
-		},
-
-		/**
-		 * @spec exclude computed read of loading state from store, UI plumbing
-		 */
-		loading() {
-			return !!this.store.loading[this.key]
-		},
-
 		/**
 		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
 		 */
@@ -199,58 +146,13 @@ export default {
 		},
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param newId
-			 * @spec exclude watcher refetching events on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchEvents()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
-		 * Fetch linked calendar events for the current object via the per-object store.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
-		 * @return {Promise<void>}
-		 */
-		async fetchEvents() {
-			this.error = false
-			this.errorMessage = ''
-			try {
-				await this.store.fetch(this.register, this.schema, this.objectId)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
-		},
-
-		/**
-		 * @param event
+		 * @param {object} event
 		 * @spec exclude store passthrough unlinking event + change emit; event-relations contract owned by integration-calendar capability
 		 */
-		async unlinkEvent(event) {
-			try {
-				await this.store.unlink(
-					this.register,
-					this.schema,
-					this.objectId,
-					event.id,
-				)
-				this.$emit('events-changed', this.events.length)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
+		unlinkEvent(event) {
+			return this.unlink(event.id, 'events-changed')
 		},
 
 		/**
@@ -268,90 +170,12 @@ export default {
 		openLinkDialog() {
 			this.$emit('link-event')
 		},
-
-		/**
-		 * @param value
-		 * @spec exclude computed date-format display helper, UI plumbing
-		 */
-		formatDate(value) {
-			if (!value) {
-				return ''
-			}
-
-			try {
-				const d = new Date(value)
-				if (Number.isNaN(d.getTime())) {
-					return value
-				}
-
-				return d.toLocaleString()
-			} catch (e) {
-				return value
-			}
-		},
 	},
 }
 </script>
 
-<style scoped>
-.events-tab__toolbar {
-	display: flex;
-	gap: 8px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
 
-.events-tab__loading {
-	display: flex;
-	justify-content: center;
-	padding: 2em 0;
-}
-
-.events-tab__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.events-tab__item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.events-tab__item:last-child {
-	border-bottom: none;
-}
-
-.events-tab__icon {
-	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
-}
-
-.events-tab__content {
-	flex-grow: 1;
-	min-width: 0;
-}
-
-.events-tab__summary {
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.events-tab__meta {
-	display: flex;
-	gap: 6px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.85em;
-}
-
-.events-tab__calendar {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+@include relation-tab-list('events-tab', 'summary', 'calendar');
 </style>

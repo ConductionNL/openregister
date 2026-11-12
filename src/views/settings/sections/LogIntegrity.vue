@@ -239,10 +239,19 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2
  *
- * @link https://www.openregister.nl
+ * @see https://www.openregister.nl
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
+/**
+ * Ask the server to verify the audit trail's hash chain.
+ *
+ * @return {Promise<object>} The response; its data is the verification
+ */
+function requestVerification() {
+	return axios.get(generateUrl('/apps/openregister/api/audit-trails/verify'))
+}
+
 export default {
 	name: 'LogIntegrity',
 
@@ -344,20 +353,29 @@ export default {
 			this.verification = null
 
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/audit-trails/verify'),
-				)
+				const response = await requestVerification()
 				this.verification = response.data
 				await this.loadStatus()
 			} catch (error) {
-				console.error('Failed to verify audit chain:', error)
-				this.error = this.t(
-					'openregister',
-					'Verification could not be completed.',
-				)
+				this.showVerifyFailure(error)
 			} finally {
 				this.verifying = false
 			}
+		},
+
+		/**
+		 * Log a verification that could not complete and say so.
+		 *
+		 * @spec exclude UI plumbing — audit chain verification failure message
+		 * @param {Error} error The failure
+		 * @return {void}
+		 */
+		showVerifyFailure(error) {
+			console.error('Failed to verify audit chain:', error)
+			this.error = this.t(
+				'openregister',
+				'Verification could not be completed.',
+			)
 		},
 
 		/**
@@ -373,7 +391,11 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use './sectionStyles.scss' as *;
+
+@include status-callout('.integrity__state', '.integrity__state-badge');
+
 .integrity {
 	margin-top: 8px;
 }
@@ -428,49 +450,6 @@ export default {
 	color: var(--color-warning);
 }
 
-.integrity__state {
-	padding: 16px;
-	border-radius: var(--border-radius-large);
-	border-left: 4px solid;
-	margin-bottom: 16px;
-}
-
-.integrity__state--success {
-	background: var(--color-success-light, rgba(var(--color-success-rgb), 0.1));
-	border-color: var(--color-success);
-}
-
-.integrity__state--warning {
-	background: var(--color-warning-light, rgba(var(--color-warning-rgb), 0.1));
-	border-color: var(--color-warning);
-}
-
-.integrity__state--error {
-	background: var(--color-error-light, rgba(var(--color-error-rgb), 0.1));
-	border-color: var(--color-error);
-}
-
-.integrity__state-badge {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	font-weight: 600;
-	font-size: 15px;
-	margin-bottom: 8px;
-}
-
-.integrity__state--success .integrity__state-badge {
-	color: var(--color-success);
-}
-
-.integrity__state--warning .integrity__state-badge {
-	color: var(--color-warning);
-}
-
-.integrity__state--error .integrity__state-badge {
-	color: var(--color-error);
-}
-
 .integrity__hint {
 	font-size: 14px;
 	color: var(--color-text-maxcontrast);
@@ -489,12 +468,7 @@ export default {
 }
 
 .integrity__command {
-	display: inline-block;
-	font-family: var(--font-face-monospace, monospace);
-	background: var(--color-background-dark);
-	border-radius: var(--border-radius);
-	padding: 4px 8px;
-	word-break: break-all;
+	@include code-chip;
 }
 
 @media (prefers-reduced-motion: reduce) {

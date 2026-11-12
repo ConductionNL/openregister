@@ -24,6 +24,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskInboxAudience;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxSelection;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskBuilder;
@@ -99,12 +102,7 @@ class TaskKindTest extends TestCase {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
 		$mapper->findInbox(
-			criteria: new TaskInboxCriteria(
-				uid: 'root',
-				isAdmin: true,
-				scope: TaskInboxCriteria::SCOPE_ALL,
-				kind: 'reminder'
-			)
+			criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL), selection: new TaskInboxSelection(filter: new TaskInboxFilter(kind: 'reminder')))
 		);
 
 		$this->assertTrue($this->saw('expr.eq', 'kind'));
@@ -123,11 +121,7 @@ class TaskKindTest extends TestCase {
 		$mapper = new TaskMapper(db: $this->connectionWith());
 
 		$mapper->findInbox(
-			criteria: new TaskInboxCriteria(
-				uid: 'root',
-				isAdmin: true,
-				scope: TaskInboxCriteria::SCOPE_ALL
-			)
+			criteria: new TaskInboxCriteria(audience: new TaskInboxAudience(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL))
 		);
 
 		$this->assertFalse($this->saw('expr.eq', 'kind'));

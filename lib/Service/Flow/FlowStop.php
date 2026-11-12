@@ -87,4 +87,34 @@ class FlowStop extends RuntimeException {
 	public function isError(): bool {
 		return $this->isError;
 	}//end isError()
+
+	/**
+	 * The status a run ends in: a raised error fails it, a deliberate stop stops it.
+	 *
+	 * @return string The run status.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	public function runStatus(): string {
+		if ($this->isError === true) {
+			return FlowEngine::STATUS_FAILED;
+		}
+
+		return FlowEngine::STATUS_STOPPED;
+	}//end runStatus()
+
+	/**
+	 * The error a run ends with; none for a deliberate stop.
+	 *
+	 * @return string|null The message, or null.
+	 *
+	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+	 */
+	public function runError(): ?string {
+		if ($this->isError === true) {
+			return $this->getMessage();
+		}
+
+		return null;
+	}//end runError()
 }//end class

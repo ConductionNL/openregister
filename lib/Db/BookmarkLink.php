@@ -59,6 +59,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class BookmarkLink extends Entity implements JsonSerializable {
+	use ObjectLinkTypesTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The object uuid.
@@ -141,9 +143,7 @@ class BookmarkLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addObjectLinkTypes();
 		$this->addType(fieldName: 'bookmarkId', type: 'integer');
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'url', type: 'string');
@@ -155,24 +155,13 @@ class BookmarkLink extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * JSON serialization.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string,mixed>
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'bookmarkId' => $this->bookmarkId,
-			'title' => $this->title,
-			'url' => $this->url,
-			'description' => $this->description,
 			'tags' => ($this->tags ?? []),
-			'addedAt' => $this->addedAt?->format(DateTime::ATOM),
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

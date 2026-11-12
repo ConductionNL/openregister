@@ -153,9 +153,9 @@ class RegisterSlugPinTest extends TestCase {
 
 		$this->assertGreaterThan(500, count($files), 'The walker must see lib/, or the guard above cannot fail.');
 		$this->assertArrayHasKey(
-			'lib/AppHost/Scheduling/ScheduleReconciler.php',
+			'lib/AppHost/Bootstrap.php',
 			$files,
-			'The reconciler is the file this guard was written for; the walker must reach it.'
+			'The walker must reach the AppHost files, where the guard\'s first finding lived.'
 		);
 	}//end testTheGuardScansTheSourceTree()
 

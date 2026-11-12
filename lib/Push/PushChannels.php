@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * OpenRegister PushChannels
+ *
+ * Defines the canonical event strings used by OpenRegister when pushing
+ * real-time notifications to connected browser clients via the Nextcloud
+ * notify_push app.
+ *
+ * Naming convention (mirrors OCA\Deck\NotifyPushEvents):
+ *   - OR_OBJECT     → `or-object`     — base string; append `-{uuid}` to target a single object.
+ *   - OR_COLLECTION → `or-collection` — base string; append `-{register-slug}-{schema-slug}` to target a collection.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Push
+ * @package  OCA\OpenRegister\Push
+ *
+ * @author    Conduction Development Team <dev@conductio.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Push;
+
+/**
+ * The notify_push channel names OpenRegister pushes on.
+ *
+ * Consumers (e.g. @conduction/nextcloud-vue) subscribe to:
+ *   - `or-object-{uuid}`                            — single-object updates
+ *   - `or-collection-{register-slug}-{schema-slug}` — collection-level invalidation (create/delete)
+ */
+interface PushChannels {
+
+	/**
+	 * Base event string for single-object updates.
+	 *
+	 * Append `-{uuid}` when pushing to specific listeners:
+	 * ```
+	 * $eventString = PushChannels::OR_OBJECT . '-' . $uuid;
+	 * ```
+	 *
+	 * Fired on every object lifecycle action (create, update, delete).
+	 *
+	 * @var string
+	 */
+	public const OR_OBJECT = 'or-object';
+
+	/**
+	 * Base event string for collection-level invalidation.
+	 *
+	 * Append `-{register-slug}-{schema-slug}` when pushing to collection listeners:
+	 * ```
+	 * $eventString = PushChannels::OR_COLLECTION . '-' . $registerSlug . '-' . $schemaSlug;
+	 * ```
+	 *
+	 * Fired on create and delete only (not on update, to avoid redundant
+	 * collection refreshes when only content changes).
+	 *
+	 * @var string
+	 */
+	public const OR_COLLECTION = 'or-collection';
+}//end interface

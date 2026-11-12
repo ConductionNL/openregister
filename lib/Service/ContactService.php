@@ -26,10 +26,12 @@ use DateTime;
 use Exception;
 use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCP\IURLGenerator;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
+use OCP\IUser;
+use Sabre\VObject\Document;
+use Sabre\VObject\Parameter;
+use Sabre\VObject\Property;
 use Sabre\VObject\Reader;
 
 /**
@@ -48,66 +50,24 @@ use Sabre\VObject\Reader;
  * @SuppressWarnings(PHPMD.StaticAccess)             Sabre\VObject\Reader::read() is a static factory; Sabre
  * provides no injectable alternative in the library.
  */
-class ContactService {
-
-	/**
-	 * Contact link mapper.
-	 *
-	 * @var ContactLinkMapper
-	 */
-	private readonly ContactLinkMapper $contactLinkMapper;
-
-	/**
-	 * CardDAV backend.
-	 *
-	 * @var CardDavBackend
-	 */
-	private readonly CardDavBackend $cardDavBackend;
-
-	/**
-	 * User session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * URL generator (webroot-aware deep links).
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
+class ContactService implements ContactServiceInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $contactLinkMapper Contact link mapper
+	 * @param ContactLinkMapperInterface $contactLinkMapper Contact link mapper
 	 * @param CardDavBackend $cardDavBackend CardDAV backend
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger
+	 * @param LinkSessionRuntime $runtime User session and logger
 	 * @param IURLGenerator $urlGenerator URL generator
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ContactLinkMapper $contactLinkMapper,
-		CardDavBackend $cardDavBackend,
-		IUserSession $userSession,
-		LoggerInterface $logger,
-		IURLGenerator $urlGenerator,
+		private readonly ContactLinkMapperInterface $contactLinkMapper,
+		private readonly CardDavBackend $cardDavBackend,
+		private readonly LinkSessionRuntime $runtime,
+		private readonly IURLGenerator $urlGenerator,
 	) {
-		$this->contactLinkMapper = $contactLinkMapper;
-		$this->cardDavBackend = $cardDavBackend;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
-		$this->urlGenerator = $urlGenerator;
 	}//end __construct()
 
 	/**
@@ -159,70 +119,142 @@ class ContactService {
 		$now = new DateTime();
 
 		$results = array_map(
-			function (ContactLink $link) use ($now): array {
-				$row = $link->jsonSerialize();
-
-				// Decide whether to refresh the cached fields. A link
-				// without any cached values is always refreshed; a stale
-				// link (older than ENRICHMENT_TTL_SECONDS) is refreshed
-				// and the updated values are persisted opportunistically.
-				$linkedAt = $link->getLinkedAt();
-				$isStale = (
-					$linkedAt === null
-					|| ($now->getTimestamp() - $linkedAt->getTimestamp()) > self::ENRICHMENT_TTL_SECONDS
-				);
-				$hasCachedValues = (
-					$link->getPhone() !== null
-					|| $link->getOrg() !== null
-					|| $link->getAvatarUrl() !== null
-				);
-
-				if ($link->isUserLink() === true) {
-					return $row;
-				}
-
-				if ($hasCachedValues === false || $isStale === true) {
-					$vfields = $this->extractVcardFields(
-						addressbookId: $link->getAddressbookId(),
-						contactUri: $link->getContactUri(),
-						contactUid: $link->getContactUid()
-					);
-
-					// Persist the freshened values + bump linkedAt so
-					// the next read can rely on the cache. Best-effort;
-					// a DB failure here doesn't break the list call.
-					try {
-						$link->setPhone($vfields['phone']);
-						$link->setOrg($vfields['org']);
-						$link->setAvatarUrl($vfields['avatarUrl']);
-						$this->contactLinkMapper->update($link);
-					} catch (\Throwable $e) {
-						$this->logger->debug(
-							'Failed to persist re-enriched vCard fields: ' . $e->getMessage()
-						);
-					}
-
-					$row['phone'] = $vfields['phone'];
-					$row['org'] = $vfields['org'];
-					$row['avatarUrl'] = $vfields['avatarUrl'];
-				}//end if
-
-				// Deep-link to the specific contact in the Contacts app.
-				$deepLink = $this->buildContactDeepLink(
-					addressbookId: $link->getAddressbookId(),
-					contactUid: $link->getContactUid()
-				);
-				if ($deepLink !== null) {
-					$row['url'] = $deepLink;
-				}
-
-				return $row;
-			},
+			fn (ContactLink $link): array => $this->contactRow(link: $link, now: $now),
 			$links
 		);
 
 		return ['results' => $results, 'total' => $total];
 	}//end getContactsForObject()
+
+	/**
+	 * The listed row of one link: re-enriched from the vCard when it has no cached values or is stale.
+	 *
+	 * A user link is returned as stored: it has no vCard.
+	 *
+	 * @param ContactLink $link The link row.
+	 * @param DateTime    $now  The listing time.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function contactRow(ContactLink $link, DateTime $now): array {
+		$row = $link->jsonSerialize();
+
+		// Decide whether to refresh the cached fields. A link
+		// without any cached values is always refreshed; a stale
+		// link (older than ENRICHMENT_TTL_SECONDS) is refreshed
+		// and the updated values are persisted opportunistically.
+		$isStale = $this->isStale(link: $link, now: $now);
+		$hasCachedValues = $this->hasCachedValues(link: $link);
+
+		if ($link->isUserLink() === true) {
+			return $row;
+		}
+
+		if ($hasCachedValues === false || $isStale === true) {
+			$row = $this->reEnrichedRow(link: $link, row: $row);
+		}
+
+		return $this->withDeepLink(link: $link, row: $row);
+	}//end contactRow()
+
+	/**
+	 * Whether the link's cached fields are older than the enrichment TTL, or were never stamped.
+	 *
+	 * @param ContactLink $link The link row.
+	 * @param DateTime    $now  The listing time.
+	 *
+	 * @return bool
+	 */
+	private function isStale(ContactLink $link, DateTime $now): bool {
+		$linkedAt = $link->getLinkedAt();
+		return (
+			$linkedAt === null
+			|| ($now->getTimestamp() - $linkedAt->getTimestamp()) > self::ENRICHMENT_TTL_SECONDS
+		);
+	}//end isStale()
+
+	/**
+	 * Whether the link carries any cached vCard field.
+	 *
+	 * @param ContactLink $link The link row.
+	 *
+	 * @return bool
+	 */
+	private function hasCachedValues(ContactLink $link): bool {
+		return (
+			$link->getPhone() !== null
+			|| $link->getOrg() !== null
+			|| $link->getAvatarUrl() !== null
+		);
+	}//end hasCachedValues()
+
+	/**
+	 * Re-read phone, org and avatar from the vCard into the row, persisting them best-effort.
+	 *
+	 * @param ContactLink         $link The link row.
+	 * @param array<string,mixed> $row  The serialised row.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function reEnrichedRow(ContactLink $link, array $row): array {
+		$vfields = $this->extractVcardFields(
+			card: $this->cardRefOf(link: $link),
+			contactUid: $link->getContactUid()
+		);
+
+		$this->persistReEnriched(link: $link, vfields: $vfields);
+
+		$row['phone'] = $vfields['phone'];
+		$row['org'] = $vfields['org'];
+		$row['avatarUrl'] = $vfields['avatarUrl'];
+		return $row;
+	}//end reEnrichedRow()
+
+	/**
+	 * Persist the freshened values + bump linkedAt so the next read can rely on the cache.
+	 *
+	 * Best-effort; a DB failure here doesn't break the list call.
+	 *
+	 * @param ContactLink          $link    The link row.
+	 * @param array<string, mixed> $vfields The freshened phone, org and avatar.
+	 *
+	 * @return void
+	 */
+	private function persistReEnriched(ContactLink $link, array $vfields): void {
+		try {
+			$link->setPhone($vfields['phone']);
+			$link->setOrg($vfields['org']);
+			$link->setAvatarUrl($vfields['avatarUrl']);
+			$this->contactLinkMapper->update($link);
+		} catch (\Throwable $e) {
+			$this->runtime->logger->debug(
+				'Failed to persist re-enriched vCard fields: ' . $e->getMessage()
+			);
+		}
+	}//end persistReEnriched()
+
+	/**
+	 * Add the deep-link to the specific contact in the Contacts app, when it resolves.
+	 *
+	 * @param ContactLink         $link The link row.
+	 * @param array<string,mixed> $row  The serialised row.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function withDeepLink(ContactLink $link, array $row): array {
+		$addressbookId = $link->getAddressbookId();
+		$contactUid = (string)$link->getContactUid();
+		if ($contactUid === '' || $addressbookId === null) {
+			return $row;
+		}
+
+		$deepLink = $this->buildContactDeepLink(addressbookId: $addressbookId, contactUid: $contactUid);
+		if ($deepLink !== null) {
+			$row['url'] = $deepLink;
+		}
+
+		return $row;
+	}//end withDeepLink()
 
 	/**
 	 * Build a webroot-aware deep-link to a specific contact.
@@ -235,24 +267,15 @@ class ContactService {
 	 * Returns null (record gets no `url`) when the uid is missing or the
 	 * addressbook can no longer be resolved, rather than a broken link.
 	 *
-	 * @param int|null $addressbookId The numeric CardDAV addressbook id.
-	 * @param string|null $contactUid The vCard UID of the contact.
+	 * @param int    $addressbookId The numeric CardDAV addressbook id.
+	 * @param string $contactUid    The vCard UID of the contact, not empty.
 	 *
 	 * @return string|null The deep-link URL, or null when not resolvable.
 	 */
-	private function buildContactDeepLink(?int $addressbookId, ?string $contactUid): ?string {
-		if ($contactUid === null || $contactUid === '' || $addressbookId === null) {
-			return null;
-		}
-
+	private function buildContactDeepLink(int $addressbookId, string $contactUid): ?string {
 		try {
-			$addressbook = $this->cardDavBackend->getAddressBookById($addressbookId);
-			if (is_array($addressbook) === false) {
-				return null;
-			}
-
-			$addressbookUri = ($addressbook['uri'] ?? null);
-			if ($addressbookUri === null || $addressbookUri === '') {
+			$addressbookUri = $this->addressbookUri(addressbookId: $addressbookId);
+			if ($addressbookUri === null) {
 				return null;
 			}
 
@@ -266,10 +289,31 @@ class ContactService {
 
 			return rtrim($base, '/') . '/' . rawurlencode('All contacts') . '/' . $token;
 		} catch (\Throwable $e) {
-			$this->logger->debug('Failed to build contact deep-link: ' . $e->getMessage());
+			$this->runtime->logger->debug('Failed to build contact deep-link: ' . $e->getMessage());
 			return null;
 		}//end try
 	}//end buildContactDeepLink()
+
+	/**
+	 * The uri of a CardDAV addressbook, or null when it cannot be resolved or has none.
+	 *
+	 * @param int $addressbookId The numeric CardDAV addressbook id.
+	 *
+	 * @return mixed The uri as stored, or null.
+	 */
+	private function addressbookUri(int $addressbookId): mixed {
+		$addressbook = $this->cardDavBackend->getAddressBookById($addressbookId);
+		if (is_array($addressbook) === false) {
+			return null;
+		}
+
+		$addressbookUri = ($addressbook['uri'] ?? null);
+		if ($addressbookUri === null || $addressbookUri === '') {
+			return null;
+		}
+
+		return $addressbookUri;
+	}//end addressbookUri()
 
 	/**
 	 * Resolve the supplementary vCard fields (`phone`, `org`, `avatarUrl`)
@@ -278,309 +322,454 @@ class ContactService {
 	 * Returns a defaults-shaped array even when the lookup fails so the
 	 * caller never sees missing keys.
 	 *
-	 * @param int|null $addressbookId The CardDAV addressbook id.
-	 * @param string|null $contactUri The vCard uri (e.g. `jan.vcf`).
-	 * @param string|null $contactUid The vCard UID (used to build a
-	 *                                fallback avatar route when PHOTO
-	 *                                is absent).
+	 * @param ContactCardRef|null $card       The vCard (e.g. `jan.vcf` in an
+	 *                                        addressbook); null when the row
+	 *                                        lacks an id or uri.
+	 * @param string|null         $contactUid The vCard UID (used to build a
+	 *                                        fallback avatar route when PHOTO
+	 *                                        is absent).
 	 *
 	 * @return array{phone: ?string, org: ?string, avatarUrl: ?string}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each vCard property (TEL, ORG, PHOTO) requires
-	 * distinct handling: TEL is iterable or scalar, PHOTO may be URI/data-URL/raw bytes requiring
-	 * format detection; collapsing branches loses semantic specificity.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       TEL iterable vs scalar + PHOTO URI vs data vs bytes +
-	 * contactUid fallback produce many distinct execution paths; all are in-method because extracting
-	 * each to a helper would scatter the single "resolve phone+org+avatar" contract.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method resolves phone, org, and avatar from
-	 * vCard in one pass; splitting into three sub-helpers would require re-reading and re-parsing the
-	 * vCard three times or passing the parsed vCard object across helpers.
 	 */
-	private function extractVcardFields(?int $addressbookId, ?string $contactUri, ?string $contactUid): array {
+	private function extractVcardFields(?ContactCardRef $card, ?string $contactUid): array {
 		$defaults = ['phone' => null, 'org' => null, 'avatarUrl' => null];
 
-		if ($addressbookId === null || $contactUri === null || $contactUri === '') {
-			// No CardDAV coordinates → still emit a fallback avatar URL
-			// when we have a uid so the chip can render an initials
-			// placeholder via the Contacts app's avatar endpoint.
-			if ($contactUid !== null && $contactUid !== '') {
-				$defaults['avatarUrl'] = '/index.php/apps/contacts/photo/' . rawurlencode($contactUid);
-			}
-
+		// No CardDAV coordinates: still emit a fallback avatar URL when
+		// there is a uid, so the chip can render an initials placeholder.
+		if ($this->hasCardCoordinates(card: $card) === false) {
+			$defaults['avatarUrl'] = $this->contactPhotoRoute(contactUid: $contactUid);
 			return $defaults;
 		}
 
-		try {
-			$card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
-		} catch (\Throwable $e) {
-			$this->logger->debug('vCard lookup failed for enrichment: ' . $e->getMessage());
-			return $defaults;
-		}
-
-		if ($card === false || isset($card['carddata']) === false) {
-			return $defaults;
-		}
-
-		try {
-			$vcard = Reader::read($card['carddata']);
-		} catch (\Throwable $e) {
-			$this->logger->debug('vCard parse failed for enrichment: ' . $e->getMessage());
-			return $defaults;
-		}
-
-		$phone = null;
-		if (isset($vcard->TEL) === true) {
-			// TEL may be a single value or an iterable of typed entries.
-			// Prefer the first non-empty entry — the bespoke UI shows
-			// one number per chip; richer multi-number rendering belongs
-			// in the upcoming reverse-lookup flyout (AD-3).
-			$tel = $vcard->TEL;
-			if (is_iterable($tel) === true) {
-				foreach ($tel as $entry) {
-					$value = (string)$entry;
-					if ($value !== '') {
-						$phone = $value;
-						break;
-					}
-				}
-			}
-
-			if (is_iterable($tel) === false) {
-				$value = (string)$tel;
-				if ($value !== '') {
-					$phone = $value;
-				}
-			}
-		}//end if
-
-		$org = null;
-		if (isset($vcard->ORG) === true) {
-			$value = (string)$vcard->ORG;
-			// VCard ORG often uses semicolon-separated component fields
-			// (`Acme;Engineering;Backend`) — surface only the primary
-			// organisation name.
-			$primary = trim(explode(';', $value)[0]);
-			if ($primary !== '') {
-				$org = $primary;
-			}
-		}
-
-		$avatarUrl = null;
-		if (isset($vcard->PHOTO) === true) {
-			// Sabre auto-classifies vCard 3.0 PHOTO bodies as Binary when
-			// no `VALUE=URI` parameter is present, which means casting to
-			// string returns the base64-decoded blob. Use the raw
-			// mime-dir value and decide based on its shape instead.
-			$photoProp = $vcard->PHOTO;
-			$rawValue = '';
-			if (method_exists($photoProp, 'getRawMimeDirValue') === true) {
-				$rawValue = (string)$photoProp->getRawMimeDirValue();
-			}
-
-			if ($rawValue === '') {
-				$rawValue = (string)$photoProp;
-			}
-
-			if ($rawValue !== '') {
-				// Trim any line-folding artefacts ("https//examplecom/janjpg"
-				// can occur when Sabre eagerly strips colons/dots from
-				// the binary view of a URL; in that case we fall back to
-				// the per-uid Contacts route below).
-				if (preg_match('#^(https?://|data:)#i', $rawValue) === 1) {
-					$avatarUrl = $rawValue;
-				}
-
-				if (preg_match('#^(https?://|data:)#i', $rawValue) === 0) {
-					// Otherwise treat as inline image bytes; wrap as data URL.
-					$mediaType = 'image/jpeg';
-					if (isset($photoProp['TYPE']) === true) {
-						$typeParam = (string)$photoProp['TYPE'];
-						if ($typeParam !== '') {
-							$mediaType = 'image/' . strtolower($typeParam);
-						}
-					}
-
-					// Strip any embedded `data:` prefix Sabre may have
-					// left in place when round-tripping a data URL.
-					if (str_starts_with($rawValue, 'data:') === true) {
-						$avatarUrl = $rawValue;
-					}
-
-					if (str_starts_with($rawValue, 'data:') === false) {
-						$avatarUrl = 'data:' . $mediaType . ';base64,' . $rawValue;
-					}
-				}
-			}//end if
-		}//end if
-
-		// Fallback to the Contacts app's per-uid avatar route when no
-		// PHOTO property is embedded — the route 404s gracefully when
-		// the contact has no photo, which the UI treats as "use the
-		// initials placeholder".
-		if ($avatarUrl === null && $contactUid !== null && $contactUid !== '') {
-			$avatarUrl = '/index.php/apps/contacts/photo/' . rawurlencode($contactUid);
-		}
-
-		return [
-			'phone' => $phone,
-			'org' => $org,
-			'avatarUrl' => $avatarUrl,
-		];
+		return $this->fieldsFromCard(
+			vcard: $this->readCard(addressbookId: $card->addressbookId, contactUri: $card->contactUri),
+			contactUid: $contactUid
+		);
 	}//end extractVcardFields()
 
 	/**
-	 * Link an existing contact to an object.
+	 * The phone, organisation and avatar URL of a parsed vCard; all null
+	 * when the card could not be read.
+	 *
+	 * Without an embedded PHOTO the Contacts app's per-uid avatar route is
+	 * used; it 404s when the contact has no photo, which the UI treats as
+	 * "use the initials placeholder".
+	 *
+	 * @param Document|null $vcard      The parsed vCard, or null.
+	 * @param string|null   $contactUid The vCard UID.
+	 *
+	 * @return array{phone: ?string, org: ?string, avatarUrl: ?string}
+	 */
+	private function fieldsFromCard(?Document $vcard, ?string $contactUid): array {
+		if ($vcard === null) {
+			return ['phone' => null, 'org' => null, 'avatarUrl' => null];
+		}
+
+		return [
+			'phone' => $this->firstPhone(vcard: $vcard),
+			'org' => $this->primaryOrganisation(vcard: $vcard),
+			'avatarUrl' => $this->photoUrl(vcard: $vcard) ?? $this->contactPhotoRoute(contactUid: $contactUid),
+		];
+	}//end fieldsFromCard()
+
+	/**
+	 * The vCard a link row points at; null when it lacks an addressbook id or a vCard uri.
+	 *
+	 * @param ContactLink $link The link row.
+	 *
+	 * @return ContactCardRef|null
+	 */
+	private function cardRefOf(ContactLink $link): ?ContactCardRef {
+		$addressbookId = $link->getAddressbookId();
+		$contactUri = $link->getContactUri();
+		if ($addressbookId === null || $contactUri === null) {
+			return null;
+		}
+
+		return new ContactCardRef(addressbookId: $addressbookId, contactUri: $contactUri);
+	}//end cardRefOf()
+
+	/**
+	 * Whether there is a vCard reference with a non-empty vCard uri.
+	 *
+	 * @param ContactCardRef|null $card The vCard reference.
+	 *
+	 * @return bool
+	 */
+	private function hasCardCoordinates(?ContactCardRef $card): bool {
+		return $card !== null && $card->contactUri !== '';
+	}//end hasCardCoordinates()
+
+	/**
+	 * Fetch and parse a vCard, or null when it cannot be read.
+	 *
+	 * @param int    $addressbookId The CardDAV addressbook id.
+	 * @param string $contactUri    The vCard uri.
+	 *
+	 * @return Document|null
+	 */
+	private function readCard(int $addressbookId, string $contactUri): ?Document {
+		$cardData = $this->fetchCardData(addressbookId: $addressbookId, contactUri: $contactUri);
+		if ($cardData === null) {
+			return null;
+		}
+
+		try {
+			return Reader::read($cardData);
+		} catch (\Throwable $e) {
+			$this->runtime->logger->debug('vCard parse failed for enrichment: ' . $e->getMessage());
+			return null;
+		}
+	}//end readCard()
+
+	/**
+	 * The raw vCard data of a card, or null when the backend has none.
+	 *
+	 * @param int    $addressbookId The CardDAV addressbook id.
+	 * @param string $contactUri    The vCard uri.
+	 *
+	 * @return mixed The `carddata` value, or null.
+	 */
+	private function fetchCardData(int $addressbookId, string $contactUri): mixed {
+		try {
+			$card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
+		} catch (\Throwable $e) {
+			$this->runtime->logger->debug('vCard lookup failed for enrichment: ' . $e->getMessage());
+			return null;
+		}
+
+		if ($card === false || isset($card['carddata']) === false) {
+			return null;
+		}
+
+		return $card['carddata'];
+	}//end fetchCardData()
+
+	/**
+	 * The first non-empty TEL value of a vCard.
+	 *
+	 * @param Document $vcard The parsed vCard.
+	 *
+	 * @return string|null
+	 */
+	private function firstPhone(Document $vcard): ?string {
+		foreach ($vcard->select('TEL') as $entry) {
+			$value = (string) $entry;
+			if ($value !== '') {
+				return $value;
+			}
+		}
+
+		return null;
+	}//end firstPhone()
+
+	/**
+	 * The primary organisation name of a vCard ORG (`Acme;Engineering` gives `Acme`).
+	 *
+	 * @param Document $vcard The parsed vCard.
+	 *
+	 * @return string|null
+	 */
+	private function primaryOrganisation(Document $vcard): ?string {
+		if (isset($vcard->ORG) === false) {
+			return null;
+		}
+
+		$primary = trim(explode(';', (string) $vcard->ORG)[0]);
+		if ($primary === '') {
+			return null;
+		}
+
+		return $primary;
+	}//end primaryOrganisation()
+
+	/**
+	 * The avatar URL an embedded PHOTO gives: a URL or data URL as is,
+	 * inline image bytes wrapped as a base64 data URL.
+	 *
+	 * Sabre classifies vCard 3.0 PHOTO bodies without `VALUE=URI` as
+	 * Binary, so the raw mime-dir value decides the shape.
+	 *
+	 * @param Document $vcard The parsed vCard.
+	 *
+	 * @return string|null
+	 */
+	private function photoUrl(Document $vcard): ?string {
+		if (isset($vcard->PHOTO) === false) {
+			return null;
+		}
+
+		$photo = $vcard->PHOTO;
+		$rawValue = $this->photoRawValue(photo: $photo);
+		if ($rawValue === '') {
+			return null;
+		}
+
+		if (preg_match('#^(https?://|data:)#i', $rawValue) === 1) {
+			return $rawValue;
+		}
+
+		return 'data:' . $this->photoMediaType(photo: $photo) . ';base64,' . $rawValue;
+	}//end photoUrl()
+
+	/**
+	 * The raw mime-dir value of a PHOTO, else its string value.
+	 *
+	 * @param Property $photo The PHOTO property.
+	 *
+	 * @return string
+	 */
+	private function photoRawValue(Property $photo): string {
+		$rawValue = (string) $photo->getRawMimeDirValue();
+		if ($rawValue === '') {
+			$rawValue = (string) $photo;
+		}
+
+		return $rawValue;
+	}//end photoRawValue()
+
+	/**
+	 * The media type of an inline PHOTO, from its TYPE parameter (default JPEG).
+	 *
+	 * @param Property $photo The PHOTO property.
+	 *
+	 * @return string
+	 */
+	private function photoMediaType(Property $photo): string {
+		$type = $photo['TYPE'];
+		if ($type instanceof Parameter === false || (string) $type->getValue() === '') {
+			return 'image/jpeg';
+		}
+
+		return 'image/' . strtolower((string) $type->getValue());
+	}//end photoMediaType()
+
+	/**
+	 * The Contacts app's per-uid avatar route, or null without a uid.
+	 *
+	 * @param string|null $contactUid The vCard UID.
+	 *
+	 * @return string|null
+	 */
+	private function contactPhotoRoute(?string $contactUid): ?string {
+		if ($contactUid === null || $contactUid === '') {
+			return null;
+		}
+
+		return '/index.php/apps/contacts/photo/' . rawurlencode($contactUid);
+	}//end contactPhotoRoute()
+
+	/**
+	 * Tag an existing vCard with its object and role, and save the link row of it.
 	 *
 	 * Tier-2: the call is idempotent — if a link row already exists for
 	 * `(objectUuid, contactUid)` (enforced by the
 	 * `idx_contact_object_uid_uniq` index) the row is updated in-place
-	 * with the freshened cached fields and the new role. Callers that
-	 * relied on the previous "always-insert" semantics still get a
-	 * persisted entity back.
+	 * with the freshened cached fields and the new role.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param int $addressbookId The addressbook ID.
-	 * @param string $contactUri The contact URI in the addressbook.
-	 * @param string|null $role The role of this contact on the object.
-	 * @param int|null $schemaId Optional schema id (Tier-2).
+	 * @param ContactCardRef   $card      The vCard to link.
+	 * @param ContactPlacement $placement Where it is linked, and in what role.
 	 *
 	 * @return ContactLink The created or updated link.
 	 *
-	 * @throws Exception If the contact does not exist.
+	 * @throws Exception If the contact does not exist (404), or nobody is logged in.
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Single switch on upsert state — extracting a sub-method
-	 *                                                doesn't add clarity and would split the vCard hydration
-	 *                                                from the DB write that consumes it.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       insert vs update branches plus optional role/schemaId
-	 * null-checks plus best-effort persist error path expand NPath; each path serves a distinct upsert
-	 * variant in the idempotent link contract.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) linkContact() covers card lookup, user auth, vCard
-	 * hydration, existence check, and insert-or-update in sequence; splitting would scatter the
-	 * idempotent upsert contract across multiple methods.
 	 */
-	public function linkContact(
-		string $objectUuid,
-		int $registerId,
-		int $addressbookId,
-		string $contactUri,
-		?string $role = null,
-		?int $schemaId = null,
-	): ContactLink {
-		// Verify the contact exists.
-		$card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
-		if ($card === false) {
+	public function linkCard(ContactCardRef $card, ContactPlacement $placement): ContactLink {
+		$found = $this->requireCard(card: $card);
+		$user = $this->requireUser();
+
+		$vcard = Reader::read($found['carddata']);
+		$contactUid = $this->vcardText(vcard: $vcard, property: 'UID') ?? '';
+
+		// Tier-2: the widened payload (phone / org / avatar) lets the row serve
+		// future list calls without round-tripping CardDAV.
+		$vfields = $this->extractVcardFields(card: $card, contactUid: $contactUid);
+
+		$this->tagVcard(vcard: $vcard, placement: $placement);
+
+		$this->cardDavBackend->updateCard($card->addressbookId, $card->contactUri, $vcard->serialize());
+
+		$existing = $this->existingLink(objectUuid: $placement->objectUuid, contactUid: $contactUid);
+		$link = $existing ?? $this->newLink(objectUuid: $placement->objectUuid, contactUid: $contactUid);
+		$this->place(link: $link, placement: $placement);
+
+		$link->setAddressbookId($card->addressbookId);
+		$link->setContactUri($card->contactUri);
+		$link->setDisplayName($this->vcardText(vcard: $vcard, property: 'FN'));
+		$link->setEmail($this->vcardText(vcard: $vcard, property: 'EMAIL'));
+		$link->setPhone($vfields['phone']);
+		$link->setOrg($vfields['org']);
+		$link->setAvatarUrl($vfields['avatarUrl']);
+		$link->setRole($placement->role);
+		$this->stampLinkedBy(link: $link, uid: $user->getUID());
+
+		return $this->saveLink(link: $link, existing: $existing);
+	}//end linkCard()
+
+	/**
+	 * The CardDAV row of a vCard that must exist.
+	 *
+	 * @param ContactCardRef $card The vCard.
+	 *
+	 * @return array The card row, with its `carddata`.
+	 *
+	 * @throws Exception If the contact does not exist (404).
+	 */
+	private function requireCard(ContactCardRef $card): array {
+		$found = $this->cardDavBackend->getCard($card->addressbookId, $card->contactUri);
+		if ($found === false) {
 			throw new Exception('Contact not found', 404);
 		}
 
-		$user = $this->userSession->getUser();
+		return $found;
+	}//end requireCard()
+
+	/**
+	 * The logged-in user.
+	 *
+	 * @return IUser
+	 *
+	 * @throws Exception If nobody is logged in.
+	 */
+	private function requireUser(): IUser {
+		$user = $this->runtime->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
-		// Parse vCard for cached fields.
-		$vcard = Reader::read($card['carddata']);
-		$contactUid = '';
-		if (isset($vcard->UID) === true) {
-			$contactUid = (string)$vcard->UID;
+		return $user;
+	}//end requireUser()
+
+	/**
+	 * Put a link row on the placement's register and, when given, its schema.
+	 *
+	 * @param ContactLink      $link      The link row.
+	 * @param ContactPlacement $placement Where it is linked.
+	 *
+	 * @return void
+	 */
+	private function place(ContactLink $link, ContactPlacement $placement): void {
+		$link->setRegisterId($placement->registerId);
+		$this->applySchema(link: $link, schemaId: $placement->schemaId);
+	}//end place()
+
+	/**
+	 * Record who linked the row, and when.
+	 *
+	 * @param ContactLink $link The link row.
+	 * @param string      $uid  The linking user's id.
+	 *
+	 * @return void
+	 */
+	private function stampLinkedBy(ContactLink $link, string $uid): void {
+		$link->setLinkedBy($uid);
+		$link->setLinkedAt(new DateTime());
+	}//end stampLinkedBy()
+
+	/**
+	 * Tag a vCard with the object it is linked to and, when given, the role.
+	 *
+	 * @param Document         $vcard     The vCard.
+	 * @param ContactPlacement $placement The linked object and the contact's role.
+	 *
+	 * @return void
+	 */
+	private function tagVcard(Document $vcard, ContactPlacement $placement): void {
+		$vcard->add('X-OPENREGISTER-OBJECT', $placement->objectUuid);
+		if ($placement->role !== null) {
+			$vcard->add('X-OPENREGISTER-ROLE', $placement->role);
 		}
+	}//end tagVcard()
 
-		$displayName = null;
-		if (isset($vcard->FN) === true) {
-			$displayName = (string)$vcard->FN;
-		}
-
-		$email = null;
-		if (isset($vcard->EMAIL) === true) {
-			$email = (string)$vcard->EMAIL;
-		}
-
-		// Tier-2: extract the widened payload (phone / org / avatar) so
-		// the row can serve future list calls without round-tripping
-		// CardDAV.
-		$vfields = $this->extractVcardFields(
-			addressbookId: $addressbookId,
-			contactUri: $contactUri,
-			contactUid: $contactUid
-		);
-
-		// Add X-OPENREGISTER-* properties to the vCard.
-		$vcard->add('X-OPENREGISTER-OBJECT', $objectUuid);
-		if ($role !== null) {
-			$vcard->add('X-OPENREGISTER-ROLE', $role);
-		}
-
-		$this->cardDavBackend->updateCard($addressbookId, $contactUri, $vcard->serialize());
-
-		// Upsert: if a row already exists for this (objectUuid, contactUid)
-		// pair, refresh its cached fields + role instead of inserting.
-		$existing = null;
-		if ($contactUid !== '') {
-			$existing = $this->contactLinkMapper->findByObjectAndContact(
-				objectUuid: $objectUuid,
-				contactUid: $contactUid
-			);
-		}
-
-		if ($existing !== null) {
-			$existing->setRegisterId($registerId);
-			if ($schemaId !== null) {
-				$existing->setSchemaId($schemaId);
-			}
-
-			$existing->setAddressbookId($addressbookId);
-			$existing->setContactUri($contactUri);
-			$existing->setDisplayName($displayName);
-			$existing->setEmail($email);
-			$existing->setPhone($vfields['phone']);
-			$existing->setOrg($vfields['org']);
-			$existing->setAvatarUrl($vfields['avatarUrl']);
-			$existing->setRole($role);
-			$existing->setLinkedBy($user->getUID());
-			$existing->setLinkedAt(new DateTime());
-
-			return $this->contactLinkMapper->update($existing);
-		}
-
-		// Create DB record.
-		$link = new ContactLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
+	/**
+	 * Set the schema of a link when one is given.
+	 *
+	 * @param ContactLink $link     The link row.
+	 * @param int|null    $schemaId The schema id, or null to leave it.
+	 *
+	 * @return void
+	 */
+	private function applySchema(ContactLink $link, ?int $schemaId): void {
 		if ($schemaId !== null) {
 			$link->setSchemaId($schemaId);
 		}
+	}//end applySchema()
 
-		$link->setContactUid($contactUid);
-		$link->setAddressbookId($addressbookId);
-		$link->setContactUri($contactUri);
-		$link->setDisplayName($displayName);
-		$link->setEmail($email);
-		$link->setPhone($vfields['phone']);
-		$link->setOrg($vfields['org']);
-		$link->setAvatarUrl($vfields['avatarUrl']);
-		$link->setRole($role);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+	/**
+	 * Update the existing link row, or insert the new one.
+	 *
+	 * @param ContactLink      $link     The link to save.
+	 * @param ContactLink|null $existing The row it was loaded from, or null for a new row.
+	 *
+	 * @return ContactLink
+	 */
+	private function saveLink(ContactLink $link, ?ContactLink $existing): ContactLink {
+		if ($existing !== null) {
+			return $this->contactLinkMapper->update($link);
+		}
 
 		return $this->contactLinkMapper->insert($link);
-	}//end linkContact()
+	}//end saveLink()
+
+	/**
+	 * The text of a vCard property, or null when the card does not have it.
+	 *
+	 * @param Document $vcard    The parsed vCard.
+	 * @param string   $property The property name, such as FN or EMAIL.
+	 *
+	 * @return string|null The first value of the property.
+	 */
+	private function vcardText(Document $vcard, string $property): ?string {
+		if (isset($vcard->$property) === false) {
+			return null;
+		}
+
+		return (string) $vcard->$property;
+	}//end vcardText()
+
+	/**
+	 * The link row of a contact on an object, when the contact has a UID and is linked already.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $contactUid The vCard UID, empty when the card has none.
+	 *
+	 * @return ContactLink|null The existing link.
+	 */
+	private function existingLink(string $objectUuid, string $contactUid): ?ContactLink {
+		if ($contactUid === '') {
+			return null;
+		}
+
+		return $this->contactLinkMapper->findByObjectAndContact(objectUuid: $objectUuid, contactUid: $contactUid);
+	}//end existingLink()
+
+	/**
+	 * A new, unsaved link of a contact to an object.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $contactUid The vCard UID.
+	 *
+	 * @return ContactLink The link.
+	 */
+	private function newLink(string $objectUuid, string $contactUid): ContactLink {
+		$link = new ContactLink();
+		$link->setObjectUuid($objectUuid);
+		$link->setContactUid($contactUid);
+		return $link;
+	}//end newLink()
 
 	/**
 	 * Create a new contact and link it to an object.
 	 *
-	 * Tier-2: extended to persist `phone` / `org` straight from the
-	 * caller-supplied payload, and to accept an optional `schemaId`
-	 * + free-form `org` field. The avatar URL falls back to the
-	 * per-uid Contacts route (no PHOTO is set on freshly-created
-	 * vCards yet).
+	 * Creates a vCard in the user's first addressbook and inserts the link row of it.
+	 * Tier-2: persists `phone` / `org` straight from the caller-supplied payload. The
+	 * avatar URL falls back to the per-uid Contacts route (no PHOTO is set on
+	 * freshly-created vCards yet).
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param array $data Contact data: `fullName` or `displayName`, `email`,
-	 *                    `phone`, `org`, `role`.
-	 * @param int|null $schemaId Optional schema id (Tier-2).
+	 * @param ContactPlacement $placement Where it is linked, and in what role.
+	 * @param array            $data      Contact data: `fullName` or `displayName`, `email`, `phone`, `org`.
 	 *
 	 * @return ContactLink The created link.
 	 *
@@ -588,111 +777,193 @@ class ContactService {
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function createAndLinkContact(
-		string $objectUuid,
-		int $registerId,
-		array $data,
-		?int $schemaId = null,
-	): ContactLink {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
+	public function createAndLinkContact(ContactPlacement $placement, array $data): ContactLink {
+		$user = $this->requireUser();
+		$addressbook = $this->requireUserAddressbook();
 
-		$addressbook = $this->findUserAddressbook();
-		if ($addressbook === null) {
-			throw new Exception('No addressbook found');
-		}
+		$contact = ['uid' => strtoupper(bin2hex(random_bytes(16)))] + $this->newContactFields(data: $data);
+		$contactUri = $contact['uid'] . '.vcf';
 
-		$uid = strtoupper(bin2hex(random_bytes(16)));
-		$role = $data['role'] ?? null;
-		// Accept both `fullName` (existing) and `displayName` (spec /
-		// dialog form field) as the human-readable label.
-		$displayName = $data['displayName'] ?? $data['fullName'] ?? 'Unknown';
-		$phone = $data['phone'] ?? null;
-		$email = $data['email'] ?? null;
-		$org = $data['org'] ?? null;
+		$this->cardDavBackend->createCard(
+			$addressbook['id'],
+			$contactUri,
+			$this->newCardData(placement: $placement, contact: $contact)
+		);
 
-		// Build vCard.
-		$lines = [];
-		$lines[] = 'BEGIN:VCARD';
-		$lines[] = 'VERSION:3.0';
-		$lines[] = 'UID:' . $uid;
-		$lines[] = 'FN:' . $displayName;
-
-		if (empty($email) === false) {
-			$lines[] = 'EMAIL;TYPE=INTERNET:' . $email;
-		}
-
-		if (empty($phone) === false) {
-			$lines[] = 'TEL;TYPE=CELL:' . $phone;
-		}
-
-		if (empty($org) === false) {
-			$lines[] = 'ORG:' . $org;
-		}
-
-		$lines[] = 'X-OPENREGISTER-OBJECT:' . $objectUuid;
-		if ($role !== null) {
-			$lines[] = 'X-OPENREGISTER-ROLE:' . $role;
-		}
-
-		$lines[] = 'END:VCARD';
-
-		$cardData = implode("\r\n", $lines) . "\r\n";
-		$contactUri = $uid . '.vcf';
-
-		$this->cardDavBackend->createCard($addressbook['id'], $contactUri, $cardData);
-
-		// Create DB record.
-		$link = new ContactLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		if ($schemaId !== null) {
-			$link->setSchemaId($schemaId);
-		}
-
-		$link->setContactUid($uid);
-		$link->setAddressbookId($addressbook['id']);
-		$link->setContactUri($contactUri);
-		$link->setDisplayName($displayName);
-		$link->setEmail($email);
-		$link->setPhone($phone);
-		$link->setOrg($org);
-		// PHOTO not set yet — fall back to the per-uid Contacts route.
-		$link->setAvatarUrl('/index.php/apps/contacts/photo/' . rawurlencode($uid));
-		$link->setRole($role);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		$link = $this->newContactLink(placement: $placement, contact: $contact + ['addressbookId' => $addressbook['id'], 'contactUri' => $contactUri]);
+		$this->stampLinkedBy(link: $link, uid: $user->getUID());
 
 		return $this->contactLinkMapper->insert($link);
 	}//end createAndLinkContact()
 
 	/**
+	 * The user's addressbook a new contact is created in.
+	 *
+	 * @return array The addressbook.
+	 *
+	 * @throws Exception When the user has none.
+	 */
+	private function requireUserAddressbook(): array {
+		$addressbook = $this->findUserAddressbook();
+		if ($addressbook === null) {
+			throw new Exception('No addressbook found');
+		}
+
+		return $addressbook;
+	}//end requireUserAddressbook()
+
+	/**
+	 * The DB record of a contact just created in an addressbook, before who linked it.
+	 *
+	 * @param ContactPlacement     $placement The object, register, schema and role.
+	 * @param array<string, mixed> $contact   The contact's uid and fields, its addressbook id and its URI.
+	 *
+	 * @return ContactLink The unsaved link.
+	 */
+	private function newContactLink(ContactPlacement $placement, array $contact): ContactLink {
+		$link = new ContactLink();
+		$link->setObjectUuid($placement->objectUuid);
+		$this->place(link: $link, placement: $placement);
+
+		$link->setContactUid($contact['uid']);
+		$link->setAddressbookId($contact['addressbookId']);
+		$link->setContactUri($contact['contactUri']);
+		$link->setDisplayName($contact['displayName']);
+		$link->setEmail($contact['email']);
+		$link->setPhone($contact['phone']);
+		$link->setOrg($contact['org']);
+		// PHOTO not set yet — fall back to the per-uid Contacts route.
+		$link->setAvatarUrl('/index.php/apps/contacts/photo/' . rawurlencode($contact['uid']));
+		$link->setRole($placement->role);
+
+		return $link;
+	}//end newContactLink()
+
+	/**
+	 * The display name, email, phone and organisation of a new contact.
+	 *
+	 * Accepts both `fullName` (existing) and `displayName` (spec / dialog
+	 * form field) as the human-readable label.
+	 *
+	 * @param array $data The caller's contact data.
+	 *
+	 * @return array{displayName: mixed, email: mixed, phone: mixed, org: mixed}
+	 */
+	private function newContactFields(array $data): array {
+		return [
+			'displayName' => $data['displayName'] ?? $data['fullName'] ?? 'Unknown',
+			'email' => $data['email'] ?? null,
+			'phone' => $data['phone'] ?? null,
+			'org' => $data['org'] ?? null,
+		];
+	}//end newContactFields()
+
+	/**
+	 * The vCard 3.0 text of a new contact tagged with the object it is linked to.
+	 *
+	 * @param ContactPlacement    $placement The linked object and the contact's role.
+	 * @param array<string,mixed> $contact   uid, displayName, email, phone and org.
+	 *
+	 * @return string
+	 */
+	private function newCardData(ContactPlacement $placement, array $contact): string {
+		$lines = [
+			'BEGIN:VCARD',
+			'VERSION:3.0',
+			'UID:' . $contact['uid'],
+			'FN:' . $contact['displayName'],
+		];
+		$lines = array_merge($lines, self::optionalCardLines(contact: $contact), self::objectCardLines(placement: $placement));
+		$lines[] = 'END:VCARD';
+
+		return implode("\r\n", $lines) . "\r\n";
+	}//end newCardData()
+
+	/**
+	 * The email, phone and organisation lines of a new card, for the fields that are set.
+	 *
+	 * @param array<string, mixed> $contact The contact's fields.
+	 *
+	 * @return list<string>
+	 */
+	private static function optionalCardLines(array $contact): array {
+		$lines = [];
+		if (empty($contact['email']) === false) {
+			$lines[] = 'EMAIL;TYPE=INTERNET:' . $contact['email'];
+		}
+
+		if (empty($contact['phone']) === false) {
+			$lines[] = 'TEL;TYPE=CELL:' . $contact['phone'];
+		}
+
+		if (empty($contact['org']) === false) {
+			$lines[] = 'ORG:' . $contact['org'];
+		}
+
+		return $lines;
+	}//end optionalCardLines()
+
+	/**
+	 * The lines that tie a new card to its object and role.
+	 *
+	 * @param ContactPlacement $placement The object and role.
+	 *
+	 * @return list<string>
+	 */
+	private static function objectCardLines(ContactPlacement $placement): array {
+		$lines = ['X-OPENREGISTER-OBJECT:' . $placement->objectUuid];
+		if ($placement->role !== null) {
+			$lines[] = 'X-OPENREGISTER-ROLE:' . $placement->role;
+		}
+
+		return $lines;
+	}//end objectCardLines()
+
+	/**
 	 * Update the role on a contact-object link.
 	 *
-	 * @param int $linkId The link ID.
-	 * @param string $role The new role.
+	 * @param int         $linkId     The link ID.
+	 * @param string      $role       The new role.
+	 * @param string|null $objectUuid When given, the object the link must belong to.
 	 *
 	 * @return ContactLink The updated link.
 	 *
-	 * @throws Exception If link not found.
+	 * @throws Exception If the link isn't found, or belongs to another object (404).
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function updateRole(int $linkId, string $role): ContactLink {
-		try {
-			$link = $this->contactLinkMapper->find($linkId);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			throw new Exception('Contact link not found', 404);
-		}
+	public function updateRole(int $linkId, string $role, ?string $objectUuid = null): ContactLink {
+		return $this->assignRole(link: $this->findLinkOf(linkId: $linkId, objectUuid: $objectUuid), role: $role);
+	}//end updateRole()
 
-		// Update vCard role property; a user link has no vCard.
+	/**
+	 * Give a contact link a new role, on the vCard (best effort) and on the link row.
+	 *
+	 * @param ContactLink $link The link, already resolved within the caller's object.
+	 * @param string      $role The new role.
+	 *
+	 * @return ContactLink The updated link.
+	 *
+	 * @spec openspec/specs/contactpersonen-handling/spec.md
+	 */
+	public function assignRole(ContactLink $link, string $role): ContactLink {
+		$this->retagRole(link: $link, role: $role);
+		$link->setRole($role);
+
+		return $this->contactLinkMapper->update($link);
+	}//end assignRole()
+
+	/**
+	 * Replace the role on the vCard of a link, best-effort; a user link has no vCard.
+	 *
+	 * @param ContactLink $link The link row.
+	 * @param string      $role The new role.
+	 *
+	 * @return void
+	 */
+	private function retagRole(ContactLink $link, string $role): void {
 		try {
-			$card = false;
-			if ($link->isUserLink() === false) {
-				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
-			}
+			$card = $this->linkedCard(link: $link);
 
 			if ($card !== false) {
 				$vcard = Reader::read($card['carddata']);
@@ -702,13 +973,24 @@ class ContactService {
 				$this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
 			}
 		} catch (Exception $e) {
-			$this->logger->warning('Failed to update vCard role: ' . $e->getMessage());
+			$this->runtime->logger->warning('Failed to update vCard role: ' . $e->getMessage());
+		}
+	}//end retagRole()
+
+	/**
+	 * The CardDAV card behind a link; a user link has none.
+	 *
+	 * @param ContactLink $link The link row.
+	 *
+	 * @return array<string, mixed>|false The card, or false when the link is a user link or the card is gone.
+	 */
+	private function linkedCard(ContactLink $link): array|false {
+		if ($link->isUserLink() === true) {
+			return false;
 		}
 
-		$link->setRole($role);
-
-		return $this->contactLinkMapper->update($link);
-	}//end updateRole()
+		return $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
+	}//end linkedCard()
 
 	/**
 	 * Remove a contact link.
@@ -722,30 +1004,24 @@ class ContactService {
 	 * proceeds regardless so orphan rows are recoverable through this
 	 * path rather than only via direct DB DELETE.
 	 *
-	 * @param int $linkId The link ID.
+	 * @param int         $linkId     The link ID.
+	 * @param string|null $objectUuid When given, the object the link must belong to.
 	 *
 	 * @return void
 	 *
-	 * @throws Exception If the link row itself isn't found (404).
+	 * @throws Exception If the link row isn't found, or belongs to another object (404).
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function unlinkContact(int $linkId): void {
-		try {
-			$link = $this->contactLinkMapper->find($linkId);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			throw new Exception('Contact link not found', 404);
-		}
+	public function unlinkContact(int $linkId, ?string $objectUuid = null): void {
+		$link = $this->findLinkOf(linkId: $linkId, objectUuid: $objectUuid);
 
 		// Best-effort: remove X-OPENREGISTER-* from the vCard. If the
 		// vCard is gone or unreadable, skip the cleanup and proceed with
 		// the link-row delete — orphan link rows would otherwise only
 		// be cleanable via direct DB DELETE.
 		try {
-			$card = false;
-			if ($link->isUserLink() === false) {
-				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
-			}
+			$card = $this->linkedCard(link: $link);
 
 			if ($card !== false) {
 				$vcard = Reader::read($card['carddata']);
@@ -754,7 +1030,7 @@ class ContactService {
 				$this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
 			}
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				'Failed to clean vCard properties (link row will still be removed): ' . $e->getMessage(),
 				[
 					'linkId' => $linkId,
@@ -766,6 +1042,30 @@ class ContactService {
 
 		$this->contactLinkMapper->delete($link);
 	}//end unlinkContact()
+
+	/**
+	 * A link by id, optionally only when it belongs to the given object.
+	 *
+	 * @param int         $linkId     The link ID.
+	 * @param string|null $objectUuid When given, the object the link must belong to.
+	 *
+	 * @return ContactLink The link.
+	 *
+	 * @throws Exception If the link isn't found, or belongs to another object (404).
+	 */
+	private function findLinkOf(int $linkId, ?string $objectUuid): ContactLink {
+		try {
+			$link = $this->contactLinkMapper->find($linkId);
+		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			throw new Exception('Contact link not found', 404);
+		}
+
+		if ($objectUuid !== null && $link->getObjectUuid() !== $objectUuid) {
+			throw new Exception('Contact link not found', 404);
+		}
+
+		return $link;
+	}//end findLinkOf()
 
 	/**
 	 * Unlink a contact from a specific object by contact uid.
@@ -815,13 +1115,25 @@ class ContactService {
 		// pass an arbitrary (enumerable CardDAV) contact UID and learn which
 		// OpenRegister objects reference contacts belonging to other users.
 		$allowedAddressbookIds = $this->currentUserAddressbookIds();
-		if ($this->userSession->getUser() === null) {
+		if ($this->runtime->userSession->getUser() === null) {
 			return [];
 		}
 
 
 		$links = $this->contactLinkMapper->findByContactUid($contactUid);
 
+		return self::visibleLinkRows(links: $links, allowedAddressbookIds: $allowedAddressbookIds);
+	}//end getObjectsForContact()
+
+	/**
+	 * The link rows the caller may see: user links, and links into the caller's own addressbooks.
+	 *
+	 * @param array<int, ContactLink> $links                 The contact's links.
+	 * @param array<int, int>         $allowedAddressbookIds The caller's addressbooks.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function visibleLinkRows(array $links, array $allowedAddressbookIds): array {
 		return array_values(
 			array_map(
 				static function (ContactLink $link): array {
@@ -829,17 +1141,27 @@ class ContactService {
 				},
 				array_filter(
 					$links,
-					static function (ContactLink $link) use ($allowedAddressbookIds): bool {
-						if ($link->isUserLink() === true) {
-							return true;
-						}
-
-						return in_array((int)$link->getAddressbookId(), $allowedAddressbookIds, true);
-					}
+					static fn (ContactLink $link): bool => self::isVisibleLink(link: $link, allowedAddressbookIds: $allowedAddressbookIds)
 				)
 			)
 		);
-	}//end getObjectsForContact()
+	}//end visibleLinkRows()
+
+	/**
+	 * Whether the caller may see a link: a user link, or one into the caller's own addressbooks.
+	 *
+	 * @param ContactLink     $link                  The link.
+	 * @param array<int, int> $allowedAddressbookIds The caller's addressbooks.
+	 *
+	 * @return bool
+	 */
+	private static function isVisibleLink(ContactLink $link, array $allowedAddressbookIds): bool {
+		if ($link->isUserLink() === true) {
+			return true;
+		}
+
+		return in_array((int)$link->getAddressbookId(), $allowedAddressbookIds, true);
+	}//end isVisibleLink()
 
 	/**
 	 * Collect the addressbook IDs owned by the current session user.
@@ -850,7 +1172,7 @@ class ContactService {
 	 * @return array<int, int> Addressbook IDs, or [] when anonymous / none.
 	 */
 	private function currentUserAddressbookIds(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession->getUser();
 		if ($user === null) {
 			return [];
 		}
@@ -879,33 +1201,57 @@ class ContactService {
 		$links = $this->contactLinkMapper->findByObjectUuid($objectUuid);
 
 		foreach ($links as $link) {
-			try {
-				if ($link->isUserLink() === true) {
-					$this->logger->debug('User link, no vCard to clean: ' . $link->getContactUid());
-					continue;
-				}
-
-				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
-				if ($card !== false) {
-					$vcard = Reader::read($card['carddata']);
-					// Remove properties matching this object only.
-					unset($vcard->{'X-OPENREGISTER-OBJECT'});
-					unset($vcard->{'X-OPENREGISTER-ROLE'});
-					$this->cardDavBackend->updateCard(
-						$link->getAddressbookId(),
-						$link->getContactUri(),
-						$vcard->serialize()
-					);
-				}
-			} catch (Exception $e) {
-				$this->logger->warning(
-					'Failed to clean vCard for contact ' . $link->getContactUid() . ': ' . $e->getMessage()
-				);
-			}
+			$this->cleanVcardOf(link: $link);
 		}//end foreach
 
 		$this->contactLinkMapper->deleteByObjectUuid($objectUuid);
 	}//end deleteLinksForObject()
+
+	/**
+	 * Remove an object's properties from the vCard behind one of its links, best-effort; a user link has no vCard.
+	 *
+	 * @param ContactLink $link The link row.
+	 *
+	 * @return void
+	 */
+	private function cleanVcardOf(ContactLink $link): void {
+		try {
+			if ($link->isUserLink() === true) {
+				$this->runtime->logger->debug('User link, no vCard to clean: ' . $link->getContactUid());
+				return;
+			}
+
+			$this->removeObjectProperties(link: $link);
+		} catch (Exception $e) {
+			$this->runtime->logger->warning(
+				'Failed to clean vCard for contact ' . $link->getContactUid() . ': ' . $e->getMessage()
+			);
+		}
+	}//end cleanVcardOf()
+
+	/**
+	 * Remove the object and role properties from the vCard behind an addressbook link, when the card still exists.
+	 *
+	 * @param ContactLink $link The addressbook link row.
+	 *
+	 * @return void
+	 */
+	private function removeObjectProperties(ContactLink $link): void {
+		$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
+		if ($card === false) {
+			return;
+		}
+
+		$vcard = Reader::read($card['carddata']);
+		// Remove properties matching this object only.
+		unset($vcard->{'X-OPENREGISTER-OBJECT'});
+		unset($vcard->{'X-OPENREGISTER-ROLE'});
+		$this->cardDavBackend->updateCard(
+			$link->getAddressbookId(),
+			$link->getContactUri(),
+			$vcard->serialize()
+		);
+	}//end removeObjectProperties()
 
 	/**
 	 * Find the user's default addressbook.
@@ -915,7 +1261,7 @@ class ContactService {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	private function findUserAddressbook(): ?array {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession->getUser();
 		if ($user === null) {
 			return null;
 		}

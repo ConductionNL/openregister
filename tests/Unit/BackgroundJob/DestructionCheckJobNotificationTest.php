@@ -22,7 +22,8 @@ use DateTime;
 use OCA\OpenRegister\BackgroundJob\DestructionCheckJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\RetentionService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -88,11 +89,11 @@ class DestructionCheckJobNotificationTest extends TestCase {
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->container->method('get')->willReturnCallback(
 			fn (string $id): object => match ($id) {
-				RetentionService::class => $this->retentionService,
+				RetentionServiceInterface::class => $this->retentionService,
 				INotificationManager::class => $this->notificationManager,
 				IGroupManager::class => $groupManager,
 				IAppConfig::class => $appConfig,
-				ObjectRetentionHandler::class => $this->createMock(ObjectRetentionHandler::class),
+				ArchivalSettingsReaderInterface::class => $this->createMock(ArchivalSettingsReaderInterface::class),
 				default => $this->createMock(LoggerInterface::class),
 			}
 		);

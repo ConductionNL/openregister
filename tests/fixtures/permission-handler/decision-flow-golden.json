@@ -1,0 +1,1827 @@
+{
+    "decide|none|read|none|none": "9da335a3374a2f121d035efa25aa7ab7711ddf99",
+    "decide|none|read|none|allow": "9da335a3374a2f121d035efa25aa7ab7711ddf99",
+    "decide|none|read|none|deny": "9da335a3374a2f121d035efa25aa7ab7711ddf99",
+    "decide|none|read|none|throw": "9da335a3374a2f121d035efa25aa7ab7711ddf99",
+    "decide|none|read|none|telemetry down": "ac4e3199bd9cde8b1b938a21a05595eb07b33b6f",
+    "decide|none|read|none|no dispatcher": "b856401538dfce18bbd6ecf17f12cd1b7b93528d",
+    "decide|none|read|plain|none": "f89dc35a3686ace6225efdea5215793eda2439d8",
+    "decide|none|read|plain|allow": "f89dc35a3686ace6225efdea5215793eda2439d8",
+    "decide|none|read|plain|deny": "f89dc35a3686ace6225efdea5215793eda2439d8",
+    "decide|none|read|plain|throw": "f89dc35a3686ace6225efdea5215793eda2439d8",
+    "decide|none|read|plain|telemetry down": "835dde1d4005eb94b6f5327e3a5a3ff00514ca70",
+    "decide|none|read|plain|no dispatcher": "b856401538dfce18bbd6ecf17f12cd1b7b93528d",
+    "decide|none|read|no uuid|none": "de5ed2af04f05634505db71e368966dc410a9e92",
+    "decide|none|read|no uuid|allow": "de5ed2af04f05634505db71e368966dc410a9e92",
+    "decide|none|read|no uuid|deny": "de5ed2af04f05634505db71e368966dc410a9e92",
+    "decide|none|read|no uuid|throw": "de5ed2af04f05634505db71e368966dc410a9e92",
+    "decide|none|read|no uuid|telemetry down": "673f7805655b203c098c26bb92ff3c76e9df4fb2",
+    "decide|none|read|no uuid|no dispatcher": "b856401538dfce18bbd6ecf17f12cd1b7b93528d",
+    "decide|none|read|own block|none": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|none|read|own block|allow": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|none|read|own block|deny": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|none|read|own block|throw": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|none|read|own block|telemetry down": "15602c9ebe01ba54444aa32eb6655abb9675f28e",
+    "decide|none|read|own block|no dispatcher": "55dc8020dda4d2213ee38d287cf84340d9adffcf",
+    "decide|none|read|draft|none": "127c258544e46795d117ce43ca1765cf7df7295f",
+    "decide|none|read|draft|allow": "127c258544e46795d117ce43ca1765cf7df7295f",
+    "decide|none|read|draft|deny": "127c258544e46795d117ce43ca1765cf7df7295f",
+    "decide|none|read|draft|throw": "127c258544e46795d117ce43ca1765cf7df7295f",
+    "decide|none|read|draft|telemetry down": "9ab62900c6ea8947efd3de7dc4e46136f9cefea3",
+    "decide|none|read|draft|no dispatcher": "0f9bfd4ca21fd0d50e6ca9e32adc981199e79fa7",
+    "decide|none|update|none|none": "e4a8dccd7f6b08222c8643aa0f8c137f1cc6dc7a",
+    "decide|none|update|none|allow": "e4a8dccd7f6b08222c8643aa0f8c137f1cc6dc7a",
+    "decide|none|update|none|deny": "e4a8dccd7f6b08222c8643aa0f8c137f1cc6dc7a",
+    "decide|none|update|none|throw": "e4a8dccd7f6b08222c8643aa0f8c137f1cc6dc7a",
+    "decide|none|update|none|telemetry down": "6d9395cdbce60467344470206bbc112cc3e63e00",
+    "decide|none|update|none|no dispatcher": "e0969b52aa6555e8c5efe5d1f3fd636bd78dd85f",
+    "decide|none|update|plain|none": "bcde0f009e8d70ad3ac2dc44707b7bd4335ff108",
+    "decide|none|update|plain|allow": "bcde0f009e8d70ad3ac2dc44707b7bd4335ff108",
+    "decide|none|update|plain|deny": "bcde0f009e8d70ad3ac2dc44707b7bd4335ff108",
+    "decide|none|update|plain|throw": "bcde0f009e8d70ad3ac2dc44707b7bd4335ff108",
+    "decide|none|update|plain|telemetry down": "2f0d930e2ef897004dd491f2c236424033a65782",
+    "decide|none|update|plain|no dispatcher": "e0969b52aa6555e8c5efe5d1f3fd636bd78dd85f",
+    "decide|none|update|no uuid|none": "43861533a6083b94f97f3a2387d1f616ff8e3142",
+    "decide|none|update|no uuid|allow": "43861533a6083b94f97f3a2387d1f616ff8e3142",
+    "decide|none|update|no uuid|deny": "43861533a6083b94f97f3a2387d1f616ff8e3142",
+    "decide|none|update|no uuid|throw": "43861533a6083b94f97f3a2387d1f616ff8e3142",
+    "decide|none|update|no uuid|telemetry down": "f4065520aadf309e4bfed7de72be1b9d805e591d",
+    "decide|none|update|no uuid|no dispatcher": "e0969b52aa6555e8c5efe5d1f3fd636bd78dd85f",
+    "decide|none|update|own block|none": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|none|update|own block|allow": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|none|update|own block|deny": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|none|update|own block|throw": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|none|update|own block|telemetry down": "bf9223062b3f0664d729202e380eea275095db99",
+    "decide|none|update|own block|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|none|update|draft|none": "21bd7f257685842645a12e88ef1d4f8794fbb3bc",
+    "decide|none|update|draft|allow": "21bd7f257685842645a12e88ef1d4f8794fbb3bc",
+    "decide|none|update|draft|deny": "21bd7f257685842645a12e88ef1d4f8794fbb3bc",
+    "decide|none|update|draft|throw": "21bd7f257685842645a12e88ef1d4f8794fbb3bc",
+    "decide|none|update|draft|telemetry down": "b9e261213ecbec390a093203fbceae7f3e0ef988",
+    "decide|none|update|draft|no dispatcher": "92e14f76752285ab22141dca86f5a3a19f56a69e",
+    "decide|none|approve|none|none": "69855f0d302675275c4d9e36c1786c6dec4eed82",
+    "decide|none|approve|none|allow": "65c136d3905dcd0772d834da1fe72d63012fa397",
+    "decide|none|approve|none|deny": "0de367f246afdfd967c7ef80cea6505bc197e1bb",
+    "decide|none|approve|none|throw": "e7d1627263d70042ab2dc7b0ee7859dcd20efb36",
+    "decide|none|approve|none|telemetry down": "00fe85adacd2f5ec8c90e738ebd00b0408cbd628",
+    "decide|none|approve|none|no dispatcher": "b856401538dfce18bbd6ecf17f12cd1b7b93528d",
+    "decide|none|approve|plain|none": "1931423fc22f05c80110dddf999cd06b62f0e825",
+    "decide|none|approve|plain|allow": "ed7dc2579dca68b5a1da4995ceffc1198d3fc460",
+    "decide|none|approve|plain|deny": "3b97768230e4f4f44f1adef475c4b09f24c37592",
+    "decide|none|approve|plain|throw": "f5c2e5b03c01b05947d28e6bff842e0c33fe72a3",
+    "decide|none|approve|plain|telemetry down": "7bfebfe0800c5b7fa8b632c7eb930ecabc50080a",
+    "decide|none|approve|plain|no dispatcher": "b856401538dfce18bbd6ecf17f12cd1b7b93528d",
+    "decide|none|approve|no uuid|none": "a78c503e6ac142e5a68f827d614886ec9862d1c2",
+    "decide|none|approve|no uuid|allow": "0524a8fe125458fda5d135e41e4b44c7b303c49e",
+    "decide|none|approve|no uuid|deny": "b53a52c0eaf89a9db97a8394387948ee2bee9193",
+    "decide|none|approve|no uuid|throw": "e4720c721010181d3ed2e9d83acb53ff1184066c",
+    "decide|none|approve|no uuid|telemetry down": "9b1b4c642834b4b07d1f99729ba154252d26acb0",
+    "decide|none|approve|no uuid|no dispatcher": "b856401538dfce18bbd6ecf17f12cd1b7b93528d",
+    "decide|none|approve|own block|none": "eaa9af7836ab0e11cf240d0a88d3dffe5d39d84a",
+    "decide|none|approve|own block|allow": "29a94f326a255f858a43655d78aedbd1cde20e8b",
+    "decide|none|approve|own block|deny": "208141e089fba5ff2e9cf3419c5571ffcb117e79",
+    "decide|none|approve|own block|throw": "d1a5a876a3a673b044508089d704bbc700082531",
+    "decide|none|approve|own block|telemetry down": "b4334b33167e7ca4394f33e33d0f7836d49c07b4",
+    "decide|none|approve|own block|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|none|approve|draft|none": "e73bf1e7bab3ddb67b23e8241b91b40457bc0940",
+    "decide|none|approve|draft|allow": "d1f05c3a8b446ab06b3505cf6772b48296199d09",
+    "decide|none|approve|draft|deny": "95971936d8dfc04d7878518c18e16aa4961c0989",
+    "decide|none|approve|draft|throw": "efb9b255d2808ea8f41c4646a6865e5f0ca73914",
+    "decide|none|approve|draft|telemetry down": "6a2a6264ac65ee7de05440d83983bca316cccf31",
+    "decide|none|approve|draft|no dispatcher": "0f9bfd4ca21fd0d50e6ca9e32adc981199e79fa7",
+    "decide|grants|read|none|none": "16cd9a76c8c3c23416478482b512a86ea4a9328b",
+    "decide|grants|read|none|allow": "16cd9a76c8c3c23416478482b512a86ea4a9328b",
+    "decide|grants|read|none|deny": "16cd9a76c8c3c23416478482b512a86ea4a9328b",
+    "decide|grants|read|none|throw": "16cd9a76c8c3c23416478482b512a86ea4a9328b",
+    "decide|grants|read|none|telemetry down": "d741ef0377454a1c57355e67f0da42a22f504c32",
+    "decide|grants|read|none|no dispatcher": "1fdef62f8d2af18024d66c83974914129fb6aed4",
+    "decide|grants|read|plain|none": "ed3e85a6b11a5fc1826fd9a1fdb1c5121f81aef9",
+    "decide|grants|read|plain|allow": "ed3e85a6b11a5fc1826fd9a1fdb1c5121f81aef9",
+    "decide|grants|read|plain|deny": "ed3e85a6b11a5fc1826fd9a1fdb1c5121f81aef9",
+    "decide|grants|read|plain|throw": "ed3e85a6b11a5fc1826fd9a1fdb1c5121f81aef9",
+    "decide|grants|read|plain|telemetry down": "8b40218e91f515f7a28725cd03f5d94cf1b3904e",
+    "decide|grants|read|plain|no dispatcher": "1fdef62f8d2af18024d66c83974914129fb6aed4",
+    "decide|grants|read|no uuid|none": "6455ecd5d4be4bcf60d7f2b86e80a1a6ffcc1a6f",
+    "decide|grants|read|no uuid|allow": "6455ecd5d4be4bcf60d7f2b86e80a1a6ffcc1a6f",
+    "decide|grants|read|no uuid|deny": "6455ecd5d4be4bcf60d7f2b86e80a1a6ffcc1a6f",
+    "decide|grants|read|no uuid|throw": "6455ecd5d4be4bcf60d7f2b86e80a1a6ffcc1a6f",
+    "decide|grants|read|no uuid|telemetry down": "ca9e9cec907d4df86cf3583b3fe2485fc4acf3fb",
+    "decide|grants|read|no uuid|no dispatcher": "1fdef62f8d2af18024d66c83974914129fb6aed4",
+    "decide|grants|read|own block|none": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|grants|read|own block|allow": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|grants|read|own block|deny": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|grants|read|own block|throw": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|grants|read|own block|telemetry down": "15602c9ebe01ba54444aa32eb6655abb9675f28e",
+    "decide|grants|read|own block|no dispatcher": "55dc8020dda4d2213ee38d287cf84340d9adffcf",
+    "decide|grants|read|draft|none": "2e96c0963f5cf16159261ca227e6a8af0010d6ce",
+    "decide|grants|read|draft|allow": "2e96c0963f5cf16159261ca227e6a8af0010d6ce",
+    "decide|grants|read|draft|deny": "2e96c0963f5cf16159261ca227e6a8af0010d6ce",
+    "decide|grants|read|draft|throw": "2e96c0963f5cf16159261ca227e6a8af0010d6ce",
+    "decide|grants|read|draft|telemetry down": "d1b5f32b346c5469d7ddab133f2fe5df3a4c180d",
+    "decide|grants|read|draft|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|grants|update|none|none": "925811b8573fcb76a4997b580e3d30bf098d7e5b",
+    "decide|grants|update|none|allow": "925811b8573fcb76a4997b580e3d30bf098d7e5b",
+    "decide|grants|update|none|deny": "925811b8573fcb76a4997b580e3d30bf098d7e5b",
+    "decide|grants|update|none|throw": "925811b8573fcb76a4997b580e3d30bf098d7e5b",
+    "decide|grants|update|none|telemetry down": "818c0347f9036fa8bd0b23a82c0c46d86d6c6d20",
+    "decide|grants|update|none|no dispatcher": "55dc8020dda4d2213ee38d287cf84340d9adffcf",
+    "decide|grants|update|plain|none": "4e5b53d943a79febf49c28e367ecaafdf681bdff",
+    "decide|grants|update|plain|allow": "4e5b53d943a79febf49c28e367ecaafdf681bdff",
+    "decide|grants|update|plain|deny": "4e5b53d943a79febf49c28e367ecaafdf681bdff",
+    "decide|grants|update|plain|throw": "4e5b53d943a79febf49c28e367ecaafdf681bdff",
+    "decide|grants|update|plain|telemetry down": "c2dab39766f7bdbb33c2901bd5f26f5f68ba62a0",
+    "decide|grants|update|plain|no dispatcher": "55dc8020dda4d2213ee38d287cf84340d9adffcf",
+    "decide|grants|update|no uuid|none": "a6d8f4dabff5d7578eb752ff417413158443b7e8",
+    "decide|grants|update|no uuid|allow": "a6d8f4dabff5d7578eb752ff417413158443b7e8",
+    "decide|grants|update|no uuid|deny": "a6d8f4dabff5d7578eb752ff417413158443b7e8",
+    "decide|grants|update|no uuid|throw": "a6d8f4dabff5d7578eb752ff417413158443b7e8",
+    "decide|grants|update|no uuid|telemetry down": "e7803be3c3c4da136403277084afe88518f98dfa",
+    "decide|grants|update|no uuid|no dispatcher": "55dc8020dda4d2213ee38d287cf84340d9adffcf",
+    "decide|grants|update|own block|none": "1c424ea1f1667a6be8522c3a055e1773d9b5ce19",
+    "decide|grants|update|own block|allow": "1c424ea1f1667a6be8522c3a055e1773d9b5ce19",
+    "decide|grants|update|own block|deny": "1c424ea1f1667a6be8522c3a055e1773d9b5ce19",
+    "decide|grants|update|own block|throw": "1c424ea1f1667a6be8522c3a055e1773d9b5ce19",
+    "decide|grants|update|own block|telemetry down": "77ea0ad7d22d5529054a34121f99e10ac673ef31",
+    "decide|grants|update|own block|no dispatcher": "55dc8020dda4d2213ee38d287cf84340d9adffcf",
+    "decide|grants|update|draft|none": "f598aaa55ba5f99c4c2bfb728415fff2ca49fd6a",
+    "decide|grants|update|draft|allow": "f598aaa55ba5f99c4c2bfb728415fff2ca49fd6a",
+    "decide|grants|update|draft|deny": "f598aaa55ba5f99c4c2bfb728415fff2ca49fd6a",
+    "decide|grants|update|draft|throw": "f598aaa55ba5f99c4c2bfb728415fff2ca49fd6a",
+    "decide|grants|update|draft|telemetry down": "b829168adf2cdfb4689a5235a89cbe309a8bed6d",
+    "decide|grants|update|draft|no dispatcher": "2788ce14aa09c1a5c6d5ab48ad520f88df30798f",
+    "decide|grants|approve|none|none": "751d0ae663aa8a7f790d258a91855e646676a35f",
+    "decide|grants|approve|none|allow": "446ceca685371cc609064c2f3758f15af240f465",
+    "decide|grants|approve|none|deny": "db094daa8d3bd9c2f6c78ba28f98dfbeaaed0ecb",
+    "decide|grants|approve|none|throw": "058b382668bf118454e3fb98ddb96a516db2fc93",
+    "decide|grants|approve|none|telemetry down": "241e009c84b970f2334a9d9a8fac6507b9e3cfba",
+    "decide|grants|approve|none|no dispatcher": "1fdef62f8d2af18024d66c83974914129fb6aed4",
+    "decide|grants|approve|plain|none": "d5b62fdba61e40926c25742e2df13df6a4c4bfe5",
+    "decide|grants|approve|plain|allow": "13887dae450a9673804748a4a00ca506e6111e66",
+    "decide|grants|approve|plain|deny": "3abd841e8d17260f8e2ce2ec2d329ecf6c91ab35",
+    "decide|grants|approve|plain|throw": "715ced61c75e5a4d2c8f02f231e0ef2c9ffbf395",
+    "decide|grants|approve|plain|telemetry down": "86be2d2e58d5962247526794703d99dcfa5d1a75",
+    "decide|grants|approve|plain|no dispatcher": "1fdef62f8d2af18024d66c83974914129fb6aed4",
+    "decide|grants|approve|no uuid|none": "31347b90ce6e5e83c3f13c21eb41e55e8a9cc2cc",
+    "decide|grants|approve|no uuid|allow": "d94f06ee237f3e6e69309fbec8a1ec60e4ba2450",
+    "decide|grants|approve|no uuid|deny": "1e655d0e92f55f205484567eafac9f02637a4970",
+    "decide|grants|approve|no uuid|throw": "d3ebd508fe153dce5355e9d117cbdceaa5889780",
+    "decide|grants|approve|no uuid|telemetry down": "a0e67f2fd782dba7ce5359b3c8321a55af45ce61",
+    "decide|grants|approve|no uuid|no dispatcher": "1fdef62f8d2af18024d66c83974914129fb6aed4",
+    "decide|grants|approve|own block|none": "5af7f78abb631dabbf3fcccfb9a7908f66feb475",
+    "decide|grants|approve|own block|allow": "29a94f326a255f858a43655d78aedbd1cde20e8b",
+    "decide|grants|approve|own block|deny": "208141e089fba5ff2e9cf3419c5571ffcb117e79",
+    "decide|grants|approve|own block|throw": "d1a5a876a3a673b044508089d704bbc700082531",
+    "decide|grants|approve|own block|telemetry down": "6268c48ddd74bdb198021180f67bb1a5e81d5db5",
+    "decide|grants|approve|own block|no dispatcher": "1fdef62f8d2af18024d66c83974914129fb6aed4",
+    "decide|grants|approve|draft|none": "4f3b6b2a8b5412263a2a6019952b5f7b4fbe4fae",
+    "decide|grants|approve|draft|allow": "3551362698c4c4841e593dca1175b81de1c69d3e",
+    "decide|grants|approve|draft|deny": "9f12992714bd4345bd5d4aa4307ba25cdc89ab83",
+    "decide|grants|approve|draft|throw": "31dd468f6da298ce417fe02a4db1ce3656913a39",
+    "decide|grants|approve|draft|telemetry down": "0d0e165b31dc3feefec1dc9deb54dd1335499f3e",
+    "decide|grants|approve|draft|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|match|read|none|none": "ea3adab1aeed77c97e101269e18222790a9de128",
+    "decide|match|read|none|allow": "ea3adab1aeed77c97e101269e18222790a9de128",
+    "decide|match|read|none|deny": "ea3adab1aeed77c97e101269e18222790a9de128",
+    "decide|match|read|none|throw": "ea3adab1aeed77c97e101269e18222790a9de128",
+    "decide|match|read|none|telemetry down": "ec427b9f5d99cc3a02cc8b998cafcbeb3be3384f",
+    "decide|match|read|none|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|match|read|plain|none": "14e56e13f6f460bbca577928aede8f8f5f5f2524",
+    "decide|match|read|plain|allow": "14e56e13f6f460bbca577928aede8f8f5f5f2524",
+    "decide|match|read|plain|deny": "14e56e13f6f460bbca577928aede8f8f5f5f2524",
+    "decide|match|read|plain|throw": "14e56e13f6f460bbca577928aede8f8f5f5f2524",
+    "decide|match|read|plain|telemetry down": "1d338927dfaf35fcb70647b16bb876b87755366b",
+    "decide|match|read|plain|no dispatcher": "aa08ed3d9314db5cfcfae283948eb522b230c7ff",
+    "decide|match|read|no uuid|none": "0d81907eccfe7170af8d07699d856514a47b47ef",
+    "decide|match|read|no uuid|allow": "0d81907eccfe7170af8d07699d856514a47b47ef",
+    "decide|match|read|no uuid|deny": "0d81907eccfe7170af8d07699d856514a47b47ef",
+    "decide|match|read|no uuid|throw": "0d81907eccfe7170af8d07699d856514a47b47ef",
+    "decide|match|read|no uuid|telemetry down": "11745d76dd4c559fa34316f35d0e580015491c23",
+    "decide|match|read|no uuid|no dispatcher": "aa08ed3d9314db5cfcfae283948eb522b230c7ff",
+    "decide|match|read|own block|none": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|match|read|own block|allow": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|match|read|own block|deny": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|match|read|own block|throw": "d885bcbcdc1417ca9354713533a9c226cb0991a8",
+    "decide|match|read|own block|telemetry down": "15602c9ebe01ba54444aa32eb6655abb9675f28e",
+    "decide|match|read|own block|no dispatcher": "55dc8020dda4d2213ee38d287cf84340d9adffcf",
+    "decide|match|read|draft|none": "41855196f56246dc28deb61162d53ef79e428166",
+    "decide|match|read|draft|allow": "41855196f56246dc28deb61162d53ef79e428166",
+    "decide|match|read|draft|deny": "41855196f56246dc28deb61162d53ef79e428166",
+    "decide|match|read|draft|throw": "41855196f56246dc28deb61162d53ef79e428166",
+    "decide|match|read|draft|telemetry down": "705e7dc622b54bef826efac49297446b629f38d9",
+    "decide|match|read|draft|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|match|update|none|none": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|match|update|none|allow": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|match|update|none|deny": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|match|update|none|throw": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|match|update|none|telemetry down": "36a7e535b2095509d8ece92180fe00c6d3a15e8a",
+    "decide|match|update|none|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|match|update|plain|none": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|match|update|plain|allow": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|match|update|plain|deny": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|match|update|plain|throw": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|match|update|plain|telemetry down": "bf9223062b3f0664d729202e380eea275095db99",
+    "decide|match|update|plain|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|match|update|no uuid|none": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|match|update|no uuid|allow": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|match|update|no uuid|deny": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|match|update|no uuid|throw": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|match|update|no uuid|telemetry down": "36a7e535b2095509d8ece92180fe00c6d3a15e8a",
+    "decide|match|update|no uuid|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|match|update|own block|none": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|match|update|own block|allow": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|match|update|own block|deny": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|match|update|own block|throw": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|match|update|own block|telemetry down": "bf9223062b3f0664d729202e380eea275095db99",
+    "decide|match|update|own block|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|match|update|draft|none": "397e192687e2620777046c37640395f488b62544",
+    "decide|match|update|draft|allow": "397e192687e2620777046c37640395f488b62544",
+    "decide|match|update|draft|deny": "397e192687e2620777046c37640395f488b62544",
+    "decide|match|update|draft|throw": "397e192687e2620777046c37640395f488b62544",
+    "decide|match|update|draft|telemetry down": "f17c4bd2f51f2fc8b90bbc72e9a7a949db0afe52",
+    "decide|match|update|draft|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|match|approve|none|none": "ded24142bf719ff696be3abec7e1aac5309d2c48",
+    "decide|match|approve|none|allow": "d94f06ee237f3e6e69309fbec8a1ec60e4ba2450",
+    "decide|match|approve|none|deny": "1e655d0e92f55f205484567eafac9f02637a4970",
+    "decide|match|approve|none|throw": "d3ebd508fe153dce5355e9d117cbdceaa5889780",
+    "decide|match|approve|none|telemetry down": "7bb7017ea0760be92b43b5d9f09add2c3d3fce0d",
+    "decide|match|approve|none|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|match|approve|plain|none": "eaa9af7836ab0e11cf240d0a88d3dffe5d39d84a",
+    "decide|match|approve|plain|allow": "29a94f326a255f858a43655d78aedbd1cde20e8b",
+    "decide|match|approve|plain|deny": "208141e089fba5ff2e9cf3419c5571ffcb117e79",
+    "decide|match|approve|plain|throw": "d1a5a876a3a673b044508089d704bbc700082531",
+    "decide|match|approve|plain|telemetry down": "b4334b33167e7ca4394f33e33d0f7836d49c07b4",
+    "decide|match|approve|plain|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|match|approve|no uuid|none": "ded24142bf719ff696be3abec7e1aac5309d2c48",
+    "decide|match|approve|no uuid|allow": "d94f06ee237f3e6e69309fbec8a1ec60e4ba2450",
+    "decide|match|approve|no uuid|deny": "1e655d0e92f55f205484567eafac9f02637a4970",
+    "decide|match|approve|no uuid|throw": "d3ebd508fe153dce5355e9d117cbdceaa5889780",
+    "decide|match|approve|no uuid|telemetry down": "7bb7017ea0760be92b43b5d9f09add2c3d3fce0d",
+    "decide|match|approve|no uuid|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|match|approve|own block|none": "eaa9af7836ab0e11cf240d0a88d3dffe5d39d84a",
+    "decide|match|approve|own block|allow": "29a94f326a255f858a43655d78aedbd1cde20e8b",
+    "decide|match|approve|own block|deny": "208141e089fba5ff2e9cf3419c5571ffcb117e79",
+    "decide|match|approve|own block|throw": "d1a5a876a3a673b044508089d704bbc700082531",
+    "decide|match|approve|own block|telemetry down": "b4334b33167e7ca4394f33e33d0f7836d49c07b4",
+    "decide|match|approve|own block|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|match|approve|draft|none": "91d1c94bfa46347f2bf5a36142461a7012656b6c",
+    "decide|match|approve|draft|allow": "d69fa2d429831fc365f31e3a166950538d64bc68",
+    "decide|match|approve|draft|deny": "e3af4db18604e1d31b43f32cae55b23cb0f43432",
+    "decide|match|approve|draft|throw": "38136d8c9db4d3b03f4e557eeac16b3680d78518",
+    "decide|match|approve|draft|telemetry down": "c9cfad2ebdca4920d18ba64b5cbe8ef06f9f42ee",
+    "decide|match|approve|draft|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|deny|read|none|none": "e64973be408e2c7fa4cbba8d1c61e6fdab80fc7f",
+    "decide|deny|read|none|allow": "e64973be408e2c7fa4cbba8d1c61e6fdab80fc7f",
+    "decide|deny|read|none|deny": "e64973be408e2c7fa4cbba8d1c61e6fdab80fc7f",
+    "decide|deny|read|none|throw": "e64973be408e2c7fa4cbba8d1c61e6fdab80fc7f",
+    "decide|deny|read|none|telemetry down": "8fa326f30a9bed34420f51395b80e0e6b97b29af",
+    "decide|deny|read|none|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|deny|read|plain|none": "3ceb04d10e26d9c1bb1ed87f04cedf3b0c7efd7b",
+    "decide|deny|read|plain|allow": "3ceb04d10e26d9c1bb1ed87f04cedf3b0c7efd7b",
+    "decide|deny|read|plain|deny": "3ceb04d10e26d9c1bb1ed87f04cedf3b0c7efd7b",
+    "decide|deny|read|plain|throw": "3ceb04d10e26d9c1bb1ed87f04cedf3b0c7efd7b",
+    "decide|deny|read|plain|telemetry down": "022594df89a0d2b7f5bf56db8d5377d2050f0d57",
+    "decide|deny|read|plain|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|deny|read|no uuid|none": "8e9fc884cd311a55157291526f1663ef2a14ca23",
+    "decide|deny|read|no uuid|allow": "8e9fc884cd311a55157291526f1663ef2a14ca23",
+    "decide|deny|read|no uuid|deny": "8e9fc884cd311a55157291526f1663ef2a14ca23",
+    "decide|deny|read|no uuid|throw": "8e9fc884cd311a55157291526f1663ef2a14ca23",
+    "decide|deny|read|no uuid|telemetry down": "fcd0d75a7799420a3ceaae6763e94f4848a3bf1e",
+    "decide|deny|read|no uuid|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|deny|read|own block|none": "659a57251f7d4eda488c1ed25bb55f7eaf352ddf",
+    "decide|deny|read|own block|allow": "659a57251f7d4eda488c1ed25bb55f7eaf352ddf",
+    "decide|deny|read|own block|deny": "659a57251f7d4eda488c1ed25bb55f7eaf352ddf",
+    "decide|deny|read|own block|throw": "659a57251f7d4eda488c1ed25bb55f7eaf352ddf",
+    "decide|deny|read|own block|telemetry down": "e51a8eab4eefe3906b17b3274848af4bd1e10ea6",
+    "decide|deny|read|own block|no dispatcher": "2788ce14aa09c1a5c6d5ab48ad520f88df30798f",
+    "decide|deny|read|draft|none": "2e96c0963f5cf16159261ca227e6a8af0010d6ce",
+    "decide|deny|read|draft|allow": "2e96c0963f5cf16159261ca227e6a8af0010d6ce",
+    "decide|deny|read|draft|deny": "2e96c0963f5cf16159261ca227e6a8af0010d6ce",
+    "decide|deny|read|draft|throw": "2e96c0963f5cf16159261ca227e6a8af0010d6ce",
+    "decide|deny|read|draft|telemetry down": "d1b5f32b346c5469d7ddab133f2fe5df3a4c180d",
+    "decide|deny|read|draft|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|deny|update|none|none": "badfe7ad76e4ca35b4fc32fca4541c7caef74399",
+    "decide|deny|update|none|allow": "badfe7ad76e4ca35b4fc32fca4541c7caef74399",
+    "decide|deny|update|none|deny": "badfe7ad76e4ca35b4fc32fca4541c7caef74399",
+    "decide|deny|update|none|throw": "badfe7ad76e4ca35b4fc32fca4541c7caef74399",
+    "decide|deny|update|none|telemetry down": "cda87277034f8a3ce69eee57a6633bd3a9cf84b8",
+    "decide|deny|update|none|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|deny|update|plain|none": "7efcedfa485fbe0f064ed803647b6ce8b0e85055",
+    "decide|deny|update|plain|allow": "7efcedfa485fbe0f064ed803647b6ce8b0e85055",
+    "decide|deny|update|plain|deny": "7efcedfa485fbe0f064ed803647b6ce8b0e85055",
+    "decide|deny|update|plain|throw": "7efcedfa485fbe0f064ed803647b6ce8b0e85055",
+    "decide|deny|update|plain|telemetry down": "e6b4cfbff8133deb64969d58ad18ca67f5d1e17d",
+    "decide|deny|update|plain|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|deny|update|no uuid|none": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|deny|update|no uuid|allow": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|deny|update|no uuid|deny": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|deny|update|no uuid|throw": "78607b1ff0135929c8dcb088814db5c82f2e1fd4",
+    "decide|deny|update|no uuid|telemetry down": "36a7e535b2095509d8ece92180fe00c6d3a15e8a",
+    "decide|deny|update|no uuid|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|deny|update|own block|none": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|deny|update|own block|allow": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|deny|update|own block|deny": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|deny|update|own block|throw": "e94717567ebe909552d355c058cbf02561175d04",
+    "decide|deny|update|own block|telemetry down": "bf9223062b3f0664d729202e380eea275095db99",
+    "decide|deny|update|own block|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|deny|update|draft|none": "9314daac0d87ca7bae35a436a4aa0398d7e033dc",
+    "decide|deny|update|draft|allow": "9314daac0d87ca7bae35a436a4aa0398d7e033dc",
+    "decide|deny|update|draft|deny": "9314daac0d87ca7bae35a436a4aa0398d7e033dc",
+    "decide|deny|update|draft|throw": "9314daac0d87ca7bae35a436a4aa0398d7e033dc",
+    "decide|deny|update|draft|telemetry down": "c776e73cbb1daf5e725f95d378c3e6db983539ef",
+    "decide|deny|update|draft|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|deny|approve|none|none": "dde640ca9275609cc69aa27f0bbe338ea30bd862",
+    "decide|deny|approve|none|allow": "446ceca685371cc609064c2f3758f15af240f465",
+    "decide|deny|approve|none|deny": "db094daa8d3bd9c2f6c78ba28f98dfbeaaed0ecb",
+    "decide|deny|approve|none|throw": "058b382668bf118454e3fb98ddb96a516db2fc93",
+    "decide|deny|approve|none|telemetry down": "7a096456a99b8c0300f7b18cc9b4db78b896595e",
+    "decide|deny|approve|none|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|deny|approve|plain|none": "a27b7b3c0b56cd30a7466bcb0a855c875320f4ee",
+    "decide|deny|approve|plain|allow": "13887dae450a9673804748a4a00ca506e6111e66",
+    "decide|deny|approve|plain|deny": "3abd841e8d17260f8e2ce2ec2d329ecf6c91ab35",
+    "decide|deny|approve|plain|throw": "715ced61c75e5a4d2c8f02f231e0ef2c9ffbf395",
+    "decide|deny|approve|plain|telemetry down": "68b823153810b97e73d1abf4c0f04438a1096943",
+    "decide|deny|approve|plain|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|deny|approve|no uuid|none": "ded24142bf719ff696be3abec7e1aac5309d2c48",
+    "decide|deny|approve|no uuid|allow": "d94f06ee237f3e6e69309fbec8a1ec60e4ba2450",
+    "decide|deny|approve|no uuid|deny": "1e655d0e92f55f205484567eafac9f02637a4970",
+    "decide|deny|approve|no uuid|throw": "d3ebd508fe153dce5355e9d117cbdceaa5889780",
+    "decide|deny|approve|no uuid|telemetry down": "7bb7017ea0760be92b43b5d9f09add2c3d3fce0d",
+    "decide|deny|approve|no uuid|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|deny|approve|own block|none": "eaa9af7836ab0e11cf240d0a88d3dffe5d39d84a",
+    "decide|deny|approve|own block|allow": "29a94f326a255f858a43655d78aedbd1cde20e8b",
+    "decide|deny|approve|own block|deny": "208141e089fba5ff2e9cf3419c5571ffcb117e79",
+    "decide|deny|approve|own block|throw": "d1a5a876a3a673b044508089d704bbc700082531",
+    "decide|deny|approve|own block|telemetry down": "b4334b33167e7ca4394f33e33d0f7836d49c07b4",
+    "decide|deny|approve|own block|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|deny|approve|draft|none": "4f3b6b2a8b5412263a2a6019952b5f7b4fbe4fae",
+    "decide|deny|approve|draft|allow": "3551362698c4c4841e593dca1175b81de1c69d3e",
+    "decide|deny|approve|draft|deny": "9f12992714bd4345bd5d4aa4307ba25cdc89ab83",
+    "decide|deny|approve|draft|throw": "31dd468f6da298ce417fe02a4db1ce3656913a39",
+    "decide|deny|approve|draft|telemetry down": "0d0e165b31dc3feefec1dc9deb54dd1335499f3e",
+    "decide|deny|approve|draft|no dispatcher": "d67b5c8ada1c93d0dd64a01d0091b0e381d806b5",
+    "decide|private|read|none|none": "16cd9a76c8c3c23416478482b512a86ea4a9328b",
+    "decide|private|read|none|allow": "16cd9a76c8c3c23416478482b512a86ea4a9328b",
+    "decide|private|read|none|deny": "16cd9a76c8c3c23416478482b512a86ea4a9328b",
+    "decide|private|read|none|throw": "16cd9a76c8c3c23416478482b512a86ea4a9328b",
+    "decide|private|read|none|telemetry down": "d741ef0377454a1c57355e67f0da42a22f504c32",
+    "decide|private|read|none|no dispatcher": "1fdef62f8d2af18024d66c83974914129fb6aed4",
+    "decide|private|read|plain|none": "91124879f206cd17c5b5bc2df312ec65f3aefe15",
+    "decide|private|read|plain|allow": "91124879f206cd17c5b5bc2df312ec65f3aefe15",
+    "decide|private|read|plain|deny": "91124879f206cd17c5b5bc2df312ec65f3aefe15",
+    "decide|private|read|plain|throw": "91124879f206cd17c5b5bc2df312ec65f3aefe15",
+    "decide|private|read|plain|telemetry down": "745b314840e2ae391d9ec8a23c54a3a81c0fbc98",
+    "decide|private|read|plain|no dispatcher": "b66be9ab6b60792e4ba5445540ab86be38c84c2f",
+    "decide|private|read|no uuid|none": "2e93b3b2bd2c315f45f165f4ccae9450470d2e3e",
+    "decide|private|read|no uuid|allow": "2e93b3b2bd2c315f45f165f4ccae9450470d2e3e",
+    "decide|private|read|no uuid|deny": "2e93b3b2bd2c315f45f165f4ccae9450470d2e3e",
+    "decide|private|read|no uuid|throw": "2e93b3b2bd2c315f45f165f4ccae9450470d2e3e",
+    "decide|private|read|no uuid|telemetry down": "e7663b9e44ad382dc2b97abbf75a4aac924c5dc6",
+    "decide|private|read|no uuid|no dispatcher": "b66be9ab6b60792e4ba5445540ab86be38c84c2f",
+    "decide|private|read|own block|none": "2b7a9dd723473cf8c7fa5dcd87c94f695df4c6d0",
+    "decide|private|read|own block|allow": "2b7a9dd723473cf8c7fa5dcd87c94f695df4c6d0",
+    "decide|private|read|own block|deny": "2b7a9dd723473cf8c7fa5dcd87c94f695df4c6d0",
+    "decide|private|read|own block|throw": "2b7a9dd723473cf8c7fa5dcd87c94f695df4c6d0",
+    "decide|private|read|own block|telemetry down": "a940a69d9006bc793d7370f13a03a522bfd1a672",
+    "decide|private|read|own block|no dispatcher": "b66be9ab6b60792e4ba5445540ab86be38c84c2f",
+    "decide|private|read|draft|none": "bf9fec4636d568d5532a74de31d644114673734e",
+    "decide|private|read|draft|allow": "bf9fec4636d568d5532a74de31d644114673734e",
+    "decide|private|read|draft|deny": "bf9fec4636d568d5532a74de31d644114673734e",
+    "decide|private|read|draft|throw": "bf9fec4636d568d5532a74de31d644114673734e",
+    "decide|private|read|draft|telemetry down": "51eb1280d53b1a8a7c6fcc71e7b76b06c7af0cd9",
+    "decide|private|read|draft|no dispatcher": "902dabc00480b39f60ec7ca2fb7e4c33452175e7",
+    "decide|private|update|none|none": "badfe7ad76e4ca35b4fc32fca4541c7caef74399",
+    "decide|private|update|none|allow": "badfe7ad76e4ca35b4fc32fca4541c7caef74399",
+    "decide|private|update|none|deny": "badfe7ad76e4ca35b4fc32fca4541c7caef74399",
+    "decide|private|update|none|throw": "badfe7ad76e4ca35b4fc32fca4541c7caef74399",
+    "decide|private|update|none|telemetry down": "cda87277034f8a3ce69eee57a6633bd3a9cf84b8",
+    "decide|private|update|none|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|private|update|plain|none": "12d093de03ef16ae91642a78444b4d5046d2c762",
+    "decide|private|update|plain|allow": "12d093de03ef16ae91642a78444b4d5046d2c762",
+    "decide|private|update|plain|deny": "12d093de03ef16ae91642a78444b4d5046d2c762",
+    "decide|private|update|plain|throw": "12d093de03ef16ae91642a78444b4d5046d2c762",
+    "decide|private|update|plain|telemetry down": "a6f7999dcdda427e00e16eb0930aa072d645b70c",
+    "decide|private|update|plain|no dispatcher": "b66be9ab6b60792e4ba5445540ab86be38c84c2f",
+    "decide|private|update|no uuid|none": "7be7a21cb1becc24c70be847b1467fe103404984",
+    "decide|private|update|no uuid|allow": "7be7a21cb1becc24c70be847b1467fe103404984",
+    "decide|private|update|no uuid|deny": "7be7a21cb1becc24c70be847b1467fe103404984",
+    "decide|private|update|no uuid|throw": "7be7a21cb1becc24c70be847b1467fe103404984",
+    "decide|private|update|no uuid|telemetry down": "f8122b5d64da3e917c508efe4f9e50642fafe213",
+    "decide|private|update|no uuid|no dispatcher": "b66be9ab6b60792e4ba5445540ab86be38c84c2f",
+    "decide|private|update|own block|none": "5d66062abcad976e011f6953d3a37b2ac655224e",
+    "decide|private|update|own block|allow": "5d66062abcad976e011f6953d3a37b2ac655224e",
+    "decide|private|update|own block|deny": "5d66062abcad976e011f6953d3a37b2ac655224e",
+    "decide|private|update|own block|throw": "5d66062abcad976e011f6953d3a37b2ac655224e",
+    "decide|private|update|own block|telemetry down": "90800b95debb502249037c9be26c4251cb8d0122",
+    "decide|private|update|own block|no dispatcher": "b66be9ab6b60792e4ba5445540ab86be38c84c2f",
+    "decide|private|update|draft|none": "333da402a2e81a28c860120da61d967183a8a920",
+    "decide|private|update|draft|allow": "333da402a2e81a28c860120da61d967183a8a920",
+    "decide|private|update|draft|deny": "333da402a2e81a28c860120da61d967183a8a920",
+    "decide|private|update|draft|throw": "333da402a2e81a28c860120da61d967183a8a920",
+    "decide|private|update|draft|telemetry down": "a8def5daba5d4758ecc68dcc052eb06d63c2c774",
+    "decide|private|update|draft|no dispatcher": "902dabc00480b39f60ec7ca2fb7e4c33452175e7",
+    "decide|private|approve|none|none": "dde640ca9275609cc69aa27f0bbe338ea30bd862",
+    "decide|private|approve|none|allow": "446ceca685371cc609064c2f3758f15af240f465",
+    "decide|private|approve|none|deny": "db094daa8d3bd9c2f6c78ba28f98dfbeaaed0ecb",
+    "decide|private|approve|none|throw": "058b382668bf118454e3fb98ddb96a516db2fc93",
+    "decide|private|approve|none|telemetry down": "7a096456a99b8c0300f7b18cc9b4db78b896595e",
+    "decide|private|approve|none|no dispatcher": "8584f7140a7a712c80b25cb9947d87557d5a08cb",
+    "decide|private|approve|plain|none": "ffe30ed3a0d575102677130bff9815977f6ca74e",
+    "decide|private|approve|plain|allow": "ffe30ed3a0d575102677130bff9815977f6ca74e",
+    "decide|private|approve|plain|deny": "ffe30ed3a0d575102677130bff9815977f6ca74e",
+    "decide|private|approve|plain|throw": "ffe30ed3a0d575102677130bff9815977f6ca74e",
+    "decide|private|approve|plain|telemetry down": "b0351dfb00817c30f8b5fb8be8a2845d25e242a6",
+    "decide|private|approve|plain|no dispatcher": "b66be9ab6b60792e4ba5445540ab86be38c84c2f",
+    "decide|private|approve|no uuid|none": "76292d18f811efcfd92d43dc8b31cae666adc765",
+    "decide|private|approve|no uuid|allow": "76292d18f811efcfd92d43dc8b31cae666adc765",
+    "decide|private|approve|no uuid|deny": "76292d18f811efcfd92d43dc8b31cae666adc765",
+    "decide|private|approve|no uuid|throw": "76292d18f811efcfd92d43dc8b31cae666adc765",
+    "decide|private|approve|no uuid|telemetry down": "3253918622d771b17144c76c7fc9903dcabb8348",
+    "decide|private|approve|no uuid|no dispatcher": "b66be9ab6b60792e4ba5445540ab86be38c84c2f",
+    "decide|private|approve|own block|none": "70db6934904f4a601cd250a571f1b9fffea7dba9",
+    "decide|private|approve|own block|allow": "70db6934904f4a601cd250a571f1b9fffea7dba9",
+    "decide|private|approve|own block|deny": "70db6934904f4a601cd250a571f1b9fffea7dba9",
+    "decide|private|approve|own block|throw": "70db6934904f4a601cd250a571f1b9fffea7dba9",
+    "decide|private|approve|own block|telemetry down": "df12b0791dc92e32a871a4b92931e8142f67cd23",
+    "decide|private|approve|own block|no dispatcher": "b66be9ab6b60792e4ba5445540ab86be38c84c2f",
+    "decide|private|approve|draft|none": "f10685a2d28ac69a15be4b225110c028d636b894",
+    "decide|private|approve|draft|allow": "f10685a2d28ac69a15be4b225110c028d636b894",
+    "decide|private|approve|draft|deny": "f10685a2d28ac69a15be4b225110c028d636b894",
+    "decide|private|approve|draft|throw": "f10685a2d28ac69a15be4b225110c028d636b894",
+    "decide|private|approve|draft|telemetry down": "86e0d98fadfb786aeca9f92f73d3b224d0cb0aee",
+    "decide|private|approve|draft|no dispatcher": "902dabc00480b39f60ec7ca2fb7e4c33452175e7",
+    "frame|no rbac": [
+        {
+            "answer": true,
+            "trace": []
+        },
+        {
+            "answer": true,
+            "trace": []
+        },
+        {
+            "answer": true,
+            "trace": []
+        }
+    ],
+    "frame|system": [
+        {
+            "answer": true,
+            "trace": []
+        },
+        {
+            "answer": true,
+            "trace": []
+        },
+        {
+            "answer": true,
+            "trace": []
+        }
+    ],
+    "frame|no schema id": [
+        {
+            "answer": false,
+            "trace": [
+                [
+                    "action event",
+                    "update",
+                    false,
+                    "alice",
+                    "u-1"
+                ]
+            ]
+        },
+        {
+            "answer": false,
+            "trace": [
+                [
+                    "action event",
+                    "update",
+                    false,
+                    "alice",
+                    "u-1"
+                ]
+            ]
+        },
+        {
+            "answer": false,
+            "trace": [
+                [
+                    "action event",
+                    "update",
+                    false,
+                    "alice",
+                    "u-1"
+                ]
+            ]
+        }
+    ],
+    "frame|elevated": [
+        {
+            "answer": true,
+            "trace": [
+                [
+                    "action event",
+                    "update",
+                    false,
+                    "alice",
+                    "u-1"
+                ]
+            ]
+        },
+        {
+            "answer": true,
+            "trace": []
+        },
+        {
+            "answer": true,
+            "trace": []
+        }
+    ],
+    "frame|elevated by register": [
+        {
+            "answer": true,
+            "trace": [
+                [
+                    "action event",
+                    "update",
+                    false,
+                    "alice",
+                    null
+                ]
+            ]
+        },
+        {
+            "answer": true,
+            "trace": []
+        },
+        {
+            "answer": true,
+            "trace": []
+        }
+    ],
+    "frame|elevated deny": [
+        {
+            "answer": false,
+            "trace": [
+                [
+                    "action event",
+                    "update",
+                    false,
+                    "alice",
+                    "u-1"
+                ]
+            ]
+        },
+        {
+            "answer": false,
+            "trace": []
+        },
+        {
+            "answer": false,
+            "trace": []
+        }
+    ],
+    "frame|elevated other register": [
+        {
+            "answer": false,
+            "trace": [
+                [
+                    "action event",
+                    "update",
+                    false,
+                    "alice",
+                    null
+                ]
+            ]
+        },
+        {
+            "answer": false,
+            "trace": []
+        },
+        {
+            "answer": false,
+            "trace": []
+        }
+    ],
+    "bulk|anon|no org|none|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|no org|none|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|no org|none|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|no org|none|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|no org|editors|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|no org|editors|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|no org|editors|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|no org|editors|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|org-a|none|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|org-a|none|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|org-a|none|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|org-a|none|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|org-a|editors|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|org-a|editors|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|org-a|editors|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|anon|org-a|editors|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|no org|none|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "own draft"
+        ],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] DEPRECATION: schema without an authorization block grants delete to any authenticated user. Set the IAppConfig flag openregister:enforce_default_closed to true to require an explicit authorization block (or set `\"public\": true` on the schema to keep open writes)."
+            ]
+        ]
+    },
+    "bulk|alice|no org|none|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "own draft"
+        ],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] DEPRECATION: schema without an authorization block grants delete to any authenticated user. Set the IAppConfig flag openregister:enforce_default_closed to true to require an explicit authorization block (or set `\"public\": true` on the schema to keep open writes)."
+            ]
+        ]
+    },
+    "bulk|alice|no org|none|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|no org|none|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|no org|editors|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|no org|editors|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|no org|editors|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|no org|editors|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|org-a|none|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "own draft"
+        ],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] DEPRECATION: schema without an authorization block grants delete to any authenticated user. Set the IAppConfig flag openregister:enforce_default_closed to true to require an explicit authorization block (or set `\"public\": true` on the schema to keep open writes)."
+            ]
+        ]
+    },
+    "bulk|alice|org-a|none|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "own draft"
+        ],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] DEPRECATION: schema without an authorization block grants delete to any authenticated user. Set the IAppConfig flag openregister:enforce_default_closed to true to require an explicit authorization block (or set `\"public\": true` on the schema to keep open writes)."
+            ]
+        ]
+    },
+    "bulk|alice|org-a|none|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|org-a|none|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|org-a|editors|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|org-a|editors|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|org-a|editors|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|alice|org-a|editors|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|no org|none|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|no org|none|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|no org|none|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|no org|none|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|no org|editors|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|no org|editors|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|no org|editors|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|no org|editors|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|org-a|none|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|org-a|none|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|org-a|none|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|org-a|none|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|org-a|editors|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|org-a|editors|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|org-a|editors|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|root|org-a|editors|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|no org|none|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "draft"
+        ],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] DEPRECATION: schema without an authorization block grants delete to any authenticated user. Set the IAppConfig flag openregister:enforce_default_closed to true to require an explicit authorization block (or set `\"public\": true` on the schema to keep open writes)."
+            ]
+        ]
+    },
+    "bulk|bob|no org|none|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "draft"
+        ],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] DEPRECATION: schema without an authorization block grants delete to any authenticated user. Set the IAppConfig flag openregister:enforce_default_closed to true to require an explicit authorization block (or set `\"public\": true` on the schema to keep open writes)."
+            ]
+        ]
+    },
+    "bulk|bob|no org|none|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|no org|none|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|no org|editors|11": {
+        "answer": [
+            "editable",
+            "no schema",
+            "draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|no org|editors|10": {
+        "answer": [
+            "editable",
+            "no schema",
+            "draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|no org|editors|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|no org|editors|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|org-a|none|11": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "draft"
+        ],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] DEPRECATION: schema without an authorization block grants delete to any authenticated user. Set the IAppConfig flag openregister:enforce_default_closed to true to require an explicit authorization block (or set `\"public\": true` on the schema to keep open writes)."
+            ]
+        ]
+    },
+    "bulk|bob|org-a|none|10": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "org a",
+            "org b",
+            "draft"
+        ],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] DEPRECATION: schema without an authorization block grants delete to any authenticated user. Set the IAppConfig flag openregister:enforce_default_closed to true to require an explicit authorization block (or set `\"public\": true` on the schema to keep open writes)."
+            ]
+        ]
+    },
+    "bulk|bob|org-a|none|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|org-a|none|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|org-a|editors|11": {
+        "answer": [
+            "editable",
+            "no schema",
+            "draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|org-a|editors|10": {
+        "answer": [
+            "editable",
+            "no schema",
+            "draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|org-a|editors|01": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|bob|org-a|editors|00": {
+        "answer": [
+            "editable",
+            "own",
+            "no schema",
+            "schema gone",
+            "org a",
+            "org b",
+            "draft",
+            "own draft"
+        ],
+        "trace": []
+    },
+    "bulk|schema lookup down": {
+        "answer": "RuntimeException",
+        "trace": []
+    },
+    "readers|none|bob|5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|none|bob|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|none|bob|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|none|bob|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|none||5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|none||404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|none||500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|none||null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|none|null|5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|none|null|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|none|null|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|none|null|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|groups|bob|5": {
+        "answer": [
+            "alice",
+            "bob"
+        ],
+        "trace": []
+    },
+    "readers|groups|bob|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|groups|bob|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|groups|bob|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|groups||5": {
+        "answer": [
+            "alice",
+            "bob"
+        ],
+        "trace": []
+    },
+    "readers|groups||404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|groups||500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|groups||null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|groups|null|5": {
+        "answer": [
+            "alice",
+            "bob"
+        ],
+        "trace": []
+    },
+    "readers|groups|null|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|groups|null|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|groups|null|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|public|bob|5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|public|bob|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|public|bob|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|public|bob|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|public||5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|public||404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|public||500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|public||null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|public|null|5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|public|null|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|public|null|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|public|null|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|admin|bob|5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|admin|bob|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|admin|bob|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|admin|bob|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|admin||5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|admin||404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|admin||500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|admin||null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|admin|null|5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|admin|null|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|admin|null|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|admin|null|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|empty|bob|5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|empty|bob|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|empty|bob|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|empty|bob|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|empty||5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|empty||404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|empty||500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|empty||null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|empty|null|5": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|empty|null|404": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|empty|null|500": {
+        "answer": [],
+        "trace": [
+            [
+                "warning",
+                "[PermissionHandler] getReadableByUsers: schema lookup failed"
+            ]
+        ]
+    },
+    "readers|empty|null|null": {
+        "answer": [],
+        "trace": []
+    },
+    "readers|unresolvable": {
+        "answer": [],
+        "trace": [
+            [
+                "error",
+                "[PermissionHandler] Failed to get register for schema; denying access (fail-closed)"
+            ],
+            [
+                "error",
+                "[PermissionHandler] Authorization unresolvable; no readable users resolved (fail-closed)"
+            ]
+        ]
+    }
+}

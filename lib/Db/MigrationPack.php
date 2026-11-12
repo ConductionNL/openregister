@@ -65,6 +65,7 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class MigrationPack extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The pack's own `id` field from its definition document (slug, unique).
@@ -165,24 +166,13 @@ class MigrationPack extends Entity implements JsonSerializable {
 	}//end getDefinitionArray()
 
 	/**
-	 * JSON serialization for the REST API (definition inlined as an object, not a string).
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string,mixed>
-	 *
-	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'packSlug' => $this->packSlug,
-			'name' => $this->name,
-			'sourceFormat' => $this->sourceFormat,
-			'version' => $this->version,
 			'definition' => $this->getDefinitionArray(),
-			'builtin' => $this->builtin,
-			'owner' => $this->owner,
-			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
-			'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

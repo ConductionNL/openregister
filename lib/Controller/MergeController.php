@@ -32,11 +32,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\MergeControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Merge\MergeService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -45,20 +49,32 @@ use RuntimeException;
 
 class MergeController extends Controller {
 	/**
+	 * MDM merge engine.
+	 *
+	 * @var ObjectMergerInterface
+	 */
+	private readonly ObjectMergerInterface $mergeService;
+
+	/**
+	 * Current user session, for actor attribution.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
-	 * @param IRequest $request The current request.
-	 * @param MergeService $mergeService MDM merge engine.
-	 * @param IUserSession $userSession Current user session, for actor attribution.
+	 * @param IRequest                $request  The current request.
+	 * @param MergeControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly MergeService $mergeService,
-		private readonly IUserSession $userSession,
+		MergeControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->mergeService = $services->mergeService;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**
@@ -126,11 +142,8 @@ class MergeController extends Controller {
 		}
 
 		try {
-			$result = $this->mergeService->executeMerge(
-				from: $from,
-				into: $into,
-				reason: $reason,
-				mergedBy: $mergedBy,
+			$result = $this->mergeService->merge(
+				instruction: new MergeInstruction(from: $from, into: $into, reason: $reason, mergedBy: $mergedBy),
 				decisions: $decisions
 			);
 		} catch (MergeDecisionException $e) {
@@ -177,7 +190,7 @@ class MergeController extends Controller {
 			$result = $this->mergeService->reverseMerge(mergeOperationId: $id, reversedBy: $reversedBy);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (RuntimeException $e) {
+		} catch (RuntimeException | DoesNotExistException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
 

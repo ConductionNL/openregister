@@ -148,8 +148,8 @@ class ConsumerTest extends TestCase {
 
 		$json = $this->consumer->jsonSerialize();
 
-		$this->assertNotNull($json['created']);
-		$this->assertNotNull($json['updated']);
+		$this->assertSame('2024-01-01T12:00:00+00:00', $json['created']);
+		$this->assertSame('2024-06-01T12:00:00+00:00', $json['updated']);
 	}
 
 	public function testJsonSerializeNullDates(): void {

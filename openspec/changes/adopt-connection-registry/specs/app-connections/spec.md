@@ -30,7 +30,7 @@ be declared.
 #### Scenario: a seam nothing calls reads Not available
 @e2e tests/e2e/connections-page.spec.ts
 
-- **GIVEN** `NullNcOfficeConverter` is bound and nothing calls the converter
+- **GIVEN** `ConversionManagerConverter` is bound, no conversion provider is installed, and nothing calls the converter
 - **WHEN** the admin reads the office converter row
 - **THEN** it SHALL read Not available with a message saying nothing calls it
 

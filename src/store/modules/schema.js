@@ -11,6 +11,8 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
+import { getJson, objectAnswer, okJson, sendJson } from '../../services/listPage.js'
+import { listStateActions, listStateFields } from './listState.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
 // register store — AppInitializationService and every search/dashboard
@@ -20,6 +22,180 @@ import { Schema } from '../../entities/index.js'
 // cache.
 let inFlightSchemaRefresh = null
 
+/**
+ * The object count the loaded schema list already holds for a schema, if any.
+ *
+ * @param {Array<object>} schemas The loaded schemas.
+ * @param {string|number} schemaId The schema.
+ * @return {number|undefined} The count, or undefined when the list has none.
+ * @spec exclude Client-side read of cached schema statistics.
+ */
+function knownObjectCount(schemas, schemaId) {
+	const schemaIdStr = String(schemaId)
+	const existingSchema = schemas.find((s) => String(s.id) === schemaIdStr)
+	return existingSchema?.stats?.objects?.total
+}
+
+/**
+ * A schema's object count from the objects count API, or null when that API
+ * fails or refuses.
+ *
+ * @param {string|number} schemaId The schema.
+ * @return {Promise<number|null>} The count, or null.
+ * @spec exclude Thin API passthrough — GET /api/objects/count.
+ */
+async function countFromObjectsApi(schemaId) {
+	try {
+		const countResponse = await fetch(
+			`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`,
+		)
+		if (!countResponse.ok) {
+			return null
+		}
+		const countData = await countResponse.json()
+		return countData.count || countData.total || 0
+	} catch {
+		return null
+	}
+}
+
+/**
+ * A schema's object count from its stats endpoint; 0 when it refuses.
+ *
+ * @param {string|number} schemaId The schema.
+ * @return {Promise<number>} The count.
+ * @spec exclude Thin API passthrough — GET /api/schemas/{id}/stats.
+ */
+async function countFromSchemaStats(schemaId) {
+	const statsResponse = await fetch(
+		`/index.php/apps/openregister/api/schemas/${schemaId}/stats`,
+	)
+	if (!statsResponse.ok) {
+		return 0
+	}
+	// The stats endpoint returns objectCount and objects_count
+	const stats = await statsResponse.json()
+	return stats.objectCount || stats.objects_count || 0
+}
+
+/**
+ * A copy of a schema without the fields the server sets or only the draft
+ * routes write; a new schema's empty id is left out so the save is a create.
+ *
+ * @param {object} schemaItem The schema.
+ * @return {object} The copy.
+ * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
+ */
+function withoutServerSchemaFields(schemaItem) {
+	const cleaned = { ...schemaItem }
+	delete cleaned.updated
+	delete cleaned.created
+	delete cleaned.stats
+	delete cleaned.archive
+	delete cleaned.version // Backend determines version
+	delete cleaned.draft // Only the draft routes write it
+	if (!cleaned.id) {
+		delete cleaned.id
+	}
+	return cleaned
+}
+
+/**
+ * Turn a schema's top-level `required` list into `required: true` on each
+ * listed property, and drop the list.
+ *
+ * @param {object} cleaned The schema copy to change.
+ * @return {void}
+ * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
+ */
+function moveRequiredToProperties(cleaned) {
+	if (!Array.isArray(cleaned.required) || !cleaned.properties) {
+		return
+	}
+	cleaned.required.forEach((propertyName) => {
+		if (cleaned.properties[propertyName]) {
+			cleaned.properties[propertyName].required = true
+		}
+	})
+	delete cleaned.required
+}
+
+/**
+ * Refuse a schema that cannot be downloaded: missing, not a Schema, or
+ * without an id.
+ *
+ * @param {unknown} schema The schema to download
+ * @return {void}
+ * @throws {Error} Why it cannot be downloaded
+ */
+function assertDownloadable(schema) {
+	if (!schema) {
+		throw new Error('No schema item to download')
+	}
+	if (!(schema instanceof Schema)) {
+		throw new Error('Invalid schema item to download')
+	}
+	if (!schema?.id) {
+		throw new Error('No schema item ID to download')
+	}
+}
+
+/**
+ * Ask the server for a schema's download; a failed answer is logged and
+ * thrown as its status text.
+ *
+ * @param {Schema} schema The schema
+ * @return {Promise<Response>} The successful response
+ */
+async function fetchSchemaDownload(schema) {
+	const response = await fetch(
+		`/index.php/apps/openregister/api/schemas/${schema.id}/download`,
+		{
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		},
+	)
+
+	if (!response.ok) {
+		console.error(response)
+		throw new Error(response.statusText)
+	}
+	return response
+}
+
+/**
+ * Let the browser save data as a prettified JSON file.
+ *
+ * @param {object} data The data to save
+ * @param {string} filename The file name to offer
+ * @return {void}
+ */
+function saveAsJsonFile(data, filename) {
+	// Convert JSON to a prettified string
+	const jsonString = JSON.stringify(data, null, 2)
+
+	// Create a Blob from the JSON string
+	const blob = new Blob([jsonString], { type: 'application/json' })
+
+	// Create a URL for the Blob
+	const url = URL.createObjectURL(blob)
+
+	// Create a temporary anchor element
+	const a = document.createElement('a')
+	a.href = url
+	a.download = filename
+
+	// Temporarily add the anchor to the DOM and trigger the download
+	document.body.appendChild(a)
+	a.click()
+
+	// Clean up
+	document.body.removeChild(a)
+	URL.revokeObjectURL(url)
+}
+
 export const useSchemaStore = defineStore('schema', {
 	state: () => ({
 		schemaItem: false,
@@ -28,11 +204,7 @@ export const useSchemaStore = defineStore('schema', {
 		viewMode: 'cards',
 		// True while the editor saves to the schema's draft instead of publishing (modelling-schema-draft).
 		draftMode: false,
-		filters: [], // List of query
-		pagination: {
-			page: 1,
-			limit: 20,
-		},
+		...listStateFields(),
 	}),
 	getters: {
 		getViewMode: (state) => state.viewMode,
@@ -159,25 +331,7 @@ export const useSchemaStore = defineStore('schema', {
 				}
 			})
 		},
-		/**
-		 * Set pagination details
-		 *
-		 * @param {number} page - The current page number for pagination
-		 * @param {number} limit - The number of items to display per page
-		 * @spec exclude store setter (local pagination state)
-		 */
-		setPagination(page, limit = 14) {
-			this.pagination = { page, limit }
-		},
-		/**
-		 * Set query filters for schema list
-		 *
-		 * @param {object} filters - The filter criteria to apply to the schema list
-		 * @spec exclude store setter (local filter state)
-		 */
-		setFilters(filters) {
-			this.filters = { ...this.filters, ...filters }
-		},
+		...listStateActions(14),
 		/**
 		 * Refresh the schema list from the API.
 		 *
@@ -219,10 +373,7 @@ export const useSchemaStore = defineStore('schema', {
 		async getSchema(id, options = { setItem: false }) {
 			const endpoint = `/index.php/apps/openregister/api/schemas/${id}`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				// Convert properties array to object if needed (backend sometimes returns array when empty)
 				if (data && Array.isArray(data.properties)) {
 					data.properties = {}
@@ -244,10 +395,7 @@ export const useSchemaStore = defineStore('schema', {
 		async getSchemaStats(id) {
 			const endpoint = `/index.php/apps/openregister/api/schemas/${id}/stats`
 			try {
-				const response = await fetch(endpoint, {
-					method: 'GET',
-				})
-				const data = await response.json()
+				const data = await getJson(endpoint)
 				return data
 			} catch (err) {
 				console.error('Error in getSchemaStats:', err)
@@ -342,50 +490,21 @@ export const useSchemaStore = defineStore('schema', {
 		 * @spec exclude pure request-payload shaping helper (no client state)
 		 */
 		cleanSchemaForSave(schemaItem) {
-			const cleaned = { ...schemaItem }
-
-			// Remove read-only/calculated fields that should not be sent to the server
-			delete cleaned.updated
-			delete cleaned.created
-			delete cleaned.stats
-			delete cleaned.archive
-			delete cleaned.version // Backend determines version
-			delete cleaned.draft // Only the draft routes write it
-
-			// New schemas have id: '' — omit it entirely so the backend unambiguously
-			// treats the request as a create rather than an update with an empty id.
-			if (!cleaned.id) {
-				delete cleaned.id
-			}
-
+			const cleaned = withoutServerSchemaFields(schemaItem)
 			// Keep configuration object intact - backend should handle it
 			// Ensure configuration object exists with default values if not present
 			if (!cleaned.configuration) {
 				cleaned.configuration = {
 					objectNameField: '',
 					objectDescriptionField: '',
+					objectSlugField: '',
+					objectSlugSuffix: false,
 				}
 			}
-
-			// Convert required array to individual property required fields
-			if (
-				cleaned.required
-				&& Array.isArray(cleaned.required)
-				&& cleaned.properties
-			) {
-				// Set required: true on properties that are in the required array
-				cleaned.required.forEach((propertyName) => {
-					if (cleaned.properties[propertyName]) {
-						cleaned.properties[propertyName].required = true
-					}
-				})
-
-				// Remove the top-level required array since we don't follow JSON Schema standard
-				delete cleaned.required
-			}
-
+			moveRequiredToProperties(cleaned)
 			return cleaned
 		},
+
 		/**
 		 * Upload a schema from store.
 		 *
@@ -404,23 +523,9 @@ export const useSchemaStore = defineStore('schema', {
 				: `/index.php/apps/openregister/api/schemas/upload/${this.schemaItem.id}`
 			const method = isNewSchema ? 'POST' : 'PUT'
 
-			const response = await fetch(endpoint, {
-				method,
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(schema),
-			})
+			const response = await sendJson(endpoint, { method, body: schema })
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
-
-			if (!responseData || typeof responseData !== 'object') {
-				throw new Error('Invalid response data')
-			}
+			const responseData = await objectAnswer(response)
 
 			const data = new Schema(responseData)
 
@@ -437,54 +542,9 @@ export const useSchemaStore = defineStore('schema', {
 		 * @spec exclude API passthrough to GET /api/schemas/{id}/download + browser-download side effect
 		 */
 		async downloadSchema(schema) {
-			if (!schema) {
-				throw new Error('No schema item to download')
-			}
-			if (!(schema instanceof Schema)) {
-				throw new Error('Invalid schema item to download')
-			}
-			if (!schema?.id) {
-				throw new Error('No schema item ID to download')
-			}
-
-			const response = await fetch(
-				`/index.php/apps/openregister/api/schemas/${schema.id}/download`,
-				{
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				},
-			)
-
-			if (!response.ok) {
-				console.error(response)
-				throw new Error(response.statusText)
-			}
-
-			const data = await response.json()
-
-			// Convert JSON to a prettified string
-			const jsonString = JSON.stringify(data, null, 2)
-
-			// Create a Blob from the JSON string
-			const blob = new Blob([jsonString], { type: 'application/json' })
-
-			// Create a URL for the Blob
-			const url = URL.createObjectURL(blob)
-
-			// Create a temporary anchor element
-			const a = document.createElement('a')
-			a.href = url
-			a.download = `${schema.title}.json`
-
-			// Temporarily add the anchor to the DOM and trigger the download
-			document.body.appendChild(a)
-			a.click()
-
-			// Clean up
-			document.body.removeChild(a)
-			URL.revokeObjectURL(url)
+			assertDownloadable(schema)
+			const response = await fetchSchemaDownload(schema)
+			saveAsJsonFile(await response.json(), `${schema.title}.json`)
 
 			return { response }
 		},
@@ -507,11 +567,7 @@ export const useSchemaStore = defineStore('schema', {
 				},
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const data = await response.json()
+			const data = await okJson(response)
 
 			if (data.error) {
 				throw new Error(data.error)
@@ -541,11 +597,7 @@ export const useSchemaStore = defineStore('schema', {
 				}),
 			})
 
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const data = await response.json()
+			const data = await okJson(response)
 
 			if (data.error) {
 				throw new Error(data.error)
@@ -566,45 +618,15 @@ export const useSchemaStore = defineStore('schema', {
 		 */
 		async getObjectCount(schemaId) {
 			try {
-				// Convert schemaId to string for comparison
-				const schemaIdStr = String(schemaId)
-
-				// First check if we already have stats for this schema
-				const existingSchema = this.schemas.find(
-					(s) => String(s.id) === schemaIdStr,
+				const known = knownObjectCount(this.schemas, schemaId)
+				if (known !== undefined) {
+					return known
+				}
+				return (
+					(await countFromObjectsApi(schemaId))
+					?? (await countFromSchemaStats(schemaId))
 				)
-				if (existingSchema?.stats?.objects?.total !== undefined) {
-					return existingSchema.stats.objects.total
-				}
-
-				// Try using the objects API to count objects for this schema
-				try {
-					const countResponse = await fetch(
-						`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`,
-					)
-					if (countResponse.ok) {
-						const countData = await countResponse.json()
-						const count = countData.count || countData.total || 0
-						return count
-					}
-				} catch (countError) {
-					// Objects count API failed; fall back to the stats endpoint below.
-				}
-
-				// Fallback to stats endpoint
-				const statsResponse = await fetch(
-					`/index.php/apps/openregister/api/schemas/${schemaId}/stats`,
-				)
-
-				if (statsResponse.ok) {
-					const stats = await statsResponse.json()
-					// The stats endpoint returns objectCount and objects_count
-					const count = stats.objectCount || stats.objects_count || 0
-					return count
-				} else {
-					return 0
-				}
-			} catch (error) {
+			} catch {
 				return 0
 			}
 		},

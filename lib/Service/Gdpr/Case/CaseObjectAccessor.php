@@ -30,37 +30,34 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Case;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\DsarService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Load + audited-save helper for data-subject-request case objects.
  */
-class CaseObjectAccessor {
+class CaseObjectAccessor implements CaseObjectAccessorInterface {
 
 	/**
-	 * Register slug the case objects live under (declared by the head).
+	 * The findAll() config selecting every case object.
 	 *
-	 * @var string
+	 * @var array{filters: array{register: string, schema: string}}
 	 */
-	public const REGISTER_SLUG = 'data-subject-requests';
-
-	/**
-	 * Schema slug of the case entity (declared by the head).
-	 *
-	 * @var string
-	 */
-	public const SCHEMA_SLUG = 'dataSubjectRequest';
+	private const CASE_QUERY = ['filters' => ['register' => self::REGISTER_SLUG, 'schema' => self::SCHEMA_SLUG]];
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService RBAC + tenant scoped object store.
+	 * @param ObjectOperationsInterface $objectService RBAC + tenant scoped object store.
 	 * @param DsarService $dsarService Resolves the DSAR processing activity for audit pinning.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly DsarService $dsarService,
 	) {
 	}//end __construct()
@@ -79,8 +76,7 @@ class CaseObjectAccessor {
 	public function load(string $caseUuid): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $caseUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::SCHEMA_SLUG,
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG),
 			_rbac: true,
 			_multitenancy: true
 		));
@@ -99,29 +95,11 @@ class CaseObjectAccessor {
 	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	public function findAllCaseEntities(): array {
-		$rendered = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => self::REGISTER_SLUG,
-					'schema' => self::SCHEMA_SLUG,
-				],
-			],
-			_rbac: true,
-			_multitenancy: true
-		);
+		$rendered = $this->objectService->findAll(config: self::CASE_QUERY, _rbac: true, _multitenancy: true);
 
 		$entities = [];
 		foreach ($rendered as $row) {
-			$uuid = '';
-			if (is_array($row) === true) {
-				$uuid = (string)($row['@self']['uuid'] ?? ($row['id'] ?? ''));
-			}
-
-			if ($uuid === '') {
-				continue;
-			}
-
-			$entity = $this->load(caseUuid: $uuid);
+			$entity = $this->reload(row: $row);
 			if ($entity !== null) {
 				$entities[] = $entity;
 			}
@@ -129,6 +107,26 @@ class CaseObjectAccessor {
 
 		return $entities;
 	}//end findAllCaseEntities()
+
+	/**
+	 * Re-load one rendered row as a live entity, by its `@self.uuid` or `id`.
+	 *
+	 * @param mixed $row One rendered findAll() row.
+	 *
+	 * @return ObjectEntity|null The entity, or null when the row names no case or it cannot be loaded.
+	 */
+	private function reload(mixed $row): ?ObjectEntity {
+		$uuid = '';
+		if (is_array($row) === true) {
+			$uuid = (string)($row['@self']['uuid'] ?? ($row['id'] ?? ''));
+		}
+
+		if ($uuid === '') {
+			return null;
+		}
+
+		return $this->load(caseUuid: $uuid);
+	}//end reload()
 
 	/**
 	 * Delete a case dossier via ObjectService, flagged as a retention sweep.
@@ -145,9 +143,10 @@ class CaseObjectAccessor {
 	 */
 	public function deleteForSweep(string $caseUuid): bool {
 		return $this->objectService->deleteObject(
-			uuid: $caseUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::SCHEMA_SLUG,
+			deletion: new ObjectDeletion(
+				uuid: $caseUuid,
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG)
+			),
 			_rbac: true,
 			_multitenancy: true,
 			_retentionSweep: true
@@ -175,9 +174,10 @@ class CaseObjectAccessor {
 
 		return $this->objectService->saveObject(
 			object: $case,
-			register: self::REGISTER_SLUG,
-			schema: self::SCHEMA_SLUG,
-			uuid: $case->getUuid(),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG),
+				uuid: $case->getUuid()
+			),
 			_rbac: true,
 			_multitenancy: true
 		);

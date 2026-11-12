@@ -176,6 +176,49 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import UndoVariant from 'vue-material-design-icons/UndoVariant.vue'
 
 /**
+ * Organisation statistics with every count at 0.
+ *
+ * @return {object} The statistics
+ */
+function emptyOrganisationStats() {
+	return {
+		totalOrganisations: 0,
+		activeOrganisations: 0,
+		totalMembers: 0,
+		averageMembersPerOrg: 0,
+	}
+}
+
+/**
+ * The statistics an answer reports, each count 0 when it has none.
+ *
+ * @param {object} data The statistics answer
+ * @return {object} The statistics
+ */
+function organisationStatsFrom(data) {
+	return {
+		totalOrganisations: data.total || 0,
+		activeOrganisations: data.active || 0,
+		totalMembers: data.totalMembers || 0,
+		averageMembersPerOrg: data.avgMembers || 0,
+	}
+}
+
+/**
+ * An organisation as a select option: labelled by its name, keyed by its uuid.
+ *
+ * @param {object} org The organisation
+ * @return {object} The option
+ */
+function organisationOption(org) {
+	return {
+		...org,
+		id: org.uuid,
+		label: org.name,
+	}
+}
+
+/**
  * OrganisationConfiguration
  *
  * @module Components
@@ -216,12 +259,7 @@ export default {
 			loadingOrganisations: false,
 
 			// Statistics
-			stats: {
-				totalOrganisations: 0,
-				activeOrganisations: 0,
-				totalMembers: 0,
-				averageMembersPerOrg: 0,
-			},
+			stats: emptyOrganisationStats(),
 
 			// UI state
 			saving: false,
@@ -239,11 +277,7 @@ export default {
 		 * @return {Array} Formatted organisation options
 		 */
 		organisationOptions() {
-			return this.organisations.map((org) => ({
-				...org,
-				id: org.uuid,
-				label: org.name,
-			}))
+			return this.organisations.map(organisationOption)
 		},
 
 		/**
@@ -301,14 +335,25 @@ export default {
 					this.organisations = response.data.results
 				}
 			} catch (error) {
-				console.error('Error loading organisations:', error)
-				this.saveError = this.t(
-					'openregister',
-					'Failed to load organisations',
-				)
+				this.showOrganisationsFailure(error)
 			} finally {
 				this.loadingOrganisations = false
 			}
+		},
+
+		/**
+		 * Log a failed organisations load and say so where save errors show.
+		 *
+		 * @spec exclude settings-section API fetch plumbing for organisations
+		 * @param {Error} error - The failure
+		 * @return {void}
+		 */
+		showOrganisationsFailure(error) {
+			console.error('Error loading organisations:', error)
+			this.saveError = this.t(
+				'openregister',
+				'Failed to load organisations',
+			)
 		},
 
 		/**
@@ -326,22 +371,7 @@ export default {
 				const settings = response.data?.organisation || {}
 
 				// Load default organisation UUID
-				const defaultOrgUuid = settings.default_organisation
-				if (defaultOrgUuid && this.organisations.length > 0) {
-					const defaultOrg = this.organisations.find(
-						(org) => org.uuid === defaultOrgUuid,
-					)
-					if (defaultOrg) {
-						this.selectedDefaultOrganisation = {
-							...defaultOrg,
-							id: defaultOrg.uuid,
-							label: defaultOrg.name,
-						}
-						this.originalDefaultOrganisation = {
-							...this.selectedDefaultOrganisation,
-						}
-					}
-				}
+				this.selectDefaultOrganisation(settings.default_organisation)
 
 				// Load auto-create setting
 				this.autoCreateDefault =
@@ -349,6 +379,29 @@ export default {
 				this.originalAutoCreateDefault = this.autoCreateDefault
 			} catch (error) {
 				console.error('Error loading settings:', error)
+			}
+		},
+
+		/**
+		 * Select the listed organisation the settings name as the default, and
+		 * remember it as the saved choice; nothing when it is not listed.
+		 *
+		 * @spec exclude settings-section API fetch plumbing for current settings
+		 * @param {string|undefined} defaultOrgUuid - The default organisation's uuid
+		 * @return {void}
+		 */
+		selectDefaultOrganisation(defaultOrgUuid) {
+			if (!defaultOrgUuid || this.organisations.length === 0) {
+				return
+			}
+			const defaultOrg = this.organisations.find(
+				(org) => org.uuid === defaultOrgUuid,
+			)
+			if (defaultOrg) {
+				this.selectedDefaultOrganisation = organisationOption(defaultOrg)
+				this.originalDefaultOrganisation = {
+					...this.selectedDefaultOrganisation,
+				}
 			}
 		},
 
@@ -365,12 +418,7 @@ export default {
 				)
 
 				if (response.data) {
-					this.stats = {
-						totalOrganisations: response.data.total || 0,
-						activeOrganisations: response.data.active || 0,
-						totalMembers: response.data.totalMembers || 0,
-						averageMembersPerOrg: response.data.avgMembers || 0,
-					}
+					this.stats = organisationStatsFrom(response.data)
 				}
 			} catch (error) {
 				console.error('Error loading statistics:', error)
@@ -416,34 +464,75 @@ export default {
 			this.saveError = null
 
 			try {
-				await axios.put(
-					generateUrl('/apps/openregister/api/settings/organisation'),
-					{
-						default_organisation:
-							this.selectedDefaultOrganisation?.uuid || null,
-						auto_create_default_organisation: this.autoCreateDefault,
-					},
-				)
-
-				this.saveSuccess = true
-				this.originalDefaultOrganisation = {
-					...this.selectedDefaultOrganisation,
-				}
-				this.originalAutoCreateDefault = this.autoCreateDefault
-
-				// Auto-hide success message after 3 seconds
-				clearTimeout(this.saveSuccessTimeout)
-				this.saveSuccessTimeout = setTimeout(() => {
-					this.saveSuccess = false
-				}, 3000)
+				await this.sendSettings()
+				this.markSaved()
 			} catch (error) {
-				console.error('Error saving settings:', error)
-				this.saveError =
-					error.response?.data?.message
-					|| this.t('openregister', 'Failed to save settings')
+				this.showSaveFailure(error)
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * The settings a save sends: the default organisation, if any, and
+		 * whether to create one automatically.
+		 *
+		 * @spec exclude settings-section save plumbing; PUTs organisation settings (tenant-lifecycle contract)
+		 * @return {object} The request body
+		 */
+		settingsPayload() {
+			return {
+				default_organisation: this.selectedDefaultOrganisation?.uuid || null,
+				auto_create_default_organisation: this.autoCreateDefault,
+			}
+		},
+
+		/**
+		 * Log a failed save and show the server's message, else the default.
+		 *
+		 * @spec exclude settings-section save plumbing; PUTs organisation settings (tenant-lifecycle contract)
+		 * @param {object} error - The failure
+		 * @return {void}
+		 */
+		showSaveFailure(error) {
+			console.error('Error saving settings:', error)
+			this.saveError =
+				error.response?.data?.message
+				|| this.t('openregister', 'Failed to save settings')
+		},
+
+		/**
+		 * Send the settings to the server.
+		 *
+		 * @spec exclude settings-section save plumbing; PUTs organisation settings (tenant-lifecycle contract)
+		 * @return {Promise<object>} The response
+		 */
+		sendSettings() {
+			return axios.put(
+				generateUrl('/apps/openregister/api/settings/organisation'),
+				this.settingsPayload(),
+			)
+		},
+
+		/**
+		 * Show the save as done, remember the saved values for change
+		 * detection, and hide the success message after three seconds.
+		 *
+		 * @spec exclude settings-section save plumbing; PUTs organisation settings (tenant-lifecycle contract)
+		 * @return {void}
+		 */
+		markSaved() {
+			this.saveSuccess = true
+			this.originalDefaultOrganisation = {
+				...this.selectedDefaultOrganisation,
+			}
+			this.originalAutoCreateDefault = this.autoCreateDefault
+
+			// Auto-hide success message after 3 seconds
+			clearTimeout(this.saveSuccessTimeout)
+			this.saveSuccessTimeout = setTimeout(() => {
+				this.saveSuccess = false
+			}, 3000)
 		},
 
 		/**

@@ -24,19 +24,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\McpServerController;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\McpServerControllerFactory;
+use OCA\OpenRegister\Mcp\Controller\McpServerController;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
+use OCA\OpenRegister\Service\Mcp\McpAgentScope;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpProtocolService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
-use OCA\OpenRegister\Service\Mcp\McpAgentScope;
-use OCA\OpenRegister\Service\Mcp\McpProtocolService;
-use OCA\OpenRegister\Service\Mcp\McpResourcesService;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\ICache;
@@ -245,8 +246,7 @@ class McpAgentLimitsTest extends TestCase {
 			$logger,
 			$groupManager
 		);
-		$this->controller = new McpServerController(
-			'openregister',
+		$this->controller = McpServerControllerFactory::create(
 			$request,
 			new McpProtocolService($cacheFactory, $random, $logger),
 			$tools,

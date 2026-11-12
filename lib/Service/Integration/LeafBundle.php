@@ -43,7 +43,7 @@ use Throwable;
  *
  * @spec openspec/changes/a-leaf-that-cannot-render-refuses-to-register/specs/leaf-provider-registration/spec.md
  */
-class LeafBundle {
+class LeafBundle implements LeafBundleInterface {
 
 	/**
 	 * The webpack entry name a providing app must build.

@@ -28,12 +28,8 @@ namespace OCA\OpenRegister\Service\Export;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ExportProfile;
-use OCA\OpenRegister\Db\ExportProfileMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ExportService;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -48,33 +44,25 @@ use Throwable;
  *     Splitting the run across two classes would move the collaborators, not
  *     reduce them.
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportProfileService {
+class ExportProfileService implements ExportProfileServiceInterface {
 
 	/**
 	 * Wire the collaborators.
 	 *
-	 * @param ExportProfileMapper  $mapper        Profile persistence.
-	 * @param RegisterMapper       $registerMapper Register lookups.
-	 * @param SchemaMapper         $schemaMapper  Schema lookups.
-	 * @param ExportService        $exportService The selection every export shares.
-	 * @param ExportProfileWriter  $writer        Projection and file writing.
-	 * @param ExportRightService    $rightService  The export verb.
-	 * @param ExportAuditRecorder   $recorder      The audit trail.
-	 * @param ExportProfileValidator $validator    Judges a submitted profile.
+	 * @param ExportProfileStores $stores       Profile, register and schema lookups.
+	 * @param ExportProfileSteps  $steps        Selection, projection and file writing, and profile validation.
+	 * @param ExportRightService  $rightService The export verb.
+	 * @param ExportAuditRecorder $recorder     The audit trail.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExportProfileMapper $mapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly ExportService $exportService,
-		private readonly ExportProfileWriter $writer,
+		private readonly ExportProfileStores $stores,
+		private readonly ExportProfileSteps $steps,
 		private readonly ExportRightService $rightService,
 		private readonly ExportAuditRecorder $recorder,
-		private readonly ExportProfileValidator $validator,
 	) {
 	}//end __construct()
 
@@ -87,10 +75,10 @@ class ExportProfileService {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no row matches.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function find(int $id): ExportProfile {
-		return $this->mapper->find($id);
+		return $this->stores->mapper->find($id);
 	}//end find()
 
 	/**
@@ -101,17 +89,17 @@ class ExportProfileService {
 	 *
 	 * @return ExportProfile[] The profiles.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The admin listing is the
 	 *     same listing with a wider scope, not a second method.
 	 */
 	public function listFor(string $callerUid, bool $callerIsAdmin): array {
 		if ($callerIsAdmin === true) {
-			return $this->mapper->findAll();
+			return $this->stores->mapper->findAll();
 		}
 
-		return $this->mapper->findByOwner($callerUid);
+		return $this->stores->mapper->findByOwner($callerUid);
 	}//end listFor()
 
 	/**
@@ -127,10 +115,10 @@ class ExportProfileService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID
 	 *     pattern, as AuditTrailMapper::createToolInvocationEntry().
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function create(array $data, string $ownerUid): ExportProfile {
-		$this->validator->validate(data: $data, partial: false);
+		$this->steps->validator->validate(data: $data, partial: false);
 
 		$profile = new ExportProfile();
 		$profile->setUuid((string)Uuid::v4());
@@ -139,7 +127,7 @@ class ExportProfileService {
 		$profile->setUpdatedAt(new DateTime());
 		$this->apply(profile: $profile, data: $data);
 
-		return $this->mapper->insert($profile);
+		return $this->stores->mapper->insert($profile);
 	}//end create()
 
 	/**
@@ -152,14 +140,14 @@ class ExportProfileService {
 	 *
 	 * @throws InvalidArgumentException When the submission does not make sense.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function update(ExportProfile $profile, array $data): ExportProfile {
-		$this->validator->validate(data: $data, partial: true);
+		$this->steps->validator->validate(data: $data, partial: true);
 		$this->apply(profile: $profile, data: $data);
 		$profile->setUpdatedAt(new DateTime());
 
-		return $this->mapper->update($profile);
+		return $this->stores->mapper->update($profile);
 	}//end update()
 
 	/**
@@ -169,30 +157,26 @@ class ExportProfileService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function delete(ExportProfile $profile): void {
-		$this->mapper->delete($profile);
+		$this->stores->mapper->delete($profile);
 	}//end delete()
 
 	/**
 	 * Refuse a caller who is neither the owner nor an administrator.
 	 *
-	 * @param ExportProfile $profile       The profile.
-	 * @param string        $callerUid     The caller.
-	 * @param bool          $callerIsAdmin Whether the caller is an administrator.
+	 * @param ExportProfile       $profile The profile.
+	 * @param ExportProfileCaller $caller  The caller's uid, and whether they are an administrator.
 	 *
 	 * @return void
 	 *
 	 * @throws ExportRefusedException When the caller may not touch the profile.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The administrator bypass is
-	 *     a property of the caller, not a second code path.
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function assertOwnerOrAdmin(ExportProfile $profile, string $callerUid, bool $callerIsAdmin): void {
-		if ($callerIsAdmin === true || $profile->getOwner() === $callerUid) {
+	public function assertOwnerOrAdmin(ExportProfile $profile, ExportProfileCaller $caller): void {
+		if ($caller->isAdmin === true || $profile->getOwner() === $caller->uid) {
 			return;
 		}
 
@@ -213,48 +197,87 @@ class ExportProfileService {
 	 *
 	 * @throws ExportRefusedException When the principal does not hold the export verb.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function run(ExportProfile $profile, string $actorUid): array {
+		$run = new ProfileExportRun(profile: $profile, actorUid: $actorUid);
 		$register = $this->registerOf(profile: $profile);
-		$schema = $this->schemaOf(profile: $profile);
+		$schema = $this->permittedSchema(run: $run);
 
-		$refusal = $this->rightService->refusalForUid(schema: $schema, userId: $actorUid);
-		if ($refusal !== null) {
-			$this->recorder->recordRefused(
-				profile: ($profile->getName() ?? ''),
-				rule: $refusal->getRule(),
-				reason: $refusal->getMessage(),
-				register: $profile->getRegisterId(),
-				schema: $profile->getSchemaId(),
-				actorId: $actorUid
-			);
-
-			throw $refusal;
-		}
-
-		$objects = $this->exportService->fetchExportObjects(
-			register: $register,
-			schema: $schema,
-			filters: $profile->getFiltersArray()
+		$objects = $this->steps->exportService->fetchExportObjects(
+			request: new ExportRequest(register: $register, schema: $schema, filters: $profile->getFiltersArray())
 		);
 
-		$written = $this->writer->write(profile: $profile, objects: $objects, schema: $schema);
+		$written = $this->steps->writer->write(projection: new ProfileProjection(profile: $profile, schema: $schema), objects: $objects);
 
-		$this->recorder->recordCompleted(
-			profile: ($profile->getName() ?? ''),
-			rowCount: $written['rowCount'],
-			format: ($profile->getFormat() ?? 'csv'),
-			valueMode: ($profile->getValueMode() ?? ExportProfile::MODE_STORED),
-			register: $profile->getRegisterId(),
-			schema: $profile->getSchemaId(),
-			actorId: $actorUid
-		);
+		$this->recordCompletion(run: $run, rowCount: $written['rowCount']);
 
 		$written['filename'] = $this->filenameFor(profile: $profile);
 
 		return $written;
 	}//end run()
+
+	/**
+	 * The profile's schema, once the principal is known to hold the export verb on it.
+	 *
+	 * @param ProfileExportRun $run The profile and the principal it runs as.
+	 *
+	 * @return Schema|null The schema, or null when the profile has none or it no longer exists.
+	 *
+	 * @throws ExportRefusedException When the principal does not hold the export verb; the refusal is recorded first.
+	 */
+	private function permittedSchema(ProfileExportRun $run): ?Schema {
+		$schema = $this->schemaOf(profile: $run->profile);
+
+		$refusal = $this->rightService->refusalForUid(schema: $schema, userId: $run->actorUid);
+		if ($refusal !== null) {
+			$this->recordRefusal(run: $run, refusal: $refusal);
+
+			throw $refusal;
+		}
+
+		return $schema;
+	}//end permittedSchema()
+
+	/**
+	 * Record that a profile run was refused.
+	 *
+	 * @param ProfileExportRun       $run     The profile and the principal it runs as.
+	 * @param ExportRefusedException $refusal Why it was refused.
+	 *
+	 * @return void
+	 */
+	private function recordRefusal(ProfileExportRun $run, ExportRefusedException $refusal): void {
+		$this->recorder->recordRefused(
+			profile: ($run->profile->getName() ?? ''),
+			rule: $refusal->getRule(),
+			reason: $refusal->getMessage(),
+			register: $run->profile->getRegisterId(),
+			schema: $run->profile->getSchemaId(),
+			actorId: $run->actorUid
+		);
+	}//end recordRefusal()
+
+	/**
+	 * Record what a completed profile run let leave.
+	 *
+	 * @param ProfileExportRun $run      The profile and the principal it ran as.
+	 * @param integer          $rowCount The rows written.
+	 *
+	 * @return void
+	 */
+	private function recordCompletion(ProfileExportRun $run, int $rowCount): void {
+		$profile = $run->profile;
+		$this->recorder->recordCompleted(
+			profile: ($profile->getName() ?? ''),
+			rowCount: $rowCount,
+			format: ($profile->getFormat() ?? 'csv'),
+			valueMode: ($profile->getValueMode() ?? ExportProfile::MODE_STORED),
+			register: $profile->getRegisterId(),
+			schema: $profile->getSchemaId(),
+			actorId: $run->actorUid
+		);
+	}//end recordCompletion()
 
 	/**
 	 * The filename a profile writes under.
@@ -263,7 +286,7 @@ class ExportProfileService {
 	 *
 	 * @return string The filename.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function filenameFor(ExportProfile $profile): string {
 		$slug = preg_replace('/[^a-z0-9]+/i', '-', (string)($profile->getName() ?? 'export'));
@@ -283,7 +306,7 @@ class ExportProfileService {
 	 *
 	 * @return Register|null The register.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function registerOf(ExportProfile $profile): ?Register {
 		if ($profile->getRegisterId() === null) {
@@ -291,7 +314,7 @@ class ExportProfileService {
 		}
 
 		try {
-			return $this->registerMapper->find($profile->getRegisterId(), _rbac: false, _multitenancy: false);
+			return $this->stores->registerMapper->find($profile->getRegisterId(), _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -304,7 +327,7 @@ class ExportProfileService {
 	 *
 	 * @return Schema|null The schema.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function schemaOf(ExportProfile $profile): ?Schema {
 		if ($profile->getSchemaId() === null) {
@@ -312,7 +335,7 @@ class ExportProfileService {
 		}
 
 		try {
-			return $this->schemaMapper->find($profile->getSchemaId(), _rbac: false, _multitenancy: false);
+			return $this->stores->schemaMapper->find($profile->getSchemaId(), _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -375,27 +398,50 @@ class ExportProfileService {
 		}
 
 		if (array_key_exists('schemaId', $data) === true) {
-			$schemaId = null;
-			if ($data['schemaId'] !== null) {
-				$schemaId = (int)$data['schemaId'];
-			}
-
-			$profile->setSchemaId($schemaId);
+			$this->applySchemaId(profile: $profile, schemaId: $data['schemaId']);
 		}
 
 		if (array_key_exists('filters', $data) === true) {
-			$filters = null;
-			if ($data['filters'] !== null) {
-				$filters = (string)json_encode($data['filters']);
-			}
-
-			$profile->setFilters($filters);
+			$this->applyFilters(profile: $profile, filters: $data['filters']);
 		}
 
 		if (array_key_exists('wholeSet', $data) === true) {
 			$profile->setWholeSet((bool)$data['wholeSet']);
 		}
 	}//end applyScope()
+
+	/**
+	 * Set the submitted schema id; null clears it.
+	 *
+	 * @param ExportProfile $profile  The entity.
+	 * @param mixed         $schemaId The submitted value.
+	 *
+	 * @return void
+	 */
+	private function applySchemaId(ExportProfile $profile, mixed $schemaId): void {
+		if ($schemaId !== null) {
+			$schemaId = (int)$schemaId;
+		}
+
+		$profile->setSchemaId($schemaId);
+	}//end applySchemaId()
+
+	/**
+	 * Set the submitted filters, stored as JSON; null clears them.
+	 *
+	 * @param ExportProfile $profile The entity.
+	 * @param mixed         $filters The submitted value.
+	 *
+	 * @return void
+	 */
+	private function applyFilters(ExportProfile $profile, mixed $filters): void {
+		$encoded = null;
+		if ($filters !== null) {
+			$encoded = (string)json_encode($filters);
+		}
+
+		$profile->setFilters($encoded);
+	}//end applyFilters()
 
 	/**
 	 * What the file looks like: the field order, the value mode and the format.

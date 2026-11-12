@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 
 declare(strict_types=1);
@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ErasurePreview;
 use OCA\OpenRegister\Db\ErasurePreviewMapper;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -100,7 +101,7 @@ final class ErasurePreviewStoreTest extends TestCase {
 		$groups->method('isAdmin')->willReturn($admin);
 
 		return [
-			new ErasurePreviewStore($mapper, $this->session($uid), $groups, new NullLogger()),
+			new ErasurePreviewStore($mapper, new GdprCallerMembership($this->session($uid), $groups, new NullLogger())),
 			$mapper,
 		];
 	}//end store()

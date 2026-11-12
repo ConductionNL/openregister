@@ -125,6 +125,6 @@ above.
 ## Specification
 
 `openspec/changes/archive/2026-10-05-favourites-and-recent/` and
-`openspec/changes/read-history-on-audit-trail/` and
-`openspec/changes/recently-opened-means-opened/`, in the `object-interactions`
+`openspec/changes/archive/2026-10-30-read-history-on-audit-trail/` and
+`openspec/changes/archive/2026-10-30-recently-opened-means-opened/`, in the `object-interactions`
 capability.

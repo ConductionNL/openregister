@@ -1,0 +1,1495 @@
+{
+    "refusal plain": {
+        "result": "",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "text"
+            ],
+            [
+                "isSensitive",
+                "a",
+                "text"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "refusal sensitive": {
+        "result": "app config a secret is kept as sensitive; a set may only generate such a value, never write one from a file",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "secret"
+            ],
+            [
+                "isSensitive",
+                "a",
+                "secret"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "refusal sensitive generated": {
+        "result": "",
+        "calls": [],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "refusal missing": {
+        "result": "",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "nope"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "refusal throws": {
+        "result": "",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "boom"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply new string": {
+        "result": {
+            "error": "",
+            "entry": {
+                "app": "a",
+                "key": "fresh",
+                "had": false,
+                "old": "",
+                "new": "v",
+                "generated": false,
+                "type": "string"
+            }
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "fresh"
+            ],
+            [
+                "getValueString",
+                "a",
+                "fresh",
+                ""
+            ],
+            [
+                "setValueString",
+                "a",
+                "fresh",
+                "v",
+                false,
+                false
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1",
+            "a/fresh": "v"
+        }
+    },
+    "apply same string": {
+        "result": {
+            "error": "",
+            "entry": null
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "text"
+            ],
+            [
+                "getValueString",
+                "a",
+                "text",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply other string": {
+        "result": {
+            "error": "",
+            "entry": {
+                "app": "a",
+                "key": "text",
+                "had": true,
+                "old": "old",
+                "new": "new",
+                "generated": false,
+                "type": "string"
+            }
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "text"
+            ],
+            [
+                "getValueString",
+                "a",
+                "text",
+                ""
+            ],
+            [
+                "setValueString",
+                "a",
+                "text",
+                "new",
+                false,
+                false
+            ]
+        ],
+        "store": {
+            "a/text": "new",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply empty to empty": {
+        "result": {
+            "error": "",
+            "entry": null
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "empty"
+            ],
+            [
+                "getValueString",
+                "a",
+                "empty",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply generate new": {
+        "result": {
+            "error": "",
+            "entry": {
+                "app": "a",
+                "key": "fresh",
+                "had": false,
+                "old": "",
+                "new": "",
+                "generated": true,
+                "fingerprint": "0408978da426b766cf96e114e927a0ba841e55b7ed40768c9b44959fba5761ee"
+            }
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "fresh"
+            ],
+            [
+                "getValueString",
+                "a",
+                "fresh",
+                ""
+            ],
+            [
+                "generate",
+                40,
+                true
+            ],
+            [
+                "setValueString",
+                "a",
+                "fresh",
+                "GEN-11",
+                false,
+                true
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1",
+            "a/fresh": "GEN-11"
+        }
+    },
+    "apply generate over empty": {
+        "result": {
+            "error": "",
+            "entry": {
+                "app": "a",
+                "key": "empty",
+                "had": true,
+                "old": "",
+                "new": "",
+                "generated": true,
+                "fingerprint": "0408978da426b766cf96e114e927a0ba841e55b7ed40768c9b44959fba5761ee"
+            }
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "empty"
+            ],
+            [
+                "getValueString",
+                "a",
+                "empty",
+                ""
+            ],
+            [
+                "generate",
+                40,
+                true
+            ],
+            [
+                "setValueString",
+                "a",
+                "empty",
+                "GEN-11",
+                false,
+                true
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "GEN-11",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply generate existing": {
+        "result": {
+            "error": "",
+            "entry": null
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "text"
+            ],
+            [
+                "getValueString",
+                "a",
+                "text",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply int new": {
+        "result": {
+            "error": "",
+            "entry": {
+                "app": "a",
+                "key": "n",
+                "had": false,
+                "old": "",
+                "new": "7",
+                "generated": false,
+                "type": "int"
+            }
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "n"
+            ],
+            [
+                "hasKey",
+                "a",
+                "n"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "n",
+                7
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1",
+            "a/n": 7
+        }
+    },
+    "apply int same": {
+        "result": {
+            "error": "",
+            "entry": null
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply int other": {
+        "result": {
+            "error": "",
+            "entry": {
+                "app": "a",
+                "key": "count",
+                "had": true,
+                "old": "5",
+                "new": "9",
+                "generated": false,
+                "type": "int"
+            }
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "count",
+                9
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 9,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply floor above": {
+        "result": {
+            "error": "",
+            "entry": null
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply floor equal": {
+        "result": {
+            "error": "",
+            "entry": null
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply floor below": {
+        "result": {
+            "error": "",
+            "entry": {
+                "app": "a",
+                "key": "count",
+                "had": true,
+                "old": "5",
+                "new": "8",
+                "generated": false,
+                "type": "int",
+                "atLeast": true
+            }
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "count",
+                8
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 8,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply floor missing": {
+        "result": {
+            "error": "",
+            "entry": {
+                "app": "a",
+                "key": "n",
+                "had": false,
+                "old": "",
+                "new": "8",
+                "generated": false,
+                "type": "int",
+                "atLeast": true
+            }
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "n"
+            ],
+            [
+                "hasKey",
+                "a",
+                "n"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "n",
+                8
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1",
+            "a/n": 8
+        }
+    },
+    "apply floor string type": {
+        "result": {
+            "error": "",
+            "entry": {
+                "app": "a",
+                "key": "text",
+                "had": true,
+                "old": "old",
+                "new": "2",
+                "generated": false,
+                "type": "string",
+                "atLeast": true
+            }
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "text"
+            ],
+            [
+                "getValueString",
+                "a",
+                "text",
+                ""
+            ],
+            [
+                "setValueString",
+                "a",
+                "text",
+                "2",
+                false,
+                false
+            ]
+        ],
+        "store": {
+            "a/text": "2",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply throws": {
+        "result": {
+            "error": "setValueString failed",
+            "entry": null
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "boom"
+            ],
+            [
+                "getValueString",
+                "a",
+                "boom",
+                ""
+            ],
+            [
+                "setValueString",
+                "a",
+                "boom",
+                "x",
+                false,
+                false
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "apply generate throws": {
+        "result": {
+            "error": "setValueString failed",
+            "entry": null
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "boom"
+            ],
+            [
+                "getValueString",
+                "a",
+                "boom",
+                ""
+            ],
+            [
+                "generate",
+                40,
+                true
+            ],
+            [
+                "setValueString",
+                "a",
+                "boom",
+                "GEN-11",
+                false,
+                true
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "raise plain to floor": {
+        "result": {
+            "entry": {
+                "app": "a",
+                "key": "count",
+                "had": true,
+                "old": "1",
+                "new": "8",
+                "generated": false,
+                "type": "int",
+                "atLeast": true
+            },
+            "written": true
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "count",
+                8
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 8,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "raise floor lower": {
+        "result": {
+            "entry": {
+                "app": "a",
+                "key": "count",
+                "had": true,
+                "old": "old",
+                "new": "8",
+                "generated": false,
+                "type": "int",
+                "atLeast": true
+            },
+            "written": true
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "count",
+                8
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 8,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "raise floor already": {
+        "result": {
+            "entry": null,
+            "written": false
+        },
+        "calls": [],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "raise floor equal": {
+        "result": {
+            "entry": null,
+            "written": false
+        },
+        "calls": [],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "raise key above": {
+        "result": {
+            "entry": {
+                "app": "a",
+                "key": "count",
+                "had": true,
+                "old": "old",
+                "new": "4",
+                "generated": false,
+                "type": "int",
+                "atLeast": true
+            },
+            "written": false
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "raise key missing": {
+        "result": {
+            "entry": {
+                "app": "a",
+                "key": "n",
+                "had": true,
+                "old": "old",
+                "new": "4",
+                "generated": false,
+                "type": "int",
+                "atLeast": true
+            },
+            "written": true
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "n"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "n",
+                4
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1",
+            "a/n": 4
+        }
+    },
+    "raise throws": {
+        "result": {
+            "entry": null,
+            "written": false
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "boom"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "boom",
+                4
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "raise floor false flag": {
+        "result": {
+            "entry": {
+                "app": "a",
+                "key": "count",
+                "had": true,
+                "old": "old",
+                "new": "8",
+                "generated": false,
+                "type": "int",
+                "atLeast": true
+            },
+            "written": true
+        },
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "count",
+                8
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 8,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost written kept": {
+        "result": false,
+        "calls": [
+            [
+                "getValueString",
+                "a",
+                "text",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost written changed": {
+        "result": true,
+        "calls": [
+            [
+                "getValueString",
+                "a",
+                "text",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost written missing": {
+        "result": false,
+        "calls": [
+            [
+                "getValueString",
+                "a",
+                "nope",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost int kept": {
+        "result": false,
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost int legacy untyped": {
+        "result": false,
+        "calls": [
+            [
+                "getValueString",
+                "a",
+                "count",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost generated kept": {
+        "result": false,
+        "calls": [
+            [
+                "getValueString",
+                "a",
+                "gen",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost generated gone": {
+        "result": true,
+        "calls": [
+            [
+                "getValueString",
+                "a",
+                "nope",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost floor kept": {
+        "result": false,
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost floor below": {
+        "result": true,
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost floor missing": {
+        "result": true,
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "n"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "lost throws": {
+        "result": true,
+        "calls": [
+            [
+                "getValueString",
+                "a",
+                "boom",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "revert written restores old": {
+        "result": "restored",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "text"
+            ],
+            [
+                "getValueString",
+                "a",
+                "text",
+                ""
+            ],
+            [
+                "setValueString",
+                "a",
+                "text",
+                "before",
+                false,
+                false
+            ]
+        ],
+        "store": {
+            "a/text": "before",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "revert written changed since": {
+        "result": "left",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "text"
+            ],
+            [
+                "getValueString",
+                "a",
+                "text",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "revert not had deletes": {
+        "result": "restored",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "text"
+            ],
+            [
+                "getValueString",
+                "a",
+                "text",
+                ""
+            ],
+            [
+                "deleteKey",
+                "a",
+                "text"
+            ]
+        ],
+        "store": {
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "revert key gone": {
+        "result": "restored",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "nope"
+            ],
+            [
+                "setValueString",
+                "a",
+                "nope",
+                "x",
+                false,
+                false
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1",
+            "a/nope": "x"
+        }
+    },
+    "revert key gone not had": {
+        "result": "restored",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "nope"
+            ],
+            [
+                "deleteKey",
+                "a",
+                "nope"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "revert int": {
+        "result": "restored",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "hasKey",
+                "a",
+                "count"
+            ],
+            [
+                "getValueInt",
+                "a",
+                "count"
+            ],
+            [
+                "setValueInt",
+                "a",
+                "count",
+                2
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 2,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "revert generated with print": {
+        "result": "restored",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "gen"
+            ],
+            [
+                "getValueString",
+                "a",
+                "gen",
+                ""
+            ],
+            [
+                "setValueString",
+                "a",
+                "gen",
+                "",
+                false,
+                false
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": ""
+        }
+    },
+    "revert generated not had": {
+        "result": "restored",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "gen"
+            ],
+            [
+                "getValueString",
+                "a",
+                "gen",
+                ""
+            ],
+            [
+                "deleteKey",
+                "a",
+                "gen"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret"
+        }
+    },
+    "revert generated replaced": {
+        "result": "left",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "gen"
+            ],
+            [
+                "getValueString",
+                "a",
+                "gen",
+                ""
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "revert generated legacy": {
+        "result": "restored",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "gen"
+            ],
+            [
+                "deleteKey",
+                "a",
+                "gen"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret"
+        }
+    },
+    "revert throws": {
+        "result": "failed",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "boom"
+            ],
+            [
+                "setValueString",
+                "a",
+                "boom",
+                "old",
+                false,
+                false
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    },
+    "revert delete throws": {
+        "result": "failed",
+        "calls": [
+            [
+                "hasKey",
+                "a",
+                "boomdel"
+            ],
+            [
+                "getValueString",
+                "a",
+                "boomdel",
+                ""
+            ],
+            [
+                "deleteKey",
+                "a",
+                "boomdel"
+            ]
+        ],
+        "store": {
+            "a/text": "old",
+            "a/empty": "",
+            "a/count": 5,
+            "a/secret": "s3cret",
+            "a/gen": "GEN-1"
+        }
+    }
+}

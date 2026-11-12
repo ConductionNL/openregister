@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="dialogTitle"
 		size="large"
-		:canClose="!saving"
+		:noClose="saving"
 		@closing="$emit('close')">
 		<form class="avgEditForm" @submit.prevent="onSave">
 			<NcTextField
@@ -90,28 +90,15 @@
 					class="avgTextarea" />
 			</label>
 
-			<NcNoteCard v-if="error" type="error">
-				{{ error }}
-			</NcNoteCard>
-
-			<div class="avgEditActions">
-				<NcButton
-					variant="tertiary"
-					:disabled="saving"
-					@click="$emit('close')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton variant="primary" type="submit" :disabled="saving">
-					<template #icon>
-						<NcLoadingIcon v-if="saving" :size="20" />
-					</template>
-					{{
-						activity
-							? t('openregister', 'Save changes')
-							: t('openregister', 'Create')
-					}}
-				</NcButton>
-			</div>
+			<AvgFormFooter
+				:error="error"
+				:saving="saving"
+				:submitLabel="
+					activity
+						? t('openregister', 'Save changes')
+						: t('openregister', 'Create')
+				"
+				@close="$emit('close')" />
 		</form>
 	</NcDialog>
 </template>
@@ -119,13 +106,11 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import {
-	NcButton,
 	NcDialog,
-	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import AvgFormFooter from './AvgFormFooter.vue'
 import {
 	LEGAL_BASIS_VOCABULARY,
 	STATUS_VOCABULARY,
@@ -136,12 +121,10 @@ export default {
 	name: 'EditActivityDialog',
 
 	components: {
+		AvgFormFooter,
 		NcDialog,
 		NcTextField,
-		NcButton,
 		NcSelect,
-		NcLoadingIcon,
-		NcNoteCard,
 	},
 
 	props: {
@@ -280,14 +263,7 @@ export default {
 			this.saving = true
 			this.error = null
 			try {
-				if (this.activity) {
-					await avgStore.updateActivity(
-						this.activity.uuid,
-						this.buildPayload(),
-					)
-				} else {
-					await avgStore.createActivity(this.buildPayload())
-				}
+				await this.storeActivity()
 				this.$emit('saved')
 			} catch (e) {
 				this.error = avgStore.getError ?? e.message ?? 'Save failed'
@@ -295,11 +271,29 @@ export default {
 				this.saving = false
 			}
 		},
+
+		/**
+		 * Update the activity being edited, or create a new one.
+		 *
+		 * @return {Promise<object>} The store's answer
+		 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+		 */
+		storeActivity() {
+			if (this.activity) {
+				return avgStore.updateActivity(
+					this.activity.uuid,
+					this.buildPayload(),
+				)
+			}
+			return avgStore.createActivity(this.buildPayload())
+		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/dialogs.scss' as *;
+
 .avgEditForm {
 	display: flex;
 	flex-direction: column;
@@ -326,12 +320,5 @@ export default {
 	border-radius: var(--border-radius);
 	font: inherit;
 	resize: vertical;
-}
-
-.avgEditActions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-	margin-top: 8px;
 }
 </style>

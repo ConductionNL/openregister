@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
+use OCA\OpenRegister\Service\Archival\ReviewerAnswer;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -80,9 +81,8 @@ class ReviewOutcomeServiceTest extends TestCase {
 
 		$this->assertNull(
 			$this->service->apply(
-				answer: DestructionReviewService::ANSWER_DESTROY,
 				entryUuid: 'obj-1',
-				reason: 'Past its date'
+				given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_DESTROY, reason: 'Past its date')
 			)
 		);
 	}
@@ -100,10 +100,8 @@ class ReviewOutcomeServiceTest extends TestCase {
 			});
 
 		$this->service->apply(
-			answer: DestructionReviewService::ANSWER_RETAIN,
 			entryUuid: 'obj-1',
-			reason: 'Lopende bezwaarprocedure',
-			newDate: '2028-03-01'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_RETAIN, reason: 'Lopende bezwaarprocedure', newDate: '2028-03-01')
 		);
 
 		$retention = $saved->getRetention();
@@ -134,10 +132,8 @@ class ReviewOutcomeServiceTest extends TestCase {
 			});
 
 		$this->service->apply(
-			answer: DestructionReviewService::ANSWER_RETAIN,
 			entryUuid: 'obj-1',
-			reason: 'Nog steeds in behandeling',
-			newDate: '2030-03-01'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_RETAIN, reason: 'Nog steeds in behandeling', newDate: '2030-03-01')
 		);
 
 		$this->assertSame('2026-03-01', $saved->getRetention()['originalArchiefactiedatum']);
@@ -156,9 +152,8 @@ class ReviewOutcomeServiceTest extends TestCase {
 		$this->assertSame(
 			'transfer-list-7',
 			$this->service->apply(
-				answer: DestructionReviewService::ANSWER_TRANSFER,
 				entryUuid: 'obj-1',
-				reason: 'Blijvend bewaren'
+				given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_TRANSFER, reason: 'Blijvend bewaren')
 			)
 		);
 	}
@@ -172,9 +167,8 @@ class ReviewOutcomeServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/transfer list could not be made/');
 
 		$this->service->apply(
-			answer: DestructionReviewService::ANSWER_TRANSFER,
 			entryUuid: 'obj-1',
-			reason: 'Blijvend bewaren'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_TRANSFER, reason: 'Blijvend bewaren')
 		);
 	}
 
@@ -186,9 +180,8 @@ class ReviewOutcomeServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/came back without a uuid/');
 
 		$this->service->apply(
-			answer: DestructionReviewService::ANSWER_TRANSFER,
 			entryUuid: 'obj-1',
-			reason: 'Blijvend bewaren'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_TRANSFER, reason: 'Blijvend bewaren')
 		);
 	}
 
@@ -199,10 +192,8 @@ class ReviewOutcomeServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/the record could not be read/');
 
 		$this->service->apply(
-			answer: DestructionReviewService::ANSWER_RETAIN,
 			entryUuid: 'obj-1',
-			reason: 'Lopende procedure',
-			newDate: '2030-01-01'
+			given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_RETAIN, reason: 'Lopende procedure', newDate: '2030-01-01')
 		);
 	}
 }

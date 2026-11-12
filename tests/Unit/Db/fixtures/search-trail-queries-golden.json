@@ -1,0 +1,2202 @@
+{
+    "findAll open search NULL rows": {
+        "result": [
+            1,
+            2
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll open search NULL empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count open search NULL rows": {
+        "result": 1,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count open search NULL empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll open search 'tax' rows": {
+        "result": [
+            1,
+            2
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll open search 'tax' empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count open search 'tax' rows": {
+        "result": 1,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count open search 'tax' empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatistics open rows": {
+        "result": {
+            "total_searches": 6,
+            "total_results": 15,
+            "avg_results_per_search": 2.5,
+            "avg_response_time": 12.35,
+            "non_empty_searches": 5
+        },
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select([{},{}])",
+            "#1 addSelect(AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 addSelect(COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatistics open empty": {
+        "result": {
+            "total_searches": 0,
+            "total_results": 0,
+            "avg_results_per_search": 0.0,
+            "avg_response_time": 0.0,
+            "non_empty_searches": 0
+        },
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select([{},{}])",
+            "#1 addSelect(AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 addSelect(COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getPopularSearchTerms open rows": {
+        "result": [
+            {
+                "term": "tax",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "term": "rent",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"search_term\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 groupBy(search_term)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getPopularSearchTerms open empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"search_term\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 groupBy(search_term)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchActivityByTime open rows": {
+        "result": [
+            {
+                "period": "2026-01-02 10:00:00",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "period": "2026-01-03 11:00:00",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(date_period)",
+            "#1 orderBy(date_period, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchActivityByTime open empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(date_period)",
+            "#1 orderBy(date_period, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatisticsByRegisterSchema open rows": {
+        "result": [
+            {
+                "register": "3",
+                "schema": "7",
+                "register_uuid": "r-3",
+                "schema_uuid": "s-7",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "register": null,
+                "schema": null,
+                "register_uuid": null,
+                "schema_uuid": null,
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"register\",\"schema\",\"register_uuid\",\"schema_uuid\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(register, schema, register_uuid, schema_uuid)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatisticsByRegisterSchema open empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"register\",\"schema\",\"register_uuid\",\"schema_uuid\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(register, schema, register_uuid, schema_uuid)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUserAgentStatistics open rows": {
+        "result": [
+            {
+                "user_agent": "agent-a",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "user_agent": "agent-b",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"user_agent\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user_agent)",
+            "#1 where(isNotNull(user_agent))",
+            "#1 groupBy(user_agent)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUserAgentStatistics open empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"user_agent\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user_agent)",
+            "#1 where(isNotNull(user_agent))",
+            "#1 groupBy(user_agent)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueSearchTermsCount open rows": {
+        "result": 2,
+        "queries": [
+            "#1 selectDistinct(search_term)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueSearchTermsCount open empty": {
+        "result": 0,
+        "queries": [
+            "#1 selectDistinct(search_term)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueUsersCount open rows": {
+        "result": 2,
+        "queries": [
+            "#1 selectDistinct(user)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user)",
+            "#1 where(isNotNull(user))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(user, :p1, NULL)",
+            "#1 andWhere(neq(user, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueUsersCount open empty": {
+        "result": 0,
+        "queries": [
+            "#1 selectDistinct(user)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user)",
+            "#1 where(isNotNull(user))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(user, :p1, NULL)",
+            "#1 andWhere(neq(user, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageSearchesPerSession open rows": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select(count(*, total_searches), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(session)",
+            "#1 where(isNotNull(session))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(session, :p1, NULL)",
+            "#1 andWhere(neq(session, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageSearchesPerSession open empty": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select(count(*, total_searches), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(session)",
+            "#1 where(isNotNull(session))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(session, :p1, NULL)",
+            "#1 andWhere(neq(session, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageObjectViewsPerSession open rows": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_views)",
+            "#1 select(count(*, total_views), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = read, 2",
+            "#1 expr.eq(action, :p1, NULL)",
+            "#1 where(eq(action, :p1, NULL))",
+            "#1 expr.isNotNull(session)",
+            "#1 andWhere(isNotNull(session))",
+            "#1 param :p2 = , 2",
+            "#1 expr.neq(session, :p2, NULL)",
+            "#1 andWhere(neq(session, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageObjectViewsPerSession open empty": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_views)",
+            "#1 select(count(*, total_views), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = read, 2",
+            "#1 expr.eq(action, :p1, NULL)",
+            "#1 where(eq(action, :p1, NULL))",
+            "#1 expr.isNotNull(session)",
+            "#1 andWhere(isNotNull(session))",
+            "#1 param :p2 = , 2",
+            "#1 expr.neq(session, :p2, NULL)",
+            "#1 andWhere(neq(session, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll from search NULL rows": {
+        "result": [
+            1,
+            2
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll from search NULL empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count from search NULL rows": {
+        "result": 1,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count from search NULL empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll from search 'tax' rows": {
+        "result": [
+            1,
+            2
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p5, NULL)",
+            "#1 andWhere(gte(created, :p5, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll from search 'tax' empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p5, NULL)",
+            "#1 andWhere(gte(created, :p5, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count from search 'tax' rows": {
+        "result": 1,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p5, NULL)",
+            "#1 andWhere(gte(created, :p5, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count from search 'tax' empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p5, NULL)",
+            "#1 andWhere(gte(created, :p5, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatistics from rows": {
+        "result": {
+            "total_searches": 6,
+            "total_results": 15,
+            "avg_results_per_search": 2.5,
+            "avg_response_time": 12.35,
+            "non_empty_searches": 5
+        },
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select([{},{}])",
+            "#1 addSelect(AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 addSelect(COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatistics from empty": {
+        "result": {
+            "total_searches": 0,
+            "total_results": 0,
+            "avg_results_per_search": 0.0,
+            "avg_response_time": 0.0,
+            "non_empty_searches": 0
+        },
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select([{},{}])",
+            "#1 addSelect(AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 addSelect(COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getPopularSearchTerms from rows": {
+        "result": [
+            {
+                "term": "tax",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "term": "rent",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"search_term\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 groupBy(search_term)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getPopularSearchTerms from empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"search_term\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 groupBy(search_term)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchActivityByTime from rows": {
+        "result": [
+            {
+                "period": "2026-01-02 10:00:00",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "period": "2026-01-03 11:00:00",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(date_period)",
+            "#1 orderBy(date_period, ASC)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchActivityByTime from empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(date_period)",
+            "#1 orderBy(date_period, ASC)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatisticsByRegisterSchema from rows": {
+        "result": [
+            {
+                "register": "3",
+                "schema": "7",
+                "register_uuid": "r-3",
+                "schema_uuid": "s-7",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "register": null,
+                "schema": null,
+                "register_uuid": null,
+                "schema_uuid": null,
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"register\",\"schema\",\"register_uuid\",\"schema_uuid\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(register, schema, register_uuid, schema_uuid)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatisticsByRegisterSchema from empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"register\",\"schema\",\"register_uuid\",\"schema_uuid\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(register, schema, register_uuid, schema_uuid)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUserAgentStatistics from rows": {
+        "result": [
+            {
+                "user_agent": "agent-a",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "user_agent": "agent-b",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"user_agent\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user_agent)",
+            "#1 where(isNotNull(user_agent))",
+            "#1 groupBy(user_agent)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(2)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUserAgentStatistics from empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"user_agent\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user_agent)",
+            "#1 where(isNotNull(user_agent))",
+            "#1 groupBy(user_agent)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(2)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueSearchTermsCount from rows": {
+        "result": 2,
+        "queries": [
+            "#1 selectDistinct(search_term)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueSearchTermsCount from empty": {
+        "result": 0,
+        "queries": [
+            "#1 selectDistinct(search_term)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueUsersCount from rows": {
+        "result": 2,
+        "queries": [
+            "#1 selectDistinct(user)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user)",
+            "#1 where(isNotNull(user))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(user, :p1, NULL)",
+            "#1 andWhere(neq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueUsersCount from empty": {
+        "result": 0,
+        "queries": [
+            "#1 selectDistinct(user)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user)",
+            "#1 where(isNotNull(user))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(user, :p1, NULL)",
+            "#1 andWhere(neq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageSearchesPerSession from rows": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select(count(*, total_searches), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(session)",
+            "#1 where(isNotNull(session))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(session, :p1, NULL)",
+            "#1 andWhere(neq(session, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageSearchesPerSession from empty": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select(count(*, total_searches), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(session)",
+            "#1 where(isNotNull(session))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(session, :p1, NULL)",
+            "#1 andWhere(neq(session, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageObjectViewsPerSession from rows": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_views)",
+            "#1 select(count(*, total_views), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = read, 2",
+            "#1 expr.eq(action, :p1, NULL)",
+            "#1 where(eq(action, :p1, NULL))",
+            "#1 expr.isNotNull(session)",
+            "#1 andWhere(isNotNull(session))",
+            "#1 param :p2 = , 2",
+            "#1 expr.neq(session, :p2, NULL)",
+            "#1 andWhere(neq(session, :p2, NULL))",
+            "#1 param :p3 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageObjectViewsPerSession from empty": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_views)",
+            "#1 select(count(*, total_views), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = read, 2",
+            "#1 expr.eq(action, :p1, NULL)",
+            "#1 where(eq(action, :p1, NULL))",
+            "#1 expr.isNotNull(session)",
+            "#1 andWhere(isNotNull(session))",
+            "#1 param :p2 = , 2",
+            "#1 expr.neq(session, :p2, NULL)",
+            "#1 andWhere(neq(session, :p2, NULL))",
+            "#1 param :p3 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll to search NULL rows": {
+        "result": [
+            1,
+            2
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll to search NULL empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count to search NULL rows": {
+        "result": 1,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count to search NULL empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll to search 'tax' rows": {
+        "result": [
+            1,
+            2
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p5, NULL)",
+            "#1 andWhere(lte(created, :p5, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll to search 'tax' empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p5, NULL)",
+            "#1 andWhere(lte(created, :p5, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count to search 'tax' rows": {
+        "result": 1,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p5, NULL)",
+            "#1 andWhere(lte(created, :p5, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count to search 'tax' empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p5, NULL)",
+            "#1 andWhere(lte(created, :p5, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatistics to rows": {
+        "result": {
+            "total_searches": 6,
+            "total_results": 15,
+            "avg_results_per_search": 2.5,
+            "avg_response_time": 12.35,
+            "non_empty_searches": 5
+        },
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select([{},{}])",
+            "#1 addSelect(AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 addSelect(COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatistics to empty": {
+        "result": {
+            "total_searches": 0,
+            "total_results": 0,
+            "avg_results_per_search": 0.0,
+            "avg_response_time": 0.0,
+            "non_empty_searches": 0
+        },
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select([{},{}])",
+            "#1 addSelect(AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 addSelect(COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getPopularSearchTerms to rows": {
+        "result": [
+            {
+                "term": "tax",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "term": "rent",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"search_term\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 groupBy(search_term)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getPopularSearchTerms to empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"search_term\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 groupBy(search_term)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchActivityByTime to rows": {
+        "result": [
+            {
+                "period": "2026-01-02 10:00:00",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "period": "2026-01-03 11:00:00",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(date_period)",
+            "#1 orderBy(date_period, ASC)",
+            "#1 param :p1 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchActivityByTime to empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(date_period)",
+            "#1 orderBy(date_period, ASC)",
+            "#1 param :p1 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatisticsByRegisterSchema to rows": {
+        "result": [
+            {
+                "register": "3",
+                "schema": "7",
+                "register_uuid": "r-3",
+                "schema_uuid": "s-7",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "register": null,
+                "schema": null,
+                "register_uuid": null,
+                "schema_uuid": null,
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"register\",\"schema\",\"register_uuid\",\"schema_uuid\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(register, schema, register_uuid, schema_uuid)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 param :p1 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatisticsByRegisterSchema to empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"register\",\"schema\",\"register_uuid\",\"schema_uuid\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(register, schema, register_uuid, schema_uuid)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 param :p1 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUserAgentStatistics to rows": {
+        "result": [
+            {
+                "user_agent": "agent-a",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "user_agent": "agent-b",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"user_agent\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user_agent)",
+            "#1 where(isNotNull(user_agent))",
+            "#1 groupBy(user_agent)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(2)",
+            "#1 param :p1 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUserAgentStatistics to empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"user_agent\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user_agent)",
+            "#1 where(isNotNull(user_agent))",
+            "#1 groupBy(user_agent)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(2)",
+            "#1 param :p1 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p1, NULL)",
+            "#1 andWhere(lte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueSearchTermsCount to rows": {
+        "result": 2,
+        "queries": [
+            "#1 selectDistinct(search_term)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueSearchTermsCount to empty": {
+        "result": 0,
+        "queries": [
+            "#1 selectDistinct(search_term)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueUsersCount to rows": {
+        "result": 2,
+        "queries": [
+            "#1 selectDistinct(user)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user)",
+            "#1 where(isNotNull(user))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(user, :p1, NULL)",
+            "#1 andWhere(neq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueUsersCount to empty": {
+        "result": 0,
+        "queries": [
+            "#1 selectDistinct(user)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user)",
+            "#1 where(isNotNull(user))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(user, :p1, NULL)",
+            "#1 andWhere(neq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageSearchesPerSession to rows": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select(count(*, total_searches), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(session)",
+            "#1 where(isNotNull(session))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(session, :p1, NULL)",
+            "#1 andWhere(neq(session, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageSearchesPerSession to empty": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select(count(*, total_searches), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(session)",
+            "#1 where(isNotNull(session))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(session, :p1, NULL)",
+            "#1 andWhere(neq(session, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageObjectViewsPerSession to rows": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_views)",
+            "#1 select(count(*, total_views), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = read, 2",
+            "#1 expr.eq(action, :p1, NULL)",
+            "#1 where(eq(action, :p1, NULL))",
+            "#1 expr.isNotNull(session)",
+            "#1 andWhere(isNotNull(session))",
+            "#1 param :p2 = , 2",
+            "#1 expr.neq(session, :p2, NULL)",
+            "#1 andWhere(neq(session, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageObjectViewsPerSession to empty": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_views)",
+            "#1 select(count(*, total_views), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = read, 2",
+            "#1 expr.eq(action, :p1, NULL)",
+            "#1 where(eq(action, :p1, NULL))",
+            "#1 expr.isNotNull(session)",
+            "#1 andWhere(isNotNull(session))",
+            "#1 param :p2 = , 2",
+            "#1 expr.neq(session, :p2, NULL)",
+            "#1 andWhere(neq(session, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll both search NULL rows": {
+        "result": [
+            1,
+            2
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll both search NULL empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count both search NULL rows": {
+        "result": 1,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count both search NULL empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll both search 'tax' rows": {
+        "result": [
+            1,
+            2
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p5, NULL)",
+            "#1 andWhere(gte(created, :p5, NULL))",
+            "#1 param :p6 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p6, NULL)",
+            "#1 andWhere(lte(created, :p6, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findAll both search 'tax' empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p5, NULL)",
+            "#1 andWhere(gte(created, :p5, NULL))",
+            "#1 param :p6 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p6, NULL)",
+            "#1 andWhere(lte(created, :p6, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "count both search 'tax' rows": {
+        "result": 1,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p5, NULL)",
+            "#1 andWhere(gte(created, :p5, NULL))",
+            "#1 param :p6 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p6, NULL)",
+            "#1 andWhere(lte(created, :p6, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "count both search 'tax' empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(*, )",
+            "#1 select(count(*, ))",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 param :p5 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p5, NULL)",
+            "#1 andWhere(gte(created, :p5, NULL))",
+            "#1 param :p6 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p6, NULL)",
+            "#1 andWhere(lte(created, :p6, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatistics both rows": {
+        "result": {
+            "total_searches": 6,
+            "total_results": 15,
+            "avg_results_per_search": 2.5,
+            "avg_response_time": 12.35,
+            "non_empty_searches": 5
+        },
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select([{},{}])",
+            "#1 addSelect(AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 addSelect(COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatistics both empty": {
+        "result": {
+            "total_searches": 0,
+            "total_results": 0,
+            "avg_results_per_search": 0.0,
+            "avg_response_time": 0.0,
+            "non_empty_searches": 0
+        },
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select([{},{}])",
+            "#1 addSelect(AVG(CASE WHEN total_results IS NOT NULL THEN total_results END) AS avg_results_per_search)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 addSelect(COUNT(CASE WHEN total_results > 0 THEN 1 END) AS non_empty_searches)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getPopularSearchTerms both rows": {
+        "result": [
+            {
+                "term": "tax",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "term": "rent",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"search_term\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 groupBy(search_term)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getPopularSearchTerms both empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"search_term\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 groupBy(search_term)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchActivityByTime both rows": {
+        "result": [
+            {
+                "period": "2026-01-02 10:00:00",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "period": "2026-01-03 11:00:00",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(date_period)",
+            "#1 orderBy(date_period, ASC)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchActivityByTime both empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(date_period)",
+            "#1 orderBy(date_period, ASC)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatisticsByRegisterSchema both rows": {
+        "result": [
+            {
+                "register": "3",
+                "schema": "7",
+                "register_uuid": "r-3",
+                "schema_uuid": "s-7",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "register": null,
+                "schema": null,
+                "register_uuid": null,
+                "schema_uuid": null,
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"register\",\"schema\",\"register_uuid\",\"schema_uuid\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(register, schema, register_uuid, schema_uuid)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getSearchStatisticsByRegisterSchema both empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"register\",\"schema\",\"register_uuid\",\"schema_uuid\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 groupBy(register, schema, register_uuid, schema_uuid)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUserAgentStatistics both rows": {
+        "result": [
+            {
+                "user_agent": "agent-a",
+                "count": 4,
+                "avg_results": 2.5,
+                "avg_response_time": 12.35
+            },
+            {
+                "user_agent": "agent-b",
+                "count": 1,
+                "avg_results": 0.0,
+                "avg_response_time": 0.0
+            }
+        ],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"user_agent\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user_agent)",
+            "#1 where(isNotNull(user_agent))",
+            "#1 groupBy(user_agent)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(2)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUserAgentStatistics both empty": {
+        "result": [],
+        "queries": [
+            "#1 func.count(*, search_count)",
+            "#1 select([\"user_agent\",{}])",
+            "#1 addSelect(AVG(total_results) AS avg_results)",
+            "#1 addSelect(AVG(response_time) AS avg_response_time)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user_agent)",
+            "#1 where(isNotNull(user_agent))",
+            "#1 groupBy(user_agent)",
+            "#1 orderBy(search_count, DESC)",
+            "#1 setMaxResults(2)",
+            "#1 param :p1 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueSearchTermsCount both rows": {
+        "result": 2,
+        "queries": [
+            "#1 selectDistinct(search_term)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueSearchTermsCount both empty": {
+        "result": 0,
+        "queries": [
+            "#1 selectDistinct(search_term)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(search_term)",
+            "#1 where(isNotNull(search_term))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(search_term, :p1, NULL)",
+            "#1 andWhere(neq(search_term, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueUsersCount both rows": {
+        "result": 2,
+        "queries": [
+            "#1 selectDistinct(user)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user)",
+            "#1 where(isNotNull(user))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(user, :p1, NULL)",
+            "#1 andWhere(neq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getUniqueUsersCount both empty": {
+        "result": 0,
+        "queries": [
+            "#1 selectDistinct(user)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(user)",
+            "#1 where(isNotNull(user))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(user, :p1, NULL)",
+            "#1 andWhere(neq(user, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageSearchesPerSession both rows": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select(count(*, total_searches), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(session)",
+            "#1 where(isNotNull(session))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(session, :p1, NULL)",
+            "#1 andWhere(neq(session, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageSearchesPerSession both empty": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_searches)",
+            "#1 select(count(*, total_searches), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 expr.isNotNull(session)",
+            "#1 where(isNotNull(session))",
+            "#1 param :p1 = , 2",
+            "#1 expr.neq(session, :p1, NULL)",
+            "#1 andWhere(neq(session, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageObjectViewsPerSession both rows": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_views)",
+            "#1 select(count(*, total_views), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = read, 2",
+            "#1 expr.eq(action, :p1, NULL)",
+            "#1 where(eq(action, :p1, NULL))",
+            "#1 expr.isNotNull(session)",
+            "#1 andWhere(isNotNull(session))",
+            "#1 param :p2 = , 2",
+            "#1 expr.neq(session, :p2, NULL)",
+            "#1 andWhere(neq(session, :p2, NULL))",
+            "#1 param :p3 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 param :p4 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p4, NULL)",
+            "#1 andWhere(lte(created, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "getAverageObjectViewsPerSession both empty": {
+        "result": 0.0,
+        "queries": [
+            "#1 func.count(*, total_views)",
+            "#1 select(count(*, total_views), COUNT(DISTINCT session) as unique_sessions)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 param :p1 = read, 2",
+            "#1 expr.eq(action, :p1, NULL)",
+            "#1 where(eq(action, :p1, NULL))",
+            "#1 expr.isNotNull(session)",
+            "#1 andWhere(isNotNull(session))",
+            "#1 param :p2 = , 2",
+            "#1 expr.neq(session, :p2, NULL)",
+            "#1 andWhere(neq(session, :p2, NULL))",
+            "#1 param :p3 = 2026-01-01 08:00:00, 2",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 param :p4 = 2026-01-31 18:00:00, 2",
+            "#1 expr.lte(created, :p4, NULL)",
+            "#1 andWhere(lte(created, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    }
+}

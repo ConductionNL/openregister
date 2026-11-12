@@ -142,14 +142,26 @@ final class MdiIconRenderer {
 			return null;
 		}
 
-		// Normalise: drop a leading "mdi" prefix, strip every non-alphanumeric
-		// character, lower-case — so "Dog", "mdi-dog" and "mdiDog" all map to
-		// the "dog" key.
+		return (self::PATHS[self::normaliseKey(icon: $icon)] ?? null);
+	}//end resolvePath()
+
+	/**
+	 * Normalise an icon reference to a PATHS key.
+	 *
+	 * Strips every non-alphanumeric character, lower-cases and drops one
+	 * leading "mdi" prefix — so "Dog", "mdi-dog" and "mdiDog" all map to
+	 * the "dog" key.
+	 *
+	 * @param string $icon The non-empty schema icon reference.
+	 *
+	 * @return string The normalised key.
+	 */
+	private static function normaliseKey(string $icon): string {
 		$key = strtolower((string)preg_replace('/[^a-z0-9]/i', '', $icon));
 		if (str_starts_with($key, 'mdi') === true) {
-			$key = substr($key, 3);
+			return substr($key, 3);
 		}
 
-		return (self::PATHS[$key] ?? null);
-	}//end resolvePath()
+		return $key;
+	}//end normaliseKey()
 }//end class

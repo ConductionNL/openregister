@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
 
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SchemaCacheClearers;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
@@ -22,7 +23,7 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 	private CacheSettingsHandler $handler;
 	private ICacheFactory&MockObject $cacheFactory;
 	private SchemaCacheHandler&MockObject $schemaCacheService;
-	private FacetCacheHandler&MockObject $facetCacheService;
+	private FacetResultCacheClearer&MockObject $facetCacheService;
 	private CacheHandler&MockObject $objectCacheService;
 	private IAppContainer&MockObject $container;
 
@@ -31,14 +32,13 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 
 		$this->cacheFactory = $this->createMock(ICacheFactory::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheService = $this->createMock(FacetCacheHandler::class);
+		$this->facetCacheService = $this->createMock(FacetResultCacheClearer::class);
 		$this->objectCacheService = $this->createMock(CacheHandler::class);
 		$this->container = $this->createMock(IAppContainer::class);
 
 		$this->handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			$this->objectCacheService,
 			$this->container
 		);
@@ -79,10 +79,7 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 	}
 
 	public function testClearCacheFacetType(): void {
-		$this->facetCacheService->method('getCacheStatistics')->willReturn([
-			'total_entries' => 3,
-		]);
-		$this->facetCacheService->expects($this->once())->method('clearAllCaches');
+		$this->facetCacheService->expects($this->once())->method('clearAll');
 
 		$result = $this->handler->clearCache('facet');
 
@@ -129,9 +126,6 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 			'total_entries' => 3,
 			'entries' => 3,
 		]);
-		$this->facetCacheService->method('getCacheStatistics')->willReturn([
-			'total_entries' => 2,
-		]);
 		$distributedCache = $this->createMock(IMemcache::class);
 		$this->cacheFactory->method('createDistributed')->willReturn($distributedCache);
 
@@ -171,8 +165,7 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 	public function testWarmupNamesCacheWhenNoCacheHandler(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -186,8 +179,7 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 	public function testWarmupNamesCacheWithContainerFallback(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -281,8 +273,7 @@ class CacheSettingsHandlerBranchCoverageTest extends TestCase {
 	public function testClearObjectCacheWhenContainerThrows(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);

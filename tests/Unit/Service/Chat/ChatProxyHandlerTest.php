@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Chat;
 
 use OCA\OpenRegister\Service\Chat\ChatProxyHandler;
+use OCA\OpenRegister\Service\Chat\ChatProxyEndpoint;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -80,10 +81,12 @@ class ChatProxyHandlerTest extends TestCase {
 		$clientService->method('newClient')->willReturn($client);
 
 		return new ChatProxyHandler(
+			new ChatProxyEndpoint(
+				$urlGenerator,
+				$clientService
+			),
 			$appConfig,
 			$appManager,
-			$urlGenerator,
-			$clientService,
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end makeHandler()

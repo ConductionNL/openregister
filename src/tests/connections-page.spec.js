@@ -16,8 +16,19 @@
 import { BUILT_IN_FORMATTERS } from '@conduction/nextcloud-vue/src/utils/builtInFormatters.js'
 
 // The built-ins reach @nextcloud/auth through the library's filter tokens, and
-// the browser-storage stub this suite uses cannot build its guest store.
-jest.mock('@nextcloud/auth', () => ({ getCurrentUser: () => null }))
+// the browser-storage stub this suite uses cannot build its guest store. Since
+// @nextcloud/axios 2.6 the library's user-autocomplete import also builds an
+// axios client at load time, which reads the request token.
+jest.mock('@nextcloud/auth', () => ({
+	getCurrentUser: () => null,
+	getRequestToken: () => null,
+	onRequestTokenUpdate: () => {},
+}))
+// The library reads the app's initial state from a pure-ESM package jest does
+// not transform; no initial state exists in a unit test, so every read falls back.
+jest.mock('@nextcloud/initial-state', () => ({
+	loadState: (app, key, fallback) => fallback,
+}))
 import fs from 'fs'
 import path from 'path'
 import customComponents, {

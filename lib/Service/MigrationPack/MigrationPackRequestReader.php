@@ -36,26 +36,7 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
  */
-class MigrationPackRequestReader {
-	/**
-	 * The most sample rows one preview request may map.
-	 *
-	 * @var int
-	 */
-	public const MAX_PREVIEW_ROWS = 20;
-
-	/**
-	 * The largest preview input, definition and rows together, as JSON bytes.
-	 *
-	 * The row count alone does not bound the work: one row can carry any
-	 * number of columns, and every row runs through the mapping engine in the
-	 * request. 1 MiB holds a large pack with long lookup tables and twenty
-	 * wide rows.
-	 *
-	 * @var int
-	 */
-	public const MAX_PREVIEW_BYTES = 1048576;
-
+class MigrationPackRequestReader implements MigrationPackRequestReaderInterface {
 	/**
 	 * Constructor.
 	 *
@@ -123,11 +104,7 @@ class MigrationPackRequestReader {
 			return $params['definition'];
 		}
 
-		$definition = array_filter(
-			$params,
-			static fn ($key): bool => str_starts_with((string)$key, '_') === false,
-			ARRAY_FILTER_USE_KEY
-		);
+		$definition = $this->bodyDefinition(params: $params);
 
 		$routeParams = $this->routeParams(request: $request);
 		if (array_key_exists('id', $routeParams) === false
@@ -137,13 +114,42 @@ class MigrationPackRequestReader {
 			return $definition;
 		}
 
+		$this->refuseRowIdInBody(definition: $definition);
+	}//end definition()
+
+	/**
+	 * The pack sent as the body itself: every parameter that is not framework-internal.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<string, mixed> The definition.
+	 */
+	private function bodyDefinition(array $params): array {
+		return array_filter(
+			$params,
+			static fn ($key): bool => str_starts_with((string)$key, '_') === false,
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end bodyDefinition()
+
+	/**
+	 * Refuse a body whose `id` equals the row id in the URL, with the rest of its errors.
+	 *
+	 * @param array<string, mixed> $definition The body definition, carrying that id.
+	 *
+	 * @return never
+	 *
+	 * @throws InvalidPackDefinitionException Always.
+	 */
+	private function refuseRowIdInBody(array $definition): never {
 		unset($definition['id']);
 		$errors   = $this->validator->validate(definition: $definition);
-		$errors[] = 'An "id" in the request body that equals the row id in the URL cannot be told apart from it.'
-			. ' Send the pack as {"definition": {...}} to keep that id.';
+		$errors[] = $this->l10n->t('An "id" in the request body that equals the row id in the URL cannot be told apart from it.')
+			. ' '
+			. $this->l10n->t('Send the pack as {"definition": {...}} to keep that id.');
 
 		throw new InvalidPackDefinitionException(errors: $errors);
-	}//end definition()
+	}//end refuseRowIdInBody()
 
 	/**
 	 * The `updatedAt` an update was based on, from the envelope's `expectedUpdatedAt`.

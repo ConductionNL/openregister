@@ -1,0 +1,93 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`OrganisationsIndex.leaveOrganisation leaves when confirmed and allowed 1`] = `
+[
+  [
+    "confirm",
+    "Are you sure you want to leave '{name}'? {"name":"Acme"}",
+  ],
+  [
+    "leaveOrganisation",
+    "org-1",
+  ],
+  [
+    "showSuccess",
+    "Left organisation successfully",
+  ],
+]
+`;
+
+exports[`OrganisationsIndex.leaveOrganisation leaves when confirmed and refused 1`] = `
+[
+  [
+    "confirm",
+    "Are you sure you want to leave '{name}'? {"name":"Acme"}",
+  ],
+  [
+    "leaveOrganisation",
+    "org-1",
+  ],
+  [
+    "showError",
+    "Failed to leave organisation: {error} {"error":"Last owner"}",
+  ],
+]
+`;
+
+exports[`OrganisationsIndex.leaveOrganisation leaves when declined 1`] = `
+[
+  [
+    "confirm",
+    "Are you sure you want to leave '{name}'? {"name":"Acme"}",
+  ],
+]
+`;
+
+exports[`OrganisationsIndex.setActiveOrganisation reports a failing app reload as a failed switch 1`] = `
+[
+  [
+    "setActiveOrganisationById",
+    "org-1",
+  ],
+  [
+    "showSuccess",
+    "Active organisation changed successfully",
+  ],
+  [
+    "reloadAppData",
+  ],
+  [
+    "showError",
+    "Failed to change active organisation: {error} {"error":"reload failed"}",
+  ],
+]
+`;
+
+exports[`OrganisationsIndex.setActiveOrganisation switches when allowed 1`] = `
+[
+  [
+    "setActiveOrganisationById",
+    "org-1",
+  ],
+  [
+    "showSuccess",
+    "Active organisation changed successfully",
+  ],
+  [
+    "reloadAppData",
+  ],
+]
+`;
+
+exports[`OrganisationsIndex.setActiveOrganisation switches when refused 1`] = `
+[
+  [
+    "setActiveOrganisationById",
+    "org-1",
+  ],
+  [
+    "showError",
+    "Failed to change active organisation: {error} {"error":"Not a member"}",
+  ],
+]
+`;

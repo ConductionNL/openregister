@@ -60,6 +60,49 @@ export const TRANSLATION_STATUSES = Object.freeze({
 	APPROVED: 'approved',
 })
 
+/**
+ * Run a translations request with the loading flag raised and the error
+ * cleared; a failure is stored, logged and rethrown.
+ *
+ * @param {object} store The translations store.
+ * @param {{run: function(): Promise<void>, failure: string, tag: string}} job
+ *     The request, the error text when the failure has no message, and the log tag.
+ * @return {Promise<void>}
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+async function whileTranslating(store, job) {
+	store.loading = true
+	store.error = null
+	try {
+		await job.run()
+	} catch (e) {
+		store.error = e.message ?? job.failure
+		console.error(job.tag, e)
+		throw e
+	} finally {
+		store.loading = false
+	}
+}
+
+/**
+ * Set the status of one cached translation slot, when the object is cached.
+ *
+ * @param {object|undefined} cached The cached translations of the object.
+ * @param {{property: string, language: string, status: string}} slot The slot and its new status.
+ * @return {void}
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+function patchSlotStatus(cached, slot) {
+	if (!cached?.translations) {
+		return
+	}
+	cached.translations = cached.translations.map((entry) =>
+		entry.property === slot.property && entry.language === slot.language
+			? { ...entry, status: slot.status }
+			: entry,
+	)
+}
+
 export const useTranslationsStore = defineStore('translations', {
 	state: () => ({
 		// Cache: per-object slots map keyed by uuid.
@@ -92,28 +135,23 @@ export const useTranslationsStore = defineStore('translations', {
 		 */
 		async fetchByObject(uuid, schema) {
 			if (!uuid) return
-			this.loading = true
-			this.error = null
-			try {
-				const params = schema ? { schema } : {}
-				const response = await axios.get(
-					`${API_BASE}/object/${encodeURIComponent(uuid)}`,
-					{ params },
-				)
-				this.byObject = {
-					...this.byObject,
-					[uuid]: {
-						translations: response.data.translations ?? [],
-						completeness: response.data.completeness ?? {},
-					},
-				}
-			} catch (e) {
-				this.error = e.message ?? 'Failed to fetch translations'
-				console.error('[translations.fetchByObject]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+			return whileTranslating(this, {
+				failure: 'Failed to fetch translations',
+				tag: '[translations.fetchByObject]',
+				run: async () => {
+					const response = await axios.get(
+						`${API_BASE}/object/${encodeURIComponent(uuid)}`,
+						{ params: schema ? { schema } : {} },
+					)
+					this.byObject = {
+						...this.byObject,
+						[uuid]: {
+							translations: response.data.translations ?? [],
+							completeness: response.data.completeness ?? {},
+						},
+					}
+				},
+			})
 		},
 
 		/**
@@ -129,33 +167,22 @@ export const useTranslationsStore = defineStore('translations', {
 			if (!Object.values(TRANSLATION_STATUSES).includes(status)) {
 				throw new Error(`Invalid translation status "${status}"`)
 			}
-			this.loading = true
-			this.error = null
-			try {
-				await axios.post(
-					`${API_BASE}/object/${encodeURIComponent(uuid)}/${encodeURIComponent(property)}/${encodeURIComponent(language)}/status`,
-					{ status },
-				)
-				// Patch local cache: update the matching slot in place.
-				const cached = this.byObject[uuid]
-				if (cached?.translations) {
-					cached.translations = cached.translations.map((slot) => {
-						if (
-							slot.property === property
-							&& slot.language === language
-						) {
-							return { ...slot, status }
-						}
-						return slot
+			return whileTranslating(this, {
+				failure: 'Failed to update status',
+				tag: '[translations.setStatus]',
+				run: async () => {
+					await axios.post(
+						`${API_BASE}/object/${encodeURIComponent(uuid)}/${encodeURIComponent(property)}/${encodeURIComponent(language)}/status`,
+						{ status },
+					)
+					// Patch local cache: update the matching slot in place.
+					patchSlotStatus(this.byObject[uuid], {
+						property,
+						language,
+						status,
 					})
-				}
-			} catch (e) {
-				this.error = e.message ?? 'Failed to update status'
-				console.error('[translations.setStatus]', e)
-				throw e
-			} finally {
-				this.loading = false
-			}
+				},
+			})
 		},
 
 		/**

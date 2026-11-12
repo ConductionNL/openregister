@@ -1,0 +1,2925 @@
+{
+    "array id, soft": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "array @self.id, soft": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "array uuid, soft": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "array without identifier": {
+        "result": null,
+        "exception": [
+            "Exception",
+            "Cannot delete object: no identifier (id/@self.id/uuid) found in the supplied data."
+        ],
+        "calls": [],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "entity without context": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "entity with register only": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": true,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "entity with full context": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "register": 55,
+                "schema": 99,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "forged deleter in data": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "forged deleter on looked-up data": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept",
+                        "deletedBy": "mallory",
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "@self": {
+                            "owner": "mallory",
+                            "deleted": {
+                                "deletedBy": "mallory"
+                            }
+                        }
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept",
+                        "deletedBy": "mallory",
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "@self": {
+                            "owner": "mallory",
+                            "deleted": {
+                                "deletedBy": "mallory"
+                            }
+                        }
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept",
+                        "deletedBy": "mallory",
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "@self": {
+                            "owner": "mallory",
+                            "deleted": {
+                                "deletedBy": "mallory"
+                            }
+                        }
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept",
+                        "deletedBy": "mallory",
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "@self": {
+                            "owner": "mallory",
+                            "deleted": {
+                                "deletedBy": "mallory"
+                            }
+                        }
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept",
+                "deletedBy": "mallory",
+                "owner": "mallory",
+                "userId": "mallory",
+                "@self": {
+                    "owner": "mallory",
+                    "deleted": {
+                        "deletedBy": "mallory"
+                    }
+                }
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1",
+                "title": "kept",
+                "deletedBy": "mallory",
+                "owner": "mallory",
+                "userId": "mallory",
+                "@self": {
+                    "owner": "mallory",
+                    "deleted": {
+                        "deletedBy": "mallory"
+                    }
+                }
+            }
+        }
+    },
+    "forged deleter on passed entity": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept",
+                        "deletedBy": "mallory",
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "@self": {
+                            "owner": "mallory",
+                            "deleted": {
+                                "deletedBy": "mallory"
+                            }
+                        }
+                    }
+                },
+                "register": 55,
+                "schema": 99,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept",
+                        "deletedBy": "mallory",
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "@self": {
+                            "owner": "mallory",
+                            "deleted": {
+                                "deletedBy": "mallory"
+                            }
+                        }
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept",
+                        "deletedBy": "mallory",
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "@self": {
+                            "owner": "mallory",
+                            "deleted": {
+                                "deletedBy": "mallory"
+                            }
+                        }
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept",
+                        "deletedBy": "mallory",
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "@self": {
+                            "owner": "mallory",
+                            "deleted": {
+                                "deletedBy": "mallory"
+                            }
+                        }
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1",
+                "title": "kept",
+                "deletedBy": "mallory",
+                "owner": "mallory",
+                "userId": "mallory",
+                "@self": {
+                    "owner": "mallory",
+                    "deleted": {
+                        "deletedBy": "mallory"
+                    }
+                }
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept",
+                "deletedBy": "mallory",
+                "owner": "mallory",
+                "userId": "mallory",
+                "@self": {
+                    "owner": "mallory",
+                    "deleted": {
+                        "deletedBy": "mallory"
+                    }
+                }
+            }
+        }
+    },
+    "id wins over uuid": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "@self.id wins over uuid": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "session user without org": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "bob"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "bob",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": null
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "bob",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": null
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "bob",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": null
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "bob",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": null
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "no session user": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "system",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": null
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "system",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": null
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "system",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": null
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "system",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": null
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "org lookup throws error": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "log": "warning",
+                "message": "[DeleteObject] Failed to get active organisation during delete",
+                "context": {
+                    "error": "no db"
+                }
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": null
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": null
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": null
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": null
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "with deletion window": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "openWindow": 9,
+                "deletedAtGiven": true
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "window-says",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice",
+                        "retentionDays": 30
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "window-says",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice",
+                        "retentionDays": 30
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "window-says",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice",
+                        "retentionDays": 30
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "window-says",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice",
+                "retentionDays": 30
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "cache invalidation throws": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "audit disabled": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "audit setting throws": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "log": "warning",
+                "message": "[DeleteObject] Failed to check audit trails setting, defaulting to enabled",
+                "context": {
+                    "error": "settings down"
+                }
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "cascade with action type": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "referential_integrity.set_null",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": {
+                    "action_type": "referential_integrity.set_null",
+                    "triggerObject": "t-1"
+                }
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "cascade without action type": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": 5,
+                "schemaId": 9
+            },
+            {
+                "audit": "referential_integrity.cascade_delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": {
+                    "triggerObject": "t-1"
+                }
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "non-numeric ids, soft": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": null,
+                "schemaId": null
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "null ids, soft": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            },
+            {
+                "invalidate": "soft_delete",
+                "object": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "registerId": null,
+                "schemaId": null
+            },
+            {
+                "audit": "delete",
+                "old": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "new": null,
+                "cascadeContext": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "update throws": {
+        "result": null,
+        "exception": [
+            "Exception",
+            "update failed"
+        ],
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "organisationFor": "alice"
+            },
+            {
+                "update": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": {
+                        "deletedBy": "alice",
+                        "deletedAt": "ATOM",
+                        "objectId": "obj-1",
+                        "organisation": "org-of-alice"
+                    },
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "old": {
+                    "which": "other",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "oldIsEntity": false
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": {
+                "deletedBy": "alice",
+                "deletedAt": "ATOM",
+                "objectId": "obj-1",
+                "organisation": "org-of-alice"
+            },
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "permanent": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "log": "info",
+                "message": "[DeleteObject] Permanent deletion requested (archival destruction)",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "hardDelete": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "hard": true
+            },
+            {
+                "invalidate": "permanent_delete",
+                "object": null,
+                "registerId": 5,
+                "schemaId": 9
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "permanent entity, full context": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "log": "info",
+                "message": "[DeleteObject] Permanent deletion requested (archival destruction)",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "hardDelete": {
+                    "which": "stored",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1",
+                        "title": "kept"
+                    }
+                },
+                "register": 55,
+                "schema": 99,
+                "hard": true
+            },
+            {
+                "invalidate": "permanent_delete",
+                "object": null,
+                "registerId": 5,
+                "schemaId": 9
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "permanent draft": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "log": "info",
+                "message": "[DeleteObject] Permanent deletion requested (archival destruction)",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "hardDelete": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "hard": true
+            },
+            {
+                "auditEntry": "draft.removed",
+                "object": "obj-1",
+                "context": {
+                    "status": "draft",
+                    "permanent": true,
+                    "job": null,
+                    "register": null,
+                    "schema": null,
+                    "owner": null
+                },
+                "actorId": null
+            },
+            {
+                "invalidate": "permanent_delete",
+                "object": null,
+                "registerId": 5,
+                "schemaId": 9
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "permanent non-numeric ids": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "log": "info",
+                "message": "[DeleteObject] Permanent deletion requested (archival destruction)",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "hardDelete": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "hard": true
+            },
+            {
+                "invalidate": "permanent_delete",
+                "object": null,
+                "registerId": null,
+                "schemaId": null
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "permanent with folder": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "log": "info",
+                "message": "[DeleteObject] Permanent deletion requested (archival destruction)",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "getObjectFolder": "obj-1"
+            },
+            {
+                "folderDeleted": true
+            },
+            {
+                "log": "info",
+                "message": "[DeleteObject] Removed Nextcloud folder for permanently deleted object",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "hardDelete": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "hard": true
+            },
+            {
+                "invalidate": "permanent_delete",
+                "object": null,
+                "registerId": 5,
+                "schemaId": 9
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "permanent folder unresolved": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "log": "info",
+                "message": "[DeleteObject] Permanent deletion requested (archival destruction)",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "getObjectFolder": "obj-1"
+            },
+            {
+                "hardDelete": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "hard": true
+            },
+            {
+                "invalidate": "permanent_delete",
+                "object": null,
+                "registerId": 5,
+                "schemaId": 9
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "permanent folder throws": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "log": "info",
+                "message": "[DeleteObject] Permanent deletion requested (archival destruction)",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "getObjectFolder": "obj-1"
+            },
+            {
+                "log": "warning",
+                "message": "[DeleteObject] Failed to remove Nextcloud folder during permanent delete",
+                "context": {
+                    "uuid": "obj-1",
+                    "error": "folder gone"
+                }
+            },
+            {
+                "hardDelete": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "hard": true
+            },
+            {
+                "invalidate": "permanent_delete",
+                "object": null,
+                "registerId": 5,
+                "schemaId": 9
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "permanent no folder bound": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "log": "info",
+                "message": "[DeleteObject] Permanent deletion requested (archival destruction)",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "hardDelete": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "hard": true
+            },
+            {
+                "invalidate": "permanent_delete",
+                "object": null,
+                "registerId": 5,
+                "schemaId": 9
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    },
+    "permanent ignores session": {
+        "result": true,
+        "exception": null,
+        "calls": [
+            {
+                "find": "obj-1",
+                "includeDeleted": false,
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "log": "info",
+                "message": "[DeleteObject] Permanent deletion requested (archival destruction)",
+                "context": {
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "hardDelete": {
+                    "which": "lookedUp",
+                    "uuid": "obj-1",
+                    "deleted": [],
+                    "object": {
+                        "id": "obj-1"
+                    }
+                },
+                "register": 5,
+                "schema": 9,
+                "hard": true
+            },
+            {
+                "invalidate": "permanent_delete",
+                "object": null,
+                "registerId": 5,
+                "schemaId": 9
+            }
+        ],
+        "stored": {
+            "which": "stored",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1",
+                "title": "kept"
+            }
+        },
+        "lookedUp": {
+            "which": "lookedUp",
+            "uuid": "obj-1",
+            "deleted": [],
+            "object": {
+                "id": "obj-1"
+            }
+        }
+    }
+}

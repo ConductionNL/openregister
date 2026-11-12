@@ -1,0 +1,554 @@
+<?php
+
+/**
+ * OpenRegister View
+ *
+ * This file contains the class for handling view related operations
+ * in the OpenRegister application.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Database
+ * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+namespace OCA\OpenRegister\Search\Db;
+
+use DateTime;
+use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
+use OCP\AppFramework\Db\Entity;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Db\IsoTimestampsTrait;
+use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\Task;
+
+/**
+ * Entity class representing a View
+ *
+ * Manages view-related data and operations for saved search configurations
+ *
+ * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method string|null getOwner()
+ * @method void setOwner(?string $owner)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method bool getIsPublic()
+ * @method void setIsPublic(bool $isPublic)
+ * @method bool getIsDefault()
+ * @method void setIsDefault(bool $isDefault)
+ * @method array|null getQuery()
+ * @method void setQuery(?array $query)
+ * @method array|null getPresentation()
+ * @method void setPresentation(?array $presentation)
+ * @method array|null getFavoritedBy()
+ * @method void setFavoritedBy(?array $favoritedBy)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method array|null getAlert()
+ * @method void setAlert(?array $alert)
+ * @method array|null getAlertState()
+ * @method void setAlertState(?array $alertState)
+ * @method DateTime|null getAlertEvaluatedAt()
+ * @method void setAlertEvaluatedAt(?DateTime $alertEvaluatedAt)
+ * @method void setUpdated(?DateTime $updated)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Sixteen of the eighteen ARE the
+ * columns of `oc_openregister_views`, one property each, the way every other
+ * entity in this directory is built ({@see Task}, {@see ScheduledReport},
+ * {@see TimelineEntry} and sixteen more carry this same suppression for the
+ * same reason). Reducing the count would mean folding columns together, which
+ * is a migration and a change to stored data, not a refactor. The remaining
+ * two — `$managedByConfig` and `$access` — are transient decorations set per
+ * request and never written, and merging those two into one bag would hide
+ * what they are to move a number by one.
+ */
+class View extends Entity implements JsonSerializable, ViewInterface {
+	use IsoTimestampsTrait;
+
+	/**
+	 * Unique identifier for the view
+	 *
+	 * @var string|null Unique identifier for the view
+	 */
+	protected ?string $uuid = null;
+
+	/**
+	 * Name of the view
+	 *
+	 * @var string|null Name of the view
+	 */
+	protected ?string $name = null;
+
+	/**
+	 * Description of the view
+	 *
+	 * @var string|null Description of the view
+	 */
+	protected ?string $description = null;
+
+	/**
+	 * Owner of the view (user ID)
+	 *
+	 * @var string|null Owner of the view
+	 */
+	protected ?string $owner = null;
+
+	/**
+	 * Organisation UUID this view belongs to
+	 *
+	 * @var string|null Organisation UUID
+	 */
+	protected ?string $organisation = null;
+
+	/**
+	 * Configuration that manages this view (transient, not stored in DB)
+	 *
+	 * @var Configuration|null
+	 */
+	private ?Configuration $managedByConfig = null;
+
+	/**
+	 * The access the current caller holds (transient, not stored in DB)
+	 *
+	 * @var string|null
+	 */
+	private ?string $access = null;
+
+	/**
+	 * Whether the view is public
+	 *
+	 * @var boolean Whether the view is public
+	 */
+	protected bool $isPublic = false;
+
+	/**
+	 * Whether the view is the user's default
+	 *
+	 * @var boolean Whether the view is the default
+	 */
+	protected bool $isDefault = false;
+
+	/**
+	 * Query parameters stored as JSON
+	 *
+	 * @var array|null Query parameters (registers, schemas, filters)
+	 */
+	protected ?array $query = [];
+
+	/**
+	 * Presentation configuration stored as JSON (nullable)
+	 *
+	 * Declares how the view renders: `viewType` (table|kanban|calendar) plus
+	 * type-specific config (kanban: groupByField/cardFields/columnOrder;
+	 * calendar: dateField/endDateField). Null means "not configured" and MUST
+	 * render as `table` (the default) so existing views are unchanged.
+	 *
+	 * @var array|null Presentation configuration, or null for the default table view
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+	 */
+	protected ?array $presentation = null;
+
+	/**
+	 * The declared count alert, or null when the view has none.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $alert = null;
+
+	/**
+	 * What the sweep remembers between passes: the state and the last count.
+	 *
+	 * Two facts and no more. An alert that remembered its own history would be
+	 * a different alert from the one somebody set.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $alertState = null;
+
+	/**
+	 * When the sweep last counted this view.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $alertEvaluatedAt = null;
+
+	/**
+	 * Groups this view is shared with, and at which mode.
+	 *
+	 * A list of `{group, mode}` with `mode` one of `read` or `write` (ledger
+	 * row 9.4). A view had `isPublic` and nothing in between: it was private or
+	 * it was everyone's, so a department could not have a view of its own.
+	 *
+	 * @var array|null The shares, or null when the view is shared with nobody.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	protected ?array $sharedWith = [];
+
+	/**
+	 * Array of user IDs who favorited this view
+	 *
+	 * @var array|null User IDs who favorited
+	 */
+	protected ?array $favoredBy = [];
+
+	/**
+	 * Creation timestamp
+	 *
+	 * @var DateTime|null Creation timestamp
+	 */
+	protected ?DateTime $created = null;
+
+	/**
+	 * Last update timestamp
+	 *
+	 * @var DateTime|null Last update timestamp
+	 */
+	protected ?DateTime $updated = null;
+
+	/**
+	 * Constructor for View entity
+	 *
+	 * Initializes the view with default values
+	 */
+	public function __construct() {
+		// Add types for automatic JSON (de)serialization.
+		$this->addType(fieldName: 'organisation', type: 'string');
+		$this->addType(fieldName: 'isPublic', type: 'boolean');
+		$this->addType(fieldName: 'isDefault', type: 'boolean');
+		$this->addType(fieldName: 'query', type: 'json');
+		$this->addType(fieldName: 'presentation', type: 'json');
+		$this->addType(fieldName: 'sharedWith', type: 'json');
+		$this->addType(fieldName: 'favoredBy', type: 'json');
+		$this->addType(fieldName: 'created', type: 'datetime');
+		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'alert', type: 'json');
+		$this->addType(fieldName: 'alertState', type: 'json');
+		$this->addType(fieldName: 'alertEvaluatedAt', type: 'datetime');
+	}//end __construct()
+
+	/**
+	 * Get the favoredBy array
+	 *
+	 * @return array Array of user IDs who favorited this view
+	 */
+	public function getFavoredBy(): array {
+		return $this->favoredBy ?? [];
+	}//end getFavoredBy()
+
+	/**
+	 * The groups this view is shared with.
+	 *
+	 * @return array The shares, empty when it is shared with nobody.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function getSharedWith(): array {
+		return ($this->sharedWith ?? []);
+	}//end getSharedWith()
+
+	/**
+	 * Set the groups this view is shared with.
+	 *
+	 * @param array $sharedWith The shares.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function setSharedWith(array $sharedWith): void {
+		$this->sharedWith = $sharedWith;
+		$this->markFieldUpdated(attribute: 'sharedWith');
+	}//end setSharedWith()
+
+	/**
+	 * The access the CALLER holds on this view, when somebody resolved it.
+	 *
+	 * Transient, like `managedByConfig` above and for the same reason: it is
+	 * not a property of the view, it is a property of the pair (view, caller),
+	 * and storing it would be a cached answer about whoever happened to ask
+	 * first.
+	 *
+	 * @return string|null One of owner, write, read, or null when unresolved.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function getAccess(): ?string {
+		return $this->access;
+	}//end getAccess()
+
+	/**
+	 * Record the access a caller holds, for this request only.
+	 *
+	 * @param string|null $access The resolved access.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function setAccess(?string $access): void {
+		$this->access = $access;
+	}//end setAccess()
+
+	/**
+	 * Set the favoredBy array
+	 *
+	 * @param array $favoredBy Array of user IDs who favorited this view
+	 *
+	 * @return void
+	 */
+	public function setFavoredBy(array $favoredBy): void {
+		$this->favoredBy = $favoredBy;
+		$this->markFieldUpdated(attribute: 'favoredBy');
+	}//end setFavoredBy()
+
+	/**
+	 * Get the organisation UUID
+	 *
+	 * @return string|null The organisation UUID
+	 */
+	public function getOrganisation(): ?string {
+		return $this->organisation;
+	}//end getOrganisation()
+
+	/**
+	 * Get the array version of this entity
+	 *
+	 * Converts the entity to an array representation
+	 *
+	 * @return (array|bool|int|null|string)[]
+	 *
+	 * @psalm-return array{id: int, uuid: null|string, name: null|string,
+	 *     description: null|string, owner: null|string,
+	 *     organisation: null|string, isPublic: bool, isDefault: bool,
+	 *     query: array|null, presentation: array, favoredBy: array,
+	 *     quota: array{storage: null, bandwidth: null, requests: null,
+	 *     users: null, groups: null},
+	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     users: int<0, max>, groups: 0}, created: null|string,
+	 *     updated: null|string,
+	 *     managedByConfiguration: array{id: int, uuid: null|string,
+	 *     title: null|string}|null}
+	 */
+	public function jsonSerialize(): array {
+		$favoredBy = $this->favoredBy ?? [];
+
+		return array_merge(
+			$this->identityJson(),
+			$this->definitionJson(),
+			[
+				// `@self.access` is what this CALLER may do, and it is absent
+				// rather than guessed when nobody resolved it: a serialiser that
+				// answered `read` by default would tell a client the view is
+				// read-only on every path that forgot to ask.
+				'@self' => ['access' => $this->access],
+				'favoredBy' => $favoredBy,
+				'quota' => $this->quotaJson(),
+				'usage' => $this->usageJson(favoredBy: $favoredBy),
+			],
+			$this->timestampsJson()
+		);
+	}//end jsonSerialize()
+
+	/**
+	 * Who the view is and who holds it.
+	 *
+	 * @return array<string, mixed> The identity part of the serialised view.
+	 */
+	private function identityJson(): array {
+		return [
+			'id' => $this->id,
+			'uuid' => $this->uuid,
+			'name' => $this->name,
+			'description' => $this->description,
+			'owner' => $this->owner,
+			'organisation' => $this->organisation,
+			'isPublic' => $this->isPublic,
+			'isDefault' => $this->isDefault,
+		];
+	}//end identityJson()
+
+	/**
+	 * What the view searches and shows, its alert and its shares.
+	 *
+	 * @return array<string, mixed> The definition part of the serialised view.
+	 */
+	private function definitionJson(): array {
+		return [
+			'query' => $this->query,
+			'presentation' => $this->getPresentationFormatted(),
+			'alert' => $this->alert,
+			'alertState' => $this->alertState,
+			'sharedWith' => ($this->sharedWith ?? []),
+		];
+	}//end definitionJson()
+
+	/**
+	 * The quota block; every limit is set via admin configuration, so all are null here.
+	 *
+	 * @return array<string, null> The quota block.
+	 */
+	private function quotaJson(): array {
+		return [
+			'storage' => null,
+			'bandwidth' => null,
+			'requests' => null,
+			'users' => null,
+			'groups' => null,
+		];
+	}//end quotaJson()
+
+	/**
+	 * The usage block: users is the number of users who favorited this view;
+	 * storage, bandwidth and requests are not calculated yet, and views have no groups.
+	 *
+	 * @param array $favoredBy The user ids who favorited this view.
+	 *
+	 * @return array<string, int> The usage block.
+	 */
+	private function usageJson(array $favoredBy): array {
+		return [
+			'storage' => 0,
+			'bandwidth' => 0,
+			'requests' => 0,
+			'users' => count($favoredBy),
+			'groups' => 0,
+		];
+	}//end usageJson()
+
+	/**
+	 * The timestamps and the managing configuration, formatted for the API.
+	 *
+	 * @return array<string, mixed> The timestamp part of the serialised view.
+	 */
+	private function timestampsJson(): array {
+		return [
+			'created' => $this->getCreatedFormatted(),
+			'updated' => $this->getUpdatedFormatted(),
+			'managedByConfiguration' => $this->getManagedByConfigurationFormatted(),
+		];
+	}//end timestampsJson()
+
+	/**
+	 * Get the presentation configuration, defaulted to the `table` view.
+	 *
+	 * A null `presentation` (never configured) MUST render exactly like an
+	 * unconfigured legacy view: `viewType: table` and no kanban/calendar
+	 * config. This is the single place that applies that default so both
+	 * the API response and any internal consumer see the same shape.
+	 *
+	 * @return array{viewType: string, kanban?: array, calendar?: array} The effective presentation config
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+	 */
+	private function getPresentationFormatted(): array {
+		return ViewFormatting::presentation(presentation: $this->presentation);
+	}//end getPresentationFormatted()
+
+	/**
+	 * Get managed by configuration formatted.
+	 *
+	 * @return (int|null|string)[]|null
+	 *
+	 * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
+	 */
+	private function getManagedByConfigurationFormatted(): ?array {
+		return ViewFormatting::managedBy(configuration: $this->managedByConfig);
+	}//end getManagedByConfigurationFormatted()
+
+	/**
+	 * Hydrate the entity from an array
+	 *
+	 * Populates entity properties from an array
+	 *
+	 * @param array $object Array containing entity data
+	 *
+	 * @return static Returns the hydrated entity
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Hydration requires handling many optional fields
+	 */
+	public function hydrate(array $object): static {
+		// Map property names to their resolved values (falling back to the
+		// same defaults the pre-existing per-field logic used).
+		//
+		// NOTE: Entity setters are dispatched via OCP\AppFramework\Db\Entity's
+		// magic __call(). Calling them with NAMED arguments (e.g.
+		// `setUuid(uuid: null)`) silently breaks: PHP hands __call an
+		// associative $args array keyed by parameter name, so the setter's
+		// `$args[0]` lookup is undefined (→ null), which either silently
+		// no-ops a nullable property or throws a TypeError on a non-nullable
+		// one (`setIsPublic` did, until this fix). A dynamic `$this->$method()`
+		// call (like Agent::hydrate()) is positional and also falls outside
+		// CustomSniffs.Functions.NamedParameters's reach, which only flags
+		// literal `$this->methodName()` call sites.
+		$fields = [
+			'uuid' => $object['uuid'] ?? null,
+			'name' => $object['name'] ?? null,
+			'description' => $object['description'] ?? null,
+			'owner' => $object['owner'] ?? null,
+			'isPublic' => $object['isPublic'] ?? false,
+			'isDefault' => $object['isDefault'] ?? false,
+			'query' => $object['query'] ?? [],
+			'presentation' => $object['presentation'] ?? null,
+			'sharedWith' => $object['sharedWith'] ?? [],
+			'favoredBy' => $object['favoredBy'] ?? [],
+		];
+
+		foreach ($fields as $key => $value) {
+			$method = 'set' . ucfirst($key);
+			$this->$method($value);
+		}
+
+		return $this;
+	}//end hydrate()
+
+	/**
+	 * Set the configuration that manages this view (transient property)
+	 *
+	 * @param Configuration|null $configuration The managing configuration
+	 *
+	 * @return void
+	 */
+	public function setManagedByConfigurationEntity(?Configuration $configuration): void {
+		$this->managedByConfig = $configuration;
+	}//end setManagedByConfigurationEntity()
+
+	/**
+	 * Get the configuration that manages this view
+	 *
+	 * Returns the first configuration that has this view's ID in its views array.
+	 * Returns null if the view is not managed by any configuration.
+	 *
+	 * @param array<Configuration> $configurations Array of Configuration entities to check against
+	 *
+	 * @return Configuration|null The configuration managing this view, or null
+	 *
+	 * @phpstan-param array<Configuration> $configurations
+	 * @psalm-param   array<Configuration> $configurations
+	 */
+	public function getManagedByConfiguration(array $configurations): ?Configuration {
+		return ViewFormatting::managing(viewId: $this->id, configurations: $configurations);
+	}//end getManagedByConfiguration()
+}//end class

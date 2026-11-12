@@ -1,0 +1,72 @@
+{
+    "declares / inline / created": [
+        "dispatch [\"u-1\",\"created\",[]]"
+    ],
+    "declares / inline / updated": [
+        "dispatch [\"u-1\",\"updated\",{\"_newData\":{\"id\":\"u-1\",\"status\":\"closed\"},\"_oldData\":{\"id\":\"u-1\",\"status\":\"open\"}}]",
+        "dispatch [\"u-1\",\"calculatedChange\",{\"_newData\":{\"id\":\"u-1\",\"status\":\"closed\"},\"_oldData\":{\"id\":\"u-1\",\"status\":\"open\"}}]"
+    ],
+    "declares / inline / updated without old": [
+        "dispatch [\"u-1\",\"updated\",[]]"
+    ],
+    "declares / inline / updated, old has no data": [
+        "dispatch [\"u-1\",\"updated\",{\"_newData\":{\"id\":\"u-1\",\"status\":\"closed\"},\"_oldData\":{\"id\":\"u-1\"}}]",
+        "dispatch [\"u-1\",\"calculatedChange\",{\"_newData\":{\"id\":\"u-1\",\"status\":\"closed\"},\"_oldData\":{\"id\":\"u-1\"}}]"
+    ],
+    "declares / inline / transitioned": [
+        "dispatch [\"u-1\",\"transition\",{\"action\":\"close\",\"from\":\"open\",\"to\":\"closed\"}]"
+    ],
+    "declares / inline / deleted": [],
+    "declares / deferred / created": [
+        "defer [\"OCA\\\\OpenRegister\\\\BackgroundJob\\\\AnnotationNotificationDispatchJob\",{\"uuid\":\"u-1\",\"register\":\"7\",\"schema\":\"with\",\"version\":\"1.2.0\",\"trigger\":\"created\"},25,null]"
+    ],
+    "declares / deferred / updated": [
+        "defer [\"OCA\\\\OpenRegister\\\\BackgroundJob\\\\AnnotationNotificationDispatchJob\",{\"uuid\":\"u-1\",\"register\":\"7\",\"schema\":\"with\",\"version\":\"1.2.0\",\"trigger\":\"updated\",\"oldData\":{\"id\":\"u-1\",\"status\":\"open\"}},25,null]"
+    ],
+    "declares / deferred / updated without old": [
+        "defer [\"OCA\\\\OpenRegister\\\\BackgroundJob\\\\AnnotationNotificationDispatchJob\",{\"uuid\":\"u-1\",\"register\":\"7\",\"schema\":\"with\",\"version\":\"1.2.0\",\"trigger\":\"updated\",\"oldData\":null},25,null]"
+    ],
+    "declares / deferred / updated, old has no data": [
+        "defer [\"OCA\\\\OpenRegister\\\\BackgroundJob\\\\AnnotationNotificationDispatchJob\",{\"uuid\":\"u-1\",\"register\":\"7\",\"schema\":\"with\",\"version\":\"1.2.0\",\"trigger\":\"updated\",\"oldData\":{\"id\":\"u-1\"}},25,null]"
+    ],
+    "declares / deferred / transitioned": [
+        "defer [\"OCA\\\\OpenRegister\\\\BackgroundJob\\\\AnnotationNotificationDispatchJob\",{\"uuid\":\"u-1\",\"register\":\"7\",\"schema\":\"with\",\"version\":\"1.2.0\",\"trigger\":\"transition\",\"action\":\"close\",\"from\":\"open\",\"to\":\"closed\"},25,null]"
+    ],
+    "declares / deferred / deleted": [],
+    "declares none / inline / created": [],
+    "declares none / inline / updated": [],
+    "declares none / inline / updated without old": [],
+    "declares none / inline / updated, old has no data": [],
+    "declares none / inline / transitioned": [],
+    "declares none / inline / deleted": [],
+    "declares none / deferred / created": [],
+    "declares none / deferred / updated": [],
+    "declares none / deferred / updated without old": [],
+    "declares none / deferred / updated, old has no data": [],
+    "declares none / deferred / transitioned": [],
+    "declares none / deferred / deleted": [],
+    "schema lookup fails / inline / created": [],
+    "schema lookup fails / inline / updated": [],
+    "schema lookup fails / inline / updated without old": [],
+    "schema lookup fails / inline / updated, old has no data": [],
+    "schema lookup fails / inline / transitioned": [],
+    "schema lookup fails / inline / deleted": [],
+    "schema lookup fails / deferred / created": [],
+    "schema lookup fails / deferred / updated": [],
+    "schema lookup fails / deferred / updated without old": [],
+    "schema lookup fails / deferred / updated, old has no data": [],
+    "schema lookup fails / deferred / transitioned": [],
+    "schema lookup fails / deferred / deleted": [],
+    "no schema / inline / created": [],
+    "no schema / inline / updated": [],
+    "no schema / inline / updated without old": [],
+    "no schema / inline / updated, old has no data": [],
+    "no schema / inline / transitioned": [],
+    "no schema / inline / deleted": [],
+    "no schema / deferred / created": [],
+    "no schema / deferred / updated": [],
+    "no schema / deferred / updated without old": [],
+    "no schema / deferred / updated, old has no data": [],
+    "no schema / deferred / transitioned": [],
+    "no schema / deferred / deleted": []
+}

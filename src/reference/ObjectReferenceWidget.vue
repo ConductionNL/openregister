@@ -61,9 +61,33 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
+import l10nMethods from '../composables/l10nMethods.js'
+
+/**
+ * A date and time in the reader's locale; a value that cannot be printed
+ * comes back as it is.
+ *
+ * @param {string} value The date
+ * @return {string} The printed date
+ */
+function localDateTime(value) {
+	try {
+		const date = new Date(value)
+		return date.toLocaleDateString(undefined, {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		})
+	} catch {
+		return value
+	}
+}
 
 export default {
 	name: 'ObjectReferenceWidget',
+	mixins: [l10nMethods],
 
 	props: {
 		richObjectType: {
@@ -141,23 +165,8 @@ export default {
 			if (!this.updated) {
 				return ''
 			}
-			try {
-				const date = new Date(this.updated)
-				return date.toLocaleDateString(undefined, {
-					year: 'numeric',
-					month: 'short',
-					day: 'numeric',
-					hour: '2-digit',
-					minute: '2-digit',
-				})
-			} catch {
-				return this.updated
-			}
+			return localDateTime(this.updated)
 		},
-	},
-
-	methods: {
-		t,
 	},
 }
 </script>

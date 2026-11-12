@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use DateInterval;
 use DateTime;
 use Exception;
@@ -35,8 +36,11 @@ use OCA\OpenRegister\Db\RunObjectLockMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
+use OCA\OpenRegister\Service\Object\LockAuthorization;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\LockStores;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -86,14 +90,14 @@ final class LockHandlerRunLockTest extends TestCase {
 	 */
 	private function handler(): LockHandler {
 		return new LockHandler(
-			$this->magic,
-			$this->audit,
+			new LockStores(
+				magicMapper: $this->magic,
+				auditTrailMapper: $this->audit,
+				advisory: $this->createMock(AdvisoryLockStore::class),
+				runLocks: $this->registry
+			),
 			$this->createMock(LoggerInterface::class),
-			$this->session,
-			$this->groups,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(AdvisoryLockStore::class),
-			$this->registry
+			new LockAuthorization($this->session, $this->groups, $this->createMock(SchemaMapper::class))
 		);
 	}//end handler()
 
@@ -195,12 +199,12 @@ final class LockHandlerRunLockTest extends TestCase {
 		$this->magic->method('unlockObjectEntity')->willReturn(new ObjectEntity());
 
 		$recorded = [];
-		$this->audit->method('createAuditTrailEntry')->willReturnCallback(
+		$this->audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context) use (&$recorded) {
 				$recorded = ['action' => $action, 'context' => $context];
 				return $this->createMock(\OCA\OpenRegister\Db\AuditTrail::class);
 			}
-		);
+		));
 
 		$this->assertTrue($this->handler()->breakLock(identifier: self::OBJ));
 		$this->assertSame('lock.broken', $recorded['action']);
@@ -228,7 +232,7 @@ final class LockHandlerRunLockTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('does not have permission to unlock');
-		$this->handler()->unlock(identifier: self::OBJ);
+		$this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false));
 	}//end testTheObjectOwnerCannotUnlockARunsLock()
 
 	/**
@@ -246,6 +250,6 @@ final class LockHandlerRunLockTest extends TestCase {
 		$this->groups->method('isAdmin')->willReturn(false);
 		$this->magic->method('unlockObjectEntity')->willReturn(new ObjectEntity());
 
-		$this->assertTrue($this->handler()->unlock(identifier: self::OBJ));
+		$this->assertTrue($this->handler()->unlock(request: new UnlockRequest(identifier: self::OBJ, advisory: false, runUuid: null, break: false)));
 	}//end testTheObjectOwnerCanStillUnlockAUserLock()
 }//end class

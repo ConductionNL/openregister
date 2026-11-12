@@ -1,0 +1,387 @@
+{
+    "array property filter": {
+        "statements": [],
+        "result": null
+    },
+    "duplicate response key": {
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "values": {
+                        "count": 3
+                    }
+                },
+                {
+                    "key": "done",
+                    "values": {
+                        "count": 4
+                    }
+                },
+                {
+                    "key": "new",
+                    "values": {
+                        "count": 2
+                    }
+                }
+            ]
+        }
+    },
+    "duplicate response key ungrouped": {
+        "statements": [
+            {
+                "sql": "SELECT SUM(NULLIF(\"amount\"::text, '')::numeric) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT SUM(NULLIF(\"amount\"::text, '')::numeric) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "values": {
+                "sum_amount": 3,
+                "count": 2
+            }
+        }
+    },
+    "empty metrics list": {
+        "statements": [
+            {
+                "sql": "SELECT COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "value": 4
+        }
+    },
+    "empty table name": {
+        "statements": [],
+        "result": null
+    },
+    "mysql grouped list": {
+        "statements": [
+            {
+                "sql": "SELECT `status` AS g0, COUNT(*) AS agg FROM `*PREFIX*register_1_schema_case` WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY `status`",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT `status` AS g0, SUM(NULLIF(`amount`, '') + 0) AS agg FROM `*PREFIX*register_1_schema_case` WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY `status`",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "values": {
+                        "count": 3
+                    }
+                },
+                {
+                    "key": "done",
+                    "values": {
+                        "count": 1,
+                        "sum_amount": 4.5
+                    }
+                },
+                {
+                    "key": "new",
+                    "values": {
+                        "sum_amount": 2
+                    }
+                }
+            ]
+        }
+    },
+    "one metric uses single path": {
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3
+                },
+                {
+                    "key": "done",
+                    "value": 1
+                }
+            ]
+        }
+    },
+    "pg grouped multi field": {
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS g0, \"kind\" AS g1, COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\", \"kind\"",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, \"kind\" AS g1, SUM(NULLIF(\"amount\"::text, '')::numeric) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\", \"kind\"",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "groups": [
+                {
+                    "keys": {
+                        "status": "open",
+                        "kind": "a"
+                    },
+                    "values": {
+                        "count": 3,
+                        "sum_amount": 7
+                    }
+                },
+                {
+                    "keys": {
+                        "status": "done",
+                        "kind": "b"
+                    },
+                    "values": {
+                        "count": 1
+                    }
+                },
+                {
+                    "keys": {
+                        "status": "open",
+                        "kind": "b"
+                    },
+                    "values": {
+                        "sum_amount": 2
+                    }
+                }
+            ]
+        }
+    },
+    "pg grouped no rbac": {
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') GROUP BY \"status\"",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, SUM(NULLIF(\"amount\"::text, '')::numeric) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') GROUP BY \"status\"",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "values": {
+                        "count": 3
+                    }
+                },
+                {
+                    "key": "done",
+                    "values": {
+                        "count": 1,
+                        "sum_amount": 4.5
+                    }
+                },
+                {
+                    "key": "new",
+                    "values": {
+                        "sum_amount": 2
+                    }
+                }
+            ]
+        }
+    },
+    "pg grouped single field": {
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, SUM(NULLIF(\"amount\"::text, '')::numeric) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "values": {
+                        "count": 3
+                    }
+                },
+                {
+                    "key": "done",
+                    "values": {
+                        "count": 1,
+                        "sum_amount": 4.5
+                    }
+                },
+                {
+                    "key": "new",
+                    "values": {
+                        "sum_amount": 2
+                    }
+                }
+            ]
+        }
+    },
+    "pg ungrouped": {
+        "statements": [
+            {
+                "sql": "SELECT COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT SUM(NULLIF(\"amount\"::text, '')::numeric) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "values": {
+                "count": 5,
+                "sum_amount": 6.5
+            }
+        }
+    },
+    "second metric bails": {
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": []
+            }
+        ],
+        "result": null
+    },
+    "single metric bucket": {
+        "statements": [
+            {
+                "sql": "SELECT date_trunc(?, \"created\")::text AS bucket, COUNT(*) AS agg, SUM(COUNT(*)) OVER (ORDER BY bucket) AS cumulative_agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 AND \"created\" >= ? AND \"created\" < ? GROUP BY bucket ORDER BY bucket",
+                "bindings": [
+                    "month",
+                    "2026-01-01T00:00:00Z",
+                    "2026-03-01T00:00:00Z"
+                ]
+            }
+        ],
+        "result": {
+            "groups": [
+                {
+                    "key": "2026-01-01T00:00:00Z",
+                    "value": 2,
+                    "cumulative": null
+                }
+            ]
+        }
+    },
+    "single metric org scoped": {
+        "statements": [
+            {
+                "sql": "SELECT SUM(NULLIF(\"amount\"::text, '')::numeric) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND \"_organisation\" IN (?, ?) AND rbac_pred = 1",
+                "bindings": [
+                    "o1",
+                    "o2"
+                ]
+            }
+        ],
+        "result": {
+            "value": 3
+        }
+    },
+    "sqlite grouped with filter": {
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 AND \"kind\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "x"
+                ]
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, SUM(NULLIF(\"amount\", '') + 0) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null' OR _deleted = '') AND (_archived IS NULL OR _archived = 'null' OR _archived = '') AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 AND \"kind\" = ? GROUP BY \"status\"",
+                "bindings": [
+                    "x"
+                ]
+            }
+        ],
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "values": {
+                        "count": 3
+                    }
+                },
+                {
+                    "key": "done",
+                    "values": {
+                        "count": 1,
+                        "sum_amount": 4.5
+                    }
+                },
+                {
+                    "key": "new",
+                    "values": {
+                        "sum_amount": 2
+                    }
+                }
+            ]
+        }
+    },
+    "sqlite ungrouped bails": {
+        "statements": [],
+        "result": null
+    },
+    "three metrics grouped": {
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS g0, COUNT(*) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, MIN(NULLIF(\"amount\"::text, '')::numeric) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": []
+            },
+            {
+                "sql": "SELECT \"status\" AS g0, MAX(NULLIF(\"amount\"::text, '')::numeric) AS agg FROM \"*PREFIX*register_1_schema_case\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (_archived IS NULL OR _archived = 'null'::jsonb) AND (_status IS NULL OR _status <> 'draft') AND rbac_pred = 1 GROUP BY \"status\"",
+                "bindings": []
+            }
+        ],
+        "result": {
+            "groups": [
+                {
+                    "key": "open",
+                    "values": {
+                        "count": 1
+                    }
+                },
+                {
+                    "key": "x",
+                    "values": {
+                        "max_amount": 9
+                    }
+                }
+            ]
+        }
+    },
+    "unknown platform": {
+        "statements": [],
+        "result": null
+    }
+}

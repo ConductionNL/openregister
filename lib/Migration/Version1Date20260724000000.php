@@ -3,7 +3,7 @@
 /**
  * Add the `presentation` JSON column to the openregister_views table.
  *
- * The `View` entity (lib/Db/View.php) gained a nullable `presentation`
+ * The `View` entity (lib/Search/Db/View.php) gained a nullable `presentation`
  * property declaring how a saved view renders: `viewType`
  * (table|kanban|calendar) plus type-specific config (kanban:
  * groupByField/cardFields/columnOrder; calendar: dateField/endDateField).

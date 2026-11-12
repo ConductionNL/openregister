@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ConsumersController;
+use OCA\OpenRegister\Controller\Support\ConsumersControllerServices;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -31,10 +32,11 @@ class ConsumersControllerTest extends TestCase {
 		});
 
 		$this->controller = new ConsumersController(
-			'openregister',
 			$this->request,
-			$this->consumerMapper,
-			$l10n
+			new ConsumersControllerServices(
+				$this->consumerMapper,
+				$l10n
+			)
 		);
 	}
 

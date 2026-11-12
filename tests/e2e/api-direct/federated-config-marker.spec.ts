@@ -33,6 +33,12 @@ test.describe('Federated config — schema marker (generic type)', () => {
 	const objects: string[] = []
 
 	test.beforeAll(async ({ request }) => {
+		// These bundles are unsigned, which an administrator has to allow.
+		await request.put(`${API}/federated-config/trust`, {
+			headers: JSON_HEADERS,
+			data: { field: 'allowUnverifiedBundles', value: 'true' },
+		})
+
 		// A schema that opts in with the marker only — no PHP anywhere.
 		const schResp = await request.post(`${API}/schemas`, {
 			headers: JSON_HEADERS,
@@ -60,6 +66,11 @@ test.describe('Federated config — schema marker (generic type)', () => {
 	})
 
 	test.afterAll(async ({ request }) => {
+		await request.put(`${API}/federated-config/trust`, {
+			headers: JSON_HEADERS,
+			data: { field: 'allowUnverifiedBundles', value: '' },
+		})
+
 		for (const u of objects) {
 			await request
 				.delete(`${API}/objects/${regId}/${schId}/${u}`)

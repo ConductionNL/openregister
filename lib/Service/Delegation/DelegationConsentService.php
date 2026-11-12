@@ -56,7 +56,8 @@ namespace OCA\OpenRegister\Service\Delegation;
 use DateInterval;
 use DateTime;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
+use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
+use OCP\AppFramework\Utility\ITimeFactory;
 use InvalidArgumentException;
 
 /**
@@ -64,7 +65,7 @@ use InvalidArgumentException;
  *
  * @spec openspec/specs/delegation-grants/spec.md
  */
-class DelegationConsentService {
+class DelegationConsentService implements DelegationConsentServiceInterface {
 
 	/**
 	 * How long a granted delegation lasts when the granter names no expiry.
@@ -97,12 +98,28 @@ class DelegationConsentService {
 	/**
 	 * Constructor.
 	 *
-	 * @param DelegationGrantMapper $grants Reads and writes grants.
+	 * @param DelegationGrantMapperInterface $grants Reads and writes grants.
+	 * @param ITimeFactory                   $clock  The moment of asking, answering and withdrawing.
 	 */
 	public function __construct(
-		private readonly DelegationGrantMapper $grants,
+		private readonly DelegationGrantMapperInterface $grants,
+		private readonly ITimeFactory $clock,
 	) {
 	}//end __construct()
+
+	/**
+	 * The caller answering or withdrawing a grant.
+	 *
+	 * @param string  $uid     The caller's uid.
+	 * @param boolean $isAdmin Whether the caller is an administrator.
+	 *
+	 * @return DelegationCaller The caller.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	public function caller(string $uid, bool $isAdmin): DelegationCaller {
+		return new DelegationCaller(uid: $uid, isAdmin: $isAdmin);
+	}//end caller()
 
 	/**
 	 * Ask `$actingAs` to let `$principal` act as them.
@@ -111,11 +128,10 @@ class DelegationConsentService {
 	 * creating a second. The caller cannot tell the two apart and should not need
 	 * to — what it needs is "there is a request, park on it".
 	 *
-	 * @param string   $principal The uid that would act.
-	 * @param string   $actingAs  The uid being asked.
-	 * @param array    $scope     What is being asked for.
-	 * @param string   $reason    Why, in the requester's words.
-	 * @param DateTime $now       The moment of asking.
+	 * @param string $principal The uid that would act.
+	 * @param string $actingAs  The uid being asked.
+	 * @param array  $scope     What is being asked for.
+	 * @param string $reason    Why, in the requester's words.
 	 *
 	 * @return DelegationGrant The outstanding request.
 	 *
@@ -123,81 +139,125 @@ class DelegationConsentService {
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function request(
-		string $principal,
-		string $actingAs,
-		array $scope,
-		string $reason,
-		DateTime $now,
-	): DelegationGrant {
-		$principal = trim($principal);
-		$actingAs = trim($actingAs);
+	public function request(string $principal, string $actingAs, array $scope, string $reason): DelegationGrant {
+		$ask = new ConsentRequest(principal: trim($principal), actingAs: trim($actingAs), scope: $scope, reason: $reason);
+		$this->assertAskable(ask: $ask);
 
-		if ($principal === '' || $actingAs === '') {
+		$existing = $this->grants->findOutstandingRequest(principal: $ask->principal, actingAs: $ask->actingAs, scope: $ask->scope);
+		return ($existing ?? $this->grants->insert($this->pendingGrant(ask: $ask)));
+	}//end request()
+
+	/**
+	 * Refuse a consent request that names no party, or the same party twice.
+	 *
+	 * @param ConsentRequest $ask The trimmed request.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the request is not one that may be made.
+	 */
+	private function assertAskable(ConsentRequest $ask): void {
+		if ($ask->principal === '' || $ask->actingAs === '') {
 			throw new InvalidArgumentException('A consent request needs both a principal and an identity.');
 		}
 
-		if ($principal === $actingAs) {
+		if ($ask->principal === $ask->actingAs) {
 			// Not a refusal of something dangerous — a refusal of something
 			// meaningless. Acting as yourself needs no grant, so a request for it
 			// would sit in somebody's inbox forever asking them to permit what
 			// they already do.
 			throw new InvalidArgumentException('Acting as yourself is not delegation; no consent is needed.');
 		}
+	}//end assertAskable()
 
-		$existing = $this->grants->findOutstandingRequest(principal: $principal, actingAs: $actingAs, scope: $scope);
-		if ($existing !== null) {
-			return $existing;
-		}
-
+	/**
+	 * A new pending grant for a consent request, open for the request lifetime.
+	 *
+	 * @param ConsentRequest $ask The trimmed request.
+	 *
+	 * @return DelegationGrant The unsaved grant.
+	 */
+	private function pendingGrant(ConsentRequest $ask): DelegationGrant {
+		$now   = $this->clock->getDateTime();
 		$grant = new DelegationGrant();
 		$grant->setUuid($this->newUuid());
-		$grant->setPrincipal($principal);
-		$grant->setActingAs($actingAs);
-		$grant->setScope($scope);
-		$grant->setReason($reason);
+		$grant->setPrincipal($ask->principal);
+		$grant->setActingAs($ask->actingAs);
+		$grant->setScope($ask->scope);
+		$grant->setReason($ask->reason);
 		$grant->setStatus(DelegationGrant::STATUS_PENDING);
 		$grant->setRequestedAt($now);
 		$grant->setExpiresAt((clone $now)->add(new DateInterval(self::REQUEST_LIFETIME)));
 
-		return $this->grants->insert($grant);
-	}//end request()
+		return $grant;
+	}//end pendingGrant()
 
 	/**
 	 * Answer a request.
 	 *
-	 * 🔴 `$answeredBy` is checked against the grant's `actingAs`. Consent over an
+	 * 🔴 The answerer is checked against the grant's `actingAs`. Consent over an
 	 * identity comes from that identity or from an administrator, and the
 	 * requester is emphatically not either — this is the check that stops a
 	 * principal from approving their own request.
 	 *
-	 * @param DelegationGrant $grant      The request being answered.
-	 * @param string          $answeredBy Who is answering.
-	 * @param boolean         $allow      Whether they permit it.
-	 * @param DateTime        $now        The moment of answering.
-	 * @param boolean         $isAdmin    Whether the answerer is an administrator.
-	 * @param DateTime|null   $until      An explicit expiry, or null for the default.
+	 * @param DelegationGrant  $grant  The request being answered.
+	 * @param DelegationCaller $caller Who is answering, and whether they are an administrator.
+	 * @param boolean          $allow  Whether they permit it.
+	 * @param DateTime|null    $until  An explicit expiry, or null for the default.
 	 *
 	 * @return DelegationGrant The answered grant.
 	 *
 	 * @throws InvalidArgumentException When the answerer may not answer this request.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $allow IS the answer, and
-	 *   $isAdmin is a fact about the answerer rather than a mode switch.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $allow IS the answer, not a mode switch.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function answer(
-		DelegationGrant $grant,
-		string $answeredBy,
-		bool $allow,
-		DateTime $now,
-		bool $isAdmin = false,
-		?DateTime $until = null,
-	): DelegationGrant {
-		$answeredBy = trim($answeredBy);
+	public function answer(DelegationGrant $grant, DelegationCaller $caller, bool $allow, ?DateTime $until = null): DelegationGrant {
+		$now = $this->stampAnswer(grant: $grant, caller: $caller);
+		if ($allow === false) {
+			return $this->deny(grant: $grant, now: $now);
+		}
 
-		if ($answeredBy !== trim((string)$grant->getActingAs()) && $isAdmin === false) {
+		return $this->allow(grant: $grant, expiresAt: ($until ?? (clone $now)->add(new DateInterval(self::DEFAULT_LIFETIME))));
+	}//end answer()
+
+	/**
+	 * Check that the caller may answer the outstanding request, then stamp who answered and when.
+	 *
+	 * @param DelegationGrant  $grant  The request being answered.
+	 * @param DelegationCaller $caller Who is answering, and whether they are an administrator.
+	 *
+	 * @return DateTime The moment of answering.
+	 *
+	 * @throws InvalidArgumentException When the answerer may not answer this request.
+	 */
+	private function stampAnswer(DelegationGrant $grant, DelegationCaller $caller): DateTime {
+		$answeredBy = trim($caller->uid);
+		$this->assertMayAnswer(grant: $grant, caller: $caller);
+		$this->assertOutstanding(grant: $grant);
+
+		$now = $this->clock->getDateTime();
+		$grant->setAnsweredAt($now);
+		$grant->setGrantedBy($answeredBy);
+
+		return $now;
+	}//end stampAnswer()
+
+	/**
+	 * Refuse an answer from anyone but the named identity or an administrator.
+	 *
+	 * @param DelegationGrant  $grant  The request being answered.
+	 * @param DelegationCaller $caller Who is answering, and whether they are an administrator.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the answerer may not answer this request.
+	 */
+	private function assertMayAnswer(DelegationGrant $grant, DelegationCaller $caller): void {
+		$answeredBy = trim($caller->uid);
+
+		if ($answeredBy !== trim((string)$grant->getActingAs()) && $caller->isAdmin === false) {
 			throw new InvalidArgumentException(
 				sprintf(
 					'Only "%s" or an administrator may answer a request to act as them; "%s" may not.',
@@ -206,7 +266,18 @@ class DelegationConsentService {
 				)
 			);
 		}
+	}//end assertMayAnswer()
 
+	/**
+	 * Refuse to answer a request that has already been answered.
+	 *
+	 * @param DelegationGrant $grant The request being answered.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the request is no longer outstanding.
+	 */
+	private function assertOutstanding(DelegationGrant $grant): void {
 		if (in_array(
 			$grant->getStatus(),
 			[DelegationGrant::STATUS_REQUESTED, DelegationGrant::STATUS_PENDING],
@@ -215,53 +286,64 @@ class DelegationConsentService {
 		) {
 			throw new InvalidArgumentException('This request has already been answered.');
 		}
+	}//end assertOutstanding()
 
-		$grant->setAnsweredAt($now);
-		$grant->setGrantedBy($answeredBy);
-
-		if ($allow === false) {
-			$grant->setStatus(DelegationGrant::STATUS_DENIED);
-			// The denial's own expiry becomes the cooling period: until then, an
-			// identical request is answered from this record rather than
-			// delivered to the user again.
-			$grant->setExpiresAt((clone $now)->add(new DateInterval(self::DENIAL_COOLING)));
-
-			return $this->grants->update($grant);
-		}
-
-		$grant->setStatus(DelegationGrant::STATUS_GRANTED);
-		$grant->setExpiresAt($until ?? (clone $now)->add(new DateInterval(self::DEFAULT_LIFETIME)));
+	/**
+	 * Record a denial, whose expiry is the cooling period.
+	 *
+	 * Until the denial expires, an identical request is answered from this
+	 * record rather than delivered to the user again.
+	 *
+	 * @param DelegationGrant $grant The answered request.
+	 * @param DateTime        $now   The moment of answering.
+	 *
+	 * @return DelegationGrant The denied grant.
+	 */
+	private function deny(DelegationGrant $grant, DateTime $now): DelegationGrant {
+		$grant->setStatus(DelegationGrant::STATUS_DENIED);
+		$grant->setExpiresAt((clone $now)->add(new DateInterval(self::DENIAL_COOLING)));
 
 		return $this->grants->update($grant);
-	}//end answer()
+	}//end deny()
+
+	/**
+	 * Record a grant that lasts until the given moment.
+	 *
+	 * @param DelegationGrant $grant     The answered request.
+	 * @param DateTime        $expiresAt When the grant ends.
+	 *
+	 * @return DelegationGrant The granted grant.
+	 */
+	private function allow(DelegationGrant $grant, DateTime $expiresAt): DelegationGrant {
+		$grant->setStatus(DelegationGrant::STATUS_GRANTED);
+		$grant->setExpiresAt($expiresAt);
+
+		return $this->grants->update($grant);
+	}//end allow()
 
 	/**
 	 * Withdraw a granted delegation.
 	 *
-	 * @param DelegationGrant $grant     The grant to withdraw.
-	 * @param string          $revokedBy Who is withdrawing it.
-	 * @param DateTime        $now       The moment.
-	 * @param boolean         $isAdmin   Whether the revoker is an administrator.
+	 * @param DelegationGrant  $grant  The grant to withdraw.
+	 * @param DelegationCaller $caller Who is withdrawing it, and whether they are an administrator.
 	 *
 	 * @return DelegationGrant The revoked grant.
 	 *
 	 * @throws InvalidArgumentException When the revoker may not withdraw it.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $isAdmin is a fact about the caller.
-	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function revoke(DelegationGrant $grant, string $revokedBy, DateTime $now, bool $isAdmin = false): DelegationGrant {
-		$revokedBy = trim($revokedBy);
+	public function revoke(DelegationGrant $grant, DelegationCaller $caller): DelegationGrant {
+		$revokedBy = trim($caller->uid);
 
-		if ($revokedBy !== trim((string)$grant->getActingAs()) && $isAdmin === false) {
+		if ($revokedBy !== trim((string)$grant->getActingAs()) && $caller->isAdmin === false) {
 			throw new InvalidArgumentException(
 				sprintf('Only "%s" or an administrator may withdraw a grant over them.', (string)$grant->getActingAs())
 			);
 		}
 
 		$grant->setStatus(DelegationGrant::STATUS_REVOKED);
-		$grant->setRevokedAt($now);
+		$grant->setRevokedAt($this->clock->getDateTime());
 
 		return $this->grants->update($grant);
 	}//end revoke()

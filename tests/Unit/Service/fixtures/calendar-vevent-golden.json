@@ -1,0 +1,53 @@
+{
+    "full event": {
+        "id": "ev.ics",
+        "uid": "ev-1",
+        "calendarId": "7",
+        "summary": "Hoorzitting",
+        "dtstart": "2026-01-05T09:00:00+00:00",
+        "dtend": "2026-01-05T10:00:00+00:00",
+        "location": "Zaal 2",
+        "description": "Met de aanvrager",
+        "attendees": [
+            "a@example.org",
+            "b@example.org"
+        ],
+        "status": "confirmed",
+        "objectUuid": "obj-9",
+        "registerId": 3,
+        "schemaId": 4
+    },
+    "bare event": {
+        "id": "ev.ics",
+        "uid": null,
+        "calendarId": "7",
+        "summary": "",
+        "dtstart": null,
+        "dtend": null,
+        "location": null,
+        "description": "",
+        "attendees": [],
+        "status": null,
+        "objectUuid": null,
+        "registerId": null,
+        "schemaId": null
+    },
+    "single attendee, date only": {
+        "id": "ev.ics",
+        "uid": "ev-2",
+        "calendarId": "7",
+        "summary": "",
+        "dtstart": "2026-03-01T00:00:00+00:00",
+        "dtend": null,
+        "location": null,
+        "description": "",
+        "attendees": [
+            "b@example.org"
+        ],
+        "status": "tentative",
+        "objectUuid": null,
+        "registerId": null,
+        "schemaId": null
+    },
+    "todo only": null
+}

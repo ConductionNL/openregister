@@ -108,29 +108,25 @@ class DivergenceComparator {
 	/**
 	 * The state of every part, keyed by path.
 	 *
-	 * @param array<string, mixed> $baseline The definition the app shipped.
-	 * @param array<string, mixed> $live     The definition the instance runs.
-	 * @param array<string, mixed> $incoming The definition the app now ships.
+	 * @param DescriptorRevisions $descriptors What the app shipped, what the instance runs and what the app now ships.
 	 *
 	 * @return array<string, string> Path to state.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
-	public function states(array $baseline, array $live, array $incoming): array {
-		$b = $this->parts->flatten(descriptor: $baseline);
-		$l = $this->parts->flatten(descriptor: $live);
-		$incomingParts = $this->parts->flatten(descriptor: $incoming);
+	public function states(DescriptorRevisions $descriptors): array {
+		$flat = new DescriptorRevisions(
+			baseline: $this->parts->flatten(descriptor: $descriptors->baseline),
+			live: $this->parts->flatten(descriptor: $descriptors->live),
+			incoming: $this->parts->flatten(descriptor: $descriptors->incoming)
+		);
 
-		$paths = array_unique(array_merge(array_keys($b), array_keys($l), array_keys($incomingParts)));
+		$paths = array_unique(array_merge(array_keys($flat->baseline), array_keys($flat->live), array_keys($flat->incoming)));
 		sort($paths);
 
 		$states = [];
 		foreach ($paths as $path) {
-			$states[$path] = $this->stateOf(
-				baseline: ($b[$path] ?? self::ABSENT),
-				live: ($l[$path] ?? self::ABSENT),
-				incoming: ($incomingParts[$path] ?? self::ABSENT)
-			);
+			$states[$path] = $this->stateOf(part: self::partAt(flat: $flat, path: $path));
 		}
 
 		return $states;
@@ -154,39 +150,79 @@ class DivergenceComparator {
 		$b = $this->parts->flatten(descriptor: $baseline);
 		$l = $this->parts->flatten(descriptor: $live);
 
-		$paths = array_unique(array_merge(array_keys($b), array_keys($l)));
-		sort($paths);
+		return $this->localDivergences(shipped: $b, live: $l);
+	}//end report()
 
+	/**
+	 * The flattened parts that differ, in path order, as report entries.
+	 *
+	 * @param array<string, mixed> $shipped The flattened baseline.
+	 * @param array<string, mixed> $live    The flattened live definition.
+	 *
+	 * @return array<int, array{path: string, state: string, shipped: mixed, live: mixed}> The divergences.
+	 */
+	private function localDivergences(array $shipped, array $live): array {
 		$divergences = [];
-		foreach ($paths as $path) {
-			$shipped = ($b[$path] ?? self::ABSENT);
-			$current = ($l[$path] ?? self::ABSENT);
-			if ($this->identical(a: $shipped, b: $current) === true) {
-				continue;
+		foreach (self::sortedPaths(shipped: $shipped, live: $live) as $path) {
+			$shippedPart = ($shipped[$path] ?? self::ABSENT);
+			$livePart = ($live[$path] ?? self::ABSENT);
+			if ($this->identical(a: $shippedPart, b: $livePart) === false) {
+				$divergences[] = array_merge(
+					['path' => $path, 'state' => self::LOCAL],
+					self::sides(shipped: $shippedPart, live: $livePart)
+				);
 			}
-
-			$shippedValue = null;
-			if ($shipped !== self::ABSENT) {
-				$shippedValue = $shipped;
-			}
-
-			$liveValue = null;
-			if ($current !== self::ABSENT) {
-				$liveValue = $current;
-			}
-
-			$divergences[] = [
-				'path' => $path,
-				'state' => self::LOCAL,
-				'shipped' => $shippedValue,
-				'live' => $liveValue,
-				'shippedPresent' => ($shipped !== self::ABSENT),
-				'livePresent' => ($current !== self::ABSENT),
-			];
 		}
 
 		return $divergences;
-	}//end report()
+	}//end localDivergences()
+
+	/**
+	 * Every path either side holds, sorted.
+	 *
+	 * @param array<string, mixed> $shipped The flattened baseline.
+	 * @param array<string, mixed> $live    The flattened live definition.
+	 *
+	 * @return array<int, string> The paths.
+	 */
+	private static function sortedPaths(array $shipped, array $live): array {
+		$paths = array_unique(array_merge(array_keys($shipped), array_keys($live)));
+		sort($paths);
+
+		return $paths;
+	}//end sortedPaths()
+
+	/**
+	 * What each side holds at one path, null for an absent part, and whether it is present.
+	 *
+	 * @param mixed $shipped The baseline part, or ABSENT.
+	 * @param mixed $live    The live part, or ABSENT.
+	 *
+	 * @return array{shipped: mixed, live: mixed, shippedPresent: bool, livePresent: bool}
+	 */
+	private static function sides(mixed $shipped, mixed $live): array {
+		return [
+			'shipped' => self::presentOrNull(part: $shipped),
+			'live' => self::presentOrNull(part: $live),
+			'shippedPresent' => ($shipped !== self::ABSENT),
+			'livePresent' => ($live !== self::ABSENT),
+		];
+	}//end sides()
+
+	/**
+	 * The part, or null when it is absent.
+	 *
+	 * @param mixed $part The part, or ABSENT.
+	 *
+	 * @return mixed
+	 */
+	private static function presentOrNull(mixed $part): mixed {
+		if ($part === self::ABSENT) {
+			return null;
+		}
+
+		return $part;
+	}//end presentOrNull()
 
 	/**
 	 * Whether a baseline was ever recorded for this subject.
@@ -204,15 +240,13 @@ class DivergenceComparator {
 	/**
 	 * The state of one part.
 	 *
-	 * @param mixed $baseline What the app shipped.
-	 * @param mixed $live     What the instance runs.
-	 * @param mixed $incoming What the app now ships.
+	 * @param PartRevisions $part What the part held when shipped, holds live and holds incoming.
 	 *
 	 * @return string The state.
 	 */
-	private function stateOf(mixed $baseline, mixed $live, mixed $incoming): string {
-		$localMoved = ($this->identical(a: $live, b: $baseline) === false);
-		$upstreamMoved = ($this->identical(a: $incoming, b: $baseline) === false);
+	private function stateOf(PartRevisions $part): string {
+		$localMoved = ($this->identical(a: $part->live, b: $part->baseline) === false);
+		$upstreamMoved = ($this->identical(a: $part->incoming, b: $part->baseline) === false);
 
 		if ($localMoved === false && $upstreamMoved === false) {
 			return self::UNCHANGED;
@@ -228,12 +262,30 @@ class DivergenceComparator {
 			return self::UPSTREAM;
 		}
 
-		if ($this->identical(a: $live, b: $incoming) === true) {
+		if ($this->identical(a: $part->live, b: $part->incoming) === true) {
 			return self::CONVERGED;
 		}
 
 		return self::BOTH;
 	}//end stateOf()
+
+	/**
+	 * What one path holds in each flattened revision, or {@see self::ABSENT}.
+	 *
+	 * A part holding null reads as absent, as the `??` lookup always has.
+	 *
+	 * @param DescriptorRevisions $flat The flattened revisions.
+	 * @param string|int          $path The path.
+	 *
+	 * @return PartRevisions The part.
+	 */
+	private static function partAt(DescriptorRevisions $flat, string|int $path): PartRevisions {
+		return new PartRevisions(
+			baseline: ($flat->baseline[$path] ?? self::ABSENT),
+			live: ($flat->live[$path] ?? self::ABSENT),
+			incoming: ($flat->incoming[$path] ?? self::ABSENT)
+		);
+	}//end partAt()
 
 	/**
 	 * Whether two part values are the same, absence included.

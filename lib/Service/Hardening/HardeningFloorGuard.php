@@ -79,17 +79,12 @@ class HardeningFloorGuard {
 		$floor = $this->policy->floor(control: $control);
 		$comparator = HardeningPolicy::comparator(control: $control);
 
-		if (HardeningControl::satisfies(comparator: $comparator, value: $proposed, floor: $floor) === true) {
+		if ((new FloorRule(comparator: $comparator, floor: $floor))->admits(value: $proposed) === true) {
 			return;
 		}
 
-		throw new HardeningFloorException(
-			control: $control,
-			floor: $floor,
-			proposed: $proposed,
-			comparator: $comparator,
-			message: self::refusal(control: $control, floor: $floor, proposed: $proposed, comparator: $comparator),
-		);
+		$breach = new FloorBreach(control: $control, floor: $floor, proposed: $proposed, comparator: $comparator);
+		throw new HardeningFloorException(breach: $breach, message: self::refusal(breach: $breach));
 
 	}//end assertValue()
 
@@ -113,15 +108,12 @@ class HardeningFloorGuard {
 		$baseline = HardeningPolicy::baseline(control: $control);
 		$comparator = HardeningPolicy::comparator(control: $control);
 
-		if (HardeningControl::satisfies(comparator: $comparator, value: $proposed, floor: $baseline) === true) {
+		if ((new FloorRule(comparator: $comparator, floor: $baseline))->admits(value: $proposed) === true) {
 			return;
 		}
 
 		throw new HardeningFloorException(
-			control: $control,
-			floor: $baseline,
-			proposed: $proposed,
-			comparator: $comparator,
+			breach: new FloorBreach(control: $control, floor: $baseline, proposed: $proposed, comparator: $comparator),
 			message: 'The floor for ' . $control . ' may not be weaker than the shipped baseline of ' . $baseline . '.',
 		);
 
@@ -130,21 +122,18 @@ class HardeningFloorGuard {
 	/**
 	 * The sentence an administrator reads when a change is refused.
 	 *
-	 * @param string $control The control identifier.
-	 * @param int $floor The floor in force.
-	 * @param int $proposed The value asked for.
-	 * @param string $comparator `atLeast` or `atMost`.
+	 * @param FloorBreach $breach The floor the value would have crossed.
 	 *
 	 * @return string The refusal.
 	 */
-	private static function refusal(string $control, int $floor, int $proposed, string $comparator): string {
+	private static function refusal(FloorBreach $breach): string {
 		$direction = 'at least';
-		if ($comparator === 'atMost') {
+		if ($breach->comparator === 'atMost') {
 			$direction = 'at most';
 		}
 
-		return 'This instance declared a floor of ' . $direction . ' ' . $floor . ' for ' . $control
-			. ', and ' . $proposed . ' is below it. Raise the floor first, or leave the control alone.';
+		return 'This instance declared a floor of ' . $direction . ' ' . $breach->floor . ' for ' . $breach->control
+			. ', and ' . $breach->proposed . ' is below it. Raise the floor first, or leave the control alone.';
 
 	}//end refusal()
 }//end class

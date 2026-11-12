@@ -24,9 +24,9 @@ permissions:
 
 on:
   push:
-    branches: [development, main]
+    branches: [main]
   pull_request:
-    branches: [development]
+    branches: [main]
   workflow_dispatch:
     inputs:
       collections:
@@ -38,23 +38,23 @@ jobs:
   newman-suite:
     name: Newman API Test Suite
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: read
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           tools: composer:v2
           coverage: none
 
       - name: Cache composer deps
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.composer/cache
           key: composer-${{ hashFiles('**/composer.lock') }}
@@ -64,12 +64,12 @@ jobs:
         run: composer install --no-dev --no-interaction --no-progress --prefer-dist
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
 
       - name: Install Newman
-        run: npm install -g newman
+        run: npm install -g newman@6.2.3
 
       - name: Boot CI stack (db + Nextcloud)
         run: docker compose -f .github/docker-compose.ci.yml up -d
@@ -256,7 +256,7 @@ jobs:
 
       - name: Upload Newman reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: newman-reports
           path: |
@@ -274,7 +274,7 @@ jobs:
 
       - name: Upload docker logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ci-logs
           path: ci-logs/

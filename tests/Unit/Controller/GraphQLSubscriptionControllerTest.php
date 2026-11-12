@@ -37,7 +37,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller {
+namespace OCA\OpenRegister\Notifications\Controller {
 
 	/**
 	 * Test-only shadow of the global `connection_aborted()`.
@@ -58,8 +58,9 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 	// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 	// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-	use OCA\OpenRegister\Controller\GraphQLSubscriptionController;
-	use OCA\OpenRegister\Service\GraphQL\SubscriptionService;
+	use OCA\OpenRegister\Notifications\Controller\GraphQLSubscriptionController;
+	use OCA\OpenRegister\Notifications\Service\GraphQL\EventStreamFilter;
+	use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 	use OCP\AppFramework\Http\Response;
 	use OCP\IRequest;
 	use PHPUnit\Framework\MockObject\MockObject;
@@ -94,7 +95,6 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 			$this->subscriptionService = $this->createMock(SubscriptionService::class);
 
 			$this->controller = new GraphQLSubscriptionController(
-				'openregister',
 				$this->request,
 				$this->subscriptionService
 			);
@@ -156,10 +156,10 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 			];
 
 			$calls = [];
-			$this->subscriptionService->method('getEventsSince')
+			$this->subscriptionService->method('eventsMatching')
 				->willReturnCallback(
-					static function ($lastId, $schemaId, $registerId) use (&$calls, $events) {
-						$calls[] = [$lastId, $schemaId, $registerId];
+					static function (EventStreamFilter $filter) use (&$calls, $events) {
+						$calls[] = [$filter->lastEventId, $filter->schemaId, $filter->registerId];
 						if (count($calls) === 1) {
 							return $events;
 						}
@@ -204,10 +204,10 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 			$this->givenRequest([], null);
 
 			$calls = [];
-			$this->subscriptionService->method('getEventsSince')
+			$this->subscriptionService->method('eventsMatching')
 				->willReturnCallback(
-					static function ($lastId, $schemaId, $registerId) use (&$calls) {
-						$calls[] = [$lastId, $schemaId, $registerId];
+					static function (EventStreamFilter $filter) use (&$calls) {
+						$calls[] = [$filter->lastEventId, $filter->schemaId, $filter->registerId];
 						return [];
 					}
 				);
@@ -231,7 +231,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 		public function testSubscribeEmitsKeepAliveHeartbeats(): void {
 			$this->givenRequest(['schema' => '1'], null);
 
-			$this->subscriptionService->method('getEventsSince')->willReturn([]);
+			$this->subscriptionService->method('eventsMatching')->willReturn([]);
 			$this->subscriptionService->expects($this->never())->method('formatAsSSE');
 
 			[, $output] = $this->runSubscribe();

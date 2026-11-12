@@ -106,8 +106,35 @@ import Close from 'vue-material-design-icons/Close.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vue'
+import { mailMessageTab } from '../composables/mailMessageTab.js'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
 import { schemaIconComponent } from '../icons.js'
+
+/**
+ * The toast for an attachment added to an object.
+ *
+ * @param {string} name The object's display name
+ * @return {string} The message
+ */
+function addedToText(name) {
+	return t('openregister', 'Attachment added to {name}', { name })
+}
+
+/**
+ * Where an attachment dropped on an object is uploaded to.
+ *
+ * @param {object} obj The linked object
+ * @return {{register: *, schema: *, objectId: *}|null} The target, or null when the object lacks its register, schema or id
+ */
+function uploadTargetOf(obj) {
+	const register = obj.register
+	const schema = obj.schemaId || obj.schema
+	const objectId = obj.id || obj.uuid
+	if (!register || !schema || !objectId) {
+		return null
+	}
+	return { register, schema, objectId }
+}
 
 export default {
 	name: 'ObjectsTab',
@@ -121,10 +148,7 @@ export default {
 		RemoveConnectionDialog,
 	},
 
-	props: {
-		accountId: { type: Number, default: null },
-		messageId: { type: Number, default: null },
-	},
+	mixins: [mailMessageTab('loadObjects')],
 
 	data() {
 		return {
@@ -137,19 +161,6 @@ export default {
 		}
 	},
 
-	watch: {
-		/**
-		 * @spec openspec/specs/mail-sidebar/spec.md
-		 */
-		messageId() {
-			this.loadObjects()
-		},
-	},
-
-	created() {
-		this.loadObjects()
-	},
-
 	methods: {
 		t,
 		schemaIconComponent,
@@ -157,7 +168,7 @@ export default {
 		 * OR sometimes derives object names as a JSON-encoded locale map
 		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
 		 *
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		displayName(obj) {
@@ -168,7 +179,7 @@ export default {
 						(v) => typeof v === 'string',
 					)
 					if (values.length > 0) return values[0]
-				} catch (e) {
+				} catch {
 					// not JSON — fall through to the raw value
 				}
 			}
@@ -181,7 +192,7 @@ export default {
 		 * deep-link registry); otherwise fall back to OpenRegister's own
 		 * object page.
 		 *
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectUrl(obj) {
@@ -226,7 +237,7 @@ export default {
 		/**
 		 * Open the confirmation dialog for removing a connection.
 		 *
-		 * @param obj
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		promptUnlink(obj) {
@@ -275,7 +286,7 @@ export default {
 		},
 
 		/**
-		 * @param event
+		 * @param {DragEvent} event
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		onAttachmentDragOver(event) {
@@ -285,8 +296,8 @@ export default {
 		},
 
 		/**
-		 * @param event
-		 * @param obj
+		 * @param {DragEvent} event
+		 * @param {object} obj
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async onAttachmentDrop(event, obj) {
@@ -294,28 +305,30 @@ export default {
 			if (!raw) {
 				return
 			}
-			const register = obj.register
-			const schema = obj.schemaId || obj.schema
-			const objectId = obj.id || obj.uuid
-			if (!register || !schema || !objectId) {
+			const target = uploadTargetOf(obj)
+			if (!target) {
 				showError(
 					t('openregister', 'Object metadata incomplete for file upload'),
 				)
 				return
 			}
+			await this.uploadDroppedAttachment(raw, obj)
+		},
+
+		/**
+		 * Upload a dropped attachment to an object, marking the object as
+		 * uploading meanwhile, and say how it went.
+		 *
+		 * @param {string} raw The dropped attachment, as JSON
+		 * @param {object} obj The object it was dropped on
+		 * @return {Promise<void>}
+		 */
+		async uploadDroppedAttachment(raw, obj) {
 			try {
 				const attachment = JSON.parse(raw)
 				this.uploadingObjectUuid = obj.uuid
-				await this.uploadAttachmentToObject(attachment, {
-					register,
-					schema,
-					objectId,
-				})
-				showSuccess(
-					t('openregister', 'Attachment added to {name}', {
-						name: this.displayName(obj),
-					}),
-				)
+				await this.uploadAttachmentToObject(attachment, uploadTargetOf(obj))
+				showSuccess(addedToText(this.displayName(obj)))
 			} catch (err) {
 				showError(t('openregister', 'Failed to add attachment'))
 				console.error('[ObjectsTab] Attachment drop upload failed:', err)
@@ -325,8 +338,8 @@ export default {
 		},
 
 		/**
-		 * @param attachment
-		 * @param target
+		 * @param {object} attachment
+		 * @param {object} target
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async uploadAttachmentToObject(attachment, target) {

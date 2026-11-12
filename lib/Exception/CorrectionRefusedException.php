@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Exception;
 
 use Exception;
-use Throwable;
 
 /**
  * Thrown when a correction is asked for without what a correction needs.
@@ -49,15 +48,4 @@ use Throwable;
  * @link https://OpenRegister.app
  */
 class CorrectionRefusedException extends Exception {
-
-	/**
-	 * Constructor.
-	 *
-	 * @param string $message The sentence the caller reads.
-	 * @param integer $code The exception code.
-	 * @param Throwable|null $previous The exception that caused this one.
-	 */
-	public function __construct(string $message, int $code = 0, ?Throwable $previous = null) {
-		parent::__construct(message: $message, code: $code, previous: $previous);
-	}//end __construct()
 }//end class

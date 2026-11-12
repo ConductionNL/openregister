@@ -1,0 +1,1850 @@
+{
+    "Application": {
+        "jsonFields": [
+            "configurations",
+            "registers",
+            "schemas",
+            "groups",
+            "authorization"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "name": "text-name",
+                "description": "text-description",
+                "version": "text-version",
+                "organisation": "text-organisation",
+                "configurations": [],
+                "registers": [],
+                "schemas": [],
+                "owner": "text-owner",
+                "active": true,
+                "storageQuota": 7,
+                "bandwidthQuota": 7,
+                "requestQuota": 7,
+                "userQuota": 7,
+                "groupQuota": 7,
+                "groups": [],
+                "authorization": {
+                    "create": [],
+                    "read": [],
+                    "update": [],
+                    "delete": []
+                },
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "name",
+                "description",
+                "version",
+                "organisation",
+                "configurations",
+                "registers",
+                "schemas",
+                "owner",
+                "active",
+                "storageQuota",
+                "bandwidthQuota",
+                "requestQuota",
+                "userQuota",
+                "groupQuota",
+                "groups",
+                "authorization",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "name": "text-name",
+                "description": "text-description",
+                "version": "text-version",
+                "organisation": "text-organisation",
+                "configurations": {
+                    "k": "v"
+                },
+                "registers": {
+                    "k": "v"
+                },
+                "schemas": {
+                    "k": "v"
+                },
+                "owner": "text-owner",
+                "active": true,
+                "storageQuota": 7,
+                "bandwidthQuota": 7,
+                "requestQuota": 7,
+                "userQuota": 7,
+                "groupQuota": 7,
+                "groups": {
+                    "k": "v"
+                },
+                "authorization": {
+                    "k": "v"
+                },
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "name",
+                "description",
+                "version",
+                "organisation",
+                "configurations",
+                "registers",
+                "schemas",
+                "owner",
+                "active",
+                "storageQuota",
+                "bandwidthQuota",
+                "requestQuota",
+                "userQuota",
+                "groupQuota",
+                "groups",
+                "authorization",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "AuditTrail": {
+        "jsonFields": [
+            "changed",
+            "resultSummary"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "schema": 7,
+                "register": 7,
+                "object": 7,
+                "objectUuid": "text-objectUuid",
+                "registerUuid": "text-registerUuid",
+                "schemaUuid": "text-schemaUuid",
+                "action": "text-action",
+                "changed": [],
+                "user": "text-user",
+                "userName": "text-userName",
+                "session": "text-session",
+                "request": "text-request",
+                "ipAddress": "text-ipAddress",
+                "version": "text-version",
+                "created": "2026-02-03T04:05:06+00:00",
+                "organisationId": "text-organisationId",
+                "organisationIdType": "text-organisationIdType",
+                "processingActivityId": "text-processingActivityId",
+                "processingActivityUrl": "text-processingActivityUrl",
+                "processingId": "text-processingId",
+                "confidentiality": "text-confidentiality",
+                "retentionPeriod": "text-retentionPeriod",
+                "size": 7,
+                "expires": "2026-02-03T04:05:06+00:00",
+                "hash": "text-hash",
+                "previousHash": "text-previousHash",
+                "importJobId": "text-importJobId",
+                "toolId": "text-toolId",
+                "paramsDigest": "text-paramsDigest",
+                "resultSummary": null,
+                "purgedAt": "2026-02-03T04:05:06+00:00",
+                "cause": "text-cause",
+                "causeRun": "text-causeRun",
+                "flowRun": "text-flowRun",
+                "flowNode": "text-flowNode",
+                "flowStep": 7,
+                "purpose": "text-purpose",
+                "consumer": "text-consumer"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "schema",
+                "register",
+                "object",
+                "objectUuid",
+                "registerUuid",
+                "schemaUuid",
+                "action",
+                "user",
+                "userName",
+                "session",
+                "request",
+                "ipAddress",
+                "version",
+                "created",
+                "organisationId",
+                "organisationIdType",
+                "processingActivityId",
+                "processingActivityUrl",
+                "processingId",
+                "confidentiality",
+                "retentionPeriod",
+                "size",
+                "expires",
+                "hash",
+                "previousHash",
+                "importJobId",
+                "toolId",
+                "paramsDigest",
+                "purgedAt",
+                "cause",
+                "causeRun",
+                "flowRun",
+                "flowNode",
+                "flowStep",
+                "purpose",
+                "consumer"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "schema": 7,
+                "register": 7,
+                "object": 7,
+                "objectUuid": "text-objectUuid",
+                "registerUuid": "text-registerUuid",
+                "schemaUuid": "text-schemaUuid",
+                "action": "text-action",
+                "changed": {
+                    "k": "v"
+                },
+                "user": "text-user",
+                "userName": "text-userName",
+                "session": "text-session",
+                "request": "text-request",
+                "ipAddress": "text-ipAddress",
+                "version": "text-version",
+                "created": "2026-02-03T04:05:06+00:00",
+                "organisationId": "text-organisationId",
+                "organisationIdType": "text-organisationIdType",
+                "processingActivityId": "text-processingActivityId",
+                "processingActivityUrl": "text-processingActivityUrl",
+                "processingId": "text-processingId",
+                "confidentiality": "text-confidentiality",
+                "retentionPeriod": "text-retentionPeriod",
+                "size": 7,
+                "expires": "2026-02-03T04:05:06+00:00",
+                "hash": "text-hash",
+                "previousHash": "text-previousHash",
+                "importJobId": "text-importJobId",
+                "toolId": "text-toolId",
+                "paramsDigest": "text-paramsDigest",
+                "resultSummary": {
+                    "k": "v"
+                },
+                "purgedAt": "2026-02-03T04:05:06+00:00",
+                "cause": "text-cause",
+                "causeRun": "text-causeRun",
+                "flowRun": "text-flowRun",
+                "flowNode": "text-flowNode",
+                "flowStep": 7,
+                "purpose": "text-purpose",
+                "consumer": "text-consumer"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "schema",
+                "register",
+                "object",
+                "objectUuid",
+                "registerUuid",
+                "schemaUuid",
+                "action",
+                "changed",
+                "user",
+                "userName",
+                "session",
+                "request",
+                "ipAddress",
+                "version",
+                "created",
+                "organisationId",
+                "organisationIdType",
+                "processingActivityId",
+                "processingActivityUrl",
+                "processingId",
+                "confidentiality",
+                "retentionPeriod",
+                "size",
+                "expires",
+                "hash",
+                "previousHash",
+                "importJobId",
+                "toolId",
+                "paramsDigest",
+                "resultSummary",
+                "purgedAt",
+                "cause",
+                "causeRun",
+                "flowRun",
+                "flowNode",
+                "flowStep",
+                "purpose",
+                "consumer"
+            ]
+        }
+    },
+    "BulkJob": {
+        "jsonFields": [
+            "parameters",
+            "selection",
+            "report"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "action": "text-action",
+                "parameters": null,
+                "selectionType": "text-selectionType",
+                "selection": null,
+                "registerId": 7,
+                "schemaId": 7,
+                "justification": "text-justification",
+                "state": "text-state",
+                "total": 7,
+                "processed": 7,
+                "applied": 7,
+                "skipped": 7,
+                "refused": 7,
+                "failed": 7,
+                "cursor": 7,
+                "report": null,
+                "startedBy": "text-startedBy",
+                "reversalWindow": 7,
+                "reversibleUntil": "2026-02-03T04:05:06+00:00",
+                "reversesJobId": 7,
+                "reversedByJobId": 7,
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "action",
+                "selectionType",
+                "registerId",
+                "schemaId",
+                "justification",
+                "state",
+                "total",
+                "processed",
+                "applied",
+                "skipped",
+                "refused",
+                "failed",
+                "cursor",
+                "startedBy",
+                "reversalWindow",
+                "reversibleUntil",
+                "reversesJobId",
+                "reversedByJobId",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "action": "text-action",
+                "parameters": {
+                    "k": "v"
+                },
+                "selectionType": "text-selectionType",
+                "selection": {
+                    "k": "v"
+                },
+                "registerId": 7,
+                "schemaId": 7,
+                "justification": "text-justification",
+                "state": "text-state",
+                "total": 7,
+                "processed": 7,
+                "applied": 7,
+                "skipped": 7,
+                "refused": 7,
+                "failed": 7,
+                "cursor": 7,
+                "report": {
+                    "k": "v"
+                },
+                "startedBy": "text-startedBy",
+                "reversalWindow": 7,
+                "reversibleUntil": "2026-02-03T04:05:06+00:00",
+                "reversesJobId": 7,
+                "reversedByJobId": 7,
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "action",
+                "parameters",
+                "selectionType",
+                "selection",
+                "registerId",
+                "schemaId",
+                "justification",
+                "state",
+                "total",
+                "processed",
+                "applied",
+                "skipped",
+                "refused",
+                "failed",
+                "cursor",
+                "report",
+                "startedBy",
+                "reversalWindow",
+                "reversibleUntil",
+                "reversesJobId",
+                "reversedByJobId",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "FederatedShare": {
+        "jsonFields": [
+            "queryFilter"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "direction": "text-direction",
+                "remoteInstanceUrl": "text-remoteInstanceUrl",
+                "remoteProviderId": "text-remoteProviderId",
+                "shareToken": "text-shareToken",
+                "scope": "text-scope",
+                "register": "text-register",
+                "schema": "text-schema",
+                "objectUri": "text-objectUri",
+                "queryFilter": null,
+                "permissions": "text-permissions",
+                "organisation": "text-organisation",
+                "sharedWith": "text-sharedWith",
+                "status": "text-status",
+                "owner": "text-owner",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "direction",
+                "remoteInstanceUrl",
+                "remoteProviderId",
+                "shareToken",
+                "scope",
+                "register",
+                "schema",
+                "objectUri",
+                "permissions",
+                "organisation",
+                "sharedWith",
+                "status",
+                "owner",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "direction": "text-direction",
+                "remoteInstanceUrl": "text-remoteInstanceUrl",
+                "remoteProviderId": "text-remoteProviderId",
+                "shareToken": "text-shareToken",
+                "scope": "text-scope",
+                "register": "text-register",
+                "schema": "text-schema",
+                "objectUri": "text-objectUri",
+                "queryFilter": {
+                    "k": "v"
+                },
+                "permissions": "text-permissions",
+                "organisation": "text-organisation",
+                "sharedWith": "text-sharedWith",
+                "status": "text-status",
+                "owner": "text-owner",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "direction",
+                "remoteInstanceUrl",
+                "remoteProviderId",
+                "shareToken",
+                "scope",
+                "register",
+                "schema",
+                "objectUri",
+                "queryFilter",
+                "permissions",
+                "organisation",
+                "sharedWith",
+                "status",
+                "owner",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "SchemaChangelog": {
+        "jsonFields": [
+            "changes"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "schemaId": 7,
+                "version": "text-version",
+                "classification": "text-classification",
+                "changes": null,
+                "actor": "text-actor",
+                "acknowledgedBy": "text-acknowledgedBy",
+                "acknowledgedAt": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "schemaId",
+                "version",
+                "classification",
+                "actor",
+                "acknowledgedBy",
+                "acknowledgedAt",
+                "created"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "schemaId": 7,
+                "version": "text-version",
+                "classification": "text-classification",
+                "changes": {
+                    "k": "v"
+                },
+                "actor": "text-actor",
+                "acknowledgedBy": "text-acknowledgedBy",
+                "acknowledgedAt": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "schemaId",
+                "version",
+                "classification",
+                "changes",
+                "actor",
+                "acknowledgedBy",
+                "acknowledgedAt",
+                "created"
+            ]
+        }
+    },
+    "SchemaRun": {
+        "jsonFields": [
+            "proposedDefinition",
+            "plan",
+            "options",
+            "report"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "schemaId": 7,
+                "registerId": 7,
+                "type": "text-type",
+                "state": "text-state",
+                "proposedDefinition": null,
+                "plan": null,
+                "options": null,
+                "processed": 7,
+                "total": 7,
+                "cursor": 7,
+                "report": null,
+                "startedBy": "text-startedBy",
+                "rolledBackFrom": 7,
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "schemaId",
+                "registerId",
+                "type",
+                "state",
+                "processed",
+                "total",
+                "cursor",
+                "startedBy",
+                "rolledBackFrom",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "schemaId": 7,
+                "registerId": 7,
+                "type": "text-type",
+                "state": "text-state",
+                "proposedDefinition": {
+                    "k": "v"
+                },
+                "plan": {
+                    "k": "v"
+                },
+                "options": {
+                    "k": "v"
+                },
+                "processed": 7,
+                "total": 7,
+                "cursor": 7,
+                "report": {
+                    "k": "v"
+                },
+                "startedBy": "text-startedBy",
+                "rolledBackFrom": 7,
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "schemaId",
+                "registerId",
+                "type",
+                "state",
+                "proposedDefinition",
+                "plan",
+                "options",
+                "processed",
+                "total",
+                "cursor",
+                "report",
+                "startedBy",
+                "rolledBackFrom",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "SchemaRunEntry": {
+        "jsonFields": [
+            "preData"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "runId": 7,
+                "objectUuid": "text-objectUuid",
+                "outcome": "text-outcome",
+                "message": "text-message",
+                "preVersion": "text-preVersion",
+                "postVersion": "text-postVersion",
+                "preData": null
+            },
+            "updated": [
+                "id",
+                "runId",
+                "objectUuid",
+                "outcome",
+                "message",
+                "preVersion",
+                "postVersion"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "runId": 7,
+                "objectUuid": "text-objectUuid",
+                "outcome": "text-outcome",
+                "message": "text-message",
+                "preVersion": "text-preVersion",
+                "postVersion": "text-postVersion",
+                "preData": {
+                    "k": "v"
+                }
+            },
+            "updated": [
+                "id",
+                "runId",
+                "objectUuid",
+                "outcome",
+                "message",
+                "preVersion",
+                "postVersion",
+                "preData"
+            ]
+        }
+    },
+    "SearchTrail": {
+        "jsonFields": [
+            "queryParameters",
+            "filters",
+            "sortParameters"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "searchTerm": "text-searchTerm",
+                "queryParameters": [],
+                "resultCount": 7,
+                "totalResults": 7,
+                "register": 7,
+                "schema": 7,
+                "registerUuid": "text-registerUuid",
+                "schemaUuid": "text-schemaUuid",
+                "user": "text-user",
+                "userName": "text-userName",
+                "registerName": "text-registerName",
+                "schemaName": "text-schemaName",
+                "session": "text-session",
+                "ipAddress": "text-ipAddress",
+                "userAgent": "text-userAgent",
+                "requestUri": "text-requestUri",
+                "httpMethod": "text-httpMethod",
+                "responseTime": 7,
+                "page": 7,
+                "limit": 7,
+                "offset": 7,
+                "facetsRequested": true,
+                "facetableRequested": true,
+                "filters": [],
+                "sortParameters": [],
+                "publishedOnly": true,
+                "executionType": "text-executionType",
+                "created": "2026-02-03T04:05:06+00:00",
+                "organisationId": "text-organisationId",
+                "organisationIdType": "text-organisationIdType",
+                "expires": "2026-02-03T04:05:06+00:00",
+                "size": 7
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "searchTerm",
+                "resultCount",
+                "totalResults",
+                "register",
+                "schema",
+                "registerUuid",
+                "schemaUuid",
+                "user",
+                "userName",
+                "session",
+                "ipAddress",
+                "userAgent",
+                "requestUri",
+                "httpMethod",
+                "responseTime",
+                "page",
+                "limit",
+                "offset",
+                "facetsRequested",
+                "facetableRequested",
+                "publishedOnly",
+                "executionType",
+                "created",
+                "organisationId",
+                "organisationIdType",
+                "expires",
+                "size"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "searchTerm": "text-searchTerm",
+                "queryParameters": {
+                    "k": "v"
+                },
+                "resultCount": 7,
+                "totalResults": 7,
+                "register": 7,
+                "schema": 7,
+                "registerUuid": "text-registerUuid",
+                "schemaUuid": "text-schemaUuid",
+                "user": "text-user",
+                "userName": "text-userName",
+                "registerName": "text-registerName",
+                "schemaName": "text-schemaName",
+                "session": "text-session",
+                "ipAddress": "text-ipAddress",
+                "userAgent": "text-userAgent",
+                "requestUri": "text-requestUri",
+                "httpMethod": "text-httpMethod",
+                "responseTime": 7,
+                "page": 7,
+                "limit": 7,
+                "offset": 7,
+                "facetsRequested": true,
+                "facetableRequested": true,
+                "filters": {
+                    "k": "v"
+                },
+                "sortParameters": {
+                    "k": "v"
+                },
+                "publishedOnly": true,
+                "executionType": "text-executionType",
+                "created": "2026-02-03T04:05:06+00:00",
+                "organisationId": "text-organisationId",
+                "organisationIdType": "text-organisationIdType",
+                "expires": "2026-02-03T04:05:06+00:00",
+                "size": 7
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "searchTerm",
+                "queryParameters",
+                "resultCount",
+                "totalResults",
+                "register",
+                "schema",
+                "registerUuid",
+                "schemaUuid",
+                "user",
+                "userName",
+                "session",
+                "ipAddress",
+                "userAgent",
+                "requestUri",
+                "httpMethod",
+                "responseTime",
+                "page",
+                "limit",
+                "offset",
+                "facetsRequested",
+                "facetableRequested",
+                "filters",
+                "sortParameters",
+                "publishedOnly",
+                "executionType",
+                "created",
+                "organisationId",
+                "organisationIdType",
+                "expires",
+                "size"
+            ]
+        }
+    },
+    "SyncRecord": {
+        "jsonFields": [
+            "rawData"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "sourceId": 7,
+                "executionId": "text-executionId",
+                "externalId": "text-externalId",
+                "status": "text-status",
+                "objectUuid": "text-objectUuid",
+                "contentHash": "text-contentHash",
+                "rawData": null,
+                "errorMessage": "text-errorMessage",
+                "attempts": 7,
+                "organisation": "text-organisation",
+                "updated": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "sourceId",
+                "executionId",
+                "externalId",
+                "status",
+                "objectUuid",
+                "contentHash",
+                "errorMessage",
+                "attempts",
+                "organisation",
+                "updated",
+                "created"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "sourceId": 7,
+                "executionId": "text-executionId",
+                "externalId": "text-externalId",
+                "status": "text-status",
+                "objectUuid": "text-objectUuid",
+                "contentHash": "text-contentHash",
+                "rawData": {
+                    "k": "v"
+                },
+                "errorMessage": "text-errorMessage",
+                "attempts": 7,
+                "organisation": "text-organisation",
+                "updated": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "sourceId",
+                "executionId",
+                "externalId",
+                "status",
+                "objectUuid",
+                "contentHash",
+                "rawData",
+                "errorMessage",
+                "attempts",
+                "organisation",
+                "updated",
+                "created"
+            ]
+        }
+    },
+    "BulkJobMember": {
+        "jsonFields": "none",
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "jobId": 7,
+                "objectUuid": "text-objectUuid",
+                "outcome": "text-outcome",
+                "reason": "text-reason",
+                "schemaVersion": "text-schemaVersion",
+                "priorValues": [],
+                "appliedValues": [],
+                "addedAtCommit": true,
+                "appliedAt": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "jobId",
+                "objectUuid",
+                "outcome",
+                "reason",
+                "schemaVersion",
+                "priorValues",
+                "appliedValues",
+                "addedAtCommit",
+                "appliedAt",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "jobId": 7,
+                "objectUuid": "text-objectUuid",
+                "outcome": "text-outcome",
+                "reason": "text-reason",
+                "schemaVersion": "text-schemaVersion",
+                "priorValues": {
+                    "k": "v"
+                },
+                "appliedValues": {
+                    "k": "v"
+                },
+                "addedAtCommit": true,
+                "appliedAt": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "jobId",
+                "objectUuid",
+                "outcome",
+                "reason",
+                "schemaVersion",
+                "priorValues",
+                "appliedValues",
+                "addedAtCommit",
+                "appliedAt",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "ConfigurationDeployment": {
+        "jsonFields": "none",
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "name": "text-name",
+                "setUuid": "text-setUuid",
+                "author": "text-author",
+                "approver": "text-approver",
+                "deployedBy": "text-deployedBy",
+                "deployedAt": "2026-02-03T04:05:06+00:00",
+                "restoresUuid": "text-restoresUuid",
+                "changes": [],
+                "changeCount": 7,
+                "state": "text-state",
+                "created": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "name",
+                "setUuid",
+                "author",
+                "approver",
+                "deployedBy",
+                "deployedAt",
+                "restoresUuid",
+                "changes",
+                "changeCount",
+                "state",
+                "created"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "name": "text-name",
+                "setUuid": "text-setUuid",
+                "author": "text-author",
+                "approver": "text-approver",
+                "deployedBy": "text-deployedBy",
+                "deployedAt": "2026-02-03T04:05:06+00:00",
+                "restoresUuid": "text-restoresUuid",
+                "changes": {
+                    "k": "v"
+                },
+                "changeCount": 7,
+                "state": "text-state",
+                "created": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "name",
+                "setUuid",
+                "author",
+                "approver",
+                "deployedBy",
+                "deployedAt",
+                "restoresUuid",
+                "changes",
+                "changeCount",
+                "state",
+                "created"
+            ]
+        }
+    },
+    "ConfigurationDraft": {
+        "jsonFields": "none",
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "setUuid": "text-setUuid",
+                "layer": "text-layer",
+                "layerRef": "text-layerRef",
+                "configKey": "text-configKey",
+                "baseValue": [],
+                "draftValue": [],
+                "basePresent": true,
+                "removes": true,
+                "createdBy": "text-createdBy",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "setUuid",
+                "layer",
+                "layerRef",
+                "configKey",
+                "baseValue",
+                "draftValue",
+                "basePresent",
+                "removes",
+                "createdBy",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "setUuid": "text-setUuid",
+                "layer": "text-layer",
+                "layerRef": "text-layerRef",
+                "configKey": "text-configKey",
+                "baseValue": {
+                    "k": "v"
+                },
+                "draftValue": {
+                    "k": "v"
+                },
+                "basePresent": true,
+                "removes": true,
+                "createdBy": "text-createdBy",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "setUuid",
+                "layer",
+                "layerRef",
+                "configKey",
+                "baseValue",
+                "draftValue",
+                "basePresent",
+                "removes",
+                "createdBy",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "ConfigurationDraftSet": {
+        "jsonFields": "none",
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "name": "text-name",
+                "description": "text-description",
+                "state": "text-state",
+                "createdBy": "text-createdBy",
+                "approvedBy": "text-approvedBy",
+                "approvedAt": "2026-02-03T04:05:06+00:00",
+                "deploymentUuid": "text-deploymentUuid",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "name",
+                "description",
+                "state",
+                "createdBy",
+                "approvedBy",
+                "approvedAt",
+                "deploymentUuid",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "name": "text-name",
+                "description": "text-description",
+                "state": "text-state",
+                "createdBy": "text-createdBy",
+                "approvedBy": "text-approvedBy",
+                "approvedAt": "2026-02-03T04:05:06+00:00",
+                "deploymentUuid": "text-deploymentUuid",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "name",
+                "description",
+                "state",
+                "createdBy",
+                "approvedBy",
+                "approvedAt",
+                "deploymentUuid",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "ConfigurationValue": {
+        "jsonFields": "none",
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "layer": "text-layer",
+                "layerRef": "text-layerRef",
+                "configKey": "text-configKey",
+                "configValue": [],
+                "deploymentUuid": "text-deploymentUuid",
+                "bundleUuid": "text-bundleUuid",
+                "updatedBy": "text-updatedBy",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "layer",
+                "layerRef",
+                "configKey",
+                "configValue",
+                "deploymentUuid",
+                "bundleUuid",
+                "updatedBy",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "layer": "text-layer",
+                "layerRef": "text-layerRef",
+                "configKey": "text-configKey",
+                "configValue": {
+                    "k": "v"
+                },
+                "deploymentUuid": "text-deploymentUuid",
+                "bundleUuid": "text-bundleUuid",
+                "updatedBy": "text-updatedBy",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "layer",
+                "layerRef",
+                "configKey",
+                "configValue",
+                "deploymentUuid",
+                "bundleUuid",
+                "updatedBy",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "ErasurePreview": {
+        "jsonFields": "none",
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "subject": "text-subject",
+                "subjectType": "text-subjectType",
+                "eraseMode": "text-eraseMode",
+                "requestId": "text-requestId",
+                "digest": "text-digest",
+                "report": [],
+                "outcome": [],
+                "status": "text-status",
+                "createdBy": "text-createdBy",
+                "approvedBy": "text-approvedBy",
+                "approvedAt": "2026-02-03T04:05:06+00:00",
+                "consumedAt": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "subject",
+                "subjectType",
+                "eraseMode",
+                "requestId",
+                "digest",
+                "report",
+                "outcome",
+                "status",
+                "createdBy",
+                "approvedBy",
+                "approvedAt",
+                "consumedAt",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "subject": "text-subject",
+                "subjectType": "text-subjectType",
+                "eraseMode": "text-eraseMode",
+                "requestId": "text-requestId",
+                "digest": "text-digest",
+                "report": {
+                    "k": "v"
+                },
+                "outcome": {
+                    "k": "v"
+                },
+                "status": "text-status",
+                "createdBy": "text-createdBy",
+                "approvedBy": "text-approvedBy",
+                "approvedAt": "2026-02-03T04:05:06+00:00",
+                "consumedAt": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "subject",
+                "subjectType",
+                "eraseMode",
+                "requestId",
+                "digest",
+                "report",
+                "outcome",
+                "status",
+                "createdBy",
+                "approvedBy",
+                "approvedAt",
+                "consumedAt",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "ObjectRelation": {
+        "jsonFields": "none",
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "sourceUuid": "text-sourceUuid",
+                "sourceRegister": 7,
+                "sourceSchema": 7,
+                "targetUuid": "text-targetUuid",
+                "targetRegister": 7,
+                "targetSchema": 7,
+                "targetUrl": "text-targetUrl",
+                "targetTitle": "text-targetTitle",
+                "kind": "text-kind",
+                "relationType": "text-relationType",
+                "label": "text-label",
+                "inverseLabel": "text-inverseLabel",
+                "symmetric": true,
+                "origin": "text-origin",
+                "sourceEntry": "text-sourceEntry",
+                "inherited": [],
+                "anchor": "text-anchor",
+                "createdBy": "text-createdBy",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "sourceUuid",
+                "sourceRegister",
+                "sourceSchema",
+                "targetUuid",
+                "targetRegister",
+                "targetSchema",
+                "targetUrl",
+                "targetTitle",
+                "kind",
+                "relationType",
+                "label",
+                "inverseLabel",
+                "symmetric",
+                "origin",
+                "sourceEntry",
+                "inherited",
+                "anchor",
+                "createdBy",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "sourceUuid": "text-sourceUuid",
+                "sourceRegister": 7,
+                "sourceSchema": 7,
+                "targetUuid": "text-targetUuid",
+                "targetRegister": 7,
+                "targetSchema": 7,
+                "targetUrl": "text-targetUrl",
+                "targetTitle": "text-targetTitle",
+                "kind": "text-kind",
+                "relationType": "text-relationType",
+                "label": "text-label",
+                "inverseLabel": "text-inverseLabel",
+                "symmetric": true,
+                "origin": "text-origin",
+                "sourceEntry": "text-sourceEntry",
+                "inherited": {
+                    "k": "v"
+                },
+                "anchor": "text-anchor",
+                "createdBy": "text-createdBy",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "sourceUuid",
+                "sourceRegister",
+                "sourceSchema",
+                "targetUuid",
+                "targetRegister",
+                "targetSchema",
+                "targetUrl",
+                "targetTitle",
+                "kind",
+                "relationType",
+                "label",
+                "inverseLabel",
+                "symmetric",
+                "origin",
+                "sourceEntry",
+                "inherited",
+                "anchor",
+                "createdBy",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "SubjectExport": {
+        "jsonFields": "none",
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "subject": "text-subject",
+                "subjectType": "text-subjectType",
+                "status": "text-status",
+                "requestedBy": "text-requestedBy",
+                "requestId": "text-requestId",
+                "objectCount": 7,
+                "contentHash": "text-contentHash",
+                "error": "text-error",
+                "readyAt": "2026-02-03T04:05:06+00:00",
+                "expiresAt": "2026-02-03T04:05:06+00:00",
+                "deliveredAt": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "subject",
+                "subjectType",
+                "status",
+                "requestedBy",
+                "requestId",
+                "objectCount",
+                "contentHash",
+                "error",
+                "readyAt",
+                "expiresAt",
+                "deliveredAt",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "subject": "text-subject",
+                "subjectType": "text-subjectType",
+                "status": "text-status",
+                "requestedBy": "text-requestedBy",
+                "requestId": "text-requestId",
+                "objectCount": 7,
+                "contentHash": "text-contentHash",
+                "error": "text-error",
+                "readyAt": "2026-02-03T04:05:06+00:00",
+                "expiresAt": "2026-02-03T04:05:06+00:00",
+                "deliveredAt": "2026-02-03T04:05:06+00:00",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "subject",
+                "subjectType",
+                "status",
+                "requestedBy",
+                "requestId",
+                "objectCount",
+                "contentHash",
+                "error",
+                "readyAt",
+                "expiresAt",
+                "deliveredAt",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "Endpoint": {
+        "jsonFields": [
+            "endpointArray",
+            "conditions",
+            "rules",
+            "configurations",
+            "groups"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "name": "text-name",
+                "description": "text-description",
+                "reference": "text-reference",
+                "version": "text-version",
+                "endpoint": "text-endpoint",
+                "endpointArray": [],
+                "endpointRegex": "text-endpointRegex",
+                "method": "text-method",
+                "targetType": "text-targetType",
+                "targetId": "text-targetId",
+                "conditions": [],
+                "inputMapping": "text-inputMapping",
+                "outputMapping": "text-outputMapping",
+                "rules": [],
+                "configurations": [],
+                "slug": "text-slug",
+                "groups": [],
+                "organisation": "text-organisation",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "name",
+                "description",
+                "reference",
+                "version",
+                "endpoint",
+                "endpointRegex",
+                "method",
+                "targetType",
+                "targetId",
+                "inputMapping",
+                "outputMapping",
+                "slug",
+                "organisation",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "name": "text-name",
+                "description": "text-description",
+                "reference": "text-reference",
+                "version": "text-version",
+                "endpoint": "text-endpoint",
+                "endpointArray": {
+                    "k": "v"
+                },
+                "endpointRegex": "text-endpointRegex",
+                "method": "text-method",
+                "targetType": "text-targetType",
+                "targetId": "text-targetId",
+                "conditions": {
+                    "k": "v"
+                },
+                "inputMapping": "text-inputMapping",
+                "outputMapping": "text-outputMapping",
+                "rules": {
+                    "k": "v"
+                },
+                "configurations": {
+                    "k": "v"
+                },
+                "slug": "text-slug",
+                "groups": {
+                    "k": "v"
+                },
+                "organisation": "text-organisation",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "name",
+                "description",
+                "reference",
+                "version",
+                "endpoint",
+                "endpointArray",
+                "endpointRegex",
+                "method",
+                "targetType",
+                "targetId",
+                "conditions",
+                "inputMapping",
+                "outputMapping",
+                "rules",
+                "configurations",
+                "slug",
+                "groups",
+                "organisation",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "Mapping": {
+        "jsonFields": [
+            "mapping",
+            "unset",
+            "cast",
+            "configurations"
+        ],
+        "empty json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "reference": "text-reference",
+                "version": "text-version",
+                "name": "text-name",
+                "description": "text-description",
+                "mapping": [],
+                "unset": [],
+                "cast": [],
+                "passThrough": true,
+                "configurations": [],
+                "slug": "text-slug",
+                "organisation": "text-organisation",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "reference",
+                "version",
+                "name",
+                "description",
+                "passThrough",
+                "slug",
+                "organisation",
+                "created",
+                "updated"
+            ]
+        },
+        "filled json": {
+            "returnsSelf": true,
+            "values": {
+                "id": 7,
+                "uuid": "text-uuid",
+                "reference": "text-reference",
+                "version": "text-version",
+                "name": "text-name",
+                "description": "text-description",
+                "mapping": {
+                    "k": "v"
+                },
+                "unset": {
+                    "k": "v"
+                },
+                "cast": {
+                    "k": "v"
+                },
+                "passThrough": true,
+                "configurations": {
+                    "k": "v"
+                },
+                "slug": "text-slug",
+                "organisation": "text-organisation",
+                "created": "2026-02-03T04:05:06+00:00",
+                "updated": "2026-02-03T04:05:06+00:00"
+            },
+            "updated": [
+                "id",
+                "uuid",
+                "reference",
+                "version",
+                "name",
+                "description",
+                "mapping",
+                "unset",
+                "cast",
+                "passThrough",
+                "configurations",
+                "slug",
+                "organisation",
+                "created",
+                "updated"
+            ]
+        }
+    },
+    "Configuration": {
+        "jsonFields": [
+            "notificationGroups",
+            "registers",
+            "schemas",
+            "objects",
+            "views",
+            "agents",
+            "sources",
+            "mappings",
+            "applications"
+        ]
+    },
+    "EndpointLog": {
+        "jsonFields": [
+            "request",
+            "response"
+        ]
+    },
+    "ObjectEntity": {
+        "jsonFields": [
+            "object",
+            "files",
+            "relations",
+            "locked",
+            "authorization",
+            "validation",
+            "quality",
+            "deleted",
+            "archived",
+            "frozen",
+            "geo",
+            "retention",
+            "tmlo",
+            "mail",
+            "contacts",
+            "notes",
+            "todos",
+            "calendar",
+            "talk",
+            "deck",
+            "groups"
+        ]
+    },
+    "Register": {
+        "jsonFields": [
+            "schemas",
+            "authorization",
+            "sharedWith",
+            "groups",
+            "languages",
+            "configuration",
+            "mail",
+            "contacts",
+            "notes",
+            "todos",
+            "calendar",
+            "talk",
+            "deck"
+        ]
+    },
+    "Schema": {
+        "jsonFields": [
+            "required",
+            "properties",
+            "archive",
+            "facets",
+            "allOf",
+            "oneOf",
+            "anyOf",
+            "authorization",
+            "sharedWith",
+            "configuration",
+            "groups",
+            "hooks",
+            "mail",
+            "contacts",
+            "notes",
+            "todos",
+            "calendar",
+            "talk",
+            "deck",
+            "draft"
+        ]
+    },
+    "Source": {
+        "jsonFields": [
+            "authConfig"
+        ]
+    }
+}

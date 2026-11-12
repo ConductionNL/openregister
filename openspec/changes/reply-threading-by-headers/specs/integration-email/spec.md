@@ -19,32 +19,42 @@ existing links.
 
 ### Requirement: A reply resolves to its object by headers before anything else
 
-`POST /api/emails/resolve` SHALL accept `messageId`, `inReplyTo` and
-`references`, SHALL match `inReplyTo` first and then `references` newest
-first against `rfcMessageId`, SHALL return the matching objects with the
-header that matched, and SHALL return an empty list when nothing matches. A
-user SHALL receive only objects they may read; a granted system caller
-SHALL resolve across RBAC and the response SHALL say `scope: system`.
+`POST /api/emails/resolve` SHALL accept `inReplyTo` and `references`, SHALL
+match `inReplyTo` first and then `references` from its last entry against
+`rfcMessageId`, and SHALL answer with a `state`: `threaded` with the one object
+and the header that matched, `ambiguous` with the candidates when the headers
+point at more than one object, or `unthreaded` when nothing matches. Nothing
+SHALL be guessed, and the subject SHALL NOT be read. A user SHALL receive only
+objects they may read; a link to any other object SHALL read as no link. A
+granted system caller SHALL resolve across RBAC and the response SHALL say
+`scope: system`.
 
 #### Scenario: an edited subject still threads
 
-- **GIVEN** an outbound link with `Message-ID` `<a1@x>` on case C
+- **GIVEN** a link with `Message-ID` `<a1@x>` on case C
 - **WHEN** resolve is called with `inReplyTo: "<a1@x>"` and a subject without any tag
-- **THEN** case C is returned with `matchedBy` `inReplyTo`
+- **THEN** the state is `threaded`, the object is C and `matchedOn` is `In-Reply-To`
 - @e2e exclude {proposal only; the integriq intake change adds the end-to-end mail test}
 
-#### Scenario: a forwarded thread lands on the newest object
+#### Scenario: a chain naming two objects resolves neither
 
-- **GIVEN** links `<a1@x>` on case C1 and `<a2@x>` on case C2, where `<a2@x>` is newer
+- **GIVEN** links `<a1@x>` on case C1 and `<a2@x>` on case C2
 - **WHEN** resolve is called with `references: ["<a1@x>", "<a2@x>"]` and no `inReplyTo`
-- **THEN** C2 is returned first
-- @e2e exclude {ordering, covered by controller unit tests}
+- **THEN** the state is `ambiguous` and C1 and C2 are the candidates
+- @e2e exclude {ordering, covered by unit tests}
+
+#### Scenario: an object the caller may not read stays unnamed
+
+- **GIVEN** a link `<a1@x>` on a case the caller may not read
+- **WHEN** resolve is called with `inReplyTo: "<a1@x>"`
+- **THEN** the state is `unthreaded` and nothing names the case
+- @e2e exclude {access, covered by unit tests}
 
 #### Scenario: nothing matches, nothing breaks
 
 - **GIVEN** headers that match no link
 - **WHEN** resolve is called
-- **THEN** the response is 200 with an empty list
+- **THEN** the response is 200 with the state `unthreaded`
 - @e2e exclude {fallthrough, covered by unit tests}
 
 ### Requirement: Collected mail files carry their thread headers (REQ-RTH-010)

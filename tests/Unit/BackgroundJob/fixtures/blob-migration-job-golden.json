@@ -1,0 +1,1016 @@
+{
+    "already complete": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "debug": [
+                "[BlobMigrationJob] Migration already complete, skipping",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        }
+    ],
+    "blob table empty": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "getDatabasePlatform": []
+        },
+        {
+            "prepare": [
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "setMaxResults": [
+                100
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] No objects remaining in blob table, marking migration complete",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "true"
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_remaining",
+                "0"
+            ]
+        }
+    ],
+    "groups and failures": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "getDatabasePlatform": []
+        },
+        {
+            "prepare": [
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "setMaxResults": [
+                100
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "warning": [
+                "[BlobMigrationJob] Orphaned object: null/empty register or schema",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "uuid": "c",
+                    "registerId": null,
+                    "schemaId": 2
+                }
+            ]
+        },
+        {
+            "warning": [
+                "[BlobMigrationJob] Orphaned object: null/empty register or schema",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "uuid": "f",
+                    "registerId": 4,
+                    "schemaId": 0
+                }
+            ]
+        },
+        {
+            "registerFind": [
+                1,
+                false,
+                false
+            ]
+        },
+        {
+            "schemaFind": [
+                2,
+                [],
+                false,
+                false
+            ]
+        },
+        {
+            "ensureTable": [
+                1,
+                2
+            ]
+        },
+        {
+            "saveObjects": [
+                [
+                    {
+                        "name": "A",
+                        "n": 1,
+                        "_uuid": "a",
+                        "_register": 1,
+                        "_schema": 2,
+                        "_version": "1.0",
+                        "uuid": "a"
+                    },
+                    {
+                        "_uuid": "b",
+                        "_register": 1,
+                        "_schema": 2,
+                        "_owner": "ann",
+                        "uuid": "b"
+                    }
+                ],
+                1,
+                2
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Migrated group to magic table",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "registerId": "1",
+                    "schemaId": "2",
+                    "count": 1
+                }
+            ]
+        },
+        {
+            "delete": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "createNamedParameter": [
+                [
+                    1,
+                    2
+                ],
+                101,
+                null
+            ]
+        },
+        {
+            "in": [
+                "id",
+                ":ids",
+                null
+            ]
+        },
+        {
+            "where": [
+                "id IN (:ids)"
+            ]
+        },
+        {
+            "executeStatement": []
+        },
+        {
+            "registerFind": [
+                9,
+                false,
+                false
+            ]
+        },
+        {
+            "warning": [
+                "[BlobMigrationJob] Could not resolve register/schema, skipping group",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "registerId": "9",
+                    "schemaId": "9",
+                    "error": "register 9 gone"
+                }
+            ]
+        },
+        {
+            "registerFind": [
+                1,
+                false,
+                false
+            ]
+        },
+        {
+            "schemaFind": [
+                3,
+                [],
+                false,
+                false
+            ]
+        },
+        {
+            "warning": [
+                "[BlobMigrationJob] Could not resolve register/schema, skipping group",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "registerId": "1",
+                    "schemaId": "3",
+                    "error": "schema 3 gone"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_processed",
+                "0"
+            ]
+        },
+        {
+            "createFunction": [
+                "COUNT(*) as count"
+            ]
+        },
+        {
+            "select": [
+                "function"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_processed",
+                "8"
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_remaining",
+                "12"
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_last_run",
+                "T"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Batch completed",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "migrated": 1,
+                    "skipped": 4,
+                    "remaining": 12,
+                    "execution_time_seconds": "X"
+                }
+            ]
+        }
+    ],
+    "no blob table": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "getDatabasePlatform": []
+        },
+        {
+            "prepare": [
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Blob table does not exist, marking migration complete",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "true"
+            ]
+        }
+    ],
+    "postgres, empty": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "getDatabasePlatform": []
+        },
+        {
+            "prepare": [
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = current_schema() LIMIT 1"
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "setMaxResults": [
+                100
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] No objects remaining in blob table, marking migration complete",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "true"
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_remaining",
+                "0"
+            ]
+        }
+    ],
+    "rows without id": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "getDatabasePlatform": []
+        },
+        {
+            "prepare": [
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "setMaxResults": [
+                100
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "registerFind": [
+                7,
+                false,
+                false
+            ]
+        },
+        {
+            "schemaFind": [
+                8,
+                [],
+                false,
+                false
+            ]
+        },
+        {
+            "ensureTable": [
+                7,
+                8
+            ]
+        },
+        {
+            "saveObjects": [
+                [
+                    {
+                        "_uuid": "g",
+                        "_register": 7,
+                        "_schema": 8,
+                        "_uri": "u",
+                        "_relations": "[]",
+                        "uuid": "g"
+                    }
+                ],
+                7,
+                8
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Migrated group to magic table",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "registerId": "7",
+                    "schemaId": "8",
+                    "count": 1
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_processed",
+                "0"
+            ]
+        },
+        {
+            "createFunction": [
+                "COUNT(*) as count"
+            ]
+        },
+        {
+            "select": [
+                "function"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_processed",
+                "1"
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_remaining",
+                "0"
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_last_run",
+                "T"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Batch completed",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "migrated": 1,
+                    "skipped": 0,
+                    "remaining": 0,
+                    "execution_time_seconds": "X"
+                }
+            ]
+        }
+    ],
+    "save throws": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "getDatabasePlatform": []
+        },
+        {
+            "prepare": [
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_objects",
+                null
+            ]
+        },
+        {
+            "setMaxResults": [
+                100
+            ]
+        },
+        {
+            "executeQuery": []
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "registerFind": [
+                1,
+                false,
+                false
+            ]
+        },
+        {
+            "schemaFind": [
+                2,
+                [],
+                false,
+                false
+            ]
+        },
+        {
+            "ensureTable": [
+                1,
+                2
+            ]
+        },
+        {
+            "saveObjects": [
+                [
+                    {
+                        "name": "A",
+                        "n": 1,
+                        "_uuid": "a",
+                        "_register": 1,
+                        "_schema": 2,
+                        "_version": "1.0",
+                        "uuid": "a"
+                    }
+                ],
+                1,
+                2
+            ]
+        },
+        {
+            "error": [
+                "[BlobMigrationJob] Migration batch failed",
+                {
+                    "file": "X",
+                    "line": "X",
+                    "error": "save failed",
+                    "trace": "X"
+                }
+            ]
+        }
+    ],
+    "table check throws": [
+        {
+            "get": [
+                "LoggerInterface"
+            ]
+        },
+        {
+            "get": [
+                "IDBConnection"
+            ]
+        },
+        {
+            "get": [
+                "IAppConfig"
+            ]
+        },
+        {
+            "get": [
+                "RegisterMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "SchemaMapperInterface"
+            ]
+        },
+        {
+            "get": [
+                "MagicMapperInterface"
+            ]
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Starting blob-to-magic migration batch",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "false"
+            ]
+        },
+        {
+            "getDatabasePlatform": []
+        },
+        {
+            "info": [
+                "[BlobMigrationJob] Blob table does not exist, marking migration complete",
+                {
+                    "file": "X",
+                    "line": "X"
+                }
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "blob_migration_complete",
+                "true"
+            ]
+        }
+    ]
+}

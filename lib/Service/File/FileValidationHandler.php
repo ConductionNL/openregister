@@ -21,11 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
 use OCP\Files\Node;
 use OCP\Files\NotPermittedException;
-use OCP\IUser;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,8 +31,7 @@ use Psr\Log\LoggerInterface;
  * This handler is responsible for:
  * - Blocking executable files for security
  * - Detecting executable magic bytes in file content
- * - Checking and fixing file ownership issues
- * - Validating file access permissions
+ * - Gating file access on readability (never on ownership)
  *
  * @category Service
  * @package  OCA\OpenRegister
@@ -46,16 +42,19 @@ use Psr\Log\LoggerInterface;
  */
 class FileValidationHandler {
 	/**
+	 * File extensions that are never accepted as uploads.
+	 *
+	 * @var array<int, string>
+	 */
+	private const DANGEROUS_EXTENSIONS = DangerousFileExtensions::ALL;
+
+	/**
 	 * Constructor for FileValidationHandler.
 	 *
-	 * @param FileMapper $fileMapper File mapper for ownership operations.
-	 * @param IUserSession $userSession User session for user context.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param ExecutableContentDetector $executableDetector Shared executable-content detection.
 	 */
 	public function __construct(
-		private readonly FileMapper $fileMapper,
-		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly ExecutableContentDetector $executableDetector = new ExecutableContentDetector(),
 	) {
@@ -78,103 +77,54 @@ class FileValidationHandler {
 	 * @psalm-return   void
 	 * @phpstan-return void
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive list of dangerous extensions requires extensive code
-	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function blockExecutableFile(string $fileName, string $fileContent): void {
-		// List of dangerous executable extensions.
-		$dangerousExtensions = [
-			// Windows executables.
-			'exe',
-			'bat',
-			'cmd',
-			'com',
-			'msi',
-			'scr',
-			'vbs',
-			'vbe',
-			'js',
-			'jse',
-			'wsf',
-			'wsh',
-			'ps1',
-			'dll',
-			// Unix/Linux executables.
-			'sh',
-			'bash',
-			'csh',
-			'ksh',
-			'zsh',
-			'run',
-			'bin',
-			'app',
-			'deb',
-			'rpm',
-			// Scripts and code.
-			'php',
-			'phtml',
-			'php3',
-			'php4',
-			'php5',
-			'phps',
-			'phar',
-			'py',
-			'pyc',
-			'pyo',
-			'pyw',
-			'pl',
-			'pm',
-			'cgi',
-			'rb',
-			'rbw',
-			'jar',
-			'war',
-			'ear',
-			'class',
-			// Containers and packages.
-			'appimage',
-			'snap',
-			'flatpak',
-			// MacOS.
-			'dmg',
-			'pkg',
-			'command',
-			// Android.
-			'apk',
-			// Other dangerous.
-			'elf',
-			'out',
-			'o',
-			'so',
-			'dylib',
-		];
-
-		// Check file extension.
-		$extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-		if (in_array($extension, $dangerousExtensions, true) === true) {
-			$this->logger->warning(
-				message: '[FileValidationHandler] Executable file upload blocked',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'filename' => $fileName,
-					'extension' => $extension,
-				]
-			);
-
-			$part1 = "File '$fileName' is an executable file (.$extension). ";
-			$part2 = 'Executable files are blocked for security reasons. ';
-			$part3 = 'Allowed formats: documents, images, archives, data files.';
-			throw new Exception($part1 . $part2 . $part3);
-		}
+		$this->refuseDangerousExtension(fileName: $fileName);
 
 		// Check magic bytes (file signatures) in content.
 		if (empty($fileContent) === false) {
 			$this->detectExecutableMagicBytes(content: $fileContent, fileName: $fileName);
 		}
 	}//end blockExecutableFile()
+
+	/**
+	 * Refuse a file whose extension marks it as executable.
+	 *
+	 * @param string $fileName The file name.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the extension is a dangerous one.
+	 */
+	private function refuseDangerousExtension(string $fileName): void {
+		$extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+		if (in_array($extension, self::DANGEROUS_EXTENSIONS, true) === false) {
+			return;
+		}
+
+		$this->logBlocked(message: '[FileValidationHandler] Executable file upload blocked', detail: ['filename' => $fileName, 'extension' => $extension]);
+
+		$part1 = "File '$fileName' is an executable file (.$extension). ";
+		$part2 = 'Executable files are blocked for security reasons. ';
+		$part3 = 'Allowed formats: documents, images, archives, data files.';
+		throw new Exception($part1 . $part2 . $part3);
+	}//end refuseDangerousExtension()
+
+	/**
+	 * Log a blocked upload.
+	 *
+	 * @param string               $message The message.
+	 * @param array<string, mixed> $detail  The file name (`filename`) and what blocked it.
+	 *
+	 * @return void
+	 */
+	private function logBlocked(string $message, array $detail): void {
+		$this->logger->warning(
+			message: $message,
+			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister'] + $detail
+		);
+	}//end logBlocked()
 
 	/**
 	 * Detects executable magic bytes in file content.
@@ -202,22 +152,7 @@ class FileValidationHandler {
 	 */
 	public function detectExecutableMagicBytes(string $content, string $fileName): void {
 		// Offset-0 executable signatures — universal, every upload.
-		$description = $this->executableDetector->matchExecutableSignature(content: $content);
-		if ($description !== null) {
-			$this->logger->warning(
-				message: '[FileValidationHandler] Executable magic bytes detected',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'app' => 'openregister',
-					'filename' => $fileName,
-					'type' => $description,
-				]
-			);
-
-			$execMsg = "File '$fileName' contains executable code ($description). ";
-			throw new Exception($execMsg . 'Executable files are blocked for security.');
-		}
+		$this->refuseExecutableSignature(content: $content, fileName: $fileName);
 
 		// Script shebangs — universal, every upload.
 		if ($this->executableDetector->hasScriptShebang(content: $content) === true) {
@@ -233,6 +168,28 @@ class FileValidationHandler {
 			);
 		}
 	}//end detectExecutableMagicBytes()
+
+	/**
+	 * Refuse content that starts with an executable signature.
+	 *
+	 * @param string $content  The file content.
+	 * @param string $fileName The file name, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the content is an executable.
+	 */
+	private function refuseExecutableSignature(string $content, string $fileName): void {
+		$description = $this->executableDetector->matchExecutableSignature(content: $content);
+		if ($description === null) {
+			return;
+		}
+
+		$this->logBlocked(message: '[FileValidationHandler] Executable magic bytes detected', detail: ['filename' => $fileName, 'type' => $description]);
+
+		$execMsg = "File '$fileName' contains executable code ($description). ";
+		throw new Exception($execMsg . 'Executable files are blocked for security.');
+	}//end refuseExecutableSignature()
 
 	/**
 	 * Whether the embedded-PHP-tag scan applies to this payload.
@@ -312,6 +269,14 @@ class FileValidationHandler {
 	 * underlying Nextcloud node operations enforce permissions natively, so the
 	 * readability gate here does not over-grant.
 	 *
+	 * There is no repair path any more. The former `ownFile()` →
+	 * `FileMapper::setFileOwnership()` chain rewrote `oc_storages.id` of the
+	 * file's whole storage to `home::<session user>`, which either collided with
+	 * that user's own storage (`storages_id_index` unique violation, logged on
+	 * every attachment a sync touched) or, when no such storage existed yet,
+	 * silently re-homed the entire `openregister` storage. Both were removed
+	 * (WOO-582); the app-user transfer lives in `FileOwnershipHandler`.
+	 *
 	 * @param Node $file The file node to check access for.
 	 *
 	 * @return void
@@ -333,81 +298,4 @@ class FileValidationHandler {
 			throw new NotPermittedException("File {$fileName} is not readable by the current session");
 		}
 	}//end checkOwnership()
-
-	/**
-	 * Set file ownership to the OpenRegister user.
-	 *
-	 * This method updates the file ownership in the database to the OpenRegister
-	 * user to fix access permission issues.
-	 *
-	 * @param Node $file The file node to set ownership for.
-	 *
-	 * @return bool True if ownership was set successfully, false otherwise.
-	 *
-	 * @throws Exception If ownership update fails.
-	 *
-	 * @psalm-return   bool
-	 * @phpstan-return bool
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function ownFile(Node $file): bool {
-		try {
-			$openRegisterUser = $this->getUser();
-			$userId = $openRegisterUser->getUID();
-			$fileId = $file->getId();
-
-			$this->logger->info(
-				message: "[FileValidationHandler] ownFile: Setting ownership of {$file->getName()} to {$userId}",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			$result = $this->fileMapper->setFileOwnership(fileId: $fileId, userId: $userId);
-
-			if ($result === false) {
-				$this->logger->warning(
-					message: "[FileValidationHandler] ownFile: Failed to set ownership of {$file->getName()} to {$userId}",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-
-				return $result;
-			}
-
-			$this->logger->info(
-				message: "[FileValidationHandler] ownFile: Set ownership of {$file->getName()} to {$userId}",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $result;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: "[FileValidationHandler] ownFile: Error setting ownership of {$file->getName()}: " . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			throw new Exception('Failed to set file ownership: ' . $e->getMessage());
-		}//end try
-	}//end ownFile()
-
-	/**
-	 * Get the OpenRegister user from the session.
-	 *
-	 * This method retrieves the current user from the session context.
-	 * The OpenRegister user is used for file ownership operations.
-	 *
-	 * @return IUser The OpenRegister user.
-	 *
-	 * @throws Exception If user is not logged in.
-	 *
-	 * @psalm-return   IUser
-	 * @phpstan-return IUser
-	 */
-	private function getUser(): IUser {
-		$user = $this->userSession->getUser();
-
-		if ($user === null) {
-			throw new Exception('User not logged in');
-		}
-
-		return $user;
-	}//end getUser()
 }//end class

@@ -66,6 +66,16 @@ final class TaskVtodoStatusMapping {
 	];
 
 	/**
+	 * The only VTODO statuses that request a lifecycle verb, and the verb each requests.
+	 *
+	 * @var array<string, string>
+	 */
+	private const VERBS = [
+		self::COMPLETED => 'complete',
+		self::CANCELLED => 'cancel',
+	];
+
+	/**
 	 * Normalised priority to iCal 0-9: the inverse of TaskPriority's import
 	 * mapping, chosen so every value round-trips (1 urgent, 3 high, 5 normal,
 	 * 7 low).
@@ -112,35 +122,41 @@ final class TaskVtodoStatusMapping {
 	 */
 	public static function requestedVerb(string $vtodoStatus, Task $task): ?string {
 		$incoming = strtoupper(trim($vtodoStatus));
-		$current = self::render(state: (string)$task->getState());
-
-		if ($incoming === $current) {
+		if ($incoming === self::render(state: (string)$task->getState())) {
 			return null;
 		}
 
-		if ($incoming === self::COMPLETED) {
-			return 'complete';
-		}
-
-		if ($incoming === self::CANCELLED) {
-			return 'cancel';
+		if (array_key_exists($incoming, self::VERBS) === true) {
+			return self::VERBS[$incoming];
 		}
 
 		if ($task->isInTerminalState() === true) {
-			throw new TaskConflictException(
-				message: sprintf(
-					"Status '%s' refused: task '%s' is in terminal state '%s' and cannot be reopened from a calendar.",
-					$incoming,
-					(string)$task->getUuid(),
-					(string)$task->getState()
-				)
-			);
+			throw self::reopenRefusal(incoming: $incoming, task: $task);
 		}
 
 		// NEEDS-ACTION or IN-PROCESS on a non-terminal task: a progress note,
 		// not a lifecycle verb. The next render restores the engine's value.
 		return null;
 	}//end requestedVerb()
+
+	/**
+	 * The refusal of a status that would reopen a terminal task.
+	 *
+	 * @param string $incoming The normalised incoming STATUS value.
+	 * @param Task $task The terminal task.
+	 *
+	 * @return TaskConflictException The refusal, naming the state.
+	 */
+	private static function reopenRefusal(string $incoming, Task $task): TaskConflictException {
+		return new TaskConflictException(
+			message: sprintf(
+				"Status '%s' refused: task '%s' is in terminal state '%s' and cannot be reopened from a calendar.",
+				$incoming,
+				(string)$task->getUuid(),
+				(string)$task->getState()
+			)
+		);
+	}//end reopenRefusal()
 
 	/**
 	 * The iCal priority a normalised priority renders as.

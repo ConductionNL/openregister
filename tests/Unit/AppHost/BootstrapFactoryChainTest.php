@@ -21,7 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\AppHost\Service\AppHostSettingsServices;
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\AppHost\LeafAdoption;
 use OCA\OpenRegister\AppHost\Controller\GenericDashboardController;
 use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
@@ -117,12 +119,14 @@ class BootstrapFactoryChainTest extends TestCase {
 				if ($id === AppHostSettingsService::class) {
 					return new AppHostSettingsService(
 						'petstore',
-						$container->get('OCP\\IAppConfig'),
-						$container->get('OCP\\App\\IAppManager'),
-						$container,
+						new AppHostSettingsServices(
+							$container->get('OCP\\IAppConfig'),
+							$container->get('OCP\\App\\IAppManager'),
+							$container,
+							$container->get('Psr\\Log\\LoggerInterface')
+						),
 						$container->get('OCP\\IGroupManager'),
-						$container->get('OCP\\IUserSession'),
-						$container->get('Psr\\Log\\LoggerInterface')
+						$container->get('OCP\\IUserSession')
 					);
 				}
 
@@ -143,7 +147,7 @@ class BootstrapFactoryChainTest extends TestCase {
 
 	public function testDashboardFactoryProducesGenericWithLeafAppId(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: ['namespace' => 'OCA\\PetStoreFixture']));
 
 		$factory = $context->factories['OCA\\PetStoreFixture\\Controller\\DashboardController'];
 		$instance = $factory($this->resolvingContainer());
@@ -153,7 +157,7 @@ class BootstrapFactoryChainTest extends TestCase {
 
 	public function testSettingsFactoryChainResolves(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: ['namespace' => 'OCA\\PetStoreFixture']));
 
 		$instance = $context->factories['OCA\\PetStoreFixture\\Controller\\SettingsController']($this->resolvingContainer());
 		$this->assertInstanceOf(GenericSettingsController::class, $instance);
@@ -161,7 +165,7 @@ class BootstrapFactoryChainTest extends TestCase {
 
 	public function testPreferencesFactoryResolves(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: ['namespace' => 'OCA\\PetStoreFixture']));
 
 		$instance = $context->factories['OCA\\PetStoreFixture\\Controller\\PreferencesController']($this->resolvingContainer());
 		$this->assertInstanceOf(GenericPreferencesController::class, $instance);
@@ -169,7 +173,7 @@ class BootstrapFactoryChainTest extends TestCase {
 
 	public function testSettingsServiceFactoryResolves(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: ['namespace' => 'OCA\\PetStoreFixture']));
 
 		$instance = $context->factories['OCA\\PetStoreFixture\\Service\\SettingsService']($this->resolvingContainer());
 		$this->assertInstanceOf(AppHostSettingsService::class, $instance);
@@ -187,11 +191,11 @@ class BootstrapFactoryChainTest extends TestCase {
 	 */
 	public function testAllFactoriesResolveToRealClassesWithFullOptions(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore', [
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: [
 			'namespace' => 'OCA\\PetStoreFixture',
 			'observability' => true,
 			'deepLinks' => true,
-		]);
+		]));
 
 		$container = $this->resolvingContainer();
 
@@ -239,7 +243,7 @@ class BootstrapFactoryChainTest extends TestCase {
 	 */
 	public function testPreferencesControllerRoundTripsPerUserValue(): void {
 		$context = new RecordingRegistrationContext();
-		Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStoreFixture']);
+		Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: 'petstore', options: ['namespace' => 'OCA\\PetStoreFixture']));
 
 		// Build a controller against a real (in-memory) config + a session user.
 		$user = $this->createMock(\OCP\IUser::class);

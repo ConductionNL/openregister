@@ -1,0 +1,678 @@
+{
+    "plain member / default": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / rbac off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")"
+    ],
+    "plain member / mt off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / explicit": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / explicit string": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / both off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "plain member / register key": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 7 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / drafts only": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where t._status = 'draft'",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / drafts any": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / archived": [
+        "where t._deleted IS NOT NULL",
+        "where t._archived IS NOT NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "plain member / archived any": [
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / default": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / rbac off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where 1 = 0"
+    ],
+    "no organisation / mt off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / explicit": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / explicit string": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / both off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "no organisation / register key": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 7 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / drafts only": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where t._status = 'draft'",
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / drafts any": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / archived": [
+        "where t._deleted IS NOT NULL",
+        "where t._archived IS NOT NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "no organisation / archived any": [
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / default": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / rbac off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")"
+    ],
+    "rules bypass / mt off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / explicit": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / explicit string": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / both off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "rules bypass / register key": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / drafts only": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where t._status = 'draft'",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / drafts any": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / archived": [
+        "where t._deleted IS NOT NULL",
+        "where t._archived IS NOT NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "rules bypass / archived any": [
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / default": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / rbac off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")"
+    ],
+    "bypass + grants / mt off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / explicit": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / explicit string": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / both off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "bypass + grants / register key": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 7 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / drafts only": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where t._status = 'draft'",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / drafts any": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / archived": [
+        "where t._deleted IS NOT NULL",
+        "where t._archived IS NOT NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "bypass + grants / archived any": [
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / default": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / rbac off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)"
+    ],
+    "cross branch / mt off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / explicit": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / explicit string": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / both off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "cross branch / register key": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 7 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / drafts only": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where t._status = 'draft'",
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / drafts any": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / archived": [
+        "where t._deleted IS NOT NULL",
+        "where t._archived IS NOT NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cross branch / archived any": [
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where ((t._organisation = :\"org-a\") OR CROSS)",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / default": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / rbac off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where 1 = 0"
+    ],
+    "cascade / mt off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / explicit": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / explicit string": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where 1 = 0",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / both off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "cascade / register key": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 7 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / drafts only": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where t._status = 'draft'",
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / drafts any": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / archived": [
+        "where t._deleted IS NOT NULL",
+        "where t._archived IS NOT NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "cascade / archived any": [
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where t._organisation IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / default": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / rbac off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5"
+    ],
+    "admin all / mt off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / explicit": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / explicit string": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / both off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "admin all / register key": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 7 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / drafts only": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where t._status = 'draft'",
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / drafts any": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / archived": [
+        "where t._deleted IS NOT NULL",
+        "where t._archived IS NOT NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "admin all / archived any": [
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / default": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / rbac off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "public lifted / mt off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / explicit": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / explicit string": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / both off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "public lifted / register key": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / drafts only": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where t._status = 'draft'",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / drafts any": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / archived": [
+        "where t._deleted IS NOT NULL",
+        "where t._archived IS NOT NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public lifted / archived any": [
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / default": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / rbac off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")"
+    ],
+    "public kept / mt off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / explicit": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / explicit string": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / both off": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")"
+    ],
+    "public kept / register key": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 7 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / drafts only": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "where t._status = 'draft'",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / drafts any": [
+        "where t._deleted IS NULL",
+        "where t._archived IS NULL",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / archived": [
+        "where t._deleted IS NOT NULL",
+        "where t._archived IS NOT NULL",
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ],
+    "public kept / archived any": [
+        "where ((t._status IS NULL OR t._status <> 'draft') OR t._owner = :\"alice\")",
+        "scope true 3 5",
+        "where (t._organisation = :\"org-a\")",
+        "rbac read 'openregister_table_1_5'"
+    ]
+}

@@ -62,6 +62,18 @@ use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory;
 final class CodedChoiceDeclaration {
 
 	/**
+	 * The refusal for both spellings of the binding: path, annotation, simple annotation.
+	 */
+	private const MSG_TWO_SPELLINGS = 'The property at \'%s\' declares its code list twice, as \'%s\' and as \'%s\'. '
+		. 'They are one binding: keep the one naming the scheme you mean.';
+
+	/**
+	 * The refusal for a scheme beside an enum: path.
+	 */
+	private const MSG_SCHEME_AND_ENUM = 'The property at \'%s\' takes its choices from a concept scheme AND lists them in '
+		. '\'enum\'. Two sources is one too many: drop the list, or drop the scheme.';
+
+	/**
 	 * Refuse a property whose choices cannot be resolved to one list.
 	 *
 	 * Static, like {@see GeneratedIdentifierDeclaration::fromProperty()}, so
@@ -83,32 +95,15 @@ final class CodedChoiceDeclaration {
 		$factory = new CodedPropertyDeclarationFactory();
 
 		if ($factory->competingSpellings(property: $property) === true) {
-			throw new CodedChoiceException(
-				sprintf(
-					'The property at \'%s\' declares its code list twice, as \'%s\' and as \'%s\'. '
-					. 'They are one binding: keep the one naming the scheme you mean.',
-					$path,
-					CodedPropertyDeclaration::ANNOTATION,
-					CodedPropertyDeclaration::SIMPLE_ANNOTATION
-				),
-				path: $path,
-				code: 'coded-choice-two-spellings'
-			);
+			$message = sprintf(self::MSG_TWO_SPELLINGS, $path, CodedPropertyDeclaration::ANNOTATION, CodedPropertyDeclaration::SIMPLE_ANNOTATION);
+			throw new CodedChoiceException($message, path: $path, code: 'coded-choice-two-spellings');
 		}
 
 		$coded = ($factory->fromProperty(property: $property) !== null);
-		$enum = ($property['enum'] ?? null);
+		$enum  = ($property['enum'] ?? null);
 
 		if ($coded === true && is_array($enum) === true && $enum !== []) {
-			throw new CodedChoiceException(
-				sprintf(
-					'The property at \'%s\' takes its choices from a concept scheme AND lists them in '
-					. '\'enum\'. Two sources is one too many: drop the list, or drop the scheme.',
-					$path
-				),
-				path: $path,
-				code: 'coded-choice-and-enum'
-			);
+			throw new CodedChoiceException(sprintf(self::MSG_SCHEME_AND_ENUM, $path), path: $path, code: 'coded-choice-and-enum');
 		}
 
 		// AN EMPTY `enum` IS ALREADY REFUSED, and this class deliberately does

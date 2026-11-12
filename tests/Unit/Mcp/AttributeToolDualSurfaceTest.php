@@ -24,29 +24,36 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
-use OCA\OpenRegister\Listener\ToolRegistrationListener;
+use OCA\OpenRegister\Mcp\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Mcp\ToolScanSubject;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
-use OCA\OpenRegister\Service\Mcp\ToolRegistryFacade;
-use OCA\OpenRegister\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Mcp\Service\Mcp\ToolRegistryFacade;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\ReachFixtureService;
 use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
 use OCA\OpenRegister\Service\Capability\ToolReachResolver;
-use OCA\OpenRegister\Tool\AgentTool;
-use OCA\OpenRegister\Tool\ApplicationTool;
-use OCA\OpenRegister\Tool\ObjectsTool;
-use OCA\OpenRegister\Tool\RegisterTool;
-use OCA\OpenRegister\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
+use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
+use OCA\OpenRegister\Mcp\Tool\RegisterTool;
+use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IL10N;
+use Psr\Container\ContainerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
+use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
 
 require_once __DIR__ . '/Fixtures/AnnotationFixtureService.php';
 require_once __DIR__ . '/Fixtures/AttributeFixtureService.php';
@@ -80,7 +87,7 @@ class AttributeToolDualSurfaceTest extends TestCase {
 		$instance = new AttributeFixtureService();
 		$scanner = new AttributeToolScanner();
 
-		$entries = $scanner->scanClass(appId: 'pipelinq', className: get_class($instance), logger: $this->logger);
+		$entries = $scanner->scanClass(subject: new ToolScanSubject(appId: 'pipelinq', className: get_class($instance), logger: $this->logger));
 		foreach ($entries as &$entry) {
 			$entry['instance'] = $instance;
 		}
@@ -105,7 +112,7 @@ class AttributeToolDualSurfaceTest extends TestCase {
 		$instance = new HintScopeFixtureService();
 		$scanner = new AttributeToolScanner();
 
-		$entries = $scanner->scanClass(appId: 'pipelinq', className: get_class($instance), logger: $this->logger);
+		$entries = $scanner->scanClass(subject: new ToolScanSubject(appId: 'pipelinq', className: get_class($instance), logger: $this->logger));
 		foreach ($entries as &$entry) {
 			$entry['instance'] = $instance;
 		}
@@ -179,13 +186,17 @@ class AttributeToolDualSurfaceTest extends TestCase {
 		);
 
 		$listener = new ToolRegistrationListener(
-			registerTool: $this->createMock(RegisterTool::class),
-			schemaTool: $this->createMock(SchemaTool::class),
-			objectsTool: $this->createMock(ObjectsTool::class),
-			applicationTool: $this->createMock(ApplicationTool::class),
-			agentTool: $this->createMock(AgentTool::class),
+			dataTools: new BuiltinDataTools(
+				registerTool: $this->createMock(RegisterTool::class),
+				schemaTool: $this->createMock(SchemaTool::class),
+				objectsTool: $this->createMock(ObjectsTool::class),
+			),
+			platformTools: new BuiltinPlatformTools(
+				applicationTool: $this->createMock(ApplicationTool::class),
+				agentTool: $this->createMock(AgentTool::class),
+			),
 			mcpToolsService: $mcpToolsService,
-			logger: $this->logger
+			logger: $this->logger,
 		);
 
 		$dispatcher = $this->createMock(IEventDispatcher::class);
@@ -215,15 +226,14 @@ class AttributeToolDualSurfaceTest extends TestCase {
 
 	public function testFacadeInvocationRoutesThroughTheSameAttributedProviderAndIsAudited(): void {
 		$this->auditTrailMapper->expects($this->once())
-			->method('createToolInvocationEntry')
+			->method('recordToolInvocation')
 			->with(
-				'pipelinq.createLead',
-				$this->matchesRegularExpression('/^[a-f0-9]{64}$/'),
-				$this->callback(fn ($summary) => $summary['isError'] === false),
-				null,
-				null,
-				null,
-				'lead-1'
+				$this->callback(
+					fn (ToolInvocation $invocation) => $invocation->toolId === 'pipelinq.createLead'
+						&& preg_match('/^[a-f0-9]{64}$/', $invocation->paramsDigest) === 1
+						&& $invocation->resultSummary['isError'] === false
+						&& $invocation->about == new AuditedObject(null, null, null, 'lead-1')
+				)
 			);
 
 		$facade = $this->buildFacade();
@@ -283,7 +293,7 @@ class AttributeToolDualSurfaceTest extends TestCase {
 	 */
 	private function reachProvider(): AttributeToolProvider {
 		$instance = new ReachFixtureService();
-		$entries = (new AttributeToolScanner())->scanClass(appId: 'dossiq', className: get_class($instance), logger: $this->logger);
+		$entries = (new AttributeToolScanner())->scanClass(subject: new ToolScanSubject(appId: 'dossiq', className: get_class($instance), logger: $this->logger));
 		foreach ($entries as &$entry) {
 			$entry['instance'] = $instance;
 		}
@@ -322,7 +332,7 @@ class AttributeToolDualSurfaceTest extends TestCase {
 
 	public function testDeclaredAnnotationsArriveOnBothSurfaces(): void {
 		$instance = new AnnotationFixtureService();
-		$entries = (new AttributeToolScanner())->scanClass(appId: 'dossiq', className: get_class($instance), logger: $this->logger);
+		$entries = (new AttributeToolScanner())->scanClass(subject: new ToolScanSubject(appId: 'dossiq', className: get_class($instance), logger: $this->logger));
 		foreach ($entries as &$entry) {
 			$entry['instance'] = $instance;
 		}
@@ -346,7 +356,41 @@ class AttributeToolDualSurfaceTest extends TestCase {
 			$this->assertSame('create', $surface['dossiq.fileCase']['scope']);
 			$this->assertSame('create', $surface['dossiq.fileCase']['action']);
 			$this->assertArrayNotHasKey('annotations', $surface['dossiq.reassignCase']);
+			$this->assertSame('Create a task', $surface['dossiq.createTask']['title'] ?? null);
+			$this->assertArrayNotHasKey('title', $surface['dossiq.reassignCase']);
 		}
 
 	}//end testDeclaredAnnotationsArriveOnBothSurfaces()
+
+	public function testATitleIsTranslatedThroughTheDeclaringAppOnBothSurfaces(): void {
+		$instance = new AnnotationFixtureService();
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text): string => ['Create a task' => 'Taak aanmaken'][$text] ?? $text);
+		$entries = (new AttributeToolScanner())->scanClass(subject: new ToolScanSubject(appId: 'dossiq', className: get_class($instance), logger: $this->logger));
+		foreach ($entries as &$entry) {
+			$entry['instance'] = $instance;
+		}
+
+		unset($entry);
+		$appContainer = $this->createMock(ContainerInterface::class);
+		$appContainer->method('has')->willReturnCallback(static fn (string $id): bool => $id === IL10N::class);
+		$appContainer->method('get')->willReturn($l10n);
+		$provider = (new AttributeToolProvider(appId: 'dossiq', entries: $entries, auditTrailMapper: $this->auditTrailMapper, logger: $this->logger))
+			->translatedBy(appContainer: $appContainer);
+
+		$jsonRpc = [];
+		foreach ((new McpToolsService(providers: [$provider], logger: $this->logger))->listTools()['tools'] as $tool) {
+			$jsonRpc[$tool['id']] = $tool;
+		}
+
+		$facade = [];
+		foreach ($this->buildFacade($provider)->listTools() as $descriptor) {
+			$facade[$descriptor['mcpId']] = $descriptor;
+		}
+
+		foreach ([$jsonRpc, $facade] as $surface) {
+			$this->assertSame('Taak aanmaken', $surface['dossiq.createTask']['title'] ?? null);
+		}
+
+	}//end testATitleIsTranslatedThroughTheDeclaringAppOnBothSurfaces()
 }//end class

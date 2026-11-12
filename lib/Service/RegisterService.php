@@ -27,9 +27,12 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Serializer\RegisterExpansion;
+use OCA\OpenRegister\Service\Serializer\RegisterListExtension;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
+use OCP\Files\Node;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -56,25 +59,32 @@ use Psr\Log\LoggerInterface;
  * contract shared with RegisterMapper::findAll/find; the method signature must match callers that
  * explicitly pass `false` to bypass multitenancy for admin/repair contexts.
  */
-class RegisterService {
+class RegisterService implements RegisterServiceInterface {
+
+	/**
+	 * The count columns every per-schema stats entry carries, in order.
+	 *
+	 * @var array<int, string>
+	 */
+	private const COUNT_FIELDS = ['total', 'deleted', 'invalid', 'locked', 'size'];
 
 	/**
 	 * Register mapper
 	 *
 	 * Handles database operations for register entities.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper
 	 *
 	 * Handles database operations for schema entities.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Database connection
@@ -96,38 +106,14 @@ class RegisterService {
 	private ?array $magicTableNames = null;
 
 	/**
-	 * File service
+	 * File service for file operations.
 	 *
-	 * Handles file operations related to registers.
-	 *
-	 * @var FileService File service instance
+	 * @var FileFolderServiceInterface
 	 */
-	private readonly FileService $fileService;
+	private readonly FileFolderServiceInterface $fileService;
 
 	/**
-	 * Organisation service
-	 *
-	 * Handles organisation-related operations and permissions.
-	 *
-	 * @var OrganisationService Organisation service instance
-	 */
-	private readonly OrganisationService $organisationService;
-
-	/**
-	 * Logger
-	 *
-	 * Used for logging register operations and errors.
-	 *
-	 * @var LoggerInterface Logger instance
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
-	 * Register serializer
-	 *
-	 * Applies `_extend` post-processing (`schemas`, `@self.stats`) on
-	 * Register entities. Shared between the HTTP controller and DI
-	 * consumers via findAllSerialized / findSerialized.
+	 * Applies `_extend` post-processing (`schemas`, `@self.stats`).
 	 *
 	 * @var RegisterSerializer
 	 */
@@ -138,42 +124,44 @@ class RegisterService {
 	 *
 	 * Initializes service with required dependencies for register operations.
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper for database operations
-	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
-	 * @param IDBConnection $db Database connection for custom queries
-	 * @param FileService $fileService File service for file operations
-	 * @param OrganisationService $organisationService Organisation service for permissions
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param RegisterSerializer $registerSerializer Serializer for `_extend` post-processing
+	 * @param RegisterServiceStorage       $storage             Register and schema mappers and the raw connection.
+	 * @param RegisterServiceHelpers $helpers File service for register folders and the register serializer.
+	 * @param OrganisationServiceInterface $organisationService Organisation service for permissions.
+	 * @param LoggerInterface              $logger              Logger for error tracking.
+	 *                                                          `@self.stats`), shared between the HTTP
+	 *                                                          controller and DI consumers.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
-		IDBConnection $db,
-		FileService $fileService,
-		OrganisationService $organisationService,
-		LoggerInterface $logger,
-		RegisterSerializer $registerSerializer,
+		RegisterServiceStorage $storage,
+		RegisterServiceHelpers $helpers,
+		private readonly OrganisationServiceInterface $organisationService,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->logger = $logger;
-		$this->logger->debug(
-			message: '[RegisterService] RegisterService constructor started.',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+		$this->fileService = $helpers->fileService;
+		$this->registerSerializer = $helpers->registerSerializer;
+		$this->logConstruction(phase: 'started');
 		// Store dependencies for use in service methods.
-		$this->registerMapper = $registerMapper;
-		$this->schemaMapper = $schemaMapper;
-		$this->db = $db;
-		$this->fileService = $fileService;
-		$this->organisationService = $organisationService;
-		$this->registerSerializer = $registerSerializer;
+		$this->registerMapper = $storage->registerMapper;
+		$this->schemaMapper   = $storage->schemaMapper;
+		$this->db             = $storage->db;
+		$this->logConstruction(phase: 'completed');
+	}//end __construct()
+
+	/**
+	 * Trace a construction phase.
+	 *
+	 * @param string $phase `started` or `completed`.
+	 *
+	 * @return void
+	 */
+	private function logConstruction(string $phase): void {
 		$this->logger->debug(
-			message: '[RegisterService] RegisterService constructor completed.',
+			message: '[RegisterService] RegisterService constructor ' . $phase . '.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-	}//end __construct()
+	}//end logConstruction()
 
 	/**
 	 * Find a register by ID with optional extensions
@@ -270,20 +258,54 @@ class RegisterService {
 	 *   (Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`)
 	 */
 	public function findSerialized(int|string $id, array $_extend = [], bool $_multitenancy = true): array {
-		$register = $this->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy);
+		return $this->serializeOne(register: $this->find(id: $id, _extend: $_extend, _multitenancy: $_multitenancy), _extend: $_extend);
+	}//end findSerialized()
 
+	/**
+	 * Serialize one register with `_extend` applied, with its per-schema counts when both `schemas` and `@self.stats` are asked.
+	 *
+	 * @param Register      $register The register.
+	 * @param array<string> $_extend  Extension keys to apply.
+	 *
+	 * @return array Serialized register payload.
+	 */
+	private function serializeOne(Register $register, array $_extend): array {
 		$stats = null;
-		if (in_array('schemas', $_extend, true) === true
-			&& in_array('@self.stats', $_extend, true) === true
-		) {
-			$stats = $this->getSchemaObjectCounts(
-				registerId: (int)$register->getId(),
-				schemas: $this->resolveSchemasForStats(schemaIds: ($register->getSchemas() ?? []))
-			);
+		if ($this->wantsSchemaStats(_extend: $_extend) === true) {
+			$stats = $this->statsFor(register: $register);
 		}
 
-		return $this->registerSerializer->serialize($register, $_extend, $stats);
-	}//end findSerialized()
+		return $this->registerSerializer->serializeExpanded(
+			$register,
+			RegisterExpansion::fromExtend(extend: $_extend, schemaStats: $stats)
+		);
+	}//end serializeOne()
+
+	/**
+	 * Whether `_extend` asks for both `schemas` and `@self.stats`, the case that needs per-schema counts.
+	 *
+	 * @param array<string> $_extend Extension keys.
+	 *
+	 * @return bool True when both are requested.
+	 */
+	private function wantsSchemaStats(array $_extend): bool {
+		return in_array('schemas', $_extend, true) === true
+			&& in_array('@self.stats', $_extend, true) === true;
+	}//end wantsSchemaStats()
+
+	/**
+	 * The per-schema object counts of one register.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<int, array{total: int}> Schema id to counts.
+	 */
+	private function statsFor(Register $register): array {
+		return $this->getSchemaObjectCounts(
+			registerId: (int)$register->getId(),
+			schemas: $this->resolveSchemasForStats(schemaIds: ($register->getSchemas() ?? []))
+		);
+	}//end statsFor()
 
 	/**
 	 * Find all registers + serialize each with `_extend` applied
@@ -291,7 +313,7 @@ class RegisterService {
 	 * Companion to {@see findAll()} that returns serialized arrays with
 	 * `_extend` honored. When `schemas` + `@self.stats` are both
 	 * requested, per-register stats are pre-computed and handed to the
-	 * serializer via `serializeMany()`.
+	 * serializer via `serializePage()`.
 	 *
 	 * @param int|null $limit Maximum number of results.
 	 * @param int|null $offset Pagination offset.
@@ -325,24 +347,36 @@ class RegisterService {
 			filters: $filters,
 			searchConditions: $searchConditions,
 			searchParams: $searchParams,
+			_extend: $_extend,
 			_multitenancy: $_multitenancy
 		);
 
-		$statsByRegisterId = null;
-		if (in_array('schemas', $_extend, true) === true
-			&& in_array('@self.stats', $_extend, true) === true
-		) {
-			$statsByRegisterId = [];
-			foreach ($registers as $register) {
-				$statsByRegisterId[(int)$register->getId()] = $this->getSchemaObjectCounts(
-					registerId: (int)$register->getId(),
-					schemas: $this->resolveSchemasForStats(schemaIds: ($register->getSchemas() ?? []))
-				);
-			}
+		return $this->registerSerializer->serializePage(
+			registers: $registers,
+			extension: new RegisterListExtension(extend: $_extend, schemaStatsByRegisterId: $this->statsByRegisterId(registers: $registers, _extend: $_extend))
+		);
+	}//end findAllSerialized()
+
+	/**
+	 * Per-register schema counts when `_extend` asks for them, else null.
+	 *
+	 * @param Register[]    $registers The registers to count for.
+	 * @param array<string> $_extend   Extension keys.
+	 *
+	 * @return array<int, array<int, array{total: int}>>|null Register id to schema counts.
+	 */
+	private function statsByRegisterId(array $registers, array $_extend): ?array {
+		if ($this->wantsSchemaStats(_extend: $_extend) === false) {
+			return null;
 		}
 
-		return $this->registerSerializer->serializeMany($registers, $_extend, $statsByRegisterId);
-	}//end findAllSerialized()
+		$statsByRegisterId = [];
+		foreach ($registers as $register) {
+			$statsByRegisterId[(int)$register->getId()] = $this->statsFor(register: $register);
+		}
+
+		return $statsByRegisterId;
+	}//end statsByRegisterId()
 
 	/**
 	 * Resolve schema IDs to hydrated objects for stats computation.
@@ -398,13 +432,26 @@ class RegisterService {
 
 		// Ensure folder exists for the new register.
 		$this->ensureRegisterFolderExists(entity: $register);
+		$this->logCreated(register: $register);
 
-		// ONE line, at the end, saying what was created — replacing seven that
-		// narrated the steps ("Starting", "Calling ensureRegisterFolderExists",
-		// "Folder creation completed"). Creating a register IS worth info: it is
-		// rare and structural. Each intermediate step of doing so is not, and
-		// reporting them at info made the interesting line harder to find, not
-		// easier. On failure the exception carries the location anyway.
+		return $register;
+	}//end createFromArray()
+
+	/**
+	 * Say, once, what was created.
+	 *
+	 * ONE line, at the end, saying what was created — replacing seven that
+	 * narrated the steps ("Starting", "Calling ensureRegisterFolderExists",
+	 * "Folder creation completed"). Creating a register IS worth info: it is
+	 * rare and structural. Each intermediate step of doing so is not, and
+	 * reporting them at info made the interesting line harder to find, not
+	 * easier. On failure the exception carries the location anyway.
+	 *
+	 * @param Register $register The created register.
+	 *
+	 * @return void
+	 */
+	private function logCreated(Register $register): void {
 		$this->logger->info(
 			message: sprintf(
 				'[RegisterService] Created register %d (%s) in organisation %s',
@@ -414,9 +461,7 @@ class RegisterService {
 			),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-
-		return $register;
-	}//end createFromArray()
+	}//end logCreated()
 
 	/**
 	 * Update an existing register from array data.
@@ -495,40 +540,70 @@ class RegisterService {
 
 		// Check if folder needs to be created (null, empty string, or legacy string path).
 		if ($folderProperty === null || $folderProperty === '' || is_string($folderProperty) === true) {
-			try {
-				// Create folder and get the folder node.
-				$folderNode = $this->fileService->createEntityFolder($entity);
-
-				if ($folderNode === null) {
-					$this->logger->warning(
-						message: "[RegisterService] Failed to create folder for register {$entity->getId()}",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					return;
-				}
-
-				// Update the entity with the folder ID.
-				$entity->setFolder((string)$folderNode->getId());
-
-				// Save the entity with the new folder ID.
-				$this->registerMapper->update($entity);
-
-				$folderId = $folderNode->getId();
-				$registerId = $entity->getId();
-				$this->logger->info(
-					message: "[RegisterService] Created folder with ID {$folderId} for register {$registerId}",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			} catch (Exception $e) {
-				// Log the error but don't fail the register creation/update.
-				// The register can still function without a folder.
-				$this->logger->error(
-					message: "[RegisterService] Failed to create folder for register {$entity->getId()}: " . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}//end try
-		}//end if
+			$this->createRegisterFolder(entity: $entity);
+		}
 	}//end ensureRegisterFolderExists()
+
+	/**
+	 * Create the register's folder and record its id; a failure is logged, never raised.
+	 *
+	 * @param Register $entity The register.
+	 *
+	 * @return void
+	 */
+	private function createRegisterFolder(Register $entity): void {
+		try {
+			// Create folder and get the folder node.
+			$this->recordFolder(entity: $entity, folderNode: $this->fileService->createEntityFolder($entity));
+		} catch (Exception $e) {
+			// Log the error but don't fail the register creation/update.
+			// The register can still function without a folder.
+			$this->logger->error(
+				message: "[RegisterService] Failed to create folder for register {$entity->getId()}: " . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end createRegisterFolder()
+
+	/**
+	 * Store a freshly created folder's id on the register.
+	 *
+	 * @param Register  $entity     The register.
+	 * @param Node|null $folderNode The created folder, or null when creation failed.
+	 *
+	 * @return void
+	 */
+	private function recordFolder(Register $entity, ?Node $folderNode): void {
+		if ($folderNode === null) {
+			$this->logger->warning(
+				message: "[RegisterService] Failed to create folder for register {$entity->getId()}",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return;
+		}
+
+		// Update the entity with the folder ID, then save it.
+		$entity->setFolder((string)$folderNode->getId());
+		$this->registerMapper->update($entity);
+		$this->logFolderCreated(entity: $entity, folderNode: $folderNode);
+	}//end recordFolder()
+
+	/**
+	 * Log the folder a register was given.
+	 *
+	 * @param Register $entity     The register.
+	 * @param Node     $folderNode Its new folder.
+	 *
+	 * @return void
+	 */
+	private function logFolderCreated(Register $entity, Node $folderNode): void {
+		$folderId   = $folderNode->getId();
+		$registerId = $entity->getId();
+		$this->logger->info(
+			message: "[RegisterService] Created folder with ID {$folderId} for register {$registerId}",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logFolderCreated()
 
 	/**
 	 * Get object counts per schema for a register using optimized SQL
@@ -544,75 +619,205 @@ class RegisterService {
 	 * @psalm-return array<int, array{total: int}>
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) getSchemaObjectCounts() builds a UNION SQL query
-	 * across N schema magic-tables with platform-specific CAST syntax (Postgres vs MariaDB/MySQL),
-	 * processes the result set, and backfills zero-stats for missing tables in one pass; splitting
-	 * would require multiple DB round-trips or passing the DB connection to sub-helpers.
 	 */
 	public function getSchemaObjectCounts(int $registerId, array $schemas): array {
-		// Initialize result array.
-		$result = [];
-
 		if (empty($schemas) === true) {
-			return $result;
+			return [];
 		}
 
+		$tally = new SchemaObjectTally(registerId: $registerId);
 		try {
-			$schemaCount = count($schemas);
-			$this->logger->debug(
-				message: "[RegisterService] GetSchemaObjectCounts: Processing $schemaCount schemas for register $registerId",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->countSchemaObjects(tally: $tally, schemas: $schemas);
+		} catch (\Exception $e) {
+			// Log the error but don't fail: the counts gathered so far are returned.
+			$this->logCountFailure(e: $e);
+		}
 
-			// Build UNION queries for each schema's magic table.
-			// Cast syntax differs across platforms — PostgreSQL uses `::text`
-			// while MariaDB/MySQL require CAST AS CHAR (mirrors lib/Db/MagicMapper.php:1346-1349).
-			// get_debug_type() is null-safe (a mocked IDBConnection returns null here in unit tests).
-			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
+		return $tally->result;
+	}//end getSchemaObjectCounts()
 
-			$unionQueries = [];
+	/**
+	 * Fill `$result` with the counts of every schema, as far as it gets before a failure.
+	 *
+	 * @param SchemaObjectTally $tally   The register counted, and the counts filled in place.
+	 * @param array             $schemas The schemas, in any accepted shape.
+	 *
+	 * @return void
+	 */
+	private function countSchemaObjects(SchemaObjectTally $tally, array $schemas): void {
+		$registerId  = $tally->registerId;
+		$schemaCount = count($schemas);
+		$this->logger->debug(
+			message: "[RegisterService] GetSchemaObjectCounts: Processing $schemaCount schemas for register $registerId",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
 
-			foreach ($schemas as $schema) {
-				// $schemas may arrive as hydrated Schema objects (the
-				// `_extend[]=schemas` + `@self.stats` path via
-				// resolveSchemasForStats()/schemaMapper->find()), as plain
-				// arrays, or as scalar ids — resolve the id from any shape.
-				if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
-					$schemaId = $schema->getId();
-				} elseif (is_array($schema) === true) {
-					$schemaId = $schema['id'] ?? null;
-				} elseif (is_numeric($schema) === true) {
-					$schemaId = (int)$schema;
-				} else {
-					$schemaId = null;
-				}
+		$unionQueries = $this->schemaCountQueries(tally: $tally, schemas: $schemas);
+		if (empty($unionQueries) === true) {
+			return;
+		}
 
-				if ($schemaId === null) {
-					$this->logger->warning(
-						message: '[RegisterService] Schema without ID found, skipping',
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					continue;
-				}
+		$this->runCountQueries(unionQueries: $unionQueries, result: $tally->result);
+	}//end countSchemaObjects()
 
-				$tableName = 'openregister_table_' . $registerId . '_' . $schemaId;
-				$tableExists = $this->magicTableExists(tableName: $tableName);
+	/**
+	 * The count query of every schema whose magic table exists; missing tables count zero.
+	 *
+	 * @param SchemaObjectTally $tally   The register counted; missing tables count zero in it.
+	 * @param array             $schemas The schemas, in any accepted shape.
+	 *
+	 * @return array<int, string> The SELECTs to union.
+	 */
+	private function schemaCountQueries(SchemaObjectTally $tally, array $schemas): array {
+		$schemaIdFormat = $this->schemaIdSqlFormat();
+		$unionQueries   = [];
+		foreach ($schemas as $schema) {
+			$schemaId = $this->countableSchemaId(tally: $tally, schema: $schema);
+			if ($schemaId !== null) {
+				$unionQueries[] = $this->schemaCountSql(
+					schemaIdExpr: sprintf($schemaIdFormat, $schemaId),
+					tableName: $tally->tableName(schemaId: $schemaId)
+				);
+			}
+		}
 
-				if ($tableExists !== true) {
-					// Table doesn't exist yet, return 0 for all stats.
-					$result[$schemaId] = $this->getZeroCountStats();
-					continue;
-				}
+		return $unionQueries;
+	}//end schemaCountQueries()
 
-				$quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
-				$schemaIdExpr = "CAST({$schemaId} AS CHAR)";
-				if ($isPostgres === true) {
-					$schemaIdExpr = "{$schemaId}::text";
-				}
+	/**
+	 * The id of one schema whose magic table exists, or null when it has no id or no magic table.
+	 *
+	 * @param SchemaObjectTally $tally  The register counted; a missing table counts zero in it.
+	 * @param mixed             $schema The schema in any accepted shape.
+	 *
+	 * @return mixed The schema id to count, or null.
+	 */
+	private function countableSchemaId(SchemaObjectTally $tally, mixed $schema): mixed {
+		$schemaId = $this->schemaIdOf(schema: $schema);
+		if ($schemaId === null) {
+			$this->warnSchemaWithoutId();
+			return null;
+		}
 
-				$unionQueries[] = "
+		if ($this->magicTableExists(tableName: $tally->tableName(schemaId: $schemaId)) !== true) {
+			$tally->result[$schemaId] = $this->getZeroCountStats();
+			return null;
+		}
+
+		return $schemaId;
+	}//end countableSchemaId()
+
+	/**
+	 * Log a schema that carries no id.
+	 *
+	 * @return void
+	 */
+	private function warnSchemaWithoutId(): void {
+		$this->logger->warning(
+			message: '[RegisterService] Schema without ID found, skipping',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end warnSchemaWithoutId()
+
+	/**
+	 * Run the unioned count queries and store each schema's counts.
+	 *
+	 * Raw SQL: QueryBuilder cannot compose a UNION ALL across an arbitrary
+	 * number of dynamically-named magic tables (one per schema/register pair).
+	 *
+	 * @param array<int, string>                   $unionQueries The SELECTs to union.
+	 * @param array<array-key, array<string, int>> $result       Schema id to counts, filled in place.
+	 *
+	 * @return void
+	 */
+	private function runCountQueries(array $unionQueries, array &$result): void {
+		$sql = implode(' UNION ALL ', $unionQueries);
+		$this->logger->debug(
+			message: '[RegisterService] Schema object counts SQL: ' . $sql,
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute();
+		while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
+			$result[(int)$row['schema_id']] = $this->getZeroCountStats(row: $row);
+		}
+
+		$stmt->closeCursor();
+	}//end runCountQueries()
+
+	/**
+	 * Log a failed count run, with its stack trace.
+	 *
+	 * @param \Exception $e The failure.
+	 *
+	 * @return void
+	 */
+	private function logCountFailure(\Exception $e): void {
+		$this->logger->error(
+			message: '[RegisterService] Error getting schema object counts: ' . $e->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		$this->logger->error(
+			message: '[RegisterService] Stack trace: ' . $e->getTraceAsString(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logCountFailure()
+
+	/**
+	 * The sprintf format that renders a schema id as text in SQL.
+	 *
+	 * PostgreSQL uses `::text`, MariaDB/MySQL need CAST AS CHAR (as lib/Db/MagicMapper.php does).
+	 * get_debug_type() is null-safe: a mocked IDBConnection returns null for the platform.
+	 *
+	 * @return string The format, with one %s for the id.
+	 */
+	private function schemaIdSqlFormat(): string {
+		$platform = $this->db->getDatabasePlatform();
+		if (stripos(get_debug_type($platform), 'PostgreSQL') !== false) {
+			return '%s::text';
+		}
+
+		return 'CAST(%s AS CHAR)';
+	}//end schemaIdSqlFormat()
+
+	/**
+	 * The id of a schema given as a Schema entity, an array with an `id`, or a numeric id.
+	 *
+	 * Schemas arrive hydrated (the `_extend[]=schemas` + `@self.stats` path), as plain
+	 * arrays, or as scalar ids.
+	 *
+	 * @param mixed $schema The schema in any of those shapes.
+	 *
+	 * @return mixed The id, or null when it has none.
+	 */
+	private function schemaIdOf(mixed $schema): mixed {
+		if ($schema instanceof \OCA\OpenRegister\Db\Schema) {
+			return $schema->getId();
+		}
+
+		if (is_array($schema) === true) {
+			return $schema['id'] ?? null;
+		}
+
+		if (is_numeric($schema) === true) {
+			return (int)$schema;
+		}
+
+		return null;
+	}//end schemaIdOf()
+
+	/**
+	 * The count query for one schema's magic table.
+	 *
+	 * @param string $schemaIdExpr SQL expression for the schema id as text.
+	 * @param string $tableName    The unprefixed magic table name.
+	 *
+	 * @return string The SELECT returning schema_id, total, deleted, invalid, locked and size.
+	 */
+	private function schemaCountSql(string $schemaIdExpr, string $tableName): string {
+		$quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+		return "
                     SELECT
                         {$schemaIdExpr} as schema_id,
                         COUNT(*) as total,
@@ -622,46 +827,7 @@ class RegisterService {
                         0 as size
                     FROM {$quotedTableName}
                 ";
-			}//end foreach
-
-			if (empty($unionQueries) === true) {
-				return $result;
-			}
-
-			// Combine all queries with UNION ALL.
-			$sql = implode(' UNION ALL ', $unionQueries);
-
-			// Log the SQL for debugging.
-			$this->logger->debug(
-				message: '[RegisterService] Schema object counts SQL: ' . $sql,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Raw SQL: QueryBuilder cannot compose a UNION ALL across an arbitrary
-			// number of dynamically-named magic tables (one per schema/register pair).
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute();
-
-			// Process results.
-			while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
-				$result[(int)$row['schema_id']] = $this->getZeroCountStats(row: $row);
-			}
-
-			$stmt->closeCursor();
-		} catch (\Exception $e) {
-			// Log error but don't fail - return empty counts.
-			$this->logger->error(
-				message: '[RegisterService] Error getting schema object counts: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			$this->logger->error(
-				message: '[RegisterService] Stack trace: ' . $e->getTraceAsString(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end try
-
-		return $result;
-	}//end getSchemaObjectCounts()
+	}//end schemaCountSql()
 
 	/**
 	 * Whether a magic table exists, answered from a single cached catalog read.
@@ -687,60 +853,91 @@ class RegisterService {
 	 */
 	private function magicTableExists(string $tableName): bool {
 		if ($this->magicTableNames === null) {
-			$this->magicTableNames = [];
-
 			try {
-				// Match on the `openregister_table_` marker itself, NOT on a computed
-				// prefix. The obvious `getQueryBuilder()->getTableName('')` returns the
-				// literal `*PREFIX*` placeholder — it is only resolved to the real prefix
-				// (`oc_`) when a query is EXECUTED through the NC DB layer, which a raw
-				// information_schema string never is. Building the LIKE from that
-				// placeholder matched zero tables, so every schema was reported as having
-				// zero objects. Anchoring on the marker sidesteps the prefix completely:
-				// the caller passes `openregister_table_R_S`, which is exactly the suffix
-				// we key on.
-				$sql = 'SELECT table_name FROM information_schema.tables';
-				$sql .= ' WHERE table_name LIKE :pattern';
-
-				$stmt = $this->db->prepare($sql);
-				$stmt->bindValue('pattern', '%openregister\_table\_%');
-				$stmt->execute();
-
-				while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
-					$name = (string)($row['table_name'] ?? '');
-					if ($name === '') {
-						continue;
-					}
-
-					// Key on the unprefixed marker onwards, so callers need not know the
-					// prefix: `oc_openregister_table_1_2` => `openregister_table_1_2`.
-					$pos = strpos($name, 'openregister_table_');
-					if ($pos === false) {
-						continue;
-					}
-
-					$this->magicTableNames[substr($name, $pos)] = true;
-				}
-
-				$stmt->closeCursor();
+				$this->loadMagicTableNames();
 			} catch (\Throwable $e) {
-				// A failed catalog read must not become "no tables exist" — that would
-				// silently report every schema as having zero objects. Fall back to the
-				// slow-but-correct per-table check for the rest of this request. Catch
-				// \Throwable, not just \Exception: a stats read is not worth a fatal if
-				// the platform's query builder is unavailable.
-				$this->logger->warning(
-					message: '[RegisterService] Could not list magic tables, falling back to per-table checks: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				$this->magicTableNames = null;
-
-				return $this->db->tableExists($tableName);
-			}//end try
-		}//end if
+				return $this->tableExistsAfterCatalogFailure(tableName: $tableName, e: $e);
+			}
+		}
 
 		return isset($this->magicTableNames[$tableName]);
 	}//end magicTableExists()
+
+	/**
+	 * Read every magic table name from the catalog into the per-request lookup.
+	 *
+	 * Match on the `openregister_table_` marker itself, NOT on a computed
+	 * prefix. The obvious `getQueryBuilder()->getTableName('')` returns the
+	 * literal `*PREFIX*` placeholder — it is only resolved to the real prefix
+	 * (`oc_`) when a query is EXECUTED through the NC DB layer, which a raw
+	 * information_schema string never is. Building the LIKE from that
+	 * placeholder matched zero tables, so every schema was reported as having
+	 * zero objects. Anchoring on the marker sidesteps the prefix completely:
+	 * the caller passes `openregister_table_R_S`, which is exactly the suffix
+	 * we key on.
+	 *
+	 * @return void
+	 */
+	private function loadMagicTableNames(): void {
+		$this->magicTableNames = [];
+
+		$sql  = 'SELECT table_name FROM information_schema.tables';
+		$sql .= ' WHERE table_name LIKE :pattern';
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->bindValue('pattern', '%openregister\_table\_%');
+		$stmt->execute();
+		while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
+			$this->rememberMagicTable(name: (string)($row['table_name'] ?? ''));
+		}
+
+		$stmt->closeCursor();
+	}//end loadMagicTableNames()
+
+	/**
+	 * Add one catalog table name to the lookup, keyed from the marker onwards.
+	 *
+	 * Key on the unprefixed marker onwards, so callers need not know the
+	 * prefix: `oc_openregister_table_1_2` => `openregister_table_1_2`.
+	 *
+	 * @param string $name The catalog table name.
+	 *
+	 * @return void
+	 */
+	private function rememberMagicTable(string $name): void {
+		if ($name === '') {
+			return;
+		}
+
+		$pos = strpos($name, 'openregister_table_');
+		if ($pos !== false) {
+			$this->magicTableNames[substr($name, $pos)] = true;
+		}
+	}//end rememberMagicTable()
+
+	/**
+	 * Answer one table check directly after the catalog read failed.
+	 *
+	 * A failed catalog read must not become "no tables exist" — that would
+	 * silently report every schema as having zero objects. Fall back to the
+	 * slow-but-correct per-table check for the rest of this request. Catch
+	 * \Throwable, not just \Exception: a stats read is not worth a fatal if
+	 * the platform's query builder is unavailable.
+	 *
+	 * @param string     $tableName The unprefixed magic table name.
+	 * @param \Throwable $e         Why the catalog read failed.
+	 *
+	 * @return bool True when the table exists.
+	 */
+	private function tableExistsAfterCatalogFailure(string $tableName, \Throwable $e): bool {
+		$this->logger->warning(
+			message: '[RegisterService] Could not list magic tables, falling back to per-table checks: ' . $e->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		$this->magicTableNames = null;
+
+		return $this->db->tableExists($tableName);
+	}//end tableExistsAfterCatalogFailure()
 
 	/**
 	 * Get a zero-initialized count stats array, optionally populated from a database row.
@@ -750,22 +947,15 @@ class RegisterService {
 	 * @return array{total: int, deleted: int, invalid: int, locked: int, size: int}
 	 */
 	private function getZeroCountStats(?array $row = null): array {
-		if ($row !== null) {
-			return [
-				'total' => (int)$row['total'],
-				'deleted' => (int)$row['deleted'],
-				'invalid' => (int)$row['invalid'],
-				'locked' => (int)$row['locked'],
-				'size' => (int)$row['size'],
-			];
+		if ($row === null) {
+			$row = array_fill_keys(self::COUNT_FIELDS, 0);
 		}
 
-		return [
-			'total' => 0,
-			'deleted' => 0,
-			'invalid' => 0,
-			'locked' => 0,
-			'size' => 0,
-		];
+		$stats = [];
+		foreach (self::COUNT_FIELDS as $field) {
+			$stats[$field] = (int)$row[$field];
+		}
+
+		return $stats;
 	}//end getZeroCountStats()
 }//end class

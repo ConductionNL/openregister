@@ -1,0 +1,1987 @@
+{
+    "email": [
+        {
+            "log.info": [
+                "[FlowMessagingService] 2 recipient entries did not resolve to a user or group: ghost, zed"
+            ]
+        },
+        {
+            "optOut.ask": [
+                "email",
+                "news",
+                [
+                    "ok@x.example",
+                    "ks@x.example",
+                    "bad@x.example",
+                    "optout@x.example",
+                    "auth@x.example",
+                    "limited@x.example"
+                ],
+                "openregister-flow::step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "email.send": [
+                "alice",
+                "S One",
+                "B One"
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "alice",
+                "user",
+                "S One",
+                "B One",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bob"
+            ]
+        },
+        {
+            "email.send": [
+                "bob",
+                "S One",
+                "B One"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "eve"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "frank"
+            ]
+        },
+        {
+            "email.send": [
+                "frank",
+                "S One",
+                "B One"
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "frank",
+                "user",
+                "S One",
+                "B One",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "ok@x.example"
+            ]
+        },
+        {
+            "email.sendToAddress": [
+                "ok@x.example",
+                "",
+                "S One",
+                "B One [https://u/ok@x.example]"
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "ok@x.example",
+                "external",
+                "S One",
+                "B One",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "ks@x.example"
+            ]
+        },
+        {
+            "email.sendToAddress": [
+                "ks@x.example",
+                "",
+                "S One",
+                "B One [https://u/ks@x.example]"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bad@x.example"
+            ]
+        },
+        {
+            "email.sendToAddress": [
+                "bad@x.example",
+                "",
+                "S One",
+                "B One [https://u/bad@x.example]"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "limited@x.example"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "email.send": [
+                "alice",
+                "S ",
+                "B "
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "alice",
+                "user",
+                "S ",
+                "B ",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bob"
+            ]
+        },
+        {
+            "email.send": [
+                "bob",
+                "S ",
+                "B "
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "eve"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "frank"
+            ]
+        },
+        {
+            "email.send": [
+                "frank",
+                "S ",
+                "B "
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "frank",
+                "user",
+                "S ",
+                "B ",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "ok@x.example"
+            ]
+        },
+        {
+            "email.sendToAddress": [
+                "ok@x.example",
+                "",
+                "S ",
+                "B  [https://u/ok@x.example]"
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "ok@x.example",
+                "external",
+                "S ",
+                "B ",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "ks@x.example"
+            ]
+        },
+        {
+            "email.sendToAddress": [
+                "ks@x.example",
+                "",
+                "S ",
+                "B  [https://u/ks@x.example]"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bad@x.example"
+            ]
+        },
+        {
+            "email.sendToAddress": [
+                "bad@x.example",
+                "",
+                "S ",
+                "B  [https://u/bad@x.example]"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "limited@x.example"
+            ]
+        },
+        {
+            "threw": "RuntimeException",
+            "message": "2 email send(s) failed: email to \"bad@x.example\" failed (failed) | email to \"bad@x.example\" failed (failed)"
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "email",
+                    "actor": "actor",
+                    "recipients": 12,
+                    "delivered": {
+                        "count": 6,
+                        "sample": [
+                            "alice",
+                            "frank",
+                            "ok@x.example",
+                            "alice",
+                            "frank"
+                        ]
+                    },
+                    "skippedByPreference": {
+                        "count": 2,
+                        "sample": [
+                            "carol",
+                            "dave"
+                        ]
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 4,
+                        "sample": [
+                            "bob",
+                            "ks@x.example",
+                            "bob",
+                            "ks@x.example"
+                        ]
+                    },
+                    "rateLimited": {
+                        "count": 4,
+                        "sample": [
+                            "eve",
+                            "limited@x.example",
+                            "eve",
+                            "limited@x.example"
+                        ]
+                    },
+                    "failed": {
+                        "count": 2,
+                        "sample": [
+                            "bad@x.example",
+                            "bad@x.example"
+                        ]
+                    },
+                    "optedOut": {
+                        "count": 2,
+                        "sample": [
+                            "optout@x.example",
+                            "optout@x.example"
+                        ]
+                    },
+                    "authorityUnavailable": {
+                        "count": 2,
+                        "sample": [
+                            "auth@x.example",
+                            "auth@x.example"
+                        ]
+                    },
+                    "unknownRecipients": {
+                        "count": 2,
+                        "sample": [
+                            "ghost",
+                            "zed"
+                        ]
+                    },
+                    "refusedRecipients": {
+                        "count": 1,
+                        "sample": [
+                            {
+                                "recipient": "nope@",
+                                "reason": "invalid-address"
+                            }
+                        ]
+                    },
+                    "truncated": true
+                }
+            }
+        }
+    ],
+    "email-closed": [
+        {
+            "log.info": [
+                "[FlowMessagingService] 2 recipient entries did not resolve to a user or group: ghost, zed"
+            ]
+        },
+        {
+            "optOut.ask": [
+                "email",
+                "news",
+                [],
+                "openregister-flow::step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "email.send": [
+                "alice",
+                "S One",
+                "B One"
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "alice",
+                "user",
+                "S One",
+                "B One",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bob"
+            ]
+        },
+        {
+            "email.send": [
+                "bob",
+                "S One",
+                "B One"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "eve"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "frank"
+            ]
+        },
+        {
+            "email.send": [
+                "frank",
+                "S One",
+                "B One"
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "frank",
+                "user",
+                "S One",
+                "B One",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "email.send": [
+                "alice",
+                "S ",
+                "B "
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "alice",
+                "user",
+                "S ",
+                "B ",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bob"
+            ]
+        },
+        {
+            "email.send": [
+                "bob",
+                "S ",
+                "B "
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "eve"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "frank"
+            ]
+        },
+        {
+            "email.send": [
+                "frank",
+                "S ",
+                "B "
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "frank",
+                "user",
+                "S ",
+                "B ",
+                "step-x"
+            ]
+        },
+        {
+            "returned": {
+                "channel": "email",
+                "actor": "actor",
+                "recipients": 6,
+                "delivered": {
+                    "count": 4,
+                    "sample": [
+                        "alice",
+                        "frank",
+                        "alice",
+                        "frank"
+                    ]
+                },
+                "skippedByPreference": {
+                    "count": 2,
+                    "sample": [
+                        "carol",
+                        "dave"
+                    ]
+                },
+                "skippedByKillSwitch": {
+                    "count": 2,
+                    "sample": [
+                        "bob",
+                        "bob"
+                    ]
+                },
+                "rateLimited": {
+                    "count": 2,
+                    "sample": [
+                        "eve",
+                        "eve"
+                    ]
+                },
+                "failed": {
+                    "count": 0,
+                    "sample": []
+                },
+                "optedOut": {
+                    "count": 0,
+                    "sample": []
+                },
+                "authorityUnavailable": {
+                    "count": 0,
+                    "sample": []
+                },
+                "unknownRecipients": {
+                    "count": 2,
+                    "sample": [
+                        "ghost",
+                        "zed"
+                    ]
+                },
+                "refusedRecipients": {
+                    "count": 7,
+                    "sample": [
+                        {
+                            "recipient": "ok@x.example",
+                            "reason": "external-recipients-off"
+                        },
+                        {
+                            "recipient": "ks@x.example",
+                            "reason": "external-recipients-off"
+                        },
+                        {
+                            "recipient": "bad@x.example",
+                            "reason": "external-recipients-off"
+                        },
+                        {
+                            "recipient": "optout@x.example",
+                            "reason": "external-recipients-off"
+                        },
+                        {
+                            "recipient": "auth@x.example",
+                            "reason": "external-recipients-off"
+                        }
+                    ]
+                },
+                "truncated": true
+            }
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "email",
+                    "actor": "actor",
+                    "recipients": 6,
+                    "delivered": {
+                        "count": 4,
+                        "sample": [
+                            "alice",
+                            "frank",
+                            "alice",
+                            "frank"
+                        ]
+                    },
+                    "skippedByPreference": {
+                        "count": 2,
+                        "sample": [
+                            "carol",
+                            "dave"
+                        ]
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 2,
+                        "sample": [
+                            "bob",
+                            "bob"
+                        ]
+                    },
+                    "rateLimited": {
+                        "count": 2,
+                        "sample": [
+                            "eve",
+                            "eve"
+                        ]
+                    },
+                    "failed": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "optedOut": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "authorityUnavailable": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "unknownRecipients": {
+                        "count": 2,
+                        "sample": [
+                            "ghost",
+                            "zed"
+                        ]
+                    },
+                    "refusedRecipients": {
+                        "count": 7,
+                        "sample": [
+                            {
+                                "recipient": "ok@x.example",
+                                "reason": "external-recipients-off"
+                            },
+                            {
+                                "recipient": "ks@x.example",
+                                "reason": "external-recipients-off"
+                            },
+                            {
+                                "recipient": "bad@x.example",
+                                "reason": "external-recipients-off"
+                            },
+                            {
+                                "recipient": "optout@x.example",
+                                "reason": "external-recipients-off"
+                            },
+                            {
+                                "recipient": "auth@x.example",
+                                "reason": "external-recipients-off"
+                            }
+                        ]
+                    },
+                    "truncated": true
+                }
+            }
+        }
+    ],
+    "email-disabled-actor": [
+        {
+            "threw": "RuntimeException",
+            "message": "This flow run's acting identity \"disabled\" (runAs) is a disabled account; nothing was sent on their behalf."
+        },
+        {
+            "handle": []
+        }
+    ],
+    "email-kill-switch": [
+        {
+            "log.info": [
+                "[FlowMessagingService] 2 recipient entries did not resolve to a user or group: ghost, zed"
+            ]
+        },
+        {
+            "returned": {
+                "channel": "email",
+                "actor": "actor",
+                "recipients": 12,
+                "delivered": {
+                    "count": 0,
+                    "sample": []
+                },
+                "skippedByPreference": {
+                    "count": 0,
+                    "sample": []
+                },
+                "skippedByKillSwitch": {
+                    "count": 12,
+                    "sample": [
+                        "alice",
+                        "bob",
+                        "carol",
+                        "dave",
+                        "eve"
+                    ]
+                },
+                "rateLimited": {
+                    "count": 0,
+                    "sample": []
+                },
+                "failed": {
+                    "count": 0,
+                    "sample": []
+                },
+                "optedOut": {
+                    "count": 0,
+                    "sample": []
+                },
+                "authorityUnavailable": {
+                    "count": 0,
+                    "sample": []
+                },
+                "unknownRecipients": {
+                    "count": 2,
+                    "sample": [
+                        "ghost",
+                        "zed"
+                    ]
+                },
+                "refusedRecipients": {
+                    "count": 1,
+                    "sample": [
+                        {
+                            "recipient": "nope@",
+                            "reason": "invalid-address"
+                        }
+                    ]
+                },
+                "truncated": true
+            }
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "email",
+                    "actor": "actor",
+                    "recipients": 12,
+                    "delivered": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByPreference": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 12,
+                        "sample": [
+                            "alice",
+                            "bob",
+                            "carol",
+                            "dave",
+                            "eve"
+                        ]
+                    },
+                    "rateLimited": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "failed": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "optedOut": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "authorityUnavailable": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "unknownRecipients": {
+                        "count": 2,
+                        "sample": [
+                            "ghost",
+                            "zed"
+                        ]
+                    },
+                    "refusedRecipients": {
+                        "count": 1,
+                        "sample": [
+                            {
+                                "recipient": "nope@",
+                                "reason": "invalid-address"
+                            }
+                        ]
+                    },
+                    "truncated": true
+                }
+            }
+        }
+    ],
+    "email-no-actor": [
+        {
+            "threw": "RuntimeException",
+            "message": "This flow run has no acting identity (runAs); a message must have a sender, so nothing was sent."
+        },
+        {
+            "handle": []
+        }
+    ],
+    "email-object-mode": [
+        {
+            "log.info": [
+                "[FlowMessagingService] 2 recipient entries did not resolve to a user or group: ghost, zed"
+            ]
+        },
+        {
+            "optOut.ask": [
+                "email",
+                "news",
+                [],
+                "openregister-flow::step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "email.send": [
+                "alice",
+                "S One",
+                "B One"
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "alice",
+                "user",
+                "S One",
+                "B One",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bob"
+            ]
+        },
+        {
+            "email.send": [
+                "bob",
+                "S One",
+                "B One"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "eve"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "frank"
+            ]
+        },
+        {
+            "email.send": [
+                "frank",
+                "S One",
+                "B One"
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "frank",
+                "user",
+                "S One",
+                "B One",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "email.send": [
+                "alice",
+                "S ",
+                "B "
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "alice",
+                "user",
+                "S ",
+                "B ",
+                "step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bob"
+            ]
+        },
+        {
+            "email.send": [
+                "bob",
+                "S ",
+                "B "
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "eve"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "frank"
+            ]
+        },
+        {
+            "email.send": [
+                "frank",
+                "S ",
+                "B "
+            ]
+        },
+        {
+            "event": [
+                "OCA\\OpenRegister\\Event\\FlowEmailSentEvent",
+                "frank",
+                "user",
+                "S ",
+                "B ",
+                "step-x"
+            ]
+        },
+        {
+            "returned": {
+                "channel": "email",
+                "actor": "actor",
+                "recipients": 6,
+                "delivered": {
+                    "count": 4,
+                    "sample": [
+                        "alice",
+                        "frank",
+                        "alice",
+                        "frank"
+                    ]
+                },
+                "skippedByPreference": {
+                    "count": 2,
+                    "sample": [
+                        "carol",
+                        "dave"
+                    ]
+                },
+                "skippedByKillSwitch": {
+                    "count": 2,
+                    "sample": [
+                        "bob",
+                        "bob"
+                    ]
+                },
+                "rateLimited": {
+                    "count": 2,
+                    "sample": [
+                        "eve",
+                        "eve"
+                    ]
+                },
+                "failed": {
+                    "count": 0,
+                    "sample": []
+                },
+                "optedOut": {
+                    "count": 0,
+                    "sample": []
+                },
+                "authorityUnavailable": {
+                    "count": 0,
+                    "sample": []
+                },
+                "unknownRecipients": {
+                    "count": 2,
+                    "sample": [
+                        "ghost",
+                        "zed"
+                    ]
+                },
+                "refusedRecipients": {
+                    "count": 7,
+                    "sample": [
+                        {
+                            "recipient": "ok@x.example",
+                            "reason": "not-on-item"
+                        },
+                        {
+                            "recipient": "ks@x.example",
+                            "reason": "not-on-item"
+                        },
+                        {
+                            "recipient": "bad@x.example",
+                            "reason": "not-on-item"
+                        },
+                        {
+                            "recipient": "optout@x.example",
+                            "reason": "not-on-item"
+                        },
+                        {
+                            "recipient": "auth@x.example",
+                            "reason": "not-on-item"
+                        }
+                    ]
+                },
+                "truncated": true
+            }
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "email",
+                    "actor": "actor",
+                    "recipients": 6,
+                    "delivered": {
+                        "count": 4,
+                        "sample": [
+                            "alice",
+                            "frank",
+                            "alice",
+                            "frank"
+                        ]
+                    },
+                    "skippedByPreference": {
+                        "count": 2,
+                        "sample": [
+                            "carol",
+                            "dave"
+                        ]
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 2,
+                        "sample": [
+                            "bob",
+                            "bob"
+                        ]
+                    },
+                    "rateLimited": {
+                        "count": 2,
+                        "sample": [
+                            "eve",
+                            "eve"
+                        ]
+                    },
+                    "failed": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "optedOut": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "authorityUnavailable": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "unknownRecipients": {
+                        "count": 2,
+                        "sample": [
+                            "ghost",
+                            "zed"
+                        ]
+                    },
+                    "refusedRecipients": {
+                        "count": 7,
+                        "sample": [
+                            {
+                                "recipient": "ok@x.example",
+                                "reason": "not-on-item"
+                            },
+                            {
+                                "recipient": "ks@x.example",
+                                "reason": "not-on-item"
+                            },
+                            {
+                                "recipient": "bad@x.example",
+                                "reason": "not-on-item"
+                            },
+                            {
+                                "recipient": "optout@x.example",
+                                "reason": "not-on-item"
+                            },
+                            {
+                                "recipient": "auth@x.example",
+                                "reason": "not-on-item"
+                            }
+                        ]
+                    },
+                    "truncated": true
+                }
+            }
+        }
+    ],
+    "email-over-bound": [
+        {
+            "log.info": [
+                "[FlowMessagingService] 2 recipient entries did not resolve to a user or group: ghost, zed"
+            ]
+        },
+        {
+            "threw": "RuntimeException",
+            "message": "The recipient list resolved to 12 recipients, above the bound of 3; nothing was sent. Narrow the recipients, or raise \"flow_messaging_recipient_bound\" in app config."
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "email",
+                    "actor": "actor",
+                    "recipients": 12,
+                    "delivered": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByPreference": {
+                        "count": 2,
+                        "sample": [
+                            "carol",
+                            "dave"
+                        ]
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "rateLimited": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "failed": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "optedOut": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "authorityUnavailable": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "unknownRecipients": {
+                        "count": 2,
+                        "sample": [
+                            "ghost",
+                            "zed"
+                        ]
+                    },
+                    "refusedRecipients": {
+                        "count": 1,
+                        "sample": [
+                            {
+                                "recipient": "nope@",
+                                "reason": "invalid-address"
+                            }
+                        ]
+                    },
+                    "truncated": false
+                }
+            }
+        }
+    ],
+    "notification": [
+        {
+            "log.info": [
+                "[FlowMessagingService] 9 recipient entries did not resolve to a user or group: ghost, ok@x.example, ks@x.example, bad@x.example, optout@x.example"
+            ]
+        },
+        {
+            "optOut.ask": [
+                "email",
+                "",
+                [],
+                "openregister-flow::step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "nc.send": [
+                "alice",
+                "o-1",
+                "One",
+                "step-x",
+                "T One",
+                "M One"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bob"
+            ]
+        },
+        {
+            "nc.send": [
+                "bob",
+                "o-1",
+                "One",
+                "step-x",
+                "T One",
+                "M One"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "eve"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "frank"
+            ]
+        },
+        {
+            "nc.send": [
+                "frank",
+                "o-1",
+                "One",
+                "step-x",
+                "T One",
+                "M One"
+            ]
+        },
+        {
+            "nc.webPush": [
+                [
+                    "alice",
+                    "frank"
+                ],
+                "step-x",
+                "T One",
+                "M One",
+                "o-1"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "nc.send": [
+                "alice",
+                "o-2",
+                "Two",
+                "step-x",
+                "T ",
+                "M "
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "bob"
+            ]
+        },
+        {
+            "nc.send": [
+                "bob",
+                "o-2",
+                "Two",
+                "step-x",
+                "T ",
+                "M "
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "eve"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "frank"
+            ]
+        },
+        {
+            "nc.send": [
+                "frank",
+                "o-2",
+                "Two",
+                "step-x",
+                "T ",
+                "M "
+            ]
+        },
+        {
+            "nc.webPush": [
+                [
+                    "alice",
+                    "frank"
+                ],
+                "step-x",
+                "T ",
+                "M ",
+                "o-2"
+            ]
+        },
+        {
+            "returned": {
+                "channel": "nc-notification",
+                "actor": "actor",
+                "recipients": 6,
+                "delivered": {
+                    "count": 4,
+                    "sample": [
+                        "alice",
+                        "frank",
+                        "alice",
+                        "frank"
+                    ]
+                },
+                "skippedByPreference": {
+                    "count": 2,
+                    "sample": [
+                        "carol",
+                        "dave"
+                    ]
+                },
+                "skippedByKillSwitch": {
+                    "count": 2,
+                    "sample": [
+                        "bob",
+                        "bob"
+                    ]
+                },
+                "rateLimited": {
+                    "count": 2,
+                    "sample": [
+                        "eve",
+                        "eve"
+                    ]
+                },
+                "failed": {
+                    "count": 0,
+                    "sample": []
+                },
+                "unknownRecipients": {
+                    "count": 9,
+                    "sample": [
+                        "ghost",
+                        "ok@x.example",
+                        "ks@x.example",
+                        "bad@x.example",
+                        "optout@x.example"
+                    ]
+                },
+                "truncated": true
+            }
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "nc-notification",
+                    "actor": "actor",
+                    "recipients": 6,
+                    "delivered": {
+                        "count": 4,
+                        "sample": [
+                            "alice",
+                            "frank",
+                            "alice",
+                            "frank"
+                        ]
+                    },
+                    "skippedByPreference": {
+                        "count": 2,
+                        "sample": [
+                            "carol",
+                            "dave"
+                        ]
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 2,
+                        "sample": [
+                            "bob",
+                            "bob"
+                        ]
+                    },
+                    "rateLimited": {
+                        "count": 2,
+                        "sample": [
+                            "eve",
+                            "eve"
+                        ]
+                    },
+                    "failed": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "unknownRecipients": {
+                        "count": 9,
+                        "sample": [
+                            "ghost",
+                            "ok@x.example",
+                            "ks@x.example",
+                            "bad@x.example",
+                            "optout@x.example"
+                        ]
+                    },
+                    "truncated": true
+                }
+            }
+        }
+    ],
+    "notification-delivered-only": [
+        {
+            "optOut.ask": [
+                "email",
+                "",
+                [],
+                "openregister-flow::step-x"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "nc.send": [
+                "alice",
+                "o-1",
+                "One",
+                "step-x",
+                "T One",
+                "M One"
+            ]
+        },
+        {
+            "nc.webPush": [
+                [
+                    "alice"
+                ],
+                "step-x",
+                "T One",
+                "M One",
+                "o-1"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "alice"
+            ]
+        },
+        {
+            "nc.send": [
+                "alice",
+                "o-2",
+                "Two",
+                "step-x",
+                "T ",
+                "M "
+            ]
+        },
+        {
+            "nc.webPush": [
+                [
+                    "alice"
+                ],
+                "step-x",
+                "T ",
+                "M ",
+                "o-2"
+            ]
+        },
+        {
+            "returned": {
+                "channel": "nc-notification",
+                "actor": "actor",
+                "recipients": 1,
+                "delivered": {
+                    "count": 2,
+                    "sample": [
+                        "alice",
+                        "alice"
+                    ]
+                },
+                "skippedByPreference": {
+                    "count": 0,
+                    "sample": []
+                },
+                "skippedByKillSwitch": {
+                    "count": 0,
+                    "sample": []
+                },
+                "rateLimited": {
+                    "count": 0,
+                    "sample": []
+                },
+                "failed": {
+                    "count": 0,
+                    "sample": []
+                },
+                "truncated": false
+            }
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "nc-notification",
+                    "actor": "actor",
+                    "recipients": 1,
+                    "delivered": {
+                        "count": 2,
+                        "sample": [
+                            "alice",
+                            "alice"
+                        ]
+                    },
+                    "skippedByPreference": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "rateLimited": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "failed": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "truncated": false
+                }
+            }
+        }
+    ],
+    "notification-kill-switch": [
+        {
+            "log.info": [
+                "[FlowMessagingService] 9 recipient entries did not resolve to a user or group: ghost, ok@x.example, ks@x.example, bad@x.example, optout@x.example"
+            ]
+        },
+        {
+            "returned": {
+                "channel": "nc-notification",
+                "actor": "actor",
+                "recipients": 6,
+                "delivered": {
+                    "count": 0,
+                    "sample": []
+                },
+                "skippedByPreference": {
+                    "count": 0,
+                    "sample": []
+                },
+                "skippedByKillSwitch": {
+                    "count": 6,
+                    "sample": [
+                        "alice",
+                        "bob",
+                        "carol",
+                        "dave",
+                        "eve"
+                    ]
+                },
+                "rateLimited": {
+                    "count": 0,
+                    "sample": []
+                },
+                "failed": {
+                    "count": 0,
+                    "sample": []
+                },
+                "unknownRecipients": {
+                    "count": 9,
+                    "sample": [
+                        "ghost",
+                        "ok@x.example",
+                        "ks@x.example",
+                        "bad@x.example",
+                        "optout@x.example"
+                    ]
+                },
+                "truncated": true
+            }
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "nc-notification",
+                    "actor": "actor",
+                    "recipients": 6,
+                    "delivered": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByPreference": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 6,
+                        "sample": [
+                            "alice",
+                            "bob",
+                            "carol",
+                            "dave",
+                            "eve"
+                        ]
+                    },
+                    "rateLimited": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "failed": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "unknownRecipients": {
+                        "count": 9,
+                        "sample": [
+                            "ghost",
+                            "ok@x.example",
+                            "ks@x.example",
+                            "bad@x.example",
+                            "optout@x.example"
+                        ]
+                    },
+                    "truncated": true
+                }
+            }
+        }
+    ],
+    "notification-unknowns": [
+        {
+            "log.info": [
+                "[FlowMessagingService] 7 recipient entries did not resolve to a user or group: ghost1, ghost2, ghost3, ghost4, ghost5"
+            ]
+        },
+        {
+            "optOut.ask": [
+                "email",
+                "",
+                [],
+                "openregister-flow::step-x"
+            ]
+        },
+        {
+            "returned": {
+                "channel": "nc-notification",
+                "actor": "actor",
+                "recipients": 0,
+                "delivered": {
+                    "count": 0,
+                    "sample": []
+                },
+                "skippedByPreference": {
+                    "count": 0,
+                    "sample": []
+                },
+                "skippedByKillSwitch": {
+                    "count": 0,
+                    "sample": []
+                },
+                "rateLimited": {
+                    "count": 0,
+                    "sample": []
+                },
+                "failed": {
+                    "count": 0,
+                    "sample": []
+                },
+                "unknownRecipients": {
+                    "count": 7,
+                    "sample": [
+                        "ghost1",
+                        "ghost2",
+                        "ghost3",
+                        "ghost4",
+                        "ghost5"
+                    ]
+                },
+                "truncated": true
+            }
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "nc-notification",
+                    "actor": "actor",
+                    "recipients": 0,
+                    "delivered": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByPreference": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "rateLimited": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "failed": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "unknownRecipients": {
+                        "count": 7,
+                        "sample": [
+                            "ghost1",
+                            "ghost2",
+                            "ghost3",
+                            "ghost4",
+                            "ghost5"
+                        ]
+                    },
+                    "truncated": true
+                }
+            }
+        }
+    ],
+    "talk": [
+        {
+            "rate": [
+                "step-x",
+                "__talk__:room-ok"
+            ]
+        },
+        {
+            "talk.post": [
+                "room-ok",
+                "Hi room-ok",
+                "actor"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "__talk__:room-ks"
+            ]
+        },
+        {
+            "talk.post": [
+                "room-ks",
+                "Hi room-ks",
+                "actor"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "__talk__:room-err"
+            ]
+        },
+        {
+            "talk.post": [
+                "room-err",
+                "Hi room-err",
+                "actor"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "__talk__:room-limit"
+            ]
+        },
+        {
+            "threw": "RuntimeException",
+            "message": "2 of 5 Talk posts failed: not a participant | No Talk conversation resolved for an item; nothing was posted for it."
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "talk",
+                    "actor": "actor",
+                    "recipients": 0,
+                    "delivered": {
+                        "count": 1,
+                        "sample": [
+                            "room-ok"
+                        ]
+                    },
+                    "skippedByPreference": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 1,
+                        "sample": [
+                            "room-ks"
+                        ]
+                    },
+                    "rateLimited": {
+                        "count": 1,
+                        "sample": [
+                            "room-limit"
+                        ]
+                    },
+                    "failed": {
+                        "count": 2,
+                        "sample": [
+                            "room-err",
+                            ""
+                        ]
+                    },
+                    "truncated": false
+                }
+            }
+        }
+    ],
+    "talk-literal": [
+        {
+            "rate": [
+                "step-x",
+                "__talk__:room-ok"
+            ]
+        },
+        {
+            "talk.post": [
+                "room-ok",
+                "Hi",
+                "actor"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "__talk__:room-ok"
+            ]
+        },
+        {
+            "talk.post": [
+                "room-ok",
+                "Hi",
+                "actor"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "__talk__:room-ok"
+            ]
+        },
+        {
+            "talk.post": [
+                "room-ok",
+                "Hi",
+                "actor"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "__talk__:room-ok"
+            ]
+        },
+        {
+            "talk.post": [
+                "room-ok",
+                "Hi",
+                "actor"
+            ]
+        },
+        {
+            "rate": [
+                "step-x",
+                "__talk__:room-ok"
+            ]
+        },
+        {
+            "talk.post": [
+                "room-ok",
+                "Hi",
+                "actor"
+            ]
+        },
+        {
+            "returned": {
+                "channel": "talk",
+                "actor": "actor",
+                "recipients": 0,
+                "delivered": {
+                    "count": 5,
+                    "sample": [
+                        "room-ok",
+                        "room-ok",
+                        "room-ok",
+                        "room-ok",
+                        "room-ok"
+                    ]
+                },
+                "skippedByPreference": {
+                    "count": 0,
+                    "sample": []
+                },
+                "skippedByKillSwitch": {
+                    "count": 0,
+                    "sample": []
+                },
+                "rateLimited": {
+                    "count": 0,
+                    "sample": []
+                },
+                "failed": {
+                    "count": 0,
+                    "sample": []
+                },
+                "truncated": false
+            }
+        },
+        {
+            "handle": {
+                "messaging": {
+                    "channel": "talk",
+                    "actor": "actor",
+                    "recipients": 0,
+                    "delivered": {
+                        "count": 5,
+                        "sample": [
+                            "room-ok",
+                            "room-ok",
+                            "room-ok",
+                            "room-ok",
+                            "room-ok"
+                        ]
+                    },
+                    "skippedByPreference": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "skippedByKillSwitch": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "rateLimited": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "failed": {
+                        "count": 0,
+                        "sample": []
+                    },
+                    "truncated": false
+                }
+            }
+        }
+    ]
+}

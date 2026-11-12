@@ -17,7 +17,7 @@
  * WHERE MAY THE FLOW SEND SOMEBODY AFTERWARDS. An attacker-chosen redirect target on
  * a callback is an open redirect, so a proposed return URL is reduced to a PATH on
  * this instance and anything carrying its own scheme or host is discarded in favour
- * of personal settings. The reduced value is then carried inside the signed state, so
+ * of the app page. The reduced value is then carried inside the signed state, so
  * the callback only ever redirects somewhere the instance itself approved rather than
  * to anything present in the request that came back.
  *
@@ -43,7 +43,7 @@ use OCP\IURLGenerator;
 /**
  * Resolves this instance's own callback, client-metadata and return URLs.
  */
-class OAuth2Endpoints {
+class OAuth2Endpoints implements OAuth2EndpointsInterface {
 	/**
 	 * Constructor.
 	 *
@@ -100,21 +100,36 @@ class OAuth2Endpoints {
 		// The app's own page: Connected accounts is in its user settings dialog.
 		$fallback = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 
-		$candidate = trim($candidate);
-		if ($candidate === '') {
-			return $fallback;
-		}
-
-		$parts = parse_url($candidate);
-		if (is_array($parts) === false || isset($parts['host']) === true || isset($parts['scheme']) === true) {
-			return $fallback;
-		}
-
-		$path = (string)($parts['path'] ?? '');
-		if (str_starts_with($path, '/') === false) {
+		$path = $this->localPath(candidate: trim($candidate));
+		if ($path === null) {
 			return $fallback;
 		}
 
 		return $this->urlGenerator->getAbsoluteURL($path);
 	}//end safeReturnUrl()
+
+	/**
+	 * The path of a candidate return URL that stays on this instance: no scheme, no host, an absolute path.
+	 *
+	 * @param string $candidate The trimmed candidate.
+	 *
+	 * @return string|null The path, or null when the candidate is empty or leaves the instance.
+	 */
+	private function localPath(string $candidate): ?string {
+		if ($candidate === '') {
+			return null;
+		}
+
+		$parts = parse_url($candidate);
+		if (is_array($parts) === false || isset($parts['host']) === true || isset($parts['scheme']) === true) {
+			return null;
+		}
+
+		$path = (string)($parts['path'] ?? '');
+		if (str_starts_with($path, '/') === false) {
+			return null;
+		}
+
+		return $path;
+	}//end localPath()
 }//end class

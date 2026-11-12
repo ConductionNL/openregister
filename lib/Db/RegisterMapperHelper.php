@@ -58,20 +58,15 @@ class RegisterMapperHelper {
 	 */
 	public function bumpPatchVersion(string $version): string {
 		// Capture: major.minor.patch followed by an optional -prerelease/+build suffix.
-		if (preg_match('/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(.*)$/', trim($version), $matches) === 1) {
-			$major = (int)$matches[1];
-			// Groups 2-4 are always present: the trailing `(.*)` always matches,
-			// so PHP fills the earlier optional groups with '' rather than
-			// omitting them. (int)'' is 0, so the old `?? 0` was a no-op.
-			$minor = (int)$matches[2];
-			$patch = (int)$matches[3];
-			$suffix = $matches[4];
-
-			return $major . '.' . $minor . '.' . ($patch + 1) . $suffix;
+		if (preg_match('/^(\d+)(?:\.(\d+))?(?:\.(\d+))?(.*)$/', trim($version), $matches) !== 1) {
+			// Fall back to a safe default when the version is unparsable.
+			return '0.0.1';
 		}
 
-		// Fall back to a safe default when the version is unparsable.
-		return '0.0.1';
+		// Groups 2-4 are always present: the trailing `(.*)` always matches,
+		// so PHP fills the earlier optional groups with '' rather than
+		// omitting them, and (int)'' is 0.
+		return (int)$matches[1] . '.' . (int)$matches[2] . '.' . ((int)$matches[3] + 1) . $matches[4];
 	}//end bumpPatchVersion()
 
 
@@ -92,17 +87,29 @@ class RegisterMapperHelper {
 		}
 
 		if (is_string($raw) === true && $raw !== '') {
-			$decoded = json_decode($raw, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-
-			// Legacy comma-separated fallback.
-			return array_filter(array_map('trim', explode(',', $raw)));
+			return $this->decodeSchemasString(raw: $raw);
 		}
 
 		return [];
 	}//end decodeSchemasField()
+
+
+	/**
+	 * Decode a non-empty `schemas` string: JSON first, then comma-separated.
+	 *
+	 * @param string $raw The raw column value.
+	 *
+	 * @return array<int|string,mixed>
+	 */
+	private function decodeSchemasString(string $raw): array {
+		$decoded = json_decode($raw, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		// Legacy comma-separated fallback.
+		return array_filter(array_map('trim', explode(',', $raw)));
+	}//end decodeSchemasString()
 
 
 }//end class

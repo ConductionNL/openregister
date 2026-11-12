@@ -3,7 +3,7 @@
 /**
  * PdfMetadataSanitizerTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer}
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\Pdf\PdfMetadataSanitizer}
  * covering /Info field stripping, XMP-namespace stripping, and
  * preservation of custom (non-stripped) namespaces.
  *
@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace Unit\Service\File\Pdf;
 
 use ddn\sapp\PDFDoc;
-use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfMetadataSanitizer;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

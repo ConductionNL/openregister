@@ -1,0 +1,442 @@
+{
+    "cost over limit": {
+        "error": "Query cost 110 exceeds maximum allowed cost 50",
+        "extensions": {
+            "code": "QUERY_TOO_COMPLEX",
+            "estimatedCost": 110,
+            "maxCost": 50
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "depth and cost over": {
+        "error": "Query depth 3 exceeds maximum allowed depth 1",
+        "extensions": {
+            "code": "QUERY_TOO_COMPLEX",
+            "maxDepth": 1,
+            "actualDepth": 3
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "depth at limit": {
+        "result": {
+            "depth": 3,
+            "cost": 34,
+            "maxDepth": 3,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "depth over limit": {
+        "error": "Query depth 3 exceeds maximum allowed depth 2",
+        "extensions": {
+            "code": "QUERY_TOO_COMPLEX",
+            "maxDepth": 2,
+            "actualDepth": 3
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "flat": {
+        "result": {
+            "depth": 0,
+            "cost": 3,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "fragment spread ignored": {
+        "result": {
+            "depth": 1,
+            "cost": 11,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "inline fragments": {
+        "result": {
+            "depth": 2,
+            "cost": 24,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "introspection skipped": {
+        "result": {
+            "depth": 0,
+            "cost": 1,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "list multipliers": {
+        "result": {
+            "depth": 2,
+            "cost": 110,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "nested defaults": {
+        "result": {
+            "depth": 3,
+            "cost": 34,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "non-numeric limits": {
+        "result": {
+            "depth": 0,
+            "cost": 1,
+            "maxDepth": 0,
+            "maxCost": 5
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "other arguments": {
+        "result": {
+            "depth": 1,
+            "cost": 12,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "schema cost override": {
+        "result": {
+            "depth": 1,
+            "cost": 8,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "top-level inline fragment": {
+        "result": {
+            "depth": 1,
+            "cost": 12,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "two operations": {
+        "result": {
+            "depth": 2,
+            "cost": 35,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "variable missing": {
+        "result": {
+            "depth": 1,
+            "cost": 12,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "variable multiplier": {
+        "result": {
+            "depth": 1,
+            "cost": 25,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "variable not numeric": {
+        "result": {
+            "depth": 1,
+            "cost": 12,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "variable null": {
+        "result": {
+            "depth": 1,
+            "cost": 12,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "variable then literal": {
+        "result": {
+            "depth": 1,
+            "cost": 15,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "variable without variables": {
+        "result": {
+            "depth": 1,
+            "cost": 12,
+            "maxDepth": 10,
+            "maxCost": 10000
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    },
+    "zero cost limit, field only": {
+        "error": "Query cost 1 exceeds maximum allowed cost 0",
+        "extensions": {
+            "code": "QUERY_TOO_COMPLEX",
+            "estimatedCost": 1,
+            "maxCost": 0
+        },
+        "reads": [
+            [
+                "openregister",
+                "graphql_max_depth",
+                "10"
+            ],
+            [
+                "openregister",
+                "graphql_max_cost",
+                "10000"
+            ]
+        ]
+    }
+}

@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\ManifestService;
+use OCA\OpenRegister\Service\ManifestSources;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -69,8 +70,7 @@ class ManifestServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ManifestService(
-			$this->objectService,
-			$this->schemaMapper,
+			new ManifestSources($this->objectService, $this->schemaMapper),
 			$this->evaluator,
 			$this->userSession,
 			$this->logger

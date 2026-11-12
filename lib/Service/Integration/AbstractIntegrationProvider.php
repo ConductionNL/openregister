@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Default starting point for concrete IntegrationProvider implementations.
@@ -108,9 +109,7 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * providers can rely on this default; CRUD-capable providers
 	 * override.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Linked-thing id.
 	 *
 	 * @return array<string,mixed>
@@ -123,18 +122,14 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support get()', $this->getId())
-		);
+	public function get(ObjectRef $ref, string $entityId): array {
+		throw $this->unsupported(operation: 'get');
 	}//end get()
 
 	/**
 	 * Create / attach a linked thing.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $payload New linked-thing fields.
 	 *
 	 * @return array<string,mixed>
@@ -147,18 +142,14 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support create()', $this->getId())
-		);
+	public function create(ObjectRef $ref, array $payload): array {
+		throw $this->unsupported(operation: 'create');
 	}//end create()
 
 	/**
 	 * Update a linked thing.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Linked-thing id.
 	 * @param array<string,mixed> $payload Update payload.
 	 *
@@ -172,18 +163,14 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support update()', $this->getId())
-		);
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
+		throw $this->unsupported(operation: 'update');
 	}//end update()
 
 	/**
 	 * Delete / unlink a linked thing.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Owning object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Linked-thing id.
 	 *
 	 * @return void
@@ -196,11 +183,22 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Parameters are mandated by the IntegrationProvider interface;
 	 *   this abstract stub intentionally throws — concrete providers override and use all parameters.
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		throw new NotImplementedException(
-			message: sprintf('Provider %s does not support delete()', $this->getId())
-		);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		throw $this->unsupported(operation: 'delete');
 	}//end delete()
+
+	/**
+	 * The NotImplementedException a provider answers for an operation it does not support.
+	 *
+	 * @param string $operation The operation, as the message names it: `get`, `create`, `update` or `delete`.
+	 *
+	 * @return NotImplementedException
+	 */
+	private function unsupported(string $operation): NotImplementedException {
+		return new NotImplementedException(
+			message: sprintf('Provider %s does not support %s()', $this->getId(), $operation)
+		);
+	}//end unsupported()
 
 	/**
 	 * Default health descriptor — assumes a healthy, configured integration.
@@ -221,4 +219,21 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 			'message' => null,
 		];
 	}//end health()
+
+	/**
+	 * Health descriptor of a provider that needs one Nextcloud app: ok when it
+	 * is available, otherwise unavailable with the given message.
+	 *
+	 * @param bool   $available Whether the backing app is available.
+	 * @param string $missing   The message when it is not.
+	 *
+	 * @return array{status: string, authStatus: string, message: ?string}
+	 */
+	protected function installedHealth(bool $available, string $missing): array {
+		if ($available === true) {
+			return ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];
+		}
+
+		return ['status' => 'unavailable', 'authStatus' => 'configured', 'message' => $missing];
+	}//end installedHealth()
 }//end class

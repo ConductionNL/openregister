@@ -1,0 +1,351 @@
+{
+ "apply": {
+  ".dangling.md": [
+   "# Residual dangling @spec anchors \u2014 golden-app",
+   "",
+   "23 anchors could not be repointed unambiguously and need human triage.",
+   "",
+   "",
+   "## D. non-tasks.md ref (decimal task / design.md / proposal.md / specs anchor re-headed) (16)",
+   "15 items, - \u2026 +1 more",
+   "",
+   "## D. archived change dir not located (3)",
+   "- `lib/A.php` \u2192 `openspec/changes/missing-change/tasks.md#task-1`",
+   "- `lib/A.php` \u2192 `openspec/changes/twin/tasks.md#task-1`",
+   "- `src/deep/c.vue` \u2192 `openspec/changes/twin/tasks.md#task-1`",
+   "",
+   "## C. capability archived/deleted \u2014 no canonical spec (requirement genuinely gone) (2)",
+   "- `lib/A.php` \u2192 `openspec/changes/retrofit-widgets/tasks.md#task-2`",
+   "- `lib/A.php` \u2192 `openspec/changes/x/specs/nowhere/spec.md#a`",
+   "",
+   "## D. change uses non-annotate tasks.md (no task-N: cap#REQ line) \u2014 needs spec delta read (1)",
+   "- `lib/A.php` \u2192 `openspec/changes/retrofit-widgets/tasks.md#task-99`",
+   "",
+   "## D. no-fragment tasks.md ref, slug is not a canonical capability (1)",
+   "- `lib/A.php` \u2192 `openspec/changes/not-a-cap/tasks.md`",
+   "",
+   "## end"
+  ],
+  ".report.json": {
+   "changed_files": [
+    "<root>/lib/A.php",
+    "<root>/src/b.js",
+    "<root>/src/vendor/skip.js"
+   ],
+   "counts": {
+    "DANGLING": 23,
+    "REPOINT_ANCHOR": 8,
+    "REPOINT_FILE": 8
+   },
+   "dangling": 23,
+   "files_changed": 3,
+   "repoint_anchor": 8,
+   "repoint_file": 8,
+   "root": "<root>"
+  },
+  "exit": 0,
+  "files": {
+   "lib/A.php": "<?php\nclass A {\n    /**\n     * @spec openspec/specs/widget-registry/spec.md#requirement-the-system-must-register-widgets-by-slug\n     */\n    public function m0(): int { return 0; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-2\n     */\n    public function m1(): int { return 1; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md\n     */\n    public function m2(): int { return 2; }\n    /**\n     * @spec openspec/specs/catalog/spec.md#requirement-catalog-items\n     */\n    public function m3(): int { return 3; }\n    /**\n     * @spec openspec/specs/sectioned/spec.md\n     */\n    public function m4(): int { return 4; }\n    /**\n     * @spec openspec/specs/sectioned/spec.md\n     */\n    public function m5(): int { return 5; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-99\n     */\n    public function m6(): int { return 6; }\n    /**\n     * @spec openspec/specs/catalog/spec.md#plain-heading\n     */\n    public function m7(): int { return 7; }\n    /**\n     * @spec openspec/specs/catalog/spec.md#requirement-catalog-items\n     */\n    public function m8(): int { return 8; }\n    /**\n     * @spec openspec/specs/catalog/spec.md\n     */\n    public function m9(): int { return 9; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md#requirement-listing\n     */\n    public function m10(): int { return 10; }\n    /**\n     * @spec openspec/changes/twin/tasks.md#task-1\n     */\n    public function m11(): int { return 11; }\n    /**\n     * @spec openspec/changes/missing-change/tasks.md#task-1\n     */\n    public function m12(): int { return 12; }\n    /**\n     * @spec openspec/specs/catalog/spec.md\n     */\n    public function m13(): int { return 13; }\n    /**\n     * @spec openspec/changes/not-a-cap/tasks.md\n     */\n    public function m14(): int { return 14; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#notatask\n     */\n    public function m15(): int { return 15; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md\n     */\n    public function m16(): int { return 16; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md\n     */\n    public function m17(): int { return 17; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md\n     */\n    public function m18(): int { return 18; }\n    /**\n     * @spec openspec/changes/x/specs/nowhere/spec.md#a\n     */\n    public function m19(): int { return 19; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md#requirement-listing\n     */\n    public function m20(): int { return 20; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md#totally-gone\n     */\n    public function m21(): int { return 21; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md#requirement-listing\n     */\n    public function m22(): int { return 22; }\n    /**\n     * @spec openspec/changes/y/design.md#d\n     */\n    public function m23(): int { return 23; }\n    /**\n     * @spec openspec/missing/file.md\n     */\n    public function m24(): int { return 24; }\n}\n",
+   "lib/Many0.php": "<?php // @spec openspec/changes/y/proposal.md#p0\n",
+   "lib/Many1.php": "<?php // @spec openspec/changes/y/proposal.md#p1\n",
+   "lib/Many10.php": "<?php // @spec openspec/changes/y/proposal.md#p10\n",
+   "lib/Many11.php": "<?php // @spec openspec/changes/y/proposal.md#p11\n",
+   "lib/Many2.php": "<?php // @spec openspec/changes/y/proposal.md#p2\n",
+   "lib/Many3.php": "<?php // @spec openspec/changes/y/proposal.md#p3\n",
+   "lib/Many4.php": "<?php // @spec openspec/changes/y/proposal.md#p4\n",
+   "lib/Many5.php": "<?php // @spec openspec/changes/y/proposal.md#p5\n",
+   "lib/Many6.php": "<?php // @spec openspec/changes/y/proposal.md#p6\n",
+   "lib/Many7.php": "<?php // @spec openspec/changes/y/proposal.md#p7\n",
+   "lib/Many8.php": "<?php // @spec openspec/changes/y/proposal.md#p8\n",
+   "lib/Many9.php": "<?php // @spec openspec/changes/y/proposal.md#p9\n",
+   "lib/latin1.php": "<?php // @spec openspec/missing/file.md \u00e9\n",
+   "src/b.js": "// @spec openspec/specs/widget-registry/spec.md#requirement-the-system-must-register-widgets-by-slug\r\nexport const b = 1;\r\n",
+   "src/deep/c.vue": "<!-- @spec openspec/changes/twin/tasks.md#task-1 -->\n",
+   "src/vendor/skip.js": "// @spec openspec/specs/widget-registry/spec.md#requirement-the-system-must-register-widgets-by-slug\n"
+  },
+  "stderr": "",
+  "stdout": {
+   "counts": {
+    "DANGLING": 23,
+    "REPOINT_ANCHOR": 8,
+    "REPOINT_FILE": 8
+   },
+   "dangling": 23,
+   "files_changed": 3,
+   "repoint_anchor": 8,
+   "repoint_file": 8,
+   "root": "<root>"
+  }
+ },
+ "direct": {
+  "blocks": {
+   "openspec/archive/old-change/tasks.md": {
+    "1": [
+     "- [x] task-1: widget-registry#R-1 \u2014 Listing",
+     null
+    ]
+   },
+   "openspec/changes/archive/2026-01-01-twin/tasks.md": {
+    "1": [
+     "- [x] task-1: catalog#X \u2014 Catalog items",
+     null
+    ]
+   },
+   "openspec/changes/archive/2026-02-01-twin/tasks.md": {
+    "1": [
+     "- [x] task-1: catalog#X \u2014 Catalog items",
+     null
+    ]
+   },
+   "openspec/changes/archive/2026-05-01-retrofit-widgets/tasks.md": {
+    "1": [
+     "- [x] task-1: widget-registry#REQ-001 \u2014 The system MUST register widgets by slug (retroactive annotation)",
+     null
+    ],
+    "2": [
+     "- [x] task-2: ghost-capability#REQ-002 \u2014 Something gone (retroactive annotation)",
+     null
+    ],
+    "3": [
+     "- [x] **task-3**: widget-registry#REQ-003 \u2014 \"No such heading here\"",
+     null
+    ],
+    "4": [
+     "- [ ] task-4: catalog#CAT-1 quoted \"Catalog items\" wrapped over a continuation line",
+     null
+    ],
+    "5": [
+     "- [x] task-5: Section heading wins \u2014 no inline cap",
+     "sectioned"
+    ],
+    "6": [
+     "- [x] task-6 (no cap and no dash)",
+     "sectioned"
+    ],
+    "7": [
+     "- [x] task-7: catalog#C-7 \u2014 Plain heading",
+     "sectioned"
+    ],
+    "8": [
+     "- [x] task-8: catalog#C-8 \"Catalog items\" wrapped after a blank line",
+     "sectioned"
+    ]
+   },
+   "openspec/changes/live-change/tasks.md": {
+    "1": [
+     "- [x] task-1: \u2014 Catalog items (cross-cap with widgets)",
+     "catalog"
+    ],
+    "2": [
+     "- [x] task-2: catalog#REQ-9",
+     "catalog"
+    ]
+   }
+  },
+  "resolve": {
+   "openspec/changes/catalog/tasks.md": {
+    "category": "REPOINT_FILE",
+    "new_target": "openspec/specs/catalog/spec.md",
+    "note": "slug==cap catalog"
+   },
+   "openspec/changes/live-change/tasks.md#task-1": {
+    "category": "REPOINT_ANCHOR",
+    "new_target": "openspec/specs/catalog/spec.md#requirement-catalog-items",
+    "note": "catalog#None"
+   },
+   "openspec/changes/live-change/tasks.md#task-2": {
+    "category": "REPOINT_FILE",
+    "new_target": "openspec/specs/catalog/spec.md",
+    "note": "catalog#REQ-9"
+   },
+   "openspec/changes/missing-change/tasks.md#task-1": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "archived change missing-change tasks.md not found"
+   },
+   "openspec/changes/not-a-cap/tasks.md": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "no-frag tasks.md, slug not-a-cap not a canonical cap"
+   },
+   "openspec/changes/old-change/tasks.md#task-1": {
+    "category": "REPOINT_ANCHOR",
+    "new_target": "openspec/specs/widget-registry/spec.md#requirement-listing",
+    "note": "widget-registry#R-1"
+   },
+   "openspec/changes/retrofit-widgets/tasks.md#notatask": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "unrecognised shape"
+   },
+   "openspec/changes/retrofit-widgets/tasks.md#task-1": {
+    "category": "REPOINT_ANCHOR",
+    "new_target": "openspec/specs/widget-registry/spec.md#requirement-the-system-must-register-widgets-by-slug",
+    "note": "widget-registry#REQ-001"
+   },
+   "openspec/changes/retrofit-widgets/tasks.md#task-2": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "capability ghost-capability has no canonical spec"
+   },
+   "openspec/changes/retrofit-widgets/tasks.md#task-3": {
+    "category": "REPOINT_FILE",
+    "new_target": "openspec/specs/widget-registry/spec.md",
+    "note": "widget-registry#REQ-003"
+   },
+   "openspec/changes/retrofit-widgets/tasks.md#task-4": {
+    "category": "REPOINT_ANCHOR",
+    "new_target": "openspec/specs/catalog/spec.md#requirement-catalog-items",
+    "note": "catalog#CAT-1"
+   },
+   "openspec/changes/retrofit-widgets/tasks.md#task-5": {
+    "category": "REPOINT_FILE",
+    "new_target": "openspec/specs/sectioned/spec.md",
+    "note": "sectioned#None"
+   },
+   "openspec/changes/retrofit-widgets/tasks.md#task-6": {
+    "category": "REPOINT_FILE",
+    "new_target": "openspec/specs/sectioned/spec.md",
+    "note": "sectioned#None"
+   },
+   "openspec/changes/retrofit-widgets/tasks.md#task-7": {
+    "category": "REPOINT_ANCHOR",
+    "new_target": "openspec/specs/catalog/spec.md#plain-heading",
+    "note": "catalog#C-7"
+   },
+   "openspec/changes/retrofit-widgets/tasks.md#task-99": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "task-99 not found in retrofit-widgets/tasks.md"
+   },
+   "openspec/changes/twin/tasks.md#task-1": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "archived change twin tasks.md not found"
+   },
+   "openspec/changes/x/specs/nowhere/spec.md#a": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "capability nowhere has no canonical spec"
+   },
+   "openspec/changes/x/specs/widget-registry/spec.md": {
+    "category": "REPOINT_FILE",
+    "new_target": "openspec/specs/widget-registry/spec.md",
+    "note": "widget-registry"
+   },
+   "openspec/changes/x/specs/widget-registry/spec.md#Listing.": {
+    "category": "REPOINT_FILE",
+    "new_target": "openspec/specs/widget-registry/spec.md",
+    "note": "widget-registry (anchor Listing. not in canonical)"
+   },
+   "openspec/changes/x/specs/widget-registry/spec.md#gone-anchor": {
+    "category": "REPOINT_FILE",
+    "new_target": "openspec/specs/widget-registry/spec.md",
+    "note": "widget-registry (anchor gone-anchor not in canonical)"
+   },
+   "openspec/changes/y/design.md#d": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "unrecognised shape"
+   },
+   "openspec/missing/file.md": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "unrecognised shape"
+   },
+   "openspec/specs/widget-registry/spec.md#Requirement-Listing.": {
+    "category": "REPOINT_ANCHOR",
+    "new_target": "openspec/specs/widget-registry/spec.md#requirement-listing",
+    "note": "widget-registry (fragment normalised to gate-46 form)"
+   },
+   "openspec/specs/widget-registry/spec.md#requirement-listing": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "unrecognised shape"
+   },
+   "openspec/specs/widget-registry/spec.md#totally-gone": {
+    "category": "DANGLING",
+    "new_target": null,
+    "note": "unrecognised shape"
+   }
+  }
+ },
+ "dry-run": {
+  ".dangling.md": [
+   "# Residual dangling @spec anchors \u2014 golden-app",
+   "",
+   "23 anchors could not be repointed unambiguously and need human triage.",
+   "",
+   "",
+   "## D. non-tasks.md ref (decimal task / design.md / proposal.md / specs anchor re-headed) (16)",
+   "15 items, - \u2026 +1 more",
+   "",
+   "## D. archived change dir not located (3)",
+   "- `lib/A.php` \u2192 `openspec/changes/missing-change/tasks.md#task-1`",
+   "- `lib/A.php` \u2192 `openspec/changes/twin/tasks.md#task-1`",
+   "- `src/deep/c.vue` \u2192 `openspec/changes/twin/tasks.md#task-1`",
+   "",
+   "## C. capability archived/deleted \u2014 no canonical spec (requirement genuinely gone) (2)",
+   "- `lib/A.php` \u2192 `openspec/changes/retrofit-widgets/tasks.md#task-2`",
+   "- `lib/A.php` \u2192 `openspec/changes/x/specs/nowhere/spec.md#a`",
+   "",
+   "## D. change uses non-annotate tasks.md (no task-N: cap#REQ line) \u2014 needs spec delta read (1)",
+   "- `lib/A.php` \u2192 `openspec/changes/retrofit-widgets/tasks.md#task-99`",
+   "",
+   "## D. no-fragment tasks.md ref, slug is not a canonical capability (1)",
+   "- `lib/A.php` \u2192 `openspec/changes/not-a-cap/tasks.md`",
+   "",
+   "## end"
+  ],
+  ".report.json": {
+   "changed_files": [
+    "<root>/lib/A.php",
+    "<root>/src/b.js",
+    "<root>/src/vendor/skip.js"
+   ],
+   "counts": {
+    "DANGLING": 23,
+    "REPOINT_ANCHOR": 8,
+    "REPOINT_FILE": 8
+   },
+   "dangling": 23,
+   "files_changed": 3,
+   "repoint_anchor": 8,
+   "repoint_file": 8,
+   "root": "<root>"
+  },
+  "exit": 0,
+  "files": {
+   "lib/A.php": "<?php\nclass A {\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-1\n     */\n    public function m0(): int { return 0; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-2\n     */\n    public function m1(): int { return 1; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-3\n     */\n    public function m2(): int { return 2; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-4\n     */\n    public function m3(): int { return 3; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-5\n     */\n    public function m4(): int { return 4; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-6\n     */\n    public function m5(): int { return 5; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-99\n     */\n    public function m6(): int { return 6; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#task-7\n     */\n    public function m7(): int { return 7; }\n    /**\n     * @spec openspec/changes/live-change/tasks.md#task-1\n     */\n    public function m8(): int { return 8; }\n    /**\n     * @spec openspec/changes/live-change/tasks.md#task-2\n     */\n    public function m9(): int { return 9; }\n    /**\n     * @spec openspec/changes/old-change/tasks.md#task-1\n     */\n    public function m10(): int { return 10; }\n    /**\n     * @spec openspec/changes/twin/tasks.md#task-1\n     */\n    public function m11(): int { return 11; }\n    /**\n     * @spec openspec/changes/missing-change/tasks.md#task-1\n     */\n    public function m12(): int { return 12; }\n    /**\n     * @spec openspec/changes/catalog/tasks.md\n     */\n    public function m13(): int { return 13; }\n    /**\n     * @spec openspec/changes/not-a-cap/tasks.md\n     */\n    public function m14(): int { return 14; }\n    /**\n     * @spec openspec/changes/retrofit-widgets/tasks.md#notatask\n     */\n    public function m15(): int { return 15; }\n    /**\n     * @spec openspec/changes/x/specs/widget-registry/spec.md\n     */\n    public function m16(): int { return 16; }\n    /**\n     * @spec openspec/changes/x/specs/widget-registry/spec.md#Listing.\n     */\n    public function m17(): int { return 17; }\n    /**\n     * @spec openspec/changes/x/specs/widget-registry/spec.md#gone-anchor\n     */\n    public function m18(): int { return 18; }\n    /**\n     * @spec openspec/changes/x/specs/nowhere/spec.md#a\n     */\n    public function m19(): int { return 19; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md#Requirement-Listing.\n     */\n    public function m20(): int { return 20; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md#totally-gone\n     */\n    public function m21(): int { return 21; }\n    /**\n     * @spec openspec/specs/widget-registry/spec.md#requirement-listing\n     */\n    public function m22(): int { return 22; }\n    /**\n     * @spec openspec/changes/y/design.md#d\n     */\n    public function m23(): int { return 23; }\n    /**\n     * @spec openspec/missing/file.md\n     */\n    public function m24(): int { return 24; }\n}\n",
+   "lib/Many0.php": "<?php // @spec openspec/changes/y/proposal.md#p0\n",
+   "lib/Many1.php": "<?php // @spec openspec/changes/y/proposal.md#p1\n",
+   "lib/Many10.php": "<?php // @spec openspec/changes/y/proposal.md#p10\n",
+   "lib/Many11.php": "<?php // @spec openspec/changes/y/proposal.md#p11\n",
+   "lib/Many2.php": "<?php // @spec openspec/changes/y/proposal.md#p2\n",
+   "lib/Many3.php": "<?php // @spec openspec/changes/y/proposal.md#p3\n",
+   "lib/Many4.php": "<?php // @spec openspec/changes/y/proposal.md#p4\n",
+   "lib/Many5.php": "<?php // @spec openspec/changes/y/proposal.md#p5\n",
+   "lib/Many6.php": "<?php // @spec openspec/changes/y/proposal.md#p6\n",
+   "lib/Many7.php": "<?php // @spec openspec/changes/y/proposal.md#p7\n",
+   "lib/Many8.php": "<?php // @spec openspec/changes/y/proposal.md#p8\n",
+   "lib/Many9.php": "<?php // @spec openspec/changes/y/proposal.md#p9\n",
+   "lib/latin1.php": "<?php // @spec openspec/missing/file.md \u00e9\n",
+   "src/b.js": "// @spec openspec/changes/retrofit-widgets/tasks.md#task-1\r\nexport const b = 1;\r\n",
+   "src/deep/c.vue": "<!-- @spec openspec/changes/twin/tasks.md#task-1 -->\n",
+   "src/vendor/skip.js": "// @spec openspec/changes/retrofit-widgets/tasks.md#task-1\n"
+  },
+  "stderr": "",
+  "stdout": {
+   "counts": {
+    "DANGLING": 23,
+    "REPOINT_ANCHOR": 8,
+    "REPOINT_FILE": 8
+   },
+   "dangling": 23,
+   "files_changed": 3,
+   "repoint_anchor": 8,
+   "repoint_file": 8,
+   "root": "<root>"
+  }
+ }
+}

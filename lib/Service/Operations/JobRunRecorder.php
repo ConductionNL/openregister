@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -49,9 +49,9 @@ use Throwable;
  * so the outer row, which is the one carrying the actor, is the row that
  * survives.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+ * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
-class JobRunRecorder {
+class JobRunRecorder implements JobRunRecorderInterface {
 
 	/**
 	 * How much of a failure message the row keeps.
@@ -73,12 +73,12 @@ class JobRunRecorder {
 	/**
 	 * Constructor.
 	 *
-	 * @param JobRunMapper     $runs   The run log.
+	 * @param JobRunMapperInterface     $runs   The run log.
 	 * @param LoggerInterface  $logger Where a failure to record is reported.
 	 * @param JobAlertService  $alerts Raises the threshold alert on a failure.
 	 */
 	public function __construct(
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 		private readonly LoggerInterface $logger,
 		private readonly JobAlertService $alerts,
 	) {
@@ -87,56 +87,23 @@ class JobRunRecorder {
 	/**
 	 * Run the work, recording it.
 	 *
-	 * @param string        $jobClass The job class the run belongs to.
-	 * @param callable      $work     The execution to observe.
-	 * @param string        $cause    One of the JobRun CAUSE_ constants.
-	 * @param string|null   $actor    The uid that caused the run, when a person did.
-	 * @param mixed         $argument The job argument, digested into the row.
-	 * @param array<string, mixed>|null $details What the act concerned.
+	 * @param JobRunStart $start The job class the run belongs to, with its cause, actor, argument and details.
+	 * @param callable    $work  The execution to observe.
 	 *
 	 * @return mixed Whatever the work returned.
 	 *
 	 * @throws Throwable Whatever the work threw, after the failure is recorded.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
 	 */
-	public function around(
-		string $jobClass,
-		callable $work,
-		string $cause = JobRun::CAUSE_SCHEDULE,
-		?string $actor = null,
-		mixed $argument = null,
-		?array $details = null,
-	): mixed {
-		if (($this->depth[$jobClass] ?? 0) > 0) {
+	public function around(JobRunStart $start, callable $work): mixed {
+		if (($this->depth[$start->jobClass] ?? 0) > 0) {
 			// An outer recorder already holds this run and already carries the
 			// cause and the actor. One execution is one row.
 			return $work();
 		}
 
-		$this->depth[$jobClass] = (($this->depth[$jobClass] ?? 0) + 1);
-		$run = $this->open(jobClass: $jobClass, cause: $cause, actor: $actor, argument: $argument, details: $details);
-		$startedAt = microtime(true);
-
-		try {
-			$result = $work();
-		} catch (Throwable $failure) {
-			$this->close(
-				run: $run,
-				startedAt: $startedAt,
-				outcome: JobRun::OUTCOME_FAILED,
-				message: $this->describe(failure: $failure)
-			);
-			$this->alerts->observeFailure(jobClass: $jobClass);
-			unset($this->depth[$jobClass]);
-
-			throw $failure;
-		}
-
-		$this->close(run: $run, startedAt: $startedAt, outcome: JobRun::OUTCOME_COMPLETED, message: null);
-		unset($this->depth[$jobClass]);
-
-		return $result;
+		return $this->observe(run: $this->start(jobClass: $start->jobClass, context: $start->context), work: $work);
 
 	}//end around()
 
@@ -147,16 +114,73 @@ class JobRunRecorder {
 	 * durations, and they belong on the same log as the runs because the
 	 * question the log answers is "what has been done to this instance".
 	 *
-	 * @param string               $jobClass The act, as a class-shaped name.
-	 * @param string               $actor    The uid that performed it.
-	 * @param array<string, mixed> $details  What the act concerned.
-	 * @param string|null          $message  A sentence about the act.
+	 * @param OperatorAct $act The act (as a class-shaped name), the uid that performed it, what it concerned and a sentence about it.
 	 *
 	 * @return JobRun|null The row, or null when the log could not be written.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
-	public function recordAct(string $jobClass, string $actor, array $details, ?string $message = null): ?JobRun {
+	public function recordAct(OperatorAct $act): ?JobRun {
+		$row = $this->actRow(jobClass: $act->jobClass, context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $act->actor, details: $act->details));
+		$row->setMessage($act->message);
+
+		return $this->insertAct(row: $row);
+
+	}//end recordAct()
+
+	/**
+	 * Mark the job class as recording and open its row.
+	 *
+	 * @param string        $jobClass The job class.
+	 * @param JobRunContext $context  The cause, actor, argument and details.
+	 *
+	 * @return RecordingRun The run being recorded.
+	 */
+	private function start(string $jobClass, JobRunContext $context): RecordingRun {
+		$this->depth[$jobClass] = (($this->depth[$jobClass] ?? 0) + 1);
+		$row = $this->open(jobClass: $jobClass, context: $context);
+
+		return new RecordingRun(jobClass: $jobClass, row: $row, startedAt: microtime(true));
+
+	}//end start()
+
+	/**
+	 * Run the work and close the row with its outcome, re-throwing a failure.
+	 *
+	 * @param RecordingRun $run  The run being recorded.
+	 * @param callable     $work The execution to observe.
+	 *
+	 * @return mixed Whatever the work returned.
+	 *
+	 * @throws Throwable Whatever the work threw, after the failure is recorded.
+	 */
+	private function observe(RecordingRun $run, callable $work): mixed {
+		try {
+			$result = $work();
+		} catch (Throwable $failure) {
+			$this->close(run: $run, failure: $this->describe(failure: $failure));
+			$this->alerts->observeFailure(jobClass: $run->jobClass);
+			unset($this->depth[$run->jobClass]);
+
+			throw $failure;
+		}
+
+		$this->close(run: $run, failure: null);
+		unset($this->depth[$run->jobClass]);
+
+		return $result;
+
+	}//end observe()
+
+	/**
+	 * The row of an act that has already happened: an instant, completed.
+	 *
+	 * @param string        $jobClass The act, as a class-shaped name.
+	 * @param JobRunContext $context  The manual cause, the actor and the details.
+	 *
+	 * @return JobRun The unsaved row.
+	 */
+	private function actRow(string $jobClass, JobRunContext $context): JobRun {
 		$now = new DateTime();
 		$run = new JobRun();
 		$run->setJobClass($jobClass);
@@ -164,23 +188,34 @@ class JobRunRecorder {
 		$run->setEnded($now);
 		$run->setDurationMs(0);
 		$run->setOutcome(JobRun::OUTCOME_COMPLETED);
-		$run->setCause(JobRun::CAUSE_MANUAL);
-		$run->setActor($actor);
-		$run->setMessage($message);
-		$run->setDetails($this->encodedDetails(details: $details));
+		$run->setCause($context->cause);
+		$run->setActor($context->actor);
+		$run->setDetails($this->encodedDetails(details: ($context->details ?? [])));
 
+		return $run;
+
+	}//end actRow()
+
+	/**
+	 * Store the row of an act, or log that it could not be stored.
+	 *
+	 * @param JobRun $row The row to store.
+	 *
+	 * @return JobRun|null The row, or null when the log could not be written.
+	 */
+	private function insertAct(JobRun $row): ?JobRun {
 		try {
-			return $this->runs->insert($run);
+			return $this->runs->insert($row);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[JobRunRecorder] Could not record the act',
-				context: ['job' => $jobClass, 'exception' => $exception]
+				context: ['job' => $row->getJobClass(), 'exception' => $exception]
 			);
 
 			return null;
 		}
 
-	}//end recordAct()
+	}//end insertAct()
 
 	/**
 	 * Open the row, before the work runs.
@@ -188,32 +223,13 @@ class JobRunRecorder {
 	 * A row that is written only at the end cannot answer "what is running
 	 * now", which is the read that refuses a double start (D-2).
 	 *
-	 * @param string               $jobClass The job class.
-	 * @param string               $cause    The cause constant.
-	 * @param string|null          $actor    The uid, when a person caused it.
-	 * @param mixed                $argument The job argument.
-	 * @param array<string, mixed>|null $details What the act concerned.
+	 * @param string        $jobClass The job class.
+	 * @param JobRunContext $context  The cause, actor, argument and details.
 	 *
 	 * @return JobRun|null The open row, or null when the log is unwritable.
 	 */
-	private function open(
-		string $jobClass,
-		string $cause,
-		?string $actor,
-		mixed $argument,
-		?array $details,
-	): ?JobRun {
-		$run = new JobRun();
-		$run->setJobClass($jobClass);
-		$run->setStarted(new DateTime());
-		$run->setOutcome(JobRun::OUTCOME_RUNNING);
-		$run->setCause($cause);
-		$run->setActor($actor);
-		$run->setArgumentDigest($this->digest(argument: $argument));
-
-		if ($details !== null) {
-			$run->setDetails($this->encodedDetails(details: $details));
-		}
+	private function open(string $jobClass, JobRunContext $context): ?JobRun {
+		$run = $this->runningRow(jobClass: $jobClass, context: $context);
 
 		try {
 			return $this->runs->insert($run);
@@ -231,35 +247,77 @@ class JobRunRecorder {
 	}//end open()
 
 	/**
+	 * A row for a run that starts now, with its cause, actor, argument digest and details.
+	 *
+	 * @param string        $jobClass The job class.
+	 * @param JobRunContext $context  The cause, actor, argument and details.
+	 *
+	 * @return JobRun The unsaved row.
+	 */
+	private function runningRow(string $jobClass, JobRunContext $context): JobRun {
+		$run = new JobRun();
+		$run->setJobClass($jobClass);
+		$run->setStarted(new DateTime());
+		$run->setOutcome(JobRun::OUTCOME_RUNNING);
+		$run->setCause($context->cause);
+		$run->setActor($context->actor);
+		$run->setArgumentDigest($this->digest(argument: $context->argument));
+
+		if ($context->details !== null) {
+			$run->setDetails($this->encodedDetails(details: $context->details));
+		}
+
+		return $run;
+	}//end runningRow()
+
+	/**
 	 * Close the row with its outcome and duration.
 	 *
-	 * @param JobRun|null $run       The open row, or null when opening failed.
-	 * @param float       $startedAt The microtime the work began.
-	 * @param string      $outcome   The outcome constant.
-	 * @param string|null $message   The failure message, when it failed.
+	 * @param RecordingRun $run     The run; its row is null when opening failed.
+	 * @param string|null  $failure The failure message when it failed, null when it completed.
 	 *
 	 * @return void
 	 */
-	private function close(?JobRun $run, float $startedAt, string $outcome, ?string $message): void {
-		if ($run === null) {
+	private function close(RecordingRun $run, ?string $failure): void {
+		$row = $run->row;
+
+		if ($row === null) {
 			return;
 		}
 
-		$run->setEnded(new DateTime());
-		$run->setDurationMs((int)round(((microtime(true) - $startedAt) * 1000)));
-		$run->setOutcome($outcome);
-		$run->setMessage($message);
+		$this->markEnded(run: $run, failure: $failure);
 
 		try {
-			$this->runs->update($run);
+			$this->runs->update($row);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[JobRunRecorder] Could not close a run row',
-				context: ['job' => $run->getJobClass(), 'exception' => $exception]
+				context: ['job' => $row->getJobClass(), 'exception' => $exception]
 			);
 		}
 
 	}//end close()
+
+	/**
+	 * Stamp the run's row with its end, duration, outcome and failure message.
+	 *
+	 * @param RecordingRun $run     The run, its row open.
+	 * @param string|null  $failure The failure message when it failed, null when it completed.
+	 *
+	 * @return void
+	 */
+	private function markEnded(RecordingRun $run, ?string $failure): void {
+		$row = $run->row;
+		$row->setEnded(new DateTime());
+		$row->setDurationMs((int)round(((microtime(true) - $run->startedAt) * 1000)));
+		$row->setOutcome(JobRun::OUTCOME_FAILED);
+
+		if ($failure === null) {
+			$row->setOutcome(JobRun::OUTCOME_COMPLETED);
+		}
+
+		$row->setMessage($failure);
+	}//end markEnded()
 
 	/**
 	 * The failure, as the row keeps it.
@@ -295,6 +353,7 @@ class JobRunRecorder {
 			return null;
 		}
 
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only fingerprints content to detect a change, not a security value.
 		return substr(sha1($encoded), 0, 16);
 
 	}//end digest()

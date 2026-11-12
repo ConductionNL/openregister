@@ -53,6 +53,7 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSourceLanguage(?string $sourceLanguage)
  */
 class Translation extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	public const STATUS_DRAFT = 'draft';
 	public const STATUS_MACHINE_TRANSLATED = 'machine_translated';
@@ -162,24 +163,15 @@ class Translation extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Flat array shape for response embedding.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
 	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'property' => $this->property,
-			'language' => $this->language,
-			'value' => $this->value,
-			'status' => $this->status,
-			'translator' => $this->translator,
-			'updated' => $this->updated?->format(\DateTimeInterface::ATOM),
-			'sourceLanguage' => $this->sourceLanguage,
 			'isSource' => ($this->language !== null
 				&& $this->sourceLanguage !== null
 				&& $this->language === $this->sourceLanguage),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

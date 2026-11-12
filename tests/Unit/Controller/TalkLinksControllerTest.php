@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\TalkLinksController;
+use OCA\OpenRegister\Controller\Support\TalkLinksControllerServices;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TalkLinkService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -71,10 +72,11 @@ class TalkLinksControllerTest extends TestCase {
 		$this->service = $this->createMock(TalkLinkService::class);
 
 		$this->controller = new TalkLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->createMock(ObjectService::class)
+			new TalkLinksControllerServices(
+				$this->service,
+				$this->createMock(ObjectService::class)
+			)
 		);
 	}//end setUp()
 

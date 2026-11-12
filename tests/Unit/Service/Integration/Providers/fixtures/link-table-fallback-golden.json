@@ -1,0 +1,2631 @@
+{
+    "cospend, app missing": {
+        "rows": [],
+        "queries": []
+    },
+    "cospend, linked rows": {
+        "rows": [
+            {
+                "type": "project",
+                "id": "p1",
+                "entryId": 1,
+                "title": "Trip",
+                "url": "/index.php/apps/cospend/p/p1",
+                "amount": 3.5,
+                "currency": "EUR",
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "project",
+                    "projectId": "p1",
+                    "billId": null,
+                    "name": "Trip",
+                    "amount": 3.5,
+                    "currency": "EUR",
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p1/4",
+                "entryId": 2,
+                "title": "Food",
+                "url": "/index.php/apps/cospend/p/p1",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "bill",
+                    "projectId": "p1",
+                    "billId": 4,
+                    "name": "Food",
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p2",
+                "entryId": 3,
+                "title": "",
+                "url": "/index.php/apps/cospend/p/p2",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 3,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "bill",
+                    "projectId": "p2",
+                    "billId": null,
+                    "name": null,
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "queries": []
+    },
+    "cospend, linked rows, failing database": {
+        "rows": [
+            {
+                "type": "project",
+                "id": "p1",
+                "entryId": 1,
+                "title": "Trip",
+                "url": "/index.php/apps/cospend/p/p1",
+                "amount": 3.5,
+                "currency": "EUR",
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "project",
+                    "projectId": "p1",
+                    "billId": null,
+                    "name": "Trip",
+                    "amount": 3.5,
+                    "currency": "EUR",
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p1/4",
+                "entryId": 2,
+                "title": "Food",
+                "url": "/index.php/apps/cospend/p/p1",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "bill",
+                    "projectId": "p1",
+                    "billId": 4,
+                    "name": "Food",
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p2",
+                "entryId": 3,
+                "title": "",
+                "url": "/index.php/apps/cospend/p/p2",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 3,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "bill",
+                    "projectId": "p2",
+                    "billId": null,
+                    "name": null,
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "queries": []
+    },
+    "cospend, mapper fails": {
+        "rows": [
+            {
+                "type": "project",
+                "id": "p1",
+                "title": "Trip",
+                "description": "u1",
+                "url": "/index.php/apps/cospend/p/p1",
+                "lastUpdated": 1700000000,
+                "data": {
+                    "id": "p1",
+                    "name": "Trip",
+                    "userId": "u1",
+                    "currencyName": "EUR",
+                    "lastChanged": 1700000000
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p1/4",
+                "title": "Food",
+                "description": "2023-11-14T22:15:00+00:00",
+                "url": "/index.php/apps/cospend/p/p1",
+                "lastUpdated": 1700000100,
+                "data": {
+                    "id": "4",
+                    "projectId": "p1",
+                    "what": "Food",
+                    "amount": 12.5,
+                    "payerId": 3,
+                    "timestamp": 1700000100,
+                    "currencyName": "EUR"
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p1/5",
+                "title": "Trip",
+                "description": "",
+                "url": "/index.php/apps/cospend/p/p1",
+                "lastUpdated": null,
+                "data": {
+                    "id": "5",
+                    "projectId": "p1",
+                    "what": "",
+                    "amount": 0,
+                    "payerId": null,
+                    "timestamp": null,
+                    "currencyName": "EUR"
+                }
+            },
+            {
+                "type": "project",
+                "id": "p2",
+                "title": "",
+                "description": "",
+                "url": "/index.php/apps/cospend/p/p2",
+                "lastUpdated": null,
+                "data": {
+                    "id": "p2",
+                    "name": "",
+                    "userId": "",
+                    "currencyName": "",
+                    "lastChanged": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p2/4",
+                "title": "Food",
+                "description": "2023-11-14T22:15:00+00:00",
+                "url": "/index.php/apps/cospend/p/p2",
+                "lastUpdated": 1700000100,
+                "data": {
+                    "id": "4",
+                    "projectId": "p2",
+                    "what": "Food",
+                    "amount": 12.5,
+                    "payerId": 3,
+                    "timestamp": 1700000100,
+                    "currencyName": ""
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p2/5",
+                "title": "",
+                "description": "",
+                "url": "/index.php/apps/cospend/p/p2",
+                "lastUpdated": null,
+                "data": {
+                    "id": "5",
+                    "projectId": "p2",
+                    "what": "",
+                    "amount": 0,
+                    "payerId": null,
+                    "timestamp": null,
+                    "currencyName": ""
+                }
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "*"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "cospend_projects",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%esc([or:obj-1])%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(name,:p\"%esc([or:obj-1])%\")"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "last_changed",
+                            "DESC"
+                        ]
+                    ]
+                ],
+                "table": "cospend_projects"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "*"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "cospend_bills",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "p1",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(project_id,:p\"p1\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "timestamp",
+                            "DESC"
+                        ]
+                    ],
+                    [
+                        "setMaxResults",
+                        [
+                            25
+                        ]
+                    ]
+                ],
+                "table": "cospend_bills"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "*"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "cospend_bills",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "p2",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(project_id,:p\"p2\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "timestamp",
+                            "DESC"
+                        ]
+                    ],
+                    [
+                        "setMaxResults",
+                        [
+                            25
+                        ]
+                    ]
+                ],
+                "table": "cospend_bills"
+            }
+        ]
+    },
+    "cospend, no links": {
+        "rows": [
+            {
+                "type": "project",
+                "id": "p1",
+                "title": "Trip",
+                "description": "u1",
+                "url": "/index.php/apps/cospend/p/p1",
+                "lastUpdated": 1700000000,
+                "data": {
+                    "id": "p1",
+                    "name": "Trip",
+                    "userId": "u1",
+                    "currencyName": "EUR",
+                    "lastChanged": 1700000000
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p1/4",
+                "title": "Food",
+                "description": "2023-11-14T22:15:00+00:00",
+                "url": "/index.php/apps/cospend/p/p1",
+                "lastUpdated": 1700000100,
+                "data": {
+                    "id": "4",
+                    "projectId": "p1",
+                    "what": "Food",
+                    "amount": 12.5,
+                    "payerId": 3,
+                    "timestamp": 1700000100,
+                    "currencyName": "EUR"
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p1/5",
+                "title": "Trip",
+                "description": "",
+                "url": "/index.php/apps/cospend/p/p1",
+                "lastUpdated": null,
+                "data": {
+                    "id": "5",
+                    "projectId": "p1",
+                    "what": "",
+                    "amount": 0,
+                    "payerId": null,
+                    "timestamp": null,
+                    "currencyName": "EUR"
+                }
+            },
+            {
+                "type": "project",
+                "id": "p2",
+                "title": "",
+                "description": "",
+                "url": "/index.php/apps/cospend/p/p2",
+                "lastUpdated": null,
+                "data": {
+                    "id": "p2",
+                    "name": "",
+                    "userId": "",
+                    "currencyName": "",
+                    "lastChanged": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p2/4",
+                "title": "Food",
+                "description": "2023-11-14T22:15:00+00:00",
+                "url": "/index.php/apps/cospend/p/p2",
+                "lastUpdated": 1700000100,
+                "data": {
+                    "id": "4",
+                    "projectId": "p2",
+                    "what": "Food",
+                    "amount": 12.5,
+                    "payerId": 3,
+                    "timestamp": 1700000100,
+                    "currencyName": ""
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p2/5",
+                "title": "",
+                "description": "",
+                "url": "/index.php/apps/cospend/p/p2",
+                "lastUpdated": null,
+                "data": {
+                    "id": "5",
+                    "projectId": "p2",
+                    "what": "",
+                    "amount": 0,
+                    "payerId": null,
+                    "timestamp": null,
+                    "currencyName": ""
+                }
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "*"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "cospend_projects",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%esc([or:obj-1])%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(name,:p\"%esc([or:obj-1])%\")"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "last_changed",
+                            "DESC"
+                        ]
+                    ]
+                ],
+                "table": "cospend_projects"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "*"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "cospend_bills",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "p1",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(project_id,:p\"p1\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "timestamp",
+                            "DESC"
+                        ]
+                    ],
+                    [
+                        "setMaxResults",
+                        [
+                            25
+                        ]
+                    ]
+                ],
+                "table": "cospend_bills"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "*"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "cospend_bills",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "p2",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(project_id,:p\"p2\")"
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            0,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "andWhere",
+                        [
+                            "eq(deleted,:p0)"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "timestamp",
+                            "DESC"
+                        ]
+                    ],
+                    [
+                        "setMaxResults",
+                        [
+                            25
+                        ]
+                    ]
+                ],
+                "table": "cospend_bills"
+            }
+        ]
+    },
+    "cospend, no links, empty database": {
+        "rows": [],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "*"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "cospend_projects",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%esc([or:obj-1])%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(name,:p\"%esc([or:obj-1])%\")"
+                        ]
+                    ],
+                    [
+                        "orderBy",
+                        [
+                            "last_changed",
+                            "DESC"
+                        ]
+                    ]
+                ],
+                "table": "cospend_projects"
+            }
+        ]
+    },
+    "cospend, no links, failing database": {
+        "rows": [],
+        "queries": [
+            {
+                "failed": true
+            }
+        ]
+    },
+    "cospend-without-mappers, app missing": {
+        "rows": [],
+        "queries": []
+    },
+    "cospend-without-mappers, linked rows": {
+        "rows": [
+            {
+                "type": "project",
+                "id": "p1",
+                "entryId": 1,
+                "title": "Trip",
+                "url": "/index.php/apps/cospend/p/p1",
+                "amount": 3.5,
+                "currency": "EUR",
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "project",
+                    "projectId": "p1",
+                    "billId": null,
+                    "name": "Trip",
+                    "amount": 3.5,
+                    "currency": "EUR",
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p1/4",
+                "entryId": 2,
+                "title": "Food",
+                "url": "/index.php/apps/cospend/p/p1",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "bill",
+                    "projectId": "p1",
+                    "billId": 4,
+                    "name": "Food",
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p2",
+                "entryId": 3,
+                "title": "",
+                "url": "/index.php/apps/cospend/p/p2",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 3,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "bill",
+                    "projectId": "p2",
+                    "billId": null,
+                    "name": null,
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "queries": []
+    },
+    "cospend-without-mappers, linked rows, failing database": {
+        "rows": [
+            {
+                "type": "project",
+                "id": "p1",
+                "entryId": 1,
+                "title": "Trip",
+                "url": "/index.php/apps/cospend/p/p1",
+                "amount": 3.5,
+                "currency": "EUR",
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "project",
+                    "projectId": "p1",
+                    "billId": null,
+                    "name": "Trip",
+                    "amount": 3.5,
+                    "currency": "EUR",
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p1/4",
+                "entryId": 2,
+                "title": "Food",
+                "url": "/index.php/apps/cospend/p/p1",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "bill",
+                    "projectId": "p1",
+                    "billId": 4,
+                    "name": "Food",
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "type": "bill",
+                "id": "p2",
+                "entryId": 3,
+                "title": "",
+                "url": "/index.php/apps/cospend/p/p2",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 3,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "bill",
+                    "projectId": "p2",
+                    "billId": null,
+                    "name": null,
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "queries": []
+    },
+    "cospend-without-mappers, mapper fails": {
+        "rows": [],
+        "queries": []
+    },
+    "cospend-without-mappers, no links": {
+        "rows": [],
+        "queries": []
+    },
+    "cospend-without-mappers, no links, empty database": {
+        "rows": [],
+        "queries": []
+    },
+    "cospend-without-mappers, no links, failing database": {
+        "rows": [],
+        "queries": []
+    },
+    "forms, app missing": {
+        "rows": [],
+        "queries": []
+    },
+    "forms, linked rows": {
+        "rows": [
+            {
+                "id": "21",
+                "title": "Live [or:obj-1]",
+                "description": "D",
+                "url": "/index.php/apps/forms/h21",
+                "status": "closed",
+                "accessible": false,
+                "expiresAt": "1970-01-01T00:00:01+00:00",
+                "submissionCount": 2,
+                "data": {
+                    "id": 21,
+                    "hash": "h21",
+                    "title": "Live [or:obj-1]",
+                    "description": "D",
+                    "status": "closed",
+                    "accessible": false,
+                    "expiresAt": "1970-01-01T00:00:01+00:00",
+                    "submissionCount": 1
+                },
+                "lastUpdated": 1700000500
+            },
+            {
+                "id": "21",
+                "title": "Live [or:obj-1]",
+                "description": "D",
+                "url": "/index.php/apps/forms/h21",
+                "status": "closed",
+                "accessible": false,
+                "expiresAt": "1970-01-01T00:00:01+00:00",
+                "submissionCount": 1,
+                "data": {
+                    "id": 21,
+                    "hash": "h21",
+                    "title": "Live [or:obj-1]",
+                    "description": "D",
+                    "status": "closed",
+                    "accessible": false,
+                    "expiresAt": "1970-01-01T00:00:01+00:00",
+                    "submissionCount": 1
+                }
+            },
+            {
+                "id": "21",
+                "title": "Live [or:obj-1]",
+                "description": "D",
+                "url": "/index.php/apps/forms/h21",
+                "status": "closed",
+                "accessible": false,
+                "expiresAt": "1970-01-01T00:00:01+00:00",
+                "submissionCount": 1,
+                "data": {
+                    "id": 21,
+                    "hash": "h21",
+                    "title": "Live [or:obj-1]",
+                    "description": "D",
+                    "status": "closed",
+                    "accessible": false,
+                    "expiresAt": "1970-01-01T00:00:01+00:00",
+                    "submissionCount": 1
+                }
+            },
+            {
+                "id": "21",
+                "title": "Live [or:obj-1]",
+                "description": "D",
+                "url": "/index.php/apps/forms/h21",
+                "status": "closed",
+                "accessible": false,
+                "expiresAt": "1970-01-01T00:00:01+00:00",
+                "submissionCount": 1,
+                "data": {
+                    "id": 21,
+                    "hash": "h21",
+                    "title": "Live [or:obj-1]",
+                    "description": "D",
+                    "status": "closed",
+                    "accessible": false,
+                    "expiresAt": "1970-01-01T00:00:01+00:00",
+                    "submissionCount": 1
+                }
+            },
+            {
+                "id": "21",
+                "title": "Live [or:obj-1]",
+                "description": "D",
+                "url": "/index.php/apps/forms/h21",
+                "status": "closed",
+                "accessible": false,
+                "expiresAt": "1970-01-01T00:00:01+00:00",
+                "submissionCount": 1,
+                "data": {
+                    "id": 21,
+                    "hash": "h21",
+                    "title": "Live [or:obj-1]",
+                    "description": "D",
+                    "status": "closed",
+                    "accessible": false,
+                    "expiresAt": "1970-01-01T00:00:01+00:00",
+                    "submissionCount": 1
+                }
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "hash",
+                            "title",
+                            "description",
+                            "expires",
+                            "state"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_forms",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            21,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p21)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_forms"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            21,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p21)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "hash",
+                            "title",
+                            "description",
+                            "expires",
+                            "state"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_forms",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            30,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p30)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_forms"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            21,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p21)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "hash",
+                            "title",
+                            "description",
+                            "expires",
+                            "state"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_forms",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            31,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p31)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_forms"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            21,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p21)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "hash",
+                            "title",
+                            "description",
+                            "expires",
+                            "state"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_forms",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            40,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p40)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_forms"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            21,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p21)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "hash",
+                            "title",
+                            "description",
+                            "expires",
+                            "state"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_forms",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            40,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(id,:p40)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_forms"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            21,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p21)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            }
+        ]
+    },
+    "forms, linked rows, failing database": {
+        "rows": [
+            {
+                "id": "21",
+                "title": "Cached",
+                "description": "",
+                "url": "/index.php/apps/forms/cached",
+                "status": "open",
+                "accessible": true,
+                "expiresAt": null,
+                "submissionCount": 2,
+                "data": {
+                    "id": 21,
+                    "hash": "cached",
+                    "title": "Cached",
+                    "description": "",
+                    "status": "open",
+                    "accessible": true,
+                    "expiresAt": null,
+                    "submissionCount": 0
+                },
+                "lastUpdated": 1700000500
+            },
+            {
+                "id": "30",
+                "title": "Gone",
+                "description": "",
+                "url": "/index.php/apps/forms/30",
+                "status": "archived",
+                "accessible": false,
+                "expiresAt": "2020-09-13T12:26:40+00:00",
+                "submissionCount": 0,
+                "data": {
+                    "id": 30,
+                    "hash": "",
+                    "title": "Gone",
+                    "description": "",
+                    "status": "archived",
+                    "accessible": false,
+                    "expiresAt": "2020-09-13T12:26:40+00:00",
+                    "submissionCount": 0
+                }
+            },
+            {
+                "id": "31",
+                "title": "",
+                "description": "",
+                "url": "/index.php/apps/forms/31",
+                "status": "draft",
+                "accessible": true,
+                "expiresAt": null,
+                "submissionCount": 0,
+                "data": {
+                    "id": 31,
+                    "hash": "",
+                    "title": "",
+                    "description": "",
+                    "status": "draft",
+                    "accessible": true,
+                    "expiresAt": null,
+                    "submissionCount": 0
+                }
+            },
+            {
+                "id": "40",
+                "title": "",
+                "description": "",
+                "url": "/index.php/apps/forms/40",
+                "status": "open",
+                "accessible": true,
+                "expiresAt": null,
+                "submissionCount": 1,
+                "data": {
+                    "id": 40,
+                    "hash": "",
+                    "title": "",
+                    "description": "",
+                    "status": "open",
+                    "accessible": true,
+                    "expiresAt": null,
+                    "submissionCount": 0
+                }
+            },
+            {
+                "id": "40",
+                "title": "",
+                "description": "",
+                "url": "/index.php/apps/forms/40",
+                "status": "open",
+                "accessible": true,
+                "expiresAt": null,
+                "submissionCount": 1,
+                "data": {
+                    "id": 40,
+                    "hash": "",
+                    "title": "",
+                    "description": "",
+                    "status": "open",
+                    "accessible": true,
+                    "expiresAt": null,
+                    "submissionCount": 0
+                }
+            }
+        ],
+        "queries": [
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            }
+        ]
+    },
+    "forms, mapper fails": {
+        "rows": [
+            {
+                "id": "21",
+                "title": "Live [or:obj-1]",
+                "description": "D",
+                "url": "/index.php/apps/forms/h21",
+                "status": "closed",
+                "accessible": false,
+                "expiresAt": "1970-01-01T00:00:01+00:00",
+                "submissionCount": 1,
+                "data": {
+                    "id": 21,
+                    "hash": "h21",
+                    "title": "Live [or:obj-1]",
+                    "description": "D",
+                    "status": "closed",
+                    "accessible": false,
+                    "expiresAt": "1970-01-01T00:00:01+00:00",
+                    "submissionCount": 1
+                }
+            },
+            {
+                "id": "22",
+                "title": "Draft",
+                "description": "",
+                "url": "/index.php/apps/forms/22",
+                "status": "draft",
+                "accessible": true,
+                "expiresAt": null,
+                "submissionCount": 1,
+                "data": {
+                    "id": 22,
+                    "hash": "",
+                    "title": "Draft",
+                    "description": "",
+                    "status": "draft",
+                    "accessible": true,
+                    "expiresAt": null,
+                    "submissionCount": 1
+                }
+            },
+            {
+                "id": "23",
+                "title": "Future",
+                "description": "",
+                "url": "/index.php/apps/forms/h23",
+                "status": "open",
+                "accessible": true,
+                "expiresAt": "9999-12-31T00:00:00+00:00",
+                "submissionCount": 1,
+                "data": {
+                    "id": 23,
+                    "hash": "h23",
+                    "title": "Future",
+                    "description": "",
+                    "status": "open",
+                    "accessible": true,
+                    "expiresAt": "9999-12-31T00:00:00+00:00",
+                    "submissionCount": 1
+                }
+            },
+            {
+                "id": "24",
+                "title": "",
+                "description": "",
+                "url": "/index.php/apps/forms/24",
+                "status": "archived",
+                "accessible": false,
+                "expiresAt": null,
+                "submissionCount": 1,
+                "data": {
+                    "id": 24,
+                    "hash": "",
+                    "title": "",
+                    "description": "",
+                    "status": "archived",
+                    "accessible": false,
+                    "expiresAt": null,
+                    "submissionCount": 1
+                }
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "title",
+                            "description",
+                            "hash",
+                            "expires",
+                            "state"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_forms",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%[or:obj-1]%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(title,:p\"%[or:obj-1]%\")"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_forms"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            21,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p21)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            22,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p22)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            23,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p23)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            24,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p24)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            }
+        ]
+    },
+    "forms, no links": {
+        "rows": [
+            {
+                "id": "21",
+                "title": "Live [or:obj-1]",
+                "description": "D",
+                "url": "/index.php/apps/forms/h21",
+                "status": "closed",
+                "accessible": false,
+                "expiresAt": "1970-01-01T00:00:01+00:00",
+                "submissionCount": 1,
+                "data": {
+                    "id": 21,
+                    "hash": "h21",
+                    "title": "Live [or:obj-1]",
+                    "description": "D",
+                    "status": "closed",
+                    "accessible": false,
+                    "expiresAt": "1970-01-01T00:00:01+00:00",
+                    "submissionCount": 1
+                }
+            },
+            {
+                "id": "22",
+                "title": "Draft",
+                "description": "",
+                "url": "/index.php/apps/forms/22",
+                "status": "draft",
+                "accessible": true,
+                "expiresAt": null,
+                "submissionCount": 1,
+                "data": {
+                    "id": 22,
+                    "hash": "",
+                    "title": "Draft",
+                    "description": "",
+                    "status": "draft",
+                    "accessible": true,
+                    "expiresAt": null,
+                    "submissionCount": 1
+                }
+            },
+            {
+                "id": "23",
+                "title": "Future",
+                "description": "",
+                "url": "/index.php/apps/forms/h23",
+                "status": "open",
+                "accessible": true,
+                "expiresAt": "9999-12-31T00:00:00+00:00",
+                "submissionCount": 1,
+                "data": {
+                    "id": 23,
+                    "hash": "h23",
+                    "title": "Future",
+                    "description": "",
+                    "status": "open",
+                    "accessible": true,
+                    "expiresAt": "9999-12-31T00:00:00+00:00",
+                    "submissionCount": 1
+                }
+            },
+            {
+                "id": "24",
+                "title": "",
+                "description": "",
+                "url": "/index.php/apps/forms/24",
+                "status": "archived",
+                "accessible": false,
+                "expiresAt": null,
+                "submissionCount": 1,
+                "data": {
+                    "id": 24,
+                    "hash": "",
+                    "title": "",
+                    "description": "",
+                    "status": "archived",
+                    "accessible": false,
+                    "expiresAt": null,
+                    "submissionCount": 1
+                }
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "title",
+                            "description",
+                            "hash",
+                            "expires",
+                            "state"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_forms",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%[or:obj-1]%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(title,:p\"%[or:obj-1]%\")"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_forms"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            21,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p21)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            22,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p22)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            23,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p23)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            },
+            {
+                "calls": [
+                    [
+                        "function",
+                        [
+                            "COUNT(*)"
+                        ]
+                    ],
+                    [
+                        "select",
+                        [
+                            "object"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_submissions",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            24,
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "eq(form_id,:p24)"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_submissions"
+            }
+        ]
+    },
+    "forms, no links, empty database": {
+        "rows": [],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "title",
+                            "description",
+                            "hash",
+                            "expires",
+                            "state"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "forms_v2_forms",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%[or:obj-1]%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(title,:p\"%[or:obj-1]%\")"
+                        ]
+                    ]
+                ],
+                "table": "forms_v2_forms"
+            }
+        ]
+    },
+    "forms, no links, failing database": {
+        "rows": [],
+        "queries": [
+            {
+                "failed": true
+            }
+        ]
+    },
+    "time, app missing": {
+        "rows": [],
+        "queries": []
+    },
+    "time, linked rows": {
+        "rows": [
+            {
+                "id": "c-1",
+                "kind": "client",
+                "type": "client",
+                "title": "Client",
+                "name": "Client",
+                "clientId": "c-1",
+                "taskId": null,
+                "timeId": null,
+                "duration": null,
+                "billable": null,
+                "startedAt": null,
+                "url": "/index.php/apps/timemanager/clients/c-1",
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "client",
+                    "clientId": "c-1",
+                    "taskId": null,
+                    "timeId": null,
+                    "name": "Client",
+                    "duration": null,
+                    "billable": null,
+                    "startedAt": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "id": "t-1",
+                "kind": "task",
+                "type": "task",
+                "title": "",
+                "name": "",
+                "clientId": null,
+                "taskId": "t-1",
+                "timeId": null,
+                "duration": 30,
+                "billable": true,
+                "startedAt": null,
+                "url": "/index.php/apps/timemanager/tasks/t-1",
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "task",
+                    "clientId": null,
+                    "taskId": "t-1",
+                    "timeId": null,
+                    "name": null,
+                    "duration": 30,
+                    "billable": true,
+                    "startedAt": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "id": "e-1",
+                "kind": "time",
+                "type": "time",
+                "title": "",
+                "name": "",
+                "clientId": null,
+                "taskId": null,
+                "timeId": "e-1",
+                "duration": null,
+                "billable": null,
+                "startedAt": "2023-11-14T22:13:20+00:00",
+                "url": "/index.php/apps/timemanager/times/e-1",
+                "data": {
+                    "id": 3,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "time",
+                    "clientId": null,
+                    "taskId": null,
+                    "timeId": "e-1",
+                    "name": null,
+                    "duration": null,
+                    "billable": null,
+                    "startedAt": "2023-11-14T22:13:20+00:00",
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "queries": []
+    },
+    "time, linked rows, failing database": {
+        "rows": [
+            {
+                "id": "c-1",
+                "kind": "client",
+                "type": "client",
+                "title": "Client",
+                "name": "Client",
+                "clientId": "c-1",
+                "taskId": null,
+                "timeId": null,
+                "duration": null,
+                "billable": null,
+                "startedAt": null,
+                "url": "/index.php/apps/timemanager/clients/c-1",
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "client",
+                    "clientId": "c-1",
+                    "taskId": null,
+                    "timeId": null,
+                    "name": "Client",
+                    "duration": null,
+                    "billable": null,
+                    "startedAt": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "id": "t-1",
+                "kind": "task",
+                "type": "task",
+                "title": "",
+                "name": "",
+                "clientId": null,
+                "taskId": "t-1",
+                "timeId": null,
+                "duration": 30,
+                "billable": true,
+                "startedAt": null,
+                "url": "/index.php/apps/timemanager/tasks/t-1",
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "task",
+                    "clientId": null,
+                    "taskId": "t-1",
+                    "timeId": null,
+                    "name": null,
+                    "duration": 30,
+                    "billable": true,
+                    "startedAt": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "id": "e-1",
+                "kind": "time",
+                "type": "time",
+                "title": "",
+                "name": "",
+                "clientId": null,
+                "taskId": null,
+                "timeId": "e-1",
+                "duration": null,
+                "billable": null,
+                "startedAt": "2023-11-14T22:13:20+00:00",
+                "url": "/index.php/apps/timemanager/times/e-1",
+                "data": {
+                    "id": 3,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": "time",
+                    "clientId": null,
+                    "taskId": null,
+                    "timeId": "e-1",
+                    "name": null,
+                    "duration": null,
+                    "billable": null,
+                    "startedAt": "2023-11-14T22:13:20+00:00",
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "queries": []
+    },
+    "time, mapper fails": {
+        "rows": [
+            {
+                "id": "c-1",
+                "kind": "client",
+                "type": "client",
+                "title": "Client",
+                "name": "Client",
+                "url": "/index.php/apps/timemanager/clients/c-1",
+                "data": {
+                    "id": 1,
+                    "uuid": "c-1",
+                    "name": "Client",
+                    "note": "[or:obj-1]"
+                }
+            },
+            {
+                "id": "2",
+                "kind": "client",
+                "type": "client",
+                "title": "",
+                "name": "",
+                "url": "/index.php/apps/timemanager/clients/2",
+                "data": {
+                    "id": 2,
+                    "note": "[or:obj-1]"
+                }
+            },
+            {
+                "id": "t-1",
+                "kind": "task",
+                "type": "task",
+                "title": "Task",
+                "name": "Task",
+                "url": "/index.php/apps/timemanager/tasks/t-1",
+                "data": {
+                    "id": 3,
+                    "uuid": "t-1",
+                    "name": "Task",
+                    "note": "[or:obj-1]"
+                }
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "note",
+                            "uuid",
+                            "name"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "timemanager_client",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%[or:obj-1]%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(note,:p\"%[or:obj-1]%\")"
+                        ]
+                    ]
+                ],
+                "table": "timemanager_client"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "note",
+                            "uuid",
+                            "name"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "timemanager_task",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%[or:obj-1]%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(note,:p\"%[or:obj-1]%\")"
+                        ]
+                    ]
+                ],
+                "table": "timemanager_task"
+            }
+        ]
+    },
+    "time, no links": {
+        "rows": [
+            {
+                "id": "c-1",
+                "kind": "client",
+                "type": "client",
+                "title": "Client",
+                "name": "Client",
+                "url": "/index.php/apps/timemanager/clients/c-1",
+                "data": {
+                    "id": 1,
+                    "uuid": "c-1",
+                    "name": "Client",
+                    "note": "[or:obj-1]"
+                }
+            },
+            {
+                "id": "2",
+                "kind": "client",
+                "type": "client",
+                "title": "",
+                "name": "",
+                "url": "/index.php/apps/timemanager/clients/2",
+                "data": {
+                    "id": 2,
+                    "note": "[or:obj-1]"
+                }
+            },
+            {
+                "id": "t-1",
+                "kind": "task",
+                "type": "task",
+                "title": "Task",
+                "name": "Task",
+                "url": "/index.php/apps/timemanager/tasks/t-1",
+                "data": {
+                    "id": 3,
+                    "uuid": "t-1",
+                    "name": "Task",
+                    "note": "[or:obj-1]"
+                }
+            }
+        ],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "note",
+                            "uuid",
+                            "name"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "timemanager_client",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%[or:obj-1]%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(note,:p\"%[or:obj-1]%\")"
+                        ]
+                    ]
+                ],
+                "table": "timemanager_client"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "note",
+                            "uuid",
+                            "name"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "timemanager_task",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%[or:obj-1]%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(note,:p\"%[or:obj-1]%\")"
+                        ]
+                    ]
+                ],
+                "table": "timemanager_task"
+            }
+        ]
+    },
+    "time, no links, empty database": {
+        "rows": [],
+        "queries": [
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "note",
+                            "uuid",
+                            "name"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "timemanager_client",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%[or:obj-1]%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(note,:p\"%[or:obj-1]%\")"
+                        ]
+                    ]
+                ],
+                "table": "timemanager_client"
+            },
+            {
+                "calls": [
+                    [
+                        "select",
+                        [
+                            "id",
+                            "note",
+                            "uuid",
+                            "name"
+                        ]
+                    ],
+                    [
+                        "from",
+                        [
+                            "timemanager_task",
+                            null
+                        ]
+                    ],
+                    [
+                        "param",
+                        [
+                            "%[or:obj-1]%",
+                            2,
+                            null
+                        ]
+                    ],
+                    [
+                        "where",
+                        [
+                            "ilike(note,:p\"%[or:obj-1]%\")"
+                        ]
+                    ]
+                ],
+                "table": "timemanager_task"
+            }
+        ]
+    },
+    "time, no links, failing database": {
+        "rows": [],
+        "queries": [
+            {
+                "failed": true
+            },
+            {
+                "failed": true
+            }
+        ]
+    }
+}

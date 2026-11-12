@@ -1,0 +1,355 @@
+{
+    "connection refused": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": false,
+            "error": "Failed to connect to Ollama: (curl error)",
+            "models": []
+        }
+    },
+    "http error": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": false,
+            "error": "Ollama API returned HTTP 500",
+            "models": []
+        }
+    },
+    "models are formatted and sorted": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            },
+            {
+                "settings.formatBytes": [
+                    4109865159
+                ]
+            },
+            {
+                "settings.formatBytes": [
+                    2048
+                ]
+            },
+            {
+                "settings.formatBytes": [
+                    0
+                ]
+            },
+            {
+                "settings.formatBytes": [
+                    512
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "models": [
+                {
+                    "id": "Capital",
+                    "name": "Capital",
+                    "description": "",
+                    "size": 0,
+                    "modified": null
+                },
+                {
+                    "id": "alpha",
+                    "name": "alpha",
+                    "description": "gemma",
+                    "size": 0,
+                    "modified": null
+                },
+                {
+                    "id": "beta",
+                    "name": "beta",
+                    "description": "2048 bytes",
+                    "size": "2048",
+                    "modified": null
+                },
+                {
+                    "id": "delta",
+                    "name": "delta",
+                    "description": "qwen • 512 bytes",
+                    "size": 512,
+                    "modified": null
+                },
+                {
+                    "id": "mistral",
+                    "name": "mistral",
+                    "description": "mistral",
+                    "size": "big",
+                    "modified": null
+                },
+                {
+                    "id": "unknown",
+                    "name": "unknown",
+                    "description": "0 bytes",
+                    "size": 0,
+                    "modified": null
+                },
+                {
+                    "id": "zephyr:7b",
+                    "name": "zephyr:7b",
+                    "description": "llama • 4109865159 bytes",
+                    "size": 4109865159,
+                    "modified": "2026-01-02T03:04:05Z"
+                }
+            ],
+            "count": 7
+        }
+    },
+    "models is not a list": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": false,
+            "error": "Unexpected response from Ollama API",
+            "models": []
+        }
+    },
+    "no models": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "models": [],
+            "count": 0
+        }
+    },
+    "redirect is followed": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            },
+            {
+                "settings.formatBytes": [
+                    4109865159
+                ]
+            },
+            {
+                "settings.formatBytes": [
+                    2048
+                ]
+            },
+            {
+                "settings.formatBytes": [
+                    0
+                ]
+            },
+            {
+                "settings.formatBytes": [
+                    512
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "models": [
+                {
+                    "id": "Capital",
+                    "name": "Capital",
+                    "description": "",
+                    "size": 0,
+                    "modified": null
+                },
+                {
+                    "id": "alpha",
+                    "name": "alpha",
+                    "description": "gemma",
+                    "size": 0,
+                    "modified": null
+                },
+                {
+                    "id": "beta",
+                    "name": "beta",
+                    "description": "2048 bytes",
+                    "size": "2048",
+                    "modified": null
+                },
+                {
+                    "id": "delta",
+                    "name": "delta",
+                    "description": "qwen • 512 bytes",
+                    "size": 512,
+                    "modified": null
+                },
+                {
+                    "id": "mistral",
+                    "name": "mistral",
+                    "description": "mistral",
+                    "size": "big",
+                    "modified": null
+                },
+                {
+                    "id": "unknown",
+                    "name": "unknown",
+                    "description": "0 bytes",
+                    "size": 0,
+                    "modified": null
+                },
+                {
+                    "id": "zephyr:7b",
+                    "name": "zephyr:7b",
+                    "description": "llama • 4109865159 bytes",
+                    "size": 4109865159,
+                    "modified": "2026-01-02T03:04:05Z"
+                }
+            ],
+            "count": 7
+        }
+    },
+    "response is not json": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": false,
+            "error": "Unexpected response from Ollama API",
+            "models": []
+        }
+    },
+    "response without models": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": false,
+            "error": "Unexpected response from Ollama API",
+            "models": []
+        }
+    },
+    "settings throw": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "settings unavailable",
+            "models": []
+        }
+    },
+    "trailing slash on the url": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            },
+            {
+                "settings.formatBytes": [
+                    4109865159
+                ]
+            },
+            {
+                "settings.formatBytes": [
+                    2048
+                ]
+            },
+            {
+                "settings.formatBytes": [
+                    0
+                ]
+            },
+            {
+                "settings.formatBytes": [
+                    512
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "models": [
+                {
+                    "id": "Capital",
+                    "name": "Capital",
+                    "description": "",
+                    "size": 0,
+                    "modified": null
+                },
+                {
+                    "id": "alpha",
+                    "name": "alpha",
+                    "description": "gemma",
+                    "size": 0,
+                    "modified": null
+                },
+                {
+                    "id": "beta",
+                    "name": "beta",
+                    "description": "2048 bytes",
+                    "size": "2048",
+                    "modified": null
+                },
+                {
+                    "id": "delta",
+                    "name": "delta",
+                    "description": "qwen • 512 bytes",
+                    "size": 512,
+                    "modified": null
+                },
+                {
+                    "id": "mistral",
+                    "name": "mistral",
+                    "description": "mistral",
+                    "size": "big",
+                    "modified": null
+                },
+                {
+                    "id": "unknown",
+                    "name": "unknown",
+                    "description": "0 bytes",
+                    "size": 0,
+                    "modified": null
+                },
+                {
+                    "id": "zephyr:7b",
+                    "name": "zephyr:7b",
+                    "description": "llama • 4109865159 bytes",
+                    "size": 4109865159,
+                    "modified": "2026-01-02T03:04:05Z"
+                }
+            ],
+            "count": 7
+        }
+    },
+    "unknown path": {
+        "calls": [
+            {
+                "settings.getLLMSettingsOnly": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": false,
+            "error": "Ollama API returned HTTP 404",
+            "models": []
+        }
+    }
+}

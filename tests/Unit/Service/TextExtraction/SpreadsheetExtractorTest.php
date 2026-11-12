@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
 use Exception;
-use OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

@@ -1,0 +1,255 @@
+{
+    "groupByFields empty": {
+        "result": []
+    },
+    "groupByFields int": {
+        "result": []
+    },
+    "groupByFields keyed": {
+        "result": [
+            "status",
+            "team"
+        ]
+    },
+    "groupByFields list": {
+        "result": [
+            "status",
+            "team"
+        ]
+    },
+    "groupByFields mixed": {
+        "result": [
+            "a",
+            "b",
+            "c"
+        ]
+    },
+    "groupByFields null": {
+        "result": []
+    },
+    "groupByFields objects": {
+        "result": [
+            "status"
+        ]
+    },
+    "groupByFields string": {
+        "result": [
+            "status"
+        ]
+    },
+    "indexJoinedGroups empty": {
+        "result": []
+    },
+    "indexJoinedGroups multi": {
+        "result": {
+            "x\u001fy": {
+                "a": 1
+            },
+            "\u0000null\u001fy": {
+                "a": 2
+            },
+            "\u0000null\u001f\u0000null": {
+                "a": 4
+            },
+            "false\u001f1.5": {
+                "a": 5
+            }
+        }
+    },
+    "indexJoinedGroups single": {
+        "result": {
+            "x": {
+                "a": 1,
+                "b": 9
+            },
+            "\u0000null": {
+                "a": 2,
+                "b": 5
+            },
+            "true": {
+                "a": 3
+            },
+            "7": {
+                "a": 4
+            },
+            "{\"l\":1}": {
+                "b": 8
+            }
+        }
+    },
+    "joinTupleKey empty": {
+        "result": ""
+    },
+    "joinTupleKey mixed": {
+        "result": "006e756c6c1f747275651f66616c73651f301f301f312e351f611f7b2278223a317d1f5b312c325d"
+    },
+    "joinTupleKey one": {
+        "result": "6f6e6c79"
+    },
+    "metricFields empty": {
+        "result": []
+    },
+    "metricFields fields": {
+        "result": [
+            "a",
+            "b"
+        ]
+    },
+    "metricFields null": {
+        "result": []
+    },
+    "metricsNeedPhpPath alias": {
+        "result": true
+    },
+    "metricsNeedPhpPath alias-not-string": {
+        "result": false
+    },
+    "metricsNeedPhpPath condition": {
+        "result": true
+    },
+    "metricsNeedPhpPath condition-not-array": {
+        "result": false
+    },
+    "metricsNeedPhpPath empty": {
+        "result": false
+    },
+    "metricsNeedPhpPath empty-alias": {
+        "result": false
+    },
+    "metricsNeedPhpPath empty-condition": {
+        "result": false
+    },
+    "metricsNeedPhpPath expression": {
+        "result": true
+    },
+    "metricsNeedPhpPath not-arrays": {
+        "result": false
+    },
+    "metricsNeedPhpPath plain": {
+        "result": false
+    },
+    "parseJoinSelectEntry empty-string": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select entries must be \"Field\" strings or {field, metric?} objects."
+    },
+    "parseJoinSelectEntry int": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select entries must be \"Field\" strings or {field, metric?} objects."
+    },
+    "parseJoinSelectEntry null": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select entries must be \"Field\" strings or {field, metric?} objects."
+    },
+    "parseJoinSelectEntry object": {
+        "result": {
+            "alias": "Budget.amount",
+            "field": "amount",
+            "metric": "sum"
+        }
+    },
+    "parseJoinSelectEntry object-alias": {
+        "result": {
+            "alias": "total",
+            "field": "amount",
+            "metric": "max"
+        }
+    },
+    "parseJoinSelectEntry object-bad-metric": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select metric \"median\" is not supported."
+    },
+    "parseJoinSelectEntry object-each-metric": {
+        "result": {
+            "alias": "amount",
+            "field": "amount",
+            "metric": "count"
+        }
+    },
+    "parseJoinSelectEntry object-field-empty": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select entries must be \"Field\" strings or {field, metric?} objects."
+    },
+    "parseJoinSelectEntry object-field-int": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select entries must be \"Field\" strings or {field, metric?} objects."
+    },
+    "parseJoinSelectEntry object-metric-int": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select metric \"3\" is not supported."
+    },
+    "parseJoinSelectEntry object-no-field": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.select entries must be \"Field\" strings or {field, metric?} objects."
+    },
+    "parseJoinSelectEntry plain-string": {
+        "result": {
+            "alias": "amount",
+            "field": "amount",
+            "metric": "sum"
+        }
+    },
+    "parseJoinSelectEntry string": {
+        "result": {
+            "alias": "Budget.amount",
+            "field": "amount",
+            "metric": "sum"
+        }
+    },
+    "resolveJoinKey empty-map": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+    },
+    "resolveJoinKey empty-string": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+    },
+    "resolveJoinKey int": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+    },
+    "resolveJoinKey list": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+    },
+    "resolveJoinKey map": {
+        "result": {
+            "code": "code",
+            "team": "team"
+        }
+    },
+    "resolveJoinKey map-empty-joined": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on names an empty field."
+    },
+    "resolveJoinKey map-int-key": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on parent field \"0\" is not one of the groupBy fields."
+    },
+    "resolveJoinKey map-unknown-parent": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on parent field \"other\" is not one of the groupBy fields."
+    },
+    "resolveJoinKey missing": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on must be a \"Schema.column\" string or a {parentField: joinedField} map."
+    },
+    "resolveJoinKey string": {
+        "result": {
+            "code": "code"
+        }
+    },
+    "resolveJoinKey string-empty-column": {
+        "error": "RuntimeException",
+        "message": "Aggregation join.on names an empty column."
+    },
+    "resolveJoinKey string-first-group": {
+        "result": {
+            "status": "code"
+        }
+    },
+    "resolveJoinKey string-no-prefix": {
+        "result": {
+            "code": "code"
+        }
+    }
+}

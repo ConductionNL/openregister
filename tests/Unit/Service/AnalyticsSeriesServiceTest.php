@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AnalyticsSeries;
 use OCA\OpenRegister\Db\AnalyticsSeriesMapper;
+use OCA\OpenRegister\Service\AnalyticsSeriesDraft;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCP\IGroupManager;
@@ -101,15 +102,11 @@ class AnalyticsSeriesServiceTest extends TestCase {
 			groupManager: $this->buildGroupManager(false),
 		);
 
-		$result = $service->register(
-			seriesKey: 'sla-breaches',
-			labels: ['Wk1', 'Wk2'],
-			datasets: [['label' => 'Breaches', 'data' => [3, 5]]],
-			title: 'SLA breaches',
-			chartType: 'bar',
-			visibility: 'group',
-			registerId: 2,
-			schemaId: 4
+		$result = $service->registerSeries(
+			draft: (new AnalyticsSeriesDraft(seriesKey: 'sla-breaches', title: 'SLA breaches'))
+				->withData(labels: ['Wk1', 'Wk2'], datasets: [['label' => 'Breaches', 'data' => [3, 5]]])
+				->shownAs(chartType: 'bar', visibility: 'group')
+				->inScope(registerId: 2, schemaId: 4)
 		);
 
 		$this->assertSame('sla-breaches', $result['seriesKey']);
@@ -149,10 +146,9 @@ class AnalyticsSeriesServiceTest extends TestCase {
 			groupManager: $this->buildGroupManager(false),
 		);
 
-		$result = $service->register(
-			seriesKey: 'sla-breaches',
-			labels: ['Wk1'],
-			datasets: [['label' => 'x', 'data' => [1]]],
+		$result = $service->registerSeries(
+			draft: (new AnalyticsSeriesDraft(seriesKey: 'sla-breaches', title: null))
+				->withData(labels: ['Wk1'], datasets: [['label' => 'x', 'data' => [1]]])
 		);
 
 		// Creator is preserved from the existing row (not overwritten).
@@ -173,7 +169,11 @@ class AnalyticsSeriesServiceTest extends TestCase {
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->register(seriesKey: 'k', labels: [], datasets: [], visibility: 'world');
+		$service->registerSeries(
+			draft: (new AnalyticsSeriesDraft(seriesKey: 'k', title: null))
+				->withData(labels: [], datasets: [])
+				->shownAs(chartType: 'line', visibility: 'world')
+		);
 	}//end testRegisterRejectsInvalidVisibility()
 
 	/**
@@ -190,7 +190,11 @@ class AnalyticsSeriesServiceTest extends TestCase {
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->register(seriesKey: 'k', labels: [], datasets: [], chartType: 'sankey');
+		$service->registerSeries(
+			draft: (new AnalyticsSeriesDraft(seriesKey: 'k', title: null))
+				->withData(labels: [], datasets: [])
+				->shownAs(chartType: 'sankey', visibility: 'private')
+		);
 	}//end testRegisterRejectsInvalidChartType()
 
 	/**
@@ -207,7 +211,10 @@ class AnalyticsSeriesServiceTest extends TestCase {
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->register(seriesKey: 'k', labels: [], datasets: []);
+		$service->registerSeries(
+			draft: (new AnalyticsSeriesDraft(seriesKey: 'k', title: null))
+				->withData(labels: [], datasets: [])
+		);
 	}//end testRegisterRejectsAnonymous()
 
 	/**

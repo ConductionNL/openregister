@@ -180,4 +180,44 @@ class MagicSearchHandlerRelationsFilterMariaDbTest extends TestCase {
 		$this->assertStringContainsString('IS NOT NULL', $captured);
 	}//end testRelationsContainsFilterEmitsPortableJsonSearchOnMariaDb()
 
+	/**
+	 * The conditions the lens step adds for a `_relations_contains` value.
+	 *
+	 * @param mixed $value The filter value.
+	 *
+	 * @return string[] The conditions.
+	 */
+	private function relationConditions(mixed $value): array {
+		$conditions = [];
+		$qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+		$qb->method('createNamedParameter')->willReturnCallback(fn ($v) => "'{$v}'");
+		$qb->method('andWhere')->willReturnCallback(
+			function (string $sql) use (&$conditions) {
+				$conditions[] = $sql;
+			}
+		);
+
+		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyRelationsContains');
+		$method->invoke($this->handler, $qb, ['_relations_contains' => $value]);
+
+		return $conditions;
+	}//end relationConditions()
+
+	public function testEveryRelationOfAListMustMatch(): void {
+		$conditions = $this->relationConditions(['one', 'two']);
+
+		$this->assertCount(2, $conditions);
+		$this->assertStringContainsString("'one'", $conditions[0]);
+		$this->assertStringContainsString("'two'", $conditions[1]);
+	}//end testEveryRelationOfAListMustMatch()
+
+	public function testOneRelationIsOneCondition(): void {
+		$this->assertCount(1, $this->relationConditions('one'));
+	}//end testOneRelationIsOneCondition()
+
+	public function testAnEmptyRelationAddsNoCondition(): void {
+		$this->assertSame([], $this->relationConditions(''));
+		$this->assertSame([], $this->relationConditions(null));
+	}//end testAnEmptyRelationAddsNoCondition()
+
 }//end class

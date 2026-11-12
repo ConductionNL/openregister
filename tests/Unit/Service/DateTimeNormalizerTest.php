@@ -140,27 +140,6 @@ class DateTimeNormalizerTest extends TestCase {
 		$this->assertNull($this->normalizer->formatForDatabase('not-a-date'));
 	}//end testFormatForDatabaseOnGarbledReturnsNull()
 
-	public function testFormatForIso8601OnEmptyReturnsNull(): void {
-		$this->assertNull($this->normalizer->formatForIso8601(''));
-		$this->assertNull($this->normalizer->formatForIso8601(null));
-		$this->assertNull($this->normalizer->formatForIso8601('   '));
-	}//end testFormatForIso8601OnEmptyReturnsNull()
-
-	public function testFormatForIso8601OnValidProducesIso8601WithOffset(): void {
-		$result = $this->normalizer->formatForIso8601('2026-04-20 14:00:00');
-		$this->assertIsString($result);
-		// Must contain both date+time and a timezone offset.
-		$this->assertMatchesRegularExpression(
-			'/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+\-]\d{2}:\d{2}$/',
-			$result
-		);
-	}//end testFormatForIso8601OnValidProducesIso8601WithOffset()
-
-	public function testFormatForIso8601OnGarbledReturnsNull(): void {
-		$this->logger->expects($this->once())->method('debug');
-		$this->assertNull($this->normalizer->formatForIso8601('not-a-date'));
-	}//end testFormatForIso8601OnGarbledReturnsNull()
-
 	// ------------------------------------------------------------------
 	// WOO-567 — a date-time with a non-UTC offset must keep its INSTANT
 	// across the database round-trip. `format()` renders in whatever

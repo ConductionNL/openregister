@@ -1,0 +1,1010 @@
+{
+    "anonymisation log by file / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_anonymisation_log, NULL)",
+            "#1 param :p1 = 4, 1",
+            "#1 expr.eq(file_id, :p1, NULL)",
+            "#1 where(eq(file_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "anonymisation log by file / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_anonymisation_log, NULL)",
+            "#1 param :p1 = 4, 1",
+            "#1 expr.eq(file_id, :p1, NULL)",
+            "#1 where(eq(file_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "anonymisation log by file / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_anonymisation_log, NULL)",
+            "#1 param :p1 = 4, 1",
+            "#1 expr.eq(file_id, :p1, NULL)",
+            "#1 where(eq(file_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "anonymisation log by file / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_anonymisation_log, NULL)",
+            "#1 param :p1 = 4, 1",
+            "#1 expr.eq(file_id, :p1, NULL)",
+            "#1 where(eq(file_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "anonymisation log by object / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_anonymisation_log, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "anonymisation log by object / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_anonymisation_log, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "anonymisation log by object / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_anonymisation_log, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "anonymisation log by object / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_anonymisation_log, NULL)",
+            "#1 param :p1 = o-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "audit trail all / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "audit trail all / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "audit trail all / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "audit trail all / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_audit_trails, NULL)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job by actor / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_jobs, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(started_by, :p1, NULL)",
+            "#1 where(eq(started_by, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 param :p2 = running, 2",
+            "#1 expr.eq(state, :p2, NULL)",
+            "#1 andWhere(eq(state, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job by actor / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_jobs, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(started_by, :p1, NULL)",
+            "#1 where(eq(started_by, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 param :p2 = running, 2",
+            "#1 expr.eq(state, :p2, NULL)",
+            "#1 andWhere(eq(state, :p2, NULL))",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job by actor / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_jobs, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(started_by, :p1, NULL)",
+            "#1 where(eq(started_by, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 param :p2 = running, 2",
+            "#1 expr.eq(state, :p2, NULL)",
+            "#1 andWhere(eq(state, :p2, NULL))",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job by actor / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_jobs, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(started_by, :p1, NULL)",
+            "#1 where(eq(started_by, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 param :p2 = running, 2",
+            "#1 expr.eq(state, :p2, NULL)",
+            "#1 andWhere(eq(state, :p2, NULL))",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job all / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_jobs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job all / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_jobs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job all / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_jobs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job all / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_jobs, NULL)",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "email link by object / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = o-2, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(mail_date, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "email link by object / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = o-2, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(mail_date, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "email link by object / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = o-2, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(mail_date, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "email link by object / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = o-2, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(mail_date, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "endpoint log all (newest first trait) / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_endpoint_logs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "endpoint log all (newest first trait) / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_endpoint_logs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "endpoint log all (newest first trait) / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_endpoint_logs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "endpoint log all (newest first trait) / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_endpoint_logs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "import preview by actor / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_import_previews, NULL)",
+            "#1 param :p1 = bob, 2",
+            "#1 expr.eq(created_by, :p1, NULL)",
+            "#1 where(eq(created_by, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "import preview by actor / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_import_previews, NULL)",
+            "#1 param :p1 = bob, 2",
+            "#1 expr.eq(created_by, :p1, NULL)",
+            "#1 where(eq(created_by, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "import preview by actor / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_import_previews, NULL)",
+            "#1 param :p1 = bob, 2",
+            "#1 expr.eq(created_by, :p1, NULL)",
+            "#1 where(eq(created_by, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "import preview by actor / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_import_previews, NULL)",
+            "#1 param :p1 = bob, 2",
+            "#1 expr.eq(created_by, :p1, NULL)",
+            "#1 where(eq(created_by, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema changelog by schema / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_changelog, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema changelog by schema / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_changelog, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema changelog by schema / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_changelog, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema changelog by schema / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_changelog, NULL)",
+            "#1 param :p1 = 3, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema run entry by run / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_run_entries, NULL)",
+            "#1 param :p1 = 5, 1",
+            "#1 expr.eq(run_id, :p1, NULL)",
+            "#1 where(eq(run_id, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = failed, 2",
+            "#1 expr.eq(outcome, :p2, NULL)",
+            "#1 andWhere(eq(outcome, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema run entry by run / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_run_entries, NULL)",
+            "#1 param :p1 = 5, 1",
+            "#1 expr.eq(run_id, :p1, NULL)",
+            "#1 where(eq(run_id, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = failed, 2",
+            "#1 expr.eq(outcome, :p2, NULL)",
+            "#1 andWhere(eq(outcome, :p2, NULL))",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema run entry by run / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_run_entries, NULL)",
+            "#1 param :p1 = 5, 1",
+            "#1 expr.eq(run_id, :p1, NULL)",
+            "#1 where(eq(run_id, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = failed, 2",
+            "#1 expr.eq(outcome, :p2, NULL)",
+            "#1 andWhere(eq(outcome, :p2, NULL))",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema run entry by run / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_run_entries, NULL)",
+            "#1 param :p1 = 5, 1",
+            "#1 expr.eq(run_id, :p1, NULL)",
+            "#1 where(eq(run_id, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = failed, 2",
+            "#1 expr.eq(outcome, :p2, NULL)",
+            "#1 andWhere(eq(outcome, :p2, NULL))",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema run by schema / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_runs, NULL)",
+            "#1 param :p1 = 6, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema run by schema / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_runs, NULL)",
+            "#1 param :p1 = 6, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema run by schema / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_runs, NULL)",
+            "#1 param :p1 = 6, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "schema run by schema / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schema_runs, NULL)",
+            "#1 param :p1 = 6, 1",
+            "#1 expr.eq(schema_id, :p1, NULL)",
+            "#1 where(eq(schema_id, :p1, NULL))",
+            "#1 orderBy(id, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail all / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail all / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail all / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail all / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "webhook log by webhook / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_webhook_logs, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(webhook, :p1, NULL)",
+            "#1 where(eq(webhook, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "webhook log by webhook / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_webhook_logs, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(webhook, :p1, NULL)",
+            "#1 where(eq(webhook, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "webhook log by webhook / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_webhook_logs, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(webhook, :p1, NULL)",
+            "#1 where(eq(webhook, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "webhook log by webhook / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_webhook_logs, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(webhook, :p1, NULL)",
+            "#1 where(eq(webhook, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "chunk unvectorized / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(vectorized, :p1, NULL)",
+            "#1 where(eq(vectorized, :p1, NULL))",
+            "#1 orderBy(created_at, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "chunk unvectorized / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(vectorized, :p1, NULL)",
+            "#1 where(eq(vectorized, :p1, NULL))",
+            "#1 orderBy(created_at, ASC)",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "chunk unvectorized / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(vectorized, :p1, NULL)",
+            "#1 where(eq(vectorized, :p1, NULL))",
+            "#1 orderBy(created_at, ASC)",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "chunk unvectorized / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_chunks, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(vectorized, :p1, NULL)",
+            "#1 where(eq(vectorized, :p1, NULL))",
+            "#1 orderBy(created_at, ASC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "chunk file source summaries / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(ch.source_id)",
+            "#1 func.count(ch.id, )",
+            "#1 selectAlias(count(ch.id, ), chunk_count)",
+            "#1 selectAlias(MIN(ch.created_at), first_extracted)",
+            "#1 selectAlias(MAX(ch.created_at), last_extracted)",
+            "#1 selectAlias(fc.name, file_name)",
+            "#1 selectAlias(mt.mimetype, mime_type)",
+            "#1 selectAlias(fc.size, file_size)",
+            "#1 from(openregister_chunks, ch)",
+            "#1 expr.eq(ch.source_id, fc.fileid, NULL)",
+            "#1 innerJoin(ch, filecache, fc, eq(ch.source_id, fc.fileid, NULL))",
+            "#1 expr.eq(fc.mimetype, mt.id, NULL)",
+            "#1 leftJoin(fc, mimetypes, mt, eq(fc.mimetype, mt.id, NULL))",
+            "#1 param :p1 = file, 2",
+            "#1 expr.eq(ch.source_type, :p1, NULL)",
+            "#1 where(eq(ch.source_type, :p1, NULL))",
+            "#1 groupBy(ch.source_id, fc.name, mt.mimetype, fc.size)",
+            "#1 orderBy(last_extracted, DESC)",
+            "#1 param :p2 = %abc%, 2",
+            "#1 expr.iLike(fc.name, :p2, NULL)",
+            "#1 andWhere(iLike(fc.name, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "chunk file source summaries / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(ch.source_id)",
+            "#1 func.count(ch.id, )",
+            "#1 selectAlias(count(ch.id, ), chunk_count)",
+            "#1 selectAlias(MIN(ch.created_at), first_extracted)",
+            "#1 selectAlias(MAX(ch.created_at), last_extracted)",
+            "#1 selectAlias(fc.name, file_name)",
+            "#1 selectAlias(mt.mimetype, mime_type)",
+            "#1 selectAlias(fc.size, file_size)",
+            "#1 from(openregister_chunks, ch)",
+            "#1 expr.eq(ch.source_id, fc.fileid, NULL)",
+            "#1 innerJoin(ch, filecache, fc, eq(ch.source_id, fc.fileid, NULL))",
+            "#1 expr.eq(fc.mimetype, mt.id, NULL)",
+            "#1 leftJoin(fc, mimetypes, mt, eq(fc.mimetype, mt.id, NULL))",
+            "#1 param :p1 = file, 2",
+            "#1 expr.eq(ch.source_type, :p1, NULL)",
+            "#1 where(eq(ch.source_type, :p1, NULL))",
+            "#1 groupBy(ch.source_id, fc.name, mt.mimetype, fc.size)",
+            "#1 orderBy(last_extracted, DESC)",
+            "#1 param :p2 = %abc%, 2",
+            "#1 expr.iLike(fc.name, :p2, NULL)",
+            "#1 andWhere(iLike(fc.name, :p2, NULL))",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "chunk file source summaries / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(ch.source_id)",
+            "#1 func.count(ch.id, )",
+            "#1 selectAlias(count(ch.id, ), chunk_count)",
+            "#1 selectAlias(MIN(ch.created_at), first_extracted)",
+            "#1 selectAlias(MAX(ch.created_at), last_extracted)",
+            "#1 selectAlias(fc.name, file_name)",
+            "#1 selectAlias(mt.mimetype, mime_type)",
+            "#1 selectAlias(fc.size, file_size)",
+            "#1 from(openregister_chunks, ch)",
+            "#1 expr.eq(ch.source_id, fc.fileid, NULL)",
+            "#1 innerJoin(ch, filecache, fc, eq(ch.source_id, fc.fileid, NULL))",
+            "#1 expr.eq(fc.mimetype, mt.id, NULL)",
+            "#1 leftJoin(fc, mimetypes, mt, eq(fc.mimetype, mt.id, NULL))",
+            "#1 param :p1 = file, 2",
+            "#1 expr.eq(ch.source_type, :p1, NULL)",
+            "#1 where(eq(ch.source_type, :p1, NULL))",
+            "#1 groupBy(ch.source_id, fc.name, mt.mimetype, fc.size)",
+            "#1 orderBy(last_extracted, DESC)",
+            "#1 param :p2 = %abc%, 2",
+            "#1 expr.iLike(fc.name, :p2, NULL)",
+            "#1 andWhere(iLike(fc.name, :p2, NULL))",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "chunk file source summaries / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(ch.source_id)",
+            "#1 func.count(ch.id, )",
+            "#1 selectAlias(count(ch.id, ), chunk_count)",
+            "#1 selectAlias(MIN(ch.created_at), first_extracted)",
+            "#1 selectAlias(MAX(ch.created_at), last_extracted)",
+            "#1 selectAlias(fc.name, file_name)",
+            "#1 selectAlias(mt.mimetype, mime_type)",
+            "#1 selectAlias(fc.size, file_size)",
+            "#1 from(openregister_chunks, ch)",
+            "#1 expr.eq(ch.source_id, fc.fileid, NULL)",
+            "#1 innerJoin(ch, filecache, fc, eq(ch.source_id, fc.fileid, NULL))",
+            "#1 expr.eq(fc.mimetype, mt.id, NULL)",
+            "#1 leftJoin(fc, mimetypes, mt, eq(fc.mimetype, mt.id, NULL))",
+            "#1 param :p1 = file, 2",
+            "#1 expr.eq(ch.source_type, :p1, NULL)",
+            "#1 where(eq(ch.source_type, :p1, NULL))",
+            "#1 groupBy(ch.source_id, fc.name, mt.mimetype, fc.size)",
+            "#1 orderBy(last_extracted, DESC)",
+            "#1 param :p2 = %abc%, 2",
+            "#1 expr.iLike(fc.name, :p2, NULL)",
+            "#1 andWhere(iLike(fc.name, :p2, NULL))",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "webhook all / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 param :p1 = 1, 2",
+            "#2 expr.eq(a, :p1, NULL)",
+            "#2 andWhere(eq(a, :p1, NULL))",
+            "#2 andWhere(1 = 0)",
+            "#2 executeQuery()"
+        ]
+    },
+    "webhook all / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 setMaxResults(5)",
+            "#2 param :p1 = 1, 2",
+            "#2 expr.eq(a, :p1, NULL)",
+            "#2 andWhere(eq(a, :p1, NULL))",
+            "#2 andWhere(1 = 0)",
+            "#2 executeQuery()"
+        ]
+    },
+    "webhook all / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 setFirstResult(20)",
+            "#2 param :p1 = 1, 2",
+            "#2 expr.eq(a, :p1, NULL)",
+            "#2 andWhere(eq(a, :p1, NULL))",
+            "#2 andWhere(1 = 0)",
+            "#2 executeQuery()"
+        ]
+    },
+    "webhook all / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_webhooks, NULL)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_webhooks, NULL)",
+            "#2 setMaxResults(0)",
+            "#2 setFirstResult(0)",
+            "#2 param :p1 = 1, 2",
+            "#2 expr.eq(a, :p1, NULL)",
+            "#2 andWhere(eq(a, :p1, NULL))",
+            "#2 andWhere(1 = 0)",
+            "#2 executeQuery()"
+        ]
+    },
+    "bulk job member by job / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 8, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = failed, 2",
+            "#1 expr.eq(outcome, :p2, NULL)",
+            "#1 andWhere(eq(outcome, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job member by job / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 8, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = failed, 2",
+            "#1 expr.eq(outcome, :p2, NULL)",
+            "#1 andWhere(eq(outcome, :p2, NULL))",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job member by job / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 8, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = failed, 2",
+            "#1 expr.eq(outcome, :p2, NULL)",
+            "#1 andWhere(eq(outcome, :p2, NULL))",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "bulk job member by job / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 8, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 orderBy(id, ASC)",
+            "#1 param :p2 = failed, 2",
+            "#1 expr.eq(outcome, :p2, NULL)",
+            "#1 andWhere(eq(outcome, :p2, NULL))",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "import preview row by preview / no page": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_import_preview_rows, NULL)",
+            "#1 param :p1 = 9, 1",
+            "#1 expr.eq(preview_id, :p1, NULL)",
+            "#1 where(eq(preview_id, :p1, NULL))",
+            "#1 orderBy(source_row, ASC)",
+            "#1 param :p2 = skip, 2",
+            "#1 expr.eq(decision, :p2, NULL)",
+            "#1 andWhere(eq(decision, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "import preview row by preview / limit": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_import_preview_rows, NULL)",
+            "#1 param :p1 = 9, 1",
+            "#1 expr.eq(preview_id, :p1, NULL)",
+            "#1 where(eq(preview_id, :p1, NULL))",
+            "#1 orderBy(source_row, ASC)",
+            "#1 param :p2 = skip, 2",
+            "#1 expr.eq(decision, :p2, NULL)",
+            "#1 andWhere(eq(decision, :p2, NULL))",
+            "#1 setMaxResults(5)",
+            "#1 executeQuery()"
+        ]
+    },
+    "import preview row by preview / offset": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_import_preview_rows, NULL)",
+            "#1 param :p1 = 9, 1",
+            "#1 expr.eq(preview_id, :p1, NULL)",
+            "#1 where(eq(preview_id, :p1, NULL))",
+            "#1 orderBy(source_row, ASC)",
+            "#1 param :p2 = skip, 2",
+            "#1 expr.eq(decision, :p2, NULL)",
+            "#1 andWhere(eq(decision, :p2, NULL))",
+            "#1 setFirstResult(20)",
+            "#1 executeQuery()"
+        ]
+    },
+    "import preview row by preview / both": {
+        "count": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_import_preview_rows, NULL)",
+            "#1 param :p1 = 9, 1",
+            "#1 expr.eq(preview_id, :p1, NULL)",
+            "#1 where(eq(preview_id, :p1, NULL))",
+            "#1 orderBy(source_row, ASC)",
+            "#1 param :p2 = skip, 2",
+            "#1 expr.eq(decision, :p2, NULL)",
+            "#1 andWhere(eq(decision, :p2, NULL))",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    }
+}

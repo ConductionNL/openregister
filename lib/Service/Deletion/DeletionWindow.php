@@ -35,7 +35,7 @@ use DateTimeImmutable;
  *
  * @spec openspec/specs/deletion-audit-trail/spec.md
  */
-final class DeletionWindow {
+final class DeletionWindow implements DeletionWindowInterface {
 	/**
 	 * The window came from the schema's own `archive.deleteRetention`.
 	 *
@@ -63,8 +63,7 @@ final class DeletionWindow {
 	 *
 	 * @param DateTimeImmutable $destroyableFrom The date the object may be destroyed.
 	 * @param int               $daysRemaining   Whole days left, never below zero.
-	 * @param int               $retentionDays   The stated retention in days.
-	 * @param string            $source          Which rule produced the retention.
+	 * @param DeletionRetention $retention       The stated retention and the rule that produced it.
 	 * @param DateTimeImmutable $deletedAt       When the object was soft-deleted.
 	 *
 	 * @return void
@@ -72,8 +71,7 @@ final class DeletionWindow {
 	public function __construct(
 		private readonly DateTimeImmutable $destroyableFrom,
 		private readonly int $daysRemaining,
-		private readonly int $retentionDays,
-		private readonly string $source,
+		private readonly DeletionRetention $retention,
 		private readonly DateTimeImmutable $deletedAt,
 	) {
 	}//end __construct()
@@ -83,7 +81,7 @@ final class DeletionWindow {
 	 *
 	 * @return DateTimeImmutable The destroyable-from date.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function destroyableFrom(): DateTimeImmutable {
 		return $this->destroyableFrom;
@@ -94,7 +92,7 @@ final class DeletionWindow {
 	 *
 	 * @return int Days remaining, zero once the window has lapsed.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function daysRemaining(): int {
 		return $this->daysRemaining;
@@ -105,10 +103,10 @@ final class DeletionWindow {
 	 *
 	 * @return int Retention in days.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function retentionDays(): int {
-		return $this->retentionDays;
+		return $this->retention->days;
 	}//end retentionDays()
 
 	/**
@@ -117,10 +115,10 @@ final class DeletionWindow {
 	 *
 	 * @return string One of the SOURCE_* constants.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function source(): string {
-		return $this->source;
+		return $this->retention->source;
 	}//end source()
 
 	/**
@@ -128,7 +126,7 @@ final class DeletionWindow {
 	 *
 	 * @return bool True once the destroyable-from date has passed.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function hasLapsed(): bool {
 		return $this->daysRemaining === 0;
@@ -139,15 +137,15 @@ final class DeletionWindow {
 	 *
 	 * @return array<string, mixed> The published shape.
 	 *
-	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function toArray(): array {
 		return [
 			'deletedAt' => $this->deletedAt->format(DATE_ATOM),
 			'destroyableFrom' => $this->destroyableFrom->format(DATE_ATOM),
 			'daysRemaining' => $this->daysRemaining,
-			'retentionDays' => $this->retentionDays,
-			'retentionSource' => $this->source,
+			'retentionDays' => $this->retention->days,
+			'retentionSource' => $this->retention->source,
 			'lapsed' => $this->hasLapsed(),
 		];
 	}//end toArray()

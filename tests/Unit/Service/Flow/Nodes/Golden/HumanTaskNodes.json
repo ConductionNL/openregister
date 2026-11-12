@@ -1,0 +1,539 @@
+[
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\UserTaskNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\UserTaskNodeInterface"
+        ],
+        "id": "openregister.user-task",
+        "name": "Ask a person or group",
+        "description": "Ask a person, a group or an agent to do something, and wait for the answer. For a system that will call back, use \"Wait for an answer\" instead.",
+        "icon": "core:actions/user.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "userTask"
+        },
+        "getCategory": {
+            "returned": "human"
+        },
+        "configKeys": {
+            "returned": [
+                "title",
+                "description",
+                "assignee",
+                "candidates",
+                "prompt",
+                "candidateUsers",
+                "candidateGroups",
+                "candidateRole",
+                "routingStrategy",
+                "routingFallback",
+                "performerType",
+                "priority",
+                "dueAt",
+                "expiresAt",
+                "onTimeout",
+                "onReject",
+                "outcomes",
+                "outcomeKey",
+                "failOnReject",
+                "heartbeatMinutes",
+                "advance",
+                "sla",
+                "calendar",
+                "ladder",
+                "escalationRules",
+                "attachTo",
+                "purpose",
+                "legalEffect",
+                "onExpiry",
+                "formKind",
+                "formSchema",
+                "formAction",
+                "formFields",
+                "formId",
+                "formRequireChecklist"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "title",
+                    "label": "What is being asked",
+                    "type": "text",
+                    "help": "The task title, shown in the inbox. Fields of the item can be used, like {{ name }}.",
+                    "required": true
+                },
+                {
+                    "key": "description",
+                    "label": "Details",
+                    "type": "textarea",
+                    "help": "What the performer needs to know to do it. Templates work here too."
+                },
+                {
+                    "key": "outcomes",
+                    "label": "Possible outcomes",
+                    "type": "text",
+                    "help": "The answers the flow will route on, comma separated, like \"approved, rejected\". Recorded on the task for the inbox to offer."
+                },
+                {
+                    "key": "attachTo",
+                    "label": "Hang this task on",
+                    "type": "text",
+                    "help": "The name an earlier step recorded its object under, such as \"case\". The task then shows on that object. Leave it empty and the task stays with the item this step received. A name no earlier step recorded fails the step rather than making a task attached to nothing."
+                },
+                {
+                    "key": "assignee",
+                    "label": "Assign directly to",
+                    "type": "principal",
+                    "help": "A person, a group, or an agent. The task is created active for them; leave empty to offer it to a pool instead."
+                },
+                {
+                    "key": "candidates",
+                    "label": "Candidates",
+                    "type": "principal",
+                    "help": "Anybody who may claim the task. People and groups may be mixed."
+                },
+                {
+                    "key": "prompt",
+                    "label": "Prompt for an agent",
+                    "type": "textarea",
+                    "help": "What an agent performer is asked, in place of a form. Ignored when a person is asked."
+                },
+                {
+                    "key": "candidateUsers",
+                    "label": "Candidate users",
+                    "type": "principal",
+                    "help": "Kept for flows written before Candidates existed. Any of them may claim the task."
+                },
+                {
+                    "key": "candidateGroups",
+                    "label": "Candidate groups",
+                    "type": "principal",
+                    "help": "Kept for flows written before Candidates existed. Any member may claim the task."
+                },
+                {
+                    "key": "candidateRole",
+                    "label": "Candidate role",
+                    "type": "principal",
+                    "help": "A role that resolves to a group of performers."
+                },
+                {
+                    "key": "routingStrategy",
+                    "label": "How to pick a performer",
+                    "type": "text",
+                    "help": "One of single-role, or-set, hierarchical, round-robin or least-loaded. Leave empty to let the pool claim."
+                },
+                {
+                    "key": "routingFallback",
+                    "label": "Fallback performer",
+                    "type": "principal",
+                    "help": "Who gets the task when the strategy finds nobody."
+                },
+                {
+                    "key": "priority",
+                    "label": "Priority",
+                    "type": "text",
+                    "help": "low, normal, high or urgent. Defaults to normal."
+                },
+                {
+                    "key": "dueAt",
+                    "label": "Due",
+                    "type": "text",
+                    "help": "When the task should be done: a date, a field like {{ deadline }}, or a relative time like \"+3 days\". Advisory."
+                },
+                {
+                    "key": "expiresAt",
+                    "label": "Expires",
+                    "type": "text",
+                    "help": "When the task stops being doable. Same shapes as \"Due\". Must not lie before it."
+                },
+                {
+                    "key": "onTimeout",
+                    "label": "On timeout",
+                    "type": "text",
+                    "help": "What happens when the task expires: skip, error or dead_letter. Empty means the deadline enforces nothing."
+                },
+                {
+                    "key": "onReject",
+                    "label": "On rejection",
+                    "type": "text",
+                    "help": "Only dead_letter changes the record; skip and error are read by whatever resumes the flow."
+                },
+                {
+                    "key": "heartbeatMinutes",
+                    "label": "Re-check every (minutes)",
+                    "type": "number",
+                    "help": "Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way."
+                },
+                {
+                    "key": "outcomeKey",
+                    "label": "Field to store the answer in",
+                    "type": "text",
+                    "help": "The outcome is written onto every item under this field, so later steps can route on it. Defaults to \"task\"."
+                },
+                {
+                    "key": "failOnReject",
+                    "label": "Treat a rejection as a failure",
+                    "type": "boolean",
+                    "help": "Off by default: being told \"no\" is usually the flow working, not breaking. Route on the outcome instead."
+                },
+                {
+                    "key": "advance",
+                    "label": "Continue after the answer",
+                    "type": "text",
+                    "help": "How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), a number runs that many steps, \"all\" runs to the next pause or the end."
+                },
+                {
+                    "key": "formKind",
+                    "label": "Form",
+                    "type": "text",
+                    "help": "What the performer fills in besides the outcome: leave empty for none, \"fields\" for fields of the subject object, \"external\" for a Nextcloud Forms form bound to the subject. Fields are validated by the subject schema; an external form is recorded as evidence and writes nothing to the object."
+                },
+                {
+                    "key": "formSchema",
+                    "label": "Subject schema",
+                    "type": "select",
+                    "optionsFrom": "/apps/openregister/api/schemas",
+                    "help": "The schema the fields belong to. Required for a field form."
+                },
+                {
+                    "key": "formAction",
+                    "label": "Lifecycle action",
+                    "type": "text",
+                    "help": "Inherit the fields a lifecycle transition of the subject schema declares, and apply that transition on completion. Leave empty to list fields instead."
+                },
+                {
+                    "key": "formFields",
+                    "label": "Fields to ask for",
+                    "type": "text",
+                    "help": "Properties of the subject schema the performer supplies, comma separated; add * after a name to make it required, like \"reason*\". A name the schema does not have is refused when the step is saved. Not combined with a lifecycle action."
+                },
+                {
+                    "key": "formId",
+                    "label": "Nextcloud Forms form",
+                    "type": "number",
+                    "help": "The id of the Forms form linked to the subject object. Needs the Forms app."
+                },
+                {
+                    "key": "formRequireChecklist",
+                    "label": "Require every checklist item checked",
+                    "type": "boolean",
+                    "help": "Refuse completion while a checklist item is unchecked, naming it. Checklist state is never part of the form values."
+                }
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "Say what is being asked, or nobody can do it."
+            },
+            "minimal": {
+                "returned": null
+            },
+            "no-title": {
+                "threw": "UnexpectedValueException",
+                "message": "Say what is being asked, or nobody can do it."
+            },
+            "candidates": {
+                "returned": null
+            },
+            "bad-performer": {
+                "threw": "UnexpectedValueException",
+                "message": "%1$s \"%2$s\" is not one of %3$s. [\"performerType\",\"robot\",\"user, group, agent, worker, external\"]"
+            },
+            "agent": {
+                "threw": "UnexpectedValueException",
+                "message": "No performer can be resolved: name an assignee, candidate users, candidate groups, a candidate role or a routing fallback."
+            },
+            "bad-routing": {
+                "threw": "UnexpectedValueException",
+                "message": "%1$s \"%2$s\" is not one of %3$s. [\"routingStrategy\",\"coin-flip\",\"single-role, or-set, hierarchical, round-robin, least-loaded\"]"
+            },
+            "bad-timeout": {
+                "returned": null
+            },
+            "good-timeout": {
+                "returned": null
+            },
+            "bad-reject": {
+                "returned": null
+            },
+            "bad-heartbeat": {
+                "threw": "UnexpectedValueException",
+                "message": "Re-check every (minutes) must be a number."
+            },
+            "zero-heartbeat": {
+                "returned": null
+            },
+            "bad-advance": {
+                "threw": "UnexpectedValueException",
+                "message": "advance 'lots' is not a budget. Use 0 to park the run for the worker, a positive number of transitions, or \"all\"."
+            },
+            "all-advance": {
+                "returned": null
+            },
+            "outcomes": {
+                "returned": null
+            },
+            "bad-outcomes": {
+                "threw": "UnexpectedValueException",
+                "message": "Possible outcomes must be a list of names, like \"approved, rejected\"."
+            },
+            "upload": {
+                "returned": null
+            },
+            "bad-upload": {
+                "returned": null
+            },
+            "party": {
+                "threw": "UnexpectedValueException",
+                "message": "No performer can be resolved: name an assignee, candidate users, candidate groups, a candidate role or a routing fallback."
+            },
+            "priority": {
+                "returned": null
+            },
+            "form-fields": {
+                "threw": "UnexpectedValueException",
+                "message": "A field form must name the subject schema its fields belong to."
+            },
+            "form-unknown": {
+                "threw": "UnexpectedValueException",
+                "message": "Form kind \"%1$s\" is not one of %2$s. [\"paper\",\"fields, external\"]"
+            },
+            "sla": {
+                "returned": null
+            },
+            "purpose": {
+                "returned": null
+            }
+        }
+    },
+    {
+        "class": "OCA\\OpenRegister\\Service\\Flow\\Nodes\\PortalTaskNode",
+        "interfaces": [
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNode",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigForm",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeConfigKeys",
+            "OCA\\OpenRegister\\Service\\Flow\\IFlowNodeTaxonomy",
+            "OCA\\OpenRegister\\Service\\Flow\\Nodes\\PortalTaskNodeInterface"
+        ],
+        "id": "openregister.portal-task",
+        "name": "Ask a party outside the organisation",
+        "description": "Ask the applicant or another party on the case, through the portal, and wait for their answer or upload. For someone in the organisation use \"Ask a person\"; for a system that will call back use \"Wait for an answer\".",
+        "icon": "core:actions/share.svg",
+        "scopes": [
+            true,
+            true,
+            false,
+            false
+        ],
+        "getKind": {
+            "returned": "userTask"
+        },
+        "getCategory": {
+            "returned": "human"
+        },
+        "configKeys": {
+            "returned": [
+                "title",
+                "description",
+                "partyRole",
+                "uploadRequired",
+                "uploadMaxFiles",
+                "uploadAcceptedTypes",
+                "uploadMaxSizeMb",
+                "outcomeKey",
+                "reasonField",
+                "dueAt",
+                "expiresAt",
+                "onTimeout",
+                "onReject",
+                "heartbeatMinutes",
+                "advance"
+            ]
+        },
+        "configForm": {
+            "returned": [
+                {
+                    "key": "title",
+                    "label": "What is being asked",
+                    "type": "text",
+                    "help": "The task title, shown in the portal. Fields of the item can be used, like {{ name }}.",
+                    "required": true
+                },
+                {
+                    "key": "description",
+                    "label": "Details",
+                    "type": "textarea",
+                    "help": "What the party needs to know to do it. Templates work here too."
+                },
+                {
+                    "key": "partyRole",
+                    "label": "Party role on the case",
+                    "type": "text",
+                    "help": "Which party on the case is asked, by role. Defaults to \"initiator\". The party is matched once, when the task is created, and a case that names nobody for the role fails the step."
+                },
+                {
+                    "key": "uploadRequired",
+                    "label": "Upload required",
+                    "type": "boolean",
+                    "help": "When on, the party must hand in at least one file. Every file lands on the case object."
+                },
+                {
+                    "key": "uploadMaxFiles",
+                    "label": "Maximum number of files",
+                    "type": "number",
+                    "help": "How many files one answer may carry. Defaults to 1."
+                },
+                {
+                    "key": "uploadAcceptedTypes",
+                    "label": "Accepted file types",
+                    "type": "text",
+                    "help": "Media types or extensions, comma separated, like \"application/pdf, image/*, docx\". Leave empty to accept any type."
+                },
+                {
+                    "key": "uploadMaxSizeMb",
+                    "label": "Maximum file size (MB)",
+                    "type": "number",
+                    "help": "Per file. Leave empty for the instance default."
+                },
+                {
+                    "key": "dueAt",
+                    "label": "Due",
+                    "type": "text",
+                    "help": "When the party should have answered: a date, a field like {{ deadline }}, or a relative time like \"+14 days\". Reminders are business timer rungs on this date."
+                },
+                {
+                    "key": "expiresAt",
+                    "label": "Expires",
+                    "type": "text",
+                    "help": "When the ask stops being answerable. Same shapes as \"Due\". Expiry is enforced by the business timers, not by this step."
+                },
+                {
+                    "key": "onTimeout",
+                    "label": "On timeout",
+                    "type": "text",
+                    "help": "What happens when the ask expires: skip, error or dead_letter. Empty means the deadline enforces nothing."
+                },
+                {
+                    "key": "onReject",
+                    "label": "On rejection",
+                    "type": "text",
+                    "help": "Only dead_letter changes the record; skip and error are read by whatever resumes the flow."
+                },
+                {
+                    "key": "heartbeatMinutes",
+                    "label": "Re-check every (minutes)",
+                    "type": "number",
+                    "help": "Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way."
+                },
+                {
+                    "key": "outcomeKey",
+                    "label": "Field to store the answer in",
+                    "type": "text",
+                    "help": "The answer, the uploaded files and the matched party are written onto every item under this field. Defaults to \"portalTask\"."
+                },
+                {
+                    "key": "reasonField",
+                    "label": "Field carrying the reason to ask again",
+                    "type": "text",
+                    "help": "When the flow routes back into this step, the party is asked again with the reason read from this item field, like \"review.comment\". Without a reason the step fails rather than asking twice unexplained. Defaults to \"reason\"."
+                },
+                {
+                    "key": "advance",
+                    "label": "Continue after the answer",
+                    "type": "text",
+                    "help": "How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), a number runs that many steps, \"all\" runs to the next pause or the end."
+                }
+            ]
+        },
+        "validate": {
+            "empty": {
+                "threw": "UnexpectedValueException",
+                "message": "Say what is being asked, or nobody can do it."
+            },
+            "minimal": {
+                "returned": null
+            },
+            "no-title": {
+                "threw": "UnexpectedValueException",
+                "message": "Say what is being asked, or nobody can do it."
+            },
+            "candidates": {
+                "returned": null
+            },
+            "bad-performer": {
+                "returned": null
+            },
+            "agent": {
+                "returned": null
+            },
+            "bad-routing": {
+                "returned": null
+            },
+            "bad-timeout": {
+                "returned": null
+            },
+            "good-timeout": {
+                "returned": null
+            },
+            "bad-reject": {
+                "returned": null
+            },
+            "bad-heartbeat": {
+                "threw": "UnexpectedValueException",
+                "message": "%1$s must be a number. [\"heartbeatMinutes\"]"
+            },
+            "zero-heartbeat": {
+                "returned": null
+            },
+            "bad-advance": {
+                "threw": "UnexpectedValueException",
+                "message": "advance 'lots' is not a budget. Use 0 to park the run for the worker, a positive number of transitions, or \"all\"."
+            },
+            "all-advance": {
+                "returned": null
+            },
+            "outcomes": {
+                "returned": null
+            },
+            "bad-outcomes": {
+                "returned": null
+            },
+            "upload": {
+                "returned": null
+            },
+            "bad-upload": {
+                "threw": "UnexpectedValueException",
+                "message": "%1$s must be a number. [\"uploadMaxFiles\"]"
+            },
+            "party": {
+                "returned": null
+            },
+            "priority": {
+                "returned": null
+            },
+            "form-fields": {
+                "returned": null
+            },
+            "form-unknown": {
+                "returned": null
+            },
+            "sla": {
+                "returned": null
+            },
+            "purpose": {
+                "returned": null
+            }
+        }
+    }
+]

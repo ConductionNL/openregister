@@ -1,0 +1,94 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`retention table shows every row 1`] = `
+"<div class="retention-table">
+<div class="retention-row">
+<div class="retention-label"><label for="retention-object-archive"><strong>Soft Delete After Inactivity</strong></label>
+<p class="retention-description">Time since last CRUD action before object is soft-deleted</p>
+</div>
+<div class="retention-input">
+<div class="retention-input-wrapper"><input id="retention-object-archive" type="number" placeholder="31536000000" class="retention-input-field"><span class="retention-unit">ms</span></div>
+</div>
+<div class="retention-display">12.0 months</div>
+</div>
+<div class="retention-row">
+<div class="retention-label"><label for="retention-object-delete"><strong>Permanent Delete After Soft Delete</strong></label>
+<p class="retention-description">Time from soft-delete to permanent deletion</p>
+</div>
+<div class="retention-input">
+<div class="retention-input-wrapper"><input id="retention-object-delete" type="number" placeholder="63072000000" class="retention-input-field"><span class="retention-unit">ms</span></div>
+</div>
+<div class="retention-display">2.0 years</div>
+</div>
+<div class="retention-row">
+<div class="retention-label"><label for="retention-search-trail"><strong>Search Trail Retention</strong></label>
+<p class="retention-description">Retention period for search query audit trails and analytics</p>
+</div>
+<div class="retention-input">
+<div class="retention-input-wrapper"><input id="retention-search-trail" type="number" placeholder="2592000000" class="retention-input-field"><span class="retention-unit">ms</span></div>
+</div>
+<div class="retention-display">4.3 weeks</div>
+</div>
+<div class="retention-row">
+<div class="retention-label"><label for="retention-create-log"><strong>Create Action Logs</strong></label>
+<p class="retention-description">Retention period for object creation audit logs</p>
+</div>
+<div class="retention-input">
+<div class="retention-input-wrapper"><input id="retention-create-log" type="number" placeholder="2592000000" class="retention-input-field"><span class="retention-unit">ms</span></div>
+</div>
+<div class="retention-display">1.0 day</div>
+</div>
+<div class="retention-row">
+<div class="retention-label"><label for="retention-read-log"><strong>Read Action Logs</strong></label>
+<p class="retention-description">Retention period for object access/view audit logs</p>
+</div>
+<div class="retention-input">
+<div class="retention-input-wrapper"><input id="retention-read-log" type="number" placeholder="86400000" class="retention-input-field"><span class="retention-unit">ms</span></div>
+</div>
+<div class="retention-display">1.0 hour</div>
+</div>
+<div class="retention-row">
+<div class="retention-label"><label for="retention-update-log"><strong>Update Action Logs</strong></label>
+<p class="retention-description">Retention period for object modification audit logs</p>
+</div>
+<div class="retention-input">
+<div class="retention-input-wrapper"><input id="retention-update-log" type="number" placeholder="604800000" class="retention-input-field"><span class="retention-unit">ms</span></div>
+</div>
+<div class="retention-display">1.0 week</div>
+</div>
+<div class="retention-row">
+<div class="retention-label"><label for="retention-delete-log"><strong>Delete Action Logs</strong></label>
+<p class="retention-description">Retention period for object deletion audit logs</p>
+</div>
+<div class="retention-input">
+<div class="retention-input-wrapper"><input id="retention-delete-log" type="number" placeholder="2592000000" class="retention-input-field"><span class="retention-unit">ms</span></div>
+</div>
+<div class="retention-display">1.0 minute</div>
+</div>
+<div class="retention-row">
+<div class="retention-label"><label for="retention-webhook-log"><strong>Webhook Logs</strong></label>
+<p class="retention-description">Retention period for webhook delivery logs and retry attempts</p>
+</div>
+<div class="retention-input">
+<div class="retention-input-wrapper"><input id="retention-webhook-log" type="number" placeholder="2592000000" class="retention-input-field"><span class="retention-unit">ms</span></div>
+</div>
+<div class="retention-display">Forever</div>
+</div>
+</div>"
+`;
+
+exports[`retention table writes createLogRetention as a number 1`] = `"2.0 hours"`;
+
+exports[`retention table writes deleteLogRetention as a number 1`] = `"2.0 hours"`;
+
+exports[`retention table writes objectArchiveRetention as a number 1`] = `"2.0 hours"`;
+
+exports[`retention table writes objectDeleteRetention as a number 1`] = `"2.0 hours"`;
+
+exports[`retention table writes readLogRetention as a number 1`] = `"2.0 hours"`;
+
+exports[`retention table writes searchTrailRetention as a number 1`] = `"2.0 hours"`;
+
+exports[`retention table writes updateLogRetention as a number 1`] = `"2.0 hours"`;
+
+exports[`retention table writes webhookLogRetention as a number 1`] = `"2.0 hours"`;

@@ -187,7 +187,7 @@
         "searchable": true,
         "authorization": {
           "read": [
-            "public"
+            {"group": "public", "crossOrganisation": true}
           ]
         }
       },
@@ -392,7 +392,7 @@
         "searchable": true,
         "authorization": {
           "read": [
-            "public"
+            {"group": "public", "crossOrganisation": true}
           ]
         }
       }

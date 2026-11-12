@@ -62,6 +62,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class MapLink extends Entity implements JsonSerializable {
+	use ObjectLinkTypesTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The object uuid.
@@ -144,9 +146,7 @@ class MapLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addObjectLinkTypes();
 		$this->addType(fieldName: 'favoriteId', type: 'integer');
 		$this->addType(fieldName: 'name', type: 'string');
 		$this->addType(fieldName: 'category', type: 'string');
@@ -156,26 +156,4 @@ class MapLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'linkedBy', type: 'string');
 		$this->addType(fieldName: 'linkedAt', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * JSON serialization.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'favoriteId' => $this->favoriteId,
-			'name' => $this->name,
-			'category' => $this->category,
-			'lat' => $this->lat,
-			'lng' => $this->lng,
-			'comment' => $this->comment,
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
-		];
-	}//end jsonSerialize()
 }//end class

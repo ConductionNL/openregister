@@ -1,0 +1,713 @@
+{
+    "recognition disabled": [
+        [
+            "file.get",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 100,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 100
+            }
+        ],
+        [
+            "chunk.delete",
+            "file",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 100,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "text-range",
+                    "start": 0,
+                    "end": 100
+                },
+                "text": "Jan de Vries woont in Utrecht en werkt bij de gemeente. The quick brown fox jumps over the lazy dog.",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"file\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0\",\n    \"text_length\": 100,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": null,\n    \"owner\": \"alice\",\n    \"extraction_method\": \"ocr\",\n    \"file_metadata\": {\n        \"file_path\": null,\n        \"file_name\": \"scan.pdf\",\n        \"mime_type\": \"application\\/pdf\",\n        \"file_size\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "settings.file"
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Entity recognition disabled, skipping",
+            {
+                "fileId": 42
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "recognition default method": [
+        [
+            "file.get",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 100,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 100
+            }
+        ],
+        [
+            "chunk.delete",
+            "file",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 100,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "text-range",
+                    "start": 0,
+                    "end": 100
+                },
+                "text": "Jan de Vries woont in Utrecht en werkt bij de gemeente. The quick brown fox jumps over the lazy dog.",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"file\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0\",\n    \"text_length\": 100,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": null,\n    \"owner\": \"alice\",\n    \"extraction_method\": \"ocr\",\n    \"file_metadata\": {\n        \"file_path\": null,\n        \"file_name\": \"scan.pdf\",\n        \"mime_type\": \"application\\/pdf\",\n        \"file_size\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "settings.file"
+        ],
+        [
+            "entities",
+            "file",
+            42,
+            {
+                "method": "hybrid",
+                "confidence_threshold": 0.5
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Entity extraction complete",
+            {
+                "fileId": 42,
+                "entities_found": 3,
+                "relations_created": 2
+            }
+        ],
+        [
+            "risk.update",
+            42
+        ],
+        [
+            "log.info",
+            "[TextExtractionService] Risk level updated",
+            {
+                "fileId": 42,
+                "riskLevel": "high"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] File extraction complete",
+            {
+                "fileId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "recognition with types": [
+        [
+            "file.get",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 100,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 100
+            }
+        ],
+        [
+            "chunk.delete",
+            "file",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 100,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "text-range",
+                    "start": 0,
+                    "end": 100
+                },
+                "text": "Jan de Vries woont in Utrecht en werkt bij de gemeente. The quick brown fox jumps over the lazy dog.",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"file\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0\",\n    \"text_length\": 100,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": null,\n    \"owner\": \"alice\",\n    \"extraction_method\": \"ocr\",\n    \"file_metadata\": {\n        \"file_path\": null,\n        \"file_name\": \"scan.pdf\",\n        \"mime_type\": \"application\\/pdf\",\n        \"file_size\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "settings.file"
+        ],
+        [
+            "entities",
+            "file",
+            42,
+            {
+                "method": "llm",
+                "confidence_threshold": 0.5,
+                "entity_types": [
+                    "PERSON",
+                    "EMAIL"
+                ]
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Entity extraction complete",
+            {
+                "fileId": 42,
+                "entities_found": 3,
+                "relations_created": 2
+            }
+        ],
+        [
+            "risk.update",
+            42
+        ],
+        [
+            "log.info",
+            "[TextExtractionService] Risk level updated",
+            {
+                "fileId": 42,
+                "riskLevel": "high"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] File extraction complete",
+            {
+                "fileId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "entity pass fails": [
+        [
+            "file.get",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 100,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 100
+            }
+        ],
+        [
+            "chunk.delete",
+            "file",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 100,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "text-range",
+                    "start": 0,
+                    "end": 100
+                },
+                "text": "Jan de Vries woont in Utrecht en werkt bij de gemeente. The quick brown fox jumps over the lazy dog.",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"file\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0\",\n    \"text_length\": 100,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": null,\n    \"owner\": \"alice\",\n    \"extraction_method\": \"ocr\",\n    \"file_metadata\": {\n        \"file_path\": null,\n        \"file_name\": \"scan.pdf\",\n        \"mime_type\": \"application\\/pdf\",\n        \"file_size\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "settings.file"
+        ],
+        [
+            "entities",
+            "file",
+            42,
+            {
+                "method": "llm",
+                "confidence_threshold": 0.5
+            }
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Entity extraction failed",
+            {
+                "fileId": 42,
+                "error": "entity recognition unavailable"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] File extraction complete",
+            {
+                "fileId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "risk update fails": [
+        [
+            "file.get",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 100,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 100
+            }
+        ],
+        [
+            "chunk.delete",
+            "file",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 100,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "text-range",
+                    "start": 0,
+                    "end": 100
+                },
+                "text": "Jan de Vries woont in Utrecht en werkt bij de gemeente. The quick brown fox jumps over the lazy dog.",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"file\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0\",\n    \"text_length\": 100,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": null,\n    \"owner\": \"alice\",\n    \"extraction_method\": \"ocr\",\n    \"file_metadata\": {\n        \"file_path\": null,\n        \"file_name\": \"scan.pdf\",\n        \"mime_type\": \"application\\/pdf\",\n        \"file_size\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "settings.file"
+        ],
+        [
+            "entities",
+            "file",
+            42,
+            {
+                "method": "llm",
+                "confidence_threshold": 0.5
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Entity extraction complete",
+            {
+                "fileId": 42,
+                "entities_found": 3,
+                "relations_created": 2
+            }
+        ],
+        [
+            "risk.update",
+            42
+        ],
+        [
+            "log.warning",
+            "[TextExtractionService] Failed to update risk level",
+            {
+                "fileId": 42,
+                "error": "risk unavailable"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] File extraction complete",
+            {
+                "fileId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "settings fail": [
+        [
+            "file.get",
+            42
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Chunking document",
+            {
+                "text_length": 100,
+                "chunk_size": 1000,
+                "chunk_overlap": 200,
+                "strategy": "RECURSIVE_CHARACTER"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] Document chunked successfully",
+            {
+                "chunk_count": 1,
+                "avg_chunk_size": 100
+            }
+        ],
+        [
+            "chunk.delete",
+            "file",
+            42
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": 0,
+                "startOffset": 0,
+                "endOffset": 100,
+                "language": "nl",
+                "languageLevel": null,
+                "languageConfidence": 0.35,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 200,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "text-range",
+                    "start": 0,
+                    "end": 100
+                },
+                "text": "Jan de Vries woont in Utrecht en werkt bij de gemeente. The quick brown fox jumps over the lazy dog.",
+                "detectionMethod": "heuristic"
+            }
+        ],
+        [
+            "chunk.insert",
+            {
+                "id": null,
+                "sourceType": "file",
+                "sourceId": 42,
+                "chunkIndex": -1,
+                "startOffset": 0,
+                "endOffset": 451,
+                "language": null,
+                "languageLevel": null,
+                "languageConfidence": null,
+                "indexed": false,
+                "vectorized": false,
+                "embeddingProvider": null,
+                "overlapSize": 0,
+                "owner": "alice",
+                "organisation": null,
+                "checksum": "8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0",
+                "positionReference": {
+                    "type": "metadata"
+                },
+                "text": "{\n    \"source_type\": \"file\",\n    \"source_id\": 42,\n    \"chunk_checksum\": \"8141377626904a6d271f902f3a35c033f7aa5ca1d52396d236e5a43a4ac833d0\",\n    \"text_length\": 100,\n    \"language\": \"nl\",\n    \"language_level\": null,\n    \"organisation\": null,\n    \"owner\": \"alice\",\n    \"extraction_method\": \"ocr\",\n    \"file_metadata\": {\n        \"file_path\": null,\n        \"file_name\": \"scan.pdf\",\n        \"mime_type\": \"application\\/pdf\",\n        \"file_size\": null\n    }\n}",
+                "detectionMethod": null
+            }
+        ],
+        [
+            "settings.file"
+        ],
+        [
+            "log.error",
+            "[TextExtractionService] Entity extraction failed",
+            {
+                "fileId": 42,
+                "error": "settings unavailable"
+            }
+        ],
+        [
+            "log.debug",
+            "[TextExtractionService] File extraction complete",
+            {
+                "fileId": 42,
+                "chunkCount": 2
+            }
+        ],
+        [
+            "returned"
+        ]
+    ],
+    "empty text": [
+        [
+            "file.get",
+            42
+        ],
+        [
+            "thrown",
+            "Exception",
+            "Text extraction resulted in an empty payload."
+        ]
+    ]
+}

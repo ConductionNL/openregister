@@ -28,6 +28,14 @@ Reading the right MUST fail closed: an organisation, register or schema that
 cannot be loaded, a value that is not a list, an entry of neither shape, and the
 wildcard `*` admit nobody.
 
+Every grant, every revoke and every change of the owning group on a record MUST
+write an audit-trail entry on the hash-chained trail, of its own typed action
+(`grant_added`, `grant_revoked`, `owner_group_changed`): who acted (the caller),
+the record, the principal and permissions of the grant (or the owning group
+before and after), and whether the caller was admitted as owner or as holder of
+the right. A refused request writes none. Failing to write the entry MUST be
+logged at error level and MUST NOT undo the change that was stored.
+
 #### Scenario: A service account writes a grant on a record it does not own
 - **GIVEN** a private record owned by a handler, of schema `private-note` in register `records`
 - **AND** the record's organisation lists `{"group": "records-service", "register": "records", "schemas": ["private-note"]}` under `grant_manage`
@@ -43,6 +51,10 @@ wildcard `*` admit nobody.
 - **GIVEN** a caller who is not the owner, not in the owning group, not an administrator and in no group that holds `grant_manage`
 - **WHEN** the caller lists, adds or revokes a grant through the sharing API
 - **THEN** each answer is HTTP 403 and nothing is written
+
+#### Scenario: A grant and its revoke are on the trail
+- **GIVEN** the holder of the right adds a read grant for user `reviewer` and then revokes it
+- **THEN** a `grant_added` and a `grant_revoked` entry name the record, `reviewer` and `admittedAs: special-right`
 
 #### Scenario: A holder cannot let itself in
 - **WHEN** a holder adds a grant for its own account, or for a group it is in, or names a group it is in as the owning group
@@ -76,6 +88,11 @@ kept per group: giving it again replaces the group's entry.
 #### Scenario: A member drops the key
 - **WHEN** the same member sends an authorization block without `grant_manage` while the stored list is not empty
 - **THEN** the answer is HTTP 403 and the stored list is unchanged
+
+#### Scenario: A change of the list is on the trail
+- **WHEN** an administrator or the owner changes the list under `grant_manage`
+- **THEN** a `settings.updated` entry names the organisation, the list before and the list after, and the acting user
+- **AND** a save that leaves the list as it was writes none
 
 #### Scenario: An app narrows what its service group holds
 - **GIVEN** an organisation where group `records-service` holds the right on schema `old`

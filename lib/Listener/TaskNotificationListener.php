@@ -38,10 +38,8 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
-use OCA\OpenRegister\Service\Notification\TaskObjectAdapter;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifierInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TransitionNotice;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Notification\IManager as INotificationManager;
@@ -60,16 +58,12 @@ class TaskNotificationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param AnnotationNotificationDispatcher $dispatcher The one dispatcher.
-	 * @param TaskNotificationRules $rules The task rule registry.
-	 * @param TaskInboxService $inbox The row the adapter is built from.
-	 * @param INotificationManager $notifications Withdrawal only, never delivery.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param TaskTransitionNotifierInterface $notifier      Delivery, through the task rule set.
+	 * @param INotificationManager            $notifications Withdrawal only, never delivery.
+	 * @param LoggerInterface                 $logger        Failure reporting.
 	 */
 	public function __construct(
-		private readonly AnnotationNotificationDispatcher $dispatcher,
-		private readonly TaskNotificationRules $rules,
-		private readonly TaskInboxService $inbox,
+		private readonly TaskTransitionNotifierInterface $notifier,
 		private readonly INotificationManager $notifications,
 		private readonly LoggerInterface $logger,
 	) {
@@ -96,35 +90,49 @@ class TaskNotificationListener implements IEventListener {
 		$task = $event->getTask();
 
 		try {
-			if ($task->isInTerminalState() === true || $event->assigneeChanged() === true) {
-				$this->withdraw(task: $task);
-			}
-
-			$row = $this->inbox->enrich(task: $task);
-			$adapter = new TaskObjectAdapter(
-				task: $task,
-				row: $row,
-				extra: ['previousAssignee' => $event->getPreviousAssignee()]
-			);
-
-			$this->dispatcher->dispatchWithSchema(
-				object: $adapter,
-				trigger: 'transition',
-				context: [
-					'action' => $event->getAction(),
-					'from' => $event->getPreviousState(),
-					'to' => $task->getState(),
-					'actor' => $event->getActor(),
-				],
-				schema: $this->rules->buildSchema()
-			);
+			$this->deliver(event: $event);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[TaskNotificationListener] Task notification failed; the transition is unaffected: ' . $failure->getMessage(),
 				['task' => $task->getUuid(), 'action' => $event->getAction()]
 			);
-		}//end try
+		}
 	}//end handle()
+
+	/**
+	 * Withdraw what an answered or reassigned task no longer needs, then notify the transition.
+	 *
+	 * @param TaskTransitionedEvent $event The committed transition.
+	 *
+	 * @return void
+	 */
+	private function deliver(TaskTransitionedEvent $event): void {
+		$task = $event->getTask();
+		if ($task->isInTerminalState() === true || $event->assigneeChanged() === true) {
+			$this->withdraw(task: $task);
+		}
+
+		$this->notifier->notifyTransition(task: $task, notice: self::noticeOf(event: $event));
+	}//end deliver()
+
+	/**
+	 * The notice of a transition: the previous assignee, and the action, places and actor as context.
+	 *
+	 * @param TaskTransitionedEvent $event The committed transition.
+	 *
+	 * @return TransitionNotice
+	 */
+	private static function noticeOf(TaskTransitionedEvent $event): TransitionNotice {
+		return new TransitionNotice(
+			extra: ['previousAssignee' => $event->getPreviousAssignee()],
+			context: [
+				'action' => $event->getAction(),
+				'from' => $event->getPreviousState(),
+				'to' => $event->getTask()->getState(),
+				'actor' => $event->getActor(),
+			]
+		);
+	}//end noticeOf()
 
 	/**
 	 * Withdraw every outstanding notification about a task, for every recipient.

@@ -37,6 +37,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\FlowTimerFire
  * @covers \OCA\OpenRegister\Db\FlowTimerEvent
  * @covers \OCA\OpenRegister\Db\FlowTimer
+ * @uses   \OCA\OpenRegister\Db\LinkColumn
  */
 class FlowTimerLedgerMappersTest extends TestCase {
 	use FluentQueryBuilderTrait;

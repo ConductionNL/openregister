@@ -40,8 +40,8 @@ use OCP\AppFramework\Db\Entity;
  *
  * @method int|null getPreviewId()
  * @method void setPreviewId(?int $previewId)
- * @method int getRowNumber()
- * @method void setRowNumber(int $rowNumber)
+ * @method int getSourceRow()
+ * @method void setSourceRow(int $sourceRow)
  * @method string|null getDecision()
  * @method void setDecision(?string $decision)
  * @method string|null getReason()
@@ -113,7 +113,7 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 	 *
 	 * @var integer
 	 */
-	protected int $rowNumber = 0;
+	protected int $sourceRow = 0;
 
 	/**
 	 * The decision.
@@ -169,7 +169,7 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 	 */
 	public function __construct() {
 		$this->addType(fieldName: 'previewId', type: 'integer');
-		$this->addType(fieldName: 'rowNumber', type: 'integer');
+		$this->addType(fieldName: 'sourceRow', type: 'integer');
 		$this->addType(fieldName: 'decision', type: 'string');
 		$this->addType(fieldName: 'reason', type: 'string');
 		$this->addType(fieldName: 'targetUuid', type: 'string');
@@ -195,17 +195,12 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The serialised row.
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'previewId' => $this->previewId,
-			'row' => $this->rowNumber,
-			'decision' => $this->decision,
-			'reason' => $this->reason,
-			'targetUuid' => $this->targetUuid,
-			'candidates' => ($this->candidates ?? []),
-			'payload' => ($this->payload ?? []),
-			'appliedAt' => $this->appliedAt?->format('c'),
-			'created' => $this->created?->format('c'),
-		];
+		return array_merge(
+			(new TypedFieldsJson())->renamed(json: (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)), names: ['sourceRow' => 'row']),
+			[
+				'candidates' => ($this->candidates ?? []),
+				'payload' => ($this->payload ?? []),
+			]
+		);
 	}//end jsonSerialize()
 }//end class

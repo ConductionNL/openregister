@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCP\EventDispatcher\Event;
@@ -67,7 +69,10 @@ class FlowTimerSubjectTerminalListenerTest extends TestCase {
 		self::assertSame('task-1', (string)$event->getTask()->getUuid());
 
 		$this->timers->expects(self::once())->method('cancelForSubject')
-			->with('task', 'task-1', "Task 'task-1' reached terminal state 'completed' (outcome 'approved').", 'task:task-1')
+			->with(
+				new TimerSubjectRef(type: 'task', uuid: 'task-1'),
+				new TimerChange(reason: "Task 'task-1' reached terminal state 'completed' (outcome 'approved').", actor: 'task:task-1')
+			)
 			->willReturn(2);
 		$this->logger->expects(self::once())->method('info')->with(self::stringContains('Cancelled 2 timer(s) of task task-1'));
 		$this->listener->handle($event);
@@ -75,7 +80,7 @@ class FlowTimerSubjectTerminalListenerTest extends TestCase {
 
 	public function testATerminalRunCancelsItsTimers(): void {
 		$this->timers->expects(self::once())->method('cancelForRun')
-			->with('run-1', "Run 'run-1' reached terminal status 'failed'.", 'flow-run:run-1')
+			->with('run-1', new TimerChange(reason: "Run 'run-1' reached terminal status 'failed'.", actor: 'flow-run:run-1'))
 			->willReturn(0);
 		$this->logger->expects(self::never())->method('info');
 		$this->listener->handle(new FlowRunTerminalEvent(runUuid: 'run-1', status: 'failed'));

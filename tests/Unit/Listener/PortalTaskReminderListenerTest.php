@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Listener\PortalTaskReminderListener;
+use OCA\OpenRegister\Service\Flow\Timer\EscalationNotice;
+use OCA\OpenRegister\Service\Flow\Timer\TimerFiring;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -83,6 +85,8 @@ final class FakeTimerFiredEvent extends Event {
  * @covers \OCA\OpenRegister\Listener\PortalTaskReminderListener
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
+ * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Event\FlowTimerFiredEvent
  */
 class PortalTaskReminderListenerTest extends TestCase {
 
@@ -271,13 +275,8 @@ class PortalTaskReminderListenerTest extends TestCase {
 		$timer->setSubjectUuid('t-1');
 		$event = new \OCA\OpenRegister\Event\FlowTimerFiredEvent(
 			timer: $timer,
-			kind: \OCA\OpenRegister\Event\FlowTimerFiredEvent::KIND_RUNG,
-			transition: 'escalation:postBreach:2:calendarDays',
-			rungKey: 'postBreach:2:calendarDays',
-			recipients: [$this->partyRecipient()],
-			priority: 'high',
-			message: 'task.overdue',
-			consequence: 'we decide on what we have'
+			firing: new TimerFiring(kind: \OCA\OpenRegister\Event\FlowTimerFiredEvent::KIND_RUNG, transition: 'escalation:postBreach:2:calendarDays', rungKey: 'postBreach:2:calendarDays'),
+			notice: new EscalationNotice(recipients: [$this->partyRecipient()], priority: 'high', message: 'task.overdue', consequence: 'we decide on what we have'),
 		);
 
 		$this->delivery->expects($this->once())
@@ -325,12 +324,8 @@ class PortalTaskReminderListenerTest extends TestCase {
 		$this->listener->handle(
 			new \OCA\OpenRegister\Event\FlowTimerFiredEvent(
 				timer: $timer,
-				kind: \OCA\OpenRegister\Event\FlowTimerFiredEvent::KIND_RUNG,
-				transition: 'escalation:preBreach:2:businessDays',
-				rungKey: 'preBreach:2:businessDays',
-				recipients: [$this->partyRecipient()],
-				priority: 'medium',
-				message: 'reminder.first'
+				firing: new TimerFiring(kind: \OCA\OpenRegister\Event\FlowTimerFiredEvent::KIND_RUNG, transition: 'escalation:preBreach:2:businessDays', rungKey: 'preBreach:2:businessDays'),
+				notice: new EscalationNotice(recipients: [$this->partyRecipient()], priority: 'medium', message: 'reminder.first'),
 			)
 		);
 	}//end testAPreBreachRungOnARealTimerRemindsTheParty()

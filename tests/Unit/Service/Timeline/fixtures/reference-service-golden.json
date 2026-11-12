@@ -1,0 +1,335 @@
+{
+    "declare new": {
+        "result": "pattern zaak [\"Zaken\",\"Z-\\\\d+\",\"r\",null,null,\"\\/z\\/{code}\",false,true]",
+        "calls": [
+            "patterns.findBySlug(zaak)",
+            "patterns.insert {\"uuid\":\"uuid v4\",\"slug\":\"zaak\",\"created\":\"DateTime\",\"title\":\"Zaken\",\"pattern\":\"Z-\\\\d+\",\"register\":\"r\",\"urlTemplate\":\"/z/{code}\",\"enabled\":false,\"updated\":\"DateTime\"}"
+        ]
+    },
+    "declare existing": {
+        "result": "pattern zaak [null,\"a\\/b\",null,null,null,null,true,false]",
+        "calls": [
+            "patterns.findBySlug(zaak)",
+            "patterns.update {\"pattern\":\"a/b\",\"register\":null,\"schema\":null,\"urlTemplate\":null,\"updated\":\"DateTime\"}"
+        ]
+    },
+    "declare no slug": {
+        "thrown": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TimelineValidationException: A reference pattern needs a slug {\"slug\":\"A reference pattern needs a slug\"}",
+        "calls": []
+    },
+    "declare no pattern": {
+        "thrown": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TimelineValidationException: A reference pattern needs an expression {\"pattern\":\"A reference pattern needs an expression\"}",
+        "calls": []
+    },
+    "declare not compiled": {
+        "thrown": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TimelineValidationException: That expression is not a usable pattern {\"pattern\":\"That expression is not a usable pattern\"}",
+        "calls": []
+    },
+    "scan empty text": {
+        "result": [],
+        "calls": []
+    },
+    "scan null text": {
+        "result": [],
+        "calls": []
+    },
+    "scan mixed": {
+        "result": [
+            {
+                "code": "Z-1",
+                "patternSlug": "zaak",
+                "targetUuid": "uuid-Z-1",
+                "url": "/z/Z-1?q=a b"
+            },
+            {
+                "code": "Z-2",
+                "patternSlug": "zaak",
+                "targetUuid": "uuid-Z-2",
+                "url": "/z/Z-2?q=a b"
+            },
+            {
+                "code": "Z-404",
+                "patternSlug": "zaak",
+                "targetUuid": null,
+                "url": "/z/Z-404?q=a b"
+            },
+            {
+                "code": "Z-500",
+                "patternSlug": "zaak",
+                "targetUuid": null,
+                "url": "/z/Z-500?q=a b"
+            },
+            {
+                "code": "1",
+                "patternSlug": "num",
+                "targetUuid": "uuid-1",
+                "url": null
+            },
+            {
+                "code": "2",
+                "patternSlug": "num",
+                "targetUuid": "uuid-2",
+                "url": null
+            },
+            {
+                "code": "0",
+                "patternSlug": "num",
+                "targetUuid": "uuid-0",
+                "url": null
+            },
+            {
+                "code": "7",
+                "patternSlug": "num",
+                "targetUuid": null,
+                "url": null
+            },
+            {
+                "code": "404",
+                "patternSlug": "num",
+                "targetUuid": null,
+                "url": null
+            },
+            {
+                "code": "500",
+                "patternSlug": "num",
+                "targetUuid": null,
+                "url": null
+            }
+        ],
+        "calls": [
+            "patterns.findAll(true)",
+            "logger.warning([ReferenceService] Pattern broken did not run; it is declared but unusable)",
+            "objects.find([\"Z-1\",[],false,\"reg-zaak\",\"schema-zaak\",true,true,false,false])",
+            "objects.find([\"Z-2\",[],false,\"reg-zaak\",\"schema-zaak\",true,true,false,false])",
+            "objects.find([\"Z-404\",[],false,\"reg-zaak\",\"schema-zaak\",true,true,false,false])",
+            "objects.find([\"Z-500\",[],false,\"reg-zaak\",\"schema-zaak\",true,true,false,false])",
+            "objects.find([\"1\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"2\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"0\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"7\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"404\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"500\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])"
+        ]
+    },
+    "scan cap": {
+        "result": [
+            {
+                "code": "1",
+                "patternSlug": "num",
+                "targetUuid": "uuid-1",
+                "url": null
+            },
+            {
+                "code": "2",
+                "patternSlug": "num",
+                "targetUuid": "uuid-2",
+                "url": null
+            },
+            {
+                "code": "3",
+                "patternSlug": "num",
+                "targetUuid": "uuid-3",
+                "url": null
+            },
+            {
+                "code": "4",
+                "patternSlug": "num",
+                "targetUuid": "uuid-4",
+                "url": null
+            },
+            {
+                "code": "5",
+                "patternSlug": "num",
+                "targetUuid": "uuid-5",
+                "url": null
+            },
+            {
+                "code": "6",
+                "patternSlug": "num",
+                "targetUuid": "uuid-6",
+                "url": null
+            },
+            {
+                "code": "7",
+                "patternSlug": "num",
+                "targetUuid": null,
+                "url": null
+            },
+            {
+                "code": "8",
+                "patternSlug": "num",
+                "targetUuid": "uuid-8",
+                "url": null
+            },
+            {
+                "code": "9",
+                "patternSlug": "num",
+                "targetUuid": "uuid-9",
+                "url": null
+            },
+            {
+                "code": "10",
+                "patternSlug": "num",
+                "targetUuid": "uuid-10",
+                "url": null
+            },
+            {
+                "code": "11",
+                "patternSlug": "num",
+                "targetUuid": "uuid-11",
+                "url": null
+            },
+            {
+                "code": "12",
+                "patternSlug": "num",
+                "targetUuid": "uuid-12",
+                "url": null
+            },
+            {
+                "code": "13",
+                "patternSlug": "num",
+                "targetUuid": "uuid-13",
+                "url": null
+            },
+            {
+                "code": "14",
+                "patternSlug": "num",
+                "targetUuid": "uuid-14",
+                "url": null
+            },
+            {
+                "code": "15",
+                "patternSlug": "num",
+                "targetUuid": "uuid-15",
+                "url": null
+            },
+            {
+                "code": "16",
+                "patternSlug": "num",
+                "targetUuid": "uuid-16",
+                "url": null
+            },
+            {
+                "code": "17",
+                "patternSlug": "num",
+                "targetUuid": "uuid-17",
+                "url": null
+            },
+            {
+                "code": "18",
+                "patternSlug": "num",
+                "targetUuid": "uuid-18",
+                "url": null
+            },
+            {
+                "code": "19",
+                "patternSlug": "num",
+                "targetUuid": "uuid-19",
+                "url": null
+            },
+            {
+                "code": "20",
+                "patternSlug": "num",
+                "targetUuid": "uuid-20",
+                "url": null
+            },
+            {
+                "code": "21",
+                "patternSlug": "num",
+                "targetUuid": "uuid-21",
+                "url": null
+            },
+            {
+                "code": "22",
+                "patternSlug": "num",
+                "targetUuid": "uuid-22",
+                "url": null
+            },
+            {
+                "code": "23",
+                "patternSlug": "num",
+                "targetUuid": "uuid-23",
+                "url": null
+            },
+            {
+                "code": "24",
+                "patternSlug": "num",
+                "targetUuid": "uuid-24",
+                "url": null
+            },
+            {
+                "code": "25",
+                "patternSlug": "num",
+                "targetUuid": "uuid-25",
+                "url": null
+            }
+        ],
+        "calls": [
+            "patterns.findAll(true)",
+            "objects.find([\"1\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"2\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"3\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"4\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"5\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"6\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"7\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"8\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"9\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"10\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"11\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"12\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"13\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"14\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"15\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"16\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"17\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"18\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"19\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"20\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"21\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"22\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"23\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"24\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"25\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])"
+        ]
+    },
+    "scan encoded url": {
+        "result": [
+            {
+                "code": "ZK 12",
+                "patternSlug": "spaced",
+                "targetUuid": "uuid-ZK 12",
+                "url": "/z/ZK%2012?q=a b"
+            }
+        ],
+        "calls": [
+            "patterns.findAll(true)",
+            "objects.find([\"ZK 12\",[],false,\"reg-spaced\",\"schema-spaced\",true,true,false,false])"
+        ]
+    },
+    "record": {
+        "result": [
+            "reference [\"entry-1\",\"source-1\",\"uuid-Z-1\",\"Z-1\",\"zaak\",\"\\/z\\/Z-1?q=a b\"]",
+            "reference [\"entry-1\",\"source-1\",\"uuid-1\",\"1\",\"num\",null]",
+            "reference [\"entry-1\",\"source-1\",\"uuid-3\",\"3\",\"num\",null]"
+        ],
+        "calls": [
+            "references.deleteForEntry(entry-1)",
+            "patterns.findAll(true)",
+            "objects.find([\"Z-1\",[],false,\"reg-zaak\",\"schema-zaak\",true,true,false,false])",
+            "objects.find([\"Z-404\",[],false,\"reg-zaak\",\"schema-zaak\",true,true,false,false])",
+            "objects.find([\"1\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"404\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "objects.find([\"3\",[],false,\"reg-num\",\"schema-num\",true,true,false,false])",
+            "references.insert {\"entryUuid\":\"entry-1\",\"sourceUuid\":\"source-1\",\"targetUuid\":\"uuid-Z-1\",\"code\":\"Z-1\",\"patternSlug\":\"zaak\",\"url\":\"/z/Z-1?q=a b\",\"created\":\"DateTime\"}",
+            "references.insert {\"entryUuid\":\"entry-1\",\"sourceUuid\":\"source-1\",\"targetUuid\":\"uuid-1\",\"code\":\"1\",\"patternSlug\":\"num\",\"created\":\"DateTime\"}",
+            "references.insert {\"entryUuid\":\"entry-1\",\"sourceUuid\":\"source-1\",\"targetUuid\":\"uuid-3\",\"code\":\"3\",\"patternSlug\":\"num\",\"created\":\"DateTime\"}"
+        ]
+    },
+    "record nothing": {
+        "result": [],
+        "calls": [
+            "references.deleteForEntry(entry-1)"
+        ]
+    }
+}

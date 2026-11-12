@@ -6,7 +6,7 @@ status: implemented
 ## Purpose
 
 @e2e exclude backend BI export/reporting service — covered by PHPUnit
-Provide a comprehensive reporting and business intelligence export layer for OpenRegister that enables government organisations to generate management reports, perform data aggregation queries, connect external BI tools, and satisfy Dutch public accountability requirements (WOO, jaarverslag, verantwoording). The system exposes a general-purpose aggregation API (count, sum, avg, min, max, count_distinct, group by) on top of the existing `MagicMapper` and `MagicStatisticsHandler` infrastructure, supports scheduled report generation via the `ReportRenderJob` daily TimedJob, produces exports in CSV, XLSX, ODS, HTML, and PDF formats via `ReportRenderService` (PhpSpreadsheet for spreadsheets, Dompdf for PDF), and provides GraphQL as the primary external-BI integration surface (Power BI, Tableau, Looker, Metabase all speak it via existing connectors). All reporting operations enforce RBAC via `PermissionHandler`, `MagicRbacHandler`, and `PropertyRbacHandler`, and respect multi-tenancy boundaries to guarantee data isolation between organisations.
+Provide a comprehensive reporting and business intelligence export layer for OpenRegister that enables government organisations to generate management reports, perform data aggregation queries, connect external BI tools, and satisfy Dutch public accountability requirements (WOO, jaarverslag, verantwoording). The system exposes a general-purpose aggregation API (count, sum, avg, min, max, count_distinct, group by) on top of the existing `MagicMapper` and `MagicStatisticsHandler` infrastructure, supports scheduled report generation via the `ReportRenderJob` daily TimedJob, produces exports in CSV, XLSX, ODS, HTML, and PDF formats via `ReportRenderService` (PhpSpreadsheet for spreadsheets, the office server for PDF), and provides GraphQL as the primary external-BI integration surface (Power BI, Tableau, Looker, Metabase all speak it via existing connectors). All reporting operations enforce RBAC via `PermissionHandler`, `MagicRbacHandler`, and `PropertyRbacHandler`, and respect multi-tenancy boundaries to guarantee data isolation between organisations.
 
 **Tender demand**: 89% of analyzed government tenders require reporting and BI export capabilities. Key recurring requirements include management dashboards, KPI tracking, periodic status reports (wekelijkse voortgangsrapportage), WOO transparency reporting, and integration with existing BI tooling (Power BI, Tableau, QlikView).
 
@@ -105,7 +105,7 @@ Reports MUST be configurable to run on a cron schedule and be delivered via Next
 - **AND** a log entry MUST record how many reports were cleaned up
 
 ### Requirement: The system MUST support export in CSV, Excel, PDF, and ODS formats
-Register objects MUST be exportable in CSV (already implemented via `ExportService::exportToCsv()`), Excel XLSX (already implemented via `ExportService::exportToExcel()`), PDF (new), and ODS (new) formats. The existing `ExportHandler` SHALL be extended with `exportToPdf()` and `exportToOds()` methods. PDF generation SHALL use a PHP library (Dompdf or TCPDF) or delegate to Docudesk's PDF capabilities if available.
+Register objects MUST be exportable in CSV (already implemented via `ExportService::exportToCsv()`), Excel XLSX (already implemented via `ExportService::exportToExcel()`), PDF (new), and ODS (new) formats. The existing `ExportHandler` SHALL be extended with `exportToPdf()` and `exportToOds()` methods. PDF generation SHALL delegate to an office server through Nextcloud's file conversion API.
 
 #### Scenario: Export filtered results to CSV
 - **GIVEN** 200 `meldingen` objects, 45 with status `afgehandeld`
@@ -416,33 +416,31 @@ data (logged at warning level) and MUST NOT abort the whole render.
 - **AND** one additional sheet per widget, each sheet title sanitised to ≤ 31 chars with `: \ / ? * [ ]` replaced
 - **AND** CSV output MUST be written with a UTF-8 BOM and concatenate every sheet
 
-### Requirement: PDF report rendering MUST keep the Dompdf renderer hermetic
+### Requirement: PDF report rendering MUST go through the office server and copy only text
 
-`PdfReportWriter::write()` MUST render through the `HtmlReportWriter` output with
-Dompdf locked down: it MUST strip `<link rel="stylesheet">` tags and
-`@font-face` declarations from the HTML before handing it to Dompdf, MUST set
-`isRemoteEnabled=false` and `isPhpEnabled=false`, and MUST assert those two flags
-did not drift (throwing `RuntimeException` if either is enabled) before
-rendering. This is the primary mitigation for Dompdf's SSRF / file-disclosure
-CVE class and MUST NOT be relaxed.
+`PdfReportWriter::write()` MUST write the `HtmlReportWriter` output as an A4
+portrait ODT and convert it to PDF through Nextcloud's file conversion API
+(`IConversionManager`), which an office server (Collabora or Euro-Office)
+provides. Only the text of the HTML may reach the ODT: stylesheets, links,
+fonts, scripts and images MUST NOT be copied or fetched. Without an office
+server the writer MUST throw `OfficeServerRequiredException` before rendering,
+which the reports endpoint answers with HTTP 501 `office_server_required`.
 
-#### Scenario: Smuggled stylesheet reference is stripped before rendering
+#### Scenario: Smuggled stylesheet reference never reaches the document
 - **GIVEN** a dashboard whose rendered HTML contains a `<link rel="stylesheet" href="file:///etc/passwd">`
 - **WHEN** `PdfReportWriter::write()` runs
-- **THEN** the `<link>` tag MUST be removed before the HTML reaches Dompdf
-- **AND** `@font-face { ... }` declarations MUST likewise be removed
+- **THEN** neither the link nor its target appears in the ODT handed to the office server
 
-#### Scenario: Sandbox-flag drift aborts the render
-- **GIVEN** a future refactor that enables Dompdf remote fetching or PHP execution
-- **WHEN** `PdfReportWriter::write()` checks the configured options
-- **THEN** the writer MUST throw `RuntimeException` indicating the sandbox configuration drifted
-- **AND** no PDF bytes MUST be produced
+#### Scenario: No office server
+- **GIVEN** no installed app converts ODT to PDF
+- **WHEN** a dashboard is rendered as PDF
+- **THEN** the writer throws `OfficeServerRequiredException` and no PDF bytes are produced
 
-#### Scenario: PDF renders A4 portrait from the HTML pipeline
-- **GIVEN** a resolved dashboard
+#### Scenario: PDF renders A4 portrait
+- **GIVEN** a resolved dashboard and an office server
 - **WHEN** the PDF is rendered
-- **THEN** Dompdf MUST load the (sanitised) HTML as UTF-8 and render at A4 portrait
-- **AND** the returned bytes MUST be a non-empty PDF document
+- **THEN** the ODT is A4 portrait with the dashboard title as document title
+- **AND** the returned bytes are the office server's PDF
 
 ## Implementation
 - **Aggregation API**: `AggregationRunner::run` ([`lib/Service/Aggregation/AggregationRunner.php`](../../../lib/Service/Aggregation/AggregationRunner.php)) supports `count / sum / avg / min / max / count_distinct + groupBy`, declared via the `x-openregister-aggregations` schema annotation. HTTP entry point: `GET /api/objects/aggregations/{register}/{schema}/{name}`. Per-aggregation TTL caching via [`AggregationCache`](../../../lib/Service/Aggregation/AggregationCache.php); eviction on object writes via `AggregationCacheInvalidationListener`.
@@ -453,7 +451,7 @@ CVE class and MUST NOT be relaxed.
 - **Server-side rendering**: [`ReportRenderService`](../../../lib/Service/Reporting/ReportRenderService.php) composes a dashboard into rendered bytes by resolving every widget's data via `AggregationRunner` / `GraphQLService`, then dispatching to the chosen format writer:
   - [`SpreadsheetReportWriter`](../../../lib/Service/Reporting/SpreadsheetReportWriter.php) — XLSX / ODS / CSV via PhpSpreadsheet (one sheet per widget + cover sheet).
   - [`HtmlReportWriter`](../../../lib/Service/Reporting/HtmlReportWriter.php) — print-friendly HTML.
-  - [`PdfReportWriter`](../../../lib/Service/Reporting/PdfReportWriter.php) — Dompdf 3.x running on the HTML output (`isRemoteEnabled=false`, `isPhpEnabled=false`; A4 portrait).
+  - [`PdfReportWriter`](../../../lib/Service/Reporting/PdfReportWriter.php): the HTML output written as an A4 portrait ODT and converted by the office server through `IConversionManager`.
   - HTTP entry point: `POST /api/reports/{id}/render?format=…`.
 - **Scheduled rendering**: [`ReportRenderJob`](../../../lib/BackgroundJob/ReportRenderJob.php) daily TimedJob walks every dashboard, evaluates `schedule.active` + `schedule.intervalSec` against `lastRenderedAt`, renders to the configured `delivery.format`, and writes to the dashboard's Files folder via `IRootFolder`. Operator kill switch: `rapportage_scheduled_renders_enabled` app-config flag.
 - **Phase 3 templates**: [`lib/Resources/RapportageSchemas/templates/woo.json`](../../../lib/Resources/RapportageSchemas/templates/woo.json) (Woo transparency) and [`lib/Resources/RapportageSchemas/templates/audit-trail.json`](../../../lib/Resources/RapportageSchemas/templates/audit-trail.json) (per-register/per-schema audit summary) are object-only configuration bundles operators import via `POST /api/configurations/import`.
@@ -466,7 +464,7 @@ CVE class and MUST NOT be relaxed.
 - **RFC 4180** — for CSV format
 - **RFC 7464** — for JSON Lines / NDJSON streaming format
 - **PhpSpreadsheet** (https://phpspreadsheet.readthedocs.io/) — XLSX / ODS / CSV writer
-- **Dompdf** (https://github.com/dompdf/dompdf) — pure-PHP PDF renderer
+- **`OCP\Files\Conversion\IConversionManager`**: Nextcloud's file conversion API, served by Collabora or Euro-Office
 - **GraphQL** (https://graphql.org/) — primary BI-tool integration surface
 - **WOO (Wet Open Overheid)** — Dutch transparency law requiring publication of government documents
 - **WCAG 2.1 AA** — accessibility for generated PDF reports

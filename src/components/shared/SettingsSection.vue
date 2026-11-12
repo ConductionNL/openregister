@@ -221,7 +221,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/common.scss' as *;
+
 /*
  * Action buttons positioned within NcSettingsSection's settings-section__desc div
  * Using deep selector to target Nextcloud Vue's internal structure
@@ -253,10 +255,7 @@ export default {
 	gap: 16px;
 }
 
-.loading-section p {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-}
+@include loading-section-p;
 
 /* Error state */
 .error-section {

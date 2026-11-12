@@ -42,20 +42,35 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\Task;
 use DateTime;
+use OCA\OpenRegister\Controller\Support\TaskCompletionCommand;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\TaskControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Controller\Support\TaskInboxRequest;
+use OCA\OpenRegister\Db\TaskInboxAnchor;
+use OCA\OpenRegister\Db\TaskInboxAudience;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
+use OCA\OpenRegister\Db\TaskInboxDueWindow;
+use OCA\OpenRegister\Db\TaskInboxFilter;
+use OCA\OpenRegister\Db\TaskInboxOrder;
+use OCA\OpenRegister\Db\TaskInboxSelection;
+use OCA\OpenRegister\Exception\ActionParameterTypeException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
-use OCA\OpenRegister\Service\Task\TaskFormCompletion;
-use OCA\OpenRegister\Service\Task\TaskFormResolver;
-use OCA\OpenRegister\Service\Task\TaskInboxService;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\FormCompletionRequest;
+use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
+use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
+use OCA\OpenRegister\Service\Task\TaskInboxPage;
+use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -70,6 +85,10 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskDelegation;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskResolution;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
 
 /**
  * REST surface for the fleet-generic task.
@@ -97,42 +116,88 @@ use Throwable;
 class TaskController extends Controller {
 
 	/**
+	 * The authorized lifecycle.
+	 *
+	 * @var TaskManagerInterface
+	 */
+	private readonly TaskManagerInterface $tasks;
+
+	/**
+	 * The inbox queries.
+	 *
+	 * @var TaskInboxServiceInterface
+	 */
+	private readonly TaskInboxServiceInterface $inbox;
+
+	/**
+	 * Read-visibility decisions.
+	 *
+	 * @var TaskAuthorizationService
+	 */
+	private readonly TaskAuthorizationService $authorization;
+
+	/**
+	 * The one overdue derivation.
+	 *
+	 * @var TaskTemporalProjection
+	 */
+	private readonly TaskTemporalProjection $temporal;
+
+	/**
+	 * Names the acting identity.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Resolves the form a task presents, per read.
+	 *
+	 * @var TaskFormResolverInterface
+	 */
+	private readonly TaskFormResolverInterface $forms;
+
+	/**
+	 * Completes a task with a form payload,
+	 *
+	 * @var TaskFormCompletionInterface
+	 */
+	private readonly TaskFormCompletionInterface $completion;
+
+	/**
+	 * Where an unexpected failure's
+	 *
+	 * @var ?LoggerInterface
+	 */
+	private readonly ?LoggerInterface $logger;
+
+	/**
+	 * Resolves the caller's groups
+	 *
+	 * @var ?IGroupManager
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskService $tasks The authorized lifecycle.
-	 * @param TaskInboxService $inbox The inbox queries.
-	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
-	 * @param TaskTemporalProjection $temporal The one overdue derivation.
-	 * @param IUserSession $userSession Names the acting identity.
-	 * @param TaskFormResolver $forms Resolves the form a task presents, per read.
-	 * @param TaskFormCompletion $completion Completes a task with a form payload,
-	 *                                       writing the subject first.
-	 * @param LoggerInterface|null $logger Where an unexpected failure's
-	 *                                     detail goes, INSTEAD of the response.
-	 * @param IGroupManager|null $groupManager Resolves the caller's groups
-	 *                                         and admin status for inbox
-	 *                                         visibility. Nullable so the
-	 *                                         controller stays constructible
-	 *                                         bare; absent means no groups
-	 *                                         and not admin, which SCOPES
-	 *                                         rather than widens.
+	 * @param TaskControllerServices $services The task controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly TaskService $tasks,
-		private readonly TaskInboxService $inbox,
-		private readonly TaskAuthorizationService $authorization,
-		private readonly TaskTemporalProjection $temporal,
-		private readonly IUserSession $userSession,
-		private readonly TaskFormResolver $forms,
-		private readonly TaskFormCompletion $completion,
-		private readonly ?LoggerInterface $logger = null,
-		private readonly ?IGroupManager $groupManager = null,
+		TaskControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->tasks = $services->work->tasks;
+		$this->inbox = $services->work->inbox;
+		$this->authorization = $services->work->authorization;
+		$this->temporal = $services->work->temporal;
+		$this->userSession = $services->platform->userSession;
+		$this->forms = $services->completion->forms;
+		$this->completion = $services->completion->completion;
+		$this->logger = $services->platform->logger;
+		$this->groupManager = $services->platform->groupManager;
 
 	}//end __construct()
 
@@ -186,113 +251,182 @@ class TaskController extends Controller {
 	/**
 	 * The inbox: what is waiting for me, with subject context and a total.
 	 *
-	 * @param string $scope assigned|pooled|watched|all.
-	 * @param string|null $state Restrict to CMMN states (comma-separated).
-	 * @param string|null $isTerminal 'true'|'false' to restrict on terminality.
-	 * @param string|null $priority Restrict to one priority.
-	 * @param string|null $kind Restrict to one kind of work, as the creator
-	 *                          named it (`reminder`, and whatever else a
-	 *                          consuming app writes). The engine attaches no
-	 *                          behaviour to the value.
-	 * @param string|null $objectUuid Restrict to tasks anchored to this object.
-	 * @param string|null $runUuid Restrict to the tasks one flow run raised.
-	 *                             This ANCHORS the read rather than filtering
-	 *                             it: `scope` is ignored, because the run's
-	 *                             view asks what the run asked, not what it
-	 *                             asked the caller. Visibility still applies.
-	 * @param string|null $overdue 'true' to restrict to derived-overdue tasks.
-	 * @param string|null $dueAfter ISO-8601 instant; only tasks due at or
-	 *                              after it. Pairs with `dueBefore` to make a
-	 *                              window, which `overdue` cannot express.
-	 * @param string|null $dueBefore ISO-8601 instant; only tasks due strictly
-	 *                               before it.
-	 * @param string $sort dueAt|priority|created. A leading `-` inverts
-	 *                     the order (`-dueAt`), so sort and direction travel
-	 *                     as one parameter.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
-	 * @param string|null $includeBlocked 'true' to list tasks whose blocker is
-	 *                                    still open. An object or run anchor
-	 *                                    lists them regardless.
+	 * Reads its query parameters from the request (TaskInboxRequest):
+	 * `scope` (assigned|pooled|watched|all), `state` (CMMN states,
+	 * comma-separated), `isTerminal` ('true'|'false'), `priority`, `kind`
+	 * (the kind of work as the creator named it; the engine attaches no
+	 * behaviour to it), `objectUuid` (tasks anchored to this object),
+	 * `runUuid` (the tasks one flow run raised; this ANCHORS the read, so
+	 * `scope` is ignored while visibility still applies), `overdue` ('true'
+	 * for derived-overdue tasks), `dueAfter` and `dueBefore` (ISO-8601
+	 * instants of a due window, at-or-after and strictly before), `sort`
+	 * (dueAt|priority|created, a leading `-` inverts it), `limit`, `offset`,
+	 * `includeBlocked` ('true' to list tasks whose blocker is still open; an
+	 * object or run anchor lists them regardless) and `openFirst` ('true' to
+	 * list open tasks before finished ones).
 	 *
-	 * @return JSONResponse The page: results, total, limit, offset.
+	 * @return JSONResponse The page: results, total, limit, offset; 400 for a parameter of the wrong type.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TaskInboxRequest::fromParams() is the value object's named constructor (ADR-011 Rule 6).
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function index(
-		string $scope = TaskInboxCriteria::SCOPE_ASSIGNED,
-		?string $state = null,
-		?string $isTerminal = null,
-		?string $priority = null,
-		?string $kind = null,
-		?string $objectUuid = null,
-		?string $runUuid = null,
-		?string $overdue = null,
-		?string $dueAfter = null,
-		?string $dueBefore = null,
-		string $sort = TaskInboxCriteria::SORT_DUE,
-		int $limit = 25,
-		int $offset = 0,
-		?string $includeBlocked = null,
-	): JSONResponse {
+	public function index(): JSONResponse {
+		try {
+			$request = TaskInboxRequest::fromParams(params: $this->request->getParams());
+		} catch (ActionParameterTypeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->inboxPage(scope: $request->scope, query: $request->query);
+	}//end index()
+
+	/**
+	 * One page of the session user's inbox in a scope: 401 without a
+	 * session, 400 for an unparseable due instant.
+	 *
+	 * The listing's filters carry the raw query strings of the route; its
+	 * sort is the one sort key with its direction.
+	 *
+	 * @param string    $scope The audience scope.
+	 * @param ListQuery $query The page, filters and sort.
+	 *
+	 * @return JSONResponse The page: results, total, limit, offset.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function inboxPage(string $scope, ListQuery $query): JSONResponse {
 		$uid = $this->uid();
 		if ($uid === null) {
 			return new JSONResponse(['error' => 'No session'], Http::STATUS_UNAUTHORIZED);
 		}
 
-		$states = [];
-		if ($state !== null && trim($state) !== '') {
-			$states = array_values(array_filter(array_map('trim', explode(',', $state))));
-		}
-
-		$terminalFilter = null;
-		if ($isTerminal !== null) {
-			$terminalFilter = filter_var($isTerminal, FILTER_VALIDATE_BOOLEAN);
-		}
-
 		// The derived-overdue filter takes its clock instant from the one
 		// derivation class, so filter and projection cannot disagree.
-		$overdueAt = null;
-		if ($overdue !== null && filter_var($overdue, FILTER_VALIDATE_BOOLEAN) === true) {
-			$overdueAt = $this->temporal->now();
-		}
-
-		// A window over the same effective deadline `overdue` uses.
-		$window = $this->dueWindow(dueAfter: $dueAfter, dueBefore: $dueBefore);
+		$overdueAt = $this->overdueAt(overdue: $query->filters['overdue']);
+		$window = $this->dueWindow(dueAfter: $query->filters['dueAfter'], dueBefore: $query->filters['dueBefore']);
 		if ($window['error'] !== null) {
 			return new JSONResponse(['error' => $window['error']], Http::STATUS_BAD_REQUEST);
 		}
 
-		$dueAfterAt = $window['after'];
-		$dueBeforeAt = $window['before'];
+		$audience = new TaskInboxAudience(uid: $uid, groupIds: $this->groupIds(uid: $uid), isAdmin: $this->isAdmin(uid: $uid), scope: $scope);
+		$due = new TaskInboxDueWindow(overdueAt: $overdueAt, dueAfter: $window['after'], dueBefore: $window['before']);
+		$criteria = new TaskInboxCriteria(audience: $audience, selection: $this->inboxSelection(query: $query, due: $due));
 
-		$descending = str_starts_with($sort, '-');
-		$sortKey = ltrim($sort, '-');
+		return new JSONResponse($this->inbox->inbox(criteria: $criteria, page: new TaskInboxPage(limit: $query->limit, offset: (int)$query->offset)));
+	}//end inboxPage()
 
-		$criteria = new TaskInboxCriteria(
-			uid: $uid,
-			groupIds: $this->groupIds(uid: $uid),
-			isAdmin: $this->isAdmin(uid: $uid),
-			scope: $scope,
-			states: $states,
-			isTerminal: $terminalFilter,
-			priority: $priority,
-			kind: $this->trimmedOrNull(value: $kind),
-			objectUuid: $objectUuid,
-			runUuid: $this->trimmedOrNull(value: $runUuid),
-			overdueAt: $overdueAt,
-			dueAfter: $dueAfterAt,
-			dueBefore: $dueBeforeAt,
-			sort: $sortKey,
-			sortDescending: $descending,
-			includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true),
+	/**
+	 * What an inbox listing selects: its filter, due window, anchor and order.
+	 *
+	 * @param ListQuery          $query The listing.
+	 * @param TaskInboxDueWindow $due   The due window and overdue instant.
+	 *
+	 * @return TaskInboxSelection The selection.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function inboxSelection(ListQuery $query, TaskInboxDueWindow $due): TaskInboxSelection {
+		$filters = $query->filters;
+		$filter = new TaskInboxFilter(
+			states: $this->stateList(state: $filters['state']),
+			isTerminal: $this->flagOrNull(value: $filters['isTerminal']),
+			priority: $filters['priority'],
+			kind: $this->trimmedOrNull(value: $filters['kind'])
+		);
+		$anchor = new TaskInboxAnchor(
+			objectUuid: $filters['objectUuid'],
+			runUuid: $this->trimmedOrNull(value: $filters['runUuid']),
+			includeBlocked: $this->isTrue(value: $filters['includeBlocked'])
 		);
 
-		return new JSONResponse($this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));
-	}//end index()
+		return new TaskInboxSelection(filter: $filter, window: $due, anchor: $anchor, order: $this->inboxOrder(query: $query));
+	}//end inboxSelection()
+
+	/**
+	 * The order of an inbox listing: its sort key and direction, and
+	 * whether open tasks come first.
+	 *
+	 * @param ListQuery $query The listing.
+	 *
+	 * @return TaskInboxOrder The order.
+	 *
+	 * @spec openspec/changes/task-inbox-open-first/specs/flow-tasks/spec.md#requirement-the-inbox-can-list-open-tasks-before-finished-ones
+	 */
+	private function inboxOrder(ListQuery $query): TaskInboxOrder {
+		return new TaskInboxOrder(
+			sort: (string)array_key_first($query->sort),
+			sortDescending: in_array('desc', $query->sort, true),
+			openFirst: $this->isTrue(value: $query->filters['openFirst'])
+		);
+	}//end inboxOrder()
+
+	/**
+	 * The states a comma-separated `state` lists, blanks dropped.
+	 *
+	 * @param string|null $state The parameter.
+	 *
+	 * @return array<int, string> The states; none for an absent or blank parameter.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function stateList(?string $state): array {
+		if ($state === null || trim($state) === '') {
+			return [];
+		}
+
+		return array_values(array_filter(array_map('trim', explode(',', $state))));
+	}//end stateList()
+
+	/**
+	 * A boolean query parameter, or null when it is absent.
+	 *
+	 * @param string|null $value The parameter.
+	 *
+	 * @return bool|null The value ('true'/'1'/'yes'/'on' are true), or null.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function flagOrNull(?string $value): ?bool {
+		if ($value === null) {
+			return null;
+		}
+
+		return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+	}//end flagOrNull()
+
+	/**
+	 * Whether a boolean query parameter is present and true.
+	 *
+	 * @param string|null $value The parameter.
+	 *
+	 * @return bool True for 'true'/'1'/'yes'/'on'.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function isTrue(?string $value): bool {
+		return $value !== null && filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
+	}//end isTrue()
+
+	/**
+	 * The clock instant of the derived-overdue filter, when `overdue` is true.
+	 *
+	 * @param string|null $overdue The parameter.
+	 *
+	 * @return DateTime|null The instant, or null for no overdue filter.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function overdueAt(?string $overdue): ?DateTime {
+		if ($this->isTrue(value: $overdue) === false) {
+			return null;
+		}
+
+		return $this->temporal->now();
+	}//end overdueAt()
 
 	/**
 	 * One task, visibility-checked, with the form it presents.
@@ -327,7 +461,7 @@ class TaskController extends Controller {
 
 		return new JSONResponse(
 			array_merge(
-				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
+				$this->inbox->enrich(task: $task),
 				$this->forms->describe(task: $task)
 			)
 		);
@@ -377,10 +511,15 @@ class TaskController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function create(): JSONResponse {
-		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->create(data: $this->body(), actor: $this->uid()),
-			successStatus: Http::STATUS_CREATED
+		$response = $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->create(data: $this->body(), actor: $this->uid())
 		);
+		if ($response->getStatus() === Http::STATUS_OK) {
+			// Only the happy path answers 200; a created task is a 201.
+			$response->setStatus(Http::STATUS_CREATED);
+		}
+
+		return $response;
 	}//end create()
 
 	/**
@@ -396,7 +535,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function offer(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->offer(uuid: $uuid, pool: $this->body(), actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->offer(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), pool: $this->body()),
 			uuid: $uuid
 		);
 	}//end offer()
@@ -414,7 +553,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function claim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->claim(uuid: $uuid, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->claim(uuid: $uuid, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end claim()
@@ -432,7 +571,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function unclaim(string $uuid): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->unclaim(uuid: $uuid, actor: $this->uid()),
 			uuid: $uuid
 		);
 	}//end unclaim()
@@ -451,7 +590,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function assign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->assign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->assign(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), assignee: $assignee),
 			uuid: $uuid
 		);
 	}//end assign()
@@ -470,7 +609,7 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function reassign(string $uuid, string $assignee = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->reassign(uuid: $uuid, assignee: $assignee, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->reassign(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), assignee: $assignee),
 			uuid: $uuid
 		);
 	}//end reassign()
@@ -490,7 +629,10 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function delegate(string $uuid, string $delegate = '', string $mandate = ''): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->delegate(uuid: $uuid, delegate: $delegate, mandate: $mandate, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->delegate(
+				ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()),
+				delegation: new TaskDelegation(delegate: $delegate, mandate: $mandate),
+			),
 			uuid: $uuid
 		);
 	}//end delegate()
@@ -510,7 +652,10 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function resolve(string $uuid, ?string $resultText = null, ?string $comment = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->resolve(uuid: $uuid, resultText: $resultText, comment: $comment, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->resolve(
+				ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()),
+				resolution: new TaskResolution(resultText: $resultText, comment: $comment),
+			),
 			uuid: $uuid
 		);
 	}//end resolve()
@@ -543,22 +688,35 @@ class TaskController extends Controller {
 		?string $comment = null,
 		mixed $data = null,
 	): JSONResponse {
+		$answer = new TaskAnswer(outcome: $outcome, resultText: $resultText, comment: $comment);
+
+		return $this->completeTask(command: new TaskCompletionCommand(uuid: $uuid, answer: $answer, data: $data));
+	}//end complete()
+
+	/**
+	 * Complete a task through the form-aware completion; a `data` that is
+	 * not an object is a 400 before any service is reached.
+	 *
+	 * @param TaskCompletionCommand $command The task, answer and field values.
+	 *
+	 * @return JSONResponse The completed task, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 */
+	private function completeTask(TaskCompletionCommand $command): JSONResponse {
+		$data = $command->data;
 		if ($data !== null && is_array($data) === false) {
 			return new JSONResponse(['error' => 'Field "data" must be an object of field values.'], Http::STATUS_BAD_REQUEST);
 		}
 
 		return $this->respondWith(
-			verb: fn (): Task => $this->completion->complete(
-				uuid: $uuid,
-				outcome: $outcome,
-				resultText: $resultText,
-				comment: $comment,
-				data: ($data ?? []),
+			verb: fn (): TaskInterface => $this->completion->complete(
+				request: new FormCompletionRequest(uuid: $command->uuid, answer: $command->answer, data: ($data ?? [])),
 				actor: $this->uid()
 			),
-			uuid: $uuid
+			uuid: $command->uuid
 		);
-	}//end complete()
+	}//end completeTask()
 
 	/**
 	 * Cancel a task.
@@ -574,10 +732,32 @@ class TaskController extends Controller {
 	#[NoCSRFRequired]
 	public function cancel(string $uuid, ?string $reason = null): JSONResponse {
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->cancel(uuid: $uuid, reason: $reason, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->cancel(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), reason: $reason),
 			uuid: $uuid
 		);
 	}//end cancel()
+
+	/**
+	 * Edit a task's own fields: title, description, due date, priority.
+	 *
+	 * The body is the change. Who may edit (the assignee, a pool member or
+	 * an administrator) is decided in the service before anything is
+	 * written; an unknown or invalid field is a 400.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The task as it now stands, or a named refusal.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function edit(string $uuid): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): TaskInterface => $this->tasks->edit(ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()), changes: $this->body()),
+			uuid: $uuid
+		);
+	}//end edit()
 
 	/**
 	 * Check or uncheck one checklist item, addressed by id.
@@ -597,7 +777,10 @@ class TaskController extends Controller {
 		$value = filter_var($checked, FILTER_VALIDATE_BOOLEAN);
 
 		return $this->respondWith(
-			verb: fn (): Task => $this->tasks->checkChecklistItem(uuid: $uuid, itemId: $itemId, checked: $value, actor: $this->uid()),
+			verb: fn (): TaskInterface => $this->tasks->checkChecklistItem(
+				ref: new TaskActorRef(uuid: $uuid, actor: $this->uid()),
+				tick: new ChecklistTick(itemId: $itemId, checked: $value),
+			),
 			uuid: $uuid
 		);
 	}//end checkItem()
@@ -615,8 +798,7 @@ class TaskController extends Controller {
 	 * never the exception text, which for a database failure carries SQL and
 	 * bound parameters.
 	 *
-	 * @param callable(): Task $verb The service call.
-	 * @param int $successStatus The status of the happy path.
+	 * @param callable(): TaskInterface $verb The service call.
 	 * @param string|null $uuid The task acted on, for the denial mapping.
 	 *
 	 * @return JSONResponse The task, or the refusal.
@@ -624,14 +806,11 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
-	private function respondWith(callable $verb, int $successStatus = Http::STATUS_OK, ?string $uuid = null): JSONResponse {
+	private function respondWith(callable $verb, ?string $uuid = null): JSONResponse {
 		try {
 			$task = $verb();
 
-			return new JSONResponse(
-				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
-				$successStatus
-			);
+			return new JSONResponse($this->inbox->enrich(task: $task));
 		} catch (TaskFormRefusedException $refused) {
 			// The form contract's refusal: the fields machine-readable next
 			// to the message, and the kind, so a client can flag each field
@@ -734,7 +913,7 @@ class TaskController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function parseInstant(?string $value): ?DateTime {
-		$raw = trim((string) ($value ?? ''));
+		$raw = trim((string)($value ?? ''));
 		if ($raw === '') {
 			return null;
 		}
@@ -760,7 +939,7 @@ class TaskController extends Controller {
 	 * than was asked for is exactly the failure this endpoint's scope rules
 	 * exist to prevent.
 	 *
-	 * @param string|null $dueAfter  The raw lower bound.
+	 * @param string|null $dueAfter The raw lower bound.
 	 * @param string|null $dueBefore The raw upper bound.
 	 *
 	 * @return array{after: DateTime|null, before: DateTime|null, error: string|null}

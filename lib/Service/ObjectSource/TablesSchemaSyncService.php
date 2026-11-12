@@ -35,9 +35,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -46,7 +46,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class TablesSchemaSyncService {
+class TablesSchemaSyncService implements TablesSchemaReconcilerInterface {
 
 	/**
 	 * The virtual register slug every Tables schema is seeded under.
@@ -65,16 +65,16 @@ class TablesSchemaSyncService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Register data mapper.
-	 * @param SchemaMapper $schemaMapper Schema data mapper.
+	 * @param RegisterMapperInterface $registerMapper Register data mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema data mapper.
 	 * @param TablesColumnMapper $columnMapper Column → schema-property projection.
 	 * @param LoggerInterface $logger Logger for reconcile diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly TablesColumnMapper $columnMapper,
 		private readonly LoggerInterface $logger,
 	) {
@@ -109,7 +109,7 @@ class TablesSchemaSyncService {
 			$stats['skipped']++;
 		}
 
-		$stats['retired'] = $this->retireMissing(register: $register, keepTableIds: $seenTableIds);
+		$stats['retired'] = $this->retireMissing(run: new TablesRetireRun(register: $register, keepTableIds: $seenTableIds));
 
 		return $stats;
 	}//end reconcile()
@@ -130,7 +130,7 @@ class TablesSchemaSyncService {
 			return false;
 		}
 
-		$retired = $this->retireMissing(register: $register, keepTableIds: [], onlyTableId: $tableId);
+		$retired = $this->retireMissing(run: new TablesRetireRun(register: $register, keepTableIds: [], onlyTableId: $tableId));
 
 		return $retired > 0;
 	}//end retireByTableId()
@@ -209,12 +209,100 @@ class TablesSchemaSyncService {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	private function seedTable(Register $register, array $table): bool {
+		$payload = $this->schemaPayload(table: $table);
+
+		$schema = $this->findSchemaBySlug(slug: $payload['slug']);
+		if ($schema === null) {
+			$schema = $this->schemaMapper->createFromArray(object: $payload);
+		} elseif ($this->isManaged(schema: $schema) === false) {
+			$this->warnHandAuthored(slug: $payload['slug']);
+			return false;
+		} else {
+			$this->schemaMapper->updateFromArray(id: (int)$schema->getId(), object: $payload);
+		}
+
+		$this->linkSchema(register: $register, schema: $schema);
+
+		return true;
+	}//end seedTable()
+
+
+	/**
+	 * The schema with a slug, outside RBAC and tenancy.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return Schema|null The schema, or null when there is none.
+	 */
+	private function findSchemaBySlug(string $slug): ?Schema {
+		try {
+			return $this->schemaMapper->find($slug, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end findSchemaBySlug()
+
+	/**
+	 * Warn that a table's slug belongs to a hand-authored schema, which sync never overwrites.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return void
+	 */
+	private function warnHandAuthored(string $slug): void {
+		$this->logger->warning(
+			sprintf('[ObjectSource:tables] schema "%s" is hand-authored — not overwriting during sync', $slug)
+		);
+	}//end warnHandAuthored()
+
+	/**
+	 * The managed schema a table projects to.
+	 *
+	 * @param array<string, mixed> $table The table descriptor ({id, title, columns}).
+	 *
+	 * @return array<string, mixed> The schema payload.
+	 */
+	private function schemaPayload(array $table): array {
 		$tableId = (int)($table['id'] ?? 0);
 		$title = (string)($table['title'] ?? '');
 		$slug = $this->deterministicSlug(title: $title, tableId: $tableId);
 		$shape = $this->columnMapper->buildSchemaProperties(columns: (array)($table['columns'] ?? []));
 
-		$configuration = [
+		return [
+			'title' => self::schemaTitle(title: $title, slug: $slug),
+			'slug' => $slug,
+			'description' => sprintf('Read-only virtual schema for Nextcloud Tables table #%d.', $tableId),
+			'properties' => $shape['properties'],
+			'required' => $shape['required'],
+			'configuration' => self::sourceConfiguration(tableId: $tableId),
+		];
+	}//end schemaPayload()
+
+	/**
+	 * A managed schema's title: the table's, or its slug when the table is untitled.
+	 *
+	 * @param string $title The table title.
+	 * @param string $slug  The schema slug.
+	 *
+	 * @return string The title.
+	 */
+	private static function schemaTitle(string $title, string $slug): string {
+		if ($title === '') {
+			return $slug;
+		}
+
+		return $title;
+	}//end schemaTitle()
+
+	/**
+	 * The configuration that marks a schema as the managed, read-only projection of a table.
+	 *
+	 * @param int $tableId The table id.
+	 *
+	 * @return array<string, mixed> The configuration.
+	 */
+	private static function sourceConfiguration(int $tableId): array {
+		return [
 			'x-schema-org' => 'schema:Thing',
 			'x-openregister-object-source' => [
 				'provider' => self::PROVIDER_ID,
@@ -222,103 +310,117 @@ class TablesSchemaSyncService {
 				'config' => ['tableId' => $tableId, 'managed' => true],
 			],
 		];
-
-		$schemaTitle = $title;
-		if ($schemaTitle === '') {
-			$schemaTitle = $slug;
-		}
-
-		$payload = [
-			'title' => $schemaTitle,
-			'slug' => $slug,
-			'description' => sprintf('Read-only virtual schema for Nextcloud Tables table #%d.', $tableId),
-			'properties' => $shape['properties'],
-			'required' => $shape['required'],
-			'configuration' => $configuration,
-		];
-
-		try {
-			$existing = $this->schemaMapper->find($slug, _rbac: false, _multitenancy: false);
-		} catch (Throwable $e) {
-			$schema = $this->schemaMapper->createFromArray(object: $payload);
-			$this->linkSchema(register: $register, schema: $schema);
-			return true;
-		}
-
-		if ($this->isManaged(schema: $existing) === false) {
-			$this->logger->warning(
-				sprintf('[ObjectSource:tables] schema "%s" is hand-authored — not overwriting during sync', $slug)
-			);
-			return false;
-		}
-
-		$this->schemaMapper->updateFromArray(id: (int)$existing->getId(), object: $payload);
-		$this->linkSchema(register: $register, schema: $existing);
-
-		return true;
-	}//end seedTable()
+	}//end sourceConfiguration()
 
 	/**
 	 * Retire managed schemas whose table is no longer present.
 	 *
-	 * @param Register $register The `tables` register.
-	 * @param array<int, int> $keepTableIds Table ids to keep (empty when only retiring one).
-	 * @param int|null $onlyTableId When set, retire only this table's schema.
+	 * @param TablesRetireRun $run The register and the tables this pass retires.
 	 *
 	 * @return int The number of schemas retired.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function retireMissing(Register $register, array $keepTableIds, ?int $onlyTableId = null): int {
+	private function retireMissing(TablesRetireRun $run): int {
+		[$retired, $schemaIds] = $this->retireEach(run: $run);
+
+		if ($retired > 0) {
+			$run->register->setSchemas($schemaIds);
+			$this->registerMapper->update($run->register);
+		}
+
+		return $retired;
+	}//end retireMissing()
+
+	/**
+	 * Retire each retirable managed schema and drop the retired ones from the register's list.
+	 *
+	 * @param TablesRetireRun $run The register and the tables this pass retires.
+	 *
+	 * @return array{0: int, 1: array<int, mixed>} [schemas retired, the register's remaining schema references].
+	 */
+	private function retireEach(TablesRetireRun $run): array {
 		$retired = 0;
-		$schemaIds = $register->getSchemas();
-		$changed = false;
-		foreach ($this->managedSchemasByTableId(register: $register) as $tableId => $schema) {
-			if ($onlyTableId !== null && $tableId !== $onlyTableId) {
+		$schemaIds = $run->register->getSchemas();
+		foreach ($this->managedSchemasByTableId(register: $run->register) as $tableId => $schema) {
+			if (self::isRetirable(run: $run, tableId: $tableId) === false) {
 				continue;
 			}
 
-			if ($onlyTableId === null && in_array($tableId, $keepTableIds, true) === true) {
-				continue;
-			}
-
-			// **DELETE SAFETY (runtime-schema-api)**: no `force: true` here.
-			//
-			// These schemas are read-only MIRRORS of Nextcloud Tables tables — their
-			// objects live in Tables, not in a magic table — so the repaired
-			// SchemaMapper guard normally counts 0 and retiring a mirror of a
-			// now-deleted table proceeds exactly as before. If a magic table DOES hold
-			// rows for such a schema, that is real user data that this sync job has no
-			// mandate to destroy; refusing (and leaving the schema linked) is the safe
-			// outcome. Forcing here would silently orphan it.
-			try {
-				$this->schemaMapper->delete($schema);
-				$retired++;
-			} catch (Throwable $e) {
-				$this->logger->warning('[ObjectSource:tables] could not retire schema ' . $schema->getSlug() . ': ' . $e->getMessage());
+			if ($this->retire(schema: $schema) === false) {
 				// Do NOT unlink a schema we failed to delete: that would detach a
 				// surviving schema from its register and hide it from every editor —
 				// the precise data-corruption pattern this change exists to close.
 				continue;
 			}
 
-			$schemaIds = array_values(
-				array_filter(
-					$schemaIds,
-					static fn ($ref) => (string)$ref !== (string)$schema->getId()
-						&& (string)$ref !== (string)$schema->getSlug()
-				)
-			);
-			$changed = true;
-		}//end foreach
-
-		if ($changed === true) {
-			$register->setSchemas($schemaIds);
-			$this->registerMapper->update($register);
+			$retired++;
+			$schemaIds = self::withoutSchema(schemaIds: $schemaIds, schema: $schema);
 		}
 
-		return $retired;
-	}//end retireMissing()
+		return [$retired, $schemaIds];
+	}//end retireEach()
+
+	/**
+	 * Whether a mirrored table's schema is up for retirement.
+	 *
+	 * @param TablesRetireRun $run     The tables this pass keeps, or the one table it retires.
+	 * @param mixed           $tableId The mirrored table.
+	 *
+	 * @return bool
+	 */
+	private static function isRetirable(TablesRetireRun $run, mixed $tableId): bool {
+		if ($run->onlyTableId !== null) {
+			return $tableId === $run->onlyTableId;
+		}
+
+		return in_array($tableId, $run->keepTableIds, true) === false;
+	}//end isRetirable()
+
+	/**
+	 * Delete one mirror schema; a refused delete is logged and reported, never forced.
+	 *
+	 * **DELETE SAFETY (runtime-schema-api)**: no `force: true` here.
+	 *
+	 * These schemas are read-only MIRRORS of Nextcloud Tables tables — their
+	 * objects live in Tables, not in a magic table — so the repaired
+	 * SchemaMapper guard normally counts 0 and retiring a mirror of a
+	 * now-deleted table proceeds exactly as before. If a magic table DOES hold
+	 * rows for such a schema, that is real user data that this sync job has no
+	 * mandate to destroy; refusing (and leaving the schema linked) is the safe
+	 * outcome. Forcing here would silently orphan it.
+	 *
+	 * @param Schema $schema The managed schema.
+	 *
+	 * @return bool True when it was deleted.
+	 */
+	private function retire(Schema $schema): bool {
+		try {
+			$this->schemaMapper->delete($schema);
+			return true;
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:tables] could not retire schema ' . $schema->getSlug() . ': ' . $e->getMessage());
+			return false;
+		}
+	}//end retire()
+
+	/**
+	 * A register's schema references without the given schema (by id or slug).
+	 *
+	 * @param array<int, mixed> $schemaIds The references.
+	 * @param Schema            $schema    The retired schema.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private static function withoutSchema(array $schemaIds, Schema $schema): array {
+		return array_values(
+			array_filter(
+				$schemaIds,
+				static fn ($ref) => (string)$ref !== (string)$schema->getId()
+					&& (string)$ref !== (string)$schema->getSlug()
+			)
+		);
+	}//end withoutSchema()
 
 	/**
 	 * Load the managed schemas of the register, keyed by their bound table id.
@@ -332,13 +434,8 @@ class TablesSchemaSyncService {
 	private function managedSchemasByTableId(Register $register): array {
 		$result = [];
 		foreach ($register->getSchemas() as $ref) {
-			try {
-				$schema = $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
-			} catch (Throwable $e) {
-				continue;
-			}
-
-			if ($this->isManaged(schema: $schema) === false) {
+			$schema = $this->findUnscopedSchema(ref: $ref);
+			if ($schema === null || $this->isManaged(schema: $schema) === false) {
 				continue;
 			}
 
@@ -350,6 +447,21 @@ class TablesSchemaSyncService {
 
 		return $result;
 	}//end managedSchemasByTableId()
+
+	/**
+	 * A schema a register lists, read outside RBAC and multitenancy.
+	 *
+	 * @param mixed $ref The schema reference as the register lists it.
+	 *
+	 * @return Schema|null Null when it cannot be read.
+	 */
+	private function findUnscopedSchema(mixed $ref): ?Schema {
+		try {
+			return $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end findUnscopedSchema()
 
 	/**
 	 * Whether a schema is managed by this sync (vs hand-authored).

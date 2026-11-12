@@ -1,0 +1,65 @@
+{
+    "a month with rows": {
+        "result": [
+            [
+                "org-1",
+                4
+            ],
+            [
+                "org-1",
+                4
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_tenant_usage, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation_uuid, :p1, NULL)",
+            "#1 where(eq(organisation_uuid, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 00:00:00, 2",
+            "#1 expr.gte(period, :p2, NULL)",
+            "#1 andWhere(gte(period, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 23:59:59, 2",
+            "#1 expr.lte(period, :p3, NULL)",
+            "#1 andWhere(lte(period, :p3, NULL))",
+            "#1 orderBy(period, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "no rows": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_tenant_usage, NULL)",
+            "#1 param :p1 = org-2, 2",
+            "#1 expr.eq(organisation_uuid, :p1, NULL)",
+            "#1 where(eq(organisation_uuid, :p1, NULL))",
+            "#1 param :p2 = 2026-01-01 00:00:00, 2",
+            "#1 expr.gte(period, :p2, NULL)",
+            "#1 andWhere(gte(period, :p2, NULL))",
+            "#1 param :p3 = 2026-01-31 23:59:59, 2",
+            "#1 expr.lte(period, :p3, NULL)",
+            "#1 andWhere(lte(period, :p3, NULL))",
+            "#1 orderBy(period, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "reversed bounds": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_tenant_usage, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation_uuid, :p1, NULL)",
+            "#1 where(eq(organisation_uuid, :p1, NULL))",
+            "#1 param :p2 = 2026-01-31 23:59:59, 2",
+            "#1 expr.gte(period, :p2, NULL)",
+            "#1 andWhere(gte(period, :p2, NULL))",
+            "#1 param :p3 = 2026-01-01 00:00:00, 2",
+            "#1 expr.lte(period, :p3, NULL)",
+            "#1 andWhere(lte(period, :p3, NULL))",
+            "#1 orderBy(period, ASC)",
+            "#1 executeQuery()"
+        ]
+    }
+}

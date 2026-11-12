@@ -1,0 +1,2158 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`organisation.cleanOrganisationForSave keeps only what may be saved, from a null slug and a falsy active flag 1`] = `
+{
+  "cleaned": {
+    "active": false,
+    "name": "N",
+  },
+  "inputUntouched": true,
+  "keys": [
+    "name",
+    "active",
+  ],
+}
+`;
+
+exports[`organisation.cleanOrganisationForSave keeps only what may be saved, from an empty slug and an empty active flag 1`] = `
+{
+  "cleaned": {
+    "active": true,
+    "name": "N",
+  },
+  "inputUntouched": true,
+  "keys": [
+    "name",
+    "active",
+  ],
+}
+`;
+
+exports[`organisation.cleanOrganisationForSave keeps only what may be saved, from every read-only field 1`] = `
+{
+  "cleaned": {
+    "active": true,
+    "name": "N",
+    "slug": "s",
+  },
+  "inputUntouched": true,
+  "keys": [
+    "name",
+    "slug",
+    "active",
+  ],
+}
+`;
+
+exports[`organisation.cleanOrganisationForSave keeps only what may be saved, from no active flag 1`] = `
+{
+  "cleaned": {
+    "name": "N",
+  },
+  "inputUntouched": true,
+  "keys": [
+    "name",
+  ],
+}
+`;
+
+exports[`organisation.clearCache on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/clear-cache",
+      {
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error clearing cache:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to clear cache: offline",
+  },
+}
+`;
+
+exports[`organisation.clearCache on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/clear-cache",
+      {
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "activeOrganisation": {
+          "name": "Active",
+          "uuid": "org-1",
+        },
+        "organisation": {
+          "name": "Saved",
+          "uuid": "org-1",
+        },
+        "organisations": [
+          {
+            "uuid": "org-2",
+          },
+        ],
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.clearCache on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/clear-cache",
+      {
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Bare",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.clearCache on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/clear-cache",
+      {
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {},
+      "response": {
+        "ok": false,
+        "status": 500,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.clearCache on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/clear-cache",
+      {
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "message": "Not a member",
+      },
+      "response": {
+        "ok": false,
+        "status": 403,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.createOrganisation on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations",
+      {
+        "body": "{"name":"New","slug":"new"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error creating organisation:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to create organisation: offline",
+  },
+}
+`;
+
+exports[`organisation.createOrganisation on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations",
+      {
+        "body": "{"name":"New","slug":"new"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": {
+    "name": "Saved",
+  },
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Saved",
+        "uuid": "org-1",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.createOrganisation on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations",
+      {
+        "body": "{"name":"New","slug":"new"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": {
+    "name": "Bare",
+  },
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Bare",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.createOrganisation on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations",
+      {
+        "body": "{"name":"New","slug":"new"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error creating organisation:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to create organisation: HTTP error! status: 500",
+  },
+}
+`;
+
+exports[`organisation.createOrganisation on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations",
+      {
+        "body": "{"name":"New","slug":"new"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error creating organisation:",
+      "Not a member",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "Not a member",
+    "thrown": "Failed to create organisation: Not a member",
+  },
+}
+`;
+
+exports[`organisation.getActiveOrganisation on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/active",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      [Error: offline],
+      undefined,
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": undefined,
+    "thrown": "offline",
+  },
+}
+`;
+
+exports[`organisation.getActiveOrganisation on an allowed answer 1`] = `
+{
+  "activeOrganisation": {
+    "active": true,
+    "authorization": {
+      "agent": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "agent_use": [],
+      "application": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configuration": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "dashboard_view": [],
+      "llm_use": [],
+      "object": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "object_publish": [],
+      "register": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "schema": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "view": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    },
+    "children": [],
+    "created": "",
+    "description": "",
+    "groups": [],
+    "id": undefined,
+    "isDefault": false,
+    "name": "Active",
+    "owner": "",
+    "parent": null,
+    "quota": {
+      "bandwidth": null,
+      "groups": null,
+      "requests": null,
+      "storage": null,
+      "users": null,
+    },
+    "slug": "",
+    "updated": "",
+    "usage": {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+    "users": [],
+    "uuid": "org-1",
+  },
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/active",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "name": "Active",
+      "uuid": "org-1",
+    },
+  },
+}
+`;
+
+exports[`organisation.getActiveOrganisation on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/active",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": null,
+  },
+}
+`;
+
+exports[`organisation.getActiveOrganisation on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/active",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": null,
+  },
+}
+`;
+
+exports[`organisation.getActiveOrganisation on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/active",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": null,
+  },
+}
+`;
+
+exports[`organisation.getOrganisation on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      [Error: offline],
+      undefined,
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": undefined,
+    "thrown": "offline",
+  },
+}
+`;
+
+exports[`organisation.getOrganisation on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "name": "Saved",
+      "uuid": "org-1",
+    },
+  },
+}
+`;
+
+exports[`organisation.getOrganisation on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "name": "Bare",
+    },
+  },
+}
+`;
+
+exports[`organisation.getOrganisation on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {},
+  },
+}
+`;
+
+exports[`organisation.getOrganisation on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "message": "Not a member",
+    },
+  },
+}
+`;
+
+exports[`organisation.getOrganisationAsItem on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      [Error: offline],
+      undefined,
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": undefined,
+    "thrown": "offline",
+  },
+}
+`;
+
+exports[`organisation.getOrganisationAsItem on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": {
+    "name": "Saved",
+  },
+  "outcome": {
+    "result": {
+      "name": "Saved",
+      "uuid": "org-1",
+    },
+  },
+}
+`;
+
+exports[`organisation.getOrganisationAsItem on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "name": "Bare",
+    },
+  },
+}
+`;
+
+exports[`organisation.getOrganisationAsItem on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {},
+  },
+}
+`;
+
+exports[`organisation.getOrganisationAsItem on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "message": "Not a member",
+    },
+  },
+}
+`;
+
+exports[`organisation.joinOrganisation on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error joining organisation:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to join organisation: offline",
+  },
+}
+`;
+
+exports[`organisation.joinOrganisation on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "activeOrganisation": {
+          "name": "Active",
+          "uuid": "org-1",
+        },
+        "organisation": {
+          "name": "Saved",
+          "uuid": "org-1",
+        },
+        "organisations": [
+          {
+            "uuid": "org-2",
+          },
+        ],
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.joinOrganisation on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Bare",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.joinOrganisation on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error joining organisation:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to join organisation: HTTP error! status: 500",
+  },
+}
+`;
+
+exports[`organisation.joinOrganisation on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error joining organisation:",
+      "HTTP error! status: 403",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 403",
+    "thrown": "Failed to join organisation: HTTP error! status: 403",
+  },
+}
+`;
+
+exports[`organisation.joinOrganisationForUser on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{"userId":"alice"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error joining organisation:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to join organisation: offline",
+  },
+}
+`;
+
+exports[`organisation.joinOrganisationForUser on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{"userId":"alice"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "activeOrganisation": {
+          "name": "Active",
+          "uuid": "org-1",
+        },
+        "organisation": {
+          "name": "Saved",
+          "uuid": "org-1",
+        },
+        "organisations": [
+          {
+            "uuid": "org-2",
+          },
+        ],
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.joinOrganisationForUser on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{"userId":"alice"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Bare",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.joinOrganisationForUser on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{"userId":"alice"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error joining organisation:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to join organisation: HTTP error! status: 500",
+  },
+}
+`;
+
+exports[`organisation.joinOrganisationForUser on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/join",
+      {
+        "body": "{"userId":"alice"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error joining organisation:",
+      "HTTP error! status: 403",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 403",
+    "thrown": "Failed to join organisation: HTTP error! status: 403",
+  },
+}
+`;
+
+exports[`organisation.leaveOrganisation on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/leave",
+      {
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error leaving organisation:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to leave organisation: offline",
+  },
+}
+`;
+
+exports[`organisation.leaveOrganisation on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/leave",
+      {
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+    [
+      "getActiveOrganisation",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "activeOrganisation": {
+          "name": "Active",
+          "uuid": "org-1",
+        },
+        "organisation": {
+          "name": "Saved",
+          "uuid": "org-1",
+        },
+        "organisations": [
+          {
+            "uuid": "org-2",
+          },
+        ],
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.leaveOrganisation on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/leave",
+      {
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+    [
+      "getActiveOrganisation",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Bare",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.leaveOrganisation on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/leave",
+      {
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error leaving organisation:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to leave organisation: HTTP error! status: 500",
+  },
+}
+`;
+
+exports[`organisation.leaveOrganisation on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/leave",
+      {
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error leaving organisation:",
+      "HTTP error! status: 403",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 403",
+    "thrown": "Failed to leave organisation: HTTP error! status: 403",
+  },
+}
+`;
+
+exports[`organisation.searchAllOrganisations on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error searching organisations:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to search organisations: offline",
+  },
+}
+`;
+
+exports[`organisation.searchAllOrganisations on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": [
+      {
+        "uuid": "org-2",
+      },
+    ],
+  },
+}
+`;
+
+exports[`organisation.searchAllOrganisations on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": [],
+  },
+}
+`;
+
+exports[`organisation.searchAllOrganisations on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error searching organisations:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to search organisations: HTTP error! status: 500",
+  },
+}
+`;
+
+exports[`organisation.searchAllOrganisations on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error searching organisations:",
+      "HTTP error! status: 403",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 403",
+    "thrown": "Failed to search organisations: HTTP error! status: 403",
+  },
+}
+`;
+
+exports[`organisation.searchOrganisations on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error searching organisations:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to search organisations: offline",
+  },
+}
+`;
+
+exports[`organisation.searchOrganisations on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": [
+      {
+        "uuid": "org-2",
+      },
+    ],
+  },
+}
+`;
+
+exports[`organisation.searchOrganisations on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": [],
+  },
+}
+`;
+
+exports[`organisation.searchOrganisations on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error searching organisations:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to search organisations: HTTP error! status: 500",
+  },
+}
+`;
+
+exports[`organisation.searchOrganisations on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error searching organisations:",
+      "HTTP error! status: 403",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 403",
+    "thrown": "Failed to search organisations: HTTP error! status: 403",
+  },
+}
+`;
+
+exports[`organisation.setActiveOrganisationById on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/set-active",
+      {
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error setting active organisation:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to set active organisation: offline",
+  },
+}
+`;
+
+exports[`organisation.setActiveOrganisationById on an allowed answer 1`] = `
+{
+  "activeOrganisation": {
+    "active": true,
+    "authorization": {
+      "agent": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "agent_use": [],
+      "application": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "configuration": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "dashboard_view": [],
+      "llm_use": [],
+      "object": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "object_publish": [],
+      "register": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "schema": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+      "view": {
+        "create": [],
+        "delete": [],
+        "read": [],
+        "update": [],
+      },
+    },
+    "children": [],
+    "created": "",
+    "description": "",
+    "groups": [],
+    "id": undefined,
+    "isDefault": false,
+    "name": "Active",
+    "owner": "",
+    "parent": null,
+    "quota": {
+      "bandwidth": null,
+      "groups": null,
+      "requests": null,
+      "storage": null,
+      "users": null,
+    },
+    "slug": "",
+    "updated": "",
+    "usage": {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+    "users": [],
+    "uuid": "org-1",
+  },
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/set-active",
+      {
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "activeOrganisation": {
+          "name": "Active",
+          "uuid": "org-1",
+        },
+        "organisation": {
+          "name": "Saved",
+          "uuid": "org-1",
+        },
+        "organisations": [
+          {
+            "uuid": "org-2",
+          },
+        ],
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.setActiveOrganisationById on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/set-active",
+      {
+        "method": "POST",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Bare",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.setActiveOrganisationById on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/set-active",
+      {
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error setting active organisation:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to set active organisation: HTTP error! status: 500",
+  },
+}
+`;
+
+exports[`organisation.setActiveOrganisationById on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1/set-active",
+      {
+        "method": "POST",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error setting active organisation:",
+      "HTTP error! status: 403",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 403",
+    "thrown": "Failed to set active organisation: HTTP error! status: 403",
+  },
+}
+`;
+
+exports[`organisation.updateById on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/7",
+      {
+        "body": "{"name":"By id"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error updating organisation:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to update organisation: offline",
+  },
+}
+`;
+
+exports[`organisation.updateById on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/7",
+      {
+        "body": "{"name":"By id"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Saved",
+        "uuid": "org-1",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.updateById on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/7",
+      {
+        "body": "{"name":"By id"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Bare",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.updateById on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/7",
+      {
+        "body": "{"name":"By id"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error updating organisation:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to update organisation: HTTP error! status: 500",
+  },
+}
+`;
+
+exports[`organisation.updateById on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/7",
+      {
+        "body": "{"name":"By id"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error updating organisation:",
+      "Not a member",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "Not a member",
+    "thrown": "Failed to update organisation: Not a member",
+  },
+}
+`;
+
+exports[`organisation.updateOrganisation on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "body": "{"name":"Renamed","active":true}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error updating organisation:",
+      "offline",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "offline",
+    "thrown": "Failed to update organisation: offline",
+  },
+}
+`;
+
+exports[`organisation.updateOrganisation on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "body": "{"name":"Renamed","active":true}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Saved",
+        "uuid": "org-1",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.updateOrganisation on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "body": "{"name":"Renamed","active":true}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "refreshOrganisationList",
+    ],
+  ],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "result": {
+      "data": {
+        "name": "Bare",
+      },
+      "response": {
+        "ok": true,
+        "status": 200,
+      },
+    },
+  },
+}
+`;
+
+exports[`organisation.updateOrganisation on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "body": "{"name":"Renamed","active":true}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error updating organisation:",
+      "HTTP error! status: 500",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "HTTP error! status: 500",
+    "thrown": "Failed to update organisation: HTTP error! status: 500",
+  },
+}
+`;
+
+exports[`organisation.updateOrganisation on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/organisations/org-1",
+      {
+        "body": "{"name":"Renamed","active":true}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "logged": [
+    [
+      "Error updating organisation:",
+      "Not a member",
+    ],
+  ],
+  "organisationItem": false,
+  "outcome": {
+    "cause": "Not a member",
+    "thrown": "Failed to update organisation: Not a member",
+  },
+}
+`;
+
+exports[`organisation.updateWithoutId on a network failure 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "cause": undefined,
+    "thrown": "Organisation UUID is required for updates",
+  },
+}
+`;
+
+exports[`organisation.updateWithoutId on an allowed answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "cause": undefined,
+    "thrown": "Organisation UUID is required for updates",
+  },
+}
+`;
+
+exports[`organisation.updateWithoutId on an allowedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "cause": undefined,
+    "thrown": "Organisation UUID is required for updates",
+  },
+}
+`;
+
+exports[`organisation.updateWithoutId on an refusedBare answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "cause": undefined,
+    "thrown": "Organisation UUID is required for updates",
+  },
+}
+`;
+
+exports[`organisation.updateWithoutId on an refusedWithMessage answer 1`] = `
+{
+  "activeOrganisation": null,
+  "log": [],
+  "logged": [],
+  "organisationItem": false,
+  "outcome": {
+    "cause": undefined,
+    "thrown": "Organisation UUID is required for updates",
+  },
+}
+`;

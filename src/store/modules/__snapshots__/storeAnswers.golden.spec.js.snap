@@ -1,0 +1,2001 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`object answers of the list stores golden deleteRegister([{"id":5,"title":"Five"}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": null,
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "id": 9,
+            "title": "Saved",
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error deleting register:",
+          "HTTP error! status: 409",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to delete register: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error deleting register:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to delete register: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error deleting register:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to delete register: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error deleting register:",
+          "Unexpected token",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to delete register: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden deleteSource([{"id":6,"title":"Six"}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/sources",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": null,
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "id": 9,
+            "title": "Saved",
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "undefined",
+            "method": "DELETE",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "SyntaxError: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden saveConfiguration([{"id":4,"title":"Four"}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/4",
+          {
+            "body": "{"title":"Four"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/configurations",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": 9,
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "Saved",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "application": "",
+            "created": "",
+            "description": null,
+            "githubBranch": null,
+            "githubPath": null,
+            "githubRepo": null,
+            "id": 9,
+            "lastSyncDate": null,
+            "localVersion": null,
+            "organisation": null,
+            "owner": "",
+            "registers": [],
+            "remoteVersion": null,
+            "schemas": [],
+            "sourceUrl": null,
+            "title": "Saved",
+            "type": "",
+            "updated": "",
+            "version": null,
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/4",
+          {
+            "body": "{"title":"Four"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving configuration:",
+          "HTTP error! status: 409",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save configuration: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/4",
+          {
+            "body": "{"title":"Four"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving configuration:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save configuration: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/4",
+          {
+            "body": "{"title":"Four"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving configuration:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save configuration: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/4",
+          {
+            "body": "{"title":"Four"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving configuration:",
+          "Unexpected token",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save configuration: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden saveConfiguration([{"title":"New"}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/configurations",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": 9,
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "Saved",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "application": "",
+            "created": "",
+            "description": null,
+            "githubBranch": null,
+            "githubPath": null,
+            "githubRepo": null,
+            "id": 9,
+            "lastSyncDate": null,
+            "localVersion": null,
+            "organisation": null,
+            "owner": "",
+            "registers": [],
+            "remoteVersion": null,
+            "schemas": [],
+            "sourceUrl": null,
+            "title": "Saved",
+            "type": "",
+            "updated": "",
+            "version": null,
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving configuration:",
+          "HTTP error! status: 409",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save configuration: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving configuration:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save configuration: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving configuration:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save configuration: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving configuration:",
+          "Unexpected token",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save configuration: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden saveRegister([{"id":5,"title":"Five"}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "{"title":"Five"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": {
+        "created": "",
+        "groups": [],
+        "id": 9,
+        "languages": [],
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "schemas": [],
+        "slug": "",
+        "source": "",
+        "tablePrefix": "",
+        "title": "Saved",
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+      },
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "created": "",
+            "groups": [],
+            "id": 9,
+            "languages": [],
+            "quota": {
+              "bandwidth": null,
+              "groups": null,
+              "requests": null,
+              "storage": null,
+              "users": null,
+            },
+            "schemas": [],
+            "slug": "",
+            "source": "",
+            "tablePrefix": "",
+            "title": "Saved",
+            "updated": "",
+            "usage": {
+              "bandwidth": 0,
+              "groups": 0,
+              "requests": 0,
+              "storage": 0,
+              "users": 0,
+            },
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "{"title":"Five"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving register:",
+          "HTTP error! status: 409",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save register: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "{"title":"Five"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving register:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save register: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "{"title":"Five"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving register:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save register: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/5",
+          {
+            "body": "{"title":"Five"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving register:",
+          "Unexpected token",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save register: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden saveRegister([{"title":"New"}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": {
+        "created": "",
+        "groups": [],
+        "id": 9,
+        "languages": [],
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "schemas": [],
+        "slug": "",
+        "source": "",
+        "tablePrefix": "",
+        "title": "Saved",
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+      },
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "created": "",
+            "groups": [],
+            "id": 9,
+            "languages": [],
+            "quota": {
+              "bandwidth": null,
+              "groups": null,
+              "requests": null,
+              "storage": null,
+              "users": null,
+            },
+            "schemas": [],
+            "slug": "",
+            "source": "",
+            "tablePrefix": "",
+            "title": "Saved",
+            "updated": "",
+            "usage": {
+              "bandwidth": 0,
+              "groups": 0,
+              "requests": 0,
+              "storage": 0,
+              "users": 0,
+            },
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving register:",
+          "HTTP error! status: 409",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save register: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving register:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save register: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving register:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save register: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers",
+          {
+            "body": "{"title":"New"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error saving register:",
+          "Unexpected token",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to save register: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden saveSource([{"id":6,"title":"Six"}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/sources",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": {
+        "authConfig": null,
+        "created": "",
+        "databaseUrl": "",
+        "description": "",
+        "id": 9,
+        "title": "Saved",
+        "type": "internal",
+        "updated": "",
+      },
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "authConfig": null,
+            "created": "",
+            "databaseUrl": "",
+            "description": "",
+            "id": 9,
+            "title": "Saved",
+            "type": "internal",
+            "updated": "",
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources/6",
+          {
+            "body": "{"id":6,"title":"Six","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "SyntaxError: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden saveSource([{"title":"New"}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources",
+          {
+            "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/sources",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": {
+        "authConfig": null,
+        "created": "",
+        "databaseUrl": "",
+        "description": "",
+        "id": 9,
+        "title": "Saved",
+        "type": "internal",
+        "updated": "",
+      },
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "authConfig": null,
+            "created": "",
+            "databaseUrl": "",
+            "description": "",
+            "id": 9,
+            "title": "Saved",
+            "type": "internal",
+            "updated": "",
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources",
+          {
+            "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources",
+          {
+            "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources",
+          {
+            "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/sources",
+          {
+            "body": "{"title":"New","updated":"2026-01-01T00:00:00.000Z"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "POST",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "SyntaxError: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden uploadConfiguration([{"title":"Up"}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/upload/1",
+          {
+            "body": "{"title":"Up"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/configurations",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": {
+        "application": "",
+        "created": "",
+        "description": null,
+        "githubBranch": null,
+        "githubPath": null,
+        "githubRepo": null,
+        "id": 9,
+        "lastSyncDate": null,
+        "localVersion": null,
+        "organisation": null,
+        "owner": "",
+        "registers": [],
+        "remoteVersion": null,
+        "schemas": [],
+        "sourceUrl": null,
+        "title": "Saved",
+        "type": "",
+        "updated": "",
+        "version": null,
+      },
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "application": "",
+            "created": "",
+            "description": null,
+            "githubBranch": null,
+            "githubPath": null,
+            "githubRepo": null,
+            "id": 9,
+            "lastSyncDate": null,
+            "localVersion": null,
+            "organisation": null,
+            "owner": "",
+            "registers": [],
+            "remoteVersion": null,
+            "schemas": [],
+            "sourceUrl": null,
+            "title": "Saved",
+            "type": "",
+            "updated": "",
+            "version": null,
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/upload/1",
+          {
+            "body": "{"title":"Up"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error uploading configuration:",
+          "HTTP error! status: 409",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to upload configuration: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/upload/1",
+          {
+            "body": "{"title":"Up"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error uploading configuration:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to upload configuration: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/upload/1",
+          {
+            "body": "{"title":"Up"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error uploading configuration:",
+          "Invalid response data",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to upload configuration: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/configurations/upload/1",
+          {
+            "body": "{"title":"Up"}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [
+        [
+          "Error uploading configuration:",
+          "Unexpected token",
+        ],
+      ],
+      "outcome": {
+        "threw": "Error: Failed to upload configuration: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden uploadRegister([{"title":"Up","id":3}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/upload/1",
+          {
+            "body": "{"title":"Up","id":3}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": {
+        "created": "",
+        "groups": [],
+        "id": 9,
+        "languages": [],
+        "quota": {
+          "bandwidth": null,
+          "groups": null,
+          "requests": null,
+          "storage": null,
+          "users": null,
+        },
+        "schemas": [],
+        "slug": "",
+        "source": "",
+        "tablePrefix": "",
+        "title": "Saved",
+        "updated": "",
+        "usage": {
+          "bandwidth": 0,
+          "groups": 0,
+          "requests": 0,
+          "storage": 0,
+          "users": 0,
+        },
+      },
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "created": "",
+            "groups": [],
+            "id": 9,
+            "languages": [],
+            "quota": {
+              "bandwidth": null,
+              "groups": null,
+              "requests": null,
+              "storage": null,
+              "users": null,
+            },
+            "schemas": [],
+            "slug": "",
+            "source": "",
+            "tablePrefix": "",
+            "title": "Saved",
+            "updated": "",
+            "usage": {
+              "bandwidth": 0,
+              "groups": 0,
+              "requests": 0,
+              "storage": 0,
+              "users": 0,
+            },
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/upload/1",
+          {
+            "body": "{"title":"Up","id":3}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/upload/1",
+          {
+            "body": "{"title":"Up","id":3}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/upload/1",
+          {
+            "body": "{"title":"Up","id":3}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/registers/upload/1",
+          {
+            "body": "{"title":"Up","id":3}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "SyntaxError: Unexpected token",
+      },
+    },
+  ],
+]
+`;
+
+exports[`object answers of the list stores golden uploadSchema([{"title":"Up","id":2}]) 1`] = `
+[
+  [
+    "object",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/schemas/upload/1",
+          {
+            "body": "{"title":"Up","id":2}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+        [
+          "/index.php/apps/openregister/api/schemas",
+          {
+            "body": "undefined",
+            "method": "GET",
+          },
+        ],
+      ],
+      "item": {
+        "archive": {},
+        "authorization": {},
+        "configuration": {
+          "allowFiles": false,
+          "allowedTags": [],
+          "facetCacheTtl": 0,
+          "linkedTypes": [],
+          "objectDescriptionField": "",
+          "objectImageField": "",
+          "objectNameField": "",
+          "objectSlugField": "",
+          "objectSlugSuffix": false,
+          "objectSummaryField": "",
+          "unique": false,
+        },
+        "created": "",
+        "description": "",
+        "draft": null,
+        "hardValidation": false,
+        "id": 9,
+        "maxDepth": 0,
+        "properties": {},
+        "required": [],
+        "slug": "",
+        "summary": "",
+        "title": "Saved",
+        "updated": "",
+        "version": "",
+      },
+      "logged": [],
+      "outcome": {
+        "returned": {
+          "data": {
+            "archive": {},
+            "authorization": {},
+            "configuration": {
+              "allowFiles": false,
+              "allowedTags": [],
+              "facetCacheTtl": 0,
+              "linkedTypes": [],
+              "objectDescriptionField": "",
+              "objectImageField": "",
+              "objectNameField": "",
+              "objectSlugField": "",
+              "objectSlugSuffix": false,
+              "objectSummaryField": "",
+              "unique": false,
+            },
+            "created": "",
+            "description": "",
+            "draft": null,
+            "hardValidation": false,
+            "id": 9,
+            "maxDepth": 0,
+            "properties": {},
+            "required": [],
+            "slug": "",
+            "summary": "",
+            "title": "Saved",
+            "updated": "",
+            "version": "",
+          },
+          "response": {
+            "ok": true,
+            "status": 200,
+          },
+        },
+      },
+    },
+  ],
+  [
+    "refused",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/schemas/upload/1",
+          {
+            "body": "{"title":"Up","id":2}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: HTTP error! status: 409",
+      },
+    },
+  ],
+  [
+    "null body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/schemas/upload/1",
+          {
+            "body": "{"title":"Up","id":2}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "text body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/schemas/upload/1",
+          {
+            "body": "{"title":"Up","id":2}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "Error: Invalid response data",
+      },
+    },
+  ],
+  [
+    "unreadable body",
+    {
+      "calls": [
+        [
+          "/index.php/apps/openregister/api/schemas/upload/1",
+          {
+            "body": "{"title":"Up","id":2}",
+            "headers": {
+              "Content-Type": "application/json",
+            },
+            "method": "PUT",
+          },
+        ],
+      ],
+      "item": {
+        "id": 1,
+        "title": "Before",
+      },
+      "logged": [],
+      "outcome": {
+        "threw": "SyntaxError: Unexpected token",
+      },
+    },
+  ],
+]
+`;

@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -28,16 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BulkAction;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
-use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
-use OCP\IUser;
-use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Applying a rule to objects that already exist.
@@ -57,34 +53,21 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The action composes the inventory,
  *   the evaluator and the write path, which are the three halves of applying a rule.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
-class ApplyRuleAction implements BulkActionInterface {
-
-	/**
-	 * The action id.
-	 *
-	 * @var string
-	 */
-	public const ID = 'openregister:apply-rule';
+class ApplyRuleAction implements ApplyRuleActionInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService The object write path.
-	 * @param SchemaMapper $schemaMapper Resolves the schema the rule is declared on.
-	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param CalculationEvaluator $evaluator The JSON-AST evaluator.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ApplyRuleServices $rules  Rule inventory and calculation evaluator.
+	 * @param BulkObjectAccess  $access The member's schema, the object write path and the log.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RuleInventoryService $inventory,
-		private readonly CalculationEvaluator $evaluator,
-		private readonly LoggerInterface $logger,
+		private readonly ApplyRuleServices $rules,
+		private readonly BulkObjectAccess $access,
 	) {
 	}//end __construct()
 
@@ -93,7 +76,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return string The action id.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getId(): string {
 		return self::ID;
@@ -104,7 +87,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return string The label.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getLabel(): string {
 		return 'Apply a rule';
@@ -115,7 +98,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getDescription(): string {
 		return 'Runs one declared rule over objects that already exist and writes what it derives. '
@@ -131,7 +114,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return bool True.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function requiresJustification(): bool {
 		return true;
@@ -145,7 +128,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return array<int, string> The homogeneity guard.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function getGuards(): array {
 		return [self::GUARD_HOMOGENEITY];
@@ -160,7 +143,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @throws InvalidArgumentException When the rule is not named.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function validateParameters(array $parameters): void {
 		$schema = ($parameters['schema'] ?? null);
@@ -182,50 +165,71 @@ class ApplyRuleAction implements BulkActionInterface {
 	/**
 	 * Rehearse or make the write for one object.
 	 *
-	 * @param ObjectEntity $object The object to act on.
-	 * @param array<string, mixed> $parameters The job's parameters.
-	 * @param bool $commit False to rehearse, true to write.
-	 * @param IUser|null $actor The user the job runs as.
+	 * @param BulkStep $step The member, the job's parameters, rehearsal or commit, and the actor.
 	 *
 	 * @return BulkActionResult What happened, or what would happen.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the rehearsal and
-	 *   the commit is the design property of D-5.
 	 * @SuppressWarnings(PHPMD.StaticAccess) BulkActionResult's named constructors are
 	 *   its only constructor: the class is immutable and its private __construct exists
 	 *   so an outcome cannot be built without saying which of the four it is.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		$rule = $this->ruleFor(parameters: $parameters);
+	public function apply(BulkStep $step): BulkActionResult {
+		$rule = $this->ruleFor(parameters: $step->parameters);
 		if ($rule === null) {
 			return BulkActionResult::failed(
-				message: sprintf('The rule "%s" is no longer declared.', (string)($parameters['ruleId'] ?? ''))
+				message: sprintf('The rule "%s" is no longer declared.', (string)($step->parameters['ruleId'] ?? ''))
 			);
 		}
 
+		$notReplayable = $this->notReplayable(rule: $rule);
+		if ($notReplayable !== null) {
+			return BulkActionResult::skipped(reason: $notReplayable);
+		}
+
+		return $this->replay(step: $step, rule: $rule);
+	}//end apply()
+
+	/**
+	 * Why a declared rule derives nothing to replay, or null when it does.
+	 *
+	 * @param RuleDescriptor $rule The rule.
+	 *
+	 * @return string|null The reason to skip, or null.
+	 */
+	private function notReplayable(RuleDescriptor $rule): ?string {
 		if ($rule->getKind() !== RuleVocabulary::KIND_CALCULATION) {
-			return BulkActionResult::skipped(
-				reason: sprintf(
-					'A rule of kind "%s" derives no value for a stored object, so there is nothing to replay.',
-					$rule->getKind()
-				)
+			return sprintf(
+				'A rule of kind "%s" derives no value for a stored object, so there is nothing to replay.',
+				$rule->getKind()
 			);
 		}
 
 		if ($rule->isEnabled() === false) {
-			return BulkActionResult::skipped(reason: 'The rule is switched off.');
+			return 'The rule is switched off.';
 		}
 
-		$current = $object->getObject();
+		return null;
+	}//end notReplayable()
+
+	/**
+	 * Evaluate a replayable rule against the object and write what it derives.
+	 *
+	 * @param BulkStep       $step The member, rehearsal or commit, and the actor.
+	 * @param RuleDescriptor $rule The calculation rule, switched on.
+	 *
+	 * @return BulkActionResult What happened, or what would happen.
+	 */
+	private function replay(BulkStep $step, RuleDescriptor $rule): BulkActionResult {
+		$current = $step->object->getObject();
 		if (is_array($current) === false) {
 			$current = [];
 		}
 
 		try {
 			// No SequenceContext: a replay must never reserve a running number.
-			$value = $this->evaluator->evaluate($current, $rule->getCondition());
+			$value = $this->rules->evaluator->evaluate($current, $rule->getCondition());
 		} catch (Throwable $failure) {
 			return BulkActionResult::failed(message: $failure->getMessage());
 		}
@@ -235,37 +239,38 @@ class ApplyRuleAction implements BulkActionInterface {
 			return BulkActionResult::skipped(reason: 'The object already carries the value this rule derives.');
 		}
 
-		if ($commit === false) {
+		if ($step->commit === false) {
 			return BulkActionResult::applied();
 		}
 
-		return $this->write(object: $object, patch: [$key => $value], actor: $actor);
-	}//end apply()
+		return $this->write(step: $step, patch: [$key => $value]);
+	}//end replay()
 
 	/**
 	 * Write the derived value onto one object.
 	 *
-	 * @param ObjectEntity $object The object.
+	 * @param BulkStep             $step  The member and the user the job runs as.
 	 * @param array<string, mixed> $patch The merge patch.
-	 * @param IUser|null $actor The user the job runs as.
 	 *
 	 * @return BulkActionResult The outcome.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) See apply().
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function write(ObjectEntity $object, array $patch, ?IUser $actor): BulkActionResult {
+	private function write(BulkStep $step, array $patch): BulkActionResult {
+		$object = $step->object;
 		try {
-			$this->objectService->patchObject(
-				objectId: (string)$object->getUuid(),
-				data: $patch,
-				register: $object->getRegister(),
-				schema: $object->getSchema(),
-				currentUser: $actor
+			$this->access->objects->patchObject(
+				patch: new ObjectPatch(
+					objectId: (string)$object->getUuid(),
+					data: $patch,
+					target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+					currentUser: $step->actor
+				)
 			);
 		} catch (Throwable $failure) {
-			$this->logger->warning(
+			$this->access->logger->warning(
 				message: '[ApplyRuleAction] Write failed for object',
 				context: [
 					'action' => self::ID,
@@ -287,13 +292,13 @@ class ApplyRuleAction implements BulkActionInterface {
 	 *
 	 * @return RuleDescriptor|null The rule, or null.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function ruleFor(array $parameters): ?RuleDescriptor {
 		try {
-			$schema = $this->schemaMapper->find((string)($parameters['schema'] ?? ''));
+			$schema = $this->access->schemas->find((string)($parameters['schema'] ?? ''));
 
-			return $this->inventory->find(schema: $schema, ruleId: (string)($parameters['ruleId'] ?? ''));
+			return $this->rules->inventory->find(schema: $schema, ruleId: (string)($parameters['ruleId'] ?? ''));
 		} catch (Throwable $failure) {
 			return null;
 		}

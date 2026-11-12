@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Mcp;
 
-use OCA\OpenRegister\Service\Mcp\McpProtocolService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpProtocolService;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\Security\ISecureRandom;

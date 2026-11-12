@@ -30,13 +30,19 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Archival\DestructionService;
-use OCA\OpenRegister\Service\Object\SaveObject;
-use OCA\OpenRegister\Service\RetentionService;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\HoldOrder;
+use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
+use OCA\OpenRegister\Controller\Support\DestructionListApproval;
+use OCA\OpenRegister\Controller\Support\RetentionControllerServices;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
@@ -56,38 +62,105 @@ use Psr\Log\LoggerInterface;
  */
 class RetentionController extends Controller {
 	/**
+	 * Statuses in which a destruction list can be approved or rejected.
+	 *
+	 * @var list<string>
+	 */
+	private const REVIEWABLE_STATUSES = ['in_review', 'awaiting_second_approval'];
+
+	/**
+	 * Retention service
+	 *
+	 * @var RetentionServiceInterface
+	 */
+	private readonly RetentionServiceInterface $retentionService;
+
+	/**
+	 * Settings handler
+	 *
+	 * @var ArchivalSettingsReaderInterface
+	 */
+	private readonly ArchivalSettingsReaderInterface $settingsHandler;
+
+	/**
+	 * Save object service
+	 *
+	 * @var SaveObjectWriterInterface
+	 */
+	private readonly SaveObjectWriterInterface $saveObject;
+
+	/**
+	 * Object mapper
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Schema mapper
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Audit trail mapper
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditMapper;
+
+	/**
+	 * Withholds entries a reviewer decided against
+	 *
+	 * @var DestructionServiceInterface
+	 */
+	private readonly DestructionServiceInterface $destructionService;
+
+	/**
+	 * Background job list
+	 *
+	 * @var IJobList
+	 */
+	private readonly IJobList $jobList;
+
+	/**
+	 * User session
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name
 	 * @param IRequest $request Request
-	 * @param RetentionService $retentionService Retention service
-	 * @param ObjectRetentionHandler $settingsHandler Settings handler
-	 * @param SaveObject $saveObject Save object service
-	 * @param MagicMapper $objectMapper Object mapper
-	 * @param SchemaMapper $schemaMapper Schema mapper
-	 * @param AuditTrailMapper $auditMapper Audit trail mapper
-	 * @param DestructionService $destructionService Withholds entries a reviewer decided against
-	 * @param IJobList $jobList Background job list
-	 * @param IUserSession $userSession User session
-	 * @param LoggerInterface $logger Logger
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+	 * @param RetentionControllerServices $services The retention controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RetentionService $retentionService,
-		private readonly ObjectRetentionHandler $settingsHandler,
-		private readonly SaveObject $saveObject,
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditMapper,
-		private readonly DestructionService $destructionService,
-		private readonly IJobList $jobList,
-		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
+		RetentionControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->retentionService = $services->domain->retentionService;
+		$this->settingsHandler = $services->domain->settingsHandler;
+		$this->saveObject = $services->domain->saveObject;
+		$this->objectMapper = $services->mappers->objectMapper;
+		$this->schemaMapper = $services->mappers->schemaMapper;
+		$this->auditMapper = $services->mappers->auditMapper;
+		$this->destructionService = $services->domain->destructionService;
+		$this->jobList = $services->platform->jobList;
+		$this->userSession = $services->platform->userSession;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**
@@ -102,170 +175,126 @@ class RetentionController extends Controller {
 	 * @return JSONResponse Response with updated destruction list
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	public function approveDestructionList(string $id): JSONResponse {
 		try {
 			$listObject = $this->objectMapper->find($id, null, null, false, false, false);
 
-			if ($listObject === null) {
-				return new JSONResponse(['error' => 'Destruction list not found'], 404);
+			$approval = new DestructionListApproval();
+			$approval->id = $id;
+			$approval->listData = $listObject->getObject();
+			$approval->status = $approval->listData['status'] ?? '';
+			if (in_array($approval->status, self::REVIEWABLE_STATUSES, true) === false) {
+				return new JSONResponse(['error' => 'Destruction list is not in reviewable status: ' . $approval->status], 409);
 			}
 
-			$listData = $listObject->getObject();
-
-			$currentStatus = $listData['status'] ?? '';
-			if (in_array($currentStatus, ['in_review', 'awaiting_second_approval'], true) === false) {
-				return new JSONResponse(
-					['error' => 'Destruction list is not in reviewable status: ' . $currentStatus],
-					409
-				);
-			}
-
-			$user = $this->userSession->getUser();
-			$userId = 'unknown';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
-
-			// Handle partial approval: exclude specified objects.
-			$excluded = $this->request->getParam('excluded', []);
-			$excludeUuids = [];
-
-			if (empty($excluded) === false && is_array($excluded) === true) {
-				foreach ($excluded as $excl) {
-					$exclUuid = $excl['uuid'] ?? null;
-					$exclReason = $excl['reason'] ?? 'No reason provided';
-
-					if ($exclUuid === null) {
-						continue;
-					}
-
-					$excludeUuids[] = $exclUuid;
-
-					// Remove from objects list and add to excluded list.
-					$listData['excluded'][] = [
-						'uuid' => $exclUuid,
-						'reason' => $exclReason,
-						'excludedBy' => $userId,
-					];
-
-					// Extend archiefactiedatum for excluded objects.
-					try {
-						$exclObject = $this->objectMapper->find(
-							$exclUuid,
-							null,
-							null,
-							false,
-							false,
-							false
-						);
-						// The find() call throws rather than returning null; the catch below
-						// is what handles a missing object.
-						$this->retentionService->extendArchiveActionDate($exclObject);
-						$this->objectMapper->update($exclObject);
-					} catch (Exception $e) {
-						$this->logger->warning(
-							'[RetentionController] Failed to extend excluded object: ' . $e->getMessage()
-						);
-					}
-				}//end foreach
-
-				// Filter excluded objects from the list.
-				$listData['objects'] = array_values(
-					array_filter(
-						$listData['objects'] ?? [],
-						function ($obj) use ($excludeUuids) {
-							return in_array($obj['uuid'] ?? '', $excludeUuids, true) === false;
-						}
-					)
-				);
-			}//end if
-
-			// Check if two-step approval is required.
-			$requiresDualApproval = $this->checkDualApprovalRequired(listData: $listData);
-
-			// Record approval.
-			$listData['approvals'][] = [
-				'userId' => $userId,
-				'timestamp' => (new DateTime())->format('c'),
-			];
-
-			if ($requiresDualApproval === true && $currentStatus === 'in_review') {
-				// First approval — need second approver.
-				$listData['status'] = 'awaiting_second_approval';
-				$listObject->setObject($listData);
-				$this->objectMapper->update($listObject);
-
-				return new JSONResponse(
-					[
-						'status' => 'awaiting_second_approval',
-						'message' => 'First approval recorded. Awaiting second approval from different archivist.',
-					]
-				);
-			}
-
-			// Check that second approver is different from first.
-			if ($currentStatus === 'awaiting_second_approval') {
-				$approvals = $listData['approvals'] ?? [];
-				if (count($approvals) >= 2) {
-					$firstApprover = $approvals[0]['userId'] ?? '';
-					if ($firstApprover === $userId) {
-						return new JSONResponse(
-							['error' => 'Second approval must be from a different archivist'],
-							403
-						);
-					}
-				}
-			}
-
-			// Withhold what a reviewer decided against, BEFORE the count is read.
-			//
-			// DestructionExecutionJob refuses a retained or transferred record, so
-			// the records themselves are safe on this route. The counts were not:
-			// this method is an independent approval implementation that never
-			// calls DestructionService::approveList(), and it computes both the
-			// audit trail and its response from $listData before the job runs,
-			// then never corrects them. A destruction certificate stating a count
-			// that never happened is its own defect on a statutory path.
-			$listData = $this->destructionService->withholdDecidedEntries($listData);
-
-			// Full approval — queue destruction execution.
-			$listData['status'] = 'approved';
-			$listObject->setObject($listData);
-			$this->objectMapper->update($listObject);
-
-			// Queue the destruction execution job.
-			$this->jobList->add(
-				\OCA\OpenRegister\BackgroundJob\DestructionExecutionJob::class,
-				['destructionListUuid' => $id]
-			);
-
-			// Create audit trail.
-			$this->auditMapper->createAuditTrailEntry(
-				$listObject,
-				'archival.destruction_approved',
-				[
-					'approvedBy' => $userId,
-					'objectCount' => count($listData['objects']),
-					'excluded' => count($listData['excluded'] ?? []),
-				]
-			);
-
-			return new JSONResponse(
-				[
-					'status' => 'approved',
-					'objectCount' => count($listData['objects']),
-					'excludedCount' => count($listData['excluded'] ?? []),
-				]
-			);
+			$approval->userId = $this->currentUserId();
+			return $this->approveReviewable(listObject: $listObject, approval: $approval);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
+		}
 	}//end approveDestructionList()
+
+	/**
+	 * Record an approval on a reviewable list: exclusions, then the first or the final step.
+	 *
+	 * @param ObjectEntity            $listObject The stored destruction list
+	 * @param DestructionListApproval $approval   The approval in progress
+	 *
+	 * @return JSONResponse The step's response
+	 */
+	private function approveReviewable(ObjectEntity $listObject, DestructionListApproval $approval): JSONResponse {
+		$this->applyExclusions(approval: $approval);
+		$requiresDualApproval = $this->checkDualApprovalRequired(listData: $approval->listData);
+		$approval->listData['approvals'][] = [
+			'userId' => $approval->userId,
+			'timestamp' => (new DateTime())->format('c'),
+		];
+		if ($requiresDualApproval === true && $approval->status === 'in_review') {
+			return $this->awaitSecondApproval(listObject: $listObject, listData: $approval->listData);
+		}
+
+		if ($approval->status === 'awaiting_second_approval' && $approval->repeatsFirstApprover() === true) {
+			return new JSONResponse(['error' => 'Second approval must be from a different archivist'], 403);
+		}
+
+		// Withhold what a reviewer decided against before the counts are read: the audit
+		// trail and the response are computed here, before DestructionExecutionJob runs.
+		$approval->listData = $this->destructionService->withholdDecidedEntries($approval->listData);
+		return $this->approveInFull(listObject: $listObject, approval: $approval);
+	}//end approveReviewable()
+
+	/**
+	 * Move the request's excluded entries off the list, extending their archive action date.
+	 *
+	 * @param DestructionListApproval $approval The approval in progress
+	 *
+	 * @return void
+	 */
+	private function applyExclusions(DestructionListApproval $approval): void {
+		$excluded = $this->request->getParam('excluded', []);
+		if (empty($excluded) === true || is_array($excluded) === false) {
+			return;
+		}
+
+		$excludeUuids = [];
+		foreach ($excluded as $excl) {
+			$exclUuid = $approval->exclude(excl: $excl);
+			if ($exclUuid !== null) {
+				$excludeUuids[] = $exclUuid;
+				$this->extendArchiveDate(uuid: $exclUuid, kind: 'excluded');
+			}
+		}
+
+		$approval->dropEntries(uuids: $excludeUuids);
+	}//end applyExclusions()
+
+	/**
+	 * Store the first of two approvals and report that a second one is awaited.
+	 *
+	 * @param ObjectEntity $listObject The stored destruction list
+	 * @param array        $listData   The list data with the first approval
+	 *
+	 * @return JSONResponse The awaiting response
+	 */
+	private function awaitSecondApproval(ObjectEntity $listObject, array $listData): JSONResponse {
+		$listData['status'] = 'awaiting_second_approval';
+		$listObject->setObject($listData);
+		$this->objectMapper->update($listObject);
+
+		return new JSONResponse(
+			[
+				'status' => 'awaiting_second_approval',
+				'message' => 'First approval recorded. Awaiting second approval from different archivist.',
+			]
+		);
+	}//end awaitSecondApproval()
+
+	/**
+	 * Store the approved list, queue its destruction and record the audit trail.
+	 *
+	 * @param ObjectEntity            $listObject The stored destruction list
+	 * @param DestructionListApproval $approval   The approval with the withheld list data
+	 *
+	 * @return JSONResponse The approved response
+	 */
+	private function approveInFull(ObjectEntity $listObject, DestructionListApproval $approval): JSONResponse {
+		$approval->listData['status'] = 'approved';
+		$listObject->setObject($approval->listData);
+		$this->objectMapper->update($listObject);
+		$this->jobList->add(DestructionExecutionJobInterface::JOB_CLASS, [DestructionExecutionJobInterface::ARGUMENT_LIST_UUID => $approval->id]);
+		$objectCount = count($approval->listData['objects']);
+		$excludedCount = count($approval->listData['excluded'] ?? []);
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $listObject,
+				action: 'archival.destruction_approved',
+				context: ['approvedBy' => $approval->userId, 'objectCount' => $objectCount, 'excluded' => $excludedCount]
+			)
+		);
+
+		return new JSONResponse(['status' => 'approved', 'objectCount' => $objectCount, 'excludedCount' => $excludedCount]);
+	}//end approveInFull()
 
 	/**
 	 * Reject a destruction list.
@@ -279,16 +308,10 @@ class RetentionController extends Controller {
 	 * @return JSONResponse Response with updated status
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function rejectDestructionList(string $id): JSONResponse {
 		try {
 			$listObject = $this->objectMapper->find($id, null, null, false, false, false);
-
-			if ($listObject === null) {
-				return new JSONResponse(['error' => 'Destruction list not found'], 404);
-			}
 
 			$reason = $this->request->getParam('reason');
 			if (empty($reason) === true) {
@@ -296,60 +319,91 @@ class RetentionController extends Controller {
 			}
 
 			$listData = $listObject->getObject();
-
-			$currentStatus = $listData['status'] ?? '';
-			if (in_array($currentStatus, ['in_review', 'awaiting_second_approval'], true) === false) {
-				return new JSONResponse(
-					['error' => 'Destruction list is not in reviewable status'],
-					409
-				);
+			if (in_array($listData['status'] ?? '', self::REVIEWABLE_STATUSES, true) === false) {
+				return new JSONResponse(['error' => 'Destruction list is not in reviewable status'], 409);
 			}
 
-			$user = $this->userSession->getUser();
-			$userId = 'unknown';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
-
-			$listData['status'] = 'rejected';
-			$listData['rejectedBy'] = $userId;
-			$listData['rejectionReason'] = $reason;
-			$listData['rejectedAt'] = (new DateTime())->format('c');
-
-			// Extend archiefactiedatum for all objects on the list.
-			foreach ($listData['objects'] ?? [] as $objRef) {
-				$uuid = $objRef['uuid'] ?? null;
-				if ($uuid === null) {
-					continue;
-				}
-
-				try {
-					$object = $this->objectMapper->find($uuid, null, null, false, false, false);
-					// The find() call throws rather than returning null; the catch below is
-					// what handles a missing object.
-					$this->retentionService->extendArchiveActionDate($object);
-					$this->objectMapper->update($object);
-				} catch (Exception $e) {
-					$this->logger->warning(
-						'[RetentionController] Failed to extend rejected object: ' . $e->getMessage()
-					);
-				}
-			}
-
-			$listObject->setObject($listData);
-			$this->objectMapper->update($listObject);
-
-			return new JSONResponse(
-				[
-					'status' => 'rejected',
-					'reason' => $reason,
-					'message' => 'Destruction list rejected. All object deadlines extended.',
-				]
-			);
+			return $this->reject(listObject: $listObject, reason: $reason);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
+		}
 	}//end rejectDestructionList()
+
+	/**
+	 * Store a rejection on the list and extend the archive action date of every entry.
+	 *
+	 * @param ObjectEntity $listObject The stored destruction list
+	 * @param mixed        $reason     The rejection reason
+	 *
+	 * @return JSONResponse The rejected response
+	 */
+	private function reject(ObjectEntity $listObject, mixed $reason): JSONResponse {
+		$listData = $listObject->getObject();
+		$listData['status'] = 'rejected';
+		$listData['rejectedBy'] = $this->currentUserId();
+		$listData['rejectionReason'] = $reason;
+		$listData['rejectedAt'] = (new DateTime())->format('c');
+		$this->extendEntries(objects: $listData['objects'] ?? []);
+		$listObject->setObject($listData);
+		$this->objectMapper->update($listObject);
+
+		return new JSONResponse(
+			[
+				'status' => 'rejected',
+				'reason' => $reason,
+				'message' => 'Destruction list rejected. All object deadlines extended.',
+			]
+		);
+	}//end reject()
+
+	/**
+	 * Extend the archive action date of every list entry that names a uuid.
+	 *
+	 * @param array $objects The list entries
+	 *
+	 * @return void
+	 */
+	private function extendEntries(array $objects): void {
+		foreach ($objects as $objRef) {
+			$uuid = $objRef['uuid'] ?? null;
+			if ($uuid !== null) {
+				$this->extendArchiveDate(uuid: $uuid, kind: 'rejected');
+			}
+		}
+	}//end extendEntries()
+
+	/**
+	 * Extend one object's archive action date; a failure is logged, not raised.
+	 *
+	 * @param string $uuid The object uuid
+	 * @param string $kind Why it is extended, for the log line
+	 *
+	 * @return void
+	 */
+	private function extendArchiveDate(string $uuid, string $kind): void {
+		try {
+			// The find() call throws rather than returning null; the catch handles a missing object.
+			$object = $this->objectMapper->find($uuid, null, null, false, false, false);
+			$this->retentionService->extendArchiveActionDate($object);
+			$this->objectMapper->update($object);
+		} catch (Exception $e) {
+			$this->logger->warning('[RetentionController] Failed to extend ' . $kind . ' object: ' . $e->getMessage());
+		}
+	}//end extendArchiveDate()
+
+	/**
+	 * The session user's id, or 'unknown' without a session user.
+	 *
+	 * @return string The user id
+	 */
+	private function currentUserId(): string {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return 'unknown';
+		}
+
+		return $user->getUID();
+	}//end currentUserId()
 
 	/**
 	 * Place a legal hold on a single object.
@@ -380,14 +434,16 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->placeLegalHold($object, $reason, $this->ownerKeyParam());
+			$this->retentionService->placeHold($object, new HoldOrder($reason, $this->ownerKeyParam()));
 			$this->objectMapper->update($object);
 
 			// Create audit trail.
-			$this->auditMapper->createAuditTrailEntry(
-				$object,
-				'archival.legal_hold_placed',
-				['reason' => $reason]
+			$this->auditMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'archival.legal_hold_placed',
+					context: ['reason' => $reason]
+				)
 			);
 
 			return new JSONResponse(
@@ -429,14 +485,16 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->releaseLegalHold($object, $reason, $this->ownerKeyParam());
+			$this->retentionService->releaseHold($object, new HoldOrder($reason, $this->ownerKeyParam()));
 			$this->objectMapper->update($object);
 
 			// Create audit trail.
-			$this->auditMapper->createAuditTrailEntry(
-				$object,
-				'archival.legal_hold_released',
-				['reason' => $reason]
+			$this->auditMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'archival.legal_hold_released',
+					context: ['reason' => $reason]
+				)
 			);
 
 			return new JSONResponse(
@@ -489,7 +547,7 @@ class RetentionController extends Controller {
 
 			// Queue via background job for large datasets.
 			$this->jobList->add(
-				\OCA\OpenRegister\BackgroundJob\BulkLegalHoldJob::class,
+				\OCA\OpenRegister\BackgroundJob\JobHandles::BULK_LEGAL_HOLD,
 				[
 					'schemaId' => $schemaId,
 					'reason' => $reason,

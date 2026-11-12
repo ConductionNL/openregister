@@ -24,10 +24,8 @@
 
 namespace OCA\OpenRegister\Settings;
 
-use OCP\App\IAppManager;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
-use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IL10N;
 use OCP\Settings\IDelegatedSettings;
@@ -58,18 +56,11 @@ class OpenRegisterAdmin implements IDelegatedSettings {
 	private IConfig $config;
 
 	/**
-	 * App manager for checking installed apps
+	 * App manager and app config the push status is read from
 	 *
-	 * @var IAppManager $appManager App manager
+	 * @var PushStatusSources $pushStatus Push status sources
 	 */
-	private IAppManager $appManager;
-
-	/**
-	 * App configuration for reading push_available flag
-	 *
-	 * @var IAppConfig $appConfig App configuration
-	 */
-	private IAppConfig $appConfig;
+	private PushStatusSources $pushStatus;
 
 	/**
 	 * Initial state service for providing data to Vue
@@ -83,8 +74,7 @@ class OpenRegisterAdmin implements IDelegatedSettings {
 	 *
 	 * @param IConfig $config Config service
 	 * @param IL10N $l Localization helper
-	 * @param IAppManager $appManager App manager for checking notify_push installation
-	 * @param IAppConfig $appConfig App config for reading push_available flag
+	 * @param PushStatusSources $pushStatus App manager and app config for the push status
 	 * @param IInitialState $initialState Initial state service for Vue data
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
@@ -93,14 +83,12 @@ class OpenRegisterAdmin implements IDelegatedSettings {
 	public function __construct(
 		IConfig $config,
 		IL10N $l,
-		IAppManager $appManager,
-		IAppConfig $appConfig,
+		PushStatusSources $pushStatus,
 		IInitialState $initialState,
 	) {
 		$this->config = $config;
 		$this->l = $l;
-		$this->appManager = $appManager;
-		$this->appConfig = $appConfig;
+		$this->pushStatus = $pushStatus;
 		$this->initialState = $initialState;
 	}//end __construct()
 
@@ -120,11 +108,11 @@ class OpenRegisterAdmin implements IDelegatedSettings {
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-10
 	 */
 	private function getPushStatus(): string {
-		if ($this->appManager->isInstalled('notify_push') === false) {
+		if ($this->pushStatus->appManager->isInstalled('notify_push') === false) {
 			return 'not_installed';
 		}
 
-		if ($this->appConfig->getValueString('openregister', 'push_available', '') === '1') {
+		if ($this->pushStatus->appConfig->getValueString('openregister', 'push_available', '') === '1') {
 			return 'active';
 		}
 

@@ -28,11 +28,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatStreamControllerFactory;
+
 use OCA\OpenRegister\Controller\ChatStreamController;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use OCP\IUser;
@@ -171,8 +173,7 @@ class ChatStreamControllerTest extends TestCase {
 	}//end setUp()
 
 	private function makeController(): TestableChatStreamController {
-		return new TestableChatStreamController(
-			appName: 'openregister',
+		return new TestableChatStreamController(...ChatStreamControllerFactory::args(
 			request: $this->request,
 			chatService: $this->chatService,
 			conversationMapper: $this->conversationMapper,
@@ -180,7 +181,7 @@ class ChatStreamControllerTest extends TestCase {
 			logger: $this->logger,
 			userSession: $this->userSession,
 			db: $this->db
-		);
+		));
 	}//end makeController()
 
 	/**
@@ -270,10 +271,10 @@ class ChatStreamControllerTest extends TestCase {
 	}//end testNoTokenEventsOnEarlyExitPaths()
 
 	/**
-	 * Decision 239: a caller without llm_use or agent_use gets a `forbidden`
-	 * frame naming the right, and the model is never called. The SSE headers
-	 * are already sent, so the refusal is a frame, as for a conversation that
-	 * is not the caller's.
+	 * A caller without llm_use or agent_use gets a `forbidden` frame naming
+	 * the right, and the model is never called. The SSE headers are already
+	 * sent, so the refusal is a frame, as for a conversation that is not the
+	 * caller's.
 	 */
 	public function testAMissingSpecialRightEmitsForbiddenBeforeTheModelIsCalled(): void {
 		$user = $this->createMock(IUser::class);
@@ -281,12 +282,13 @@ class ChatStreamControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$conversation = new Conversation();
+		$conversation->setId(11);
 		$conversation->setUserId('alice');
 		$conversation->setUuid('conv-1');
 		$this->conversationMapper->method('findByUuid')->willReturn($conversation);
 
-		$this->chatService->expects($this->once())->method('missingRight')
-			->with($conversation, null, 'alice')
+		$this->chatService->expects($this->once())->method('missingRightIn')
+			->with(11, 'alice')
 			->willReturn('llm_use');
 		$this->chatService->expects($this->never())->method('processMessage');
 

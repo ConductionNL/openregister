@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseSentryOccasion;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use PHPUnit\Framework\TestCase;
 
@@ -31,6 +32,8 @@ use PHPUnit\Framework\TestCase;
  * Coverage of CaseSentryEvaluator, and of the three catalog entries it relies on.
  *
  * @covers \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
+ * @covers \OCA\OpenRegister\Service\Case\CaseSentryOnPart
+ * @covers \OCA\OpenRegister\Service\Case\CaseSentryMoment
  * @covers \OCA\OpenRegister\Service\Flow\EventCatalogService
  * @covers \OCA\OpenRegister\Exception\CaseValidationException
  * @uses \OCA\OpenRegister\Db\CaseItem
@@ -76,10 +79,10 @@ class CaseSentryEvaluatorTest extends TestCase {
 		$item->setEntryCriteria([['id' => 'after-advice', 'on' => ['event' => 'case.item.completed', 'item' => 'advice-received']]]);
 		$tree = new CasePlanTree(items: [$milestone, $item]);
 
-		$this->assertNull($this->evaluator()->entrySentry(item: $item, tree: $tree, object: []), 'Not yet.');
+		$this->assertNull($this->evaluator()->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: [])), 'Not yet.');
 
 		$milestone->setState(CaseItem::STATE_COMPLETED);
-		$this->assertSame('after-advice', $this->evaluator()->entrySentry(item: $item, tree: $tree, object: []), 'Now, without any event in hand.');
+		$this->assertSame('after-advice', $this->evaluator()->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: [])), 'Now, without any event in hand.');
 	}//end testAPlanItemOnPartReadsCurrentStateAndNamesTheSentry()
 
 	/**
@@ -100,8 +103,8 @@ class CaseSentryEvaluatorTest extends TestCase {
 		);
 		$tree = new CasePlanTree(items: [$done, $item]);
 
-		$this->assertSame('second', $this->evaluator()->entrySentry(item: $item, tree: $tree, object: ['amount' => 500]));
-		$this->assertNull($this->evaluator()->entrySentry(item: $item, tree: $tree, object: ['amount' => 50]), 'Both if-parts false: none fires.');
+		$this->assertSame('second', $this->evaluator()->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: ['amount' => 500])));
+		$this->assertNull($this->evaluator()->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: ['amount' => 50])), 'Both if-parts false: none fires.');
 	}//end testAndWithinOrAcross()
 
 	/**
@@ -114,8 +117,8 @@ class CaseSentryEvaluatorTest extends TestCase {
 		$item->setEntryCriteria([['id' => 'guard', 'if' => ['==' => [['var' => 'json.missing.deep'], 'yes']]]]);
 		$tree = new CasePlanTree(items: [$item]);
 
-		$this->assertNull($this->evaluator()->entrySentry(item: $item, tree: $tree, object: ['other' => 1]));
-		$this->assertSame('guard', $this->evaluator()->entrySentry(item: $item, tree: $tree, object: ['missing' => ['deep' => 'yes']]));
+		$this->assertNull($this->evaluator()->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: ['other' => 1])));
+		$this->assertSame('guard', $this->evaluator()->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: ['missing' => ['deep' => 'yes']])));
 	}//end testAnUnevaluableIfPartBlocks()
 
 	/**
@@ -130,9 +133,9 @@ class CaseSentryEvaluatorTest extends TestCase {
 		$tree = new CasePlanTree(items: [$other, $item]);
 		$evaluator = $this->evaluator();
 
-		$this->assertSame('withdrawn', $evaluator->exitSentry(item: $item, tree: $tree, object: ['status' => 'ingetrokken']));
-		$this->assertNull($evaluator->exitSentry(item: $item, tree: $tree, object: ['status' => 'open']));
-		$data = $evaluator->dataFor(tree: $tree, object: ['status' => 'open'], event: 'object.updated', payload: ['k' => 1]);
+		$this->assertSame('withdrawn', $evaluator->exitSentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: ['status' => 'ingetrokken'])));
+		$this->assertNull($evaluator->exitSentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: ['status' => 'open'])));
+		$data = $evaluator->dataOn(occasion: new CaseSentryOccasion(tree: $tree, object: ['status' => 'open'], event: 'object.updated', payload: ['k' => 1]));
 		$this->assertSame(['intake' => 'active', 'x' => 'available'], $data['case']['items']);
 		$this->assertSame('object.updated', $data['context']['event']);
 		$this->assertSame(['status' => 'open'], $data['json']);
@@ -146,8 +149,8 @@ class CaseSentryEvaluatorTest extends TestCase {
 	public function testTheTwoDefaults(): void {
 		$item = CaseFixtures::row(id: 1, key: 'x', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
 		$tree = new CasePlanTree(items: [$item]);
-		$this->assertSame(CaseSentryEvaluator::DEFAULT_ENTRY, $this->evaluator()->entrySentry(item: $item, tree: $tree, object: []));
-		$this->assertNull($this->evaluator()->exitSentry(item: $item, tree: $tree, object: []));
+		$this->assertSame(CaseSentryEvaluator::DEFAULT_ENTRY, $this->evaluator()->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: [])));
+		$this->assertNull($this->evaluator()->exitSentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: [])));
 	}//end testTheTwoDefaults()
 
 	/**
@@ -174,7 +177,7 @@ class CaseSentryEvaluatorTest extends TestCase {
 		);
 		$tree = new CasePlanTree(items: [$done, $item]);
 
-		$this->assertNull($this->evaluator()->exitSentry(item: $item, tree: $tree, object: ['x' => 1], event: 'object.updated'));
+		$this->assertNull($this->evaluator()->exitSentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: ['x' => 1], event: 'object.updated')));
 	}//end testAMalformedSentryNeverFires()
 
 	/**
@@ -189,9 +192,9 @@ class CaseSentryEvaluatorTest extends TestCase {
 		$tree = new CasePlanTree(items: [$item]);
 		$evaluator = $this->evaluator();
 
-		$this->assertNull($evaluator->exitSentry(item: $item, tree: $tree, object: []), 'No event in hand.');
-		$this->assertNull($evaluator->exitSentry(item: $item, tree: $tree, object: [], event: 'object.transitioned'));
-		$this->assertSame('sentry:1', $evaluator->exitSentry(item: $item, tree: $tree, object: [], event: 'updated'), 'The legacy alias counts.');
+		$this->assertNull($evaluator->exitSentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: [])), 'No event in hand.');
+		$this->assertNull($evaluator->exitSentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: [], event: 'object.transitioned')));
+		$this->assertSame('sentry:1', $evaluator->exitSentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: [], event: 'updated')), 'The legacy alias counts.');
 	}//end testAnObjectOnPartReadsTheEventBeingHandled()
 
 	/**

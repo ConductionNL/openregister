@@ -124,26 +124,47 @@ final class DeferredListenerContext {
 			return new self(userId: null, orgUuid: null, entries: []);
 		}
 
-		$userId = $argument['userId'] ?? null;
-		if (is_string($userId) === false || $userId === '') {
-			$userId = null;
+		return new self(
+			userId: self::nonEmptyString(value: ($argument['userId'] ?? null)),
+			orgUuid: self::nonEmptyString(value: ($argument['organisationUuid'] ?? null)),
+			entries: self::arrayEntries(list: ($argument['entries'] ?? []))
+		);
+	}//end fromJobArguments()
+
+	/**
+	 * A job-argument value as a non-empty string, or null.
+	 *
+	 * @param mixed $value The decoded value.
+	 *
+	 * @return string|null The string, or null when it is not one or is empty.
+	 */
+	private static function nonEmptyString(mixed $value): ?string {
+		if (is_string($value) === false || $value === '') {
+			return null;
 		}
 
-		$orgUuid = $argument['organisationUuid'] ?? null;
-		if (is_string($orgUuid) === false || $orgUuid === '') {
-			$orgUuid = null;
+		return $value;
+	}//end nonEmptyString()
+
+	/**
+	 * The entries of a job-argument list that are arrays, in order; none when it is not a list.
+	 *
+	 * @param mixed $list The decoded entry list.
+	 *
+	 * @return array<int, array<string, mixed>> The entries.
+	 */
+	private static function arrayEntries(mixed $list): array {
+		if (is_array($list) === false) {
+			return [];
 		}
 
 		$entries = [];
-		$rawList = $argument['entries'] ?? [];
-		if (is_array($rawList) === true) {
-			foreach ($rawList as $rawEntry) {
-				if (is_array($rawEntry) === true) {
-					$entries[] = $rawEntry;
-				}
+		foreach ($list as $rawEntry) {
+			if (is_array($rawEntry) === true) {
+				$entries[] = $rawEntry;
 			}
 		}
 
-		return new self(userId: $userId, orgUuid: $orgUuid, entries: $entries);
-	}//end fromJobArguments()
+		return $entries;
+	}//end arrayEntries()
 }//end class

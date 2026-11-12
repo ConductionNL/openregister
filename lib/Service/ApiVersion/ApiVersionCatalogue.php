@@ -45,7 +45,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ use Throwable;
  *         The repo carries the same suppression shape on VocabularyController,
  *         CodedValueGuard and DestructionScopeService for the same reason.
  */
-class ApiVersionCatalogue {
+class ApiVersionCatalogue implements ApiVersionCatalogueInterface {
 
 	/**
 	 * The app the configuration lives under.
@@ -81,13 +81,6 @@ class ApiVersionCatalogue {
 	 * @var string
 	 */
 	public const APP_ID = 'openregister';
-
-	/**
-	 * Configuration key holding the administered declaration, a JSON list.
-	 *
-	 * @var string
-	 */
-	public const CONFIG_KEY = 'api_versions';
 
 	/**
 	 * The identifier of the version this instance has always served.
@@ -147,7 +140,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<string, ApiVersion> Versions keyed by identifier.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function all(): array {
 		if ($this->resolved === null) {
@@ -163,7 +156,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<string, ApiVersion> Versions keyed by identifier.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function served(): array {
 		return array_filter($this->all(), static fn (ApiVersion $version): bool => $version->isServed());
@@ -182,7 +175,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<int, string> The identifiers.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function identifiers(): array {
 		return array_values(array_map(static fn (ApiVersion $version): string => $version->id, $this->all()));
@@ -194,7 +187,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<int, string> The served identifiers.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function servedIdentifiers(): array {
 		return array_values(array_map(static fn (ApiVersion $version): string => $version->id, $this->served()));
@@ -213,7 +206,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return ApiVersion|null The declared version, or null when unknown.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function get(string $identifier): ?ApiVersion {
 		return ($this->all()[trim($identifier)] ?? null);
@@ -228,7 +221,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return ApiVersion The current version.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function current(): ApiVersion {
 		$supported = array_filter(
@@ -248,7 +241,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<string, string> Identifier to reason.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function rejections(): array {
 		if ($this->resolved === null) {
@@ -272,25 +265,42 @@ class ApiVersionCatalogue {
 	private function resolve(): array {
 		$rejected = [];
 
-		$administered = $this->readAdministered(rejected: $rejected);
-		if ($administered !== []) {
-			$candidate = $this->buildVersions(declarations: $administered, rejected: $rejected);
-			if ($this->isUsable(versions: $candidate, rejected: $rejected) === true) {
-				$this->rejected = $rejected;
-				return $candidate;
-			}
-
-			$this->logger->error(
-				'OpenRegister: the administered API version declaration is not usable; falling back to the built-in contract.',
-				['rejections' => $rejected]
-			);
-		}
-
+		$candidate      = $this->administeredVersions(rejected: $rejected);
 		$this->rejected = $rejected;
+		if ($candidate !== null) {
+			return $candidate;
+		}
 
 		return $this->buildVersions(declarations: self::BUILT_IN, rejected: $rejected);
 
 	}//end resolve()
+
+	/**
+	 * The administered versions, when there are any and they can be served; a set that cannot is logged.
+	 *
+	 * @param array<string, string> $rejected Refusals collected so far, added to in place.
+	 *
+	 * @return array<string, ApiVersion>|null The versions, or null to fall back to the built-in contract.
+	 */
+	private function administeredVersions(array &$rejected): ?array {
+		$administered = $this->readAdministered(rejected: $rejected);
+		if ($administered === []) {
+			return null;
+		}
+
+		$candidate = $this->buildVersions(declarations: $administered, rejected: $rejected);
+		if ($this->isUsable(versions: $candidate, rejected: $rejected) === true) {
+			return $candidate;
+		}
+
+		$this->logger->error(
+			'OpenRegister: the administered API version declaration is not usable; falling back to the built-in contract.',
+			['rejections' => $rejected]
+		);
+
+		return null;
+
+	}//end administeredVersions()
 
 	/**
 	 * Why a candidate declaration could not be served, without storing it.
@@ -309,7 +319,7 @@ class ApiVersionCatalogue {
 	 *
 	 * @return array<string, string> The refusals, keyed by the version they concern.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function inspect(array $declarations): array {
 		$rejected = [];
@@ -333,17 +343,8 @@ class ApiVersionCatalogue {
 	 * @return array<int, array<string, mixed>> The declarations, or an empty list.
 	 */
 	private function readAdministered(array &$rejected): array {
-		try {
-			$raw = trim((string)$this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, ''));
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'OpenRegister: could not read the API version configuration; using the built-in contract.',
-				['exception' => $e]
-			);
-			return [];
-		}
-
-		if ($raw === '') {
+		$raw = $this->administeredRaw();
+		if ($raw === null || $raw === '') {
 			return [];
 		}
 
@@ -356,6 +357,24 @@ class ApiVersionCatalogue {
 		return array_values(array_filter($decoded, 'is_array'));
 
 	}//end readAdministered()
+
+	/**
+	 * The administered configuration, trimmed; null (logged) when it cannot be read.
+	 *
+	 * @return string|null The raw configuration.
+	 */
+	private function administeredRaw(): ?string {
+		try {
+			return trim((string)$this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, ''));
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'OpenRegister: could not read the API version configuration; using the built-in contract.',
+				['exception' => $e]
+			);
+			return null;
+		}
+
+	}//end administeredRaw()
 
 	/**
 	 * Turn declarations into versions, recording each refusal.
@@ -404,16 +423,46 @@ class ApiVersionCatalogue {
 	 * @return bool True when the set can be served.
 	 */
 	private function isUsable(array $versions, array &$rejected): bool {
+		if ($this->hasSupportedVersion(versions: $versions) === false) {
+			$rejected['*'] = 'No version is supported; a caller naming no version would have nothing to be answered with.';
+			return false;
+		}
+
+		$broken = $this->brokenSuccessorLink(versions: $versions);
+		if ($broken !== null) {
+			$rejected[$broken->id] = 'Its successor ' . $broken->successor . ' is not a version this instance serves.';
+			return false;
+		}
+
+		return true;
+
+	}//end isUsable()
+
+	/**
+	 * Whether a candidate set has a supported version to answer a caller that names none.
+	 *
+	 * @param array<string, ApiVersion> $versions The candidate set.
+	 *
+	 * @return bool True when one is supported.
+	 */
+	private function hasSupportedVersion(array $versions): bool {
 		$supported = array_filter(
 			$versions,
 			static fn (ApiVersion $version): bool => ($version->status === ApiVersion::STATUS_SUPPORTED)
 		);
 
-		if ($supported === []) {
-			$rejected['*'] = 'No version is supported; a caller naming no version would have nothing to be answered with.';
-			return false;
-		}
+		return $supported !== [];
 
+	}//end hasSupportedVersion()
+
+	/**
+	 * The first version whose successor is not a version this set serves.
+	 *
+	 * @param array<string, ApiVersion> $versions The candidate set.
+	 *
+	 * @return ApiVersion|null The version, or null when every successor answers.
+	 */
+	private function brokenSuccessorLink(array $versions): ?ApiVersion {
 		foreach ($versions as $version) {
 			if ($version->successor === null) {
 				continue;
@@ -421,12 +470,11 @@ class ApiVersionCatalogue {
 
 			$successor = ($versions[$version->successor] ?? null);
 			if ($successor === null || $successor->isServed() === false) {
-				$rejected[$version->id] = 'Its successor ' . $version->successor . ' is not a version this instance serves.';
-				return false;
+				return $version;
 			}
 		}
 
-		return true;
+		return null;
 
-	}//end isUsable()
+	}//end brokenSuccessorLink()
 }//end class

@@ -98,25 +98,23 @@ class BpmnMappingReport implements JsonSerializable {
 	 * is a report an author cannot act on, and it reads as though the importer
 	 * is unsure rather than the file being unusual.
 	 *
-	 * @param string $elementId The BPMN element id.
-	 * @param string $kind      The element kind.
-	 * @param string $verdict   One of {@see self::VERDICTS}.
-	 * @param string $action    What the author should do about it.
+	 * @param string      $elementId The BPMN element id.
+	 * @param BpmnReading $reading   The element kind, one of {@see self::VERDICTS}, and what the author should do about it.
 	 *
 	 * @return bool True when the entry was recorded.
 	 *
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
-	public function record(string $elementId, string $kind, string $verdict, string $action = ''): bool {
-		if (trim($elementId) === '' || in_array($verdict, self::VERDICTS, true) === false) {
+	public function record(string $elementId, BpmnReading $reading): bool {
+		if (trim($elementId) === '' || in_array($reading->verdict, self::VERDICTS, true) === false) {
 			return false;
 		}
 
 		$this->entries[] = [
 			'elementId' => $elementId,
-			'kind' => $kind,
-			'verdict' => $verdict,
-			'action' => $action,
+			'kind' => $reading->kind,
+			'verdict' => $reading->verdict,
+			'action' => $reading->action,
 		];
 
 		return true;

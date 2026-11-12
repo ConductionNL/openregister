@@ -1,0 +1,2355 @@
+{
+    "base64 content equal to stored hash": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "base64 content is decoded": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "validation.blockExecutableFile",
+                "args": [
+                    "doc.txt",
+                    "hello"
+                ]
+            },
+            {
+                "method": "validation.checkOwnership",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    }
+                ]
+            },
+            {
+                "method": "file.putContent",
+                "args": [
+                    "hello"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Successfully updated file content: doc.txt",
+                    []
+                ]
+            },
+            {
+                "method": "ownership.transferFileOwnershipIfNeeded",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    },
+                    null
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "executable blocked": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "validation.blockExecutableFile",
+                "args": [
+                    "doc.txt",
+                    "MZ"
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "Executable files are not allowed"
+    },
+    "folder node with content and tags": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'dir'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "dir"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'dir'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'dir'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "dir"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: dir (ID: 3)",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.getFileTags",
+                "args": [
+                    "3"
+                ]
+            },
+            {
+                "method": "fileService.attachTagsToFile",
+                "args": [
+                    "3",
+                    [
+                        "t"
+                    ]
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Successfully updated file tags: dir",
+                    []
+                ]
+            }
+        ],
+        "threw": "TypeError",
+        "message": "OCA\\OpenRegister\\Service\\File\\UpdateFileHandler::updateFile(): Return value must be of type OCP\\Files\\File, MockObject returned"
+    },
+    "id not found": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '9'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File ID provided: 9",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.getById",
+                "args": [
+                    9
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No file found with ID: 9",
+                    []
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Error finding file by ID 9: File with ID 9 does not exist",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "File with ID 9 does not exist: File with ID 9 does not exist"
+    },
+    "id read handler misses, user folder by id": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '7'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File ID provided: 7",
+                    []
+                ]
+            },
+            {
+                "method": "readFileHandler.getFile",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    7
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.getById",
+                "args": [
+                    7
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file by ID in user folder: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "id user folder throws": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '9'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File ID provided: 9",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Error finding file by ID 9: User folder unavailable",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "File with ID 9 does not exist: User folder unavailable"
+    },
+    "id via read handler, new content, tags": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '7'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File ID provided: 7",
+                    []
+                ]
+            },
+            {
+                "method": "readFileHandler.getFile",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    7
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file by ID in object folder: doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "validation.blockExecutableFile",
+                "args": [
+                    "doc.txt",
+                    "new"
+                ]
+            },
+            {
+                "method": "validation.checkOwnership",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    }
+                ]
+            },
+            {
+                "method": "file.putContent",
+                "args": [
+                    "new"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Successfully updated file content: doc.txt",
+                    []
+                ]
+            },
+            {
+                "method": "ownership.transferFileOwnershipIfNeeded",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    },
+                    null
+                ]
+            },
+            {
+                "method": "fileService.getFileTags",
+                "args": [
+                    "7"
+                ]
+            },
+            {
+                "method": "fileService.attachTagsToFile",
+                "args": [
+                    "7",
+                    [
+                        "object:abc",
+                        "object:def",
+                        "blue"
+                    ]
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Successfully updated file tags: doc.txt",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "id via read handler, same content": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '7'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File ID provided: 7",
+                    []
+                ]
+            },
+            {
+                "method": "readFileHandler.getFile",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    7
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file by ID in object folder: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "id without object, user folder by id": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '7'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File ID provided: 7",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.getById",
+                "args": [
+                    7
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file by ID in user folder: doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "validation.blockExecutableFile",
+                "args": [
+                    "doc.txt",
+                    "new"
+                ]
+            },
+            {
+                "method": "validation.checkOwnership",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    }
+                ]
+            },
+            {
+                "method": "file.putContent",
+                "args": [
+                    "new"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Successfully updated file content: doc.txt",
+                    []
+                ]
+            },
+            {
+                "method": "ownership.transferFileOwnershipIfNeeded",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    },
+                    null
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "no object, leading id empty": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '12/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "12/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: '12/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Extracted filename from path: 'doc.txt' (from '12/doc.txt')",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: '12/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "12/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File 12/doc.txt not found in user folder either.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Attempting to find file by ID: 12",
+                    []
+                ]
+            },
+            {
+                "method": "userFolder.getById",
+                "args": [
+                    12
+                ]
+            },
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No file found with ID: 12",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "File 12/doc.txt does not exist"
+    },
+    "no object, leading id fallback": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '12/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "12/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: '12/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Extracted filename from path: 'doc.txt' (from '12/doc.txt')",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: '12/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "12/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File 12/doc.txt not found in user folder either.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Attempting to find file by ID: 12",
+                    []
+                ]
+            },
+            {
+                "method": "userFolder.getById",
+                "args": [
+                    12
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file by ID 12: doc.txt at path: /openregister/files/doc.txt",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "no object, leading id throws": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '12/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "12/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: '12/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Extracted filename from path: 'doc.txt' (from '12/doc.txt')",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: '12/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "12/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File 12/doc.txt not found in user folder either.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Attempting to find file by ID: 12",
+                    []
+                ]
+            },
+            {
+                "method": "userFolder.getById",
+                "args": [
+                    12
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Error finding file by ID 12: Lookup by id failed",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "File 12/doc.txt does not exist"
+    },
+    "no object, no leading id": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'missing.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "missing.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'missing.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'missing.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "missing.txt"
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File missing.txt not found in user folder either.",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "File missing.txt does not exist"
+    },
+    "no object, user folder": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'a%20b/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "a%20b/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'a b/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'a b/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "a b/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: a b/doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.getFileTags",
+                "args": [
+                    "7"
+                ]
+            },
+            {
+                "method": "fileService.attachTagsToFile",
+                "args": [
+                    "7",
+                    [
+                        "x"
+                    ]
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Successfully updated file tags: doc.txt",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "not updateable": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "validation.blockExecutableFile",
+                "args": [
+                    "doc.txt",
+                    "new"
+                ]
+            },
+            {
+                "method": "validation.checkOwnership",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    }
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Can't write content to file: File doc.txt is not writable by the current session",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "Can't write content to file: File doc.txt is not writable by the current session"
+    },
+    "nothing to change": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "object folder get not permitted": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getObjectFolder",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    null
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder path: /openregister/objectFolder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder ID: 2",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.getDirectoryListing",
+                "args": []
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Files in object folder: ",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Error accessing object folder: No access to doc.txt",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "object folder listing fails": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getObjectFolder",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    null
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder path: /openregister/objectFolder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder ID: 2",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.getDirectoryListing",
+                "args": []
+            },
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Could not list folder contents: Listing failed",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in object folder: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "object folder missing": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getObjectFolder",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    null
+                ]
+            },
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Could not get object folder for object ID: 55",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "object folder throws": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getObjectFolder",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    null
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Error accessing object folder: Object folder unavailable",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "ownership refused": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "validation.blockExecutableFile",
+                "args": [
+                    "doc.txt",
+                    "new"
+                ]
+            },
+            {
+                "method": "validation.checkOwnership",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    }
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Can't write content to file: Not your file",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "Can't write content to file: Not your file"
+    },
+    "path in object folder by full path": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'sub/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "sub/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'sub/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getObjectFolder",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    null
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder path: /openregister/objectFolder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder ID: 2",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.getDirectoryListing",
+                "args": []
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Files in object folder: doc.txt",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.get",
+                "args": [
+                    "sub/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in object folder: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "path in object folder by full path after name misses": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '8010/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "8010/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: '8010/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Extracted filename from path: 'doc.txt' (from '8010/doc.txt')",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getObjectFolder",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    null
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder path: /openregister/objectFolder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder ID: 2",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.getDirectoryListing",
+                "args": []
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Files in object folder: doc.txt",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File 'doc.txt' not found in object folder.",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.get",
+                "args": [
+                    "8010/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file using full path in object folder: doc.txt",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "path in object folder by name": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: '/8010/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "/8010/doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: '8010/doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Extracted filename from path: 'doc.txt' (from '8010/doc.txt')",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getObjectFolder",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    null
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder path: /openregister/objectFolder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder ID: 2",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.getDirectoryListing",
+                "args": []
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Files in object folder: doc.txt",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in object folder: doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "validation.blockExecutableFile",
+                "args": [
+                    "doc.txt",
+                    "new"
+                ]
+            },
+            {
+                "method": "validation.checkOwnership",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    }
+                ]
+            },
+            {
+                "method": "file.putContent",
+                "args": [
+                    "new"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Successfully updated file content: doc.txt",
+                    []
+                ]
+            },
+            {
+                "method": "ownership.transferFileOwnershipIfNeeded",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    },
+                    null
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "path not in object folder, found in user folder": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getObjectFolder",
+                "args": [
+                    {
+                        "object": 55
+                    },
+                    null
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder path: /openregister/objectFolder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Object folder ID: 2",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.getDirectoryListing",
+                "args": []
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Files in object folder: ",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File 'doc.txt' not found in object folder.",
+                    []
+                ]
+            },
+            {
+                "method": "objectFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[UpdateFileHandler] updateFile: File 'doc.txt' also not found with full path in object folder.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "put content not permitted": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "validation.blockExecutableFile",
+                "args": [
+                    "doc.txt",
+                    "new"
+                ]
+            },
+            {
+                "method": "validation.checkOwnership",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    }
+                ]
+            },
+            {
+                "method": "file.putContent",
+                "args": [
+                    "new"
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Can't write content to file: Storage is read-only",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "Can't write content to file: Storage is read-only"
+    },
+    "stream content changed": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            },
+            {
+                "method": "validation.blockExecutableFile",
+                "args": [
+                    "doc.txt",
+                    "streamed bytes"
+                ]
+            },
+            {
+                "method": "validation.checkOwnership",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    }
+                ]
+            },
+            {
+                "method": "file.putContent",
+                "args": [
+                    "stream:streamed bytes"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Successfully updated file content: doc.txt",
+                    []
+                ]
+            },
+            {
+                "method": "ownership.transferFileOwnershipIfNeeded",
+                "args": [
+                    {
+                        "node": 7,
+                        "name": "doc.txt",
+                        "folder": false
+                    },
+                    null
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "stream content unchanged": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Found file in user folder at path: doc.txt (ID: 7)",
+                    []
+                ]
+            }
+        ],
+        "returned": {
+            "node": 7,
+            "name": "doc.txt",
+            "folder": false
+        }
+    },
+    "user folder invalid path": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Can't access file doc.txt: Invalid path doc.txt",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "Can't access file doc.txt: Invalid path doc.txt"
+    },
+    "user folder not permitted": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Original file path received: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "fileService.extractFileNameFromPath",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: After cleaning: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Trying user folder approach with path: 'doc.txt'",
+                    []
+                ]
+            },
+            {
+                "method": "folders.getOpenRegisterUserFolder",
+                "args": []
+            },
+            {
+                "method": "userFolder.get",
+                "args": [
+                    "doc.txt"
+                ]
+            },
+            {
+                "method": "logger.error",
+                "args": [
+                    "[UpdateFileHandler] updateFile: Can't access file doc.txt: No access to doc.txt",
+                    []
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "Can't access file doc.txt: No access to doc.txt"
+    }
+}

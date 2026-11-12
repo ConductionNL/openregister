@@ -1,0 +1,273 @@
+[
+    {
+        "id": "app.sub.lead.search",
+        "name": "lead_search",
+        "description": "Search lead objects in app.sub.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "filters": {
+                    "type": "object",
+                    "properties": [],
+                    "additionalProperties": false
+                },
+                "page": {
+                    "type": "integer",
+                    "description": "Page number (default 1)."
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "description": "Results per page (default 20, max 100)."
+                },
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Optional field projection."
+                }
+            }
+        },
+        "app": "app.sub",
+        "subject": "lead",
+        "action": "search",
+        "outputSchema": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "hasMore": {
+                    "type": "boolean"
+                }
+            }
+        }
+    },
+    {
+        "id": "app.sub.lead.get",
+        "name": "lead_get",
+        "description": "Get a single lead object by id in app.sub.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Object id or uuid."
+                }
+            },
+            "required": [
+                "id"
+            ]
+        },
+        "app": "app.sub",
+        "subject": "lead",
+        "action": "get",
+        "outputSchema": {
+            "type": "object"
+        }
+    },
+    {
+        "id": "app.sub.lead.create",
+        "name": "lead_create",
+        "description": "Create a lead object in app.sub.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "Name",
+                    "maxLength": 10
+                },
+                "odd": {
+                    "type": "string"
+                },
+                "choice": {
+                    "enum": [
+                        "a",
+                        "b"
+                    ]
+                },
+                "untyped": {
+                    "description": "no type",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "k": {
+                                "format": "uuid",
+                                "type": "string"
+                            },
+                            "v": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "shape": {
+                    "type": "object"
+                },
+                "id": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "app": "app.sub",
+        "subject": "lead",
+        "action": "create"
+    },
+    {
+        "id": "app.sub.lead.update",
+        "name": "lead_update",
+        "description": "Update a lead object in app.sub.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "title": "Name",
+                    "maxLength": 10
+                },
+                "odd": {
+                    "type": "string"
+                },
+                "choice": {
+                    "enum": [
+                        "a",
+                        "b"
+                    ]
+                },
+                "untyped": {
+                    "description": "no type",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "k": {
+                                "format": "uuid",
+                                "type": "string"
+                            },
+                            "v": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "shape": {
+                    "type": "object"
+                }
+            },
+            "required": [
+                "id"
+            ]
+        },
+        "app": "app.sub",
+        "subject": "lead",
+        "action": "update"
+    },
+    {
+        "id": "app.sub.lead.delete",
+        "name": "lead_delete",
+        "description": "Delete a lead object in app.sub.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Object id or uuid."
+                }
+            },
+            "required": [
+                "id"
+            ]
+        },
+        "app": "app.sub",
+        "subject": "lead",
+        "action": "delete"
+    },
+    {
+        "id": "app.sub.case.get",
+        "name": "case_get",
+        "description": "Get a single case object by id in app.sub.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Object id or uuid."
+                }
+            },
+            "required": [
+                "id"
+            ]
+        },
+        "app": "app.sub",
+        "subject": "case",
+        "action": "get",
+        "outputSchema": {
+            "type": "object"
+        }
+    },
+    {
+        "id": "app.sub.case.delete",
+        "name": "case_delete",
+        "description": "Delete a case object in app.sub.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Object id or uuid."
+                }
+            },
+            "required": [
+                "id"
+            ]
+        },
+        "app": "app.sub",
+        "subject": "case",
+        "action": "delete",
+        "destructiveHint": true,
+        "scope": "write"
+    },
+    {
+        "id": "app.sub.4.get",
+        "name": "4_get",
+        "description": "Get a single 4 object by id in app.sub.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Object id or uuid."
+                }
+            },
+            "required": [
+                "id"
+            ]
+        },
+        "app": "app.sub",
+        "subject": "4",
+        "action": "get",
+        "outputSchema": {
+            "type": "object"
+        }
+    }
+]

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CaseControllerFactory;
 use OCA\OpenRegister\Controller\CaseController;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
@@ -45,13 +46,25 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Service\Case\CaseAdHocRequest;
 
 /**
  * HTTP translation, route contract and structural absences.
  *
  * @covers \OCA\OpenRegister\Controller\CaseController
+ * @uses \OCA\OpenRegister\Controller\Support\CaseControllerServices
  * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeSkeletonDraft
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeStageBuilder
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeRoleMapper
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkHop
+ * @uses \OCA\OpenRegister\Service\Flow\FlowWalkPass
  */
 class CaseControllerTest extends TestCase {
 
@@ -108,7 +121,7 @@ class CaseControllerTest extends TestCase {
 			}
 		);
 
-		return new CaseController(
+		return CaseControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			plans: $this->plans,
@@ -213,13 +226,15 @@ class CaseControllerTest extends TestCase {
 		$this->plans->method('transition')->willReturn($item);
 		$this->plans->method('enableDiscretionary')->willReturn($item);
 		$this->plans->method('findStuck')->willReturn(['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0]);
+		$this->request = $this->createMock(IRequest::class);
+		$this->request->method('getParams')->willReturn(['key' => 'k', 'type' => 'humanTask']);
 		$controller = $this->controller();
 
 		$this->assertSame(Http::STATUS_OK, $controller->show('o')->getStatus());
 		$this->assertSame(Http::STATUS_CREATED, $controller->create('o', 1, 1, ['items' => []])->getStatus());
 		$this->assertSame(3, $controller->evaluate('o')->getData()['transitions']);
 		$this->assertSame([['key' => 'advice']], $controller->enableable('o')->getData()['results']);
-		$this->assertSame(Http::STATUS_CREATED, $controller->attach('o', 'k', 'humanTask')->getStatus());
+		$this->assertSame(Http::STATUS_CREATED, $controller->attach('o')->getStatus());
 		$this->assertSame('verleend', $controller->complete('o', 'verleend')->getData()['result']);
 		$this->assertSame(4, $controller->destroy('o')->getData()['deleted']);
 		$this->assertSame('i-1', $controller->transition('i-1', 'completed')->getData()['uuid']);
@@ -285,14 +300,16 @@ class CaseControllerTest extends TestCase {
 	 */
 	public function testAttachForwardsASelfDeclaredAuthorizationForRefusal(): void {
 		$this->request = $this->createMock(IRequest::class);
-		$this->request->method('getParams')->willReturn(['authorization' => ['me']]);
+		$this->request->method('getParams')->willReturn(['authorization' => ['me'], 'key' => 'k', 'type' => 'humanTask', 'parent' => 'intake', 'required' => 'false']);
 		$this->plans->expects($this->once())->method('attachAdHoc')->with(
-			'o',
-			$this->callback(static fn (array $data): bool => $data['authorization'] === ['me'] && $data['required'] === false && $data['key'] === 'k' && array_key_exists('name', $data) === false),
-			'alice'
+			$this->callback(
+				static fn (CaseAdHocRequest $request): bool => $request->objectUuid === 'o'
+					&& $request->data['authorization'] === ['me'] && $request->data['required'] === false && $request->data['key'] === 'k'
+					&& array_key_exists('name', $request->data) === false && $request->actor === 'alice'
+			)
 		)->willThrowException(new CaseValidationException('An ad-hoc item cannot declare its own authorization'));
 
-		$response = $this->controller()->attach('o', 'k', 'humanTask', null, null, 'intake', null, null, null, null, null, null, null, false);
+		$response = $this->controller()->attach('o');
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 	}//end testAttachForwardsASelfDeclaredAuthorizationForRefusal()
 

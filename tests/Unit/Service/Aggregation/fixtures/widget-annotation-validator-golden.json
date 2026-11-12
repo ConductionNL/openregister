@@ -1,0 +1,206 @@
+{
+    "no annotation": [],
+    "null annotation": [],
+    "string annotation": [
+        {
+            "code": "widgets-empty",
+            "message": "x-openregister-widgets must declare at least one widget."
+        }
+    ],
+    "empty annotation": [
+        {
+            "code": "widgets-empty",
+            "message": "x-openregister-widgets must declare at least one widget."
+        }
+    ],
+    "keyed annotation": [
+        {
+            "code": "widget-malformed",
+            "message": "widgets[first] must be an object."
+        },
+        {
+            "code": "widget-bad-type",
+            "message": "widgets[second] type \"pie\" is not in [kpi, chart, table, stats, sparkline, tile]."
+        }
+    ],
+    "list with malformed entries": [
+        {
+            "code": "widget-malformed",
+            "message": "widgets[0] must be an object."
+        },
+        {
+            "code": "widget-malformed",
+            "message": "widgets[1] must be an object."
+        },
+        {
+            "code": "widget-malformed",
+            "message": "widgets[2] must be an object."
+        },
+        {
+            "code": "widget-bad-type",
+            "message": "widgets[4] type \"\" is not in [kpi, chart, table, stats, sparkline, tile]."
+        },
+        {
+            "code": "widget-title-missing",
+            "message": "widgets[4] requires a non-empty title."
+        },
+        {
+            "code": "widget-datasource-missing",
+            "message": "widgets[4] requires a dataSource object."
+        }
+    ],
+    "every type": [
+        {
+            "code": "widget-bad-type",
+            "message": "widgets[6] type \"KPI\" is not in [kpi, chart, table, stats, sparkline, tile]."
+        },
+        {
+            "code": "widget-bad-type",
+            "message": "widgets[7] type \"\" is not in [kpi, chart, table, stats, sparkline, tile]."
+        }
+    ],
+    "type missing": [
+        {
+            "code": "widget-bad-type",
+            "message": "widgets[0] type \"\" is not in [kpi, chart, table, stats, sparkline, tile]."
+        }
+    ],
+    "type integer": [
+        {
+            "code": "widget-bad-type",
+            "message": "widgets[0] type \"5\" is not in [kpi, chart, table, stats, sparkline, tile]."
+        }
+    ],
+    "title missing": [
+        {
+            "code": "widget-title-missing",
+            "message": "widgets[0] requires a non-empty title."
+        }
+    ],
+    "title empty": [
+        {
+            "code": "widget-title-missing",
+            "message": "widgets[0] requires a non-empty title."
+        }
+    ],
+    "title zero": [],
+    "title null": [
+        {
+            "code": "widget-title-missing",
+            "message": "widgets[0] requires a non-empty title."
+        }
+    ],
+    "data source missing": [
+        {
+            "code": "widget-datasource-missing",
+            "message": "widgets[0] requires a dataSource object."
+        }
+    ],
+    "data source string": [
+        {
+            "code": "widget-datasource-missing",
+            "message": "widgets[0] requires a dataSource object."
+        }
+    ],
+    "mode missing": [
+        {
+            "code": "widget-datasource-bad-mode",
+            "message": "widgets[0] dataSource.mode \"\" is not in [aggregation, graphql, statistics]."
+        }
+    ],
+    "mode unknown": [
+        {
+            "code": "widget-datasource-bad-mode",
+            "message": "widgets[0] dataSource.mode \"sql\" is not in [aggregation, graphql, statistics]."
+        }
+    ],
+    "aggregation empty": [
+        {
+            "code": "widget-datasource-aggregation-incomplete",
+            "message": "widgets[0] dataSource.register is required when mode is \"aggregation\"."
+        },
+        {
+            "code": "widget-datasource-aggregation-incomplete",
+            "message": "widgets[0] dataSource.schema is required when mode is \"aggregation\"."
+        },
+        {
+            "code": "widget-datasource-aggregation-incomplete",
+            "message": "widgets[0] dataSource.aggregation is required when mode is \"aggregation\"."
+        }
+    ],
+    "aggregation partial": [
+        {
+            "code": "widget-datasource-aggregation-incomplete",
+            "message": "widgets[0] dataSource.schema is required when mode is \"aggregation\"."
+        }
+    ],
+    "aggregation ignores graphql query": [],
+    "graphql without query": [
+        {
+            "code": "widget-datasource-graphql-incomplete",
+            "message": "widgets[0] dataSource.graphqlQuery is required when mode is \"graphql\"."
+        }
+    ],
+    "graphql empty query": [
+        {
+            "code": "widget-datasource-graphql-incomplete",
+            "message": "widgets[0] dataSource.graphqlQuery is required when mode is \"graphql\"."
+        }
+    ],
+    "graphql with query": [],
+    "statistics": [],
+    "options string": [
+        {
+            "code": "widget-options-malformed",
+            "message": "widgets[0] options must be an object when present."
+        }
+    ],
+    "options null": [],
+    "options object": [],
+    "options after incomplete source": [
+        {
+            "code": "widget-datasource-graphql-incomplete",
+            "message": "widgets[0] dataSource.graphqlQuery is required when mode is \"graphql\"."
+        },
+        {
+            "code": "widget-options-malformed",
+            "message": "widgets[0] options must be an object when present."
+        }
+    ],
+    "everything wrong": [
+        {
+            "code": "widget-bad-type",
+            "message": "widgets[0] type \"pie\" is not in [kpi, chart, table, stats, sparkline, tile]."
+        },
+        {
+            "code": "widget-title-missing",
+            "message": "widgets[0] requires a non-empty title."
+        },
+        {
+            "code": "widget-datasource-aggregation-incomplete",
+            "message": "widgets[0] dataSource.schema is required when mode is \"aggregation\"."
+        },
+        {
+            "code": "widget-datasource-aggregation-incomplete",
+            "message": "widgets[0] dataSource.aggregation is required when mode is \"aggregation\"."
+        },
+        {
+            "code": "widget-options-malformed",
+            "message": "widgets[0] options must be an object when present."
+        }
+    ],
+    "nothing but a stop": [
+        {
+            "code": "widget-bad-type",
+            "message": "widgets[0] type \"pie\" is not in [kpi, chart, table, stats, sparkline, tile]."
+        },
+        {
+            "code": "widget-title-missing",
+            "message": "widgets[0] requires a non-empty title."
+        },
+        {
+            "code": "widget-datasource-missing",
+            "message": "widgets[0] requires a dataSource object."
+        }
+    ]
+}

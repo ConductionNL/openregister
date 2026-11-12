@@ -1,0 +1,631 @@
+{
+    "picker: results": {
+        "value": [
+            {
+                "id": 1,
+                "workPackageId": 1,
+                "subject": "One",
+                "type": "",
+                "status": "",
+                "priority": "",
+                "assignee": "",
+                "project": "",
+                "url": ""
+            },
+            {
+                "id": 2,
+                "workPackageId": 2,
+                "subject": "Two",
+                "type": "",
+                "status": "",
+                "priority": "",
+                "assignee": "",
+                "project": "",
+                "url": ""
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: items": {
+        "value": [
+            {
+                "id": 3,
+                "workPackageId": 3,
+                "subject": "Three",
+                "type": "",
+                "status": "",
+                "priority": "",
+                "assignee": "",
+                "project": "P",
+                "url": "u3"
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: embedded elements": {
+        "value": [
+            {
+                "id": 7,
+                "workPackageId": 7,
+                "subject": "",
+                "type": "Embedded type",
+                "status": "Linked status",
+                "priority": "High",
+                "assignee": "",
+                "project": "",
+                "url": "/wp/7"
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: embedded without elements": {
+        "value": [
+            {
+                "id": 4,
+                "workPackageId": 4,
+                "subject": "#4",
+                "type": "",
+                "status": "",
+                "priority": "",
+                "assignee": "",
+                "project": "",
+                "url": ""
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: embedded elements not array": {
+        "value": [
+            {
+                "id": 5,
+                "workPackageId": 5,
+                "subject": "#5",
+                "type": "",
+                "status": "",
+                "priority": "",
+                "assignee": "",
+                "project": "",
+                "url": ""
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: elements": {
+        "value": [
+            {
+                "id": 6,
+                "workPackageId": 6,
+                "subject": "#6",
+                "type": "",
+                "status": "",
+                "priority": "",
+                "assignee": "",
+                "project": "",
+                "url": ""
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: results not array falls to items": {
+        "value": [
+            {
+                "id": 8,
+                "workPackageId": 8,
+                "subject": "#8",
+                "type": "",
+                "status": "",
+                "priority": "",
+                "assignee": "",
+                "project": "",
+                "url": ""
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: empty results wins": {
+        "value": [],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: plain list": {
+        "value": [
+            {
+                "id": 10,
+                "workPackageId": 10,
+                "subject": "Ten",
+                "type": "",
+                "status": "",
+                "priority": "",
+                "assignee": "",
+                "project": "",
+                "url": ""
+            },
+            {
+                "id": 11,
+                "workPackageId": 11,
+                "subject": "#11",
+                "type": "",
+                "status": "",
+                "priority": "",
+                "assignee": "",
+                "project": "",
+                "url": ""
+            }
+        ],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: assoc without envelope": {
+        "value": [],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker: empty": {
+        "value": [],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker search": {
+        "value": [],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "query": {
+                        "_search": "abc"
+                    }
+                }
+            }
+        ]
+    },
+    "picker empty search": {
+        "value": [],
+        "calls": [
+            {
+                "method": "GET",
+                "path": "",
+                "options": {
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            }
+        ]
+    },
+    "picker unavailable": {
+        "error": [
+            "Exception",
+            "not configured",
+            503
+        ],
+        "calls": []
+    },
+    "create full": {
+        "value": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "workPackageId": 42,
+            "subject": "S",
+            "type": "T",
+            "status": "N",
+            "priority": null,
+            "assignee": "A",
+            "project": "P",
+            "url": "U",
+            "linkedBy": "alice",
+            "cachedAtSet": true
+        },
+        "calls": [
+            [
+                "3",
+                "4",
+                "obj-1",
+                {
+                    "subject": "Ship",
+                    "project": "5",
+                    "type": "Task"
+                }
+            ]
+        ]
+    },
+    "create no type": {
+        "value": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "workPackageId": 43,
+            "subject": "#43",
+            "type": null,
+            "status": null,
+            "priority": null,
+            "assignee": null,
+            "project": null,
+            "url": null,
+            "linkedBy": "alice",
+            "cachedAtSet": true
+        },
+        "calls": [
+            [
+                "3",
+                "4",
+                "obj-1",
+                {
+                    "subject": "Ship",
+                    "project": "5"
+                }
+            ]
+        ]
+    },
+    "create no id": {
+        "error": [
+            "Exception",
+            "OpenProject did not return a work-package id",
+            502
+        ],
+        "calls": [
+            [
+                "3",
+                "4",
+                "obj-1",
+                {
+                    "subject": "Ship",
+                    "project": "5"
+                }
+            ]
+        ]
+    },
+    "create blank subject": {
+        "error": [
+            "Exception",
+            "Subject is required",
+            400
+        ],
+        "calls": []
+    },
+    "create blank project": {
+        "error": [
+            "Exception",
+            "Project id is required",
+            400
+        ],
+        "calls": []
+    },
+    "create throws": {
+        "error": [
+            "Exception",
+            "Failed to create OpenProject work package",
+            500
+        ],
+        "calls": [
+            [
+                "3",
+                "4",
+                "obj-1",
+                {
+                    "subject": "Ship",
+                    "project": "5"
+                }
+            ]
+        ]
+    },
+    "create unavailable": {
+        "error": [
+            "Exception",
+            "reconnect",
+            503
+        ],
+        "calls": [
+            [
+                "3",
+                "4",
+                "obj-1",
+                {
+                    "subject": "Ship",
+                    "project": "5"
+                }
+            ]
+        ]
+    },
+    "link with info": {
+        "value": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "workPackageId": 77,
+            "subject": "S",
+            "type": "T",
+            "status": "N",
+            "priority": null,
+            "assignee": "A",
+            "project": "P",
+            "url": "U",
+            "linkedBy": "alice",
+            "cachedAtSet": true
+        },
+        "calls": [
+            [
+                "3",
+                "4",
+                "obj-1",
+                "77"
+            ]
+        ]
+    },
+    "link source throws": {
+        "value": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "workPackageId": 77,
+            "subject": "#77",
+            "type": null,
+            "status": null,
+            "priority": null,
+            "assignee": null,
+            "project": null,
+            "url": null,
+            "linkedBy": "alice",
+            "cachedAtSet": true
+        },
+        "calls": [
+            [
+                "3",
+                "4",
+                "obj-1",
+                "77"
+            ]
+        ]
+    },
+    "link no connector": {
+        "value": {
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "workPackageId": 77,
+            "subject": "#77",
+            "type": null,
+            "status": null,
+            "priority": null,
+            "assignee": null,
+            "project": null,
+            "url": null,
+            "linkedBy": "alice",
+            "cachedAtSet": true
+        },
+        "calls": []
+    },
+    "refresh updates": {
+        "value": [
+            {
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": null,
+                "workPackageId": 77,
+                "subject": "#77",
+                "type": null,
+                "status": "Done",
+                "priority": "from-update",
+                "assignee": null,
+                "project": null,
+                "url": null,
+                "linkedBy": null,
+                "cachedAtSet": true
+            }
+        ],
+        "calls": [
+            [
+                "3",
+                "0",
+                "obj-1",
+                "77"
+            ],
+            "update"
+        ]
+    },
+    "refresh update fails": {
+        "value": [
+            {
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": null,
+                "workPackageId": 77,
+                "subject": "#77",
+                "type": null,
+                "status": null,
+                "priority": null,
+                "assignee": null,
+                "project": null,
+                "url": "new-url",
+                "linkedBy": null,
+                "cachedAtSet": true
+            }
+        ],
+        "calls": [
+            [
+                "3",
+                "0",
+                "obj-1",
+                "77"
+            ],
+            "update"
+        ]
+    },
+    "refresh source throws": {
+        "value": [
+            {
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": null,
+                "workPackageId": 77,
+                "subject": "Old subject",
+                "type": null,
+                "status": "Old status",
+                "priority": null,
+                "assignee": null,
+                "project": null,
+                "url": "old-url",
+                "linkedBy": null,
+                "cachedAtSet": true
+            }
+        ],
+        "calls": [
+            [
+                "3",
+                "0",
+                "obj-1",
+                "77"
+            ]
+        ]
+    },
+    "refresh fresh": {
+        "value": [
+            {
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": null,
+                "workPackageId": 77,
+                "subject": "Old subject",
+                "type": null,
+                "status": "Old status",
+                "priority": null,
+                "assignee": null,
+                "project": null,
+                "url": "old-url",
+                "linkedBy": null,
+                "cachedAtSet": true
+            }
+        ],
+        "calls": []
+    },
+    "refresh no connector": {
+        "value": [
+            {
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": null,
+                "workPackageId": 77,
+                "subject": "Old subject",
+                "type": null,
+                "status": "Old status",
+                "priority": null,
+                "assignee": null,
+                "project": null,
+                "url": "old-url",
+                "linkedBy": null,
+                "cachedAtSet": true
+            }
+        ],
+        "calls": []
+    }
+}

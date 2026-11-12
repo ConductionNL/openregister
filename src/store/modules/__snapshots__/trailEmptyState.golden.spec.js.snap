@@ -1,0 +1,166 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`trail stores empty state golden auditTrail starts, clears and falls back empty 1`] = `
+{
+  "cleared": {
+    "freshPagination": true,
+    "freshStatistics": true,
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+  },
+  "fallback": {
+    "fresh": true,
+    "secondTotal": 0,
+    "value": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+  },
+  "initial": {
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "statistics": {
+      "create": 0,
+      "delete": 0,
+      "read": 0,
+      "total": 0,
+      "update": 0,
+    },
+  },
+  "sharedInitially": false,
+}
+`;
+
+exports[`trail stores empty state golden deleted starts, clears and falls back empty 1`] = `
+{
+  "cleared": {
+    "freshPagination": true,
+    "freshStatistics": true,
+    "pagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+  },
+  "fallback": null,
+  "initial": {
+    "pagination": {
+      "limit": 20,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "statistics": {
+      "deletedThisWeek": 0,
+      "deletedToday": 0,
+      "oldestDays": 0,
+      "totalDeleted": 0,
+    },
+  },
+  "sharedInitially": false,
+}
+`;
+
+exports[`trail stores empty state golden searchTrail starts, clears and falls back empty 1`] = `
+{
+  "cleared": {
+    "freshPagination": true,
+    "freshStatistics": true,
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+  },
+  "fallback": {
+    "fresh": true,
+    "secondTotal": 0,
+    "value": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+  },
+  "initial": {
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "page": 1,
+      "pages": 1,
+      "total": 0,
+    },
+    "statistics": {
+      "averageExecutionTime": 0,
+      "averageResultsPerSearch": 0,
+      "queryComplexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "successRate": 0,
+      "total": 0,
+      "totalResults": 0,
+      "uniqueOrganizations": 0,
+      "uniqueSearchTerms": 0,
+      "uniqueUsers": 0,
+    },
+  },
+  "sharedInitially": false,
+}
+`;

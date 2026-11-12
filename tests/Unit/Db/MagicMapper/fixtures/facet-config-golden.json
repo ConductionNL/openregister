@@ -1,0 +1,174 @@
+{
+    "types": {
+        "empty": "terms",
+        "string": "terms",
+        "date format": "date_histogram",
+        "date-time format": "date_histogram",
+        "datetime format": "date_histogram",
+        "time format": "terms",
+        "integer": "terms",
+        "integer with facet_type": "range",
+        "number with facet_type": "histogram",
+        "string with facet_type": "terms",
+        "integer with date format": "date_histogram",
+        "facetable true": "date_histogram",
+        "facetable terms on date": "terms",
+        "facetable date_histogram": "date_histogram",
+        "facetable date_range": "date_range",
+        "facetable unknown type": "date_histogram",
+        "facetable null type": "range",
+        "facetable without type": "terms",
+        "facetable string": "terms"
+    },
+    "merged": {
+        "no tables": {
+            "@self": []
+        },
+        "tables without schema": {
+            "@self": []
+        },
+        "extend one schema": {
+            "@self": {
+                "schema": {
+                    "type": "terms"
+                }
+            },
+            "name": {
+                "type": "terms",
+                "title": null
+            },
+            "kind": {
+                "type": "terms",
+                "title": null
+            },
+            "born": {
+                "type": "date_histogram",
+                "title": null,
+                "options": {
+                    "interval": "year"
+                },
+                "interval": "year"
+            }
+        },
+        "extend three schemas": {
+            "@self": {
+                "schema": {
+                    "type": "terms"
+                }
+            },
+            "name": {
+                "type": "terms",
+                "title": "Name"
+            },
+            "kind": {
+                "type": "terms",
+                "title": "Kind"
+            },
+            "born": {
+                "type": "date_histogram",
+                "title": "Born",
+                "options": {
+                    "interval": "year"
+                },
+                "interval": "year"
+            },
+            "size": {
+                "type": "range",
+                "title": null
+            },
+            "7": {
+                "type": "terms",
+                "title": null
+            }
+        },
+        "extend reversed": {
+            "@self": {
+                "schema": {
+                    "type": "terms"
+                }
+            },
+            "kind": {
+                "type": "terms",
+                "title": "Other kind"
+            },
+            "born": {
+                "type": "terms",
+                "title": "Born"
+            },
+            "name": {
+                "type": "terms",
+                "title": "Name"
+            },
+            "size": {
+                "type": "range",
+                "title": null
+            },
+            "7": {
+                "type": "terms",
+                "title": null
+            }
+        },
+        "extend with empty schema": {
+            "@self": {
+                "schema": {
+                    "type": "terms"
+                }
+            },
+            "kind": {
+                "type": "terms",
+                "title": "Kind"
+            },
+            "name": {
+                "type": "terms",
+                "title": "Name"
+            },
+            "size": {
+                "type": "range",
+                "title": null
+            },
+            "7": {
+                "type": "terms",
+                "title": null
+            }
+        },
+        "comma list": {
+            "@self": {
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "register": {
+                    "type": "terms"
+                },
+                "owner": {
+                    "type": "terms"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "organisation": {
+                    "type": "terms"
+                }
+            },
+            "name": {
+                "type": "terms"
+            },
+            "kind": {
+                "type": "terms"
+            }
+        },
+        "empty string": {
+            "@self": [],
+            "": {
+                "type": "terms"
+            }
+        },
+        "comma list without schema": {
+            "@self": []
+        }
+    }
+}

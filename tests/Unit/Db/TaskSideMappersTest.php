@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskRelation;
 use OCA\OpenRegister\Db\TaskRelationMapper;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 
@@ -45,6 +46,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\FlowRunMapper
  * @covers \OCA\OpenRegister\Event\FlowRunTerminalEvent
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses   \OCA\OpenRegister\Db\LinkColumn
  */
 class TaskSideMappersTest extends TestCase {
 	use FluentQueryBuilderTrait;
@@ -150,7 +153,7 @@ class TaskSideMappersTest extends TestCase {
 				$announced[] = $event->getRunUuid() . ':' . $event->getStatus();
 			}
 		);
-		$mapper = new FlowRunMapper(db: $this->connectionWith(), dispatcher: $dispatcher);
+		$mapper = new FlowRunMapper(db: $this->connectionWith(), entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 
 		$done = new FlowRun();
 		$done->setId(1);

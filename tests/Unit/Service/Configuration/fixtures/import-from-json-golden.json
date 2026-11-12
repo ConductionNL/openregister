@@ -1,0 +1,2978 @@
+{
+    "app-version": [
+        {
+            "config.get": "imported_config_app_version"
+        },
+        {
+            "config.get": "imported_config_app_hash"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting TWO-PASS schema import process",
+            "context": {
+                "totalSchemas": 3,
+                "schemaKeys": [
+                    "alpha",
+                    "broken",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaTitle": "Alpha",
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaSlug": "alpha",
+                "schemaId": 100
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "schemaTitle": "no title",
+                "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "broken",
+                "version": "1.0.0",
+                "properties": [],
+                "configuration": {
+                    "objectDescriptionField": "x"
+                },
+                "title": "broken"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to create schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaTitle": "Gamma",
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaSlug": "gamma",
+                "schemaId": 101
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] PARTIAL IMPORT: 1 of 3 schema(s) were rejected and are NOT linked to any register in this import: broken. Registers declaring them were created without those schema references.",
+            "context": {
+                "appId": "app",
+                "failedSchemas": [
+                    {
+                        "key": "broken",
+                        "slug": "broken",
+                        "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                    }
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pass 1 completed - all schemas created",
+            "context": {
+                "createdCount": 2,
+                "createdSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 2: Resolving schema cross-references",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha",
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma",
+                "schemaId": 103
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema import process completed (TWO-PASS)",
+            "context": {
+                "importedCount": 2,
+                "importedSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema 'alpha' found in schemasMap",
+            "context": {
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug broken not found in schemasMap during register import. It was REJECTED by the schema import phase (Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.). This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug missing not found in schemasMap during register import. This schema should have been created in the TWO-PASS schema import phase. This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'reg' not found, will create new one",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "reg",
+                "title": "Reg",
+                "version": "1.0.0",
+                "schemas": [
+                    102
+                ],
+                "type": "mock"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'typed' not found, will create new one",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "typed",
+                "title": "Typed",
+                "version": "1.0.0",
+                "type": "own"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting mapping import",
+            "context": {
+                "totalMappings": 1,
+                "mappingKeys": [
+                    "map-one"
+                ]
+            }
+        },
+        {
+            "mapping.create": {
+                "slug": "map-one",
+                "version": "1.0.0",
+                "mapping": [],
+                "name": "map-one",
+                "configurations": [
+                    null
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping imported successfully",
+            "context": {
+                "mappingSlug": "map-one",
+                "mappingId": 7
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping import completed",
+            "context": {
+                "importedCount": 1
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] No acting user resolvable for import - user-dependent ops (folders) may skip",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "one",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "two",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'one' - import failed: save refused",
+            "context": {
+                "appId": "app",
+                "objectSlug": "one",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'two' - import failed: save refused",
+            "context": {
+                "appId": "app",
+                "objectSlug": "two",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "config.set": "imported_config_app_version",
+            "value": "1.0.0"
+        },
+        {
+            "config.set": "imported_config_app_hash",
+            "value": "<hash>"
+        },
+        {
+            "log": "info",
+            "message": "[ImportHandler] Stored version 1.0.0 for app app after successful import",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No seed data found for configuration",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "result": {
+                "registers": [
+                    "OCA\\OpenRegister\\Db\\Register:reg",
+                    "OCA\\OpenRegister\\Db\\Register:typed"
+                ],
+                "schemas": [
+                    "OCA\\OpenRegister\\Db\\Schema:alpha",
+                    "OCA\\OpenRegister\\Db\\Schema:gamma"
+                ],
+                "workflows": {
+                    "deployed": [],
+                    "updated": [],
+                    "unchanged": [],
+                    "failed": []
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [
+                    "OCA\\OpenRegister\\Db\\Mapping:map-one"
+                ],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "objects": [],
+                "skipped": {
+                    "registers": 0,
+                    "schemas": 1,
+                    "objects": 2,
+                    "mappings": 0,
+                    "seedObjects": 0
+                },
+                "unchanged": {
+                    "objects": 0
+                },
+                "failed": {
+                    "schemas": [
+                        {
+                            "key": "broken",
+                            "slug": "broken",
+                            "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                        }
+                    ],
+                    "objects": [
+                        {
+                            "slug": "one",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        },
+                        {
+                            "slug": "two",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "app-version-forced": [
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Force import enabled for app app version 1.0.0 - bypassing version check",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting TWO-PASS schema import process",
+            "context": {
+                "totalSchemas": 3,
+                "schemaKeys": [
+                    "alpha",
+                    "broken",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaTitle": "Alpha",
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaSlug": "alpha",
+                "schemaId": 100
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "schemaTitle": "no title",
+                "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "broken",
+                "version": "1.0.0",
+                "properties": [],
+                "configuration": {
+                    "objectDescriptionField": "x"
+                },
+                "title": "broken"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to create schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaTitle": "Gamma",
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaSlug": "gamma",
+                "schemaId": 101
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] PARTIAL IMPORT: 1 of 3 schema(s) were rejected and are NOT linked to any register in this import: broken. Registers declaring them were created without those schema references.",
+            "context": {
+                "appId": "app",
+                "failedSchemas": [
+                    {
+                        "key": "broken",
+                        "slug": "broken",
+                        "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                    }
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pass 1 completed - all schemas created",
+            "context": {
+                "createdCount": 2,
+                "createdSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 2: Resolving schema cross-references",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha",
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma",
+                "schemaId": 103
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema import process completed (TWO-PASS)",
+            "context": {
+                "importedCount": 2,
+                "importedSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema 'alpha' found in schemasMap",
+            "context": {
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug broken not found in schemasMap during register import. It was REJECTED by the schema import phase (Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.). This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug missing not found in schemasMap during register import. This schema should have been created in the TWO-PASS schema import phase. This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'reg' not found, will create new one",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "reg",
+                "title": "Reg",
+                "version": "1.0.0",
+                "schemas": [
+                    102
+                ],
+                "type": "mock"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'typed' not found, will create new one",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "typed",
+                "title": "Typed",
+                "version": "1.0.0",
+                "type": "own"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting mapping import",
+            "context": {
+                "totalMappings": 1,
+                "mappingKeys": [
+                    "map-one"
+                ]
+            }
+        },
+        {
+            "mapping.create": {
+                "slug": "map-one",
+                "version": "1.0.0",
+                "mapping": [],
+                "name": "map-one",
+                "configurations": [
+                    null
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping imported successfully",
+            "context": {
+                "mappingSlug": "map-one",
+                "mappingId": 7
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping import completed",
+            "context": {
+                "importedCount": 1
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] No acting user resolvable for import - user-dependent ops (folders) may skip",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "one",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "two",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'one' - import failed: save refused",
+            "context": {
+                "appId": "app",
+                "objectSlug": "one",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'two' - import failed: save refused",
+            "context": {
+                "appId": "app",
+                "objectSlug": "two",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "config.set": "imported_config_app_version",
+            "value": "1.0.0"
+        },
+        {
+            "config.set": "imported_config_app_hash",
+            "value": "<hash>"
+        },
+        {
+            "log": "info",
+            "message": "[ImportHandler] Stored version 1.0.0 for app app after successful import",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No seed data found for configuration",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "result": {
+                "registers": [
+                    "OCA\\OpenRegister\\Db\\Register:reg",
+                    "OCA\\OpenRegister\\Db\\Register:typed"
+                ],
+                "schemas": [
+                    "OCA\\OpenRegister\\Db\\Schema:alpha",
+                    "OCA\\OpenRegister\\Db\\Schema:gamma"
+                ],
+                "workflows": {
+                    "deployed": [],
+                    "updated": [],
+                    "unchanged": [],
+                    "failed": []
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [
+                    "OCA\\OpenRegister\\Db\\Mapping:map-one"
+                ],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "objects": [],
+                "skipped": {
+                    "registers": 0,
+                    "schemas": 1,
+                    "objects": 2,
+                    "mappings": 0,
+                    "seedObjects": 0
+                },
+                "unchanged": {
+                    "objects": 0
+                },
+                "failed": {
+                    "schemas": [
+                        {
+                            "key": "broken",
+                            "slug": "broken",
+                            "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                        }
+                    ],
+                    "objects": [
+                        {
+                            "slug": "one",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        },
+                        {
+                            "slug": "two",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "changed-hash": [
+        {
+            "config.get": "imported_config_app_version"
+        },
+        {
+            "config.get": "imported_config_app_hash"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting TWO-PASS schema import process",
+            "context": {
+                "totalSchemas": 3,
+                "schemaKeys": [
+                    "alpha",
+                    "broken",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaTitle": "Alpha",
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaSlug": "alpha",
+                "schemaId": 100
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "schemaTitle": "no title",
+                "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "broken",
+                "version": "1.0.0",
+                "properties": [],
+                "configuration": {
+                    "objectDescriptionField": "x"
+                },
+                "title": "broken"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to create schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaTitle": "Gamma",
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaSlug": "gamma",
+                "schemaId": 101
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] PARTIAL IMPORT: 1 of 3 schema(s) were rejected and are NOT linked to any register in this import: broken. Registers declaring them were created without those schema references.",
+            "context": {
+                "appId": "app",
+                "failedSchemas": [
+                    {
+                        "key": "broken",
+                        "slug": "broken",
+                        "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                    }
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pass 1 completed - all schemas created",
+            "context": {
+                "createdCount": 2,
+                "createdSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 2: Resolving schema cross-references",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha",
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma",
+                "schemaId": 103
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema import process completed (TWO-PASS)",
+            "context": {
+                "importedCount": 2,
+                "importedSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema 'alpha' found in schemasMap",
+            "context": {
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug broken not found in schemasMap during register import. It was REJECTED by the schema import phase (Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.). This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug missing not found in schemasMap during register import. This schema should have been created in the TWO-PASS schema import phase. This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'reg' not found, will create new one",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "reg",
+                "title": "Reg",
+                "version": "1.0.0",
+                "schemas": [
+                    102
+                ],
+                "type": "mock"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'typed' not found, will create new one",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "typed",
+                "title": "Typed",
+                "version": "1.0.0",
+                "type": "own"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting mapping import",
+            "context": {
+                "totalMappings": 1,
+                "mappingKeys": [
+                    "map-one"
+                ]
+            }
+        },
+        {
+            "mapping.create": {
+                "slug": "map-one",
+                "version": "1.0.0",
+                "mapping": [],
+                "name": "map-one",
+                "configurations": [
+                    null
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping imported successfully",
+            "context": {
+                "mappingSlug": "map-one",
+                "mappingId": 7
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping import completed",
+            "context": {
+                "importedCount": 1
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] No acting user resolvable for import - user-dependent ops (folders) may skip",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "one",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "two",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'one' - import failed: save refused",
+            "context": {
+                "appId": "app",
+                "objectSlug": "one",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'two' - import failed: save refused",
+            "context": {
+                "appId": "app",
+                "objectSlug": "two",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "config.set": "imported_config_app_version",
+            "value": "1.0.0"
+        },
+        {
+            "config.set": "imported_config_app_hash",
+            "value": "<hash>"
+        },
+        {
+            "log": "info",
+            "message": "[ImportHandler] Stored version 1.0.0 for app app after successful import",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No seed data found for configuration",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "result": {
+                "registers": [
+                    "OCA\\OpenRegister\\Db\\Register:reg",
+                    "OCA\\OpenRegister\\Db\\Register:typed"
+                ],
+                "schemas": [
+                    "OCA\\OpenRegister\\Db\\Schema:alpha",
+                    "OCA\\OpenRegister\\Db\\Schema:gamma"
+                ],
+                "workflows": {
+                    "deployed": [],
+                    "updated": [],
+                    "unchanged": [],
+                    "failed": []
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [
+                    "OCA\\OpenRegister\\Db\\Mapping:map-one"
+                ],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "objects": [],
+                "skipped": {
+                    "registers": 0,
+                    "schemas": 1,
+                    "objects": 2,
+                    "mappings": 0,
+                    "seedObjects": 0
+                },
+                "unchanged": {
+                    "objects": 0
+                },
+                "failed": {
+                    "schemas": [
+                        {
+                            "key": "broken",
+                            "slug": "broken",
+                            "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                        }
+                    ],
+                    "objects": [
+                        {
+                            "slug": "one",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        },
+                        {
+                            "slug": "two",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "from-data": [
+        {
+            "config.get": "imported_config_data-app_version"
+        },
+        {
+            "config.get": "imported_config_data-app_hash"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting TWO-PASS schema import process",
+            "context": {
+                "totalSchemas": 3,
+                "schemaKeys": [
+                    "alpha",
+                    "broken",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaTitle": "Alpha",
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaSlug": "alpha",
+                "schemaId": 100
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "schemaTitle": "no title",
+                "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "broken",
+                "version": "1.0.0",
+                "properties": [],
+                "configuration": {
+                    "objectDescriptionField": "x"
+                },
+                "title": "broken"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to create schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaTitle": "Gamma",
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaSlug": "gamma",
+                "schemaId": 101
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] PARTIAL IMPORT: 1 of 3 schema(s) were rejected and are NOT linked to any register in this import: broken. Registers declaring them were created without those schema references.",
+            "context": {
+                "appId": "data-app",
+                "failedSchemas": [
+                    {
+                        "key": "broken",
+                        "slug": "broken",
+                        "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                    }
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pass 1 completed - all schemas created",
+            "context": {
+                "createdCount": 2,
+                "createdSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 2: Resolving schema cross-references",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha",
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma",
+                "schemaId": 103
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema import process completed (TWO-PASS)",
+            "context": {
+                "importedCount": 2,
+                "importedSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema 'alpha' found in schemasMap",
+            "context": {
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug broken not found in schemasMap during register import. It was REJECTED by the schema import phase (Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.). This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug missing not found in schemasMap during register import. This schema should have been created in the TWO-PASS schema import phase. This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'reg' not found, will create new one",
+            "context": {
+                "appId": "data-app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "reg",
+                "title": "Reg",
+                "version": "1.0.0",
+                "schemas": [
+                    102
+                ],
+                "type": "mock"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'typed' not found, will create new one",
+            "context": {
+                "appId": "data-app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "typed",
+                "title": "Typed",
+                "version": "1.0.0",
+                "type": "own"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting mapping import",
+            "context": {
+                "totalMappings": 1,
+                "mappingKeys": [
+                    "map-one"
+                ]
+            }
+        },
+        {
+            "mapping.create": {
+                "slug": "map-one",
+                "version": "1.0.0",
+                "mapping": [],
+                "name": "map-one",
+                "configurations": [
+                    null
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping imported successfully",
+            "context": {
+                "mappingSlug": "map-one",
+                "mappingId": 7
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping import completed",
+            "context": {
+                "importedCount": 1
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] No acting user resolvable for import - user-dependent ops (folders) may skip",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "one",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "two",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'one' - import failed: save refused",
+            "context": {
+                "appId": "data-app",
+                "objectSlug": "one",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'two' - import failed: save refused",
+            "context": {
+                "appId": "data-app",
+                "objectSlug": "two",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "config.set": "imported_config_data-app_version",
+            "value": "2.0.0"
+        },
+        {
+            "config.set": "imported_config_data-app_hash",
+            "value": "<hash>"
+        },
+        {
+            "log": "info",
+            "message": "[ImportHandler] Stored version 2.0.0 for app data-app after successful import",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No seed data found for configuration",
+            "context": {
+                "appId": "data-app"
+            }
+        },
+        {
+            "result": {
+                "registers": [
+                    "OCA\\OpenRegister\\Db\\Register:reg",
+                    "OCA\\OpenRegister\\Db\\Register:typed"
+                ],
+                "schemas": [
+                    "OCA\\OpenRegister\\Db\\Schema:alpha",
+                    "OCA\\OpenRegister\\Db\\Schema:gamma"
+                ],
+                "workflows": {
+                    "deployed": [],
+                    "updated": [],
+                    "unchanged": [],
+                    "failed": []
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [
+                    "OCA\\OpenRegister\\Db\\Mapping:map-one"
+                ],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "objects": [],
+                "skipped": {
+                    "registers": 0,
+                    "schemas": 1,
+                    "objects": 2,
+                    "mappings": 0,
+                    "seedObjects": 0
+                },
+                "unchanged": {
+                    "objects": 0
+                },
+                "failed": {
+                    "schemas": [
+                        {
+                            "key": "broken",
+                            "slug": "broken",
+                            "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                        }
+                    ],
+                    "objects": [
+                        {
+                            "slug": "one",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        },
+                        {
+                            "slug": "two",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "no-version": [
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting TWO-PASS schema import process",
+            "context": {
+                "totalSchemas": 3,
+                "schemaKeys": [
+                    "alpha",
+                    "broken",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaTitle": "Alpha",
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "alpha",
+                "schemaSlug": "alpha",
+                "schemaId": 100
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "schemaTitle": "no title",
+                "schemaSlug": "broken"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "broken",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "broken",
+                "version": "1.0.0",
+                "properties": [],
+                "configuration": {
+                    "objectDescriptionField": "x"
+                },
+                "title": "broken"
+            }
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.",
+            "context": []
+        },
+        {
+            "log": "error",
+            "message": "[ImportHandler] Failed to create schema (Pass 1)",
+            "context": {
+                "schemaKey": "broken",
+                "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Processing schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaTitle": "Gamma",
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema to check the owning app of",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Successfully created schema (Pass 1)",
+            "context": {
+                "schemaKey": "gamma",
+                "schemaSlug": "gamma",
+                "schemaId": 101
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] PARTIAL IMPORT: 1 of 3 schema(s) were rejected and are NOT linked to any register in this import: broken. Registers declaring them were created without those schema references.",
+            "context": {
+                "appId": "app",
+                "failedSchemas": [
+                    {
+                        "key": "broken",
+                        "slug": "broken",
+                        "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                    }
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Pass 1 completed - all schemas created",
+            "context": {
+                "createdCount": 2,
+                "createdSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] PASS 2: Resolving schema cross-references",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "alpha",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "title": "Alpha",
+                "version": "1.0.0",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "name"
+                    }
+                },
+                "slug": "alpha"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "alpha",
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Resolving cross-references for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No unambiguous pre-existing schema outside the register scope",
+            "context": {
+                "slug": "gamma",
+                "exception": "not found"
+            }
+        },
+        {
+            "schema.create": {
+                "slug": "gamma",
+                "title": "Gamma",
+                "version": "1.0.0",
+                "properties": []
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Cross-references resolved for schema (Pass 2)",
+            "context": {
+                "schemaSlug": "gamma",
+                "schemaId": 103
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema import process completed (TWO-PASS)",
+            "context": {
+                "importedCount": 2,
+                "importedSchemas": [
+                    "alpha",
+                    "gamma"
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Schema 'alpha' found in schemasMap",
+            "context": {
+                "schemaId": 102
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug broken not found in schemasMap during register import. It was REJECTED by the schema import phase (Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema.). This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Schema with slug missing not found in schemasMap during register import. This schema should have been created in the TWO-PASS schema import phase. This register will be created without this schema reference.",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'reg' not found, will create new one",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "reg",
+                "title": "Reg",
+                "version": "1.0.0",
+                "schemas": [
+                    102
+                ],
+                "type": "mock"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Register 'typed' not found, will create new one",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "register.create": {
+                "slug": "typed",
+                "title": "Typed",
+                "version": "1.0.0",
+                "type": "own"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Starting mapping import",
+            "context": {
+                "totalMappings": 1,
+                "mappingKeys": [
+                    "map-one"
+                ]
+            }
+        },
+        {
+            "mapping.create": {
+                "slug": "map-one",
+                "version": "1.0.0",
+                "mapping": [],
+                "name": "map-one",
+                "configurations": [
+                    null
+                ]
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping imported successfully",
+            "context": {
+                "mappingSlug": "map-one",
+                "mappingId": 7
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Mapping import completed",
+            "context": {
+                "importedCount": 1
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] No acting user resolvable for import - user-dependent ops (folders) may skip",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "one",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Object failed on the first pass, retried after the rest",
+            "context": {
+                "objectSlug": "two",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "one"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=one",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "one"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'one' - import failed: save refused",
+            "context": {
+                "appId": "app",
+                "objectSlug": "one",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Import object search filter",
+            "context": {
+                "filter": {
+                    "@self": {
+                        "register": 1,
+                        "schema": 102,
+                        "slug": "two"
+                    },
+                    "_limit": 1
+                }
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Searching: register=1, schema=102, slug=two",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Found 0 results",
+            "context": []
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No existing object found - will create new object",
+            "context": {
+                "registerId": 1,
+                "schemaId": 102,
+                "slug": "two"
+            }
+        },
+        {
+            "log": "warning",
+            "message": "[ImportHandler] Skipping object 'two' - import failed: save refused",
+            "context": {
+                "appId": "app",
+                "objectSlug": "two",
+                "registerSlug": "reg",
+                "schemaSlug": "alpha",
+                "error": "save refused"
+            }
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] No seed data found for configuration",
+            "context": {
+                "appId": "app"
+            }
+        },
+        {
+            "result": {
+                "registers": [
+                    "OCA\\OpenRegister\\Db\\Register:reg",
+                    "OCA\\OpenRegister\\Db\\Register:typed"
+                ],
+                "schemas": [
+                    "OCA\\OpenRegister\\Db\\Schema:alpha",
+                    "OCA\\OpenRegister\\Db\\Schema:gamma"
+                ],
+                "workflows": {
+                    "deployed": [],
+                    "updated": [],
+                    "unchanged": [],
+                    "failed": []
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [
+                    "OCA\\OpenRegister\\Db\\Mapping:map-one"
+                ],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "objects": [],
+                "skipped": {
+                    "registers": 0,
+                    "schemas": 1,
+                    "objects": 2,
+                    "mappings": 0,
+                    "seedObjects": 0
+                },
+                "unchanged": {
+                    "objects": 0
+                },
+                "failed": {
+                    "schemas": [
+                        {
+                            "key": "broken",
+                            "slug": "broken",
+                            "error": "Failed to import schema: The value for objectDescriptionField ('x') does not exist as a property in the schema."
+                        }
+                    ],
+                    "objects": [
+                        {
+                            "slug": "one",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        },
+                        {
+                            "slug": "two",
+                            "register": "reg",
+                            "schema": "alpha",
+                            "error": "save refused",
+                            "refusedByListener": false
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "unchanged": [
+        {
+            "config.get": "imported_config_app_version"
+        },
+        {
+            "config.get": "imported_config_app_hash"
+        },
+        {
+            "log": "debug",
+            "message": "[ImportHandler] Skipping app: config content unchanged (v1.0.0, stored v)",
+            "context": []
+        },
+        {
+            "result": {
+                "registers": [],
+                "schemas": [],
+                "workflows": {
+                    "deployed": [],
+                    "updated": [],
+                    "unchanged": [],
+                    "failed": []
+                },
+                "endpoints": [],
+                "sources": [],
+                "mappings": [],
+                "jobs": [],
+                "synchronizations": [],
+                "rules": [],
+                "objects": [],
+                "skipped": {
+                    "registers": 0,
+                    "schemas": 0,
+                    "objects": 0,
+                    "mappings": 0,
+                    "seedObjects": 0
+                },
+                "unchanged": {
+                    "objects": 0
+                },
+                "failed": {
+                    "schemas": [],
+                    "objects": []
+                }
+            }
+        }
+    ]
+}

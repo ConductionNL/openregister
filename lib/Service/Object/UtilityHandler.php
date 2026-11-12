@@ -18,8 +18,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * Handles utility operations for ObjectService.
@@ -42,14 +42,14 @@ class UtilityHandler {
 	/**
 	 * Constructor for UtilityHandler.
 	 *
-	 * @param RegisterMapper $registerMapper Mapper for register entities.
-	 * @param SchemaMapper $schemaMapper Mapper for schema entities.
+	 * @param RegisterMapperInterface $registerMapper Mapper for register entities.
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 
@@ -72,19 +72,8 @@ class UtilityHandler {
 			return false;
 		}
 
-		// Standard UUID with dashes (8-4-4-4-12 format).
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-			return true;
-		}
-
-		// UUID without dashes (32 hex chars).
-		if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Prefixed UUID (e.g., "id-uuid" with or without dashes).
-		$pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-		if (preg_match($pattern, $value) === 1) {
+		// A UUID, with or without dashes or a word prefix.
+		if (preg_match(UuidPattern::ANY, $value) === 1) {
 			return true;
 		}
 
@@ -165,97 +154,4 @@ class UtilityHandler {
 		return $entity;
 	}//end normalizeEntity()
 
-	/**
-	 * Calculate efficiency metric for bulk operations.
-	 *
-	 * Computes average time per object for performance tracking.
-	 *
-	 * @param array $lookupMap The lookup map of loaded objects.
-	 * @param float $totalTime Total execution time in milliseconds.
-	 *
-	 * @psalm-param array<string, mixed> $lookupMap
-	 *
-	 * @phpstan-param array<string, mixed> $lookupMap
-	 *
-	 * @return string
-	 *
-	 * @psalm-return   string
-	 * @phpstan-return string
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function calculateEfficiency(array $lookupMap, float $totalTime): string {
-		$count = count($lookupMap);
-		if ($count > 0) {
-			return round($totalTime / $count, 2) . 'ms/object';
-		}
-
-		return 'no_objects';
-	}//end calculateEfficiency()
-
-	/**
-	 * Clean query parameters by removing internal/system parameters.
-	 *
-	 * Removes parameters starting with underscore and specific
-	 * system parameters that shouldn't be exposed.
-	 *
-	 * @param array $parameters The query parameters to clean.
-	 *
-	 * @return array The cleaned parameters.
-	 *
-	 * @psalm-param    array<string, mixed> $parameters
-	 * @phpstan-param  array<string, mixed> $parameters
-	 * @psalm-return   array<string, mixed>
-	 * @phpstan-return array<string, mixed>
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function cleanQuery(array $parameters): array {
-		$newParameters = [];
-
-		// List of parameters to exclude (internal/system parameters).
-		$excludeParams = [
-			'extend',
-			'unset',
-			'fields',
-			'filter',
-			'page',
-			'limit',
-			'offset',
-			'order',
-			'search',
-			'ids',
-			'uses',
-			'views',
-			'source',
-			'facets',
-			'facetable',
-			'sample_size',
-			'count',
-			'performance',
-			'aggregations',
-		];
-
-		foreach ($parameters as $key => $value) {
-			// Skip parameters starting with underscore.
-			if (str_starts_with($key, '_') === true) {
-				continue;
-			}
-
-			// Skip excluded parameters.
-			if (in_array($key, $excludeParams) === true) {
-				continue;
-			}
-
-			// Skip @self parameters.
-			if (str_starts_with($key, '@self') === true) {
-				continue;
-			}
-
-			// Keep parameter if it passes all filters.
-			$newParameters[$key] = $value;
-		}//end foreach
-
-		return $newParameters;
-	}//end cleanQuery()
 }//end class

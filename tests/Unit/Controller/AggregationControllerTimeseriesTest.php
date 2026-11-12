@@ -28,12 +28,12 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\AggregationController;
+use OCA\OpenRegister\Search\Controller\AggregationController;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -41,7 +41,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Controller\AggregationController
+ * @coversDefaultClass \OCA\OpenRegister\Search\Controller\AggregationController
  */
 class AggregationControllerTimeseriesTest extends TestCase {
 
@@ -65,10 +65,8 @@ class AggregationControllerTimeseriesTest extends TestCase {
 		$this->runner = $this->createMock(AggregationRunner::class);
 		$this->validator = $this->createMock(TimeseriesRequestValidator::class);
 		$this->controller = new AggregationController(
-			'openregister',
 			$this->request,
-			$this->runner,
-			$this->validator
+			new \OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices($this->runner, $this->validator)
 		);
 	}//end setUp()
 

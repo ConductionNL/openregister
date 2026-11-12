@@ -30,6 +30,7 @@ use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
+use OCA\OpenRegister\Service\Deferral\DeferralQueueServices;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -42,6 +43,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\ActorForwardingServices;
 
 /**
  * Deferred cleanup: the right UUIDs, under the forwarded actor, never on a
@@ -138,10 +140,12 @@ class ObjectCleanupJobTest extends TestCase {
 
 		$this->job = new ObjectCleanupJob(
 			time: $this->createMock(originalClassName: ITimeFactory::class),
-			userSession: $this->userSession,
-			userManager: $this->userManager,
-			organisation: $this->createMock(originalClassName: OrganisationService::class),
-			logger: $this->logger,
+			actor: new ActorForwardingServices(
+				userSession: $this->userSession,
+				userManager: $this->userManager,
+				organisation: $this->createMock(originalClassName: OrganisationService::class),
+				logger: $this->logger
+			),
 			resolver: $this->resolver,
 			cleanup: $this->cleanup
 		);
@@ -262,9 +266,11 @@ class ObjectCleanupJobTest extends TestCase {
 		$deferral = new ListenerDeferralService(
 			userSession: $deferringSession,
 			organisation: $this->createMock(originalClassName: OrganisationService::class),
-			jobList: $jobList,
-			appConfig: $this->createMock(originalClassName: IAppConfig::class),
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
+			queue: new DeferralQueueServices(
+				jobList: $jobList,
+				appConfig: $this->createMock(originalClassName: IAppConfig::class),
+				logger: $this->createMock(originalClassName: LoggerInterface::class)
+			)
 		);
 
 		$deferral->defer(

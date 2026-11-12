@@ -1,0 +1,515 @@
+{
+    "analytics, app missing": {
+        "rows": [],
+        "marker": []
+    },
+    "analytics, linked rows": {
+        "rows": [
+            {
+                "id": "0",
+                "title": "",
+                "url": "/index.php/apps/analytics/#/r/0",
+                "subheader": null,
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "reportId": null,
+                    "reportTitle": null,
+                    "reportType": null,
+                    "subheader": null,
+                    "createdAt": null,
+                    "modifiedAt": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "id": "0",
+                "title": "",
+                "url": "/index.php/apps/analytics/#/r/0",
+                "subheader": null,
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "reportId": null,
+                    "reportTitle": null,
+                    "reportType": null,
+                    "subheader": null,
+                    "createdAt": null,
+                    "modifiedAt": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "marker": []
+    },
+    "analytics, mapper fails": {
+        "rows": [
+            {
+                "id": "7",
+                "title": "N",
+                "url": "/index.php/apps/analytics/#/r/7",
+                "data": {
+                    "id": 7,
+                    "album_id": 8,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "t",
+                    "lat": 1.5
+                }
+            }
+        ],
+        "marker": [
+            [
+                "object",
+                "analytics_report",
+                "name",
+                "[or:obj-1]",
+                [
+                    "subheader",
+                    "type"
+                ],
+                "id"
+            ]
+        ]
+    },
+    "analytics, no links": {
+        "rows": [
+            {
+                "id": "7",
+                "title": "N",
+                "url": "/index.php/apps/analytics/#/r/7",
+                "data": {
+                    "id": 7,
+                    "album_id": 8,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "t",
+                    "lat": 1.5
+                }
+            }
+        ],
+        "marker": [
+            [
+                "object",
+                "analytics_report",
+                "name",
+                "[or:obj-1]",
+                [
+                    "subheader",
+                    "type"
+                ],
+                "id"
+            ]
+        ]
+    },
+    "collectives, app missing": {
+        "rows": [],
+        "marker": []
+    },
+    "collectives, linked rows": {
+        "rows": [
+            {
+                "id": "0",
+                "title": "",
+                "url": "/index.php/apps/collectives/?fileId=0",
+                "emoji": null,
+                "collectiveName": null,
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "pageId": null,
+                    "collectiveId": null,
+                    "collectiveName": null,
+                    "pageTitle": null,
+                    "slug": null,
+                    "emoji": null,
+                    "lastModified": null,
+                    "url": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "id": "0",
+                "title": "",
+                "url": "/index.php/apps/collectives/?fileId=0",
+                "emoji": null,
+                "collectiveName": null,
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "pageId": null,
+                    "collectiveId": null,
+                    "collectiveName": null,
+                    "pageTitle": null,
+                    "slug": null,
+                    "emoji": null,
+                    "lastModified": null,
+                    "url": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "marker": []
+    },
+    "collectives, mapper fails": {
+        "rows": [
+            {
+                "id": "7",
+                "title": "s",
+                "url": "/index.php/apps/collectives/7",
+                "data": {
+                    "id": 7,
+                    "album_id": 8,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "t",
+                    "lat": 1.5
+                }
+            }
+        ],
+        "marker": [
+            [
+                "object",
+                "collectives_pages",
+                "slug",
+                "[or:obj-1]",
+                [
+                    "emoji",
+                    "last_user_id"
+                ],
+                "id"
+            ]
+        ]
+    },
+    "collectives, no links": {
+        "rows": [
+            {
+                "id": "7",
+                "title": "s",
+                "url": "/index.php/apps/collectives/7",
+                "data": {
+                    "id": 7,
+                    "album_id": 8,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "t",
+                    "lat": 1.5
+                }
+            }
+        ],
+        "marker": [
+            [
+                "object",
+                "collectives_pages",
+                "slug",
+                "[or:obj-1]",
+                [
+                    "emoji",
+                    "last_user_id"
+                ],
+                "id"
+            ]
+        ]
+    },
+    "maps, app missing": {
+        "rows": [],
+        "marker": []
+    },
+    "maps, linked rows": {
+        "rows": [
+            {
+                "id": "0",
+                "title": "",
+                "url": "/index.php/apps/maps/#/m=0",
+                "category": null,
+                "lat": null,
+                "lng": null,
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "favoriteId": null,
+                    "name": null,
+                    "category": null,
+                    "lat": null,
+                    "lng": null,
+                    "comment": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "id": "0",
+                "title": "",
+                "url": "/index.php/apps/maps/#/m=0",
+                "category": null,
+                "lat": null,
+                "lng": null,
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "favoriteId": null,
+                    "name": null,
+                    "category": null,
+                    "lat": null,
+                    "lng": null,
+                    "comment": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "marker": []
+    },
+    "maps, mapper fails": {
+        "rows": [
+            {
+                "id": "7",
+                "title": "N",
+                "url": "/index.php/apps/maps/#/m=7",
+                "data": {
+                    "id": 7,
+                    "album_id": 8,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "t",
+                    "lat": 1.5
+                }
+            }
+        ],
+        "marker": [
+            [
+                "object",
+                "maps_favorites",
+                "name",
+                "[or:obj-1]",
+                [
+                    "lat",
+                    "lng",
+                    "category",
+                    "comment"
+                ],
+                "id"
+            ]
+        ]
+    },
+    "maps, no links": {
+        "rows": [
+            {
+                "id": "7",
+                "title": "N",
+                "url": "/index.php/apps/maps/#/m=7",
+                "data": {
+                    "id": 7,
+                    "album_id": 8,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "t",
+                    "lat": 1.5
+                }
+            }
+        ],
+        "marker": [
+            [
+                "object",
+                "maps_favorites",
+                "name",
+                "[or:obj-1]",
+                [
+                    "lat",
+                    "lng",
+                    "category",
+                    "comment"
+                ],
+                "id"
+            ]
+        ]
+    },
+    "photos, app missing": {
+        "rows": [],
+        "marker": []
+    },
+    "photos, linked rows": {
+        "rows": [
+            {
+                "id": "0",
+                "title": "",
+                "url": "/index.php/apps/photos/albums/0",
+                "coverPhotoUrl": null,
+                "photoCount": null,
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "albumId": null,
+                    "albumName": null,
+                    "coverPhotoUrl": null,
+                    "photoCount": null,
+                    "lastEdited": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "id": "0",
+                "title": "",
+                "url": "/index.php/apps/photos/albums/0",
+                "coverPhotoUrl": null,
+                "photoCount": null,
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "albumId": null,
+                    "albumName": null,
+                    "coverPhotoUrl": null,
+                    "photoCount": null,
+                    "lastEdited": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "marker": []
+    },
+    "photos, mapper fails": {
+        "rows": [
+            {
+                "id": "8",
+                "title": "N",
+                "url": "/index.php/apps/photos/albums/8",
+                "data": {
+                    "id": 7,
+                    "album_id": 8,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "t",
+                    "lat": 1.5
+                }
+            }
+        ],
+        "marker": [
+            [
+                "object",
+                "photos_albums",
+                "name",
+                "[or:obj-1]",
+                [
+                    "user",
+                    "created"
+                ],
+                "album_id"
+            ]
+        ]
+    },
+    "photos, no links": {
+        "rows": [
+            {
+                "id": "8",
+                "title": "N",
+                "url": "/index.php/apps/photos/albums/8",
+                "data": {
+                    "id": 7,
+                    "album_id": 8,
+                    "name": "N",
+                    "slug": "s",
+                    "title": "t",
+                    "lat": 1.5
+                }
+            }
+        ],
+        "marker": [
+            [
+                "object",
+                "photos_albums",
+                "name",
+                "[or:obj-1]",
+                [
+                    "user",
+                    "created"
+                ],
+                "album_id"
+            ]
+        ]
+    },
+    "cospend, app missing": {
+        "rows": [],
+        "marker": []
+    },
+    "cospend, linked rows": {
+        "rows": [
+            {
+                "type": "",
+                "id": "",
+                "entryId": 1,
+                "title": "",
+                "url": "/index.php/apps/cospend/p/",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 1,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": null,
+                    "projectId": null,
+                    "billId": null,
+                    "name": null,
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            },
+            {
+                "type": "",
+                "id": "",
+                "entryId": 2,
+                "title": "",
+                "url": "/index.php/apps/cospend/p/",
+                "amount": null,
+                "currency": null,
+                "data": {
+                    "id": 2,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "entryType": null,
+                    "projectId": null,
+                    "billId": null,
+                    "name": null,
+                    "amount": null,
+                    "currency": null,
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            }
+        ],
+        "marker": []
+    },
+    "cospend, mapper fails": {
+        "rows": [],
+        "marker": []
+    },
+    "cospend, no links": {
+        "rows": [],
+        "marker": []
+    }
+}

@@ -1,12 +1,12 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
+import { listDateTime } from '../../services/listDateTime.js'
 import { applicationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcAppContent>
 		<CnIndexPage
-			ref="indexPage"
 			:title="t('openregister', 'Applications')"
 			:description="t('openregister', 'Manage your applications and modules')"
 			:showTitle="true"
@@ -17,13 +17,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			:viewMode="applicationStore.viewMode"
 			:selectable="true"
 			:selectedIds="selectedApplications"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Add Application')"
 			rowKey="id"
@@ -48,41 +42,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 							<ApplicationOutline :size="20" />
 							{{ object.name }}
 						</h2>
-						<NcActions
-							:primary="true"
-							:menuName="t('openregister', 'Actions')">
-							<template #icon>
-								<DotsHorizontal :size="20" />
-							</template>
-							<NcActionButton
-								closeAfterClick
-								@click="
-									() => {
-										applicationStore.setApplicationItem(object)
-										navigationStore.setModal('editApplication')
-									}
-								">
-								<template #icon>
-									<Pencil :size="20" />
-								</template>
-								{{ t('openregister', 'Edit') }}
-							</NcActionButton>
-							<NcActionButton
-								closeAfterClick
-								@click="
-									() => {
-										applicationStore.setApplicationItem(object)
-										navigationStore.setDialog(
-											'deleteApplication',
-										)
-									}
-								">
-								<template #icon>
-									<TrashCanOutline :size="20" />
-								</template>
-								{{ t('openregister', 'Delete') }}
-							</NcActionButton>
-						</NcActions>
+						<ActionMenu :actions="applicationActions(object)" primary />
 					</div>
 					<!-- Application Details -->
 					<div class="applicationDetails">
@@ -98,18 +58,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 								v-if="object.active !== undefined"
 								class="applicationInfoItem">
 								<strong>{{ t('openregister', 'Status') }}:</strong>
-								<span
-									:class="
-										object.active
-											? 'status-active'
-											: 'status-inactive'
-									">
-									{{
-										object.active
-											? t('openregister', 'Active')
-											: t('openregister', 'Inactive')
-									}}
-								</span>
+								<ActiveStatus :active="object.active" />
 							</div>
 							<div
 								v-if="object.configurations"
@@ -140,11 +89,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			<template #column-name="{ row }">
 				<div class="titleContent">
 					<strong>{{ row.name }}</strong>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -155,13 +100,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Custom column: active status -->
 			<template #column-active="{ row }">
-				<span :class="row.active ? 'status-active' : 'status-inactive'">
-					{{
-						row.active
-							? t('openregister', 'Active')
-							: t('openregister', 'Inactive')
-					}}
-				</span>
+				<ActiveStatus :active="row.active" />
 			</template>
 
 			<!-- Custom column: configurations count -->
@@ -181,56 +120,12 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Custom column: created date -->
 			<template #column-created="{ row }">
-				{{
-					row.created
-						? new Date(row.created).toLocaleDateString({
-								day: '2-digit',
-								month: '2-digit',
-								year: 'numeric',
-							})
-							+ ', '
-							+ new Date(row.created).toLocaleTimeString({
-								hour: '2-digit',
-								minute: '2-digit',
-								second: '2-digit',
-							})
-						: '-'
-				}}
+				{{ listDateTime(row.created) }}
 			</template>
 
 			<!-- Custom row actions for table view -->
 			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								applicationStore.setApplicationItem(row)
-								navigationStore.setModal('editApplication')
-							}
-						">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						{{ t('openregister', 'Edit') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								applicationStore.setApplicationItem(row)
-								navigationStore.setDialog('deleteApplication')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="applicationActions(row)" />
 			</template>
 		</CnIndexPage>
 	</NcAppContent>
@@ -238,27 +133,31 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
+import { NcAppContent } from '@nextcloud/vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
+import ActiveStatus from './ActiveStatus.vue'
+import { deleteAction, editAction } from '../../services/menuActions.js'
+import {
+	BUILTIN_ACTIONS_OFF,
+	rowOpeners,
+} from '../indexPageOptions.js'
 
 export default {
 	name: 'ApplicationsIndex',
 	components: {
+		ActiveStatus,
+		IndexRowDescription,
+		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
 		ApplicationOutline,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
 	},
 
 	data() {
 		return {
+			builtinActionsOff: BUILTIN_ACTIONS_OFF,
 			selectedApplications: [],
 			isRefreshing: false,
 		}
@@ -346,6 +245,24 @@ export default {
 
 	methods: {
 		/**
+		 * The menu of one application.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {object} application - list row
+		 * @return {Array<object>}
+		 */
+		applicationActions(application) {
+			return [
+				editAction(() => this.openModal(application, 'editApplication')),
+				deleteAction(() =>
+					this.openDialog(application, 'deleteApplication'),
+				),
+			]
+		},
+
+		...rowOpeners((item) => applicationStore.setApplicationItem(item)),
+
+		/**
 		 * Reload the application list from the store.
 		 *
 		 * @spec exclude list-view manual refresh plumbing
@@ -396,7 +313,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 .applicationDetails {
 	margin-top: 1rem;
 }
@@ -421,10 +340,7 @@ export default {
 	min-width: 120px;
 }
 
-.status-active {
-	color: var(--color-success);
-	font-weight: 600;
-}
+@include status-active;
 
 .status-inactive {
 	color: var(--color-text-lighter);

@@ -5,7 +5,7 @@
  *
  * The object-lifecycle triggers: when an OpenRegister object is created,
  * updated, deleted, locked, unlocked, reverted or changes state, this hands the
- * event to {@see FlowTriggerService}, which queues a run for every flow wired to
+ * event to {@see FlowTriggerServiceInterface}, which queues a run for every flow wired to
  * it. Each is one line in the event map here; the mechanism is written once.
  *
  * The lock/revert/state triggers were declared in the event catalog from the
@@ -44,8 +44,8 @@ use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Flow\FlowTriggerService;
-use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCA\OpenRegister\Service\Flow\FlowTriggerServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerSlugsInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -57,16 +57,31 @@ use OCP\IUserSession;
  */
 class FlowTriggerListener implements IEventListener {
 	/**
+	 * The trigger id each object event class is wired to, checked in this order.
+	 *
+	 * @var array<class-string<Event>, string>
+	 */
+	private const EVENT_IDS = [
+		ObjectCreatedEvent::class => 'object.created',
+		ObjectUpdatedEvent::class => 'object.updated',
+		ObjectDeletedEvent::class => 'object.deleted',
+		ObjectLockedEvent::class => 'object.locked',
+		ObjectUnlockedEvent::class => 'object.unlocked',
+		ObjectRevertedEvent::class => 'object.reverted',
+		ObjectTransitionedEvent::class => 'object.transitioned',
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerService $triggers Queues the runs.
+	 * @param FlowTriggerServiceInterface $triggers Queues the runs.
 	 * @param IUserSession $userSession The acting user, for attribution.
-	 * @param FlowTriggerSlugs $slugs Turns the object's numeric ids into the slugs triggers match on.
+	 * @param FlowTriggerSlugsInterface $slugs Turns the object's numeric ids into the slugs triggers match on.
 	 */
 	public function __construct(
-		private readonly FlowTriggerService $triggers,
+		private readonly FlowTriggerServiceInterface $triggers,
 		private readonly IUserSession $userSession,
-		private readonly FlowTriggerSlugs $slugs,
+		private readonly FlowTriggerSlugsInterface $slugs,
 	) {
 
 	}//end __construct()
@@ -97,11 +112,20 @@ class FlowTriggerListener implements IEventListener {
 			return;
 		}
 
+		$this->fireObjectTrigger(event: $event, eventId: $eventId);
+	}//end handle()
+
+	/**
+	 * Fire an object event as its trigger, against the object's register and schema slugs.
+	 *
+	 * @param Event  $event   The object event.
+	 * @param string $eventId The trigger id flows are wired to.
+	 *
+	 * @return void
+	 */
+	private function fireObjectTrigger(Event $event, string $eventId): void {
 		$object = $event->getObject();
-		$user = null;
-		if ($this->userSession->getUser() !== null) {
-			$user = $this->userSession->getUser()->getUID();
-		}
+		$user = $this->callerUid();
 
 		// 🔴 SLUGS, NOT THE OBJECT'S NUMERIC IDS. The trigger index and the
 		// flow trigger columns both hold slugs (`dossiq`/`case`) — an imported
@@ -121,8 +145,21 @@ class FlowTriggerListener implements IEventListener {
 			user: $user,
 			context: $this->contextFor(event: $event)
 		);
+	}//end fireObjectTrigger()
 
-	}//end handle()
+	/**
+	 * The acting user's uid; null when nobody is signed in.
+	 *
+	 * @return string|null
+	 */
+	private function callerUid(): ?string {
+		$user = null;
+		if ($this->userSession->getUser() !== null) {
+			$user = $this->userSession->getUser()->getUID();
+		}
+
+		return $user;
+	}//end callerUid()
 
 	/**
 	 * Fire a terminal plan-item transition as its catalog trigger.
@@ -208,32 +245,10 @@ class FlowTriggerListener implements IEventListener {
 	 * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
 	 */
 	private function eventIdFor(Event $event): ?string {
-		if ($event instanceof ObjectCreatedEvent) {
-			return 'object.created';
-		}
-
-		if ($event instanceof ObjectUpdatedEvent) {
-			return 'object.updated';
-		}
-
-		if ($event instanceof ObjectDeletedEvent) {
-			return 'object.deleted';
-		}
-
-		if ($event instanceof ObjectLockedEvent) {
-			return 'object.locked';
-		}
-
-		if ($event instanceof ObjectUnlockedEvent) {
-			return 'object.unlocked';
-		}
-
-		if ($event instanceof ObjectRevertedEvent) {
-			return 'object.reverted';
-		}
-
-		if ($event instanceof ObjectTransitionedEvent) {
-			return 'object.transitioned';
+		foreach (self::EVENT_IDS as $class => $eventId) {
+			if ($event instanceof $class) {
+				return $eventId;
+			}
 		}
 
 		return null;

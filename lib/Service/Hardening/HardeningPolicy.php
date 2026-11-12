@@ -55,7 +55,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningPolicy {
+class HardeningPolicy implements HardeningFloorsInterface, AllowedOriginsInterface {
 
 	/**
 	 * The app the administered controls live under.
@@ -330,6 +330,18 @@ class HardeningPolicy {
 			return [];
 		}
 
+		return self::integerFloors(decoded: $decoded);
+
+	}//end declaredFloors()
+
+	/**
+	 * The entries of a decoded floor map that name a control and an integer floor.
+	 *
+	 * @param array $decoded The decoded floor map.
+	 *
+	 * @return array<string, int> Control to floor.
+	 */
+	private static function integerFloors(array $decoded): array {
 		$floors = [];
 		foreach ($decoded as $control => $floor) {
 			if (is_string($control) === true && is_int($floor) === true) {
@@ -338,8 +350,7 @@ class HardeningPolicy {
 		}
 
 		return $floors;
-
-	}//end declaredFloors()
+	}//end integerFloors()
 
 	/**
 	 * Every floor in force, declared or baseline.

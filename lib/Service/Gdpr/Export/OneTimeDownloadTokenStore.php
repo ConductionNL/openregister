@@ -40,6 +40,9 @@ use OCP\Security\ISecureRandom;
 
 /**
  * Single-use, time-boxed, case-scoped download-token store.
+
+ *
+ * @spec openspec/specs/dsar-export-bundle/spec.md
  */
 class OneTimeDownloadTokenStore {
 
@@ -96,16 +99,8 @@ class OneTimeDownloadTokenStore {
 		$tokenId = hash(algo: 'sha256', data: $token);
 		$expiry = ($this->time->getTime() + $ttlSeconds);
 
-		$this->appConfig->setValueString(
-			app: self::APP_ID,
-			key: self::KEY_PREFIX . $tokenId,
-			value: json_encode(
-				[
-					'caseUuid' => $caseUuid,
-					'expiry' => $expiry,
-				]
-			)
-		);
+		$record = json_encode(['caseUuid' => $caseUuid, 'expiry' => $expiry]);
+		$this->appConfig->setValueString(app: self::APP_ID, key: self::KEY_PREFIX . $tokenId, value: $record);
 
 		return $token;
 	}//end mint()
@@ -130,39 +125,53 @@ class OneTimeDownloadTokenStore {
 			return false;
 		}
 
-		$tokenId = hash(algo: 'sha256', data: $token);
-		$key = self::KEY_PREFIX . $tokenId;
+		$raw = $this->burn(key: self::KEY_PREFIX . hash(algo: 'sha256', data: $token));
 
-		$raw = $this->appConfig->getValueString(
-			app: self::APP_ID,
-			key: $key,
-			default: ''
-		);
+		return ($raw !== '' && $this->grants(raw: $raw, caseUuid: $caseUuid) === true);
+	}//end redeem()
 
-		if ($raw === '') {
-			return false;
+	/**
+	 * Take a stored token record and delete it in the same step.
+	 *
+	 * Burn on first sight: whether valid or expired, the token is single use.
+	 * Deleting before the validity verdict guarantees no replay. An absent
+	 * record is not deleted (there is nothing to burn).
+	 *
+	 * @param string $key The app-config key of the token record.
+	 *
+	 * @return string The raw record, or '' when there is none.
+	 */
+	private function burn(string $key): string {
+		$raw = $this->appConfig->getValueString(app: self::APP_ID, key: $key, default: '');
+		if ($raw !== '') {
+			$this->appConfig->deleteKey(app: self::APP_ID, key: $key);
 		}
 
-		// Burn on first sight: whether valid or expired, the token is single
-		// use. Deleting before the validity verdict guarantees no replay.
-		$this->appConfig->deleteKey(app: self::APP_ID, key: $key);
+		return $raw;
+	}//end burn()
 
+	/**
+	 * Whether a burned record authorised this case and had not expired.
+	 *
+	 * Fails closed: a malformed record, a missing or different case, or a
+	 * missing expiry all deny.
+	 *
+	 * @param string $raw      The raw stored record.
+	 * @param string $caseUuid The case the download is scoped to.
+	 *
+	 * @return bool True when the record grants this download.
+	 */
+	private function grants(string $raw, string $caseUuid): bool {
 		$record = json_decode($raw, true);
 		if (is_array($record) === false) {
 			return false;
 		}
 
 		$recordCase = (string)($record['caseUuid'] ?? '');
-		$expiry = (int)($record['expiry'] ?? 0);
-
 		if ($recordCase === '' || $recordCase !== $caseUuid) {
 			return false;
 		}
 
-		if ($expiry < $this->time->getTime()) {
-			return false;
-		}
-
-		return true;
-	}//end redeem()
+		return ((int)($record['expiry'] ?? 0) >= $this->time->getTime());
+	}//end grants()
 }//end class

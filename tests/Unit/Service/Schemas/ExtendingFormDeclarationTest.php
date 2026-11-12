@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -25,7 +25,6 @@ namespace Unit\Service\Schemas;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
-use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
 use PHPUnit\Framework\TestCase;
 
@@ -187,100 +186,23 @@ class ExtendingFormDeclarationTest extends TestCase {
 	}
 
 	/**
-	 * A property authored through the form is validated exactly like a hand-written one.
-	 *
-	 * Not "similarly". The same object goes into the same method, so there is
-	 * no second class of property with a second set of rules.
-	 *
-	 * @return void
-	 */
-	public function testAForwardedPropertyIsValidatedLikeAHandWrittenOne(): void {
-		$validator = new PropertyValidatorHandler();
-		$declaration = $this->shippedForm();
-
-		$good = $this->declarations->toProperty(
-			annotation: $declaration,
-			formValues: ['name' => 'Naam', 'propertyType' => 'string', 'isRequired' => true]
-		);
-		$this->assertSame(expected: ['title' => 'Naam', 'type' => 'string', 'required' => true], actual: $good);
-		$this->assertTrue(condition: $validator->validateProperty(property: $good, path: '/naam'));
-
-		$bad = $this->declarations->toProperty(
-			annotation: $declaration,
-			formValues: ['name' => 'Naam', 'propertyType' => 'sting']
-		);
-		$this->expectExceptionMessage(message: 'sting');
-		$validator->validateProperty(property: $bad, path: '/naam');
-	}
-
-	/**
-	 * A field the form did not fill in does not become a null property key.
-	 *
-	 * @return void
-	 */
-	public function testAnUnansweredFormFieldIsLeftOutOfTheProperty(): void {
-		$property = $this->declarations->toProperty(
-			annotation: $this->shippedForm(),
-			formValues: ['propertyType' => 'string']
-		);
-
-		$this->assertSame(expected: ['type' => 'string'], actual: $property);
-	}
-
-	/**
-	 * The `definition` alias supplies a description, and never beats one.
-	 *
-	 * The shipped consumer reads `definition` as the fallback source for a
-	 * description. A role the vocabulary does not hold, refused by name, would
-	 * break a form that already works, so it is declared rather than refused.
-	 *
-	 * @return void
-	 */
-	public function testTheDefinitionAliasSuppliesADescription(): void {
-		$declaration = [
-			'definitions' => 'caseTypeFieldDefinition',
-			'map' => ['type' => 'propertyType', 'definition' => 'shortText'],
-		];
-
-		$this->assertSame(expected: [], actual: $this->declarations->validate(annotation: $declaration));
-		$this->assertSame(
-			expected: ['type', 'description'],
-			actual: $this->declarations->forwards(annotation: $declaration)
-		);
-		$this->assertSame(
-			expected: ['type' => 'string', 'description' => 'Korte toelichting'],
-			actual: $this->declarations->toProperty(
-				annotation: $declaration,
-				formValues: ['propertyType' => 'string', 'shortText' => 'Korte toelichting']
-			)
-		);
-	}
-
-	/**
-	 * `hideOnCreate` is accepted, forwards no key and never reaches a property.
+	 * `hideOnCreate` is accepted and forwards no key.
 	 *
 	 * `@conduction/nextcloud-vue` 2.79.0 reads it to leave a field off the
 	 * create form. Refusing it by name refused dossiq's whole case schema at
 	 * register import, so an upgraded instance kept its old case schema.
 	 *
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @return void
 	 */
-	public function testTheHideOnCreateFormRoleIsAcceptedAndForwardsNothing(): void {
+	public function testTheHideOnCreateFormRoleIsAcceptedAndNotForwarded(): void {
 		$declaration = $this->shippedForm();
 		$declaration['map']['hideOnCreate'] = 'hideOnCreate';
 
 		$this->assertSame(expected: [], actual: $this->declarations->validate(annotation: $declaration));
 		$this->assertNotContains(needle: 'hideOnCreate', haystack: $this->declarations->forwards(annotation: $declaration));
 		$this->assertSame(expected: 6, actual: count($this->declarations->forwards(annotation: $declaration)));
-
-		$property = $this->declarations->toProperty(
-			annotation: $declaration,
-			formValues: ['propertyType' => 'string', 'hideOnCreate' => true]
-		);
-		$this->assertSame(expected: ['type' => 'string'], actual: $property);
-		$this->assertTrue(condition: (new PropertyValidatorHandler())->validateProperty(property: $property, path: '/x'));
 	}
 
 	/**
@@ -291,7 +213,7 @@ class ExtendingFormDeclarationTest extends TestCase {
 	 * `mapped()` is called with. A role the consumer reads that this layer
 	 * refuses breaks a working form at import, which is what this pins.
 	 *
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @return void
 	 */
@@ -323,7 +245,7 @@ class ExtendingFormDeclarationTest extends TestCase {
 	/**
 	 * A role that is neither a key, an alias nor a form role is still refused.
 	 *
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @return void
 	 */

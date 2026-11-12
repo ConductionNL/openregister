@@ -4,11 +4,22 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'clearAuditTrails'"
 		:name="t('openregister', 'Clear Filtered Audit Trails')"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="success === null"
+		:successText="successMessage"
+		:closeLabel="
+			success === null
+				? t('openregister', 'Cancel')
+				: t('openregister', 'Close')
+		"
+		:confirmLabel="t('openregister', 'Clear Entries')"
+		@cancel="closeDialog"
+		@confirm="clearAuditTrails()">
 		<p v-if="success === null">
 			{{
 				t(
@@ -52,80 +63,51 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				</NcNoteCard>
 			</div>
 		</div>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ successMessage }}</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success === null
-						? t('openregister', 'Cancel')
-						: t('openregister', 'Close')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading"
-				variant="error"
-				@click="clearAuditTrails()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<DeleteOutline v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Clear Entries') }}
-			</NcButton>
+		<template #confirmIcon>
+			<DeleteOutline :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import { NcNoteCard } from '@nextcloud/vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { confirmDialogState } from '../shared/confirmDialogState.js'
+import { deletionAnswer } from './deletionAnswer.js'
 
 export default {
 	name: 'ClearAuditTrails',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
+		ConfirmDialogFrame,
 		NcNoteCard,
-		// Icons
 		DeleteOutline,
-		Cancel,
 	},
+
+	mixins: [confirmDialogState(null)],
 
 	data() {
 		return {
-			success: null,
-			loading: false,
-			error: false,
 			successMessage: '',
-			closeModalTimeout: null,
 			filteredCount: 0,
 		}
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		navigationStore: () => navigationStore,
+
 		/**
 		 * @spec exclude UI state helper — reports whether any audit-trail filter is active.
 		 */
 		hasActiveFilters() {
 			return (
-				auditTrailStore.filters
-				&& Object.keys(auditTrailStore.filters).some(
+				auditTrailStore.auditTrailFilters
+				&& Object.keys(auditTrailStore.auditTrailFilters).some(
 					(key) =>
-						auditTrailStore.filters[key] !== null
-						&& auditTrailStore.filters[key] !== undefined
-						&& auditTrailStore.filters[key] !== '',
+						auditTrailStore.auditTrailFilters[key] !== null
+						&& auditTrailStore.auditTrailFilters[key] !== undefined
+						&& auditTrailStore.auditTrailFilters[key] !== '',
 				)
 			)
 		},
@@ -134,9 +116,9 @@ export default {
 		 * @spec exclude UI display helper — returns only the non-empty filters for display.
 		 */
 		displayFilters() {
-			if (!auditTrailStore.filters) return {}
+			if (!auditTrailStore.auditTrailFilters) return {}
 			return Object.fromEntries(
-				Object.entries(auditTrailStore.filters).filter(
+				Object.entries(auditTrailStore.auditTrailFilters).filter(
 					([_key, value]) =>
 						value !== null && value !== undefined && value !== '',
 				),
@@ -148,7 +130,7 @@ export default {
 		'navigationStore.dialog': function (newVal) {
 			if (newVal === 'clearAuditTrails') {
 				// Update filtered count when dialog opens
-				this.filteredCount = auditTrailStore.auditTrailCount
+				this.filteredCount = auditTrailStore.auditTrailPagination.total
 			}
 		},
 	},
@@ -181,68 +163,74 @@ export default {
 			this.loading = true
 
 			try {
-				// Build query parameters for deletion
-				const params = new URLSearchParams()
-
-				// Add current filters to determine which logs to delete
-				if (auditTrailStore.filters) {
-					Object.entries(auditTrailStore.filters).forEach(
-						([key, value]) => {
-							if (
-								value !== null
-								&& value !== undefined
-								&& value !== ''
-							) {
-								params.append(key, value)
-							}
-						},
-					)
-				}
-
-				// Make the API request
-				const response = await fetch(
-					`/index.php/apps/openregister/api/audit-trails?${params.toString()}`,
-					{
-						method: 'DELETE',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-					},
-				)
-
-				const result = await response.json()
-
-				if (result.success) {
-					this.success = true
-					this.error = false
-					this.successMessage =
-						result.message
-						|| this.t(
-							'openregister',
-							'{count} audit trails cleared successfully',
-							{ count: this.filteredCount },
-						)
-
-					// Refresh the audit trail list
-					await auditTrailStore.refreshAuditTrailList()
-
-					// Auto-close after 3 seconds
-					this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
-				} else {
-					throw new Error(result.error || 'Deletion failed')
-				}
+				const result = await this.requestClear()
+				await this.showCleared(result)
 			} catch (error) {
-				console.error('Error clearing audit trails:', error)
-				this.success = false
-				this.error =
-					error.message
-					|| this.t(
-						'openregister',
-						'An error occurred while clearing audit trails',
-					)
+				this.showClearFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Say how many entries were cleared, refresh the audit trail list and
+		 * close after three seconds.
+		 *
+		 * @param {object} result The server's answer
+		 * @return {Promise<void>}
+		 */
+		async showCleared(result) {
+			this.success = true
+			this.error = false
+			this.successMessage =
+				result.message
+				|| this.t(
+					'openregister',
+					'{count} audit trails cleared successfully',
+					{
+						count: this.filteredCount,
+					},
+				)
+			await auditTrailStore.refreshAuditTrailList()
+			this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
+		},
+
+		/**
+		 * Log a failed clear and say why it failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showClearFailure(error) {
+			console.error('Error clearing audit trails:', error)
+			this.success = false
+			this.error =
+				error.message
+				|| this.t(
+					'openregister',
+					'An error occurred while clearing audit trails',
+				)
+		},
+
+		/**
+		 * Ask the server to delete the audit trails that match the active
+		 * filters.
+		 *
+		 * @return {Promise<object>} The server's answer when it reports success
+		 * @throws {Error} When the server reports a failure
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-3
+		 */
+		async requestClear() {
+			const params = new URLSearchParams(Object.entries(this.displayFilters))
+			const response = await fetch(
+				`/index.php/apps/openregister/api/audit-trails?${params.toString()}`,
+				{
+					method: 'DELETE',
+					headers: { 'Content-Type': 'application/json' },
+				},
+			)
+			return deletionAnswer(response)
 		},
 
 		/**

@@ -18,6 +18,13 @@ use OCP\Files\SimpleFS\ISimpleFile;
  */
 class MemoryFile implements ISimpleFile {
 
+	/**
+	 * The last change, unix seconds; a test sets it.
+	 *
+	 * @var int
+	 */
+	public int $mtime = 0;
+
 	public function __construct(
 		private readonly string $name,
 		private readonly MemoryFolder $folder,
@@ -38,7 +45,7 @@ class MemoryFile implements ISimpleFile {
 	}//end getETag()
 
 	public function getMTime(): int {
-		return 0;
+		return $this->mtime;
 	}//end getMTime()
 
 	public function getContent(): string {

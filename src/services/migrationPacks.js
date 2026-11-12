@@ -123,8 +123,10 @@ export async function deletePack(id) {
 /**
  * Import a pack from a JSON file. A pack with the same slug is updated.
  *
+ * The server answers 201 for a pack it created and 200 for one it replaced.
+ *
  * @param {File} file The uploaded file.
- * @return {Promise<object>} The created or updated pack.
+ * @return {Promise<{pack: object, replaced: boolean}>} The created or updated pack, and whether it replaced a stored one.
  *
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
  */
@@ -132,7 +134,7 @@ export async function importPack(file) {
 	const form = new FormData()
 	form.append('file', file)
 	const response = await axios.post(packUrl('/import'), form)
-	return response.data
+	return { pack: response.data, replaced: response.status === 200 }
 }
 
 /**
@@ -179,6 +181,23 @@ export async function previewPack(definition, rows) {
  */
 function slugTexts() {
 	return {
+		...packErrorTexts(),
+		...accessErrorTexts(),
+		'too-many-rows': t(
+			'openregister',
+			'There are too many sample rows to test at once.',
+		),
+	}
+}
+
+/**
+ * The text for each error slug about the pack itself: invalid, a locked or
+ * taken slug, or missing.
+ *
+ * @return {object} Slug to text.
+ */
+function packErrorTexts() {
+	return {
 		'invalid-pack': t('openregister', 'The pack is not valid.'),
 		'builtin-slug-locked': t(
 			'openregister',
@@ -189,6 +208,17 @@ function slugTexts() {
 			'Another pack already has this slug. Choose a different slug.',
 		),
 		'pack-not-found': t('openregister', 'This migration pack does not exist.'),
+	}
+}
+
+/**
+ * The text for each error slug about who sent the request: nobody signed
+ * in, or someone who is not an administrator.
+ *
+ * @return {object} Slug to text.
+ */
+function accessErrorTexts() {
+	return {
 		'not-authenticated': t(
 			'openregister',
 			'You are not signed in. Sign in and try again.',
@@ -196,10 +226,6 @@ function slugTexts() {
 		'admin-required': t(
 			'openregister',
 			'Only administrators can change migration packs.',
-		),
-		'too-many-rows': t(
-			'openregister',
-			'There are too many sample rows to test at once.',
 		),
 	}
 }
@@ -225,24 +251,63 @@ const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 export function explainError(error, fallback, texts = {}) {
 	const status = error?.response?.status || 0
 	const body = error?.response?.data || {}
-	const code =
-		typeof body.error === 'string' && SLUG_PATTERN.test(body.error)
-			? body.error
-			: ''
-	const details = Array.isArray(body.details?.errors)
-		? body.details.errors.map(String)
-		: []
+	const code = errorCode(body)
+	const details = errorDetails(body)
 	const known = { ...slugTexts(), ...texts }
-	let message = fallback
-	if (status === 403) {
-		message = known['admin-required']
-	} else if (Object.hasOwn(known, code)) {
-		message = known[code]
-	} else if (code !== '' && code !== 'migration-pack-error') {
-		message =
-			typeof body.message === 'string' && body.message !== ''
-				? body.message
-				: fallback
-	}
+	const message = messageFor({ status, code, body, known, fallback })
 	return { message, details, code, status }
+}
+
+/**
+ * The slug of an API error body, or '' when it has none.
+ *
+ * @param {object} body The error body.
+ * @return {string} The slug.
+ */
+function errorCode(body) {
+	return typeof body.error === 'string' && SLUG_PATTERN.test(body.error)
+		? body.error
+		: ''
+}
+
+/**
+ * The `details.errors` of an API error body, as strings.
+ *
+ * @param {object} body The error body.
+ * @return {Array<string>} The details.
+ */
+function errorDetails(body) {
+	return Array.isArray(body.details?.errors) ? body.details.errors.map(String) : []
+}
+
+/**
+ * Pick the message for a failed request.
+ *
+ * @param {{status: number, code: string, body: object, known: object, fallback: string}} failure The parsed failure.
+ * @return {string} The message.
+ */
+function messageFor(failure) {
+	if (failure.status === 403) {
+		return failure.known['admin-required']
+	}
+	if (Object.hasOwn(failure.known, failure.code)) {
+		return failure.known[failure.code]
+	}
+	if (failure.code !== '' && failure.code !== 'migration-pack-error') {
+		return serverMessage(failure.body, failure.fallback)
+	}
+	return failure.fallback
+}
+
+/**
+ * The server's own message of an API error body, or the fallback.
+ *
+ * @param {object} body The error body.
+ * @param {string} fallback The message when the server sent none.
+ * @return {string} The message.
+ */
+function serverMessage(body, fallback) {
+	return typeof body.message === 'string' && body.message !== ''
+		? body.message
+		: fallback
 }

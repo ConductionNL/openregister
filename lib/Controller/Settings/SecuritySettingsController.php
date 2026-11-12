@@ -20,7 +20,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Settings;
 
 use Exception;
-use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\SecuritySettingsControllerServices;
+use OCA\OpenRegister\Service\RateLimitResetInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -39,20 +41,32 @@ use Psr\Log\LoggerInterface;
  */
 class SecuritySettingsController extends Controller {
 	/**
+	 * Security service.
+	 *
+	 * @var RateLimitResetInterface
+	 */
+	private readonly RateLimitResetInterface $securityService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
 	 * @param IRequest $request The request.
-	 * @param SecurityService $securityService Security service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param SecuritySettingsControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		$appName,
 		IRequest $request,
-		private readonly SecurityService $securityService,
-		private readonly LoggerInterface $logger,
+		SecuritySettingsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->securityService = $services->securityService;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -69,41 +83,10 @@ class SecuritySettingsController extends Controller {
 	 */
 	public function clearIpRateLimits(): JSONResponse {
 		try {
-			$data = $this->request->getParams();
-			$ipAddress = $data['ip'] ?? null;
-
-			if (empty($ipAddress) === true) {
-				return new JSONResponse(
-					data: ['error' => 'IP address is required'],
-					statusCode: 400
-				);
-			}
-
-			$this->securityService->clearIpRateLimits(ipAddress: $ipAddress);
-
-			$this->logger->info(
-				message: '[SecuritySettingsController] IP rate limits cleared by admin',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'ip_address' => $ipAddress]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'IP rate limits cleared successfully',
-					'ip_address' => $ipAddress,
-				]
-			);
+			return $this->clearIp(ipAddress: $this->request->getParams()['ip'] ?? null);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[SecuritySettingsController] Failed to clear IP rate limits',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 500
-			);
-		}//end try
+			return $this->failure(message: 'Failed to clear IP rate limits', error: $e);
+		}
 	}//end clearIpRateLimits()
 
 	/**
@@ -120,41 +103,10 @@ class SecuritySettingsController extends Controller {
 	 */
 	public function clearUserRateLimits(): JSONResponse {
 		try {
-			$data = $this->request->getParams();
-			$username = $data['username'] ?? null;
-
-			if (empty($username) === true) {
-				return new JSONResponse(
-					data: ['error' => 'Username is required'],
-					statusCode: 400
-				);
-			}
-
-			$this->securityService->clearUserRateLimits(username: $username);
-
-			$this->logger->info(
-				message: '[SecuritySettingsController] User rate limits cleared by admin',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'username' => $username]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'User rate limits cleared successfully',
-					'username' => $username,
-				]
-			);
+			return $this->clearUser(username: $this->request->getParams()['username'] ?? null);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[SecuritySettingsController] Failed to clear user rate limits',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 500
-			);
-		}//end try
+			return $this->failure(message: 'Failed to clear user rate limits', error: $e);
+		}
 	}//end clearUserRateLimits()
 
 	/**
@@ -172,50 +124,136 @@ class SecuritySettingsController extends Controller {
 	public function clearAllRateLimits(): JSONResponse {
 		try {
 			$data = $this->request->getParams();
-			$ipAddress = $data['ip'] ?? null;
-			$username = $data['username'] ?? null;
-
-			if (empty($ipAddress) === true && empty($username) === true) {
-				return new JSONResponse(
-					data: ['error' => 'At least one of IP address or username is required'],
-					statusCode: 400
-				);
-			}
-
-			$cleared = [];
-
-			if (empty($ipAddress) === false) {
-				$this->securityService->clearIpRateLimits(ipAddress: $ipAddress);
-				$cleared['ip_address'] = $ipAddress;
-			}
-
-			if (empty($username) === false) {
-				$this->securityService->clearUserRateLimits(username: $username);
-				$cleared['username'] = $username;
-			}
-
-			$this->logger->info(
-				message: '[SecuritySettingsController] Rate limits cleared by admin',
-				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $cleared)
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Rate limits cleared successfully',
-					'cleared' => $cleared,
-				]
-			);
+			return $this->clearBoth(ipAddress: $data['ip'] ?? null, username: $data['username'] ?? null);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[SecuritySettingsController] Failed to clear rate limits',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 500
-			);
-		}//end try
+			return $this->failure(message: 'Failed to clear rate limits', error: $e);
+		}
 	}//end clearAllRateLimits()
+
+	/**
+	 * Clear the rate limits of one IP address.
+	 *
+	 * @param mixed $ipAddress The requested IP address.
+	 *
+	 * @return JSONResponse The result
+	 */
+	private function clearIp(mixed $ipAddress): JSONResponse {
+		if (empty($ipAddress) === true) {
+			return $this->badRequest(error: 'IP address is required');
+		}
+
+		$this->securityService->clearIpRateLimits(ipAddress: $ipAddress);
+		$this->logCleared(message: 'IP rate limits cleared by admin', cleared: ['ip_address' => $ipAddress]);
+
+		return new JSONResponse(
+			data: ['success' => true, 'message' => 'IP rate limits cleared successfully', 'ip_address' => $ipAddress]
+		);
+	}//end clearIp()
+
+	/**
+	 * Clear the rate limits of one user.
+	 *
+	 * @param mixed $username The requested username.
+	 *
+	 * @return JSONResponse The result
+	 */
+	private function clearUser(mixed $username): JSONResponse {
+		if (empty($username) === true) {
+			return $this->badRequest(error: 'Username is required');
+		}
+
+		$this->securityService->clearUserRateLimits(username: $username);
+		$this->logCleared(message: 'User rate limits cleared by admin', cleared: ['username' => $username]);
+
+		return new JSONResponse(
+			data: ['success' => true, 'message' => 'User rate limits cleared successfully', 'username' => $username]
+		);
+	}//end clearUser()
+
+	/**
+	 * Clear the rate limits of whichever of an IP address and a user is given.
+	 *
+	 * @param mixed $ipAddress The requested IP address.
+	 * @param mixed $username  The requested username.
+	 *
+	 * @return JSONResponse The result
+	 */
+	private function clearBoth(mixed $ipAddress, mixed $username): JSONResponse {
+		if (empty($ipAddress) === true && empty($username) === true) {
+			return $this->badRequest(error: 'At least one of IP address or username is required');
+		}
+
+		$cleared = $this->clearGiven(ipAddress: $ipAddress, username: $username);
+		$this->logCleared(message: 'Rate limits cleared by admin', cleared: $cleared);
+
+		return new JSONResponse(
+			data: ['success' => true, 'message' => 'Rate limits cleared successfully', 'cleared' => $cleared]
+		);
+	}//end clearBoth()
+
+	/**
+	 * Clear the IP and user rate limits that were given, IP first.
+	 *
+	 * @param mixed $ipAddress The requested IP address.
+	 * @param mixed $username  The requested username.
+	 *
+	 * @return array<string, mixed> What was cleared
+	 */
+	private function clearGiven(mixed $ipAddress, mixed $username): array {
+		$cleared = [];
+		if (empty($ipAddress) === false) {
+			$this->securityService->clearIpRateLimits(ipAddress: $ipAddress);
+			$cleared['ip_address'] = $ipAddress;
+		}
+
+		if (empty($username) === false) {
+			$this->securityService->clearUserRateLimits(username: $username);
+			$cleared['username'] = $username;
+		}
+
+		return $cleared;
+	}//end clearGiven()
+
+	/**
+	 * A 400 response carrying one error message.
+	 *
+	 * @param string $error The error message.
+	 *
+	 * @return JSONResponse The response
+	 */
+	private function badRequest(string $error): JSONResponse {
+		return new JSONResponse(data: ['error' => $error], statusCode: 400);
+	}//end badRequest()
+
+	/**
+	 * Log which rate limits an administrator cleared.
+	 *
+	 * @param string               $message The log message, without the class prefix.
+	 * @param array<string, mixed> $cleared What was cleared.
+	 *
+	 * @return void
+	 */
+	private function logCleared(string $message, array $cleared): void {
+		$this->logger->info(
+			message: '[SecuritySettingsController] '.$message,
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $cleared)
+		);
+	}//end logCleared()
+
+	/**
+	 * Log a failed clear and answer it with a 500 response.
+	 *
+	 * @param string    $message The log message, without the class prefix.
+	 * @param Exception $error   The failure.
+	 *
+	 * @return JSONResponse The response
+	 */
+	private function failure(string $message, Exception $error): JSONResponse {
+		$this->logger->error(
+			message: '[SecuritySettingsController] '.$message,
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error->getMessage()]
+		);
+
+		return new JSONResponse(data: ['error' => $error->getMessage()], statusCode: 500);
+	}//end failure()
 }//end class

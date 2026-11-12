@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleGuard;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
@@ -31,17 +30,13 @@ use Psr\Log\NullLogger;
 class FlowLifecycleGuardTest extends TestCase {
 
 	/**
-	 * A guard whose run mapper reports $pinned active runs.
+	 * A guard whose preflight reports the given dead ends.
 	 *
-	 * @param integer $pinned   How many runs are pinned to the version asked about.
-	 * @param array   $deadEnds Step ids the preflight reports as dead ends.
+	 * @param array $deadEnds Step ids the preflight reports as dead ends.
 	 *
 	 * @return FlowLifecycleGuard The guard.
 	 */
-	private function guard(int $pinned = 0, array $deadEnds = []): FlowLifecycleGuard {
-		$runs = $this->createMock(FlowRunMapper::class);
-		$runs->method('countActivePinnedTo')->willReturn($pinned);
-
+	private function guard(array $deadEnds = []): FlowLifecycleGuard {
 		// The preflight is a double, deliberately. Whether a given graph HAS a
 		// dead end is FlowNodePreflight's question and has its own tests; what
 		// this suite asserts is that the guard turns that verdict into a
@@ -57,7 +52,7 @@ class FlowLifecycleGuardTest extends TestCase {
 			),
 		]);
 
-		return new FlowLifecycleGuard($runs, $preflight, new NullLogger());
+		return new FlowLifecycleGuard($preflight, new NullLogger());
 	}//end guard()
 
 	/**
@@ -112,9 +107,14 @@ class FlowLifecycleGuardTest extends TestCase {
 	 * @return void
 	 */
 	public function testEditingADraftIsAllowed(): void {
-		$this->guard()->refuseEditUnlessDraft('f', FlowVersion::STATUS_DRAFT);
+		$refusedFor = null;
+		try {
+			$this->guard()->refuseEditUnlessDraft('f', FlowVersion::STATUS_DRAFT);
+		} catch (FlowLifecycleRefused $refusal) {
+			$refusedFor = $refusal->getReason();
+		}
 
-		$this->expectNotToPerformAssertions();
+		$this->assertNull($refusedFor, 'A draft must stay editable; the guard refused it.');
 	}//end testEditingADraftIsAllowed()
 
 	/**
@@ -125,9 +125,14 @@ class FlowLifecycleGuardTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFlowWithNoLifecycleYetIsNotRefused(): void {
-		$this->guard()->refuseEditUnlessDraft('f', null);
+		$refusedFor = null;
+		try {
+			$this->guard()->refuseEditUnlessDraft('f', null);
+		} catch (FlowLifecycleRefused $refusal) {
+			$refusedFor = $refusal->getReason();
+		}
 
-		$this->expectNotToPerformAssertions();
+		$this->assertNull($refusedFor, 'A flow with no lifecycle yet must not be refused; the guard refused it.');
 	}//end testAFlowWithNoLifecycleYetIsNotRefused()
 
 	/**
@@ -176,31 +181,6 @@ class FlowLifecycleGuardTest extends TestCase {
 			fn () => $this->guard(deadEnds: ['orphan'])->refusePublishOnDeadEnd('f', $graph)
 		);
 	}//end testPublishingAGraphWithADeadEndIsRefused()
-
-	/**
-	 * 🔴 A VERSION A RUN STILL NEEDS MAY NOT BE REMOVED. Removing it would
-	 * strand that run: it cannot be advanced, and it must not be moved onto a
-	 * different graph.
-	 *
-	 * @return void
-	 */
-	public function testRemovingAVersionAnActiveRunIsPinnedToIsRefused(): void {
-		$this->assertRefusedWith(
-			FlowLifecycleRefused::REASON_VERSION_IN_USE,
-			fn () => $this->guard(pinned: 3)->refuseRemoveWhilePinned('f', 2)
-		);
-	}//end testRemovingAVersionAnActiveRunIsPinnedToIsRefused()
-
-	/**
-	 * A version nothing is pinned to may be removed.
-	 *
-	 * @return void
-	 */
-	public function testRemovingAnUnusedVersionIsAllowed(): void {
-		$this->guard(pinned: 0)->refuseRemoveWhilePinned('f', 2);
-
-		$this->expectNotToPerformAssertions();
-	}//end testRemovingAnUnusedVersionIsAllowed()
 
 	/**
 	 * The refusal names the flow, so a log line is actionable without a

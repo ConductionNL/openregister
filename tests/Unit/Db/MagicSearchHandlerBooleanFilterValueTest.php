@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/boolean-filter-values/specs/zoeken-filteren/spec.md#requirement-a-boolean-filter-value-filters-like-its-string-form
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-boolean-filter-value-filters-like-its-string-form
  */
 
 declare(strict_types=1);
@@ -41,6 +41,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\TermsFacetTable;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -54,6 +56,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * A boolean filter value reaches every object-filter builder as its string form.
@@ -130,7 +135,7 @@ class MagicSearchHandlerBooleanFilterValueTest extends TestCase {
 	public function testQueryBuilderPath(array $filters, string $expected): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $filters, $this->makeSchema());
+		$method->invoke($this->handler, new TableFilterRun(qb: $this->makeQueryBuilder(), query: [], table: new MagicReadTable(schema: $this->makeSchema())), $filters);
 
 		$this->assertSame([$expected], $this->captured);
 	}//end testQueryBuilderPath()
@@ -148,7 +153,7 @@ class MagicSearchHandlerBooleanFilterValueTest extends TestCase {
 	public function testRawSqlPath(array $filters, string $_qb, string $expected): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$method->setAccessible(true);
-		$conditions = $method->invoke($this->handler, $filters, $this->makeSchema(), $this->makeConnection(), true);
+		$conditions = $method->invoke($this->handler, new ConditionSqlRun(query: $filters, table: new MagicReadTable(schema: $this->makeSchema()), connection: $this->makeConnection(), isPostgres: true));
 
 		$this->assertSame([$expected], $conditions);
 	}//end testRawSqlPath()
@@ -178,7 +183,8 @@ class MagicSearchHandlerBooleanFilterValueTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicFacetHandler::class, 'applyObjectFieldFilters');
 		$method->setAccessible(true);
-		$method->invoke($facets, $this->makeQueryBuilder(), $filters, 'openregister_table_1_1', $this->makeSchema());
+		$facet = (new TermsFacetTable('openregister_table_1_1', $filters, new Register(), $this->makeSchema()))->forPropertyField('label');
+		$method->invoke($facets, $this->makeQueryBuilder(), $facet);
 
 		$this->assertSame([str_replace('t.', '', $expected)], $this->captured);
 	}//end testFacetPath()

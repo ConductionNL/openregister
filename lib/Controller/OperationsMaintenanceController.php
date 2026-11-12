@@ -15,20 +15,22 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
-use OCA\OpenRegister\Service\Operations\SupportBundleService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
+use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
+use OCA\OpenRegister\Controller\Support\OperationsActingRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
+use OCA\OpenRegister\Controller\Support\OperationsMaintenanceControllerServices;
 
 /**
  * Closing the instance, and saying what it is made of.
@@ -39,27 +41,45 @@ use OCP\IUserSession;
  * the middleware refuses a non-administrator before this controller is even
  * built, and CSRF stays required on them.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
  */
 class OperationsMaintenanceController extends Controller {
 
 	/**
+	 * The acting administrator and the parameter readers.
+	 *
+	 * @var OperationsActingRequest
+	 */
+	private readonly OperationsActingRequest $acting;
+
+	/**
+	 * Maintenance mode.
+	 *
+	 * @var MaintenanceModeServiceInterface
+	 */
+	private readonly MaintenanceModeServiceInterface $maintenance;
+
+	/**
+	 * The support bundle and the instance facts.
+	 *
+	 * @var SupportBundleServiceInterface
+	 */
+	private readonly SupportBundleServiceInterface $bundle;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                 $appName     Application name.
 	 * @param IRequest               $request     HTTP request.
-	 * @param MaintenanceModeService $maintenance Maintenance mode.
-	 * @param SupportBundleService   $bundle      The support bundle and the instance facts.
-	 * @param IUserSession           $userSession Names the administrator acting.
+	 * @param OperationsMaintenanceControllerServices $services The services, bundled.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly MaintenanceModeService $maintenance,
-		private readonly SupportBundleService $bundle,
-		private readonly IUserSession $userSession,
+		OperationsMaintenanceControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->maintenance = $services->maintenance;
+		$this->bundle = $services->bundle;
+		$this->acting = new OperationsActingRequest(request: $request, userSession: $services->userSession);
 	}//end __construct()
 
 	/**
@@ -71,7 +91,7 @@ class OperationsMaintenanceController extends Controller {
 	 *       so the middleware refuses a non-administrator before this
 	 *       controller is built, and CSRF stays required on the write.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 */
 	public function maintenance(): JSONResponse {
 		$method = $this->request->getMethod();
@@ -81,13 +101,13 @@ class OperationsMaintenanceController extends Controller {
 		}
 
 		if ($method === 'DELETE') {
-			return new JSONResponse(data: $this->maintenance->leave(actor: $this->actor()));
+			return new JSONResponse(data: $this->maintenance->leave(actor: $this->acting->actor()));
 		}
 
 		return new JSONResponse(
 			data: $this->maintenance->enter(
-				actor: $this->actor(),
-				message: $this->stringParam(name: 'message')
+				actor: $this->acting->actor(),
+				message: $this->acting->stringParam(name: 'message')
 			)
 		);
 	}//end maintenance()
@@ -97,7 +117,7 @@ class OperationsMaintenanceController extends Controller {
 	 *
 	 * @return JSONResponse The bundle.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 */
 	#[NoCSRFRequired]
 	public function supportBundle(): JSONResponse {
@@ -109,40 +129,12 @@ class OperationsMaintenanceController extends Controller {
 	 *
 	 * @return JSONResponse The facts.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 */
 	#[NoCSRFRequired]
 	public function facts(): JSONResponse {
 		return new JSONResponse(data: $this->bundle->facts());
 	}//end facts()
 
-	/**
-	 * The uid acting.
-	 *
-	 * Every write here is an administrator's act and is recorded as theirs, so
-	 * an unresolvable session is an empty string the services refuse rather
-	 * than a system identity the record would blame.
-	 *
-	 * @return string The uid, or the empty string.
-	 */
-	private function actor(): string {
-		return (string)($this->userSession->getUser()?->getUID() ?? '');
-	}//end actor()
 
-	/**
-	 * Read a non-empty string request parameter.
-	 *
-	 * @param string $name The parameter name.
-	 *
-	 * @return string|null The value, or null when absent or empty.
-	 */
-	private function stringParam(string $name): ?string {
-		$value = $this->request->getParam($name);
-
-		if (is_string($value) === false || $value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringParam()
 }//end class

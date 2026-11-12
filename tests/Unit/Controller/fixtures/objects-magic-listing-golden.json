@@ -1,0 +1,378 @@
+{
+    "facets empty": {
+        "answer": {
+            "@self": [],
+            "results": []
+        },
+        "calls": [
+            {
+                "facets": {
+                    "_facets": [
+                        "a"
+                    ]
+                }
+            }
+        ]
+    },
+    "facets facets": {
+        "answer": {
+            "@self": [],
+            "results": [],
+            "facets": {
+                "f": 1
+            }
+        },
+        "calls": [
+            {
+                "facets": {
+                    "_facets": [
+                        "a"
+                    ]
+                }
+            }
+        ]
+    },
+    "facets fails": {
+        "answer": {
+            "@self": {
+                "facet_error": "no facets"
+            },
+            "results": []
+        },
+        "calls": [
+            {
+                "facets": {
+                    "_facets": [
+                        "a"
+                    ]
+                }
+            }
+        ]
+    },
+    "facets none asked": {
+        "@self": [],
+        "results": []
+    },
+    "hint all controls": {
+        "@self": {
+            "kept": 1,
+            "ignoredFilters": [
+                "limit",
+                "offset",
+                "page",
+                "order",
+                "sort",
+                "search",
+                "extend",
+                "fields",
+                "unset"
+            ],
+            "hint": "Query returned 0 results because limit, offset, page, order, sort, search, extend, fields, unset was treated as an object property filter. Did you mean _limit, _offset, _page, _order, _sort, _search, _extend, _fields, _unset? Control parameters require an underscore prefix (e.g. _limit, _offset, _page)."
+        }
+    },
+    "hint mixed": {
+        "@self": {
+            "kept": 1,
+            "ignoredFilters": [
+                "colour",
+                "page",
+                "size",
+                "sort"
+            ],
+            "hint": "Query returned 0 results because page, sort was treated as an object property filter. Did you mean _page, _sort? Control parameters require an underscore prefix (e.g. _limit, _offset, _page)."
+        }
+    },
+    "hint none": {
+        "@self": {
+            "kept": 1
+        }
+    },
+    "hint one control": {
+        "@self": {
+            "kept": 1,
+            "ignoredFilters": [
+                "limit"
+            ],
+            "hint": "Query returned 0 results because limit was treated as an object property filter. Did you mean _limit? Control parameters require an underscore prefix (e.g. _limit, _offset, _page)."
+        }
+    },
+    "hint property only": {
+        "@self": {
+            "kept": 1,
+            "ignoredFilters": [
+                "colour"
+            ]
+        }
+    },
+    "hint underscored stays out": {
+        "@self": {
+            "kept": 1,
+            "ignoredFilters": [
+                "_limit"
+            ]
+        }
+    },
+    "paging defaults": {
+        "answer": {
+            "total": 45,
+            "pages": 3,
+            "page": 1,
+            "limit": 20
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "paging exact pages": {
+        "answer": {
+            "total": 45,
+            "pages": 9,
+            "page": 1,
+            "limit": 5
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "paging limit": {
+        "answer": {
+            "total": 45,
+            "pages": 5,
+            "page": 1,
+            "limit": 10
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "paging negative limit": {
+        "answer": {
+            "total": 45,
+            "pages": 1,
+            "page": 1,
+            "limit": -1
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "paging no total": {
+        "total": null,
+        "pages": 1,
+        "page": 3,
+        "limit": 10
+    },
+    "paging no total flag": {
+        "total": null,
+        "pages": 1,
+        "page": 1,
+        "limit": 10
+    },
+    "paging no total page": {
+        "total": null,
+        "pages": 1,
+        "page": 4,
+        "limit": 10
+    },
+    "paging no total zero limit": {
+        "total": null,
+        "pages": 1,
+        "page": 1,
+        "limit": 0
+    },
+    "paging nothing found": {
+        "answer": {
+            "total": 0,
+            "pages": 0,
+            "page": 1,
+            "limit": 10
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "paging offset": {
+        "answer": {
+            "total": 45,
+            "pages": 5,
+            "page": 3,
+            "limit": 10
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "paging page": {
+        "answer": {
+            "total": 45,
+            "pages": 5,
+            "page": 3,
+            "limit": 10
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "paging page and offset": {
+        "answer": {
+            "total": 45,
+            "pages": 5,
+            "page": 3,
+            "limit": 10
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "paging zero limit": {
+        "answer": {
+            "total": 45,
+            "pages": 1,
+            "page": 1,
+            "limit": 0
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "paging zero limit offset": {
+        "answer": {
+            "total": 45,
+            "pages": 1,
+            "page": 1,
+            "limit": 0
+        },
+        "calls": [
+            {
+                "count": []
+            }
+        ]
+    },
+    "response lens": {
+        "results": [
+            "r"
+        ],
+        "total": 2,
+        "pages": 3,
+        "page": 4,
+        "limit": 5,
+        "@self": {
+            "source": "magic_mapper",
+            "register": "r",
+            "schema": "s",
+            "query": {
+                "q": 1,
+                "_recentLens": {
+                    "answered": false
+                }
+            },
+            "rbac": true,
+            "multi": false,
+            "deleted": null,
+            "activeOrganisation": null,
+            "lenses": {
+                "recent": {
+                    "answered": false
+                }
+            }
+        }
+    },
+    "response lens not an array": {
+        "results": [
+            "r"
+        ],
+        "total": 2,
+        "pages": 3,
+        "page": 4,
+        "limit": 5,
+        "@self": {
+            "source": "magic_mapper",
+            "register": "r",
+            "schema": "s",
+            "query": {
+                "q": 1,
+                "_recentLens": "text"
+            },
+            "rbac": true,
+            "multi": false,
+            "deleted": null,
+            "activeOrganisation": null
+        }
+    },
+    "response plain": {
+        "results": [
+            "r"
+        ],
+        "total": 2,
+        "pages": 3,
+        "page": 4,
+        "limit": 5,
+        "@self": {
+            "source": "magic_mapper",
+            "register": "r",
+            "schema": "s",
+            "query": {
+                "q": 1
+            },
+            "rbac": true,
+            "multi": false,
+            "deleted": null,
+            "activeOrganisation": null
+        }
+    },
+    "search balanced": null,
+    "search blank": null,
+    "search dangling operator": {
+        "status": 400,
+        "data": {
+            "error": "AND needs a term after it at position 3.",
+            "position": 3,
+            "term": "a AND"
+        }
+    },
+    "search none": null,
+    "search not a string": null,
+    "search open bracket": {
+        "status": 400,
+        "data": {
+            "error": "Unbalanced opening bracket at position 1.",
+            "position": 1,
+            "term": "(a AND b"
+        }
+    },
+    "search open quote": {
+        "status": 400,
+        "data": {
+            "error": "Unterminated quoted phrase opened at position 1.",
+            "position": 1,
+            "term": "\"a AND b"
+        }
+    },
+    "search padded open bracket": {
+        "status": 400,
+        "data": {
+            "error": "Unbalanced opening bracket at position 1.",
+            "position": 1,
+            "term": "(a"
+        }
+    },
+    "search plain": null
+}

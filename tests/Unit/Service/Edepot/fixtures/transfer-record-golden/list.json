@@ -1,0 +1,47 @@
+[
+    [
+        "findAll",
+        [
+            {
+                "filters": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransfer"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "result",
+        [
+            {
+                "uuid": "a"
+            },
+            {
+                "uuid": "b"
+            }
+        ]
+    ],
+    [
+        "findAll",
+        [
+            {
+                "filters": {
+                    "register": "edepot-transfers",
+                    "schema": "edepotTransfer"
+                }
+            },
+            true,
+            true
+        ]
+    ],
+    [
+        "warning",
+        "[TransferRecordService] transfer-list enumeration failed: index down"
+    ],
+    [
+        "result",
+        []
+    ]
+]

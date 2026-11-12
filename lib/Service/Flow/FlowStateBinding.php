@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\FlowStateMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -46,13 +46,13 @@ class FlowStateBinding {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowStateMapper $stateMapper Persists state that outlives a run.
+	 * @param FlowStateMapperInterface $stateMapper Persists state that outlives a run.
 	 * @param LoggerInterface $logger Records a state write that could not be saved.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
 	 */
 	public function __construct(
-		private readonly FlowStateMapper $stateMapper,
+		private readonly FlowStateMapperInterface $stateMapper,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -106,25 +106,49 @@ class FlowStateBinding {
 			return;
 		}
 
+		$this->store(run: $run, handle: $handle);
+
+	}//end persist()
+
+	/**
+	 * Write the handle's state for the run's flow; a failed write is logged, never thrown.
+	 *
+	 * @param FlowRun         $run    The run, its flow id known to be set.
+	 * @param FlowStateHandle $handle The dirty state handle.
+	 *
+	 * @return void
+	 */
+	private function store(FlowRun $run, FlowStateHandle $handle): void {
 		try {
-			$this->stateMapper->put(flowId: $flowId, state: $handle->all());
+			$this->stateMapper->put(flowId: trim((string)$run->getFlowId()), state: $handle->all());
 		} catch (Throwable $e) {
 			// Deliberately non-fatal, and deliberately LOUD. A run that did its
 			// work should not be recorded as failed because its bookkeeping
 			// could not be saved — but a silently dropped state write would let
 			// a flow repeat work forever while looking healthy, so this must be
 			// visible rather than swallowed.
-			$this->logger->error(
-				message: '[FlowStateBinding] Could not persist flow state',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'flow' => $flowId,
-					'run' => $run->getUuid(),
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
+			$this->logPersistFailure(run: $run, error: $e);
+		}
+	}//end store()
 
-	}//end persist()
+	/**
+	 * Say loudly that a run's flow state could not be written.
+	 *
+	 * @param FlowRun   $run   The run.
+	 * @param Throwable $error What went wrong.
+	 *
+	 * @return void
+	 */
+	private function logPersistFailure(FlowRun $run, Throwable $error): void {
+		$this->logger->error(
+			message: '[FlowStateBinding] Could not persist flow state',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'flow' => trim((string)$run->getFlowId()),
+				'run' => $run->getUuid(),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logPersistFailure()
 }//end class

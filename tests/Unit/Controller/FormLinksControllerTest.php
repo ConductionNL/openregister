@@ -33,9 +33,11 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\FormLinksController;
+use OCA\OpenRegister\Db\FormSubmissionRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FormLinkService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FormLinksControllerFactory;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -90,7 +92,7 @@ class FormLinksControllerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$this->controller = new FormLinksController(
+		$this->controller = FormLinksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
@@ -144,7 +146,7 @@ class FormLinksControllerTest extends TestCase {
 
 		$this->service->expects($this->once())
 			->method('unlinkSubmission')
-			->with('uuid-1', 42, 7)
+			->with('uuid-1', $this->equalTo(new FormSubmissionRef(42, 7)))
 			->willReturn(true);
 
 		$response = $this->controller->destroySubmission('zaken', 'zaak', 'uuid-1', '42', '7');

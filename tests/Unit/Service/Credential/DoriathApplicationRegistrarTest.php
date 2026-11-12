@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Credential;
 
+use OCA\OpenRegister\Service\Configuration\AppSettingsAccess;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
 use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
 use OCA\OpenRegister\Tests\Fixtures\Doriath\FakeApplicationService;
@@ -173,7 +174,7 @@ class DoriathApplicationRegistrarTest extends TestCase {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isEnabledForUser')->with('doriath')->willReturn(true);
 
-		$registrar = new class($appConfig, $appManager, $this->createMock(LoggerInterface::class)) extends DoriathApplicationRegistrar {
+		$registrar = new class(new AppSettingsAccess($appConfig, $appManager, $this->createMock(LoggerInterface::class))) extends DoriathApplicationRegistrar {
 			protected function resolveApplicationService(): ?object {
 				return null;
 			}
@@ -225,7 +226,7 @@ class DoriathApplicationRegistrarTest extends TestCase {
 				LoggerInterface $logger,
 				private readonly object $fixtureApplicationService,
 			) {
-				parent::__construct($appConfig, $appManager, $logger);
+				parent::__construct(new AppSettingsAccess($appConfig, $appManager, $logger));
 			}
 
 			protected function resolveApplicationService(): ?object {

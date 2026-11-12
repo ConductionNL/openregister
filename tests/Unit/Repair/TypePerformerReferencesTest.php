@@ -30,9 +30,13 @@ namespace Unit\Repair;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\TypePerformerReferences;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
+use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -85,6 +89,9 @@ class NamedResolver implements IPrincipalResolver {
  * Tests for {@see TypePerformerReferences}.
  *
  * @covers \OCA\OpenRegister\Repair\TypePerformerReferences
+ * @covers \OCA\OpenRegister\Repair\PerformerTyping
+ * @covers \OCA\OpenRegister\Repair\PerformerField
+ * @covers \OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
  * @uses \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
@@ -139,15 +146,8 @@ final class TypePerformerReferencesTest extends TestCase {
 	private function runStep(array $resolvers): void {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			function (
-				?string $app = null,
-				?string $applicationSlug = null,
-				?string $organisation = null,
-				?bool $enabled = null,
-				int $limit = 100,
-				int $offset = 0,
-			): array {
-				return array_slice($this->flows, $offset, $limit);
+			function (FlowSelection $selection, ListQuery $query): array {
+				return array_slice($this->flows, (int)$query->offset, $query->limit);
 			}
 		);
 		$mapper->method('update')->willReturnCallback(
@@ -173,7 +173,7 @@ final class TypePerformerReferencesTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($mapper, $registry) {
-				return ($id === PrincipalResolverRegistry::class) ? $registry : $mapper;
+				return ($id === PrincipalKindsInterface::class) ? new PrincipalKinds($registry) : $mapper;
 			}
 		);
 
@@ -197,6 +197,20 @@ final class TypePerformerReferencesTest extends TestCase {
 
 		return $this->stored[0]->getNodes()[0]['config'];
 	}//end storedConfig()
+
+	/**
+	 * In a list, an empty entry is dropped and the rest typed; a scalar field stays a scalar.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyListEntryIsDroppedAndAScalarStaysAScalar(): void {
+		$this->flows = [$this->flowWith(['candidateGroups' => ['', 'bezwaar'], 'routingFallback' => 'alice'])];
+
+		$this->runStep([new NamedResolver('user', ['alice']), new NamedResolver('group', ['bezwaar'])]);
+
+		$this->assertSame([['type' => 'group', 'id' => 'bezwaar']], $this->storedConfig()['candidateGroups']);
+		$this->assertSame(['type' => 'user', 'id' => 'alice'], $this->storedConfig()['routingFallback']);
+	}//end testAnEmptyListEntryIsDroppedAndAScalarStaysAScalar()
 
 	/**
 	 * A string only one kind answers to is rewritten to that kind.

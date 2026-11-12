@@ -13,7 +13,7 @@
  * So the rule under test is: anything this comparison does not positively
  * recognise as a match is a refusal.
  *
- * `SaveObject::filterFieldMatches()` is private and lives in a 5000-line class
+ * `ReferenceFilterGuard::fieldMatches()` is private and lives in a class with a database
  * that cannot be constructed in a unit test. Its logic is small, total and
  * exactly the thing worth pinning, so it is mirrored here through the same
  * declaration the production path uses, and a source assertion holds the two
@@ -49,7 +49,7 @@ class ReferenceFilterMatchTest extends TestCase {
 	/**
 	 * The production file, read to keep this mirror honest.
 	 */
-	private const SAVE_OBJECT = __DIR__ . '/../../../../lib/Service/Object/SaveObject.php';
+	private const FILTER_GUARD = __DIR__ . '/../../../../lib/Service/Object/SaveObject/ReferenceFilterGuard.php';
 
 	/**
 	 * The same comparison the save path performs, over one condition.
@@ -133,7 +133,7 @@ class ReferenceFilterMatchTest extends TestCase {
 	 *
 	 * The thread between this mirror and the real thing. `OPERATORS` is the
 	 * list the schema save accepts; an operator on it with no arm in
-	 * `filterFieldMatches()` falls through to the refusal, which is safe but
+	 * `ReferenceFilterGuard::fieldMatches()` falls through to the refusal, which is safe but
 	 * means a filter an author was allowed to write can never match anything.
 	 * Either way the two have to be kept in step, and this is what says so.
 	 *
@@ -152,7 +152,7 @@ class ReferenceFilterMatchTest extends TestCase {
 				sprintf("array_key_exists('%s'", $operator),
 				$body,
 				sprintf(
-					'operator %s is accepted at schema save and has no arm in filterFieldMatches(), '
+					'operator %s is accepted at schema save and has no arm in fieldMatches(), '
 					. 'so a filter using it matches nothing',
 					$operator
 				)
@@ -161,7 +161,7 @@ class ReferenceFilterMatchTest extends TestCase {
 	}//end testEveryDeclaredOperatorHasAnArm()
 
 	/**
-	 * The body of `SaveObject::filterFieldMatches()`, and nothing else.
+	 * The body of `ReferenceFilterGuard::fieldMatches()`, and nothing else.
 	 *
 	 * 🔴 IT IS THE METHOD BODY, NOT THE FILE, AND THAT IS THE WHOLE TEST.
 	 * Written first as a search for `'in'` across SaveObject.php, it survived a
@@ -174,15 +174,15 @@ class ReferenceFilterMatchTest extends TestCase {
 	 * @return string The method body.
 	 */
 	private function filterFieldMatchesBody(): string {
-		$source = (string)file_get_contents(self::SAVE_OBJECT);
+		$source = (string)file_get_contents(self::FILTER_GUARD);
 
-		$start = strpos($source, 'private function filterFieldMatches(');
+		$start = strpos($source, 'private static function fieldMatches(');
 		$this->assertNotFalse(
 			$start,
 			'the save path must still perform this comparison, or this file is mirroring nothing'
 		);
 
-		$end = strpos($source, '}//end filterFieldMatches()', (int)$start);
+		$end = strpos($source, '}//end fieldMatches()', (int)$start);
 		$this->assertNotFalse($end, 'the method must end the way this codebase ends methods');
 
 		return substr($source, (int)$start, ((int)$end - (int)$start));

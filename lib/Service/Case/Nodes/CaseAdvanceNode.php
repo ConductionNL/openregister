@@ -30,7 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Case\Nodes;
 
 use OCA\OpenRegister\Db\CaseItem;
-use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Case\CaseItemTransition;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -39,7 +40,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
  */
-class CaseAdvanceNode extends CaseNodeBase {
+class CaseAdvanceNode extends CaseNodeBase implements CaseAdvanceNodeInterface {
 
 	/**
 	 * The step type this node answers to.
@@ -102,34 +103,88 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function configForm(): array {
-		return [
-			[
-				'key' => 'item',
-				'label' => $this->l10n->t('Plan item'),
-				'type' => 'text',
-				'required' => true,
-				'help' => $this->l10n->t('The key of the stage, task or milestone to move.'),
-			],
-			[
-				'key' => 'to',
-				'label' => $this->l10n->t('New state'),
-				'type' => 'select',
-				'required' => true,
-				'options' => CaseItem::STATES,
-			],
-			[
-				'key' => 'reason',
-				'label' => $this->l10n->t('Reason'),
-				'type' => 'text',
-			],
-			[
-				'key' => 'uuid',
-				'label' => $this->l10n->t('Object'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Which object the case is. Leave empty to use the object the step receives.'),
-			],
-		];
+		return [$this->itemField(), $this->stateField(), $this->reasonField(), $this->objectField()];
 	}//end configForm()
+
+	/**
+	 * The editor field naming the plan item to move.
+	 *
+	 * @return array<string, mixed> The field.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private function itemField(): array {
+		return [
+			'key' => 'item',
+			'label' => $this->l10n->t('Plan item'),
+			'type' => 'text',
+			'required' => true,
+			'help' => $this->l10n->t('The key of the stage, task or milestone to move.'),
+		];
+	}//end itemField()
+
+	/**
+	 * The editor field choosing the new state.
+	 *
+	 * @return array<string, mixed> The field.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private function stateField(): array {
+		return [
+			'key' => 'to',
+			'label' => $this->l10n->t('New state'),
+			'type' => 'select',
+			'required' => true,
+			'options' => CaseItem::STATES,
+		];
+	}//end stateField()
+
+	/**
+	 * The editor field for the free-text reason.
+	 *
+	 * @return array<string, mixed> The field.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private function reasonField(): array {
+		return [
+			'key' => 'reason',
+			'label' => $this->l10n->t('Reason'),
+			'type' => 'text',
+		];
+	}//end reasonField()
+
+	/**
+	 * The move a validated configuration asks for.
+	 *
+	 * @param array $config The validated step configuration.
+	 *
+	 * @return array{key: string, to: string, reason: string|null} The plan-item key, the target state and the reason.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private static function moveOf(array $config): array {
+		return ['key' => trim((string)$config['item']), 'to' => (string)$config['to'], 'reason' => self::reasonOf(config: $config)];
+	}//end moveOf()
+
+	/**
+	 * The configured reason, trimmed, or null when there is none.
+	 *
+	 * @param array $config The step configuration.
+	 *
+	 * @return string|null The reason.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private static function reasonOf(array $config): ?string {
+		$reason = ($config['reason'] ?? null);
+		if (is_string($reason) === false || trim($reason) === '') {
+			return null;
+		}
+
+		return trim($reason);
+	}//end reasonOf()
 
 	/**
 	 * An advance step names an item and one of the six states.
@@ -157,54 +212,26 @@ class CaseAdvanceNode extends CaseNodeBase {
 	/**
 	 * Move the item on each distinct object.
 	 *
-	 * @param array $items The incoming items.
-	 * @param array $config The step configuration.
-	 * @param array $context The run context.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The items, each carrying `case` = {item, state}.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		if ($items === []) {
-			return $items;
-		}
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+		$work = fn (CaseStepCall $call): array => $this->advance(call: $call, move: self::moveOf(config: $config));
 
-		$this->validateConfig(config: $config);
-		$uid = $this->actingUid(context: $context);
-		$key = trim((string)$config['item']);
-		$reason = null;
-		if (is_string(($config['reason'] ?? null)) === true && trim($config['reason']) !== '') {
-			$reason = trim($config['reason']);
-		}
-
-		$results = [];
-		foreach (array_keys($this->targets(items: $items, config: $config)) as $uuid) {
-			$results[$uuid] = $this->scope->call(
-				context: $context,
-				operation: fn (): array => $this->advance(objectUuid: (string)$uuid, key: $key, to: (string)$config['to'], uid: $uid, reason: $reason)
-			);
-		}
-
-		$out = [];
-		foreach ($items as $index => $item) {
-			$json = ($item[FlowItems::JSON] ?? []);
-			$json['case'] = $results[(string)array_key_first($this->targets(items: [$item], config: $config))];
-			$item[FlowItems::JSON] = $json;
-			$out[$index] = $item;
-		}
-
-		return $out;
+		return $this->perTarget(run: new CaseStepRun(items: $items, config: $config, context: $context), work: $work);
 	}//end execute()
 
 	/**
 	 * Find the item by key and transition it.
 	 *
-	 * @param string $objectUuid The object.
-	 * @param string $key The plan-item key.
-	 * @param string $to The target state.
-	 * @param string $uid The acting identity.
-	 * @param string|null $reason Free text.
+	 * @param CaseStepCall $call The object and the acting identity.
+	 * @param array{key: string, to: string, reason: string|null} $move The plan-item key, the target state and the free-text reason.
 	 *
 	 * @return array{item: string, state: string} The item and its state afterwards.
 	 *
@@ -212,20 +239,64 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
-	private function advance(string $objectUuid, string $key, string $to, string $uid, ?string $reason): array {
-		$plan = $this->plans->getPlan(objectUuid: $objectUuid, uid: $uid);
-		foreach (($plan['items'] ?? []) as $row) {
-			if (($row['key'] ?? null) !== $key) {
-				continue;
-			}
+	private function advance(CaseStepCall $call, array $move): array {
+		$objectUuid = $call->target->objectUuid;
+		$uid = $call->uid;
+		$plan = $this->steps->plans->getPlan(objectUuid: $objectUuid, uid: $uid);
+		$row = $this->liveRealisation(items: (array)($plan['items'] ?? []), key: $move['key']);
+		if ($row !== null) {
+			$transition = new CaseItemTransition(itemUuid: (string)$row['uuid'], to: $move['to'], actor: $uid, reason: $move['reason']);
+			$moved = $this->steps->plans->transition(transition: $transition);
 
-			$moved = $this->plans->transition(itemUuid: (string)$row['uuid'], to: $to, uid: $uid, reason: $reason);
-
-			return ['item' => $key, 'state' => (string)$moved->getState()];
+			return ['item' => $move['key'], 'state' => (string)$moved->getState()];
 		}
 
 		throw new RuntimeException(
-			$this->l10n->t('The case plan on object %1$s has no item "%2$s".', [$objectUuid, $key])
+			$this->l10n->t('The case plan on object %1$s has no item "%2$s".', [$objectUuid, $move['key']])
 		);
 	}//end advance()
+
+	/**
+	 * The row of a key that can still move: a repeating item has one row per
+	 * realisation (same key, `realisationCount` + 1), and the first row in plan
+	 * order is the oldest, which is already completed or terminated. A row
+	 * that is not terminal wins (the newest of them, should several be open);
+	 * when every realisation is terminal the newest is returned, so the step
+	 * fails on the realisation that is actually current.
+	 *
+	 * @param array<int, array<string, mixed>> $items The plan's rows.
+	 * @param string $key The plan-item key.
+	 *
+	 * @return array<string, mixed>|null The row, or null when the plan has no such key.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private function liveRealisation(array $items, string $key): ?array {
+		$chosen = null;
+		foreach (array_filter($items, static fn (array $row): bool => ($row['key'] ?? null) === $key) as $row) {
+			if ($chosen === null || $this->outranks(candidate: $row, current: $chosen) === true) {
+				$chosen = $row;
+			}
+		}
+
+		return $chosen;
+	}//end liveRealisation()
+
+	/**
+	 * Whether a row of the same key is a better one to advance than the one held.
+	 *
+	 * @param array<string, mixed> $candidate The row under consideration.
+	 * @param array<string, mixed> $current The row held so far.
+	 *
+	 * @return bool True when the candidate is open and the held row is not, or both are alike and the candidate is a later realisation.
+	 */
+	private function outranks(array $candidate, array $current): bool {
+		$candidateOpen = (($candidate['isTerminal'] ?? false) === false);
+		$currentOpen = (($current['isTerminal'] ?? false) === false);
+		if ($candidateOpen !== $currentOpen) {
+			return $candidateOpen;
+		}
+
+		return (int)($candidate['realisationCount'] ?? 1) > (int)($current['realisationCount'] ?? 1);
+	}//end outranks()
 }//end class

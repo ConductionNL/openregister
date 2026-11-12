@@ -1,0 +1,44 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ViewObject property changes (golden) compares with the edited value once there is one 1`] = `
+{
+  "formData": {
+    "free": "x",
+    "name": "Edited",
+  },
+  "shown": [
+    [
+      "free",
+      undefined,
+      "x",
+    ],
+  ],
+}
+`;
+
+exports[`ViewObject property changes (golden) shows one toast at a time and removes it after 3 seconds 1`] = `
+{
+  "left": 0,
+  "shown": {
+    "count": 1,
+    "style": "position: fixed; top: 20px; right: 20px; background: var(--color-success); color: white; padding: 12px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 10000; font-size: 14px; max-width: 300px;",
+    "text": "Property 'b' changed from 'x' to 'y'",
+  },
+}
+`;
+
+exports[`ViewObject property changes (golden) stores the converted value and notices the change once, after 500 ms 1`] = `
+{
+  "before": "{"formData":{"count":3,"name":"Old"},"pending":{"count":{"oldValue":2,"newValue":3}},"timers":["count"]}",
+  "early": 0,
+  "pending": {},
+  "shown": [
+    [
+      "count",
+      2,
+      3,
+    ],
+  ],
+  "timers": [],
+}
+`;

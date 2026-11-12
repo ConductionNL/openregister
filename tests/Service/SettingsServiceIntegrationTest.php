@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCA\OpenRegister\Service\SettingsService;
 use PHPUnit\Framework\TestCase;
 
@@ -594,11 +595,11 @@ class SettingsServiceIntegrationTest extends TestCase {
 	}
 
 	// =========================================================================
-	// massValidateObjects parameter validation tests
+	// massValidate parameter validation tests
 	// =========================================================================
 
 	/**
-	 * Test massValidateObjects rejects invalid mode
+	 * Test massValidate rejects invalid mode
 	 *
 	 * @return void
 	 */
@@ -606,11 +607,11 @@ class SettingsServiceIntegrationTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid mode parameter');
 
-		$this->service->massValidateObjects(0, 100, 'invalid_mode');
+		$this->service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 100, mode: 'invalid_mode', collectErrors: false));
 	}
 
 	/**
-	 * Test massValidateObjects rejects batch size below 1
+	 * Test massValidate rejects batch size below 1
 	 *
 	 * @return void
 	 */
@@ -618,11 +619,11 @@ class SettingsServiceIntegrationTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid batch size');
 
-		$this->service->massValidateObjects(0, 0, 'serial');
+		$this->service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 0, mode: 'serial', collectErrors: false));
 	}
 
 	/**
-	 * Test massValidateObjects rejects batch size above 5000
+	 * Test massValidate rejects batch size above 5000
 	 *
 	 * @return void
 	 */
@@ -630,6 +631,6 @@ class SettingsServiceIntegrationTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 		$this->expectExceptionMessage('Invalid batch size');
 
-		$this->service->massValidateObjects(0, 5001, 'serial');
+		$this->service->massValidate(request: new MassValidationRequest(maxObjects: 0, batchSize: 5001, mode: 'serial', collectErrors: false));
 	}
 }

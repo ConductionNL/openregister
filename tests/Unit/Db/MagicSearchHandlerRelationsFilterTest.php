@@ -33,6 +33,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 
 /**
  * Locks the Phase-0 fixes around the dotted relation-field filter and the
@@ -114,7 +116,7 @@ class MagicSearchHandlerRelationsFilterTest extends TestCase {
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$method->setAccessible(true);
-		return $method->invoke($this->handler, $query, $schema, $this->makeConnection(), true);
+		return $method->invoke($this->handler, new ConditionSqlRun(query: $query, table: new MagicReadTable(schema: $schema), connection: $this->makeConnection(), isPostgres: true));
 	}//end invokeObjectFilters()
 
 	// -------------------------------------------------------------------------

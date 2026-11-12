@@ -29,6 +29,7 @@ use OCA\OpenRegister\Controller\FlowLinksController;
 use OCA\OpenRegister\Db\FlowLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -53,10 +54,11 @@ class FlowLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new FlowLinksController(
-			'openregister',
 			$this->request,
-			$this->service,
-			$this->objectService,
+			new \OCA\OpenRegister\Controller\Support\FlowLinksControllerServices(
+				$this->service,
+				$this->objectService,
+			),
 		);
 	}
 
@@ -140,7 +142,7 @@ class FlowLinksControllerTest extends TestCase {
 		$link->setOperationId(99);
 
 		$this->service->method('linkOperation')
-			->with('abc-123', 1, 2, 99)
+			->with($this->callback(static fn (LinkTarget $target): bool => $target->objectUuid === 'abc-123' && $target->registerId === 1 && $target->schemaId() === 2), 99)
 			->willReturn($link);
 
 		$response = $this->controller->link('reg', 'sch', 'obj');

@@ -26,7 +26,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Exception;
 
 use Exception;
-use Throwable;
 
 /**
  * A uniqueness nomination the schema save refuses.
@@ -65,22 +64,20 @@ class UniqueHintException extends Exception {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $message The sentence naming what was refused.
+	 * The exception always carries HTTP 422.
+	 *
+	 * @param string                                                             $message The sentence naming what was refused.
 	 * @param array<int, array{code: string, property: string, message: string}> $errors The per-property errors.
-	 * @param int $code HTTP status carried on the exception (default: 422).
-	 * @param Throwable|null $previous Previous exception, when chained.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $message = 'x-openregister-unique-hint names a property this schema does not declare.',
-		array $errors = [],
-		int $code = 422,
-		?Throwable $previous = null,
+		string $message='x-openregister-unique-hint names a property this schema does not declare.',
+		array $errors=[],
 	) {
 		$this->errors = array_values($errors);
 
-		parent::__construct(message: $message, code: $code, previous: $previous);
+		parent::__construct(message: $message, code: 422);
 	}//end __construct()
 
 	/**

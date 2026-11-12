@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * The `Conversation` entity (lib/Db/Conversation.php) declares an `$owner`
+ * The `Conversation` entity (lib/Mcp/Db/Conversation.php) declares an `$owner`
  * property with `getOwner()`/`setOwner()`, and `ChatService` sets it when it
  * creates a conversation, but no migration ever added the column to the
  * `openregister_conversations` table. As a result every agent run that creates

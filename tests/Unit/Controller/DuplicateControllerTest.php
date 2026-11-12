@@ -27,11 +27,11 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\DuplicateController;
+use OCA\OpenRegister\Search\Controller\DuplicateController;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Quality\DismissedPairStore;
-use OCA\OpenRegister\Service\Quality\DuplicateDetectionService;
+use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -40,9 +40,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Quality\DedupRun;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Controller\DuplicateController
+ * @coversDefaultClass \OCA\OpenRegister\Search\Controller\DuplicateController
  */
 class DuplicateControllerTest extends TestCase {
 
@@ -67,13 +68,13 @@ class DuplicateControllerTest extends TestCase {
 		$this->duplicates = $this->createMock(DuplicateDetectionService::class);
 		$this->dismissals = $this->createMock(DismissedPairStore::class);
 		$this->controller = new DuplicateController(
-			'openregister',
 			$this->request,
-			$this->duplicates,
-			$this->dismissals,
-			$this->createMock(ObjectService::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class)
+			new \OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices(
+				$this->duplicates,
+				$this->dismissals,
+				$this->createMock(ObjectService::class),
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(\Psr\Log\LoggerInterface::class))
+			)
 		);
 	}//end setUp()
 
@@ -114,7 +115,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('findDuplicates')
-			->with('reg', 'sch', null, null)
+			->with(new DedupRun(register: 'reg', schema: 'sch', matchRules: null, threshold: null))
 			->willReturn($pairs);
 
 		$response = $this->controller->index('reg', 'sch');
@@ -136,7 +137,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('findDuplicates')
-			->with('reg', 'sch', null, 0.9)
+			->with(new DedupRun(register: 'reg', schema: 'sch', matchRules: null, threshold: 0.9))
 			->willReturn([]);
 
 		$response = $this->controller->index('reg', 'sch');
@@ -241,7 +242,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('checkCandidate')
-			->with('reg', 'sch', ['requester' => 'bsn:123', 'subject' => 'Kapvergunning'], null, null)
+			->with(new DedupRun(register: 'reg', schema: 'sch', threshold: null), ['requester' => 'bsn:123', 'subject' => 'Kapvergunning'])
 			->willReturn($matches);
 		$this->duplicates->method('effectiveThreshold')->willReturn(0.85);
 
@@ -269,7 +270,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('checkCandidate')
-			->with('reg', 'sch', ['requester' => 'bsn:123'], null, 0.9)
+			->with(new DedupRun(register: 'reg', schema: 'sch', threshold: 0.9), ['requester' => 'bsn:123'])
 			->willReturn([]);
 		$this->duplicates->method('effectiveThreshold')->willReturn(0.9);
 
@@ -295,7 +296,7 @@ class DuplicateControllerTest extends TestCase {
 
 		$this->duplicates->expects($this->once())
 			->method('checkCandidate')
-			->with('reg', 'sch', ['threshold' => '30 dagen', 'requester' => 'bsn:123'], null, null)
+			->with(new DedupRun(register: 'reg', schema: 'sch', threshold: null), ['threshold' => '30 dagen', 'requester' => 'bsn:123'])
 			->willReturn([]);
 		$this->duplicates->method('effectiveThreshold')->willReturn(0.85);
 
@@ -322,13 +323,13 @@ class DuplicateControllerTest extends TestCase {
 		$other = $this->createMock(DuplicateDetectionService::class);
 		$other->method('checkCandidate')->willThrowException(new RuntimeException('missing'));
 		$controller = new DuplicateController(
-			'openregister',
 			$this->request,
-			$other,
-			$this->dismissals,
-			$this->createMock(ObjectService::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class)
+			new \OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices(
+				$other,
+				$this->dismissals,
+				$this->createMock(ObjectService::class),
+				new \OCA\OpenRegister\Controller\Support\ControllerSession($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(\Psr\Log\LoggerInterface::class))
+			)
 		);
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->check('reg', 'sch')->getStatus());
@@ -365,7 +366,7 @@ class DuplicateControllerTest extends TestCase {
 		}
 
 		$source = (string)file_get_contents((string)$reflection->getFileName());
-		$this->assertStringNotContainsString('executeMerge', $source);
+		$this->assertStringNotContainsString('->merge(', $source);
 		$this->assertStringNotContainsString('previewMerge', $source);
 	}//end testControllerCanNeverMerge()
 }//end class

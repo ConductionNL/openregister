@@ -1,0 +1,1596 @@
+{
+    "filter bbox": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo.bbox": "b"
+                }
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        }
+    },
+    "filter flat wins over nested": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo": {
+                        "bbox": "nested"
+                    },
+                    "geo.bbox": "flat"
+                }
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        }
+    },
+    "filter near": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo.near": "n"
+                }
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        }
+    },
+    "filter nested": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo": {
+                        "bbox": "b",
+                        "x": 1
+                    },
+                    "geo.bbox": "b",
+                    "geo.x": 1
+                }
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        }
+    },
+    "filter nested not an array": {
+        "calls": [],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                }
+            ],
+            "total": 2
+        }
+    },
+    "filter no applier": {
+        "calls": [],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                }
+            ],
+            "total": 2
+        }
+    },
+    "filter no filters": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo.bbox": "b"
+                }
+            }
+        ],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                }
+            ],
+            "total": 2
+        }
+    },
+    "filter no geo params": {
+        "calls": [],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                }
+            ],
+            "total": 2
+        }
+    },
+    "filter no parser": {
+        "calls": [],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                }
+            ],
+            "total": 2
+        }
+    },
+    "filter no results": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo.bbox": "b"
+                }
+            }
+        ],
+        "answer": {
+            "total": 2
+        }
+    },
+    "filter no total": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo.bbox": "b"
+                }
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ]
+        }
+    },
+    "filter null bbox": {
+        "calls": [],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                }
+            ],
+            "total": 2
+        }
+    },
+    "filter other geo key": {
+        "calls": [],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                },
+                {
+                    "id": 2
+                }
+            ],
+            "total": 2
+        }
+    },
+    "filter parse error": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo.bbox": "b"
+                }
+            }
+        ],
+        "answer": {
+            "error": "geo filter parse error: bad geo",
+            "results": [],
+            "total": 0
+        }
+    },
+    "filter property": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo.property": "p"
+                }
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        }
+    },
+    "filter radius": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo.radius": 5
+                }
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "answer": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        }
+    },
+    "filter results not an array": {
+        "calls": [
+            {
+                "fromQueryParams": {
+                    "geo.bbox": "b"
+                }
+            }
+        ],
+        "answer": {
+            "results": "x",
+            "total": 2
+        }
+    },
+    "geocode blank query falls through": {
+        "calls": [
+            "isAvailable",
+            {
+                "reverseGeocode": [
+                    4.9,
+                    52.3
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "available": true,
+            "address": {
+                "label": "address"
+            }
+        }
+    },
+    "geocode free": {
+        "calls": [
+            "isAvailable",
+            {
+                "geocodeFree": [
+                    "Dam 1",
+                    5,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "available": true,
+            "suggestions": [
+                {
+                    "label": "Dam 1"
+                }
+            ]
+        }
+    },
+    "geocode free bag only": {
+        "calls": [
+            "isAvailable",
+            {
+                "geocodeFree": [
+                    "Dam",
+                    5,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "available": true,
+            "suggestions": [
+                {
+                    "label": "Dam"
+                }
+            ]
+        }
+    },
+    "geocode free bag text": {
+        "calls": [
+            "isAvailable",
+            {
+                "geocodeFree": [
+                    "Dam",
+                    5,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "available": true,
+            "suggestions": [
+                {
+                    "label": "Dam"
+                }
+            ]
+        }
+    },
+    "geocode free number": {
+        "calls": [
+            "isAvailable",
+            {
+                "geocodeFree": [
+                    "12",
+                    5,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "available": true,
+            "suggestions": [
+                {
+                    "label": "12"
+                }
+            ]
+        }
+    },
+    "geocode free unavailable": {
+        "calls": [
+            "isAvailable",
+            {
+                "geocodeFree": [
+                    "Dam 1",
+                    5,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "available": false,
+            "suggestions": [
+                {
+                    "label": "Dam 1"
+                }
+            ]
+        }
+    },
+    "geocode free wins over coordinates": {
+        "calls": [
+            "isAvailable",
+            {
+                "geocodeFree": [
+                    "Dam",
+                    5,
+                    false
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "available": true,
+            "suggestions": [
+                {
+                    "label": "Dam"
+                }
+            ]
+        }
+    },
+    "geocode no geocoder": {
+        "calls": [],
+        "status": 200,
+        "data": {
+            "available": false,
+            "suggestions": []
+        }
+    },
+    "geocode nothing": {
+        "calls": [
+            "isAvailable"
+        ],
+        "status": 422,
+        "data": {
+            "error": "geocode requires either ?q=<address> or ?lon=&lat="
+        }
+    },
+    "geocode only lat": {
+        "calls": [
+            "isAvailable"
+        ],
+        "status": 422,
+        "data": {
+            "error": "geocode requires either ?q=<address> or ?lon=&lat="
+        }
+    },
+    "geocode only lon": {
+        "calls": [
+            "isAvailable"
+        ],
+        "status": 422,
+        "data": {
+            "error": "geocode requires either ?q=<address> or ?lon=&lat="
+        }
+    },
+    "geocode reverse": {
+        "calls": [
+            "isAvailable",
+            {
+                "reverseGeocode": [
+                    4.9,
+                    52.3
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "available": true,
+            "address": {
+                "label": "address"
+            }
+        }
+    },
+    "geocode text lat": {
+        "calls": [
+            "isAvailable"
+        ],
+        "status": 422,
+        "data": {
+            "error": "geocode requires either ?q=<address> or ?lon=&lat="
+        }
+    },
+    "geocode text lon": {
+        "calls": [
+            "isAvailable"
+        ],
+        "status": 422,
+        "data": {
+            "error": "geocode requires either ?q=<address> or ?lon=&lat="
+        }
+    },
+    "geojson count": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson count wins": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson empty fields": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson empty property": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    "",
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson fields array": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    [
+                        "a",
+                        "2"
+                    ],
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson fields string": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    [
+                        "a",
+                        "b",
+                        "c"
+                    ],
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson float count": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson max features": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson no builder": {
+        "calls": [],
+        "status": 501,
+        "data": {
+            "error": "Geo feature builder not configured"
+        }
+    },
+    "geojson no results": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson null count falls through": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson number property": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    "5",
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson plain": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson property": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    "location",
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson results not an array": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson text count": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "geojson zero property": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildFeatureCollection": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    "0",
+                    null,
+                    true
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "FeatureCollection"
+        }
+    },
+    "search bad body": {
+        "calls": [
+            {
+                "fromGeoSearchBody": {
+                    "x": 1
+                }
+            }
+        ],
+        "status": 422,
+        "data": {
+            "error": "bad geo"
+        }
+    },
+    "search filtered": {
+        "calls": [
+            {
+                "fromGeoSearchBody": {
+                    "polygon": "p"
+                }
+            },
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        },
+                        {
+                            "id": 3
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1,
+            "page": 1
+        }
+    },
+    "search no applier": {
+        "calls": [],
+        "status": 501,
+        "data": {
+            "error": "Geo filtering primitives not configured"
+        }
+    },
+    "search no parser": {
+        "calls": [],
+        "status": 501,
+        "data": {
+            "error": "Geo filtering primitives not configured"
+        }
+    },
+    "search no results": {
+        "calls": [
+            {
+                "fromGeoSearchBody": []
+            },
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "applyAll": [
+                    [],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "total": 0,
+            "results": []
+        }
+    },
+    "search no total": {
+        "calls": [
+            {
+                "fromGeoSearchBody": []
+            },
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ]
+        }
+    },
+    "search null total": {
+        "calls": [
+            {
+                "fromGeoSearchBody": []
+            },
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "applyAll": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    [
+                        "filter"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": null
+        }
+    },
+    "search results not an array": {
+        "calls": [
+            {
+                "fromGeoSearchBody": []
+            },
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "results": "x",
+            "total": 1
+        }
+    },
+    "wfs count": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    7
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs count wins": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    7
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs empty fields": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs empty property": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    "",
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs fields array": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs fields string": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs float count": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    2
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs max features": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    4
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs no builder": {
+        "calls": [],
+        "status": 501,
+        "data": {
+            "error": "Geo feature builder not configured"
+        }
+    },
+    "wfs no results": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [],
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs null count falls through": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    4
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs number property": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    "5",
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs plain": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs property": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    "location",
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs results not an array": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [],
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs text count": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    },
+    "wfs zero property": {
+        "calls": [
+            {
+                "index": [
+                    "r",
+                    "s"
+                ]
+            },
+            {
+                "buildWfsResponse": [
+                    [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    "0",
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "type": "wfs"
+        }
+    }
+}

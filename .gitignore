@@ -69,9 +69,10 @@ phpqa_output.log
 **/endpoints *
 **/*Analysis*
 !**/*Analysis*.php
-**/*references*
-!**/*references*.php
-!**/*references*/
+# Junk files named "references <words>" (a shell redirect gone wrong). The space
+# keeps real paths out: the old `**/*references*` also ignored every path
+# containing "preferences".
+**/references *
 **/*encoding*
 !**/*encoding*.php
 **/ter
@@ -115,8 +116,7 @@ website/docs/Features/img_5.png
 website/docs/features/img_4.png
 website/docs/features/img_5.png
 
-# SBOM is published as release asset (see SECURITY.md), not stored in repo
-sbom.cdx.json
+# Intermediate SBOM files. The merged sbom.cdx.json at the root is committed.
 bom-php.cdx.json
 bom-npm.cdx.json
 
@@ -145,3 +145,8 @@ playwright-report/
 # Python bytecode caches (a .pyc was once committed by accident, WOO-579)
 __pycache__/
 *.pyc
+
+# Agent and review work files. They belong in an issue or a PR, not in the tree.
+/scratchpad/
+/task-audit.json
+bom-*.cdx.json

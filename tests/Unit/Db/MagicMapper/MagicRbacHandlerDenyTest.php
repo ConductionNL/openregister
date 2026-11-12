@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -33,6 +33,8 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -48,11 +50,15 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Pins the deny term the raw-SQL emitter produces.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacPermissionCheck
  * @uses \OCA\OpenRegister\Db\MagicMapper\RbacResolvers
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
@@ -61,6 +67,10 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  */
 class MagicRbacHandlerDenyTest extends TestCase {
 
@@ -110,19 +120,25 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		}
 
 		return new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->conditionMatcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class),
+				denyEnforcementMode: $this->modeFixedAt($mode)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->conditionMatcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(
 				objectScopeResolver: null,
 				objectGrantResolver: null,
 				denyResolver: new DenyResolver(new DenyEntryMatcher())
-			),
-			$this->modeFixedAt($mode)
+			)
 		);
 	}//end handlerInMode()
 
@@ -157,6 +173,26 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	}//end schemaWith()
 
 	/**
+	 * A stored row carrying the facts of one check.
+	 *
+	 * @param string     $owner         The row owner.
+	 * @param array      $data          The row's object data.
+	 * @param array|null $authorization The row's own `_authorization`.
+	 * @param string     $uuid          The row's uuid.
+	 *
+	 * @return ObjectEntity The row.
+	 */
+	private function row(string $owner, array $data, ?array $authorization, string $uuid): ObjectEntity {
+		$row = new ObjectEntity();
+		$row->setUuid($uuid);
+		$row->setOwner($owner);
+		$row->setObject($data);
+		$row->setAuthorization($authorization);
+
+		return $row;
+	}//end row()
+
+	/**
 	 * Reset the shared match evaluator before every case.
 	 *
 	 * @return void
@@ -173,7 +209,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testTheGrantEmitsConditionsBeforeAnyDenyIsWritten(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$result = $handler->buildRbacConditionsSql($this->schemaWith(['read' => ['behandelaars']]), 'read');
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars']])))->forAction('read'));
 
 		$this->assertFalse($result['bypass']);
 		$this->assertNotEmpty($result['conditions']);
@@ -196,14 +232,11 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	public function testADeniedCallerGetsNoConditionsAndTheControlStillDoes(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
 
-		$denied = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]]),
-			'read'
-		);
+		$denied = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]])))->forAction('read'));
 		$this->assertSame([], $denied['conditions']);
 		$this->assertFalse($denied['bypass']);
 
-		$control = $handler->buildRbacConditionsSql($this->schemaWith(['read' => ['behandelaars']]), 'read');
+		$control = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars']])))->forAction('read'));
 		$this->assertNotEmpty($control['conditions']);
 	}//end testADeniedCallerGetsNoConditionsAndTheControlStillDoes()
 
@@ -221,7 +254,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testEveryConditionCarriesTheRowDenyTermIncludingTheOwnerOne(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$result = $handler->buildRbacConditionsSql($this->schemaWith(['read' => ['behandelaars']]), 'read');
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars']])))->forAction('read'));
 
 		$this->assertNotEmpty($result['conditions']);
 		foreach ($result['conditions'] as $condition) {
@@ -242,7 +275,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testTheTermNamesTheCallersOwnPrincipals(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars', 'waarnemers']);
-		$condition = $handler->buildRbacConditionsSql($this->schemaWith(['read' => ['behandelaars']]), 'read')['conditions'][0];
+		$condition = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars']])))->forAction('read'))['conditions'][0];
 
 		$this->assertStringContainsString('"behandelaars"', $condition);
 		$this->assertStringContainsString('"waarnemers"', $condition);
@@ -257,10 +290,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testTheTermIsScopedToTheActionBeingFiltered(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$condition = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['update' => ['behandelaars']]),
-			'update'
-		)['conditions'][0];
+		$condition = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['update' => ['behandelaars']])))->forAction('update'))['conditions'][0];
 
 		$this->assertStringContainsString('$.deny.update', $condition);
 		$this->assertStringNotContainsString('$.deny.read', $condition);
@@ -278,7 +308,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testASchemaWithNoBlockStillCarriesTheTerm(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$result = $handler->buildRbacConditionsSql($this->schemaWith(null), 'read');
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(null)))->forAction('read'));
 
 		$this->assertNotEmpty($result['conditions']);
 		foreach ($result['conditions'] as $condition) {
@@ -293,10 +323,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testAnAdministratorStillBypasses(): void {
 		$handler = $this->handlerFor('root', ['admin']);
-		$result = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['admin'], 'deny' => ['read' => ['admin']]]),
-			'read'
-		);
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['admin'], 'deny' => ['read' => ['admin']]])))->forAction('read'));
 
 		$this->assertTrue($result['bypass']);
 	}//end testAnAdministratorStillBypasses()
@@ -316,31 +343,23 @@ class MagicRbacHandlerDenyTest extends TestCase {
 
 		// The object read refuses the denied row.
 		$this->assertFalse(
-			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: 'ana',
-				objectData: ['title' => 'geheim'],
-				objectAuthorization: ['deny' => ['read' => ['behandelaars']]],
-				objectUuid: 'aaaaaaaa-0000-0000-0000-000000000001'
+			$handler->hasRowPermission(
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
+				row: $this->row('ana', ['title' => 'geheim'], ['deny' => ['read' => ['behandelaars']]], 'aaaaaaaa-0000-0000-0000-000000000001')
 			)
 		);
 
 		// And the same caller reads an undenied row of the same schema, so the
 		// refusal above is about the deny and not about the caller.
 		$this->assertTrue(
-			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: 'ana',
-				objectData: ['title' => 'gewoon'],
-				objectAuthorization: null,
-				objectUuid: 'aaaaaaaa-0000-0000-0000-000000000002'
+			$handler->hasRowPermission(
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
+				row: $this->row('ana', ['title' => 'gewoon'], null, 'aaaaaaaa-0000-0000-0000-000000000002')
 			)
 		);
 
 		// And the list carries a term that can exclude exactly that row.
-		$condition = $handler->buildRbacConditionsSql($schema, 'read')['conditions'][0];
+		$condition = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'))['conditions'][0];
 		$this->assertStringContainsString('$.deny.read', $condition);
 		$this->assertStringContainsString('"behandelaars"', $condition);
 	}//end testTheListAndTheObjectReadAgreeOnADeniedRow()
@@ -354,13 +373,9 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
 
 		$this->assertFalse(
-			$handler->hasPermission(
-				schema: $this->schemaWith(['delete' => ['behandelaars']]),
-				action: 'delete',
-				objectOwner: 'ana',
-				objectData: ['title' => 'van mij'],
-				objectAuthorization: ['deny' => ['delete' => ['user:ana']]],
-				objectUuid: 'aaaaaaaa-0000-0000-0000-000000000003'
+			$handler->hasRowPermission(
+				ask: new RbacPermissionAsk(schema: $this->schemaWith(['delete' => ['behandelaars']]), action: 'delete'),
+				row: $this->row('ana', ['title' => 'van mij'], ['deny' => ['delete' => ['user:ana']]], 'aaaaaaaa-0000-0000-0000-000000000003')
 			)
 		);
 	}//end testTheRowDenyBeatsTheOwnerBypassOnTheObjectPath()
@@ -375,15 +390,12 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	 */
 	public function testAnUncompilableConditionalDenyDeniesTheWholeList(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
-		$result = $handler->buildRbacConditionsSql(
-			$this->schemaWith(
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(
 				[
 					'read' => ['behandelaars'],
 					'deny' => ['read' => [['group' => 'behandelaars', 'match' => []]]],
 				]
-			),
-			'read'
-		);
+			)))->forAction('read'));
 
 		$this->assertSame([], $result['conditions']);
 	}//end testAnUncompilableConditionalDenyDeniesTheWholeList()
@@ -402,10 +414,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	public function testAStagedDenyEmitsNoPredicateAndKeepsTheRowsInTheList(): void {
 		$handler = $this->handlerInMode('ana', ['behandelaars'], DenyEnforcementMode::MODE_STAGING);
 
-		$result = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]]),
-			'read'
-		);
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]])))->forAction('read'));
 
 		// Enforcing, this exact fixture yields no conditions at all
 		// ({@see testADeniedCallerGetsNoConditionsAndTheControlStillDoes()}).
@@ -427,10 +436,7 @@ class MagicRbacHandlerDenyTest extends TestCase {
 	public function testTheOffModeEmitsNoDenyPredicateEither(): void {
 		$handler = $this->handlerInMode('ana', ['behandelaars'], DenyEnforcementMode::MODE_OFF);
 
-		$result = $handler->buildRbacConditionsSql(
-			$this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]]),
-			'read'
-		);
+		$result = $handler->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]])))->forAction('read'));
 
 		$this->assertNotEmpty($result['conditions']);
 		foreach ($result['conditions'] as $condition) {
@@ -452,13 +458,9 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		$schema = $this->schemaWith(['read' => ['behandelaars']]);
 
 		$this->assertTrue(
-			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: 'ana',
-				objectData: ['title' => 'geheim'],
-				objectAuthorization: ['deny' => ['read' => ['behandelaars']]],
-				objectUuid: 'bbbbbbbb-0000-0000-0000-000000000001'
+			$handler->hasRowPermission(
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
+				row: $this->row('ana', ['title' => 'geheim'], ['deny' => ['read' => ['behandelaars']]], 'bbbbbbbb-0000-0000-0000-000000000001')
 			)
 		);
 	}//end testTheObjectPathAlsoStagesRatherThanRefusing()
@@ -474,13 +476,9 @@ class MagicRbacHandlerDenyTest extends TestCase {
 		$schema = $this->schemaWith(['read' => ['behandelaars']]);
 
 		$this->assertFalse(
-			$handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: 'ana',
-				objectData: ['title' => 'geheim'],
-				objectAuthorization: ['deny' => ['read' => ['behandelaars']]],
-				objectUuid: 'bbbbbbbb-0000-0000-0000-000000000002'
+			$handler->hasRowPermission(
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
+				row: $this->row('ana', ['title' => 'geheim'], ['deny' => ['read' => ['behandelaars']]], 'bbbbbbbb-0000-0000-0000-000000000002')
 			)
 		);
 	}//end testTheSameObjectCallRefusesWhenEnforcing()

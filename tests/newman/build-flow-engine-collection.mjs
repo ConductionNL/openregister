@@ -433,7 +433,7 @@ const setup = {
 		req(
 			'create summariser agent',
 			'POST',
-			'/apps/openregister/api/objects/hermiq/agent',
+			'/apps/openregister/api/agents',
 			{
 				name: 'flow-engine-summariser-{{stamp}}',
 				description: 'Summarises a mailbox for the flow engine coverage',
@@ -443,11 +443,12 @@ const setup = {
 				active: true,
 			},
 			[
+				'// hermiq.agent-step runs an OpenRegister agent (the agents table), so the',
+				'// fixture is created through the agents API, not as a register object.',
 				'const b = pm.response.json()',
-				"pm.collectionVariables.set('agent', (b['@self'] && b['@self'].id) || b.id || '')",
-				'// Not a failure when hermiq is absent: only case 3 needs it, and that',
-				'// case guards on the variable being set.',
-				"pm.test('agent fixture resolved (or hermiq absent)', () => pm.expect(true).to.be.true)",
+				"pm.test('agent fixture created', () => pm.expect(b.uuid, pm.response.text()).to.be.a('string'))",
+				"pm.collectionVariables.set('agent', b.uuid || '')",
+				"pm.collectionVariables.set('agentId', b.id || '')",
 			],
 		),
 	],
@@ -632,11 +633,7 @@ function caseFolder(c) {
  * Every guarded case already set `<case>_skipped` when its prerequisite was
  * absent — and nothing ever read it. The only trace of a skip was a
  * `console.log`, so a run in which the AI case never executed reported exactly
- * the same all-green summary as one in which it did. That is how
- * `hermiq.agent-step` came to be described as "executed through the engine"
- * while openregister's CI, which never installs hermiq, has skipped it every
- * time: the fixture request POSTs to `/objects/hermiq/agent`, fails, leaves
- * `agent` empty, and closes with `pm.expect(true).to.be.true`.
+ * the same all-green summary as one in which it did.
  *
  * This folder makes the count visible and, more importantly, makes an
  * UNEXPECTED skip fail. A case may only be missing when it declared a
@@ -849,7 +846,7 @@ const teardown = {
 		req(
 			'delete agent',
 			'DELETE',
-			'/apps/openregister/api/objects/hermiq/agent/{{agent}}',
+			'/apps/openregister/api/agents/{{agentId}}',
 			undefined,
 			[
 				"pm.test('agent deleted', () => pm.expect([200, 204, 404]).to.include(pm.response.code))",
@@ -890,6 +887,7 @@ const collection = {
 		{ key: 'extSource', value: '' },
 		{ key: 'ncSource', value: '' },
 		{ key: 'agent', value: '' },
+		{ key: 'agentId', value: '' },
 		{ key: 'mappingId', value: '' },
 		{ key: 'mappingUuid', value: '' },
 		{ key: 'synchronization', value: '' },
@@ -904,9 +902,32 @@ const collection = {
 		{ key: 'objectHead', value: '' },
 	],
 	item: [setup, ...CASES.map(caseFolder), coverage, teardown],
+	event: [
+		{
+			listen: 'prerequest',
+			script: {
+				type: 'text/javascript',
+				exec: [
+					'// The quality workflow passes base_url, admin_user and admin_password; take',
+					"// them for this collection's own names when those are not given.",
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password'], ['adminUser', 'admin_user'], ['adminPassword', 'admin_password']].forEach(function (pair) {",
+					'    var given = pm.environment.get(pair[1]);',
+					'    if (given !== undefined && pm.environment.get(pair[0]) === undefined) {',
+					'        pm.collectionVariables.set(pair[0], given);',
+					'    }',
+					'});',
+				],
+			},
+		},
+	],
 }
 
-const out = join(here, 'openregister-flow-engine.postman_collection.json')
+const out = join(
+	here,
+	'..',
+	'integration',
+	'openregister-flow-engine.postman_collection.json',
+)
 writeFileSync(out, JSON.stringify(collection, null, 2) + '\n')
 console.log(
 	`wrote ${out} — ${CASES.length} cases, ${collection.item.length} folders`,

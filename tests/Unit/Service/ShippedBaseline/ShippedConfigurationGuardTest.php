@@ -27,9 +27,13 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
+use OCA\OpenRegister\Service\ShippedBaseline\ResetRequest;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgrade;
+use OCA\OpenRegister\Service\ShippedBaseline\SchemaUpgradeOptions;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedDefinition;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -60,14 +64,19 @@ class ShippedConfigurationGuardTest extends TestCase {
 	 * @param array<string, mixed>|null $baseline The stored baseline definition, or null for none.
 	 * @param IUserSession|null                 $session  The session.
 	 * @param ShippedAuthorizationDecision|null $decision The administrator's decision, when one is in effect.
+	 * @param bool                              $readFails Whether reading the baseline throws, so the guard cannot run.
 	 *
 	 * @return ShippedConfigurationGuard The guard.
 	 */
-	private function guard(?array $baseline, ?IUserSession $session = null, ?ShippedAuthorizationDecision $decision = null): ShippedConfigurationGuard {
+	private function guard(?array $baseline, ?IUserSession $session = null, ?ShippedAuthorizationDecision $decision = null, bool $readFails = false): ShippedConfigurationGuard {
 		$store = $this->createMock(ShippedBaselineStore::class);
 		$store->method('schemaSubject')->willReturnCallback(
 			static fn (string $slug): string => ('schema:' . $slug)
 		);
+		if ($readFails === true) {
+			$store->method('read')->willThrowException(new \RuntimeException('baseline store down'));
+		}
+
 		$store->method('read')->willReturn(
 			($baseline === null ? null : [
 				'definition' => $baseline,
@@ -77,7 +86,8 @@ class ShippedConfigurationGuardTest extends TestCase {
 			])
 		);
 		$store->method('record')->willReturnCallback(
-			function (string $subject, array $definition): bool {
+			function (string $subject, ShippedDefinition $shipped): bool {
+				$definition = $shipped->definition;
 				$this->recorded[] = ['subject' => $subject, 'definition' => $definition];
 				return true;
 			}
@@ -146,13 +156,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$live = ['properties' => ['wijk' => ['type' => 'string']]];
 		$incoming = ['properties' => ['zaaknummer' => ['type' => 'string']]];
 
-		$result = $guard->guardSchemaUpdate(
-			slug: 'zaak',
-			live: $live,
-			incoming: $incoming,
-			app: 'dossiq',
-			appVersion: '1.3.0'
-		);
+		$result = $guard->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')));
 
 		$this->assertFalse($result['guarded'], 'the guard says plainly that it did not guard this import');
 		$this->assertSame($incoming, $result['definition'], 'and the incoming definition is written as it stands');
@@ -173,13 +177,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$incoming = $baseline;
 		$incoming['properties']['zaaknummer']['title'] = 'Zaak-ID';
 
-		$result = $this->guard(baseline: $baseline)->guardSchemaUpdate(
-			slug: 'zaak',
-			live: $live,
-			incoming: $incoming,
-			app: 'dossiq',
-			appVersion: '1.3.0'
-		);
+		$result = $this->guard(baseline: $baseline)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')));
 
 		$this->assertTrue($result['guarded']);
 		$this->assertArrayHasKey('wijk', $result['definition']['properties']);
@@ -197,13 +195,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$live = ['properties' => ['toelichting' => ['maxLength' => 2000]]];
 		$incoming = ['properties' => ['toelichting' => ['maxLength' => 1000]]];
 
-		$result = $this->guard(baseline: $baseline)->guardSchemaUpdate(
-			slug: 'zaak',
-			live: $live,
-			incoming: $incoming,
-			app: 'dossiq',
-			appVersion: '1.3.0'
-		);
+		$result = $this->guard(baseline: $baseline)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')));
 
 		$this->assertCount(1, $result['conflicts'], 'the conflict is reported');
 		$this->assertSame(
@@ -240,6 +232,11 @@ class ShippedConfigurationGuardTest extends TestCase {
 
 		$this->assertFalse($report['baseline'], 'no baseline is a different answer from no divergence');
 		$this->assertSame([], $report['divergences']);
+		$this->assertSame(
+			['baseline' => false, 'app' => '', 'appVersion' => '', 'recordedAt' => '', 'divergences' => []],
+			$report,
+			'the whole no-baseline answer, key for key'
+		);
 	}//end testWithNoBaselineTheReportSaysSo()
 
 	/**
@@ -251,11 +248,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$baseline = ['properties' => ['toelichting' => ['maxLength' => 500]]];
 		$live = ['properties' => ['toelichting' => ['maxLength' => 2000]]];
 
-		$preview = $this->guard(baseline: $baseline)->previewReset(
-			slug: 'zaak',
-			live: $live,
-			path: 'properties.toelichting.maxLength'
-		);
+		$preview = $this->guard(baseline: $baseline)->previewPartReset(request: new ResetRequest(slug: 'zaak', live: $live, path: 'properties.toelichting.maxLength'));
 
 		$this->assertTrue($preview['applicable']);
 		$this->assertSame(2000, $preview['from']);
@@ -327,11 +320,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 			],
 		];
 
-		$preview = $this->guard(baseline: $baseline)->previewReset(
-			slug: 'zaak',
-			live: $live,
-			path: 'properties.wijk.type'
-		);
+		$preview = $this->guard(baseline: $baseline)->previewPartReset(request: new ResetRequest(slug: 'zaak', live: $live, path: 'properties.wijk.type'));
 
 		$this->assertTrue($preview['applicable']);
 		$this->assertArrayNotHasKey(
@@ -349,11 +338,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 	public function testResettingAnUnchangedPartIsRefused(): void {
 		$baseline = ['properties' => ['zaaknummer' => ['type' => 'string']]];
 
-		$preview = $this->guard(baseline: $baseline)->previewReset(
-			slug: 'zaak',
-			live: $baseline,
-			path: 'properties.zaaknummer.type'
-		);
+		$preview = $this->guard(baseline: $baseline)->previewPartReset(request: new ResetRequest(slug: 'zaak', live: $baseline, path: 'properties.zaaknummer.type'));
 
 		$this->assertFalse($preview['applicable']);
 		$this->assertStringContainsString('already matches', $preview['reason']);
@@ -369,14 +354,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$live = ['properties' => ['toelichting' => ['maxLength' => 2000]]];
 		$incoming = ['properties' => ['toelichting' => ['maxLength' => 1000]]];
 
-		$result = $this->guard(baseline: $baseline, session: $this->sessionOf('beheerder'))->guardSchemaUpdate(
-			slug: 'zaak',
-			live: $live,
-			incoming: $incoming,
-			app: 'dossiq',
-			appVersion: '1.3.0',
-			decisions: ['properties.toelichting.maxLength']
-		);
+		$result = $this->guard(baseline: $baseline, session: $this->sessionOf('beheerder'))->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')), options: new SchemaUpgradeOptions(decisions: ['properties.toelichting.maxLength']));
 
 		$this->assertSame(1000, $result['definition']['properties']['toelichting']['maxLength']);
 		$this->assertSame(
@@ -423,13 +401,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$incoming['properties']['personalNumber']['x-notes'] = 'BSN, onderwijsnummer or a school number';
 		$incoming['properties']['emergencyContacts']['description'] = 'Who to call';
 
-		$result = $this->guard(baseline: $baseline)->guardSchemaUpdate(
-			slug: 'learner-profile',
-			live: $live,
-			incoming: $incoming,
-			app: 'learniq',
-			appVersion: '0.34.33'
-		);
+		$result = $this->guard(baseline: $baseline)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'learner-profile', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'learniq', appVersion: '0.34.33')));
 
 		$this->assertSame([], $result['conflicts'], 'a property the instance never had is not a conflict');
 		// The merge writes parts in path order, as it does for every guarded
@@ -459,13 +431,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$live = ['properties' => ['toelichting' => ['type' => 'string']]];
 		$incoming = $baseline;
 
-		$result = $this->guard(baseline: $baseline)->guardSchemaUpdate(
-			slug: 'zaak',
-			live: $live,
-			incoming: $incoming,
-			app: 'dossiq',
-			appVersion: '1.3.0'
-		);
+		$result = $this->guard(baseline: $baseline)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')));
 
 		$this->assertSame(['type' => 'string'], $result['definition']['properties']['toelichting']);
 		$this->assertContains('properties.toelichting.maxLength', $result['preserved']);
@@ -487,26 +453,12 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$incoming = ['properties' => ['kind' => ['type' => 'string', 'enum' => ['inbox', 'cases']]]];
 		$live = ['properties' => ['kind' => ['type' => 'string', 'enum' => ['inbox']]]];
 
-		$first = $this->guard(baseline: null)->guardSchemaUpdate(
-			slug: 'portalPage',
-			live: $live,
-			incoming: $incoming,
-			app: 'portaliq',
-			appVersion: '0.56.0',
-			record: false
-		);
+		$first = $this->guard(baseline: null)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'portalPage', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'portaliq', appVersion: '0.56.0')), options: new SchemaUpgradeOptions(record: false));
 
 		$this->assertSame([], $this->recorded, 'nothing is recorded before the schema is written');
 		$this->assertSame($incoming, $first['baseline'], 'the first baseline is what the app shipped');
 
-		$second = $this->guard(baseline: $live)->guardSchemaUpdate(
-			slug: 'portalPage',
-			live: $live,
-			incoming: $incoming,
-			app: 'portaliq',
-			appVersion: '0.56.1',
-			record: false
-		);
+		$second = $this->guard(baseline: $live)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'portalPage', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'portaliq', appVersion: '0.56.1')), options: new SchemaUpgradeOptions(record: false));
 
 		$this->assertSame([], $this->recorded, 'nor on the guarded path');
 		$this->assertEqualsCanonicalizing(['inbox', 'cases'], $second['definition']['properties']['kind']['enum'], 'the upstream change lands');
@@ -521,13 +473,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 	public function testByDefaultTheBaselineIsStillRecorded(): void {
 		$incoming = ['properties' => ['zaaknummer' => ['type' => 'string']]];
 
-		$this->guard(baseline: null)->guardSchemaUpdate(
-			slug: 'zaak',
-			live: ['properties' => []],
-			incoming: $incoming,
-			app: 'dossiq',
-			appVersion: '1.3.0'
-		);
+		$this->guard(baseline: null)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'zaak', live: ['properties' => []], incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')));
 
 		$this->assertSame([['subject' => 'schema:zaak', 'definition' => $incoming]], $this->recorded);
 	}//end testByDefaultTheBaselineIsStillRecorded()
@@ -549,13 +495,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$live = ['authorization' => ['read' => ['authenticated'], 'export' => ['authenticated']]];
 		$incoming = ['authorization' => ['read' => ['portaliq-medewerkers'], 'export' => ['portaliq-medewerkers']]];
 
-		$unattended = $this->guard(baseline: $baseline)->guardSchemaUpdate(
-			slug: 'portalAccount',
-			live: $live,
-			incoming: $incoming,
-			app: 'portaliq',
-			appVersion: '0.97.0'
-		);
+		$unattended = $this->guard(baseline: $baseline)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'portalAccount', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'portaliq', appVersion: '0.97.0')));
 		$this->assertEquals($live['authorization'], $unattended['definition']['authorization']);
 		$this->assertSame([], $this->actions);
 
@@ -563,13 +503,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$guard    = $this->guard(baseline: $baseline, decision: $decision);
 		$decided  = $decision->run(
 			via: 'occ openregister:descriptors:list --import',
-			operation: static fn (): array => $guard->guardSchemaUpdate(
-				slug: 'portalAccount',
-				live: $live,
-				incoming: $incoming,
-				app: 'portaliq',
-				appVersion: '0.97.0'
-			)
+			operation: static fn (): array => $guard->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'portalAccount', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'portaliq', appVersion: '0.97.0')))
 		);
 
 		$this->assertEquals($incoming['authorization'], $decided['definition']['authorization']);
@@ -578,4 +512,52 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$this->assertSame([['schema' => 'portalAccount', 'path' => 'authorization']], $decision->replaced());
 		$this->assertNull($decision->via(), 'the decision ends with the operation');
 	}//end testAnAdministratorsReimportTakesTheShippedAuthorization()
+
+	/**
+	 * A guard that cannot run still lets the upgrade finish, but never hands the instance's authorization to the shipped one.
+	 *
+	 * @return void
+	 */
+	public function testAGuardThatCannotRunKeepsTheInstanceAuthorization(): void {
+		$live = [
+			'title' => 'T',
+			'authorization' => ['read' => ['staff']],
+			'properties' => [
+				'bsn' => ['type' => 'string', 'authorization' => ['read' => ['staff']]],
+				'name' => ['type' => 'string'],
+			],
+		];
+		$incoming = [
+			'title' => 'T2',
+			'authorization' => ['read' => ['authenticated']],
+			'properties' => [
+				'bsn' => ['type' => 'string', 'authorization' => ['read' => ['authenticated']]],
+				'name' => ['type' => 'string', 'authorization' => ['read' => ['authenticated']]],
+				'added' => ['type' => 'string', 'authorization' => ['read' => ['shipped']]],
+			],
+		];
+
+		$result = $this->guard(baseline: null, readFails: true)->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'person', live: $live, incoming: new ShippedDefinition(definition: $incoming, app: 'dossiq', appVersion: '1.3.0')));
+
+		$this->assertFalse($result['guarded']);
+		$this->assertNull($result['baseline']);
+		$this->assertSame('T2', $result['definition']['title'], 'the rest of the upgrade still lands');
+		$this->assertSame(['read' => ['staff']], $result['definition']['authorization']);
+		$this->assertSame(['read' => ['staff']], $result['definition']['properties']['bsn']['authorization']);
+		$this->assertArrayNotHasKey('authorization', $result['definition']['properties']['name']);
+		$this->assertSame(['read' => ['shipped']], $result['definition']['properties']['added']['authorization'], 'a property the instance lacks brings its shipped block');
+	}//end testAGuardThatCannotRunKeepsTheInstanceAuthorization()
+
+	/**
+	 * An authorization block taken because only the app changed it is on the audit trail.
+	 *
+	 * @return void
+	 */
+	public function testAnAuthorizationBlockTakenFromTheAppIsAudited(): void {
+		$block = ['read' => ['authenticated']];
+		$result = $this->guard(baseline: ['authorization' => $block])->guardUpgrade(upgrade: new SchemaUpgrade(slug: 'portalAccount', live: ['authorization' => $block], incoming: new ShippedDefinition(definition: ['authorization' => ['read' => ['portaliq-medewerkers']]], app: 'portaliq', appVersion: '0.98.0')));
+
+		$this->assertSame(['read' => ['portaliq-medewerkers']], $result['definition']['authorization']);
+		$this->assertSame([ShippedConfigurationGuard::ACTION_DECIDED], $this->actions);
+	}//end testAnAuthorizationBlockTakenFromTheAppIsAudited()
 }//end class

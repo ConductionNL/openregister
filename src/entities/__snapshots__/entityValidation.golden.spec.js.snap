@@ -1,0 +1,629 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`entity validation golden validates audit trails 1`] = `
+{
+  "arrayChange": [
+    {
+      "data": {
+        "action": "read",
+        "changed": [
+          1,
+          2,
+        ],
+        "confidentiality": null,
+        "created": "2025-05-29T05:35:12+00:00",
+        "id": 4901,
+        "ipAddress": "",
+        "object": 389,
+        "objectUuid": null,
+        "organisationId": null,
+        "organisationIdType": null,
+        "processingActivityId": null,
+        "processingActivityUrl": null,
+        "processingId": null,
+        "register": 4,
+        "registerUuid": null,
+        "request": "4jGyX42HTpd2evVWajKo",
+        "retentionPeriod": null,
+        "schema": 22,
+        "schemaUuid": null,
+        "session": "",
+        "size": 1687,
+        "user": "System",
+        "userName": "System",
+        "uuid": "7a8996f3-9d61-4f5b-94bb-7fb13cf77d02",
+        "version": null,
+      },
+      "issues": undefined,
+      "success": true,
+    },
+    {
+      "data": {
+        "action": "read",
+        "changed": [
+          1,
+          2,
+        ],
+        "confidentiality": null,
+        "created": "2025-05-29T05:35:12+00:00",
+        "id": 4901,
+        "ipAddress": "",
+        "object": 389,
+        "objectUuid": null,
+        "organisationId": null,
+        "organisationIdType": null,
+        "processingActivityId": null,
+        "processingActivityUrl": null,
+        "processingId": null,
+        "register": 4,
+        "registerUuid": null,
+        "request": "4jGyX42HTpd2evVWajKo",
+        "retentionPeriod": null,
+        "schema": 22,
+        "schemaUuid": null,
+        "session": "",
+        "size": 1687,
+        "user": "System",
+        "userName": "System",
+        "uuid": "7a8996f3-9d61-4f5b-94bb-7fb13cf77d02",
+        "version": null,
+      },
+      "issues": undefined,
+      "success": true,
+    },
+  ],
+  "empty": [
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "Invalid UUID",
+          "path": [
+            "uuid",
+          ],
+        },
+      ],
+      "success": false,
+    },
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "Invalid UUID",
+          "path": [
+            "uuid",
+          ],
+        },
+      ],
+      "success": false,
+    },
+  ],
+  "mock": [
+    {
+      "data": {
+        "action": "read",
+        "changed": [],
+        "confidentiality": null,
+        "created": "2025-05-29T05:35:12+00:00",
+        "id": 4901,
+        "ipAddress": "",
+        "object": 389,
+        "objectUuid": null,
+        "organisationId": null,
+        "organisationIdType": null,
+        "processingActivityId": null,
+        "processingActivityUrl": null,
+        "processingId": null,
+        "register": 4,
+        "registerUuid": null,
+        "request": "4jGyX42HTpd2evVWajKo",
+        "retentionPeriod": null,
+        "schema": 22,
+        "schemaUuid": null,
+        "session": "",
+        "size": 1687,
+        "user": "System",
+        "userName": "System",
+        "uuid": "7a8996f3-9d61-4f5b-94bb-7fb13cf77d02",
+        "version": null,
+      },
+      "issues": undefined,
+      "success": true,
+    },
+    {
+      "data": {
+        "action": "read",
+        "changed": [],
+        "confidentiality": null,
+        "created": "2025-05-29T05:35:12+00:00",
+        "id": 4901,
+        "ipAddress": "",
+        "object": 389,
+        "objectUuid": null,
+        "organisationId": null,
+        "organisationIdType": null,
+        "processingActivityId": null,
+        "processingActivityUrl": null,
+        "processingId": null,
+        "register": 4,
+        "registerUuid": null,
+        "request": "4jGyX42HTpd2evVWajKo",
+        "retentionPeriod": null,
+        "schema": 22,
+        "schemaUuid": null,
+        "session": "",
+        "size": 1687,
+        "user": "System",
+        "userName": "System",
+        "uuid": "7a8996f3-9d61-4f5b-94bb-7fb13cf77d02",
+        "version": null,
+      },
+      "issues": undefined,
+      "success": true,
+    },
+  ],
+  "wrongTypes": [
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected number, received string",
+          "path": [
+            "id",
+          ],
+        },
+        {
+          "code": "invalid_format",
+          "message": "Invalid UUID",
+          "path": [
+            "uuid",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected number, received string",
+          "path": [
+            "schema",
+          ],
+        },
+        {
+          "code": "invalid_union",
+          "message": "Invalid input",
+          "path": [
+            "changed",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received number",
+          "path": [
+            "version",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected number, received string",
+          "path": [
+            "size",
+          ],
+        },
+      ],
+      "success": false,
+    },
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected number, received string",
+          "path": [
+            "id",
+          ],
+        },
+        {
+          "code": "invalid_format",
+          "message": "Invalid UUID",
+          "path": [
+            "uuid",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected number, received string",
+          "path": [
+            "schema",
+          ],
+        },
+        {
+          "code": "invalid_union",
+          "message": "Invalid input",
+          "path": [
+            "changed",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received number",
+          "path": [
+            "version",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected number, received string",
+          "path": [
+            "size",
+          ],
+        },
+      ],
+      "success": false,
+    },
+  ],
+}
+`;
+
+exports[`entity validation golden validates schemas 1`] = `
+{
+  "badVersion": [
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "Invalid version format",
+          "path": [
+            "version",
+          ],
+        },
+      ],
+      "success": false,
+    },
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_format",
+          "message": "Invalid version format",
+          "path": [
+            "version",
+          ],
+        },
+      ],
+      "success": false,
+    },
+  ],
+  "configured": [
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received number",
+          "path": [
+            "configuration",
+            "objectNameField",
+          ],
+        },
+      ],
+      "success": false,
+    },
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received number",
+          "path": [
+            "configuration",
+            "objectNameField",
+          ],
+        },
+      ],
+      "success": false,
+    },
+  ],
+  "empty": [
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "id",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "title",
+          ],
+        },
+        {
+          "code": "invalid_format",
+          "message": "Invalid version format",
+          "path": [
+            "version",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "slug",
+          ],
+        },
+      ],
+      "success": false,
+    },
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "id",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "title",
+          ],
+        },
+        {
+          "code": "invalid_format",
+          "message": "Invalid version format",
+          "path": [
+            "version",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "slug",
+          ],
+        },
+      ],
+      "success": false,
+    },
+  ],
+  "goodVersion": [
+    {
+      "data": {
+        "archive": {},
+        "authorization": {},
+        "configuration": {
+          "objectDescriptionField": "",
+          "objectNameField": "",
+          "objectSlugField": "",
+          "objectSlugSuffix": false,
+        },
+        "created": "2026-01-02T03:04:05.000Z",
+        "description": "Defines the structure for character data",
+        "hardValidation": false,
+        "id": "5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f",
+        "maxDepth": 2,
+        "properties": {},
+        "required": [
+          "name",
+        ],
+        "slug": "character-schema",
+        "summary": "Character Schema",
+        "title": "Character Schema",
+        "updated": "2026-01-02T03:04:05.000Z",
+        "version": "2.10.3",
+      },
+      "issues": undefined,
+      "success": true,
+    },
+    {
+      "data": {
+        "archive": {},
+        "authorization": {},
+        "configuration": {
+          "objectDescriptionField": "",
+          "objectNameField": "",
+          "objectSlugField": "",
+          "objectSlugSuffix": false,
+        },
+        "created": "2026-01-02T03:04:05.000Z",
+        "description": "Defines the structure for character data",
+        "hardValidation": false,
+        "id": "5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f",
+        "maxDepth": 2,
+        "properties": {},
+        "required": [
+          "name",
+        ],
+        "slug": "character-schema",
+        "summary": "Character Schema",
+        "title": "Character Schema",
+        "updated": "2026-01-02T03:04:05.000Z",
+        "version": "2.10.3",
+      },
+      "issues": undefined,
+      "success": true,
+    },
+  ],
+  "mock": [
+    {
+      "data": {
+        "archive": {},
+        "authorization": {},
+        "configuration": {
+          "objectDescriptionField": "",
+          "objectNameField": "",
+          "objectSlugField": "",
+          "objectSlugSuffix": false,
+        },
+        "created": "2026-01-02T03:04:05.000Z",
+        "description": "Defines the structure for character data",
+        "hardValidation": false,
+        "id": "5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f",
+        "maxDepth": 2,
+        "properties": {},
+        "required": [
+          "name",
+        ],
+        "slug": "character-schema",
+        "summary": "Character Schema",
+        "title": "Character Schema",
+        "updated": "2026-01-02T03:04:05.000Z",
+        "version": "1.0.0",
+      },
+      "issues": undefined,
+      "success": true,
+    },
+    {
+      "data": {
+        "archive": {},
+        "authorization": {},
+        "configuration": {
+          "objectDescriptionField": "",
+          "objectNameField": "",
+          "objectSlugField": "",
+          "objectSlugSuffix": false,
+        },
+        "created": "2026-01-02T03:04:05.000Z",
+        "description": "Defines the structure for character data",
+        "hardValidation": false,
+        "id": "5678a1e5-b54d-43ad-abd1-4b5bff5fcd3f",
+        "maxDepth": 2,
+        "properties": {},
+        "required": [
+          "name",
+        ],
+        "slug": "character-schema",
+        "summary": "Character Schema",
+        "title": "Character Schema",
+        "updated": "2026-01-02T03:04:05.000Z",
+        "version": "1.0.0",
+      },
+      "issues": undefined,
+      "success": true,
+    },
+  ],
+  "wrongTypes": [
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received number",
+          "path": [
+            "id",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "title",
+          ],
+        },
+        {
+          "code": "invalid_format",
+          "message": "Invalid version format",
+          "path": [
+            "version",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "slug",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected boolean, received string",
+          "path": [
+            "hardValidation",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected number to be >=0",
+          "path": [
+            "maxDepth",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected array, received string",
+          "path": [
+            "authorization",
+            "read",
+          ],
+        },
+      ],
+      "success": false,
+    },
+    {
+      "data": undefined,
+      "issues": [
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected string, received number",
+          "path": [
+            "id",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "title",
+          ],
+        },
+        {
+          "code": "invalid_format",
+          "message": "Invalid version format",
+          "path": [
+            "version",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected string to have >=1 characters",
+          "path": [
+            "slug",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected boolean, received string",
+          "path": [
+            "hardValidation",
+          ],
+        },
+        {
+          "code": "too_small",
+          "message": "Too small: expected number to be >=0",
+          "path": [
+            "maxDepth",
+          ],
+        },
+        {
+          "code": "invalid_type",
+          "message": "Invalid input: expected array, received string",
+          "path": [
+            "authorization",
+            "read",
+          ],
+        },
+      ],
+      "success": false,
+    },
+  ],
+}
+`;

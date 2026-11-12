@@ -28,6 +28,43 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  */
 class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	private const KEY = 'pref_walkthrough_completed_version';
@@ -52,7 +89,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testTheStaffSkipTheTourAndRemoveTakesTheValuesAway(): void {
 		$this->alpha(preferences: [
@@ -82,7 +119,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAnAdoptedAccountGetsItsOwnValueBackUnlessItChangedSince(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Sanne', 'email' => '', 'password' => 'theirs'];
@@ -106,34 +143,59 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * An account outside the set, an administrator outside the cast and a secret key are refused before any write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
-	public function testAnAccountTheSetDoesNotOwnAnAdministratorAndASecretAreRefusedBeforeAnyWrite(): void {
-		$this->accounts->users['sanne.devries'] = ['displayName' => 'Sanne', 'email' => '', 'password' => 'theirs'];
-		$this->accounts->groups['admin']        = ['sanne.devries'];
-		$this->accounts->users['someone']       = ['displayName' => 'Someone', 'email' => '', 'password' => 'x'];
+	public function testAnAccountTheSetDoesNotOwnAnAdministratorOutsideTheCastAndASecretAreRefusedBeforeAnyWrite(): void {
+		$this->accounts->users['someone'] = ['displayName' => 'Someone', 'email' => '', 'password' => 'x'];
+		$this->accounts->users['admin']   = ['displayName' => 'Admin', 'email' => '', 'password' => 'x'];
+		$this->accounts->groups['admin']  = ['admin'];
 		$this->alpha(preferences: [
 			['user' => 'someone', 'key' => self::KEY, 'value' => '1.2.0'],
-			['user' => '{{cast:sanne.uid}}', 'key' => self::KEY, 'value' => '1.2.0'],
+			['user' => 'admin', 'key' => self::KEY, 'value' => '1.2.0'],
 			['user' => '{{cast:esra.uid}}', 'key' => 'api_token', 'value' => 'abc'],
 		]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), adopt: ['sanne.devries'], today: $this->today());
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 
+		$where  = 'alpha/lib/Settings/example-sets/demo.json: user preference ';
+		$admins = 'account "admin" is one of Nextcloud\'s administrators and not in the set\'s cast; an example set never changes their preferences';
 		$this->assertSame(
-			[
-				'alpha/lib/Settings/example-sets/demo.json: user preference "'.self::KEY.'": account "someone" is not one the set creates or adopts',
-				'alpha/lib/Settings/example-sets/demo.json: user preference "'.self::KEY.'": account "sanne.devries" is one of Nextcloud\'s administrators; an example set never changes their preferences',
-				'alpha/lib/Settings/example-sets/demo.json: user preference "api_token": user preference alpha api_token holds a secret; a set never writes one',
+			expected: [
+				$where.'"'.self::KEY.'": account "someone" is not one the set creates or adopts',
+				$where.'"'.self::KEY.'": '.$admins,
+				$where.'"api_token": user preference alpha api_token holds a secret; a set never writes one',
 			],
-			array_values(array_filter($report['refusals'], static fn (string $line): bool => str_contains($line, 'user preference')))
+			actual: array_values(array_filter($report['refusals'], static fn (string $line): bool => str_contains($line, 'user preference')))
 		);
-		$this->assertSame([], $this->userValues);
-		$this->assertSame(0, $this->accounts->userCreates);
+		$this->assertSame(expected: [], actual: $this->userValues);
+		$this->assertSame(expected: 0, actual: $this->accounts->userCreates);
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * An administrator the cast declares, here adopted, gets the preference and stays the only administrator.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 */
+	public function testAnAdministratorTheCastDeclaresGetsThePreference(): void {
+		$this->accounts->users['sanne.devries'] = ['displayName' => 'Sanne', 'email' => '', 'password' => 'theirs'];
+		$this->accounts->groups['admin']        = ['sanne.devries'];
+		$this->alpha(preferences: [['user' => '{{cast:sanne.uid}}', 'key' => self::KEY, 'value' => '1.2.0']]);
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), adopt: ['sanne.devries'], today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(expected: '1.2.0', actual: $this->userValues['sanne.devries']['alpha'][self::KEY]);
+		$this->assertSame(expected: ['sanne.devries'], actual: $this->accounts->groups['admin'], message: 'the set adds and removes no administrator');
+	}
+
+	/**
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAKeyNextcloudKeepsAsSensitiveIsRefused(): void {
 		$this->accounts->users['esra.demir'] = ['displayName' => 'Esra', 'email' => '', 'password' => 'theirs'];
@@ -148,7 +210,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAPreferenceOfAnotherAppRefusesTheSet(): void {
 		$this->alpha(preferences: [['user' => '{{cast:esra.uid}}', 'app' => 'beta', 'key' => self::KEY, 'value' => '1.2.0']]);

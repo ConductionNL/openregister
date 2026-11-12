@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TasksControllerFactory;
 use OCA\OpenRegister\Controller\TasksController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -29,7 +33,7 @@ class TasksControllerGapTest extends TestCase {
 		$this->taskService = $this->createMock(TaskService::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new TasksController(
+		$this->controller = TasksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->taskService,
@@ -72,8 +76,8 @@ class TasksControllerGapTest extends TestCase {
 		]);
 
 		$this->taskService->expects($this->once())
-			->method('updateTask')
-			->with('42', 'task-uri', $this->anything())
+			->method('changeTask')
+			->with(new TaskLocation(calendarId: '42', uri: 'task-uri'), $this->anything())
 			->willReturn(['id' => 'task-uri', 'summary' => 'Updated task']);
 
 		$result = $this->controller->update('reg', 'schema', 'id', 'task-uri');
@@ -100,8 +104,8 @@ class TasksControllerGapTest extends TestCase {
 			]);
 
 		$this->taskService->expects($this->once())
-			->method('updateTask')
-			->with('20', 'task-uri', $this->anything())
+			->method('changeTask')
+			->with(new TaskLocation(calendarId: '20', uri: 'task-uri'), $this->anything())
 			->willReturn(['id' => 'task-uri', 'summary' => 'Updated task']);
 
 		$result = $this->controller->update('reg', 'schema', 'id', 'task-uri');
@@ -188,6 +192,32 @@ class TasksControllerGapTest extends TestCase {
 		$result = $this->controller->destroy('reg', 'schema', 'id', 'nonexistent-task');
 
 		$this->assertEquals(404, $result->getStatus());
+	}
+
+	/**
+	 * A calendar id in the request does not stand in for the tie to the object.
+	 */
+	public function testATaskThatIsNotOfTheObjectIsNotFoundAndStays(): void {
+		$object = $this->createObjectEntity();
+		$this->setupObjectValidation($object);
+		$this->request->method('getParams')->willReturn(['calendarId' => '20']);
+		$this->taskService->method('requireTaskAt')->willThrowException(new \Exception('Task not found', 404));
+		$this->taskService->expects($this->never())->method('changeTask');
+
+		$this->assertEquals(404, $this->controller->update('reg', 'schema', 'id', 'task-uri')->getStatus());
+	}
+
+	/**
+	 * Removal asks the same question.
+	 */
+	public function testDestroyOfATaskThatIsNotOfTheObjectIsNotFoundAndStays(): void {
+		$object = $this->createObjectEntity();
+		$this->setupObjectValidation($object);
+		$this->taskService->method('getTasksForObject')->willReturn([['id' => 'task-uri', 'calendarId' => '20']]);
+		$this->taskService->method('requireTaskAt')->willThrowException(new \Exception('Task not found', 404));
+		$this->taskService->expects($this->never())->method('deleteTask');
+
+		$this->assertEquals(404, $this->controller->destroy('reg', 'schema', 'id', 'task-uri')->getStatus());
 	}
 
 	/**
@@ -293,13 +323,11 @@ class TasksControllerGapTest extends TestCase {
 		]);
 
 		$this->taskService->expects($this->once())
-			->method('createTask')
+			->method('createObjectTask')
 			->with(
-				1,
-				2,
-				'test-uuid',
-				'test-uuid', // Falls back to UUID when name is null
-				$this->anything()
+				new ObjectRef(register: 1, schema: 2, id: 'test-uuid'),
+				// The title falls back to the uuid when the name is null.
+				$this->callback(static fn (LinkedTaskDraft $draft): bool => $draft->objectTitle === 'test-uuid')
 			)
 			->willReturn(['id' => 'new-task', 'summary' => 'Test task']);
 

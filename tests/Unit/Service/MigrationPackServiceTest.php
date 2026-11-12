@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use DateTime;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -46,8 +47,11 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\MigrationPack\PackRevision;
 
 class MigrationPackServiceTest extends TestCase {
+	use PassThroughL10nTrait;
+
 	private MigrationPackService $service;
 	private MigrationPackMapper&MockObject $mapper;
 	private IAppConfig&MockObject $appConfig;
@@ -74,8 +78,8 @@ class MigrationPackServiceTest extends TestCase {
 		);
 		$this->service = new MigrationPackService(
 			$this->mapper,
-			new PackDefinitionValidator(),
-			new MappingEngine(),
+			new PackDefinitionValidator($this->passThroughL10n()),
+			new MappingEngine($this->passThroughL10n()),
 			$this->appConfig
 		);
 	}
@@ -171,10 +175,9 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->expects($this->never())->method('update');
 
 		$this->expectException(PackChangedException::class);
-		$this->service->update(
+		$this->service->revise(
 			1,
-			$this->validDefinition(),
-			(new DateTimeImmutable('2026-10-12T10:00:00+00:00'))->getTimestamp()
+			new PackRevision($this->validDefinition(), (new DateTimeImmutable('2026-10-12T10:00:00+00:00'))->getTimestamp())
 		);
 	}
 
@@ -188,10 +191,9 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
 
 		// The same instant, written with another offset.
-		$pack = $this->service->update(
+		$pack = $this->service->revise(
 			1,
-			$this->validDefinition(['name' => 'Renamed Pack']),
-			(new DateTimeImmutable('2026-10-12T10:00:00+00:00'))->getTimestamp()
+			new PackRevision($this->validDefinition(['name' => 'Renamed Pack']), (new DateTimeImmutable('2026-10-12T10:00:00+00:00'))->getTimestamp())
 		);
 
 		$this->assertSame('Renamed Pack', $pack->getName());
@@ -227,7 +229,7 @@ class MigrationPackServiceTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueArray')->willReturn([]);
 		$appConfig->method('setValueArray')->willThrowException(new RuntimeException('app config unavailable'));
-		$service = new MigrationPackService($this->mapper, new PackDefinitionValidator(), new MappingEngine(), $appConfig);
+		$service = new MigrationPackService($this->mapper, new PackDefinitionValidator($this->passThroughL10n()), new MappingEngine($this->passThroughL10n()), $appConfig);
 		$this->mapper->method('find')->willReturn($this->builtinPack());
 		$this->mapper->expects($this->never())->method('delete');
 
@@ -240,7 +242,7 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
 		$this->mapper->method('insert')->willReturnCallback(static fn (MigrationPack $pack) => $pack);
 
-		$this->assertTrue($this->service->create($this->validDefinition(), null, true)->getBuiltin());
+		$this->assertTrue($this->service->seedBuiltin($this->validDefinition())->getBuiltin());
 		$this->assertSame(
 			['other-pack'],
 			$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY]
@@ -253,7 +255,7 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->method('insert')->willThrowException(new RuntimeException('insert failed'));
 
 		try {
-			$this->service->create($this->validDefinition(), null, true);
+			$this->service->seedBuiltin($this->validDefinition());
 			$this->fail('The insert failure must surface');
 		} catch (RuntimeException $e) {
 			$this->assertSame('insert failed', $e->getMessage());

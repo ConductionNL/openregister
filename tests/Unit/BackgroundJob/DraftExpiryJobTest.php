@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -24,7 +25,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
+use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use PHPUnit\Framework\TestCase;
@@ -33,6 +38,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Decision 216: declared, daily, counted, and a failure surfaces.
@@ -42,6 +48,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\DraftRemovalRecord
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Service\Object\DraftListLens
+ * @uses \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -71,7 +78,7 @@ class DraftExpiryJobTest extends TestCase {
 			$constructor = (new ReflectionClass($class))->getConstructor();
 			foreach (($constructor?->getParameters() ?? []) as $parameter) {
 				$type = $parameter->getType();
-				if ($type instanceof ReflectionNamedType && $type->getName() === DraftExpiry::class) {
+				if ($type instanceof ReflectionNamedType && $type->getName() === DraftExpiryInterface::class) {
 					$found[] = $class;
 				}
 			}
@@ -155,19 +162,24 @@ class DraftExpiryJobTest extends TestCase {
 		$objects->method('searchObjects')->willReturnCallback(
 			static fn (array $query = []): array => $query['@self']['schema'] === '1' ? [$expired, $fresh] : []
 		);
+		// The sweep reads each object again just before deleting it.
+		$objects->method('find')->willReturnCallback(
+			static fn (string|int $id): ?ObjectEntity => (array_values(array_filter([$expired, $fresh], static fn (ObjectEntity $entity): bool => $entity->getUuid() === (string)$id))[0] ?? null)
+		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid) use (&$deleted, &$actors): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$deleted, &$actors): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 				// What the real delete path does for a draft: ask the removal record to write its entry.
 				$audit = $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class);
-				$audit->method('createAuditTrailEntry')->willReturnCallback(
+				$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 					static function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null) use (&$actors): \OCA\OpenRegister\Db\AuditTrail {
 						$actors[] = $actorId;
 
 						return new \OCA\OpenRegister\Db\AuditTrail();
 					}
-				);
-				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(draft: new ObjectEntity(), register: null, schema: null);
+				));
+				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(new RemovedDraft(draft: new ObjectEntity(), register: null, schema: null));
 
 				return true;
 			}
@@ -175,19 +187,24 @@ class DraftExpiryJobTest extends TestCase {
 
 				// One line for the schema that lost a draft, then the totals (decision 228).
 		$logged = [];
+		$levels = [];
 		$logger = $this->createMock(LoggerInterface::class);
-		$logger->method('info')->willReturnCallback(
-			static function (string $message, array $context = []) use (&$logged): void {
-				$logged[] = [$message, $context];
-			}
-		);
+		foreach (['info', 'warning'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				static function (string $message, array $context = []) use (&$logged, &$levels, $level): void {
+					$logged[] = [$message, $context];
+					$levels[] = $level;
+				}
+			);
+		}
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
 			services: [
 				ITimeFactory::class => $this->clock(),
 				LoggerInterface::class => $logger,
-				DraftExpiry::class => new DraftExpiry(objects: $objects, registers: $registers, schemas: $schemas, logger: $this->createMock(LoggerInterface::class)),
+				DraftRemovalFrameInterface::class => new DraftRemovalFrame(),
+				DraftExpiryInterface::class => new DraftExpiry(objects: $objects, registers: $registers, schemas: $schemas, logger: $this->createMock(LoggerInterface::class)),
 			]
 		);
 
@@ -206,6 +223,8 @@ class DraftExpiryJobTest extends TestCase {
 		// The second schema sets nothing, so it gets 30 days: looked at, nothing expired, no line of its own.
 		$this->assertStringContainsString('swept drafts', $logged[1][0]);
 		$this->assertSame(['schemas' => 2, 'expired' => 1, 'removed' => 1, 'refused' => 0, 'deferred' => 0], $logged[1][1]);
+		// A sweep that removed a draft is logged where the default log level (warning) shows it.
+		$this->assertSame(['warning', 'warning'], $levels);
 	}//end testTheDeclaredJobRemovesAnExpiredDraft()
 
 	/**
@@ -222,7 +241,7 @@ class DraftExpiryJobTest extends TestCase {
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
-			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiry::class => $expiry]
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry, DraftRemovalFrameInterface::class => new DraftRemovalFrame()]
 		);
 		$this->runJob(job: $job);
 	}//end testAZeroIsLogged()
@@ -239,10 +258,32 @@ class DraftExpiryJobTest extends TestCase {
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
-			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiry::class => $expiry]
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry, DraftRemovalFrameInterface::class => new DraftRemovalFrame()]
 		);
 
 		$this->expectException(RuntimeException::class);
 		$this->runJob(job: $job);
 	}//end testAFailingSweepSurfaces()
+
+	/**
+	 * Drafts that were removed or refused are logged at warning, so the default log level shows them; a zero stays at info.
+	 */
+	public function testARefusalIsLoggedWhereTheDefaultLevelShowsIt(): void {
+		$expiry = $this->createMock(DraftExpiry::class);
+		$expiry->method('sweep')->willReturn(
+			[
+				'schemas' => 1, 'expired' => 2, 'removed' => 0, 'refused' => 2, 'deferred' => 0,
+				'perSchema' => [['register' => 'service', 'schema' => 'ticket', 'lifetimeDays' => 7, 'expired' => 2, 'removed' => 0, 'refused' => 2, 'deferred' => 0]],
+			]
+		);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->exactly(2))->method('warning');
+		$logger->expects($this->never())->method('info');
+
+		$job = $this->build(
+			class: $this->declaredJobClass(),
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiryInterface::class => $expiry, DraftRemovalFrameInterface::class => new DraftRemovalFrame()]
+		);
+		$this->runJob(job: $job);
+	}//end testARefusalIsLoggedWhereTheDefaultLevelShowsIt()
 }//end class

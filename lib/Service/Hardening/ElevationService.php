@@ -41,9 +41,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Hardening;
 
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\ISession;
-use OCP\IUserManager;
-use OCP\IUserSession;
 use Throwable;
 
 /**
@@ -52,7 +49,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class ElevationService {
+class ElevationService implements ElevationServiceInterface {
 
 	/**
 	 * The control that says how long an elevated session lasts.
@@ -71,22 +68,16 @@ class ElevationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ISession             $session     Holds the moment, and dies with the session.
-	 * @param IUserSession         $userSession Names the account that is elevating.
-	 * @param IUserManager         $users       Confirms the password.
-	 * @param ITimeFactory         $time        The clock, so a test can move it.
-	 * @param HardeningPolicy      $policy      Reads the administered period.
-	 * @param HardeningAuditWriter $audit       Records the grant and the refusal.
+	 * @param ElevationIdentity $identity The session, the signed-in user and the password check.
+	 * @param ITimeFactory      $time     The clock, so a test can move it.
+	 * @param HardeningPosture  $posture  Reads the administered period and records the grant and the refusal.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ISession $session,
-		private readonly IUserSession $userSession,
-		private readonly IUserManager $users,
+		private readonly ElevationIdentity $identity,
 		private readonly ITimeFactory $time,
-		private readonly HardeningPolicy $policy,
-		private readonly HardeningAuditWriter $audit,
+		private readonly HardeningPosture $posture,
 	) {
 
 	}//end __construct()
@@ -99,7 +90,7 @@ class ElevationService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
 	 */
 	public function periodSeconds(): int {
-		return $this->policy->administered(control: self::PERIOD_CONTROL);
+		return $this->posture->policy->administered(control: self::PERIOD_CONTROL);
 
 	}//end periodSeconds()
 
@@ -118,44 +109,57 @@ class ElevationService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
 	 */
 	public function elevate(string $password): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->identity->userSession->getUser();
 		if ($user === null || $password === '') {
-			$this->audit->record(
-				fact: 'elevation.refused',
-				before: '',
-				after: '',
-				accepted: false,
-				refusal: 'No signed-in account, or no password given.',
-			);
-
-			return false;
+			return $this->refuseElevation(account: '', refusal: 'No signed-in account, or no password given.');
 		}
 
 		$uid = $user->getUID();
-		if ($this->users->checkPassword($uid, $password) === false) {
-			$this->audit->record(
-				fact: 'elevation.refused',
-				before: '',
-				after: $uid,
-				accepted: false,
-				refusal: 'The password was not confirmed.',
-			);
-
-			return false;
+		if ($this->identity->users->checkPassword($uid, $password) === false) {
+			return $this->refuseElevation(account: $uid, refusal: 'The password was not confirmed.');
 		}
 
-		$now = $this->time->getTime();
-		$this->session->set(self::SESSION_KEY, $now);
-		$this->audit->record(
-			fact: 'elevation.granted',
-			before: '',
-			after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()],
-			accepted: true,
-		);
+		$this->grantElevation(uid: $uid);
 
 		return true;
 
 	}//end elevate()
+
+	/**
+	 * Audit a refused elevation.
+	 *
+	 * @param string $account The account that asked, or the empty string when there is none.
+	 * @param string $refusal Why it was refused.
+	 *
+	 * @return boolean Always false: nothing was elevated.
+	 */
+	private function refuseElevation(string $account, string $refusal): bool {
+		$this->posture->audit->refused(
+			change: new HardeningFact(fact: 'elevation.refused', before: '', after: $account),
+			refusal: $refusal
+		);
+
+		return false;
+	}//end refuseElevation()
+
+	/**
+	 * Start the elevated period for this session and audit the grant.
+	 *
+	 * @param string $uid The account whose password was confirmed.
+	 *
+	 * @return void
+	 */
+	private function grantElevation(string $uid): void {
+		$now = $this->time->getTime();
+		$this->identity->session->set(self::SESSION_KEY, $now);
+		$this->posture->audit->accepted(
+			change: new HardeningFact(
+				fact: 'elevation.granted',
+				before: '',
+				after: ['user' => $uid, 'periodSeconds' => $this->periodSeconds()]
+			)
+		);
+	}//end grantElevation()
 
 	/**
 	 * End the elevated period without ending the session.
@@ -165,7 +169,7 @@ class ElevationService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
 	 */
 	public function drop(): void {
-		$this->session->remove(self::SESSION_KEY);
+		$this->identity->session->remove(self::SESSION_KEY);
 
 	}//end drop()
 
@@ -189,17 +193,7 @@ class ElevationService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-administration-requires-a-fresh-expiring-authentication-req-ihc-002
 	 */
 	public function remainingSeconds(): int {
-		try {
-			$since = $this->session->get(self::SESSION_KEY);
-		} catch (Throwable) {
-			return 0;
-		}
-
-		if (is_int($since) === false && is_string($since) === false) {
-			return 0;
-		}
-
-		$since = (int)$since;
+		$since = $this->elevatedSince();
 		if ($since <= 0) {
 			return 0;
 		}
@@ -221,6 +215,25 @@ class ElevationService {
 	}//end remainingSeconds()
 
 	/**
+	 * The moment this session was elevated, or 0 when it holds no readable moment.
+	 *
+	 * @return integer The unix time stored at elevation, or 0.
+	 */
+	private function elevatedSince(): int {
+		try {
+			$since = $this->identity->session->get(self::SESSION_KEY);
+		} catch (Throwable) {
+			return 0;
+		}
+
+		if (is_int($since) === false && is_string($since) === false) {
+			return 0;
+		}
+
+		return (int)$since;
+	}//end elevatedSince()
+
+	/**
 	 * Refuse an administration write unless the period is running.
 	 *
 	 * @return void
@@ -234,12 +247,13 @@ class ElevationService {
 			return;
 		}
 
-		$this->audit->record(
-			fact: 'elevation.lapsed',
-			before: '',
-			after: ($this->userSession->getUser()?->getUID() ?? ''),
-			accepted: false,
-			refusal: 'The administration write was refused: the elevated period had lapsed.',
+		$this->posture->audit->refused(
+			change: new HardeningFact(
+				fact: 'elevation.lapsed',
+				before: '',
+				after: ($this->identity->userSession->getUser()?->getUID() ?? '')
+			),
+			refusal: 'The administration write was refused: the elevated period had lapsed.'
 		);
 
 		throw new ElevationRequiredException(periodSeconds: $this->periodSeconds());

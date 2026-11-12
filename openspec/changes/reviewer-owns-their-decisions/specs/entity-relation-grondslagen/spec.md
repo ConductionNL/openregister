@@ -32,7 +32,7 @@ When ownership is `decider` for the relation's schema (from `x-openregister-revi
 
 ### Requirement: A schema can hide one reviewer's decisions from another (REQ-ROD-002)
 
-When `hideOthers` is on, every endpoint that returns entity relations (`gdprEntities#index`, `gdprEntities#show`, the file entity listings and the review leaf's reads) SHALL return a relation decided by someone other than the caller with `decision: "hidden"`, without its decision record (`decidedBy`, `decidedAt`, `note`) and without `bases`, unless the caller is a supervisor or an administrator. The relation SHALL still be listed with its type and position.
+When `hideOthers` is on, every endpoint that returns entity relations (`gdprEntities#index`, `gdprEntities#show`, the file entity listings and the review leaf's reads) SHALL return a relation decided by someone other than the caller with `decision: "hidden"`, without its decision record (`decidedBy`, `decidedAt`, `note`), without `bases` and `skipAnonymization`, and without `anonymized` and `anonymizedValue` (an anonymise pass writes both from the verdict, so they would show it), unless the caller is a supervisor or an administrator. The relation SHALL still be listed with its type and position.
 
 #### Scenario: a blind second review
 - **GIVEN** `hideOthers` on and ten occurrences, four decided by `j.devries`

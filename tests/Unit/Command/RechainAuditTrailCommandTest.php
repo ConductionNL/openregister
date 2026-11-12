@@ -113,6 +113,25 @@ class RechainAuditTrailCommandTest extends TestCase {
 	}//end testDryRunNeverRechains()
 
 	/**
+	 * The state line prints validity, verified count, first break, tombstones and unsealed rows.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function testDryRunPrintsTheStateLine(): void {
+		$this->hashes->method('verifyChain')->willReturnOnConsecutiveCalls(
+			$this->verification(false),
+			['valid' => 'yes', 'entriesVerified' => 3]
+		);
+		$this->hashes->method('countUnsealed')->willReturn(7);
+
+		$this->tester->execute(['--dry-run' => true]);
+		$this->assertMatchesRegularExpression('/valid=false  verified=\d+  brokenAt=42  tombstones=\d+  unsealed=7/', $this->tester->getDisplay());
+
+	}//end testDryRunPrintsTheStateLine()
+
+	/**
 	 * Declining the confirmation leaves the hashes alone.
 	 *
 	 * The prompt is the whole safety mechanism for an interactive operator, so

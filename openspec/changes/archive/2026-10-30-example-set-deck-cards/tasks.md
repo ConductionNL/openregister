@@ -1,0 +1,3 @@
+- [x] 1.1 ExampleSetDeckStore (Deck tables)
+- [x] 1.2 ExampleSetDeckCards part, wired in EngineKinds, Catalogue and Record
+- [x] 1.3 tests (ExampleSetDeckCardsTest)

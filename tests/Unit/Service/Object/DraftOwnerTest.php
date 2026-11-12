@@ -62,6 +62,19 @@ class DraftOwnerTest extends TestCase {
 	}//end testAUserOwnerIsTheUid()
 
 	/**
+	 * The owner is the asserted one, else the signed-in subject, else nobody.
+	 */
+	public function testTheOwnerIsTheAssertedOneElseTheSubjectElseNobody(): void {
+		$alice = $this->user(uid: 'alice');
+		$portal = DraftOwner::portalSubject(subjectRef: 'subject-1');
+
+		$this->assertSame($portal, DraftOwner::resolve(subject: $alice, owner: $portal));
+		$this->assertSame('alice', DraftOwner::resolve(subject: $alice, owner: null)?->value());
+		$this->assertSame($portal, DraftOwner::resolve(subject: null, owner: $portal));
+		$this->assertNull(DraftOwner::resolve(subject: null, owner: null));
+	}//end testTheOwnerIsTheAssertedOneElseTheSubjectElseNobody()
+
+	/**
 	 * A portal subject owner is `portal:<subjectRef>`, scoped, without a user.
 	 */
 	public function testAPortalSubjectIsAScopeValue(): void {

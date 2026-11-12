@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
+ * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Drops the favourites table.
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
+ * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
  */
 class Version1Date20261009130100 extends SimpleMigrationStep {
 
@@ -49,7 +49,7 @@ class Version1Date20261009130100 extends SimpleMigrationStep {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();

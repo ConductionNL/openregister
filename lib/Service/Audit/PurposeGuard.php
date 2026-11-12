@@ -15,14 +15,16 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
@@ -38,9 +40,9 @@ use Throwable;
  * of the same question, and an administrator who has found one has found the
  * other.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
-class PurposeGuard {
+class PurposeGuard implements PurposeGuardInterface {
 	/**
 	 * The schema and register annotation that turns doelbinding on.
 	 *
@@ -49,24 +51,17 @@ class PurposeGuard {
 	public const ANNOTATION = 'x-openregister-purpose-required';
 
 	/**
-	 * The audit action a refused read is recorded under.
-	 *
-	 * @var string
-	 */
-	public const ACTION_REFUSED = 'purpose.query-refused';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param PurposeRegistry  $registry The administered purpose list.
 	 * @param PurposeContext   $context  The purpose this request declared.
-	 * @param AuditTrailMapper $audit    Records the refusal.
+	 * @param AuditTrailMapperInterface $audit    Records the refusal.
 	 * @param LoggerInterface  $logger   PSR-3 logger.
 	 */
 	public function __construct(
 		private readonly PurposeRegistry $registry,
 		private readonly PurposeContext $context,
-		private readonly AuditTrailMapper $audit,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -86,7 +81,7 @@ class PurposeGuard {
 	 *
 	 * @return bool True when the read must name a purpose.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function isRequired(?Register $register, ?Schema $schema): bool {
 		if ($this->annotated(register: $register, schema: $schema) === false) {
@@ -97,6 +92,20 @@ class PurposeGuard {
 			return true;
 		}
 
+		$this->warnUnbound(register: $register, schema: $schema);
+
+		return false;
+	}//end isRequired()
+
+	/**
+	 * Warn that an annotated read runs unbound because the instance administers no purpose.
+	 *
+	 * @param Register|null $register The register read.
+	 * @param Schema|null   $schema   The schema read.
+	 *
+	 * @return void
+	 */
+	private function warnUnbound(?Register $register, ?Schema $schema): void {
 		$this->logger->warning(
 			message: '[Doelbinding] A schema asks for a declared purpose and the instance administers none, '
 				. 'so the read runs unbound. Administer a purpose to close this.',
@@ -105,9 +114,7 @@ class PurposeGuard {
 				'register' => $register?->getId(),
 			]
 		);
-
-		return false;
-	}//end isRequired()
+	}//end warnUnbound()
 
 	/**
 	 * Enforce doelbinding on a read, and remember the purpose it ran under.
@@ -124,26 +131,63 @@ class PurposeGuard {
 	 *
 	 * @throws PurposeRefusedException When a purpose is needed and none is usable.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function enforce(?Register $register, ?Schema $schema): ?string {
 		if ($this->isRequired(register: $register, schema: $schema) === false) {
 			return null;
 		}
 
-		$declared = $this->context->declared();
-
 		try {
-			$resolved = $this->registry->requirePurpose(code: $declared);
+			return $this->acceptDeclared();
 		} catch (PurposeRefusedException $refusal) {
-			$this->recordRefusal(refusal: $refusal, register: $register, schema: $schema);
+			$this->recordRefusal(refusal: $refusal, scope: new PurposeReadScope(register: $register, schema: $schema));
 			throw $refusal;
 		}
+	}//end enforce()
 
+	/**
+	 * Whether a read of this table may run, without recording a refusal.
+	 *
+	 * For a search that spans tables and leaves out the ones it may not read,
+	 * rather than refusing the whole search.
+	 *
+	 * @param Register|null $register The register being read.
+	 * @param Schema|null   $schema   The schema being read.
+	 *
+	 * @return bool True when no purpose is needed or the declared one is accepted.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function allows(?Register $register, ?Schema $schema): bool {
+		if ($this->isRequired(register: $register, schema: $schema) === false) {
+			return true;
+		}
+
+		try {
+			$this->acceptDeclared();
+		} catch (PurposeRefusedException $refusal) {
+			return false;
+		}
+
+		return true;
+	}//end allows()
+
+	/**
+	 * Accept the purpose this request declared, and remember it.
+	 *
+	 * @return string The accepted purpose code.
+	 *
+	 * @throws PurposeRefusedException When no usable purpose was declared.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function acceptDeclared(): string {
+		$resolved = $this->registry->requirePurpose(code: $this->context->declared());
 		$this->context->accept(purpose: $resolved['purpose'], activity: $resolved['activity']);
 
 		return $resolved['purpose']->getCode();
-	}//end enforce()
+	}//end acceptDeclared()
 
 	/**
 	 * Record the refusal on the trail.
@@ -156,36 +200,41 @@ class PurposeGuard {
 	 * Fail-soft: a refusal that cannot be recorded is still a refusal. The
 	 * read does not become permitted because the bookkeeping failed.
 	 *
-	 * @param PurposeRefusedException $refusal  The refusal to record.
-	 * @param Register|null           $register The register being read.
-	 * @param Schema|null             $schema   The schema being read.
+	 * @param PurposeRefusedException $refusal The refusal to record.
+	 * @param PurposeReadScope        $scope   The register and schema being read.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	private function recordRefusal(
-		PurposeRefusedException $refusal,
-		?Register $register,
-		?Schema $schema,
-	): void {
+	private function recordRefusal(PurposeRefusedException $refusal, PurposeReadScope $scope): void {
 		try {
-			$this->audit->createPurposeRefusalEntry(
-				rule: $refusal->getRule(),
-				purpose: $refusal->getPurpose(),
-				register: $register?->getId(),
-				schema: $schema?->getId()
+			$target = new AuditedObject(register: $scope->register?->getId(), schema: $scope->schema?->getId());
+			$this->audit->recordPurposeRefusal(
+				refusal: new PurposeRefusal(rule: $refusal->getRule(), purpose: $refusal->getPurpose(), target: $target)
 			);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[Doelbinding] The refusal could not be recorded on the trail.',
-				context: [
-					'rule' => $refusal->getRule(),
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logUnrecordedRefusal(refusal: $refusal, error: $e);
 		}
 	}//end recordRefusal()
+
+	/**
+	 * Log a refusal that could not be recorded on the trail.
+	 *
+	 * @param PurposeRefusedException $refusal The refusal.
+	 * @param Throwable               $error   Why recording it failed.
+	 *
+	 * @return void
+	 */
+	private function logUnrecordedRefusal(PurposeRefusedException $refusal, Throwable $error): void {
+		$this->logger->error(
+			message: '[Doelbinding] The refusal could not be recorded on the trail.',
+			context: [
+				'rule' => $refusal->getRule(),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logUnrecordedRefusal()
 
 	/**
 	 * Whether the schema, or failing that its register, asks for doelbinding.
@@ -195,7 +244,7 @@ class PurposeGuard {
 	 *
 	 * @return bool True when either carries the annotation.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function annotated(?Register $register, ?Schema $schema): bool {
 		if ($schema !== null && $this->readsTrue(configuration: $schema->getConfiguration()) === true) {
@@ -221,18 +270,24 @@ class PurposeGuard {
 	 *
 	 * @return bool True when the annotation is present and affirmative.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function readsTrue(mixed $configuration): bool {
 		if (is_array($configuration) === false) {
 			return false;
 		}
 
-		$value = ($configuration[self::ANNOTATION] ?? null);
-		if ($value === null) {
-			return false;
-		}
+		return $this->isTruthy(value: ($configuration[self::ANNOTATION] ?? null));
+	}//end readsTrue()
 
+	/**
+	 * Whether an annotation value reads as true: true, 1, or "true" / "1" / "yes" in any case.
+	 *
+	 * @param mixed $value The annotation value.
+	 *
+	 * @return bool True when it reads as true.
+	 */
+	private function isTruthy(mixed $value): bool {
 		if (is_bool($value) === true) {
 			return $value;
 		}
@@ -242,5 +297,5 @@ class PurposeGuard {
 		}
 
 		return $value === 1;
-	}//end readsTrue()
+	}//end isTruthy()
 }//end class

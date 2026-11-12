@@ -1,0 +1,738 @@
+{
+    "current keys getArchivalSettingsOnly": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 30,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": null,
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": null
+        },
+        "writes": []
+    },
+    "current keys getObjectSettingsOnly": {
+        "result": {
+            "vectorizationEnabled": false,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": true,
+            "enabledViews": [
+                "v"
+            ],
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 25,
+            "autoRetry": true
+        },
+        "writes": []
+    },
+    "current keys getRetentionSettingsOnly": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 86400000,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": false,
+            "searchTrailsEnabled": true,
+            "searchTrailRecordingMode": "_search"
+        },
+        "writes": []
+    },
+    "current keys getVersionInfoOnly": {
+        "result": {
+            "appName": "Open Register",
+            "appVersion": "0.2.3"
+        },
+        "writes": []
+    },
+    "empty getArchivalSettingsOnly": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 30,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": null,
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": null
+        },
+        "writes": []
+    },
+    "empty getObjectSettingsOnly": {
+        "result": {
+            "vectorizationEnabled": false,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": true,
+            "enabledViews": [],
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 25,
+            "autoRetry": true
+        },
+        "writes": []
+    },
+    "empty getRetentionSettingsOnly": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 86400000,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": true,
+            "searchTrailsEnabled": true,
+            "searchTrailRecordingMode": "_search"
+        },
+        "writes": []
+    },
+    "empty getVersionInfoOnly": {
+        "result": {
+            "appName": "Open Register",
+            "appVersion": "0.2.3"
+        },
+        "writes": []
+    },
+    "null json getArchivalSettingsOnly": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 30,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": null,
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": null
+        },
+        "writes": []
+    },
+    "null json getObjectSettingsOnly": {
+        "result": {
+            "vectorizationEnabled": false,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": true,
+            "enabledViews": [],
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 25,
+            "autoRetry": true
+        },
+        "writes": []
+    },
+    "null json getRetentionSettingsOnly": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 86400000,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": true,
+            "searchTrailsEnabled": true,
+            "searchTrailRecordingMode": "_search"
+        },
+        "writes": []
+    },
+    "null json getVersionInfoOnly": {
+        "result": {
+            "appName": "Open Register",
+            "appVersion": "0.2.3"
+        },
+        "writes": []
+    },
+    "odd values getArchivalSettingsOnly": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 30,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": null,
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": null
+        },
+        "writes": []
+    },
+    "odd values getObjectSettingsOnly": {
+        "result": {
+            "vectorizationEnabled": false,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": true,
+            "enabledViews": "text",
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 25,
+            "autoRetry": true
+        },
+        "writes": []
+    },
+    "odd values getRetentionSettingsOnly": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 86400000,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": true,
+            "searchTrailsEnabled": false,
+            "searchTrailRecordingMode": "_search"
+        },
+        "writes": []
+    },
+    "odd values getVersionInfoOnly": {
+        "result": {
+            "appName": "Open Register",
+            "appVersion": "0.2.3"
+        },
+        "writes": []
+    },
+    "scalar json getArchivalSettingsOnly": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 30,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": null,
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": null
+        },
+        "writes": []
+    },
+    "scalar json getObjectSettingsOnly": {
+        "result": {
+            "vectorizationEnabled": false,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": true,
+            "enabledViews": [],
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 25,
+            "autoRetry": true
+        },
+        "writes": []
+    },
+    "scalar json getRetentionSettingsOnly": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 86400000,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": true,
+            "searchTrailsEnabled": true,
+            "searchTrailRecordingMode": "_search"
+        },
+        "writes": []
+    },
+    "scalar json getVersionInfoOnly": {
+        "result": {
+            "appName": "Open Register",
+            "appVersion": "0.2.3"
+        },
+        "writes": []
+    },
+    "stored getArchivalSettingsOnly": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 7,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": "r",
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": null
+        },
+        "writes": []
+    },
+    "stored getObjectSettingsOnly": {
+        "result": {
+            "vectorizationEnabled": true,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": false,
+            "enabledViews": [
+                "s1"
+            ],
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 25,
+            "autoRetry": true
+        },
+        "writes": []
+    },
+    "stored getRetentionSettingsOnly": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 5,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": true,
+            "searchTrailsEnabled": false,
+            "searchTrailRecordingMode": "all"
+        },
+        "writes": []
+    },
+    "stored getVersionInfoOnly": {
+        "result": {
+            "appName": "Open Register",
+            "appVersion": "0.2.3"
+        },
+        "writes": []
+    },
+    "updateArchivalSettingsOnly bad mode": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 30,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": null,
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": null
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "archival"
+                ]
+            ],
+            [
+                "setValueString",
+                "archival",
+                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":30,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "archival"
+                ]
+            ]
+        ]
+    },
+    "updateArchivalSettingsOnly nothing": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 30,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": null,
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": null
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "archival"
+                ]
+            ],
+            [
+                "setValueString",
+                "archival",
+                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":30,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "archival"
+                ]
+            ]
+        ]
+    },
+    "updateArchivalSettingsOnly nulls": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 30,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": null,
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": null
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "archival"
+                ]
+            ],
+            [
+                "setValueString",
+                "archival",
+                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":30,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":null}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "archival"
+                ]
+            ]
+        ]
+    },
+    "updateArchivalSettingsOnly values": {
+        "result": {
+            "destructionCheckInterval": 86400,
+            "notificationLeadDays": 2,
+            "reviewReminderFrequency": "P7D",
+            "defaultExtensionPeriod": "P1Y",
+            "destructionBatchSize": 50,
+            "selectielijstRegister": null,
+            "selectielijstSchema": null,
+            "selectielijstVersion": null,
+            "destructionListRegister": null,
+            "destructionListSchema": null,
+            "archivalRegister": "ar"
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "archival"
+                ]
+            ],
+            [
+                "setValueString",
+                "archival",
+                "{\"destructionCheckInterval\":86400,\"notificationLeadDays\":2,\"reviewReminderFrequency\":\"P7D\",\"defaultExtensionPeriod\":\"P1Y\",\"destructionBatchSize\":50,\"selectielijstRegister\":null,\"selectielijstSchema\":null,\"selectielijstVersion\":null,\"destructionListRegister\":null,\"destructionListSchema\":null,\"archivalRegister\":\"ar\"}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "archival"
+                ]
+            ]
+        ]
+    },
+    "updateObjectSettingsOnly bad mode": {
+        "result": {
+            "vectorizationEnabled": false,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": true,
+            "enabledViews": [],
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 25,
+            "autoRetry": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "objectManagement"
+                ]
+            ],
+            [
+                "setValueString",
+                "objectManagement",
+                "{\"vectorizationEnabled\":false,\"vectorizeOnCreate\":true,\"vectorizeOnUpdate\":false,\"vectorizeAllViews\":true,\"enabledViews\":[],\"includeMetadata\":true,\"includeRelations\":true,\"maxNestingDepth\":10,\"batchSize\":25,\"autoRetry\":true}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "objectManagement"
+                ]
+            ]
+        ]
+    },
+    "updateObjectSettingsOnly nothing": {
+        "result": {
+            "vectorizationEnabled": false,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": true,
+            "enabledViews": [],
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 25,
+            "autoRetry": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "objectManagement"
+                ]
+            ],
+            [
+                "setValueString",
+                "objectManagement",
+                "{\"vectorizationEnabled\":false,\"vectorizeOnCreate\":true,\"vectorizeOnUpdate\":false,\"vectorizeAllViews\":true,\"enabledViews\":[],\"includeMetadata\":true,\"includeRelations\":true,\"maxNestingDepth\":10,\"batchSize\":25,\"autoRetry\":true}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "objectManagement"
+                ]
+            ]
+        ]
+    },
+    "updateObjectSettingsOnly nulls": {
+        "result": {
+            "vectorizationEnabled": false,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": true,
+            "enabledViews": [],
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 25,
+            "autoRetry": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "objectManagement"
+                ]
+            ],
+            [
+                "setValueString",
+                "objectManagement",
+                "{\"vectorizationEnabled\":false,\"vectorizeOnCreate\":true,\"vectorizeOnUpdate\":false,\"vectorizeAllViews\":true,\"enabledViews\":[],\"includeMetadata\":true,\"includeRelations\":true,\"maxNestingDepth\":10,\"batchSize\":25,\"autoRetry\":true}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "objectManagement"
+                ]
+            ]
+        ]
+    },
+    "updateObjectSettingsOnly values": {
+        "result": {
+            "vectorizationEnabled": true,
+            "vectorizeOnCreate": true,
+            "vectorizeOnUpdate": false,
+            "vectorizeAllViews": true,
+            "enabledViews": [
+                "a"
+            ],
+            "includeMetadata": true,
+            "includeRelations": true,
+            "maxNestingDepth": 10,
+            "batchSize": 3,
+            "autoRetry": true
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "objectManagement"
+                ]
+            ],
+            [
+                "setValueString",
+                "objectManagement",
+                "{\"vectorizationEnabled\":true,\"vectorizeOnCreate\":true,\"vectorizeOnUpdate\":false,\"vectorizeAllViews\":true,\"enabledViews\":[\"a\"],\"includeMetadata\":true,\"includeRelations\":true,\"maxNestingDepth\":10,\"batchSize\":3,\"autoRetry\":true}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "objectManagement"
+                ]
+            ]
+        ]
+    },
+    "updateRetentionSettingsOnly bad mode": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 86400000,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": true,
+            "searchTrailsEnabled": true,
+            "searchTrailRecordingMode": "_search"
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "retention"
+                ]
+            ],
+            [
+                "setValueString",
+                "retention",
+                "{\"objectArchiveRetention\":31536000000,\"objectDeleteRetention\":63072000000,\"searchTrailRetention\":2592000000,\"createLogRetention\":2592000000,\"readLogRetention\":86400000,\"updateLogRetention\":604800000,\"deleteLogRetention\":2592000000,\"auditTrailsEnabled\":true,\"searchTrailsEnabled\":true,\"searchTrailRecordingMode\":\"_search\"}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "retention"
+                ]
+            ]
+        ]
+    },
+    "updateRetentionSettingsOnly nothing": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 86400000,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": true,
+            "searchTrailsEnabled": true,
+            "searchTrailRecordingMode": "_search"
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "retention"
+                ]
+            ],
+            [
+                "setValueString",
+                "retention",
+                "{\"objectArchiveRetention\":31536000000,\"objectDeleteRetention\":63072000000,\"searchTrailRetention\":2592000000,\"createLogRetention\":2592000000,\"readLogRetention\":86400000,\"updateLogRetention\":604800000,\"deleteLogRetention\":2592000000,\"auditTrailsEnabled\":true,\"searchTrailsEnabled\":true,\"searchTrailRecordingMode\":\"_search\"}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "retention"
+                ]
+            ]
+        ]
+    },
+    "updateRetentionSettingsOnly nulls": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 86400000,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": true,
+            "searchTrailsEnabled": true,
+            "searchTrailRecordingMode": "_search"
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "retention"
+                ]
+            ],
+            [
+                "setValueString",
+                "retention",
+                "{\"objectArchiveRetention\":31536000000,\"objectDeleteRetention\":63072000000,\"searchTrailRetention\":2592000000,\"createLogRetention\":2592000000,\"readLogRetention\":86400000,\"updateLogRetention\":604800000,\"deleteLogRetention\":2592000000,\"auditTrailsEnabled\":true,\"searchTrailsEnabled\":true,\"searchTrailRecordingMode\":\"_search\"}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "retention"
+                ]
+            ]
+        ]
+    },
+    "updateRetentionSettingsOnly values": {
+        "result": {
+            "objectArchiveRetention": 31536000000,
+            "objectDeleteRetention": 63072000000,
+            "searchTrailRetention": 2592000000,
+            "createLogRetention": 2592000000,
+            "readLogRetention": 1,
+            "updateLogRetention": 604800000,
+            "deleteLogRetention": 2592000000,
+            "auditTrailsEnabled": "no",
+            "searchTrailsEnabled": true,
+            "searchTrailRecordingMode": "none"
+        },
+        "writes": [
+            [
+                "snapshot",
+                [
+                    "retention"
+                ]
+            ],
+            [
+                "setValueString",
+                "retention",
+                "{\"objectArchiveRetention\":31536000000,\"objectDeleteRetention\":63072000000,\"searchTrailRetention\":2592000000,\"createLogRetention\":2592000000,\"readLogRetention\":1,\"updateLogRetention\":604800000,\"deleteLogRetention\":2592000000,\"auditTrailsEnabled\":\"no\",\"searchTrailsEnabled\":true,\"searchTrailRecordingMode\":\"none\"}",
+                false
+            ],
+            [
+                "record",
+                [
+                    "retention"
+                ]
+            ]
+        ]
+    }
+}

@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
@@ -83,7 +85,7 @@ class FilesObjectSourceProviderTest extends TestCase {
 			$rootFolder->method('getUserFolder')->willReturn($userFolder);
 		}
 
-		return new FilesObjectSourceProvider($rootFolder, $session, new NullLogger());
+		return new FilesObjectSourceProvider(rootFolder: $rootFolder, session: new \OCA\OpenRegister\Service\LinkSessionRuntime(userSession: $session, logger: new NullLogger()));
 	}//end provider()
 
 	/**
@@ -161,7 +163,7 @@ class FilesObjectSourceProviderTest extends TestCase {
 		$report = $this->file(42, 'report.pdf', '/admin/files/docs/report.pdf', 'application/pdf', 2048, 1700000000);
 		$notes = $this->file(43, 'notes.txt', '/admin/files/notes.txt', 'text/plain', 12, 1700000100);
 
-		$objects = $this->provider($acting, $this->homeFolder([$report, $notes]))->findAll($register, $schema);
+		$objects = $this->provider($acting, $this->homeFolder([$report, $notes]))->findAll(new SourcedTable(new RegisterSchema($register, $schema)));
 
 		$this->assertCount(2, $objects);
 		$data = $objects[0]->getObject();
@@ -188,9 +190,9 @@ class FilesObjectSourceProviderTest extends TestCase {
 		$report = $this->file(42, 'report.pdf', '/admin/files/docs/report.pdf', 'application/pdf', 2048, 1700000000);
 		$provider = $this->provider($acting, $this->homeFolder([$report]));
 
-		$this->assertSame('report.pdf', $provider->find($register, $schema, '42')?->getObject()['name']);
-		$this->assertNull($provider->find($register, $schema, '999'));
-		$this->assertNull($provider->find($register, $schema, 'not-numeric'));
+		$this->assertSame('report.pdf', $provider->find(new SourcedTable(new RegisterSchema($register, $schema)), '42')?->getObject()['name']);
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), '999'));
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'not-numeric'));
 	}//end testFindByFileId()
 
 	/**
@@ -200,6 +202,6 @@ class FilesObjectSourceProviderTest extends TestCase {
 	 */
 	public function testNoActingUserEmptyList(): void {
 		[$register, $schema] = $this->binding();
-		$this->assertCount(0, $this->provider(null, null)->findAll($register, $schema));
+		$this->assertCount(0, $this->provider(null, null)->findAll(new SourcedTable(new RegisterSchema($register, $schema))));
 	}//end testNoActingUserEmptyList()
 }//end class

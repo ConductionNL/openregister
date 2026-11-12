@@ -36,12 +36,10 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrant;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\AuthorizationChange;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -53,9 +51,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One collaborator per source
  * the act can remove, plus the audit that records what it removed.
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
-class ReachRevocationService {
+class ReachRevocationService implements ReachRevocationServiceInterface {
 	/**
 	 * The rule a revocation runs under, carried on every audit line.
 	 *
@@ -66,24 +64,16 @@ class ReachRevocationService {
 	/**
 	 * Wire the act.
 	 *
-	 * @param PrincipalReachService     $reach        The listing the act runs from.
-	 * @param SchemaMapper              $schemaMapper Schema authorization blocks.
-	 * @param DerivedGrantStore         $derived      Grants derived from sign-in claims.
-	 * @param DelegationGrantMapper     $delegations  Delegations held.
-	 * @param AuthorizationAuditService $audit        The record of what was removed.
-	 * @param IUserSession              $userSession  The acting administrator.
-	 * @param LoggerInterface           $logger       PSR logger.
-	 *
-	 * @return void
+	 * @param PrincipalReachService     $reach       The listing the act runs from.
+	 * @param ReachSources              $sources     Schema authorization blocks, derived grants and delegations held.
+	 * @param ReachRevocationLog $log The authorization audit and the PSR log a revocation is written to.
+	 * @param IUserSession              $userSession The acting administrator.
 	 */
 	public function __construct(
 		private readonly PrincipalReachService $reach,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly DerivedGrantStore $derived,
-		private readonly DelegationGrantMapper $delegations,
-		private readonly AuthorizationAuditService $audit,
+		private readonly ReachSources $sources,
+		private readonly ReachRevocationLog $log,
 		private readonly IUserSession $userSession,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -95,7 +85,7 @@ class ReachRevocationService {
 	 *
 	 * @return array<string, mixed> One record naming every grant removed and every one retained.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function revokeAll(string $principal, string $reason = ''): array {
 		$principal = trim($principal);
@@ -135,7 +125,7 @@ class ReachRevocationService {
 		// ONE ENTRY NAMES ALL OF THEM. Per-grant lines would let a reader
 		// believe a partial act was a whole one, and the question this answers
 		// is "what did this person still have on the day they left".
-		$this->logger->warning(
+		$this->log->logger->warning(
 			message: '[ReachRevocation] A principal\'s whole reach was revoked in one act',
             context: array_merge(['event_type' => AuthorizationAuditService::EVENT_TYPE], $record)
 		);
@@ -169,12 +159,14 @@ class ReachRevocationService {
 
 			try {
 				$schema->setAuthorization($after);
-				$this->schemaMapper->update($schema);
-				$this->audit->logSchemaAuthorizationChange(
-					schemaId: (int)$schema->getId(),
-					schemaTitle: (string)$schema->getTitle(),
-					oldAuthorization: $before,
-					newAuthorization: $after
+				$this->sources->schemaMapper->update($schema);
+				$this->log->audit->recordSchemaChange(
+					change: new AuthorizationChange(
+						entityId: (int)$schema->getId(),
+						entityTitle: (string)$schema->getTitle(),
+						before: $before,
+						after: $after
+					)
 				);
 
 				$record['removed'][] = [
@@ -237,7 +229,7 @@ class ReachRevocationService {
 	 */
 	private function namesPrincipal(mixed $entry, string $principal): bool {
 		if (is_string($entry) === true) {
-			return ($entry === $principal || $entry === ('user:' . $principal));
+			return self::isPrincipalName(value: $entry, principal: $principal);
 		}
 
 		if (is_array($entry) === false) {
@@ -245,16 +237,25 @@ class ReachRevocationService {
 		}
 
 		foreach (['name', 'principal', 'id', 'user'] as $key) {
-			$value = ($entry[$key] ?? null);
-			if (is_string($value) === true
-				&& ($value === $principal || $value === ('user:' . $principal))
-			) {
+			if (self::isPrincipalName(value: ($entry[$key] ?? null), principal: $principal) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end namesPrincipal()
+
+	/**
+	 * Whether a value is the account's name, bare or in its `user:` form.
+	 *
+	 * @param mixed  $value     The value as written.
+	 * @param string $principal The account.
+	 *
+	 * @return bool True when the value names the account.
+	 */
+	private static function isPrincipalName(mixed $value, string $principal): bool {
+		return (is_string($value) === true && ($value === $principal || $value === ('user:' . $principal)));
+	}//end isPrincipalName()
 
 	/**
 	 * Forget the grants derived from this account's sign-in claims.
@@ -266,7 +267,7 @@ class ReachRevocationService {
 	 */
 	private function removeDerived(string $principal, array &$record): void {
 		try {
-			$held = $this->derived->grantsFor(userId: $principal);
+			$held = $this->sources->derived->grantsFor(userId: $principal);
 		} catch (Throwable $e) {
 			$record['failed'][] = ['source' => PrincipalReach::SOURCE_DERIVED, 'error' => $e->getMessage()];
 			return;
@@ -277,7 +278,7 @@ class ReachRevocationService {
 		}
 
 		try {
-			$this->derived->forget(userId: $principal);
+			$this->sources->derived->forget(userId: $principal);
 			$record['removed'][] = [
 				'source' => PrincipalReach::SOURCE_DERIVED,
 				'grants' => $held,
@@ -299,7 +300,7 @@ class ReachRevocationService {
 		$now = new DateTime();
 
 		try {
-			$held = $this->delegations->findHeldBy(principal: $principal);
+			$held = $this->sources->delegations->findHeldBy(principal: $principal);
 		} catch (Throwable $e) {
 			$record['failed'][] = ['source' => PrincipalReach::SOURCE_DELEGATION, 'error' => $e->getMessage()];
 			return;
@@ -313,7 +314,7 @@ class ReachRevocationService {
 			try {
 				$grant->setStatus(DelegationGrant::STATUS_REVOKED);
 				$grant->setRevokedAt(new DateTime());
-				$this->delegations->update($grant);
+				$this->sources->delegations->update($grant);
 
 				$record['removed'][] = [
 					'source' => PrincipalReach::SOURCE_DELEGATION,
@@ -337,9 +338,9 @@ class ReachRevocationService {
 	 */
 	private function schemas(): array {
 		try {
-			return $this->schemaMapper->findAll();
+			return $this->sources->schemaMapper->findAll();
 		} catch (Throwable $e) {
-			$this->logger->error(
+			$this->log->logger->error(
 				message: '[ReachRevocation] Could not list the schemas, so nothing was revoked from them',
 				context: ['error' => $e->getMessage()]
 			);

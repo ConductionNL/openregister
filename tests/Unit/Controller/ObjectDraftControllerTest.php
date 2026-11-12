@@ -20,19 +20,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
 use OCA\OpenRegister\Controller\ObjectDraftController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\OCSController;
+use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -47,6 +53,9 @@ use RuntimeException;
  * Decision 216: the owner's action on the object API.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectDraftController
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDraftControllerServices
  * @uses \OCA\OpenRegister\Exception\DraftActivationRefusedException
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
@@ -59,6 +68,7 @@ class ObjectDraftControllerTest extends TestCase {
 	private ObjectService&MockObject $objects;
 
 	private DraftActivation&MockObject $activation;
+
 
 	private IUserSession&MockObject $session;
 
@@ -91,6 +101,13 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	private ?ObjectEntity $readable = null;
 
+	/**
+	 * Whether the render boundary throws.
+	 *
+	 * @var bool
+	 */
+	private bool $renderFails = false;
+
 	protected function setUp(): void {
 		$this->register = new Register();
 		$this->register->setId(10);
@@ -99,16 +116,23 @@ class ObjectDraftControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->objects = $this->createMock(ObjectService::class);
+		// The render boundary: takes the `writeOnly` property `secret` out of the entity, as the real one does for the schema that declares it.
+		$this->objects->method('renderEntity')->willReturnCallback(
+			function (ObjectEntity $entity, ?RenderSelection $selection = null, bool $_rbac = true): array {
+				if ($this->renderFails === true) {
+					throw new RuntimeException('render boundary down');
+				}
+
+				$object = ($entity->getObject() ?? []);
+				unset($object['secret']);
+				$entity->setObject($object);
+
+				return $entity->jsonSerialize();
+			}
+		);
 		$this->objects->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				$register = null,
-				$schema = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-			): ?ObjectEntity {
+			function (...$args): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy] = FindCallShape::find(args: $args);
 				$this->reads[] = ['id' => $id, 'register' => $register, 'schema' => $schema, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
 
 				return $this->readable;
@@ -142,7 +166,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$this->controller = new ObjectDraftController(
+		$this->controller = ObjectDraftControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			objects: $this->objects,
@@ -151,7 +175,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end setUp()
 
@@ -185,8 +210,9 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	private function activationAnswers(ObjectEntity|\Throwable $answer): void {
 		$this->activation->method('activateAsUser')->willReturnCallback(
-			function (Register $register, Schema $schema, string $draftId, IUser $user, array $changes = []) use ($answer): ObjectEntity {
-				$this->activations[] = ['register' => $register, 'schema' => $schema, 'draftId' => $draftId, 'user' => $user, 'changes' => $changes];
+			function (UserDraftActivation $activation) use ($answer): ObjectEntity {
+				$address             = $activation->address;
+				$this->activations[] = ['register' => $address->register, 'schema' => $address->schema, 'draftId' => $address->draftId, 'user' => $activation->user, 'changes' => $activation->changes];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}
@@ -254,6 +280,52 @@ class ObjectDraftControllerTest extends TestCase {
 		// The record was resolved through the RBAC boundary, in its own register and schema.
 		$this->assertSame(['id' => 'd1', 'register' => $this->register, 'schema' => $this->schema, 'rbac' => true, 'multitenancy' => true], $this->reads[0]);
 	}//end testTheOwnerGetsTheActivatedObject()
+
+	/**
+	 * The answer goes through the render boundary: a `writeOnly` property is never in the 200 body.
+	 *
+	 * Goes red without the redaction: the entity the save handed back carries the secret.
+	 */
+	public function testAWriteOnlyPropertyIsNotInTheActivatedObject(): void {
+		$this->signIn(uid: 'agent');
+		$this->readableDraft();
+
+		$active = new ObjectEntity();
+		$active->setUuid('d1');
+		$active->setStatus('active');
+		$active->setObject(['subject' => 'A', 'secret' => 'hunter2']);
+		$this->activationAnswers(answer: $active);
+
+		$response = $this->controller->activate(register: 'service', schema: 'ticket', id: 'd1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertStringNotContainsString('hunter2', (string)json_encode($response->getData()));
+		$this->assertSame('A', $response->getData()['subject'] ?? null);
+	}//end testAWriteOnlyPropertyIsNotInTheActivatedObject()
+
+	/**
+	 * A render that fails after the activation was committed answers 200 with the id and status, never 500.
+	 *
+	 * Goes red without the try around renderEntity(): the exception escapes.
+	 */
+	public function testARenderFailureAfterTheCommitIsStillA200(): void {
+		$this->signIn(uid: 'agent');
+		$this->readableDraft();
+		$active = new ObjectEntity();
+		$active->setUuid('d1');
+		$active->setStatus('active');
+		$active->setObject(['subject' => 'A']);
+		$this->activationAnswers(answer: $active);
+		$this->renderFails = true;
+		$this->logger->expects($this->once())->method('error')->with($this->stringContains('could not be rendered'));
+
+		$response = $this->controller->activate(register: 'service', schema: 'ticket', id: 'd1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('d1', $response->getData()['id']);
+		$this->assertSame('active', $response->getData()['@self']['status']);
+		$this->assertArrayNotHasKey('subject', $response->getData(), 'Nothing the render boundary would have redacted is sent without it.');
+	}//end testARenderFailureAfterTheCommitIsStillA200()
 
 	/**
 	 * A body without `object`, or with something that is no object, activates the draft as stored.
@@ -362,7 +434,7 @@ class ObjectDraftControllerTest extends TestCase {
 		);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		$controller = new ObjectDraftController(
+		$controller = ObjectDraftControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			objects: $this->objects,
@@ -371,7 +443,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 
 		$response = $controller->activate(register: '27', schema: '43', id: 'd1');
@@ -398,7 +471,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 		$this->activation->expects($this->never())->method('activateAsUser');
 
-		$controller = new ObjectDraftController(
+		$controller = ObjectDraftControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			objects: $objects,
@@ -407,7 +480,8 @@ class ObjectDraftControllerTest extends TestCase {
 			activation: $this->activation,
 			session: $this->session,
 			l10n: $l10n,
-			logger: $this->logger
+			logger: $this->logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 
 		$this->assertSame(404, $controller->activate(register: 'service', schema: 'ticket', id: 'd1')->getStatus());

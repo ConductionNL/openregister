@@ -46,7 +46,7 @@ use Throwable;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
  */
-class FormDependentsCheck {
+class FormDependentsCheck implements FormDependentsCheckInterface {
 
 	/**
 	 * The owning app's setting: `unpublish` (default) or `refuse`.
@@ -63,23 +63,76 @@ class FormDependentsCheck {
 	public const SUBJECT = 'form_unpublished';
 
 	/**
+	 * The schemas whose save a caller is judging itself, by id, for this request.
+	 *
+	 * @var array<int, true>
+	 */
+	private array $claimed = [];
+
+	/**
+	 * Asks the owning apps for their forms.
+	 *
+	 * @var IEventDispatcher
+	 */
+	private readonly IEventDispatcher $dispatcher;
+
+	/**
+	 * Tells an author their form was unpublished.
+	 *
+	 * @var IManager
+	 */
+	private readonly IManager $notifications;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IEventDispatcher         $dispatcher    Asks the owning apps for their forms.
-	 * @param FormDestinationValidator $validator     Judges each form.
-	 * @param IAppConfig               $appConfig     Reads each owning app's break setting.
-	 * @param IManager                 $notifications Tells an author their form was unpublished.
-	 * @param LoggerInterface          $logger        Records an unpublish that failed.
+	 * @param FormDependentsSignals    $signals   The event and notification channels the form dependents check reports through.
+	 * @param FormDestinationValidator $validator Judges each form.
+	 * @param IAppConfig               $appConfig Reads each owning app's break setting.
+	 * @param LoggerInterface          $logger    Records an unpublish that failed.
 	 */
 	public function __construct(
-		private readonly IEventDispatcher $dispatcher,
+		FormDependentsSignals $signals,
 		private readonly FormDestinationValidator $validator,
 		private readonly IAppConfig $appConfig,
-		private readonly IManager $notifications,
 		private readonly LoggerInterface $logger,
 	) {
-
+		$this->dispatcher = $signals->dispatcher;
+		$this->notifications = $signals->notifications;
 	}//end __construct()
+
+	/**
+	 * Say that the caller of this save judges the dependent forms itself.
+	 *
+	 * The schema API assesses BEFORE the write, so it can refuse the save, and
+	 * applies after it. Every other writer of a schema (the configuration
+	 * importer, the import endpoint, the AI and MCP tools) has no response to
+	 * refuse, and is covered by {@see \OCA\OpenRegister\Listener\FormDestinationSchemaListener}, which
+	 * skips a save its caller has claimed so no form is unpublished or
+	 * announced twice.
+	 *
+	 * @param int $schemaId The schema about to be saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function claim(int $schemaId): void {
+		$this->claimed[$schemaId] = true;
+	}//end claim()
+
+	/**
+	 * Whether the caller of this schema's save judges the dependent forms itself.
+	 *
+	 * @param int $schemaId The schema.
+	 *
+	 * @return bool True when it was claimed in this request.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function isClaimed(int $schemaId): bool {
+		return isset($this->claimed[$schemaId]);
+	}//end isClaimed()
 
 	/**
 	 * Judge every published form that submits into the proposed schema.
@@ -97,29 +150,52 @@ class FormDependentsCheck {
 		$this->dispatcher->dispatchTyped($event);
 
 		$affected = [];
-		$refused = false;
 		foreach ($event->getForms() as $form) {
-			$options = [];
-			if ($form->audience !== null) {
-				$options['audience'] = $form->audience;
+			$entry = $this->judged(form: $form, schema: $schema);
+			if ($entry !== null) {
+				$affected[] = $entry;
 			}
-
-			$findings = $this->validator->validate(mapping: $form->mapping, schema: $schema, options: $options);
-			if ($findings === []) {
-				continue;
-			}
-
-			$break = $this->appConfig->getValueString($form->app, self::BREAK_SETTING, 'unpublish');
-			if ($break !== 'refuse') {
-				$break = 'unpublish';
-			}
-
-			$refused = ($refused || $break === 'refuse');
-			$affected[] = ['id' => $form->id, 'app' => $form->app, 'title' => $form->title, 'break' => $break, 'findings' => $findings, 'form' => $form];
 		}
+
+		$refused = in_array('refuse', array_column($affected, 'break'), true);
 
 		return ['refused' => $refused, 'schema' => (string)$schema->getSlug(), 'affected' => $affected];
 	}//end assess()
+
+	/**
+	 * One form judged against the proposed schema: its affected entry, or null when the schema breaks nothing of it.
+	 *
+	 * @param FormDependent $form   The form.
+	 * @param Schema        $schema The proposed schema definition.
+	 *
+	 * @return array<string, mixed>|null The entry: id, app, title, break, findings, form.
+	 */
+	private function judged(FormDependent $form, Schema $schema): ?array {
+		$findings = $this->validator->validate(mapping: $form->mapping, destination: new FormDestination(schema: $schema, audience: $form->audience));
+		if ($findings === []) {
+			return null;
+		}
+
+		$break = $this->breakOf(app: $form->app);
+
+		return ['id' => $form->id, 'app' => $form->app, 'title' => $form->title, 'break' => $break, 'findings' => $findings, 'form' => $form];
+	}//end judged()
+
+	/**
+	 * What the owning app wants when a schema change breaks its form: `refuse`, else `unpublish`.
+	 *
+	 * @param string $app The owning app's id.
+	 *
+	 * @return string `refuse` or `unpublish`.
+	 */
+	private function breakOf(string $app): string {
+		$break = $this->appConfig->getValueString($app, self::BREAK_SETTING, 'unpublish');
+		if ($break !== 'refuse') {
+			return 'unpublish';
+		}
+
+		return $break;
+	}//end breakOf()
 
 	/**
 	 * After the save: unpublish each broken form and tell its author.
@@ -135,7 +211,7 @@ class FormDependentsCheck {
 		foreach ($assessment['affected'] as $entry) {
 			$outcome = 'refused';
 			if ($assessment['refused'] === false) {
-				$outcome = $this->unpublish(form: $entry['form'], schema: $assessment['schema'], findings: $entry['findings']);
+				$outcome = $this->unpublish(run: new FormUnpublishRun(form: $entry['form'], schema: $assessment['schema'], findings: $entry['findings']));
 			}
 
 			$listed[] = ['id' => $entry['id'], 'app' => $entry['app'], 'title' => $entry['title'], 'outcome' => $outcome, 'findings' => $entry['findings']];
@@ -147,36 +223,81 @@ class FormDependentsCheck {
 	/**
 	 * Unpublish one form through its owning app, and notify its author.
 	 *
-	 * @param FormDependent                    $form     The form.
-	 * @param string                           $schema   The schema slug.
-	 * @param array<int, array<string, mixed>> $findings Why.
+	 * @param FormUnpublishRun $run The form, the schema slug and why.
 	 *
-	 * @return string `unpublished`, or `unpublish-failed` when the owning app could not.
+	 * @return string `unpublished`, `unpublish-failed` when the owning app could not, or
+	 *                `unpublish-unavailable` when it registered the form without a way to unpublish it.
 	 */
-	private function unpublish(FormDependent $form, string $schema, array $findings): string {
+	private function unpublish(FormUnpublishRun $run): string {
+		if ($run->form->unpublish === null) {
+			return $this->unavailable(run: $run);
+		}
+
 		try {
-			if ($form->unpublish !== null) {
-				($form->unpublish)();
-			}
+			($run->form->unpublish)();
 		} catch (Throwable $exception) {
-			$this->logger->error(
-				message: '[FormDependentsCheck] An owning app could not unpublish a form broken by a schema change',
-				context: ['form' => $form->id, 'app' => $form->app, 'schema' => $schema, 'exception' => $exception->getMessage()]
-			);
-
-			return 'unpublish-failed';
+			return $this->failed(run: $run, exception: $exception);
 		}
 
-		if ($form->author !== null && $form->author !== '') {
-			$notification = $this->notifications->createNotification();
-			$notification->setApp('openregister')
-				->setUser($form->author)
-				->setDateTime(new DateTime())
-				->setObject('form', $form->id)
-				->setSubject(self::SUBJECT, ['formTitle' => $form->title, 'schema' => $schema, 'count' => count($findings)]);
-			$this->notifications->notify($notification);
-		}
+		$this->notifyAuthor(run: $run);
 
 		return 'unpublished';
 	}//end unpublish()
+
+	/**
+	 * Record that a broken form registered no way to be unpublished; it stays published.
+	 *
+	 * Nothing was unpublished: say so, and do not tell the author it was.
+	 *
+	 * @param FormUnpublishRun $run The form and the schema slug.
+	 *
+	 * @return string `unpublish-unavailable`.
+	 */
+	private function unavailable(FormUnpublishRun $run): string {
+		$this->logger->warning(
+			message: '[FormDependentsCheck] A form broken by a schema change has no way to be unpublished; it stays published',
+			context: ['form' => $run->form->id, 'app' => $run->form->app, 'schema' => $run->schema]
+		);
+
+		return 'unpublish-unavailable';
+	}//end unavailable()
+
+	/**
+	 * Record that the owning app could not unpublish a broken form.
+	 *
+	 * @param FormUnpublishRun $run       The form and the schema slug.
+	 * @param Throwable        $exception What the owning app threw.
+	 *
+	 * @return string `unpublish-failed`.
+	 */
+	private function failed(FormUnpublishRun $run, Throwable $exception): string {
+		$this->logger->error(
+			message: '[FormDependentsCheck] An owning app could not unpublish a form broken by a schema change',
+			context: ['form' => $run->form->id, 'app' => $run->form->app, 'schema' => $run->schema, 'exception' => $exception->getMessage()]
+		);
+
+		return 'unpublish-failed';
+	}//end failed()
+
+	/**
+	 * Tell the form's author, when known, that a schema change unpublished it.
+	 *
+	 * @param FormUnpublishRun $run The form, the schema slug and why.
+	 *
+	 * @return void
+	 */
+	private function notifyAuthor(FormUnpublishRun $run): void {
+		$form = $run->form;
+		if ($form->author === null || $form->author === '') {
+			return;
+		}
+
+		$notification = $this->notifications->createNotification();
+		$notification->setApp('openregister')
+			->setUser($form->author)
+			->setDateTime(new DateTime())
+			->setObject('form', $form->id)
+			->setSubject(self::SUBJECT, ['formTitle' => $form->title, 'schema' => $run->schema, 'count' => count($run->findings)]);
+		$this->notifications->notify($notification);
+	}//end notifyAuthor()
 }//end class

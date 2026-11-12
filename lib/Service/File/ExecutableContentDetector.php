@@ -46,6 +46,8 @@ namespace OCA\OpenRegister\Service\File;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @spec openspec/specs/file-actions/spec.md
  */
 class ExecutableContentDetector {
 
@@ -327,20 +329,43 @@ class ExecutableContentDetector {
 			return null;
 		}
 
+		return $this->signatureContentType(content: $content) ?? $this->isoBaseMediaType(content: $content);
+	}//end sniffBinaryContentType()
+
+	/**
+	 * The MIME type of the first binary signature the content starts with.
+	 *
+	 * @param string $content The leading bytes of the file.
+	 *
+	 * @return string|null The MIME type, or null when no signature matches.
+	 */
+	private function signatureContentType(string $content): ?string {
 		foreach (self::BINARY_CONTENT_SIGNATURES as $signature => $mimeType) {
 			if (str_starts_with($content, (string)$signature) === true) {
 				return $mimeType;
 			}
 		}
 
-		// ISO base media file format (mp4, m4a, mov, 3gp, heic): 4-byte box
-		// length, then the literal 'ftyp' brand marker at offset 4.
+		return null;
+	}//end signatureContentType()
+
+	/**
+	 * `video/mp4` for the ISO base media file format, else null.
+	 *
+	 * ISO base media file format (mp4, m4a, mov, 3gp, heic): 4-byte box
+	 * length, then the literal 'ftyp' brand marker at offset 4.
+	 *
+	 * @param string $content The leading bytes of the file.
+	 *
+	 * @return string|null
+	 */
+	private function isoBaseMediaType(string $content): ?string {
 		if (strlen($content) >= 12 && substr($content, 4, 4) === 'ftyp') {
 			return 'video/mp4';
 		}
 
 		return null;
-	}//end sniffBinaryContentType()
+	}//end isoBaseMediaType()
 
 	/**
 	 * Check whether the filename carries an extension that is always scanned.

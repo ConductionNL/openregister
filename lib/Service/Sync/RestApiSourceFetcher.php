@@ -49,6 +49,20 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 	private const MAX_PAGES = 1000;
 
 	/**
+	 * The identifier field of a listed item.
+	 *
+	 * The identifier field is always 'id'. It used to be looked up on
+	 * $source->getConfiguration(), and Source has no `configuration`
+	 * property, column or serialized field, so that call threw
+	 * "configuration is not a valid attribute" out of Entity::__call on
+	 * every gather. Nothing in the app, the UI or the specs ever set an
+	 * identifierField, so the lookup had no store to read. Give sources a
+	 * real configuration column first if the field ever needs to be
+	 * settable.
+	 */
+	private const ID_FIELD = 'id';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Client $httpClient HTTP client
@@ -91,54 +105,66 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 			throw new RuntimeException('Source has no endpoint URL configured.');
 		}
 
-		$headers = $this->buildHeaders(source: $source, since: $since);
+		$run = new ListingGather(headers: $this->buildHeaders(source: $source, since: $since));
 
-		// The identifier field is always 'id'. It used to be looked up on
-		// $source->getConfiguration(), and Source has no `configuration`
-		// property, column or serialized field, so that call threw
-		// "configuration is not a valid attribute" out of Entity::__call on
-		// every gather. Nothing in the app, the UI or the specs ever set an
-		// identifierField, so the lookup had no store to read. Give sources a
-		// real configuration column first if the field ever needs to be
-		// settable.
-		$idField = 'id';
-
-		$ids = [];
 		$url = $baseUrl;
 		$page = 0;
 
 		while ($url !== null && $page < self::MAX_PAGES) {
 			$page++;
-			// Bound each request so a hung upstream cannot stall the harvest job
-			// indefinitely (harden-harvest-http). Guzzle defaults to no timeout.
-			$response = $this->httpClient->request(
-				'GET',
-				$url,
-				['headers' => $headers, 'timeout' => 30, 'connect_timeout' => 5]
-			);
+			$url = $this->gatherPage(run: $run, url: $url);
+		}
 
-			// 304 Not Modified: nothing changed since the checkpoint.
-			if ($response->getStatusCode() === 304) {
-				break;
-			}
-
-			$body = json_decode((string)$response->getBody(), true);
-			if (is_array($body) === false) {
-				break;
-			}
-
-			$items = $this->extractItems(body: $body);
-			foreach ($items as $item) {
-				if (is_array($item) === true && isset($item[$idField]) === true) {
-					$ids[] = (string)$item[$idField];
-				}
-			}
-
-			$url = $this->nextPageUrl(body: $body, response: $response);
-		}//end while
-
-		return array_values(array_unique($ids));
+		return array_values(array_unique($run->ids));
 	}//end gather()
+
+	/**
+	 * Request one listing page, collect its ids and return the next page's URL.
+	 *
+	 * @param ListingGather $run The listing: its headers, and the ids gathered so far, appended to.
+	 * @param string        $url The page URL.
+	 *
+	 * @return string|null The next page URL, or null when this was the last (or 304 / non-JSON).
+	 */
+	private function gatherPage(ListingGather $run, string $url): ?string {
+		// Bound each request so a hung upstream cannot stall the harvest job
+		// indefinitely (harden-harvest-http). Guzzle defaults to no timeout.
+		$response = $this->httpClient->request(
+			'GET',
+			$url,
+			['headers' => $run->headers, 'timeout' => 30, 'connect_timeout' => 5]
+		);
+
+		// 304 Not Modified: nothing changed since the checkpoint.
+		if ($response->getStatusCode() === 304) {
+			return null;
+		}
+
+		$body = json_decode((string)$response->getBody(), true);
+		if (is_array($body) === false) {
+			return null;
+		}
+
+		$this->collectIds(run: $run, items: $this->extractItems(body: $body));
+
+		return $this->nextPageUrl(body: $body, response: $response);
+	}//end gatherPage()
+
+	/**
+	 * Append the id of every array item that has one.
+	 *
+	 * @param ListingGather     $run   The listing whose ids are appended to.
+	 * @param array<int, mixed> $items The listed items.
+	 *
+	 * @return void
+	 */
+	private function collectIds(ListingGather $run, array $items): void {
+		foreach ($items as $item) {
+			if (is_array($item) === true && isset($item[self::ID_FIELD]) === true) {
+				$run->ids[] = (string)$item[self::ID_FIELD];
+			}
+		}
+	}//end collectIds()
 
 	/**
 	 * {@inheritDoc}
@@ -179,35 +205,54 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 	 * @return array<string, string> The headers
 	 */
 	private function buildHeaders(Source $source, ?string $since): array {
-		$headers = ['Accept' => 'application/json'];
-
-		$auth = $this->decryptAuthConfig(source: $source);
-		switch ((string)$source->getAuthType()) {
-			case 'apikey':
-				$headerName = (string)($auth['header'] ?? 'X-Api-Key');
-				$headers[$headerName] = (string)($auth['key'] ?? '');
-				break;
-
-			case 'basic':
-				$headers['Authorization'] = 'Basic ' . base64_encode(
-					(string)($auth['username'] ?? '') . ':' . (string)($auth['password'] ?? '')
-				);
-				break;
-
-			default:
-				// None / unsupported-here: no auth header.
-				break;
-		}
-
-		if ($since !== null) {
-			$ts = strtotime($since);
-			if ($ts !== false) {
-				$headers['If-Modified-Since'] = gmdate('D, d M Y H:i:s', $ts) . ' GMT';
-			}
-		}
-
-		return $headers;
+		// Replace, not merge: a numeric header name keeps its key.
+		return array_replace(
+			['Accept' => 'application/json'],
+			$this->authHeaders(source: $source),
+			$this->sinceHeaders(since: $since)
+		);
 	}//end buildHeaders()
+
+	/**
+	 * The auth header for the source's auth type, from its decrypted auth config.
+	 *
+	 * @param Source $source The source.
+	 *
+	 * @return array<string, string> Empty for none / unsupported-here.
+	 */
+	private function authHeaders(Source $source): array {
+		$auth = $this->decryptAuthConfig(source: $source);
+
+		return match ((string)$source->getAuthType()) {
+			'apikey' => [(string)($auth['header'] ?? 'X-Api-Key') => (string)($auth['key'] ?? '')],
+			'basic' => [
+				'Authorization' => 'Basic ' . base64_encode(
+					(string)($auth['username'] ?? '') . ':' . (string)($auth['password'] ?? '')
+				),
+			],
+			default => [],
+		};
+	}//end authHeaders()
+
+	/**
+	 * The If-Modified-Since header for a parseable checkpoint, else none.
+	 *
+	 * @param string|null $since The checkpoint, or null.
+	 *
+	 * @return array<string, string>
+	 */
+	private function sinceHeaders(?string $since): array {
+		if ($since === null) {
+			return [];
+		}
+
+		$ts = strtotime($since);
+		if ($ts === false) {
+			return [];
+		}
+
+		return ['If-Modified-Since' => gmdate('D, d M Y H:i:s', $ts) . ' GMT'];
+	}//end sinceHeaders()
 
 	/**
 	 * Decrypt the source's auth config blob.
@@ -224,21 +269,31 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 
 		$decrypted = [];
 		foreach ($config as $key => $value) {
-			if (is_string($value) === false || $value === '') {
-				$decrypted[$key] = $value;
-				continue;
-			}
-
-			try {
-				$decrypted[$key] = $this->crypto->decrypt($value);
-			} catch (\Throwable $e) {
-				// Value was not encrypted (or key rotated): use as-is.
-				$decrypted[$key] = $value;
-			}
+			$decrypted[$key] = $this->decryptValue(value: $value);
 		}
 
 		return $decrypted;
 	}//end decryptAuthConfig()
+
+	/**
+	 * Decrypt one auth-config value; non-strings, '' and undecryptable values are used as-is.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return mixed
+	 */
+	private function decryptValue($value) {
+		if (is_string($value) === false || $value === '') {
+			return $value;
+		}
+
+		try {
+			return $this->crypto->decrypt($value);
+		} catch (\Throwable $e) {
+			// Value was not encrypted (or key rotated): use as-is.
+			return $value;
+		}
+	}//end decryptValue()
 
 	/**
 	 * Extract the list of items from a collection response body.
@@ -273,15 +328,42 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 	 * @return string|null The next URL or null when exhausted
 	 */
 	private function nextPageUrl(array $body, $response): ?string {
-		// _links.next.href or next at top level.
+		$next = $this->bodyNextUrl(body: $body);
+		if ($next !== null) {
+			return $next;
+		}
+
+		return $this->linkHeaderNextUrl(response: $response);
+	}//end nextPageUrl()
+
+	/**
+	 * The next-page URL in the body: `_links.next.href`, else a non-empty top-level `next`.
+	 *
+	 * @param array $body The decoded page body.
+	 *
+	 * @return string|null
+	 */
+	private function bodyNextUrl(array $body): ?string {
 		if (isset($body['_links']['next']['href']) === true) {
 			return (string)$body['_links']['next']['href'];
 		}
 
-		if (isset($body['next']) === true && is_string($body['next']) === true && $body['next'] !== '') {
-			return $body['next'];
+		$next = ($body['next'] ?? null);
+		if (is_string($next) === true && $next !== '') {
+			return $next;
 		}
 
+		return null;
+	}//end bodyNextUrl()
+
+	/**
+	 * The `rel="next"` URL of the response's Link header, or null.
+	 *
+	 * @param mixed $response The HTTP response.
+	 *
+	 * @return string|null
+	 */
+	private function linkHeaderNextUrl($response): ?string {
 		// Link: <url>; rel="next".
 		$link = $response->getHeaderLine('Link');
 		if ($link !== '' && preg_match('/<([^>]+)>;\s*rel="next"/', $link, $m) === 1) {
@@ -289,5 +371,5 @@ class RestApiSourceFetcher implements SourceFetcherInterface {
 		}
 
 		return null;
-	}//end nextPageUrl()
+	}//end linkHeaderNextUrl()
 }//end class

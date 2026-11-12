@@ -24,9 +24,11 @@ use DateInterval;
 use DateTime;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
@@ -36,6 +38,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode
@@ -94,8 +97,7 @@ final class LockObjectNodeTest extends TestCase {
 		$this->node = new LockObjectNode(
 			$this->objects,
 			$users,
-			$l10n,
-			$this->createMock(IURLGenerator::class)
+			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
 		$this->state = new FlowResumeState();
@@ -135,20 +137,18 @@ final class LockObjectNodeTest extends TestCase {
 	public function testTheLockIsTakenForTheRun(): void {
 		$seen = [];
 		$this->objects->method('lockObject')->willReturnCallback(
-			function (...$args) use (&$seen): array {
-				// Named arguments arrive positionally in declaration order:
-				// identifier, process, duration, advisory, runUuid, nodeId.
-				$seen = $args;
+			function (LockRequest $request) use (&$seen): array {
+				$seen = $request;
 				return ['uuid' => self::OBJ, 'locked' => []];
 			}
 		);
 
-		$out = $this->node->execute($this->items(), [], $this->context());
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items(), config: [], context: $this->context()));
 
 		$this->assertSame(self::OBJ, $out[0][FlowItems::JSON]['uuid']);
-		$this->assertSame(self::OBJ, $seen[0]);
-		$this->assertSame(self::RUN, $seen[4], 'the lock was not scoped to the run');
-		$this->assertSame('lock-1', $seen[5]);
+		$this->assertSame(self::OBJ, $seen->identifier);
+		$this->assertSame(self::RUN, $seen->runUuid, 'the lock was not scoped to the run');
+		$this->assertSame('lock-1', $seen->nodeId);
 	}//end testTheLockIsTakenForTheRun()
 
 	/**
@@ -158,7 +158,7 @@ final class LockObjectNodeTest extends TestCase {
 	 */
 	public function testASuccessfulAcquireRecordsNoAttempts(): void {
 		$this->objects->method('lockObject')->willReturn(['uuid' => self::OBJ, 'locked' => []]);
-		$this->node->execute($this->items(), [], $this->context());
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: [], context: $this->context()));
 
 		$this->assertNull($this->state->forNode('lock-1')->get(LockObjectNode::SLOT_ATTEMPTS));
 	}//end testASuccessfulAcquireRecordsNoAttempts()
@@ -174,7 +174,7 @@ final class LockObjectNodeTest extends TestCase {
 	 */
 	public function testAnEmptyFiringDoesNotSuspend(): void {
 		$this->objects->expects($this->never())->method('lockObject');
-		$this->assertSame([], $this->node->execute([], [], $this->context()));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: [], context: $this->context())));
 	}//end testAnEmptyFiringDoesNotSuspend()
 
 	// ---------------------------------------------------------------
@@ -194,7 +194,7 @@ final class LockObjectNodeTest extends TestCase {
 		$this->objects->method('lockObject')->willThrowException(new LockedException('held by run B'));
 
 		try {
-			$this->node->execute($this->items(), [], $this->context());
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: [], context: $this->context()));
 			$this->fail('the node did not suspend');
 		} catch (FlowSuspension $suspension) {
 			$this->assertNotNull($suspension->getResumeAt(), 'a null resumeAt would be reaped, never woken');
@@ -215,7 +215,7 @@ final class LockObjectNodeTest extends TestCase {
 		$this->objects->method('lockObject')->willThrowException(new LockedException('held'));
 
 		try {
-			$this->node->execute($this->items(), ['waitSeconds' => 600], $this->context());
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: ['waitSeconds' => 600], context: $this->context()));
 		} catch (FlowSuspension $e) {
 			// Expected.
 		}
@@ -224,7 +224,7 @@ final class LockObjectNodeTest extends TestCase {
 		$this->assertNotNull($first);
 
 		try {
-			$this->node->execute($this->items(), ['waitSeconds' => 600], $this->context());
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: ['waitSeconds' => 600], context: $this->context()));
 		} catch (FlowSuspension $e) {
 			// Expected.
 		}
@@ -251,7 +251,7 @@ final class LockObjectNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage(self::RUN);
-		$this->node->execute($this->items(), [], $this->context());
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: [], context: $this->context()));
 	}//end testAnExhaustedBudgetFailsAndNamesTheHolder()
 
 	/**
@@ -266,7 +266,7 @@ final class LockObjectNodeTest extends TestCase {
 
 		try {
 			// A budget shorter than the retry floor.
-			$this->node->execute($this->items(), ['waitSeconds' => 5], $this->context());
+			$this->node->execute(new FlowNodeCall(items: $this->items(), config: ['waitSeconds' => 5], context: $this->context()));
 			$this->fail('the node did not suspend');
 		} catch (FlowSuspension $suspension) {
 			$deadline = new DateTime((string)$this->state->forNode('lock-1')->get(LockObjectNode::SLOT_DEADLINE));
@@ -286,7 +286,7 @@ final class LockObjectNodeTest extends TestCase {
 	public function testNoResumeSlotIsRefused(): void {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('resume slot');
-		$this->node->execute($this->items(), [], ['runUuid' => self::RUN, 'runAs' => 'alice']);
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: [], context: ['runUuid' => self::RUN, 'runAs' => 'alice']));
 	}//end testNoResumeSlotIsRefused()
 
 	/**
@@ -302,7 +302,7 @@ final class LockObjectNodeTest extends TestCase {
 		unset($context['runUuid']);
 
 		$this->expectException(RuntimeException::class);
-		$this->node->execute($this->items(), [], $context);
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: [], context: $context));
 	}//end testARunWithNoIdentityIsRefused()
 
 	/**
@@ -315,7 +315,7 @@ final class LockObjectNodeTest extends TestCase {
 		unset($context['runAs']);
 
 		$this->expectException(RuntimeException::class);
-		$this->node->execute($this->items(), [], $context);
+		$this->node->execute(new FlowNodeCall(items: $this->items(), config: [], context: $context));
 	}//end testARunWithNoActingIdentityIsRefused()
 
 	/**
@@ -326,7 +326,7 @@ final class LockObjectNodeTest extends TestCase {
 	 */
 	public function testAnUnresolvableTargetThrows(): void {
 		$this->expectException(RuntimeException::class);
-		$this->node->execute([FlowItems::item(json: ['name' => 'no uuid here'])], [], $this->context());
+		$this->node->execute(new FlowNodeCall(items: [FlowItems::item(json: ['name' => 'no uuid here'])], config: [], context: $this->context()));
 	}//end testAnUnresolvableTargetThrows()
 
 	// ---------------------------------------------------------------

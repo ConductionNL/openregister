@@ -60,9 +60,16 @@
          handler cannot disagree again: a service would let one of them be
          constructed with a different implementation, which is the drift the
          class was written to end. -->
+    <!-- StaticAccess: an exception on the terms above.
+
+         `\OCA\OpenRegister\Formats\UuidFormat` answers one question about one
+         string: is this a uuid, and in which shape. It holds no state and has
+         no collaborators. It is static because the same pattern was written
+         inline at thirty sites; a service would have to be injected into value
+         objects and static helpers that have no constructor to take it. -->
     <!-- StaticAccess: a fourth exception, on the terms above.
 
-         `\OCA\OpenRegister\Support\PermissionBit` maps an action onto the core
+         `\OCA\OpenRegister\Service\Rbac\PermissionBit` maps an action onto the core
          share permission bit it needs. The table used to be a public static on
          `ObjectGrantResolver`, which IS a service: it takes an IManager, caches
          resolved grants per user, and answers questions about live shares.
@@ -103,6 +110,7 @@
            - Service\Search\SearchDictionary           (private ctor, ::empty, ::fromDeclarations)
            - Service\Schemas\ReferenceFilterDeclaration (private ctor, ::fromProperty)
            - Service\Rbac\TokenGrant                   (readonly VO, ::fromStored)
+           - Service\Edepot\MdtoBegrip                (readonly VO, ::optional)
 
     ===================================================================
          StaticAccess: pure declaration readers, on the FleetAppId terms.
@@ -125,12 +133,22 @@
          instance to inject and no seam to stub short of wrapping the SPL, which
          buys nothing here: the first converts a DateTimeInterface the caller
          already holds, the second reads the IANA zone list to refuse an invalid
-         timezone in a working-calendar definition. -->
+         timezone in a working-calendar definition.
+
+    ===================================================================
+         StaticAccess: `\OCA\OpenRegister\Db\StoredEntity`.
+
+         Kernel contracts take the entity interfaces (SchemaInterface,
+         RegisterInterface) so that lib/Kernel names nothing in lib/Db. Their
+         implementations work on stored rows, and StoredEntity turns the
+         interface back into the row or refuses it. It holds no state and takes
+         the one value it narrows as its argument; every implementation must
+         refuse a foreign implementation the same way. -->
     <rule ref="rulesets/cleancode.xml/StaticAccess">
         <properties>
             <property
                 name="exceptions"
-                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit,\OCA\OpenRegister\Support\FilterParams,\OCA\OpenRegister\Support\PermissionBit,\OCA\OpenRegister\Service\View\ViewAlert,\OCA\OpenRegister\Service\Flow\MacroActionBinding,\OCA\OpenRegister\Service\Flow\FlowNextHint,\OCA\OpenRegister\Service\Flow\Timer\ServiceHours,\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar,\OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration,\OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration,\OCA\OpenRegister\Service\Search\HistoryPredicate,\OCA\OpenRegister\Service\Search\DictionaryExpansion,\OCA\OpenRegister\Service\Search\SearchDictionary,\OCA\OpenRegister\Service\Rules\RuleDescriptor,\OCA\OpenRegister\Service\Rbac\TokenGrant,\DateTimeImmutable,\DateTimeZone"/>
+                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit,\OCA\OpenRegister\Support\FilterParams,\OCA\OpenRegister\Service\Rbac\PermissionBit,\OCA\OpenRegister\Formats\UuidFormat,\OCA\OpenRegister\Service\View\ViewAlert,\OCA\OpenRegister\Service\Flow\MacroActionBinding,\OCA\OpenRegister\Service\Flow\FlowNextHint,\OCA\OpenRegister\Service\Flow\Timer\ServiceHours,\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar,\OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration,\OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration,\OCA\OpenRegister\Service\Search\HistoryPredicate,\OCA\OpenRegister\Service\Search\DictionaryExpansion,\OCA\OpenRegister\Service\Search\SearchDictionary,\OCA\OpenRegister\Service\Rules\RuleDescriptor,\OCA\OpenRegister\Service\Rbac\TokenGrant,\OCA\OpenRegister\Service\Edepot\MdtoBegrip,\OCA\OpenRegister\Db\StoredEntity,\DateTimeImmutable,\DateTimeZone"/>
         </properties>
     </rule>
 </ruleset>

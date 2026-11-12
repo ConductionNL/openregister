@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -25,6 +25,7 @@ use OCA\OpenRegister\Controller\ApiSurfaceController;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
 use OCA\OpenRegister\Service\ApiVersion\ApiContractService;
 use OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiSurfaceControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -35,6 +36,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ApiSurfaceController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
  */
@@ -70,14 +72,13 @@ class ApiSurfaceControllerTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturn('');
 
-		return new ApiSurfaceController(
+		return ApiSurfaceControllerFactory::create(
 			'openregister',
 			$request,
 			$capabilities,
 			$catalogue,
 			($contracts ?? $this->createMock(ApiContractService::class)),
-			$session,
-			$this->createMock(LoggerInterface::class),
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($session, $this->createMock(\OCP\IGroupManager::class), $this->createMock(LoggerInterface::class)),
 		);
 	}//end controller()
 

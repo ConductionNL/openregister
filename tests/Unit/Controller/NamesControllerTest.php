@@ -205,6 +205,184 @@ class NamesControllerTest extends TestCase {
 	}
 
 	/**
+	 * Characterisation: each accepted `ids` shape reaches the lookup normalised.
+	 *
+	 * @return void
+	 */
+	public function testIndexNormalisesEachIdsShape(): void {
+		$shapes = [
+			[' uuid-1 , uuid-2', ['uuid-1', 'uuid-2']],
+			['["uuid-3","uuid-4"]', ['uuid-3', 'uuid-4']],
+			['[not json', []],
+			[['uuid-5'], ['uuid-5']],
+			[42, ['42']],
+		];
+		$seen = [];
+		$this->cacheHandler->method('getMultipleObjectNames')
+			->willReturnCallback(
+				function (array $ids) use (&$seen): array {
+					$seen[] = $ids;
+					return ['uuid-1' => 'Name 1'];
+				}
+			);
+		$this->cacheHandler->expects($this->never())->method('getAllObjectNames');
+		$this->cacheHandler->method('getStats')->willReturn(['hits' => 3]);
+		$current = null;
+		$this->request->method('getParam')->willReturnCallback(
+			function () use (&$current) {
+				return $current;
+			}
+		);
+
+		foreach ($shapes as $shape) {
+			$current = $shape[0];
+			$data    = $this->controller->index()->getData();
+			$this->assertSame(['names', 'total', 'cached', 'execution_time', 'cache_stats'], array_keys($data));
+			$this->assertSame(['uuid-1' => 'Name 1'], $data['names']);
+			$this->assertSame(1, $data['total']);
+			$this->assertSame(['hits' => 3], $data['cache_stats']);
+			$this->assertStringEndsWith('ms', $data['execution_time']);
+		}
+
+		$this->assertSame(array_column($shapes, 1), $seen);
+	}
+
+	/**
+	 * Characterisation: the bulk lookup logs one debug line; the all-names lookup another.
+	 *
+	 * @return void
+	 */
+	public function testIndexLogsTheLookupKind(): void {
+		$messages = [];
+		$this->logger->method('debug')->willReturnCallback(
+			function (string $message, array $context) use (&$messages): void {
+				$messages[] = [$message, array_keys($context)];
+			}
+		);
+		$this->cacheHandler->method('getAllObjectNames')->willReturn(['a' => 'A', 'b' => 'B']);
+		$this->cacheHandler->method('getMultipleObjectNames')->willReturn([]);
+		$this->cacheHandler->method('getStats')->willReturn([]);
+		$current = null;
+		$this->request->method('getParam')->willReturnCallback(
+			function () use (&$current) {
+				return $current;
+			}
+		);
+
+		$this->controller->index();
+		$current = 'x';
+		$this->controller->index();
+
+		$this->assertSame(
+			[
+				['[NamesController] 📋 ALL NAMES REQUEST', ['file', 'line', 'total_names', 'execution_time']],
+				['[NamesController] 📦 BULK NAME LOOKUP REQUEST', ['file', 'line', 'requested_count', 'found_count', 'execution_time']],
+			],
+			$messages
+		);
+	}
+
+	/**
+	 * Characterisation: failures log an error and answer 500 with the message.
+	 *
+	 * @return void
+	 */
+	public function testFailuresLogAndReportTheMessage(): void {
+		$errors = [];
+		$this->logger->method('error')->willReturnCallback(
+			function (string $message, array $context) use (&$errors): void {
+				$errors[] = [$message, array_keys($context), $context['error']];
+			}
+		);
+		$this->request->method('getParam')->willReturn(null);
+		$this->request->method('getParams')->willReturn(['ids' => ['uuid-1']]);
+		$this->cacheHandler->method('getAllObjectNames')->willThrowException(new Exception('index broke'));
+		$this->cacheHandler->method('getMultipleObjectNames')->willThrowException(new Exception('post broke'));
+
+		$index  = $this->controller->index();
+		$create = $this->controller->create();
+
+		$this->assertSame(500, $index->getStatus());
+		$this->assertSame(['error' => 'Failed to retrieve object names', 'message' => 'index broke'], $index->getData());
+		$this->assertSame(500, $create->getStatus());
+		$this->assertSame(['error' => 'Failed to retrieve object names', 'message' => 'post broke'], $create->getData());
+		$this->assertSame(
+			[
+				['[NamesController] Names endpoint failed', ['file', 'line', 'error', 'trace'], 'index broke'],
+				['[NamesController] POST names endpoint failed', ['file', 'line', 'error', 'trace'], 'post broke'],
+			],
+			$errors
+		);
+	}
+
+	/**
+	 * Characterisation: create() trims and drops blank ids, and answers each refusal exactly.
+	 *
+	 * @return void
+	 */
+	public function testCreateTrimsIdsAndAnswersEachRefusal(): void {
+		$current = null;
+		$this->request->method('getParams')->willReturnCallback(
+			function () use (&$current) {
+				return $current;
+			}
+		);
+		$seen = null;
+		$this->cacheHandler->method('getMultipleObjectNames')->willReturnCallback(
+			function (array $ids) use (&$seen): array {
+				$seen = $ids;
+				return ['uuid-1' => 'Name 1'];
+			}
+		);
+		$this->cacheHandler->method('getStats')->willReturn(['hits' => 1]);
+		$debug = [];
+		$this->logger->method('debug')->willReturnCallback(
+			function (string $message, array $context) use (&$debug): void {
+				$debug[] = [$message, $context['requested_count'], $context['found_count']];
+			}
+		);
+
+		$current = ['ids' => [' uuid-1 ', '', 'uuid-2']];
+		$data    = $this->controller->create()->getData();
+		$this->assertSame([0 => 'uuid-1', 2 => 'uuid-2'], $seen);
+		$this->assertSame(['names', 'total', 'requested', 'cached', 'execution_time', 'cache_stats'], array_keys($data));
+		$this->assertSame(2, $data['requested']);
+		$this->assertSame(1, $data['total']);
+		$this->assertTrue($data['cached']);
+		$this->assertSame(['hits' => 1], $data['cache_stats']);
+		$this->assertSame([['[NamesController] 📦 BULK NAME POST REQUEST', 2, 1]], $debug);
+
+		$current = ['ids' => 'x'];
+		$this->assertSame(
+			[
+				'error' => 'Invalid request: ids array is required in request body',
+				'example' => ['ids' => ['uuid-1', 'uuid-2', 'uuid-3']],
+			],
+			$this->controller->create()->getData()
+		);
+		$current = ['ids' => [' ']];
+		$this->assertSame(['error' => 'No valid IDs provided in request'], $this->controller->create()->getData());
+	}
+
+	/**
+	 * Characterisation: both endpoints refuse an anonymous caller with the same body.
+	 *
+	 * @return void
+	 */
+	public function testAnonymousCallersGetTheSameRefusal(): void {
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn(null);
+		$this->cacheHandler->expects($this->never())->method('getMultipleObjectNames');
+		$this->cacheHandler->expects($this->never())->method('getAllObjectNames');
+		$controller = new NamesController('openregister', $this->request, $this->cacheHandler, $this->logger, $session);
+
+		foreach ([$controller->index(), $controller->create()] as $response) {
+			$this->assertSame(401, $response->getStatus());
+			$this->assertSame(['error' => 'Authentication required'], $response->getData());
+		}
+	}
+
+	/**
 	 * show() / stats() / warmup() were REMOVED and must not return.
 	 *
 	 * These replace the seven tests that used to exercise them. Deleting those

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCP\IAppConfig;
@@ -60,43 +61,59 @@ class FileSettingsHandler {
 	public const OPENANONYMISER_PASSWORD_KEY = 'openAnonymiserPassword';
 
 	/**
-	 * Configuration service
+	 * The file settings returned when none are stored, and the default of every key on update.
 	 *
-	 * @var IAppConfig
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * Application name
+	 * The enabled file types are LLPhant-friendly: native PHP support plus common
+	 * library-based formats. extractionScope is none, all, folders or objects;
+	 * textExtractor llphant or dolphin; extractionMode background, immediate or
+	 * manual. openAnonymiserSource is internal (the AppAPI ExApp) or external (an
+	 * operator URL); an empty openAnonymiserUsername sends no credentials.
+	 * entityRecognitionMethod is regex, presidio, openanonymiser, llm or hybrid,
+	 * or auto: an internal "not yet configured" marker resolved at state-query
+	 * time to the recommended backend, never shown as a UI option.
+	 * openAnonymiserPasswordSet is filled in on every read.
 	 *
-	 * @var string
+	 * @var array<string, mixed>
 	 */
-	private string $appName;
-
-	/**
-	 * Records every save on the audit trail (openregister#4100).
-	 *
-	 * @var OwnSettingsChangeRecorder|null
-	 */
-	private ?OwnSettingsChangeRecorder $changeRecorder;
+	private const FILE_DEFAULTS = [
+		'vectorizationEnabled' => false,
+		'provider' => null,
+		'chunkingStrategy' => 'RECURSIVE_CHARACTER',
+		'chunkSize' => 1000,
+		'chunkOverlap' => 200,
+		'enabledFileTypes' => ['txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'doc', 'xlsx', 'xls'],
+		'ocrEnabled' => false,
+		'maxFileSizeMB' => 100,
+		'extractionScope' => 'objects',
+		'textExtractor' => 'llphant',
+		'extractionMode' => 'background',
+		'maxFileSize' => 100,
+		'batchSize' => 10,
+		'dolphinApiEndpoint' => '',
+		'dolphinApiKey' => '',
+		'presidioApiEndpoint' => '',
+		'openAnonymiserApiEndpoint' => '',
+		'openAnonymiserSource' => 'internal',
+		'openAnonymiserUsername' => '',
+		'openAnonymiserPasswordSet' => false,
+		'entityRecognitionEnabled' => false,
+		'entityRecognitionMethod' => 'auto',
+	];
 
 	/**
 	 * Constructor for FileSettingsHandler
 	 *
+	 * The app id comes from Application::APP_ID (ADR-011 Rule 4).
+	 *
 	 * @param IAppConfig $appConfig Configuration service.
-	 * @param string $appName Application name.
-	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail.
+	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail (openregister#4100).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		IAppConfig $appConfig,
-		string $appName = 'openregister',
-		?OwnSettingsChangeRecorder $changeRecorder = null,
+		private readonly IAppConfig $appConfig,
+		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
 	) {
-		$this->appConfig = $appConfig;
-		$this->appName = $appName;
-		$this->changeRecorder = $changeRecorder;
 	}//end __construct()
 
 	/**
@@ -110,82 +127,63 @@ class FileSettingsHandler {
 	 */
 	public function getFileSettingsOnly(): array {
 		try {
-			$fileConfig = $this->appConfig->getValueString($this->appName, 'fileManagement', '');
-
+			$fileConfig = $this->appConfig->getValueString(Application::APP_ID, 'fileManagement', '');
 			if (empty($fileConfig) === true) {
-				// Return default configuration.
-				return [
-					'vectorizationEnabled' => false,
-					'provider' => null,
-					'chunkingStrategy' => 'RECURSIVE_CHARACTER',
-					'chunkSize' => 1000,
-					'chunkOverlap' => 200,
-					// LLPhant-friendly defaults: native PHP support + common library-based formats.
-					'enabledFileTypes' => [
-						'txt',
-						'md',
-						'html',
-						'json',
-						'xml',
-						'csv',
-						'pdf',
-						'docx',
-						'doc',
-						'xlsx',
-						'xls',
-					],
-					'ocrEnabled' => false,
-					'maxFileSizeMB' => 100,
-					// Text extraction settings (for FileConfiguration component).
-					'extractionScope' => 'objects',
-					// None, all, folders, objects.
-					'textExtractor' => 'llphant',
-					// Llphant, dolphin.
-					'extractionMode' => 'background',
-					// Background, immediate, manual.
-					'maxFileSize' => 100,
-					'batchSize' => 10,
-					'dolphinApiEndpoint' => '',
-					'dolphinApiKey' => '',
-					// Presidio entity recognition settings.
-					'presidioApiEndpoint' => '',
-					'openAnonymiserApiEndpoint' => '',
-					// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (operator URL).
-					'openAnonymiserSource' => 'internal',
-					// HTTP Basic user for an external OpenAnonymiser; empty sends no credentials.
-					'openAnonymiserUsername' => '',
-					'openAnonymiserPasswordSet' => $this->hasOpenAnonymiserPassword(),
-					'entityRecognitionEnabled' => false,
-					// 'auto' is an internal "not yet configured" marker resolved at state-query
-					// time to the recommended backend; it is never shown as a UI option.
-					'entityRecognitionMethod' => 'auto',
-					// Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
-				];
-			}//end if
-
-			$fileSettings = json_decode($fileConfig, true);
-
-			// The same bound as updateFileSettings() applies on the way out. Values
-			// stored before that clamp existed are still in appconfig — the previous
-			// write path accepted 0, negatives and anything above 500 — and the cron
-			// job hands batchSize straight to extractPendingFiles(), so a bound that
-			// only guards the write path leaves those installations unprotected.
-			if (is_array($fileSettings) === true && array_key_exists('batchSize', $fileSettings) === true) {
-				$fileSettings['batchSize'] = max(1, min((int) $fileSettings['batchSize'], 500));
+				$defaults = self::FILE_DEFAULTS;
+				$defaults['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
+				return $defaults;
 			}
 
-			if (is_array($fileSettings) === true) {
-				// The password is never part of a settings read, only whether one is set.
-				unset($fileSettings[self::OPENANONYMISER_PASSWORD_KEY]);
-				$fileSettings['openAnonymiserUsername'] = (string) ($fileSettings['openAnonymiserUsername'] ?? '');
-				$fileSettings['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
-			}
-
-			return $fileSettings;
+			return $this->readableFileSettings(fileSettings: json_decode($fileConfig, true));
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to retrieve File Management settings: ' . $e->getMessage());
 		}//end try
 	}//end getFileSettingsOnly()
+
+	/**
+	 * Stored file settings as a read returns them.
+	 *
+	 * The same batch size bound as updateFileSettings() applies on the way out.
+	 * Values stored before that clamp existed are still in appconfig (the
+	 * previous write path accepted 0, negatives and anything above 500) and the
+	 * cron job hands batchSize straight to extractPendingFiles(), so a bound that
+	 * only guards the write path leaves those installations unprotected. The
+	 * password is never part of a settings read, only whether one is set.
+	 *
+	 * @param mixed $fileSettings The decoded stored settings; anything but an array is returned as it is.
+	 *
+	 * @return mixed
+	 */
+	private function readableFileSettings($fileSettings) {
+		if (is_array($fileSettings) === false) {
+			return $fileSettings;
+		}
+
+		if (array_key_exists('batchSize', $fileSettings) === true) {
+			$fileSettings['batchSize'] = $this->boundedBatchSize(batchSize: $fileSettings['batchSize']);
+		}
+
+		unset($fileSettings[self::OPENANONYMISER_PASSWORD_KEY]);
+		$fileSettings['openAnonymiserUsername'] = (string) ($fileSettings['openAnonymiserUsername'] ?? '');
+		$fileSettings['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
+
+		return $fileSettings;
+	}//end readableFileSettings()
+
+	/**
+	 * A batch size between 1 and 500.
+	 *
+	 * A zero or negative batch size makes the cron job extract nothing and report
+	 * "no pending files" for a queue that is not empty, and an unbounded one lets
+	 * a single tick attempt MAX_PENDING_WINDOWS x batchSize files.
+	 *
+	 * @param mixed $batchSize The submitted or stored batch size.
+	 *
+	 * @return int
+	 */
+	private function boundedBatchSize($batchSize): int {
+		return max(1, min((int) $batchSize, 500));
+	}//end boundedBatchSize()
 
 	/**
 	 * Update File Management settings only.
@@ -210,62 +208,8 @@ class FileSettingsHandler {
 	 */
 	public function updateFileSettingsOnly(array $fileData): array {
 		try {
-			$fileConfig = [
-				'vectorizationEnabled' => $fileData['vectorizationEnabled'] ?? false,
-				'provider' => $fileData['provider'] ?? null,
-				'chunkingStrategy' => $fileData['chunkingStrategy'] ?? 'RECURSIVE_CHARACTER',
-				'chunkSize' => $fileData['chunkSize'] ?? 1000,
-				'chunkOverlap' => $fileData['chunkOverlap'] ?? 200,
-				'enabledFileTypes' => $fileData['enabledFileTypes'] ?? [
-					'txt',
-					'md',
-					'html',
-					'json',
-					'xml',
-					'csv',
-					'pdf',
-					'docx',
-					'doc',
-					'xlsx',
-					'xls',
-				],
-				'ocrEnabled' => $fileData['ocrEnabled'] ?? false,
-				'maxFileSizeMB' => $fileData['maxFileSizeMB'] ?? 100,
-				// Text extraction settings (from FileConfiguration component).
-				'extractionScope' => $fileData['extractionScope'] ?? 'objects',
-				// None, all, folders, objects.
-				'textExtractor' => $fileData['textExtractor'] ?? 'llphant',
-				// Llphant, dolphin.
-				'extractionMode' => $fileData['extractionMode'] ?? 'background',
-				// Background, immediate, manual.
-				'maxFileSize' => $fileData['maxFileSize'] ?? 100,
-				// Bounded on write: a zero or negative batch size makes the cron job
-				// extract nothing and report "no pending files" for a queue that is
-				// not empty, and an unbounded one lets a single tick attempt
-				// MAX_PENDING_WINDOWS x batchSize files.
-				'batchSize' => max(1, min((int) ($fileData['batchSize'] ?? 10), 500)),
-				'dolphinApiEndpoint' => $fileData['dolphinApiEndpoint'] ?? '',
-				'dolphinApiKey' => $fileData['dolphinApiKey'] ?? '',
-				// Presidio entity recognition settings.
-				'presidioApiEndpoint' => $fileData['presidioApiEndpoint'] ?? '',
-				'openAnonymiserApiEndpoint' => $fileData['openAnonymiserApiEndpoint'] ?? '',
-				'openAnonymiserSource' => $fileData['openAnonymiserSource'] ?? 'internal',
-				'openAnonymiserUsername' => trim((string) ($fileData['openAnonymiserUsername'] ?? '')),
-				'entityRecognitionEnabled' => $fileData['entityRecognitionEnabled'] ?? false,
-				'entityRecognitionMethod' => $fileData['entityRecognitionMethod'] ?? 'auto',
-				// Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
-				// Who owns a redaction decision on a file that belongs to no
-				// schema (reviewer-owns-their-decisions); null is open.
-				ReviewPolicy::SETTINGS_KEY => $this->reviewDefault(fileData: $fileData),
-			];
-
-			$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_PASSWORD_KEY];
-			$before = $this->changeRecorder?->snapshot(keys: $auditKeys);
-			$this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
-			$this->storeOpenAnonymiserPassword(fileData: $fileData);
-			if ($before !== null) {
-				$this->changeRecorder?->record(before: $before, keys: $auditKeys);
-			}
+			$fileConfig = $this->submittedFileSettings(fileData: $fileData);
+			$this->storeRecorded(fileConfig: $fileConfig, fileData: $fileData);
 
 			$fileConfig['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
 
@@ -276,18 +220,68 @@ class FileSettingsHandler {
 	}//end updateFileSettingsOnly()
 
 	/**
+	 * Store the file settings and the anonymiser password, recording the change.
+	 *
+	 * The snapshot is taken before either write and the change is recorded after
+	 * both, so one audit entry covers the whole save.
+	 *
+	 * @param array<string, mixed> $fileConfig The file settings to store.
+	 * @param array<string, mixed> $fileData   The settings being written, for the password.
+	 *
+	 * @return void
+	 */
+	private function storeRecorded(array $fileConfig, array $fileData): void {
+		$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_PASSWORD_KEY];
+		$before = $this->changeRecorder?->snapshot(keys: $auditKeys);
+		$this->appConfig->setValueString(Application::APP_ID, 'fileManagement', json_encode($fileConfig));
+		$this->storeOpenAnonymiserPassword(fileData: $fileData);
+		if ($before !== null) {
+			$this->changeRecorder?->record(before: $before, keys: $auditKeys);
+		}
+	}//end storeRecorded()
+
+	/**
+	 * The file settings to store: every default key from the submitted values or
+	 * its default, the batch size bounded, the user name trimmed, and the review
+	 * default (who owns a redaction decision on a file that belongs to no schema).
+	 *
+	 * @param array<string, mixed> $fileData The submitted settings.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function submittedFileSettings(array $fileData): array {
+		$fileConfig = [];
+		foreach (self::FILE_DEFAULTS as $key => $default) {
+			$fileConfig[$key] = $fileData[$key] ?? $default;
+		}
+
+		unset($fileConfig['openAnonymiserPasswordSet']);
+		$fileConfig['batchSize'] = $this->boundedBatchSize(batchSize: $fileConfig['batchSize']);
+		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);
+		$fileConfig[ReviewPolicy::SETTINGS_KEY] = $this->reviewDefault(fileData: $fileData);
+
+		return $fileConfig;
+	}//end submittedFileSettings()
+
+	/**
 	 * The instance review default from a settings save, refused when unsound.
+	 *
+	 * A save without the key keeps the stored declaration; an explicit null clears it.
 	 *
 	 * @param array<string, mixed> $fileData The settings being saved.
 	 *
-	 * @return array<string, mixed>|null The declaration, or null when none is given.
+	 * @return array<string, mixed>|null The declaration to store, or null when there is none.
 	 *
 	 * @throws InvalidArgumentException When the declaration names an ownership nobody can honour.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
 	private function reviewDefault(array $fileData): ?array {
-		$declaration = ($fileData[ReviewPolicy::SETTINGS_KEY] ?? null);
+		if (array_key_exists(ReviewPolicy::SETTINGS_KEY, $fileData) === false) {
+			return $this->storedReviewDefault();
+		}
+
+		$declaration = $fileData[ReviewPolicy::SETTINGS_KEY];
 		if ($declaration === null) {
 			return null;
 		}
@@ -301,6 +295,20 @@ class FileSettingsHandler {
 	}//end reviewDefault()
 
 	/**
+	 * The review default already stored, kept when a save does not name one.
+	 *
+	 * @return array<string, mixed>|null The stored policy, or null when none is stored.
+	 */
+	private function storedReviewDefault(): ?array {
+		$stored = ($this->getFileSettingsOnly()[ReviewPolicy::SETTINGS_KEY] ?? null);
+		if (is_array($stored) === true) {
+			return $stored;
+		}
+
+		return null;
+	}//end storedReviewDefault()
+
+	/**
 	 * The stored OpenAnonymiser password, for the outgoing request only.
 	 *
 	 * Never return this from a settings endpoint and never log it.
@@ -310,7 +318,7 @@ class FileSettingsHandler {
 	 * @spec exclude credential plumbing for the external OpenAnonymiser transport
 	 */
 	public function getOpenAnonymiserPassword(): string {
-		return $this->appConfig->getValueString($this->appName, self::OPENANONYMISER_PASSWORD_KEY, '');
+		return $this->appConfig->getValueString(Application::APP_ID, self::OPENANONYMISER_PASSWORD_KEY, '');
 	}//end getOpenAnonymiserPassword()
 
 	/**
@@ -340,17 +348,27 @@ class FileSettingsHandler {
 			return;
 		}
 
-		$password = $fileData[self::OPENANONYMISER_PASSWORD_KEY];
+		$this->writeOpenAnonymiserPassword(password: $fileData[self::OPENANONYMISER_PASSWORD_KEY]);
+	}//end storeOpenAnonymiserPassword()
+
+	/**
+	 * Store the OpenAnonymiser password as a sensitive value, or delete it when blank.
+	 *
+	 * @param string $password The submitted password; '' clears the stored one.
+	 *
+	 * @return void
+	 */
+	private function writeOpenAnonymiserPassword(string $password): void {
 		if ($password === '') {
-			$this->appConfig->deleteKey($this->appName, self::OPENANONYMISER_PASSWORD_KEY);
+			$this->appConfig->deleteKey(Application::APP_ID, self::OPENANONYMISER_PASSWORD_KEY);
 			return;
 		}
 
 		$this->appConfig->setValueString(
-			$this->appName,
+			Application::APP_ID,
 			self::OPENANONYMISER_PASSWORD_KEY,
 			$password,
 			sensitive: true
 		);
-	}//end storeOpenAnonymiserPassword()
+	}//end writeOpenAnonymiserPassword()
 }//end class

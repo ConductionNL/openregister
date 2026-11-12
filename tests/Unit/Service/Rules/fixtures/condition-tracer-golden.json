@@ -1,0 +1,1346 @@
+{
+    "and with list args clause": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "ast and": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "ast eq dotted": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "zaak.type",
+            "operandValue": "a",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "zaak.type",
+            "operandValue": "a",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "zaak.type",
+            "operandValue": "a",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "zaak.type",
+            "operandValue": "a",
+            "message": null
+        }
+    },
+    "ast gt": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "ast nested": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "ast not": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": null
+        }
+    },
+    "empty": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "empty document": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "null",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "null",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "null",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "null",
+            "message": null
+        }
+    },
+    "jsonlogic and": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "jsonlogic and all hold": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic and empty": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic and scalar": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic arg with two keys": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "jsonlogic bare var": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": null
+        }
+    },
+    "jsonlogic comparison scalar args": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic deep dotted": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "zaak.n.x",
+            "operandValue": "1",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "zaak.n.x",
+            "operandValue": "1",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "zaak.n.x",
+            "operandValue": "1",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "zaak.n.x",
+            "operandValue": "1",
+            "message": null
+        }
+    },
+    "jsonlogic dotted": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "zaak.type",
+            "operandValue": "a",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "zaak.type",
+            "operandValue": "a",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "zaak.type",
+            "operandValue": "a",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "zaak.type",
+            "operandValue": "a",
+            "message": null
+        }
+    },
+    "jsonlogic gt": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "jsonlogic gt literal first": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "jsonlogic in": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": null
+        }
+    },
+    "jsonlogic missing path": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "zaak.missing.deep",
+            "operandValue": "null",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "zaak.missing.deep",
+            "operandValue": "null",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "zaak.missing.deep",
+            "operandValue": "null",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "zaak.missing.deep",
+            "operandValue": "null",
+            "message": null
+        }
+    },
+    "jsonlogic nested arithmetic": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "jsonlogic nested no reference": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic nested scalar arg": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "jsonlogic not bare": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": null
+        }
+    },
+    "jsonlogic not empty": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic not list": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": null
+        }
+    },
+    "jsonlogic not scalar": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic or": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "tags",
+            "operandValue": "[\"a\"]",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "tags",
+            "operandValue": "[\"a\"]",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "tags",
+            "operandValue": "[\"a\"]",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "tags",
+            "operandValue": "[\"a\"]",
+            "message": null
+        }
+    },
+    "jsonlogic or empty": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic or keyed": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "bedrag",
+            "operandValue": "120",
+            "message": null
+        }
+    },
+    "jsonlogic or scalar clause": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic through scalar": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "status.x",
+            "operandValue": "null",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "status.x",
+            "operandValue": "null",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "status.x",
+            "operandValue": "null",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "status.x",
+            "operandValue": "null",
+            "message": null
+        }
+    },
+    "jsonlogic two literals": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic unknown op": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": null
+        }
+    },
+    "jsonlogic unknown op scalar": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic var default": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": null
+        }
+    },
+    "jsonlogic var empty list": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "jsonlogic var empty string": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": "status",
+            "operandValue": "open",
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": "status",
+            "operandValue": "open",
+            "message": null
+        }
+    },
+    "jsonlogic var number": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "scalar": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    },
+    "two keys": {
+        "fired": {
+            "verdict": "fired",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no_match": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "refused": {
+            "verdict": "refused",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "error": {
+            "verdict": "error",
+            "operand": null,
+            "operandValue": null,
+            "message": "said"
+        },
+        "no message": {
+            "verdict": "no_match",
+            "operand": null,
+            "operandValue": null,
+            "message": null
+        }
+    }
+}

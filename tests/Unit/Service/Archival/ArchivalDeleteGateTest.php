@@ -79,9 +79,11 @@ class ArchivalDeleteGateTest extends TestCase {
 		$schema = new Schema();
 		$schema->setConfiguration(['x-openregister-archival' => ['retention' => ['default' => 'P30D']]]);
 
-		// Should not throw.
+		$this->assertTrue($schema->hasArchivalAnnotation());
 		$this->runGate(schema: $schema, retentionSweep: true);
-		$this->assertTrue(true);
+
+		$this->expectException(ArchivalImmutableException::class);
+		$this->runGate(schema: $schema, retentionSweep: false);
 	}
 
 	/**
@@ -91,8 +93,8 @@ class ArchivalDeleteGateTest extends TestCase {
 		$schema = new Schema();
 		$schema->setConfiguration(['x-openregister-lifecycle' => []]);
 
+		$this->assertFalse($schema->hasArchivalAnnotation());
 		$this->runGate(schema: $schema, retentionSweep: false);
-		$this->assertTrue(true);
 	}
 
 	/**

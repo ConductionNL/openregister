@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 use OCA\OpenRegister\Service\ImportService;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -37,45 +39,17 @@ class ImportServicePublishDeprecationTest extends TestCase {
 	}
 
 	/**
-	 * Test that importFromExcel still accepts the publish parameter (backward compatibility).
+	 * Test that importFromExcel still accepts the publish option (backward compatibility).
 	 */
 	public function testImportFromExcelStillAcceptsPublishParameter(): void {
-		$reflection = new ReflectionClass(ImportService::class);
-		$method = $reflection->getMethod('importFromExcel');
-		$params = $method->getParameters();
-
-		$publishParam = null;
-		foreach ($params as $param) {
-			if ($param->getName() === 'publish') {
-				$publishParam = $param;
-				break;
-			}
-		}
-
-		$this->assertNotNull($publishParam, 'importFromExcel should still accept $publish for backward compat');
-		$this->assertTrue($publishParam->isDefaultValueAvailable(), '$publish should have a default value');
-		$this->assertFalse($publishParam->getDefaultValue(), '$publish default should be false');
+		$this->assertAcceptsPublishOption(method: 'importFromExcel');
 	}
 
 	/**
-	 * Test that importFromCsv still accepts the publish parameter (backward compatibility).
+	 * Test that importFromCsv still accepts the publish option (backward compatibility).
 	 */
 	public function testImportFromCsvStillAcceptsPublishParameter(): void {
-		$reflection = new ReflectionClass(ImportService::class);
-		$method = $reflection->getMethod('importFromCsv');
-		$params = $method->getParameters();
-
-		$publishParam = null;
-		foreach ($params as $param) {
-			if ($param->getName() === 'publish') {
-				$publishParam = $param;
-				break;
-			}
-		}
-
-		$this->assertNotNull($publishParam, 'importFromCsv should still accept $publish for backward compat');
-		$this->assertTrue($publishParam->isDefaultValueAvailable(), '$publish should have a default value');
-		$this->assertFalse($publishParam->getDefaultValue(), '$publish default should be false');
+		$this->assertAcceptsPublishOption(method: 'importFromCsv');
 	}
 
 	/**
@@ -93,5 +67,29 @@ class ImportServicePublishDeprecationTest extends TestCase {
 			$source,
 			'ImportService should not inject @self.published into objects'
 		);
+	}
+
+	/**
+	 * Assert an importer takes an ImportRequest whose options still carry `publish`, defaulting to false.
+	 *
+	 * @param string $method The ImportService method.
+	 *
+	 * @return void
+	 */
+	private function assertAcceptsPublishOption(string $method): void {
+		$request = (new ReflectionClass(ImportService::class))->getMethod($method)->getParameters()[0];
+		$this->assertSame(ImportRequest::class, (string)$request->getType(), $method . ' should take an ImportRequest');
+
+		$publishParam = null;
+		foreach ((new ReflectionClass(ImportOptions::class))->getConstructor()->getParameters() as $param) {
+			if ($param->getName() === 'publish') {
+				$publishParam = $param;
+				break;
+			}
+		}
+
+		$this->assertNotNull($publishParam, $method . ' should still accept publish for backward compat');
+		$this->assertTrue($publishParam->isDefaultValueAvailable(), 'publish should have a default value');
+		$this->assertFalse($publishParam->getDefaultValue(), 'publish default should be false');
 	}
 }

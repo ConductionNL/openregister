@@ -106,11 +106,6 @@ class FlowRunStepOrderingMapperTest extends TestCase {
 		$this->assertSame('s', $steps[0]->jsonSerialize()['streamId']);
 	}//end testFindByRunIsCanonicalByOrdinalPathThenSequence()
 
-	public function testTheTimestampReadIsExplicitAndSeparate(): void {
-		(new FlowRunStepMapper($this->db))->findByRunByTimestamp(runUuid: 'r');
-		$this->assertSame(['orderBy:created', 'addOrderBy:id'], $this->ordering());
-	}//end testTheTimestampReadIsExplicitAndSeparate()
-
 	public function testLockByUuidReadsForUpdate(): void {
 		$this->rows = [['id' => 9, 'uuid' => 'r', 'flow_id' => 'f', 'status' => 'running', 'marking' => json_encode(['a' => 1]), 'firings' => 2, 'place_items' => json_encode(['a' => []])]];
 		$run = (new FlowRunMapper($this->db))->lockByUuid(uuid: 'r');

@@ -1,0 +1,928 @@
+{
+    "filtered NULL confidential false: none": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(confidential, :p1, NULL)",
+            "#1 andWhere(eq(confidential, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered 'org-1' confidential false: none": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p1, NULL)",
+            "#1 andWhere(eq(organisation_id, :p1, NULL))",
+            "#1 param :p2 = false, boolean",
+            "#1 expr.eq(confidential, :p2, NULL)",
+            "#1 andWhere(eq(confidential, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential true: none": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered '' confidential true: none": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential false: every column": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 1, 2",
+            "#1 expr.eq(register_id, :p1, NULL)",
+            "#1 andWhere(eq(register_id, :p1, NULL))",
+            "#1 param :p2 = 2, 2",
+            "#1 expr.eq(schema_id, :p2, NULL)",
+            "#1 andWhere(eq(schema_id, :p2, NULL))",
+            "#1 param :p3 = a-3, 2",
+            "#1 expr.eq(activity_id, :p3, NULL)",
+            "#1 andWhere(eq(activity_id, :p3, NULL))",
+            "#1 param :p4 = anna, 2",
+            "#1 expr.eq(actor, :p4, NULL)",
+            "#1 andWhere(eq(actor, :p4, NULL))",
+            "#1 param :p5 = read, 2",
+            "#1 expr.eq(action, :p5, NULL)",
+            "#1 andWhere(eq(action, :p5, NULL))",
+            "#1 param :p6 = false, boolean",
+            "#1 expr.eq(confidential, :p6, NULL)",
+            "#1 andWhere(eq(confidential, :p6, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered 'org-1' confidential false: every column": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 1, 2",
+            "#1 expr.eq(register_id, :p1, NULL)",
+            "#1 andWhere(eq(register_id, :p1, NULL))",
+            "#1 param :p2 = 2, 2",
+            "#1 expr.eq(schema_id, :p2, NULL)",
+            "#1 andWhere(eq(schema_id, :p2, NULL))",
+            "#1 param :p3 = a-3, 2",
+            "#1 expr.eq(activity_id, :p3, NULL)",
+            "#1 andWhere(eq(activity_id, :p3, NULL))",
+            "#1 param :p4 = anna, 2",
+            "#1 expr.eq(actor, :p4, NULL)",
+            "#1 andWhere(eq(actor, :p4, NULL))",
+            "#1 param :p5 = read, 2",
+            "#1 expr.eq(action, :p5, NULL)",
+            "#1 andWhere(eq(action, :p5, NULL))",
+            "#1 param :p6 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p6, NULL)",
+            "#1 andWhere(eq(organisation_id, :p6, NULL))",
+            "#1 param :p7 = false, boolean",
+            "#1 expr.eq(confidential, :p7, NULL)",
+            "#1 andWhere(eq(confidential, :p7, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential true: every column": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 1, 2",
+            "#1 expr.eq(register_id, :p1, NULL)",
+            "#1 andWhere(eq(register_id, :p1, NULL))",
+            "#1 param :p2 = 2, 2",
+            "#1 expr.eq(schema_id, :p2, NULL)",
+            "#1 andWhere(eq(schema_id, :p2, NULL))",
+            "#1 param :p3 = a-3, 2",
+            "#1 expr.eq(activity_id, :p3, NULL)",
+            "#1 andWhere(eq(activity_id, :p3, NULL))",
+            "#1 param :p4 = anna, 2",
+            "#1 expr.eq(actor, :p4, NULL)",
+            "#1 andWhere(eq(actor, :p4, NULL))",
+            "#1 param :p5 = read, 2",
+            "#1 expr.eq(action, :p5, NULL)",
+            "#1 andWhere(eq(action, :p5, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered '' confidential true: every column": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 1, 2",
+            "#1 expr.eq(register_id, :p1, NULL)",
+            "#1 andWhere(eq(register_id, :p1, NULL))",
+            "#1 param :p2 = 2, 2",
+            "#1 expr.eq(schema_id, :p2, NULL)",
+            "#1 andWhere(eq(schema_id, :p2, NULL))",
+            "#1 param :p3 = a-3, 2",
+            "#1 expr.eq(activity_id, :p3, NULL)",
+            "#1 andWhere(eq(activity_id, :p3, NULL))",
+            "#1 param :p4 = anna, 2",
+            "#1 expr.eq(actor, :p4, NULL)",
+            "#1 andWhere(eq(actor, :p4, NULL))",
+            "#1 param :p5 = read, 2",
+            "#1 expr.eq(action, :p5, NULL)",
+            "#1 andWhere(eq(action, :p5, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential false: empty and null skipped": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 0, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = , 2",
+            "#1 expr.eq(action, :p2, NULL)",
+            "#1 andWhere(eq(action, :p2, NULL))",
+            "#1 param :p3 = false, boolean",
+            "#1 expr.eq(confidential, :p3, NULL)",
+            "#1 andWhere(eq(confidential, :p3, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered 'org-1' confidential false: empty and null skipped": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 0, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = , 2",
+            "#1 expr.eq(action, :p2, NULL)",
+            "#1 andWhere(eq(action, :p2, NULL))",
+            "#1 param :p3 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p3, NULL)",
+            "#1 andWhere(eq(organisation_id, :p3, NULL))",
+            "#1 param :p4 = false, boolean",
+            "#1 expr.eq(confidential, :p4, NULL)",
+            "#1 andWhere(eq(confidential, :p4, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential true: empty and null skipped": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 0, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = , 2",
+            "#1 expr.eq(action, :p2, NULL)",
+            "#1 andWhere(eq(action, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered '' confidential true: empty and null skipped": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 0, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = , 2",
+            "#1 expr.eq(action, :p2, NULL)",
+            "#1 andWhere(eq(action, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential false: unknown column ignored": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(confidential, :p1, NULL)",
+            "#1 andWhere(eq(confidential, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered 'org-1' confidential false: unknown column ignored": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p1, NULL)",
+            "#1 andWhere(eq(organisation_id, :p1, NULL))",
+            "#1 param :p2 = false, boolean",
+            "#1 expr.eq(confidential, :p2, NULL)",
+            "#1 andWhere(eq(confidential, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential true: unknown column ignored": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered '' confidential true: unknown column ignored": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential false: subject type only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = BSN, 2",
+            "#1 expr.eq(subject_id_type, :p1, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p1, NULL))",
+            "#1 param :p2 = %{\"type\":\"BSN\",%, 2",
+            "#1 expr.like(subject_ids, :p2, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p1, NULL)), like(subject_ids, :p2, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p1, NULL)), like(subject_ids, :p2, NULL)))",
+            "#1 param :p3 = false, boolean",
+            "#1 expr.eq(confidential, :p3, NULL)",
+            "#1 andWhere(eq(confidential, :p3, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered 'org-1' confidential false: subject type only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = BSN, 2",
+            "#1 expr.eq(subject_id_type, :p1, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p1, NULL))",
+            "#1 param :p2 = %{\"type\":\"BSN\",%, 2",
+            "#1 expr.like(subject_ids, :p2, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p1, NULL)), like(subject_ids, :p2, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p1, NULL)), like(subject_ids, :p2, NULL)))",
+            "#1 param :p3 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p3, NULL)",
+            "#1 andWhere(eq(organisation_id, :p3, NULL))",
+            "#1 param :p4 = false, boolean",
+            "#1 expr.eq(confidential, :p4, NULL)",
+            "#1 andWhere(eq(confidential, :p4, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential true: subject type only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = BSN, 2",
+            "#1 expr.eq(subject_id_type, :p1, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p1, NULL))",
+            "#1 param :p2 = %{\"type\":\"BSN\",%, 2",
+            "#1 expr.like(subject_ids, :p2, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p1, NULL)), like(subject_ids, :p2, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p1, NULL)), like(subject_ids, :p2, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered '' confidential true: subject type only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = BSN, 2",
+            "#1 expr.eq(subject_id_type, :p1, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p1, NULL))",
+            "#1 param :p2 = %{\"type\":\"BSN\",%, 2",
+            "#1 expr.like(subject_ids, :p2, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p1, NULL)), like(subject_ids, :p2, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p1, NULL)), like(subject_ids, :p2, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential false: subject value only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 111, 2",
+            "#1 expr.eq(subject_id_value, :p1, NULL)",
+            "#1 expr.andX(eq(subject_id_value, :p1, NULL))",
+            "#1 param :p2 = %\"value\":\"111\"}%, 2",
+            "#1 expr.like(subject_ids, :p2, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_value, :p1, NULL)), like(subject_ids, :p2, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_value, :p1, NULL)), like(subject_ids, :p2, NULL)))",
+            "#1 param :p3 = false, boolean",
+            "#1 expr.eq(confidential, :p3, NULL)",
+            "#1 andWhere(eq(confidential, :p3, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered 'org-1' confidential false: subject value only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 111, 2",
+            "#1 expr.eq(subject_id_value, :p1, NULL)",
+            "#1 expr.andX(eq(subject_id_value, :p1, NULL))",
+            "#1 param :p2 = %\"value\":\"111\"}%, 2",
+            "#1 expr.like(subject_ids, :p2, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_value, :p1, NULL)), like(subject_ids, :p2, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_value, :p1, NULL)), like(subject_ids, :p2, NULL)))",
+            "#1 param :p3 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p3, NULL)",
+            "#1 andWhere(eq(organisation_id, :p3, NULL))",
+            "#1 param :p4 = false, boolean",
+            "#1 expr.eq(confidential, :p4, NULL)",
+            "#1 andWhere(eq(confidential, :p4, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential true: subject value only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 111, 2",
+            "#1 expr.eq(subject_id_value, :p1, NULL)",
+            "#1 expr.andX(eq(subject_id_value, :p1, NULL))",
+            "#1 param :p2 = %\"value\":\"111\"}%, 2",
+            "#1 expr.like(subject_ids, :p2, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_value, :p1, NULL)), like(subject_ids, :p2, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_value, :p1, NULL)), like(subject_ids, :p2, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered '' confidential true: subject value only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 111, 2",
+            "#1 expr.eq(subject_id_value, :p1, NULL)",
+            "#1 expr.andX(eq(subject_id_value, :p1, NULL))",
+            "#1 param :p2 = %\"value\":\"111\"}%, 2",
+            "#1 expr.like(subject_ids, :p2, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_value, :p1, NULL)), like(subject_ids, :p2, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_value, :p1, NULL)), like(subject_ids, :p2, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential false: subject both": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = BSN, 2",
+            "#1 expr.eq(subject_id_type, :p2, NULL)",
+            "#1 param :p3 = 111, 2",
+            "#1 expr.eq(subject_id_value, :p3, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL))",
+            "#1 param :p4 = %{\"type\":\"BSN\",\"value\":\"111\"}%, 2",
+            "#1 expr.like(subject_ids, :p4, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL)), like(subject_ids, :p4, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL)), like(subject_ids, :p4, NULL)))",
+            "#1 param :p5 = false, boolean",
+            "#1 expr.eq(confidential, :p5, NULL)",
+            "#1 andWhere(eq(confidential, :p5, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered 'org-1' confidential false: subject both": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = BSN, 2",
+            "#1 expr.eq(subject_id_type, :p2, NULL)",
+            "#1 param :p3 = 111, 2",
+            "#1 expr.eq(subject_id_value, :p3, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL))",
+            "#1 param :p4 = %{\"type\":\"BSN\",\"value\":\"111\"}%, 2",
+            "#1 expr.like(subject_ids, :p4, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL)), like(subject_ids, :p4, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL)), like(subject_ids, :p4, NULL)))",
+            "#1 param :p5 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p5, NULL)",
+            "#1 andWhere(eq(organisation_id, :p5, NULL))",
+            "#1 param :p6 = false, boolean",
+            "#1 expr.eq(confidential, :p6, NULL)",
+            "#1 andWhere(eq(confidential, :p6, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential true: subject both": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = BSN, 2",
+            "#1 expr.eq(subject_id_type, :p2, NULL)",
+            "#1 param :p3 = 111, 2",
+            "#1 expr.eq(subject_id_value, :p3, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL))",
+            "#1 param :p4 = %{\"type\":\"BSN\",\"value\":\"111\"}%, 2",
+            "#1 expr.like(subject_ids, :p4, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL)), like(subject_ids, :p4, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL)), like(subject_ids, :p4, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered '' confidential true: subject both": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = anna, 2",
+            "#1 expr.eq(actor, :p1, NULL)",
+            "#1 andWhere(eq(actor, :p1, NULL))",
+            "#1 param :p2 = BSN, 2",
+            "#1 expr.eq(subject_id_type, :p2, NULL)",
+            "#1 param :p3 = 111, 2",
+            "#1 expr.eq(subject_id_value, :p3, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL))",
+            "#1 param :p4 = %{\"type\":\"BSN\",\"value\":\"111\"}%, 2",
+            "#1 expr.like(subject_ids, :p4, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL)), like(subject_ids, :p4, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p2, NULL), eq(subject_id_value, :p3, NULL)), like(subject_ids, :p4, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential false: subject empty": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(confidential, :p1, NULL)",
+            "#1 andWhere(eq(confidential, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered 'org-1' confidential false: subject empty": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p1, NULL)",
+            "#1 andWhere(eq(organisation_id, :p1, NULL))",
+            "#1 param :p2 = false, boolean",
+            "#1 expr.eq(confidential, :p2, NULL)",
+            "#1 andWhere(eq(confidential, :p2, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential true: subject empty": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered '' confidential true: subject empty": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential false: subject zero": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 0, 2",
+            "#1 expr.eq(subject_id_type, :p1, NULL)",
+            "#1 param :p2 = 0, 2",
+            "#1 expr.eq(subject_id_value, :p2, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL))",
+            "#1 param :p3 = %{\"type\":\"0\",\"value\":\"0\"}%, 2",
+            "#1 expr.like(subject_ids, :p3, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL)), like(subject_ids, :p3, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL)), like(subject_ids, :p3, NULL)))",
+            "#1 param :p4 = false, boolean",
+            "#1 expr.eq(confidential, :p4, NULL)",
+            "#1 andWhere(eq(confidential, :p4, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered 'org-1' confidential false: subject zero": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 0, 2",
+            "#1 expr.eq(subject_id_type, :p1, NULL)",
+            "#1 param :p2 = 0, 2",
+            "#1 expr.eq(subject_id_value, :p2, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL))",
+            "#1 param :p3 = %{\"type\":\"0\",\"value\":\"0\"}%, 2",
+            "#1 expr.like(subject_ids, :p3, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL)), like(subject_ids, :p3, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL)), like(subject_ids, :p3, NULL)))",
+            "#1 param :p4 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p4, NULL)",
+            "#1 andWhere(eq(organisation_id, :p4, NULL))",
+            "#1 param :p5 = false, boolean",
+            "#1 expr.eq(confidential, :p5, NULL)",
+            "#1 andWhere(eq(confidential, :p5, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered NULL confidential true: subject zero": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 0, 2",
+            "#1 expr.eq(subject_id_type, :p1, NULL)",
+            "#1 param :p2 = 0, 2",
+            "#1 expr.eq(subject_id_value, :p2, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL))",
+            "#1 param :p3 = %{\"type\":\"0\",\"value\":\"0\"}%, 2",
+            "#1 expr.like(subject_ids, :p3, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL)), like(subject_ids, :p3, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL)), like(subject_ids, :p3, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "filtered '' confidential true: subject zero": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 param :p1 = 0, 2",
+            "#1 expr.eq(subject_id_type, :p1, NULL)",
+            "#1 param :p2 = 0, 2",
+            "#1 expr.eq(subject_id_value, :p2, NULL)",
+            "#1 expr.andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL))",
+            "#1 param :p3 = %{\"type\":\"0\",\"value\":\"0\"}%, 2",
+            "#1 expr.like(subject_ids, :p3, NULL)",
+            "#1 expr.orX(andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL)), like(subject_ids, :p3, NULL))",
+            "#1 andWhere(orX(andX(eq(subject_id_type, :p1, NULL), eq(subject_id_value, :p2, NULL)), like(subject_ids, :p3, NULL)))",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(100)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "counts: unscoped": {
+        "result": {
+            "a-1": 5,
+            "7": 2,
+            "": 1
+        },
+        "queries": [
+            "#1 select(activity_id)",
+            "#1 func.count(*, )",
+            "#1 selectAlias(count(*, ), cnt)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 groupBy(activity_id)",
+            "#1 executeQuery()"
+        ]
+    },
+    "counts: organisation": {
+        "result": {
+            "a-1": 5,
+            "7": 2,
+            "": 1
+        },
+        "queries": [
+            "#1 select(activity_id)",
+            "#1 func.count(*, )",
+            "#1 selectAlias(count(*, ), cnt)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 groupBy(activity_id)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p1, NULL)",
+            "#1 andWhere(eq(organisation_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "counts: register": {
+        "result": {
+            "a-1": 5,
+            "7": 2,
+            "": 1
+        },
+        "queries": [
+            "#1 select(activity_id)",
+            "#1 func.count(*, )",
+            "#1 selectAlias(count(*, ), cnt)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 groupBy(activity_id)",
+            "#1 param :p1 = 7, 2",
+            "#1 expr.eq(register_id, :p1, NULL)",
+            "#1 andWhere(eq(register_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "counts: both": {
+        "result": {
+            "a-1": 5,
+            "7": 2,
+            "": 1
+        },
+        "queries": [
+            "#1 select(activity_id)",
+            "#1 func.count(*, )",
+            "#1 selectAlias(count(*, ), cnt)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 groupBy(activity_id)",
+            "#1 param :p1 = org-1, 2",
+            "#1 expr.eq(organisation_id, :p1, NULL)",
+            "#1 andWhere(eq(organisation_id, :p1, NULL))",
+            "#1 param :p2 = 7, 2",
+            "#1 expr.eq(register_id, :p2, NULL)",
+            "#1 andWhere(eq(register_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "counts: empty strings": {
+        "result": {
+            "a-1": 5,
+            "7": 2,
+            "": 1
+        },
+        "queries": [
+            "#1 select(activity_id)",
+            "#1 func.count(*, )",
+            "#1 selectAlias(count(*, ), cnt)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 groupBy(activity_id)",
+            "#1 executeQuery()"
+        ]
+    },
+    "counts: zero strings": {
+        "result": {
+            "a-1": 5,
+            "7": 2,
+            "": 1
+        },
+        "queries": [
+            "#1 select(activity_id)",
+            "#1 func.count(*, )",
+            "#1 selectAlias(count(*, ), cnt)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 groupBy(activity_id)",
+            "#1 param :p1 = 0, 2",
+            "#1 expr.eq(organisation_id, :p1, NULL)",
+            "#1 andWhere(eq(organisation_id, :p1, NULL))",
+            "#1 param :p2 = 0, 2",
+            "#1 expr.eq(register_id, :p2, NULL)",
+            "#1 andWhere(eq(register_id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "counts: no rows": {
+        "result": [],
+        "queries": [
+            "#1 select(activity_id)",
+            "#1 func.count(*, )",
+            "#1 selectAlias(count(*, ), cnt)",
+            "#1 from(openregister_processing_log, NULL)",
+            "#1 groupBy(activity_id)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail: defaults": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail: paged": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail: zero paging": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(0)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail: limit only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail: offset only": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setFirstResult(4)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail: assoc sort": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 addOrderBy(created, ASC)",
+            "#1 addOrderBy(user, DESC)",
+            "#1 addOrderBy(size, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail: list sort": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 addOrderBy(0, DESC)",
+            "#1 addOrderBy(1, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail: odd directions": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 addOrderBy(a, ASC)",
+            "#1 addOrderBy(b, ASC)",
+            "#1 addOrderBy(c, ASC)",
+            "#1 addOrderBy(d, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "search trail: filtered and sorted": {
+        "result": 0,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_search_trails, NULL)",
+            "#1 param :p1 = alice, 2",
+            "#1 expr.eq(user, :p1, NULL)",
+            "#1 andWhere(eq(user, :p1, NULL))",
+            "#1 param :p2 = %tax%, 2",
+            "#1 expr.like(search_term, :p2, NULL)",
+            "#1 param :p3 = %tax%, 2",
+            "#1 expr.like(request_uri, :p3, NULL)",
+            "#1 param :p4 = %tax%, 2",
+            "#1 expr.like(user_agent, :p4, NULL)",
+            "#1 expr.orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL))",
+            "#1 andWhere(orX(like(search_term, :p2, NULL), like(request_uri, :p3, NULL), like(user_agent, :p4, NULL)))",
+            "#1 addOrderBy(search_term, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 setFirstResult(2)",
+            "#1 executeQuery()"
+        ]
+    }
+}

@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -28,8 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowTriggerMapper;
-use OCA\OpenRegister\Db\RuleRunSummaryMapper;
+use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 
@@ -52,36 +51,46 @@ use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
  *   rule is declared plus the summary store; each collaborator is one of those places and
  *   folding any of them away would mean this class reading the tables itself.
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
-final class RuleInventoryService {
+final class RuleInventoryService implements RuleInventoryServiceInterface {
 
 	/**
-	 * How long a rule may go unevaluated before the inventory says so.
+	 * Applies the inventory's scope filter.
 	 *
-	 * Ninety days is the window the change names, and it is a default rather
-	 * than a constant of nature: the caller may ask for another.
-	 *
-	 * @var integer
+	 * @var RuleScope
 	 */
-	public const DEFAULT_IDLE_DAYS = 90;
+	private readonly RuleScope $scopes;
+
+	/**
+	 * Lifts a property's own calculation into the one map; stateless, so it is built in place.
+	 *
+	 * @var PropertyCalculations
+	 */
+	private readonly PropertyCalculations $propertyCalculations;
+
+	/**
+	 * The published kinds, verdicts and actions; stateless, so it is built in place.
+	 *
+	 * @var RuleVocabulary
+	 */
+	private readonly RuleVocabulary $vocabulary;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerMapper $triggers The derived flow trigger index.
-	 * @param RuleRunSummaryMapper $summaries Last run and last error per rule.
-	 * @param PropertyCalculations $propertyCalculations Lifts a property's own calculation into the one map.
-	 * @param RuleVocabulary $vocabulary The published kinds, verdicts and actions.
+	 * @param RuleRunSummaryMapperInterface $summaries Last run and last error per rule.
+	 * @param FlowRuleDescriptors $flows Reads the flows a schema's objects trigger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly FlowTriggerMapper $triggers,
-		private readonly RuleRunSummaryMapper $summaries,
-		private readonly PropertyCalculations $propertyCalculations,
-		private readonly RuleVocabulary $vocabulary,
+		private readonly RuleRunSummaryMapperInterface $summaries,
+		private readonly FlowRuleDescriptors $flows,
 	) {
+		$this->scopes = new RuleScope();
+		$this->propertyCalculations = new PropertyCalculations();
+		$this->vocabulary = new RuleVocabulary();
 	}//end __construct()
 
 	/**
@@ -91,31 +100,21 @@ final class RuleInventoryService {
 	 *
 	 * @return array<int, RuleDescriptor> The descriptors, in the order the pipeline evaluates them.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function describe(Schema $schema): array {
 		$slug = (string)($schema->getSlug() ?? '');
 		$configuration = ($schema->getConfiguration() ?? []);
-		$properties = ($schema->getProperties() ?? []);
+		$lifecycle = ($configuration['x-openregister-lifecycle'] ?? []);
+		$declared = new DeclaredRuleDescriptors(slug: $slug);
 
 		$descriptors = array_merge(
-			$this->calculations(slug: $slug, configuration: $configuration, properties: $properties),
-			$this->stateFieldRules(slug: $slug, configuration: $configuration),
-			$this->lifecycleConditions(slug: $slug, configuration: $configuration),
-			$this->flows(slug: $slug)
+			$declared->calculations(merged: $this->calculationsOf(configuration: $configuration, properties: ($schema->getProperties() ?? []))),
+			$declared->stateFieldRules(states: ($lifecycle['states'] ?? [])),
+			$declared->lifecycleConditions(transitions: ($lifecycle['transitions'] ?? [])),
+			$this->flows->describe(slug: $slug)
 		);
-
-		usort(
-			$descriptors,
-			function (RuleDescriptor $left, RuleDescriptor $right): int {
-				$byKind = ($this->vocabulary->orderOf(kind: $left->getKind()) <=> $this->vocabulary->orderOf(kind: $right->getKind()));
-				if ($byKind !== 0) {
-					return $byKind;
-				}
-
-				return strcmp($left->getKey(), $right->getKey());
-			}
-		);
+		usort($descriptors, $this->inEvaluationOrder(...));
 
 		return $descriptors;
 	}//end describe()
@@ -123,49 +122,40 @@ final class RuleInventoryService {
 	/**
 	 * The inventory as the API returns it: descriptors with their summaries.
 	 *
-	 * @param Schema $schema The schema to read.
-	 * @param int $idleDays How long a rule may go unevaluated before it is flagged.
-	 * @param DateTime|null $now The moment to measure the idle window from.
+	 * @param Schema               $schema  The schema to read.
+	 * @param RuleInventoryOptions $options The idle window, the moment it is measured from and the scope filter.
 	 *
 	 * @return array<int, array<string, mixed>> The inventory rows.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function inventory(Schema $schema, int $idleDays = self::DEFAULT_IDLE_DAYS, ?DateTime $now = null): array {
-		$slug = (string)($schema->getSlug() ?? '');
-		$summaries = $this->summaries->findBySchema(schemaSlug: $slug);
-		$measuredAt = ($now ?? new DateTime());
-		$cutoff = (clone $measuredAt)->modify('-' . max(1, $idleDays) . ' days');
+	public function inventory(Schema $schema, RuleInventoryOptions $options = new RuleInventoryOptions()): array {
+		$summaries = $this->summaries->findBySchema(schemaSlug: (string)($schema->getSlug() ?? ''));
+		$window = new RuleInventoryWindow(idleDays: $options->idleDays, now: ($options->now ?? new DateTime()));
+		$rowOf = static fn (RuleDescriptor $rule): array => $window->rowOf(descriptor: $rule, summary: ($summaries[$rule->getId()] ?? null));
 
-		$rows = [];
+		return array_map($rowOf, $this->admitted(schema: $schema, filter: $options->scope));
+	}//end inventory()
+
+	/**
+	 * The rules of a schema a scope filter admits, in evaluation order.
+	 *
+	 * @param Schema $schema The schema to read.
+	 * @param array<string, mixed> $filter Property => value: only the rules with that scope, plus those without one.
+	 *
+	 * @return array<int, RuleDescriptor> The admitted descriptors.
+	 */
+	private function admitted(Schema $schema, array $filter): array {
+		$admitted = [];
 		foreach ($this->describe(schema: $schema) as $descriptor) {
-			$row = $descriptor->jsonSerialize();
-			$summary = ($summaries[$descriptor->getId()] ?? null);
-
-			$row['lastRun'] = null;
-			$row['lastVerdict'] = null;
-			$row['lastError'] = null;
-			$row['lastErrorAt'] = null;
-			// A rule that has never been evaluated has not run inside the
-			// window either. Saying "unknown" here would hide exactly the rule
-			// an administrator most wants to see: one that was written, saved
-			// and has never once been reached.
-			$row['ranInsideWindow'] = false;
-
-			if ($summary !== null) {
-				$row = array_merge($row, $summary->jsonSerialize());
-				$row['id'] = $descriptor->getId();
-				$row['schema'] = $slug;
-				$lastRun = $summary->getLastRun();
-				$row['ranInsideWindow'] = ($lastRun !== null && $lastRun >= $cutoff);
+			if ($this->scopes->admits(scope: $descriptor->getScope(), filter: $filter) === true) {
+				$admitted[] = $descriptor;
 			}
-
-			$row['idleWindowDays'] = max(1, $idleDays);
-			$rows[] = $row;
 		}
 
-		return $rows;
-	}//end inventory()
+		return $admitted;
+	}//end admitted()
 
 	/**
 	 * One rule of a schema, by its derived id.
@@ -175,7 +165,7 @@ final class RuleInventoryService {
 	 *
 	 * @return RuleDescriptor|null The descriptor, or null when the schema declares no such rule.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function find(Schema $schema, string $ruleId): ?RuleDescriptor {
 		foreach ($this->describe(schema: $schema) as $descriptor) {
@@ -188,199 +178,40 @@ final class RuleInventoryService {
 	}//end find()
 
 	/**
-	 * The declared calculations, each one rule.
+	 * The one calculations map: the annotation with every property calculation lifted in.
 	 *
-	 * @param string $slug The schema's slug.
+	 * The same merge the save listener runs, so an authored property
+	 * calculation and a hand-written annotation appear once each and in the
+	 * same place the pipeline will find them.
+	 *
 	 * @param array<string, mixed> $configuration The schema's configuration block.
 	 * @param array<string, mixed> $properties The schema's properties map.
 	 *
-	 * @return array<int, RuleDescriptor> The descriptors.
-	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @return array<string, mixed> The merged calculations.
 	 */
-	private function calculations(string $slug, array $configuration, array $properties): array {
+	private function calculationsOf(array $configuration, array $properties): array {
 		$annotation = ($configuration['x-openregister-calculations'] ?? []);
 		if (is_array($annotation) === false) {
 			$annotation = [];
 		}
 
-		// The same merge the save listener runs, so an authored property
-		// calculation and a hand-written annotation appear once each and in the
-		// same place the pipeline will find them.
-		$merged = $this->propertyCalculations->merge(annotation: $annotation, properties: $properties);
-
-		$descriptors = [];
-		foreach ($merged as $name => $declaration) {
-			if (is_array($declaration) === false) {
-				continue;
-			}
-
-			$descriptors[] = new RuleDescriptor(
-				kind: RuleVocabulary::KIND_CALCULATION,
-				schemaSlug: $slug,
-				key: (string)$name,
-				label: (string)$name,
-				source: ('x-openregister-calculations.' . (string)$name),
-				enabled: ($declaration['enabled'] ?? true) !== false,
-				actions: [RuleVocabulary::ACTION_SET_VALUE],
-				condition: ($declaration['expression'] ?? null),
-				maxObjects: $this->ceilingOf(declaration: $declaration)
-			);
-		}
-
-		return $descriptors;
-	}//end calculations()
+		return $this->propertyCalculations->merge(annotation: $annotation, properties: $properties);
+	}//end calculationsOf()
 
 	/**
-	 * The per-state field blocks, one rule per state that declares one.
+	 * Order two rules the way the pipeline evaluates them: by kind, then by key.
 	 *
-	 * The block is the vocabulary `field-rules-by-state` adds. A schema saved
-	 * before that change declares none, and this returns nothing for it rather
-	 * than inventing an entry, which is the projection property working.
+	 * @param RuleDescriptor $left The one rule.
+	 * @param RuleDescriptor $right The other.
 	 *
-	 * @param string $slug The schema's slug.
-	 * @param array<string, mixed> $configuration The schema's configuration block.
-	 *
-	 * @return array<int, RuleDescriptor> The descriptors.
-	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @return int The comparison.
 	 */
-	private function stateFieldRules(string $slug, array $configuration): array {
-		$states = ($configuration['x-openregister-lifecycle']['states'] ?? []);
-		if (is_array($states) === false) {
-			return [];
+	private function inEvaluationOrder(RuleDescriptor $left, RuleDescriptor $right): int {
+		$byKind = ($this->vocabulary->orderOf(kind: $left->getKind()) <=> $this->vocabulary->orderOf(kind: $right->getKind()));
+		if ($byKind !== 0) {
+			return $byKind;
 		}
 
-		$descriptors = [];
-		foreach ($states as $state => $block) {
-			if (is_array($block) === false || is_array(($block['fields'] ?? null)) === false) {
-				continue;
-			}
-
-			$descriptors[] = new RuleDescriptor(
-				kind: RuleVocabulary::KIND_STATE_FIELD_RULE,
-				schemaSlug: $slug,
-				key: (string)$state,
-				label: (string)$state,
-				source: ('x-openregister-lifecycle.states.' . (string)$state . '.fields'),
-				enabled: ($block['enabled'] ?? true) !== false,
-				actions: RuleVocabulary::KINDS[RuleVocabulary::KIND_STATE_FIELD_RULE]['actions'],
-				condition: ($block['condition'] ?? null),
-				maxObjects: $this->ceilingOf(declaration: $block)
-			);
-		}
-
-		return $descriptors;
-	}//end stateFieldRules()
-
-	/**
-	 * The transitions that guard themselves with a condition.
-	 *
-	 * A transition with no condition is not a rule: it is a move that is always
-	 * allowed, and listing it would fill the inventory with entries that can
-	 * never refuse anything and never appear in the run log.
-	 *
-	 * @param string $slug The schema's slug.
-	 * @param array<string, mixed> $configuration The schema's configuration block.
-	 *
-	 * @return array<int, RuleDescriptor> The descriptors.
-	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
-	 */
-	private function lifecycleConditions(string $slug, array $configuration): array {
-		$transitions = ($configuration['x-openregister-lifecycle']['transitions'] ?? []);
-		if (is_array($transitions) === false) {
-			return [];
-		}
-
-		$descriptors = [];
-		foreach ($transitions as $name => $spec) {
-			if (is_array($spec) === false || ($spec['condition'] ?? null) === null) {
-				continue;
-			}
-
-			$descriptors[] = new RuleDescriptor(
-				kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION,
-				schemaSlug: $slug,
-				key: (string)$name,
-				label: (string)($spec['label'] ?? $name),
-				source: ('x-openregister-lifecycle.transitions.' . (string)$name . '.condition'),
-				enabled: ($spec['enabled'] ?? true) !== false,
-				actions: [RuleVocabulary::ACTION_REFUSE_TRANSITION],
-				condition: $spec['condition'],
-				maxObjects: $this->ceilingOf(declaration: $spec)
-			);
-		}
-
-		return $descriptors;
-	}//end lifecycleConditions()
-
-	/**
-	 * The flows this schema's objects trigger.
-	 *
-	 * One descriptor per flow, not per trigger row: a flow subscribed to both
-	 * create and update is one rule an administrator switches on or off, and
-	 * the events it listens for belong on that one entry.
-	 *
-	 * @param string $slug The schema's slug.
-	 *
-	 * @return array<int, RuleDescriptor> The descriptors.
-	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
-	 */
-	private function flows(string $slug): array {
-		$byFlow = [];
-		foreach ($this->triggers->findBySchema(schemaSlug: $slug) as $row) {
-			$uuid = $row['flow_uuid'];
-			if (isset($byFlow[$uuid]) === false) {
-				$byFlow[$uuid] = ['events' => [], 'enabled' => false];
-			}
-
-			$byFlow[$uuid]['events'][] = $row['event'];
-			// A flow is on when ANY of its trigger rows is: the row carries the
-			// flow's own enabled flag, denormalised, and a flow with one
-			// disabled row and one enabled row still runs.
-			$byFlow[$uuid]['enabled'] = ($byFlow[$uuid]['enabled'] === true || $row['enabled'] === true);
-		}
-
-		$descriptors = [];
-		foreach ($byFlow as $uuid => $flow) {
-			$events = array_values(array_unique($flow['events']));
-			sort($events);
-
-			$descriptors[] = new RuleDescriptor(
-				kind: RuleVocabulary::KIND_FLOW,
-				schemaSlug: $slug,
-				key: (string)$uuid,
-				label: (string)$uuid,
-				source: ('openregister_flow_triggers.' . (string)$uuid),
-				enabled: $flow['enabled'],
-				actions: [RuleVocabulary::ACTION_RUN_FLOW],
-				condition: ['events' => $events]
-			);
-		}
-
-		return $descriptors;
-	}//end flows()
-
-	/**
-	 * The ceiling a declaration carries, when it carries a usable one.
-	 *
-	 * A ceiling of zero or less is not a ceiling, it is a rule that can never
-	 * run, so it is read as no ceiling rather than as a silent shutdown.
-	 *
-	 * @param array<string, mixed> $declaration The rule's declaration.
-	 *
-	 * @return int|null The ceiling, or null when none is declared.
-	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
-	 */
-	private function ceilingOf(array $declaration): ?int {
-		$ceiling = ($declaration['maxObjects'] ?? null);
-		if (is_int($ceiling) === false || $ceiling <= 0) {
-			return null;
-		}
-
-		return $ceiling;
-	}//end ceilingOf()
+		return strcmp($left->getKey(), $right->getKey());
+	}//end inEvaluationOrder()
 }//end class

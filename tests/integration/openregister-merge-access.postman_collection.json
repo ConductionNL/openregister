@@ -1,0 +1,1012 @@
+{
+	"info": {
+		"name": "OpenRegister merge checks the caller's rights (lane T23 fix)",
+		"description": "objects#merge: a caller who cannot read the objects gets 404, a caller who can read but not update/delete them gets 403, and in both cases both objects are unchanged; an admin may merge. Seeds its own data: `00 setup` creates a non-admin user, a register, an admin-only schema and a publicly readable schema with two objects each; `99 teardown` deletes them.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 setup",
+			"item": [
+				{
+					"name": "Create non-admin user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('OCS accepted the user', () => pm.expect(b.ocs.meta.statuscode).to.be.oneOf([100,200]));",
+									"pm.test('OCS answers the new user id', () => pm.expect(b.ocs.data.id).to.equal(pm.collectionVariables.get('userId')));"
+								]
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }",
+									"pm.collectionVariables.set('userId', 't23u' + pm.collectionVariables.get('run'));",
+									"pm.collectionVariables.set('userPassword', 'T23-pw-' + pm.collectionVariables.get('run') + '-Xq9!vL');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"userid\": \"{{userId}}\",\n \"password\": \"{{userPassword}}\",\n \"displayName\": \"T23 reader {{run}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Create register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+									"const b = pm.response.json();",
+									"pm.test('register echoes its slug', () => pm.expect(b.slug).to.equal('t23-lane-' + pm.collectionVariables.get('run')));",
+									"pm.collectionVariables.set('registerId', String(b.id));",
+									"pm.collectionVariables.set('registerSlug', b.slug);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"title\": \"T23 lane {{run}}\",\n \"slug\": \"t23-lane-{{run}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Create closed schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+									"const b = pm.response.json();",
+									"pm.test('schema has an id', () => pm.expect(b.id).to.not.equal(undefined));",
+									"pm.collectionVariables.set('closedSchema', String(b.id));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"title\": \"T23 merge closed {{run}}\",\n \"slug\": \"t23-merge-closed-{{run}}\",\n \"properties\": {\n  \"title\": {\n   \"type\": \"string\"\n  }\n },\n \"authorization\": {\n  \"read\": [\n   \"admin\"\n  ],\n  \"create\": [\n   \"admin\"\n  ],\n  \"update\": [\n   \"admin\"\n  ],\n  \"delete\": [\n   \"admin\"\n  ]\n }\n}"
+						}
+					}
+				},
+				{
+					"name": "Create open schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+									"const b = pm.response.json();",
+									"pm.test('schema has an id', () => pm.expect(b.id).to.not.equal(undefined));",
+									"pm.collectionVariables.set('openSchema', String(b.id));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"title\": \"T23 merge open {{run}}\",\n \"slug\": \"t23-merge-open-{{run}}\",\n \"properties\": {\n  \"title\": {\n   \"type\": \"string\"\n  }\n },\n \"authorization\": {\n  \"read\": [\n   \"public\",\n   \"admin\"\n  ],\n  \"create\": [\n   \"admin\"\n  ],\n  \"update\": [\n   \"admin\"\n  ],\n  \"delete\": [\n   \"admin\"\n  ]\n }\n}"
+						}
+					}
+				},
+				{
+					"name": "Attach schemas to register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('register lists both schemas', () => pm.expect(b.schemas.map(String)).to.include.members([pm.collectionVariables.get('closedSchema'), pm.collectionVariables.get('openSchema')]));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"T23 lane {{run}}\", \"slug\": \"t23-lane-{{run}}\", \"schemas\": [\"{{closedSchema}}\", \"{{openSchema}}\"]}"
+						}
+					}
+				},
+				{
+					"name": "Create object A",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+									"const b = pm.response.json();",
+									"pm.test('object echoes its title', () => pm.expect(b.title).to.equal('alpha'));",
+									"pm.collectionVariables.set('objectA', b['@self'].id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{closedSchema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"title\": \"alpha\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Create object B",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+									"const b = pm.response.json();",
+									"pm.test('object echoes its title', () => pm.expect(b.title).to.equal('beta'));",
+									"pm.collectionVariables.set('objectB', b['@self'].id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{closedSchema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"title\": \"beta\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Create object C",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+									"const b = pm.response.json();",
+									"pm.test('object echoes its title', () => pm.expect(b.title).to.equal('gamma'));",
+									"pm.collectionVariables.set('objectC', b['@self'].id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"title\": \"gamma\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Create object D",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+									"const b = pm.response.json();",
+									"pm.test('object echoes its title', () => pm.expect(b.title).to.equal('delta'));",
+									"pm.collectionVariables.set('objectD', b['@self'].id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n \"title\": \"delta\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 merge on a schema the caller cannot read",
+			"item": [
+				{
+					"name": "Merge B into A as non-admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 404', () => pm.expect(pm.response.code).to.be.oneOf([404]));",
+									"const b = pm.response.json();",
+									"pm.test('error is \"Object not found\"', () => pm.expect(b).to.have.nested.property('error', \"Object not found\"));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{closedSchema}}/{{objectB}}/merge",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"target\": \"{{objectA}}\", \"object\": {\"title\": \"hijacked\"}}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{userId}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{userPassword}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "Re-read object A",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('object A keeps its title', () => pm.expect(b.title).to.equal('alpha'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{closedSchema}}/{{objectA}}"
+					}
+				},
+				{
+					"name": "Re-read object B",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('object B keeps its title', () => pm.expect(b.title).to.equal('beta'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{closedSchema}}/{{objectB}}"
+					}
+				},
+				{
+					"name": "Merge B into A as admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('sourceObject.title is \"beta\"', () => pm.expect(b).to.have.nested.property('sourceObject.title', \"beta\"));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{closedSchema}}/{{objectB}}/merge",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"target\": \"{{objectA}}\", \"object\": {\"title\": \"alpha\"}}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "02 merge on a schema the caller can read but not change",
+			"item": [
+				{
+					"name": "Non-admin can read object C",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('title is \"gamma\"', () => pm.expect(b).to.have.nested.property('title', \"gamma\"));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchema}}/{{objectC}}",
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{userId}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{userPassword}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "Merge D into C as non-admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 403', () => pm.expect(pm.response.code).to.be.oneOf([403]));",
+									"const b = pm.response.json();",
+									"pm.test('error is \"You may not merge these objects.\"', () => pm.expect(b).to.have.nested.property('error', \"You may not merge these objects.\"));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchema}}/{{objectD}}/merge",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"target\": \"{{objectC}}\", \"object\": {\"title\": \"hijacked\"}}"
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "username",
+									"value": "{{userId}}",
+									"type": "string"
+								},
+								{
+									"key": "password",
+									"value": "{{userPassword}}",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					}
+				},
+				{
+					"name": "Re-read object C",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('object C keeps its title', () => pm.expect(b.title).to.equal('gamma'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchema}}/{{objectC}}"
+					}
+				},
+				{
+					"name": "Re-read object D",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('object D keeps its title', () => pm.expect(b.title).to.equal('delta'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchema}}/{{objectD}}"
+					}
+				},
+				{
+					"name": "Merge D into C as admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('success is true', () => pm.expect(b).to.have.nested.property('success', true));",
+									"pm.test('sourceObject.title is \"delta\"', () => pm.expect(b).to.have.nested.property('sourceObject.title', \"delta\"));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchema}}/{{objectD}}/merge",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"target\": \"{{objectC}}\", \"object\": {\"title\": \"gamma\"}}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "99 teardown",
+			"item": [
+				{
+					"name": "Delete object A",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 204', () => pm.expect(pm.response.code).to.be.oneOf([200,204]));",
+									"pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{closedSchema}}/{{objectA}}"
+					}
+				},
+				{
+					"name": "Delete object C",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 204', () => pm.expect(pm.response.code).to.be.oneOf([200,204]));",
+									"pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{openSchema}}/{{objectC}}"
+					}
+				},
+				{
+					"name": "Delete openSchema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 204 or 409', () => pm.expect(pm.response.code).to.be.oneOf([200,204,409]));",
+									"pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{openSchema}}"
+					}
+				},
+				{
+					"name": "Delete closedSchema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 204 or 409', () => pm.expect(pm.response.code).to.be.oneOf([200,204,409]));",
+									"pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{closedSchema}}"
+					}
+				},
+				{
+					"name": "Delete register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200 or 204 or 409', () => pm.expect(pm.response.code).to.be.oneOf([200,204,409]));",
+									"pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}"
+					}
+				},
+				{
+					"name": "Delete non-admin user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+									"const b = pm.response.json();",
+									"pm.test('OCS deleted the user', () => pm.expect(b.ocs.meta.statuscode).to.be.oneOf([100,200]));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/ocs/v2.php/cloud/users/{{userId}}?format=json"
+					}
+				}
+			]
+		}
+	]
+}

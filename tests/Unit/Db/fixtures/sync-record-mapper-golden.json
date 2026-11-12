@@ -1,0 +1,156 @@
+{
+    "pending with organisation": {
+        "uuidIsV4": true,
+        "datesSet": [
+            true,
+            true
+        ],
+        "record": {
+            "id": 0,
+            "sourceId": 3,
+            "executionId": "exec-1",
+            "externalId": "ext-9",
+            "status": "pending",
+            "objectUuid": null,
+            "contentHash": null,
+            "rawData": null,
+            "errorMessage": null,
+            "attempts": 0,
+            "organisation": "org-1"
+        },
+        "queries": [
+            "#1 insert(openregister_sync_records)",
+            "#1 param :p1 = <uuid>, 2",
+            "#1 setValue(uuid, :p1)",
+            "#1 param :p2 = 3, 1",
+            "#1 setValue(source_id, :p2)",
+            "#1 param :p3 = exec-1, 2",
+            "#1 setValue(execution_id, :p3)",
+            "#1 param :p4 = ext-9, 2",
+            "#1 setValue(external_id, :p4)",
+            "#1 param :p5 = pending, 2",
+            "#1 setValue(status, :p5)",
+            "#1 param :p6 = 0, 1",
+            "#1 setValue(attempts, :p6)",
+            "#1 param :p7 = org-1, 2",
+            "#1 setValue(organisation, :p7)",
+            "#1 param :p8 = DateTime, datetime",
+            "#1 setValue(created, :p8)",
+            "#1 param :p9 = DateTime, datetime",
+            "#1 setValue(updated, :p9)",
+            "#1 executeStatement()"
+        ]
+    },
+    "pending without organisation": {
+        "uuidIsV4": true,
+        "datesSet": [
+            true,
+            true
+        ],
+        "record": {
+            "id": 0,
+            "sourceId": 4,
+            "executionId": "exec-2",
+            "externalId": "ext-8",
+            "status": "pending",
+            "objectUuid": null,
+            "contentHash": null,
+            "rawData": null,
+            "errorMessage": null,
+            "attempts": 0,
+            "organisation": null
+        },
+        "queries": [
+            "#1 insert(openregister_sync_records)",
+            "#1 param :p1 = <uuid>, 2",
+            "#1 setValue(uuid, :p1)",
+            "#1 param :p2 = 4, 1",
+            "#1 setValue(source_id, :p2)",
+            "#1 param :p3 = exec-2, 2",
+            "#1 setValue(execution_id, :p3)",
+            "#1 param :p4 = ext-8, 2",
+            "#1 setValue(external_id, :p4)",
+            "#1 param :p5 = pending, 2",
+            "#1 setValue(status, :p5)",
+            "#1 param :p6 = 0, 1",
+            "#1 setValue(attempts, :p6)",
+            "#1 param :p7 = DateTime, datetime",
+            "#1 setValue(created, :p7)",
+            "#1 param :p8 = DateTime, datetime",
+            "#1 setValue(updated, :p8)",
+            "#1 executeStatement()"
+        ]
+    },
+    "legal transition": {
+        "uuidIsV4": false,
+        "datesSet": [
+            false,
+            true
+        ],
+        "record": {
+            "id": 12,
+            "sourceId": null,
+            "executionId": null,
+            "externalId": null,
+            "status": "fetched",
+            "objectUuid": null,
+            "contentHash": null,
+            "rawData": null,
+            "errorMessage": null,
+            "attempts": null,
+            "organisation": null
+        },
+        "queries": [
+            "#1 update(openregister_sync_records, NULL)",
+            "#1 param :p1 = fetched, 2",
+            "#1 set(status, :p1)",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 set(updated, :p2)",
+            "#1 param :p3 = 12, 1",
+            "#1 expr.eq(id, :p3, NULL)",
+            "#1 where(eq(id, :p3, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "legal failure with message": {
+        "uuidIsV4": false,
+        "datesSet": [
+            false,
+            true
+        ],
+        "record": {
+            "id": 12,
+            "sourceId": null,
+            "executionId": null,
+            "externalId": null,
+            "status": "fetch_error",
+            "objectUuid": null,
+            "contentHash": null,
+            "rawData": null,
+            "errorMessage": "boom",
+            "attempts": null,
+            "organisation": null
+        },
+        "queries": [
+            "#1 update(openregister_sync_records, NULL)",
+            "#1 param :p1 = fetch_error, 2",
+            "#1 set(status, :p1)",
+            "#1 param :p2 = boom, 2",
+            "#1 set(error_message, :p2)",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 set(updated, :p3)",
+            "#1 param :p4 = 12, 1",
+            "#1 expr.eq(id, :p4, NULL)",
+            "#1 where(eq(id, :p4, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "illegal transition": {
+        "thrown": "InvalidArgumentException: Illegal sync-record transition from \"pending\" to \"imported\".",
+        "queries": []
+    },
+    "illegal failure with message": {
+        "thrown": "InvalidArgumentException: Illegal sync-record transition from \"pending\" to \"import_error\".",
+        "queries": []
+    }
+}

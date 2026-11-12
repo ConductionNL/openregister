@@ -96,17 +96,18 @@ class LockedException extends Exception {
 	 * ask this factory for the refusal.
 	 *
 	 * @param ObjectEntity $object The locked object, already found to be locked against the caller.
+	 * @param string       $action What the caller tried, in the refusal's words.
 	 *
 	 * @return self The refusal carrying the holder.
 	 *
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
 	 */
-	public static function forObject(ObjectEntity $object): self {
+	public static function forObject(ObjectEntity $object, string $action = 'update'): self {
 		$holder = (string)$object->describeLockHolder();
 
 		$exception = new self(
-			message: 'Cannot update object: Object is locked by ' . $holder
-				. '. Please unlock the object before attempting to update it.'
+			message: 'Cannot ' . $action . ' object: Object is locked by ' . $holder
+				. '. Please unlock the object before attempting to ' . $action . ' it.'
 		);
 
 		$exception->lockedBy = $object->getLockedBy();

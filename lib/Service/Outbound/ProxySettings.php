@@ -31,13 +31,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Outbound;
 
+use OCA\OpenRegister\Support\AppConfigValue;
 use OCP\IAppConfig;
 use OCP\IConfig;
 use Throwable;
@@ -48,14 +49,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Outbound
  */
-class ProxySettings {
-
-	/**
-	 * The app the setting lives under.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'openregister';
+class ProxySettings implements ProxySettingsInterface {
 
 	/**
 	 * Configuration key holding the proxy URL.
@@ -101,7 +95,7 @@ class ProxySettings {
 	 *
 	 * @return string|null The proxy URL, or null.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function proxy(): ?string {
 		$own = $this->readAppValue(key: self::PROXY_KEY);
@@ -128,24 +122,45 @@ class ProxySettings {
 	 *
 	 * @return array<int, string> The host patterns.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function exceptions(): array {
 		$raw = $this->readAppValue(key: self::NO_PROXY_KEY);
 		if ($raw === null) {
-			try {
-				$system = $this->systemConfig->getSystemValue('proxyexclude', []);
-			} catch (Throwable) {
-				$system = [];
-			}
-
-			if (is_array($system) === false) {
-				return [];
-			}
-
-			return array_values(array_filter(array_map('strval', $system), static fn (string $host): bool => (trim($host) !== '')));
+			return $this->systemExceptions();
 		}
 
+		return self::listedHosts(raw: $raw);
+
+	}//end exceptions()
+
+	/**
+	 * The hosts Nextcloud's own `proxyexclude` system value names, blanks dropped.
+	 *
+	 * @return array<int, string> The hosts, or none when the value is unreadable or not a list.
+	 */
+	private function systemExceptions(): array {
+		try {
+			$system = $this->systemConfig->getSystemValue('proxyexclude', []);
+		} catch (Throwable) {
+			$system = [];
+		}
+
+		if (is_array($system) === false) {
+			return [];
+		}
+
+		return array_values(array_filter(array_map('strval', $system), static fn (string $host): bool => (trim($host) !== '')));
+	}//end systemExceptions()
+
+	/**
+	 * The trimmed, non-blank hosts of a comma-separated list.
+	 *
+	 * @param string $raw The administered list.
+	 *
+	 * @return array<int, string> The hosts, in list order.
+	 */
+	private static function listedHosts(string $raw): array {
 		$hosts = [];
 		foreach (explode(',', $raw) as $host) {
 			$trimmed = trim($host);
@@ -155,8 +170,7 @@ class ProxySettings {
 		}
 
 		return $hosts;
-
-	}//end exceptions()
+	}//end listedHosts()
 
 	/**
 	 * The request options every outbound call carries.
@@ -169,7 +183,7 @@ class ProxySettings {
 	 *
 	 * @return array<string, mixed> The options, or an empty array when no proxy is set.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function requestOptions(): array {
 		$proxy = $this->proxy();
@@ -177,27 +191,36 @@ class ProxySettings {
 			return [];
 		}
 
-		$exceptions = $this->exceptions();
+		return ['proxy' => self::proxyOption(proxy: $proxy, exceptions: $this->exceptions())];
+
+	}//end requestOptions()
+
+	/**
+	 * The `proxy` request option: the bare URL, or the map form when some hosts stay direct.
+	 *
+	 * @param string             $proxy      The proxy URL.
+	 * @param array<int, string> $exceptions The hosts that bypass it.
+	 *
+	 * @return string|array{http: string, https: string, no: array<int, string>} The option value.
+	 */
+	private static function proxyOption(string $proxy, array $exceptions): string|array {
 		if ($exceptions === []) {
-			return ['proxy' => $proxy];
+			return $proxy;
 		}
 
 		return [
-			'proxy' => [
-				'http' => $proxy,
-				'https' => $proxy,
-				'no' => $exceptions,
-			],
+			'http' => $proxy,
+			'https' => $proxy,
+			'no' => $exceptions,
 		];
-
-	}//end requestOptions()
+	}//end proxyOption()
 
 	/**
 	 * Whether an administered proxy is in force.
 	 *
 	 * @return bool True when outbound calls go through a proxy.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function isConfigured(): bool {
 		return ($this->proxy() !== null);
@@ -209,7 +232,7 @@ class ProxySettings {
 	 *
 	 * @return array<string, mixed> The description.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function describe(): array {
 		$proxy = $this->proxy();
@@ -232,7 +255,7 @@ class ProxySettings {
 	 *
 	 * @return string The URL, without credentials.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public static function withoutCredentials(string $url): string {
 		// No user-information delimiter means nothing to strip, so the value can
@@ -250,6 +273,23 @@ class ProxySettings {
 			return '(set)';
 		}
 
+		$rebuilt = self::schemeHostPort(parts: $parts);
+		if ($rebuilt === '') {
+			return '(set)';
+		}
+
+		return $rebuilt;
+
+	}//end withoutCredentials()
+
+	/**
+	 * A parsed URL put back together from its scheme, host and port only.
+	 *
+	 * @param array<string, mixed> $parts The parse_url() parts.
+	 *
+	 * @return string The scheme, host and port, each only when present; '' when none is.
+	 */
+	private static function schemeHostPort(array $parts): string {
 		$rebuilt = '';
 		if (isset($parts['scheme']) === true) {
 			$rebuilt .= ($parts['scheme'] . '://');
@@ -261,13 +301,8 @@ class ProxySettings {
 			$rebuilt .= (':' . $parts['port']);
 		}
 
-		if ($rebuilt === '') {
-			return '(set)';
-		}
-
 		return $rebuilt;
-
-	}//end withoutCredentials()
+	}//end schemeHostPort()
 
 	/**
 	 * Read one of this app's own values, or null when it is unset.
@@ -277,17 +312,7 @@ class ProxySettings {
 	 * @return string|null The value, or null.
 	 */
 	private function readAppValue(string $key): ?string {
-		try {
-			$value = trim((string)$this->appConfig->getValueString(self::APP_ID, $key, ''));
-		} catch (Throwable) {
-			return null;
-		}
-
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
+		return AppConfigValue::nonEmpty(appConfig: $this->appConfig, key: $key);
 
 	}//end readAppValue()
 }//end class

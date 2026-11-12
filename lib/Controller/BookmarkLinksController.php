@@ -28,11 +28,17 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\BookmarkLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\BookmarkLinkService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\BookmarkDraft;
+use OCA\OpenRegister\Service\BookmarkLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -43,21 +49,35 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class BookmarkLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
+	/**
+	 * Backing service.
+	 *
+	 * @var BookmarkLinkServiceInterface
+	 */
+	private readonly BookmarkLinkServiceInterface $bookmarkLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param BookmarkLinkService $bookmarkLinkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param BookmarkLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly BookmarkLinkService $bookmarkLinkService,
-		private readonly ObjectService $objectService,
+		BookmarkLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->bookmarkLinkService = $services->bookmarkLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -75,28 +95,26 @@ class BookmarkLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * List linked bookmarks for an object: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->bookmarkLinkService->getLinkedBookmarks($object->getUuid());
-
-			return new JSONResponse(['results' => $results, 'total' => count($results)]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
-	}//end index()
+		return $this->listLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->bookmarkLinkService->getLinkedBookmarks($object->getUuid()))
+		);
+	}//end indexFor()
 
 	/**
 	 * Link an existing bookmark.
@@ -115,38 +133,38 @@ class BookmarkLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * Link an existing bookmark: the body of link() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkFor(ObjectRef $ref): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: function (ObjectEntity $object): JSONResponse {
+				$bookmarkId = (int)$this->request->getParam('bookmarkId', 0);
+				if ($bookmarkId === 0) {
+					return new JSONResponse(['error' => 'bookmarkId is required'], 400);
+				}
+
+				$link = $this->bookmarkLinkService->linkBookmark(
+					$this->linkTargetOf(object: $object),
+					$bookmarkId
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$bookmarkId = (int)$this->request->getParam('bookmarkId', 0);
-			if ($bookmarkId === 0) {
-				return new JSONResponse(['error' => 'bookmarkId is required'], 400);
-			}
-
-			$link = $this->bookmarkLinkService->linkBookmark(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$bookmarkId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
-	}//end link()
+		);
+	}//end linkFor()
 
 	/**
 	 * Create a new bookmark and link it.
@@ -167,58 +185,75 @@ class BookmarkLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
+		return $this->createNewFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end createNew()
+
+	/**
+	 * Create a new bookmark and link it: the body of createNew() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createNewFor(ObjectRef $ref): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
+		return $this->onLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: fn (ObjectEntity $object): JSONResponse => $this->createBookmarkFor(object: $object)
+		);
+	}//end createNewFor()
 
-			$title = (string)$this->request->getParam('title', '');
-			$url = (string)$this->request->getParam('url', '');
-			$description = (string)$this->request->getParam('description', '');
-			$rawTags = $this->request->getParam('tags', []);
+	/**
+	 * Create the requested bookmark and link it to the object.
+	 *
+	 * @param ObjectEntity $object The object the bookmark is linked to.
+	 *
+	 * @return JSONResponse 201 with the link, or 400 when the title or url is missing.
+	 */
+	private function createBookmarkFor(ObjectEntity $object): JSONResponse {
+		$title = (string)$this->request->getParam('title', '');
+		$url = (string)$this->request->getParam('url', '');
+		$description = (string)$this->request->getParam('description', '');
+		$tags = $this->textTags(rawTags: $this->request->getParam('tags', []));
 
-			if (trim($title) === '') {
-				return new JSONResponse(['error' => 'title is required'], 400);
-			}
+		if (trim($title) === '') {
+			return LinkedSourceResponses::required(param: 'title');
+		}
 
-			if (trim($url) === '') {
-				return new JSONResponse(['error' => 'url is required'], 400);
-			}
+		if (trim($url) === '') {
+			return LinkedSourceResponses::required(param: 'url');
+		}
 
-			$tags = [];
-			if (is_array($rawTags) === true) {
-				foreach ($rawTags as $tag) {
-					if (is_string($tag) === true) {
-						$tags[] = $tag;
-					}
+		$link = $this->bookmarkLinkService->createAndLinkBookmark(
+			$this->linkTargetOf(object: $object),
+			(new BookmarkDraft(title: $title, url: $url))->withDetails(description: $description, tags: $tags)
+		);
+
+		return LinkedSourceResponses::created(link: $link);
+	}//end createBookmarkFor()
+
+	/**
+	 * The text entries of the requested tags; anything that is not a list is no tags.
+	 *
+	 * @param mixed $rawTags The `tags` of the request.
+	 *
+	 * @return array<int, string> The tags.
+	 */
+	private function textTags(mixed $rawTags): array {
+		$tags = [];
+		if (is_array($rawTags) === true) {
+			foreach ($rawTags as $tag) {
+				if (is_string($tag) === true) {
+					$tags[] = $tag;
 				}
 			}
+		}
 
-			$link = $this->bookmarkLinkService->createAndLinkBookmark(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$title,
-				$url,
-				$description,
-				$tags
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
-	}//end createNew()
+		return $tags;
+	}//end textTags()
 
 	/**
 	 * Unlink a bookmark.
@@ -236,28 +271,31 @@ class BookmarkLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $bookmarkId): JSONResponse {
+		return $this->destroyFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id), bookmarkId: $bookmarkId);
+	}//end destroy()
+
+	/**
+	 * Unlink a bookmark: the body of destroy() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 * @param string $bookmarkId NC Bookmarks bookmark id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyFor(ObjectRef $ref, string $bookmarkId): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: $this->routeOf(ref: $ref),
+			action: function (ObjectEntity $object) use ($bookmarkId): JSONResponse {
+				$this->bookmarkLinkService->unlinkBookmark($object->getUuid(), (int)$bookmarkId);
+
+				return new JSONResponse(['success' => true]);
 			}
-
-			$this->bookmarkLinkService->unlinkBookmark($object->getUuid(), (int)$bookmarkId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
-	}//end destroy()
+		);
+	}//end destroyFor()
 
 	/**
 	 * List bookmarks visible to the current user (picker source).
@@ -275,10 +313,7 @@ class BookmarkLinksController extends Controller {
 	 */
 	public function available(): JSONResponse {
 		if ($this->bookmarkLinkService->isBookmarksAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Bookmarks app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'Nextcloud Bookmarks');
 		}
 
 		$search = $this->request->getParam('search');
@@ -286,10 +321,20 @@ class BookmarkLinksController extends Controller {
 			$search = (string)$search;
 		}
 
-		$tags = null;
+		$bookmarks = $this->bookmarkLinkService->getAvailableBookmarks($search, $this->requestedTags());
+
+		return LinkedSourceResponses::listed(items: $bookmarks);
+	}//end available()
+
+	/**
+	 * The tags the picker narrows to: a comma list or a list of text, or null for no narrowing.
+	 *
+	 * @return array<int, string>|null The tags
+	 */
+	private function requestedTags(): ?array {
 		$rawTags = $this->request->getParam('tags');
 		if (is_string($rawTags) === true && $rawTags !== '') {
-			$tags = array_values(
+			return array_values(
 				array_filter(
 					array_map('trim', explode(',', $rawTags)),
 					static function (string $tag): bool {
@@ -297,35 +342,14 @@ class BookmarkLinksController extends Controller {
 					}
 				)
 			);
-		} elseif (is_array($rawTags) === true) {
-			$tags = array_values(array_filter($rawTags, 'is_string'));
 		}
 
-		$bookmarks = $this->bookmarkLinkService->getAvailableBookmarks($search, $tags);
-		return new JSONResponse(['results' => $bookmarks, 'total' => count($bookmarks)]);
-	}//end available()
+		if (is_array($rawTags) === true) {
+			return array_values(array_filter($rawTags, 'is_string'));
+		}
 
-	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
+		return null;
+	}//end requestedTags()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -341,24 +365,18 @@ class BookmarkLinksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if ($code === 409) {
-			return new JSONResponse(['error' => $exception->getMessage()], 409);
-		}
-
-		if ($code === 404) {
-			return new JSONResponse(['error' => $exception->getMessage()], 404);
-		}
-
-		if ($code === 503) {
-			return new JSONResponse(['error' => $exception->getMessage()], 503);
-		}
-
-		if ($code === 400) {
-			return new JSONResponse(['error' => $exception->getMessage()], 400);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+	protected function mapException(Exception $exception): JSONResponse {
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [400, 404, 409, 503]);
 	}//end mapException()
+
+	/**
+	 * The link route of the object a route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return ObjectLinkRoute The route the link traits resolve.
+	 */
+	private function routeOf(ObjectRef $ref): ObjectLinkRoute {
+		return new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id);
+	}//end routeOf()
 }//end class

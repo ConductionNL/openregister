@@ -34,18 +34,23 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -85,9 +90,9 @@ class SchemasDestroySafetyTest extends TestCase {
 	private SchemaCacheHandler $schemaCacheService;
 
 	/**
-	 * @var FacetCacheHandler&MockObject
+	 * @var FacetResultCacheClearer&MockObject
 	 */
-	private FacetCacheHandler $facetCacheSvc;
+	private FacetResultCacheClearer $facetCacheSvc;
 
 	/**
 	 * @var LoggerInterface&MockObject
@@ -112,6 +117,13 @@ class SchemasDestroySafetyTest extends TestCase {
 	private bool $isAdmin = true;
 
 	/**
+	 * The caller's groups.
+	 *
+	 * @var list<string>
+	 */
+	private array $userGroups = [];
+
+	/**
 	 * Wire up SchemasController with every dependency mocked.
 	 * Default user is an authenticated admin so all permission checks pass.
 	 */
@@ -122,7 +134,7 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheSvc = $this->createMock(FacetCacheHandler::class);
+		$this->facetCacheSvc = $this->createMock(FacetResultCacheClearer::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->schemaDeletionService = $this->createMock(SchemaDeletionService::class);
 
@@ -137,6 +149,7 @@ class SchemasDestroySafetyTest extends TestCase {
 
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturnCallback(fn (): bool => $this->isAdmin);
+		$groupManager->method('getUserGroupIds')->willReturnCallback(fn (): array => $this->userGroups);
 		$groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
 		// The cascade + table-reclaim work is resolved lazily from the container.
@@ -153,7 +166,7 @@ class SchemasDestroySafetyTest extends TestCase {
 					return $groupManager;
 				}
 
-				if ($id === SchemaDeletionService::class) {
+				if ($id === \OCA\OpenRegister\Service\SchemaTeardownInterface::class) {
 					return $schemaDeletionService;
 				}
 
@@ -161,7 +174,7 @@ class SchemasDestroySafetyTest extends TestCase {
 			}
 		);
 
-		$this->controller = new SchemasController(
+		$this->controller = SchemasControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),
@@ -243,7 +256,7 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->objectMapper
 			->expects($this->once())
 			->method('getStatistics')
-			->with($this->equalTo(null), $this->equalTo(42))
+			->with($this->equalTo(new StatisticsScope(schemaId: 42)))
 			->willReturn(['total' => 5]);
 
 		// No disposition flag is set → guard MUST fire.
@@ -401,7 +414,7 @@ class SchemasDestroySafetyTest extends TestCase {
 
 		// Caches are invalidated on EVERY disposition, cascade included.
 		$this->schemaCacheService->expects($this->once())->method('invalidate')->with($this->equalTo(42));
-		$this->facetCacheSvc->expects($this->once())->method('invalidateForSchemaChange');
+		$this->facetCacheSvc->expects($this->once())->method('clearAll');
 
 		$response = $this->controller->destroy(42);
 
@@ -457,6 +470,60 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->assertSame('delete', $data['operation']);
 
 	}//end testCascadeOnAnArchivalSchemaIsRefusedWith403()
+
+	/**
+	 * The HTTP cascade answers a frozen row with the state's own 409.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	public function testCascadeOnAFrozenRowIsRefusedWith409(): void {
+		$object = new ObjectEntity();
+		$object->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00']);
+		$this->stubRefusedCascade(ObjectStateWriteException::frozen($object));
+
+		$response = $this->controller->destroy(42);
+
+		$this->assertSame(ObjectStateWriteException::HTTP_STATUS, $response->getStatus());
+		$this->assertSame('frozen', $response->getData()['state']);
+
+	}//end testCascadeOnAFrozenRowIsRefusedWith409()
+
+	/**
+	 * The HTTP cascade answers a locked row with 423.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	public function testCascadeOnALockedRowIsRefusedWith423(): void {
+		$object = new ObjectEntity();
+		$object->setLocked(['kind' => ObjectEntity::LOCK_KIND_USER, 'user' => 'alice']);
+		$this->stubRefusedCascade(LockedException::forObject($object));
+
+		$response = $this->controller->destroy(42);
+
+		$this->assertSame(LockedException::HTTP_STATUS, $response->getStatus());
+		$this->assertArrayHasKey('error', $response->getData());
+
+	}//end testCascadeOnALockedRowIsRefusedWith423()
+
+	/**
+	 * Make the cascade refuse with the given exception.
+	 *
+	 * @param \Exception $refusal The refusal.
+	 *
+	 * @return void
+	 */
+	private function stubRefusedCascade(\Exception $refusal): void {
+		$this->schemaMapper->method('find')->willReturn($this->makeSchema(42, 'held-case'));
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 2]);
+		$this->stubFlags(deleteObjects: 'true');
+		$this->schemaDeletionService->method('cascadeDeleteSchema')->willThrowException($refusal);
+		$this->schemaMapper->expects($this->never())->method('delete');
+
+	}//end stubRefusedCascade()
 
 	/**
 	 * REQ + SCENARIO: "Cascade succeeds but the table drop fails".
@@ -533,4 +600,40 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->assertSame(403, $response->getStatus());
 
 	}//end testCascadeWithoutManagePermissionIsRefusedWith403()
+
+	/**
+	 * A manager of the schema who is no administrator may not run the cascade.
+	 */
+	public function testCascadeByAManagerWhoIsNoAdministratorIsRefusedWith403(): void {
+		$schema = $this->makeSchema(42, 'cow');
+		$schema->setAuthorization(['manage' => ['planners']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->isAdmin = false;
+		$this->userGroups = ['planners'];
+		$this->stubFlags(deleteObjects: 'true');
+
+		$this->schemaDeletionService->expects($this->never())->method('cascadeDeleteSchema');
+		$this->schemaMapper->expects($this->never())->method('delete');
+
+		$this->assertSame(403, $this->controller->destroy(42)->getStatus());
+
+	}//end testCascadeByAManagerWhoIsNoAdministratorIsRefusedWith403()
+
+	/**
+	 * Deleting the schema and keeping its objects stays with the manage rule.
+	 */
+	public function testAManagerMayStillDeleteASchemaWithoutObjects(): void {
+		$schema = $this->makeSchema(42, 'cow');
+		$schema->setAuthorization(['manage' => ['planners']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+		$this->isAdmin = false;
+		$this->userGroups = ['planners'];
+		$this->stubFlags();
+
+		$this->schemaMapper->expects($this->once())->method('delete');
+
+		$this->assertNotSame(403, $this->controller->destroy(42)->getStatus());
+
+	}//end testAManagerMayStillDeleteASchemaWithoutObjects()
 }//end class

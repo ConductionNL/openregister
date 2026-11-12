@@ -5,9 +5,10 @@
  *
  * Drives AnnotationNotificationListener, the caller whose update entries
  * carry the object's previous data, into the real ListenerDeferralService,
- * with a job list that refuses an argument over 32,000 characters the way
- * Nextcloud's does. Before this change one cron run lost eleven chunks of 25
- * update notifications that way (zuiddrecht live test, 14 October 2026).
+ * with a job list that refuses an argument over the limit the way
+ * Nextcloud's does: 4,000 characters on Nextcloud 32 and 33, 32,000 from 34.
+ * Before this change one cron run lost eleven chunks of 25 update
+ * notifications that way (zuiddrecht live test, 14 October 2026).
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\Deferral
@@ -18,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -35,8 +36,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Service\Deferral\DeferralQueueServices;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
 use OCP\BackgroundJob\IJobList;
@@ -50,9 +52,14 @@ require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
 /**
  * Update notifications of large objects reach the job list in chunks it takes.
  *
- * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
  */
 class DeferredChunksFitTheJobLimitTest extends TestCase {
+
+	/**
+	 * The job argument limit of Nextcloud 34 and later.
+	 */
+	private const NC34_LIMIT = 32000;
 
 	/**
 	 * The arguments the job list took, per job.
@@ -76,6 +83,13 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	private array $errors = [];
 
 	/**
+	 * What was logged at warning level.
+	 *
+	 * @var array<int, array{0: string, 1: array<string, mixed>}>
+	 */
+	private array $warnings = [];
+
+	/**
 	 * Reset the shutdown spy.
 	 *
 	 * @return void
@@ -88,15 +102,17 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	/**
 	 * The real deferral service on a job list that enforces the limit.
 	 *
+	 * @param int $limit The job argument limit of the simulated Nextcloud.
+	 *
 	 * @return ListenerDeferralService
 	 */
-	private function deferral(): ListenerDeferralService {
+	private function deferral(int $limit = self::NC34_LIMIT): ListenerDeferralService {
 		$jobList = $this->createMock(IJobList::class);
 		$jobList->method('add')->willReturnCallback(
-			function (string $job, mixed $argument): void {
+			function (string $job, mixed $argument) use ($limit): void {
 				// The check Nextcloud's JobList::add() makes.
-				if (strlen((string)json_encode($argument)) > 32000) {
-					throw new InvalidArgumentException("Background job arguments can't exceed 32000 characters (json encoded)");
+				if (strlen((string)json_encode($argument)) > $limit) {
+					throw new InvalidArgumentException("Background job arguments can't exceed " . $limit . ' characters (json encoded)');
 				}
 
 				$this->enqueued[]   = $argument;
@@ -109,13 +125,21 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 				$this->errors[] = [$message, $context];
 			}
 		);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []): void {
+				$this->warnings[] = [$message, $context];
+			}
+		);
 
 		return new ListenerDeferralService(
 			userSession: $this->createMock(IUserSession::class),
 			organisation: $this->createMock(OrganisationService::class),
-			jobList: $jobList,
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $logger,
+			queue: new DeferralQueueServices(
+				jobList: $jobList,
+				appConfig: $this->createMock(IAppConfig::class),
+				logger: $logger
+			),
+			argumentLimit: $limit,
 		);
 	}//end deferral()
 
@@ -186,49 +210,95 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	}//end enqueuedUuids()
 
 	/**
-	 * Twenty-five updates of cases of about 2,000 characters each, one
-	 * listener chunk, all reach the job list.
+	 * The limits of the Nextcloud versions this app supports, with an entry size that needs spreading at each.
+	 *
+	 * @return array<string, array{0: int, 1: int}> Limit and description length.
+	 */
+	public static function limits(): array {
+		return [
+			'Nextcloud 34 and later: 32,000' => [32000, 2000],
+			'Nextcloud 32 and 33: 4,000' => [4000, 500],
+		];
+	}//end limits()
+
+	/**
+	 * Twenty-five updates of large cases, one listener chunk, all reach the
+	 * job list, whichever limit the running Nextcloud has.
+	 *
+	 * @param int $limit  The job argument limit.
+	 * @param int $length The length of each case's description.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @dataProvider limits
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
-	public function testAChunkOfLargeUpdatesIsSpreadOverJobsTheListTakes(): void {
-		$deferral = $this->deferral();
+	public function testAChunkOfLargeUpdatesIsSpreadOverJobsTheListTakes(int $limit, int $length): void {
+		$deferral = $this->deferral(limit: $limit);
 		$listener = $this->listener(deferral: $deferral);
 		$expected = [];
 		for ($i = 1; $i <= 25; $i++) {
 			$uuid = 'case-' . $i;
 			$expected[] = $uuid;
-			$listener->handle(new ObjectUpdatedEvent($this->caseOf(uuid: $uuid, length: 2000), $this->caseOf(uuid: $uuid, length: 2000)));
+			$listener->handle(new ObjectUpdatedEvent($this->caseOf(uuid: $uuid, length: $length), $this->caseOf(uuid: $uuid, length: $length)));
 		}
 
 		$deferral->flushAll();
 
 		self::assertSame([], $this->errors, 'nothing was refused');
+		self::assertSame([], $this->warnings, 'nothing had to be reduced');
 		self::assertSame($expected, $this->enqueuedUuids(), 'every update, once, in order');
 		self::assertGreaterThan(1, count($this->enqueued), 'more than one job');
 		foreach ($this->enqueued as $argument) {
-			self::assertLessThanOrEqual(ListenerDeferralService::MAX_ARGUMENT_LENGTH, strlen((string)json_encode($argument)));
+			self::assertLessThanOrEqual($limit, strlen((string)json_encode($argument)));
 		}
 
 		self::assertSame([AnnotationNotificationDispatchJob::class], array_values(array_unique($this->jobClasses)));
 	}//end testAChunkOfLargeUpdatesIsSpreadOverJobsTheListTakes()
 
 	/**
-	 * One update too large for any job is named in the log; the others in
-	 * its chunk still go.
+	 * An update whose previous data alone passes the limit is enqueued without
+	 * it: the notification is not lost, and the log names the reduction.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 */
+	public function testAnOversizedUpdateIsKeptWithoutItsOldData(): void {
+		$deferral = $this->deferral(limit: ListenerDeferralService::ARGUMENT_LENGTH_NC32);
+		$listener = $this->listener(deferral: $deferral);
+		$listener->handle(new ObjectUpdatedEvent($this->caseOf(uuid: 'small-1', length: 100), $this->caseOf(uuid: 'small-1', length: 100)));
+		$listener->handle(new ObjectUpdatedEvent($this->caseOf(uuid: 'big', length: 5000), $this->caseOf(uuid: 'big', length: 5000)));
+		$listener->handle(new ObjectUpdatedEvent($this->caseOf(uuid: 'small-2', length: 100), $this->caseOf(uuid: 'small-2', length: 100)));
+
+		$deferral->flushAll();
+
+		self::assertSame([], $this->errors, 'nothing was dropped');
+		self::assertSame(['small-1', 'big', 'small-2'], $this->enqueuedUuids());
+		self::assertCount(1, $this->warnings);
+		self::assertSame('big', $this->warnings[0][1]['uuid']);
+		self::assertStringContainsString('calculatedChange rules are skipped', $this->warnings[0][0]);
+		foreach ($this->enqueued as $argument) {
+			foreach ($argument['entries'] as $entry) {
+				self::assertSame($entry['uuid'] !== 'big', array_key_exists('oldData', $entry) && $entry['oldData'] !== null);
+			}
+		}
+	}//end testAnOversizedUpdateIsKeptWithoutItsOldData()
+
+	/**
+	 * One entry too large for any job, whatever it carries, is named in the
+	 * log; the others in its chunk still go.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testAnEntryTooLargeForAnyJobIsNamedAndTheRestGo(): void {
 		$deferral = $this->deferral();
-		$listener = $this->listener(deferral: $deferral);
-		$listener->handle(new ObjectUpdatedEvent($this->caseOf(uuid: 'small-1', length: 100), $this->caseOf(uuid: 'small-1', length: 100)));
-		$listener->handle(new ObjectUpdatedEvent($this->caseOf(uuid: 'huge', length: 40000), $this->caseOf(uuid: 'huge', length: 40000)));
-		$listener->handle(new ObjectUpdatedEvent($this->caseOf(uuid: 'small-2', length: 100), $this->caseOf(uuid: 'small-2', length: 100)));
+		$deferral->defer(jobClass: AnnotationNotificationDispatchJob::class, entry: ['uuid' => 'small-1', 'trigger' => 'updated']);
+		$deferral->defer(jobClass: AnnotationNotificationDispatchJob::class, entry: ['uuid' => 'huge', 'trigger' => 'updated', 'payload' => str_repeat('x', 40000)]);
+		$deferral->defer(jobClass: AnnotationNotificationDispatchJob::class, entry: ['uuid' => 'small-2', 'trigger' => 'updated']);
 
 		$deferral->flushAll();
 
@@ -238,11 +308,36 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	}//end testAnEntryTooLargeForAnyJobIsNamedAndTheRestGo()
 
 	/**
+	 * Without an injected limit the service reads the running server's, and falls back to 4,000.
+	 *
+	 * @return void
+	 */
+	public function testTheLimitComesFromTheServerWhenItNamesOne(): void {
+		$service = new ListenerDeferralService(
+			userSession: $this->createMock(IUserSession::class),
+			organisation: $this->createMock(OrganisationService::class),
+			queue: new DeferralQueueServices(
+				jobList: $this->createMock(IJobList::class),
+				appConfig: $this->createMock(IAppConfig::class),
+				logger: $this->createMock(LoggerInterface::class)
+			),
+		);
+
+		$serverConstant = 'OC\\BackgroundJob\\JobList::MAX_ARGUMENT_JSON_LENGTH';
+		$expected = ListenerDeferralService::ARGUMENT_LENGTH_NC32;
+		if (defined($serverConstant) === true) {
+			$expected = constant($serverConstant);
+		}
+
+		self::assertSame($expected, $service->getArgumentLimit());
+	}//end testTheLimitComesFromTheServerWhenItNamesOne()
+
+	/**
 	 * Small entries still go as one job per chunk.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testSmallEntriesStayInOneJob(): void {
 		$deferral = $this->deferral();

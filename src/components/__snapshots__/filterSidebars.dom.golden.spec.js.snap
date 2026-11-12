@@ -1,0 +1,505 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`filter sidebars golden files: emits what the radios, search and clear do 1`] = `
+[
+  "all=true pending=false processing=false completed=false failed=false all=true none=false low=false medium=false high=false very_high=false",
+  "all=false pending=true processing=false completed=false failed=false all=true none=false low=false medium=false high=false very_high=false",
+  "all=false pending=false processing=true completed=false failed=false all=true none=false low=false medium=false high=false very_high=false",
+  "all=false pending=false processing=false completed=true failed=false all=true none=false low=false medium=false high=false very_high=false",
+  "all=false pending=false processing=false completed=false failed=true all=true none=false low=false medium=false high=false very_high=false",
+  "all=false pending=false processing=false completed=false failed=true all=true none=false low=false medium=false high=false very_high=false",
+  "all=false pending=false processing=false completed=false failed=true all=false none=true low=false medium=false high=false very_high=false",
+  "all=false pending=false processing=false completed=false failed=true all=false none=false low=true medium=false high=false very_high=false",
+  "all=false pending=false processing=false completed=false failed=true all=false none=false low=false medium=true high=false very_high=false",
+  "all=false pending=false processing=false completed=false failed=true all=false none=false low=false medium=false high=true very_high=false",
+  "all=false pending=false processing=false completed=false failed=true all=false none=false low=false medium=false high=false very_high=true",
+  "before debounce: null",
+  "clear shown: true",
+  "all=true pending=false processing=false completed=false failed=false all=true none=false low=false medium=false high=false very_high=false",
+  "clear shown: false",
+]
+`;
+
+exports[`filter sidebars golden files: emits what the radios, search and clear do 2`] = `
+[
+  [
+    "update:status",
+    null,
+  ],
+  [
+    "update:status",
+    "pending",
+  ],
+  [
+    "update:status",
+    "processing",
+  ],
+  [
+    "update:status",
+    "completed",
+  ],
+  [
+    "update:status",
+    "failed",
+  ],
+  [
+    "update:riskLevel",
+    null,
+  ],
+  [
+    "update:riskLevel",
+    "none",
+  ],
+  [
+    "update:riskLevel",
+    "low",
+  ],
+  [
+    "update:riskLevel",
+    "medium",
+  ],
+  [
+    "update:riskLevel",
+    "high",
+  ],
+  [
+    "update:riskLevel",
+    "very_high",
+  ],
+  [
+    "update:search",
+    "first",
+  ],
+  [
+    "update:search",
+    "",
+  ],
+  [
+    "update:status",
+    null,
+  ],
+  [
+    "update:riskLevel",
+    null,
+  ],
+]
+`;
+
+exports[`filter sidebars golden files: emits what the radios, search and clear do 3`] = `
+{
+  "update:riskLevel": [
+    [
+      null,
+    ],
+    [
+      "none",
+    ],
+    [
+      "low",
+    ],
+    [
+      "medium",
+    ],
+    [
+      "high",
+    ],
+    [
+      "very_high",
+    ],
+    [
+      null,
+    ],
+  ],
+  "update:search": [
+    [
+      "first",
+    ],
+    [
+      "",
+    ],
+  ],
+  "update:status": [
+    [
+      null,
+    ],
+    [
+      "pending",
+    ],
+    [
+      "processing",
+    ],
+    [
+      "completed",
+    ],
+    [
+      "failed",
+    ],
+    [
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`filter sidebars golden files: follows changed props 1`] = `
+[
+  "all=false pending=false processing=false completed=false failed=true all=false none=false low=false medium=false high=true very_high=false",
+  "<div class="files-sidebar">
+  <div class="sidebar-header">
+    <h3>t:Search Files</h3>
+  </div>
+  <div class="search-section">
+    <x-nctextfield modelvalue="typed" aria-label="t:Search by file name or path" placeholder="t:Search by file name or path">
+      <slot-default>
+        <x-magnify size="20"></x-magnify>
+      </slot-default>
+    </x-nctextfield>
+  </div>
+  <div class="filter-section">
+    <h4>t:Extraction Status</h4>
+    <div class="filter-options">
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="all">
+        <slot-default>t:All Files</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="pending">
+        <slot-default>t:Pending</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="processing">
+        <slot-default>t:Processing</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="completed">
+        <slot-default>t:Completed</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="true" type="radio" value="failed">
+        <slot-default>t:Failed</slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </div>
+  <div class="filter-section">
+    <h4>t:Risk Level</h4>
+    <div class="filter-options">
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="all">
+        <slot-default>t:All Levels</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="none">
+        <slot-default>t:None</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="low">
+        <slot-default>t:Low</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="medium">
+        <slot-default>t:Medium</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="true" type="radio" value="high">
+        <slot-default>t:High</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="very_high">
+        <slot-default>t:Very High</slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </div>
+  <div class="clear-filters">
+    <x-ncbutton variant="secondary">
+      <slot-default>t:Clear filters</slot-default>
+    </x-ncbutton>
+  </div>
+</div>",
+  "all=true pending=false processing=false completed=false failed=false all=true none=false low=false medium=false high=false very_high=false",
+]
+`;
+
+exports[`filter sidebars golden files: follows changed props 2`] = `{}`;
+
+exports[`filter sidebars golden files: renders with filters from the props 1`] = `
+"<div class="files-sidebar">
+  <div class="sidebar-header">
+    <h3>t:Search Files</h3>
+  </div>
+  <div class="search-section">
+    <x-nctextfield modelvalue="abc" aria-label="t:Search by file name or path" placeholder="t:Search by file name or path">
+      <slot-default>
+        <x-magnify size="20"></x-magnify>
+      </slot-default>
+    </x-nctextfield>
+  </div>
+  <div class="filter-section">
+    <h4>t:Extraction Status</h4>
+    <div class="filter-options">
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="all">
+        <slot-default>t:All Files</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="pending">
+        <slot-default>t:Pending</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="processing">
+        <slot-default>t:Processing</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="completed">
+        <slot-default>t:Completed</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="true" type="radio" value="failed">
+        <slot-default>t:Failed</slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </div>
+  <div class="filter-section">
+    <h4>t:Risk Level</h4>
+    <div class="filter-options">
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="all">
+        <slot-default>t:All Levels</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="none">
+        <slot-default>t:None</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="low">
+        <slot-default>t:Low</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="medium">
+        <slot-default>t:Medium</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="true" type="radio" value="high">
+        <slot-default>t:High</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="very_high">
+        <slot-default>t:Very High</slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </div>
+  <div class="clear-filters">
+    <x-ncbutton variant="secondary">
+      <slot-default>t:Clear filters</slot-default>
+    </x-ncbutton>
+  </div>
+</div>"
+`;
+
+exports[`filter sidebars golden files: renders without filters 1`] = `
+"<div class="files-sidebar">
+  <div class="sidebar-header">
+    <h3>t:Search Files</h3>
+  </div>
+  <div class="search-section">
+    <x-nctextfield modelvalue="" aria-label="t:Search by file name or path" placeholder="t:Search by file name or path">
+      <slot-default>
+        <x-magnify size="20"></x-magnify>
+      </slot-default>
+    </x-nctextfield>
+  </div>
+  <div class="filter-section">
+    <h4>t:Extraction Status</h4>
+    <div class="filter-options">
+      <x-nccheckboxradioswitch modelvalue="true" type="radio" value="all">
+        <slot-default>t:All Files</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="pending">
+        <slot-default>t:Pending</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="processing">
+        <slot-default>t:Processing</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="completed">
+        <slot-default>t:Completed</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="failed">
+        <slot-default>t:Failed</slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </div>
+  <div class="filter-section">
+    <h4>t:Risk Level</h4>
+    <div class="filter-options">
+      <x-nccheckboxradioswitch modelvalue="true" type="radio" value="all">
+        <slot-default>t:All Levels</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="none">
+        <slot-default>t:None</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="low">
+        <slot-default>t:Low</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="medium">
+        <slot-default>t:Medium</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="high">
+        <slot-default>t:High</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="very_high">
+        <slot-default>t:Very High</slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </div>
+  
+</div>"
+`;
+
+exports[`filter sidebars golden webhooks: emits what the radios, search and clear do 1`] = `
+[
+  "all=true enabled=false disabled=false",
+  "all=false enabled=true disabled=false",
+  "all=false enabled=false disabled=true",
+  "before debounce: null",
+  "clear shown: true",
+  "all=true enabled=false disabled=false",
+  "clear shown: false",
+]
+`;
+
+exports[`filter sidebars golden webhooks: emits what the radios, search and clear do 2`] = `
+[
+  [
+    "update:enabled",
+    null,
+  ],
+  [
+    "update:enabled",
+    true,
+  ],
+  [
+    "update:enabled",
+    false,
+  ],
+  [
+    "update:search",
+    "first",
+  ],
+  [
+    "update:search",
+    "",
+  ],
+  [
+    "update:enabled",
+    null,
+  ],
+]
+`;
+
+exports[`filter sidebars golden webhooks: emits what the radios, search and clear do 3`] = `
+{
+  "update:enabled": [
+    [
+      null,
+    ],
+    [
+      true,
+    ],
+    [
+      false,
+    ],
+    [
+      null,
+    ],
+  ],
+  "update:search": [
+    [
+      "first",
+    ],
+    [
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`filter sidebars golden webhooks: follows changed props 1`] = `
+[
+  "all=false enabled=false disabled=true",
+  "<div class="webhooks-sidebar">
+  <div class="sidebar-header">
+    <h3>t:Search Webhooks</h3>
+  </div>
+  <div class="search-section">
+    <x-nctextfield modelvalue="typed" aria-label="t:Search by name or URL" placeholder="t:Search by name or URL">
+      <slot-default>
+        <x-magnify size="20"></x-magnify>
+      </slot-default>
+    </x-nctextfield>
+  </div>
+  <div class="filter-section">
+    <h4>t:Status</h4>
+    <div class="filter-options">
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="all">
+        <slot-default>t:All Webhooks</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="enabled">
+        <slot-default>t:Enabled</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="true" type="radio" value="disabled">
+        <slot-default>t:Disabled</slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </div>
+  <div class="clear-filters">
+    <x-ncbutton variant="secondary">
+      <slot-default>t:Clear filters</slot-default>
+    </x-ncbutton>
+  </div>
+</div>",
+  "all=true enabled=false disabled=false",
+]
+`;
+
+exports[`filter sidebars golden webhooks: follows changed props 2`] = `{}`;
+
+exports[`filter sidebars golden webhooks: renders with filters from the props 1`] = `
+"<div class="webhooks-sidebar">
+  <div class="sidebar-header">
+    <h3>t:Search Webhooks</h3>
+  </div>
+  <div class="search-section">
+    <x-nctextfield modelvalue="abc" aria-label="t:Search by name or URL" placeholder="t:Search by name or URL">
+      <slot-default>
+        <x-magnify size="20"></x-magnify>
+      </slot-default>
+    </x-nctextfield>
+  </div>
+  <div class="filter-section">
+    <h4>t:Status</h4>
+    <div class="filter-options">
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="all">
+        <slot-default>t:All Webhooks</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="enabled">
+        <slot-default>t:Enabled</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="true" type="radio" value="disabled">
+        <slot-default>t:Disabled</slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </div>
+  <div class="clear-filters">
+    <x-ncbutton variant="secondary">
+      <slot-default>t:Clear filters</slot-default>
+    </x-ncbutton>
+  </div>
+</div>"
+`;
+
+exports[`filter sidebars golden webhooks: renders without filters 1`] = `
+"<div class="webhooks-sidebar">
+  <div class="sidebar-header">
+    <h3>t:Search Webhooks</h3>
+  </div>
+  <div class="search-section">
+    <x-nctextfield modelvalue="" aria-label="t:Search by name or URL" placeholder="t:Search by name or URL">
+      <slot-default>
+        <x-magnify size="20"></x-magnify>
+      </slot-default>
+    </x-nctextfield>
+  </div>
+  <div class="filter-section">
+    <h4>t:Status</h4>
+    <div class="filter-options">
+      <x-nccheckboxradioswitch modelvalue="true" type="radio" value="all">
+        <slot-default>t:All Webhooks</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="enabled">
+        <slot-default>t:Enabled</slot-default>
+      </x-nccheckboxradioswitch>
+      <x-nccheckboxradioswitch modelvalue="false" type="radio" value="disabled">
+        <slot-default>t:Disabled</slot-default>
+      </x-nccheckboxradioswitch>
+    </div>
+  </div>
+  
+</div>"
+`;

@@ -31,7 +31,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleCeilingServiceTest extends TestCase {
 
@@ -43,17 +43,7 @@ class RuleCeilingServiceTest extends TestCase {
 	 * @return RuleDescriptor The rule.
 	 */
 	private function rule(?int $maxObjects): RuleDescriptor {
-		return new RuleDescriptor(
-			kind: RuleVocabulary::KIND_CALCULATION,
-			schemaSlug: 'bezwaar',
-			key: 'uiterlijkeDatum',
-			label: 'uiterlijkeDatum',
-			source: 'x-openregister-calculations.uiterlijkeDatum',
-			enabled: true,
-			actions: [RuleVocabulary::ACTION_SET_VALUE],
-			condition: null,
-			maxObjects: $maxObjects
-		);
+		return new RuleDescriptor(origin: new \OCA\OpenRegister\Service\Rules\RuleOrigin(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: 'bezwaar', key: 'uiterlijkeDatum', source: 'x-openregister-calculations.uiterlijkeDatum'), label: 'uiterlijkeDatum', effect: new \OCA\OpenRegister\Service\Rules\RuleEffect(actions: [RuleVocabulary::ACTION_SET_VALUE], condition: null, maxObjects: $maxObjects), enabled: true);
 
 	}//end rule()
 
@@ -62,7 +52,7 @@ class RuleCeilingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testASelectionAboveTheCeilingIsRefusedNamingBothNumbers(): void {
 		$service = new RuleCeilingService();
@@ -89,7 +79,7 @@ class RuleCeilingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testASelectionExactlyAtTheCeilingProceeds(): void {
 		$service = new RuleCeilingService();
@@ -105,7 +95,7 @@ class RuleCeilingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARuleWithNoCeilingIsNotBounded(): void {
 		$service = new RuleCeilingService();
@@ -120,7 +110,7 @@ class RuleCeilingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheRefusalRendersInTheEndpointEnvelope(): void {
 		try {
@@ -145,7 +135,7 @@ class RuleCeilingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testThePreviewAndTheRunNeverDisagree(): void {
 		$service = new RuleCeilingService();

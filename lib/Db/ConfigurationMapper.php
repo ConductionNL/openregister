@@ -23,19 +23,16 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
-use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
-use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
-use OCP\ISession;
 use OCP\IUserSession;
 
 /**
@@ -58,22 +55,24 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ConfigurationMapper extends QBMapper {
+class ConfigurationMapper extends QBMapper implements ConfigurationMapperInterface {
+
+	use ColumnFiltersTrait;
 	use MultiTenancyTrait;
 
 	/**
 	 * Organisation service for multi-tenancy
 	 *
-	 * @var OrganisationService
+	 * @var OrganisationServiceInterface
 	 */
 	// REMOVED: Services should not be in mappers.
 
 	/**
 	 * Organisation mapper for multi-tenancy
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	protected OrganisationMapper $organisationMapper;
+	protected OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * User session for current user
@@ -90,45 +89,31 @@ class ConfigurationMapper extends QBMapper {
 	private IGroupManager $groupManager;
 
 	/**
-	 * Session for caching configurations
+	 * Announces configuration events
 	 *
-	 * @var ISession
+	 * @var EntityEventsInterface
 	 */
-	private ISession $session;
-
-	/**
-	 * Event dispatcher for dispatching configuration events
-	 *
-	 * @var IEventDispatcher
-	 */
-	private IEventDispatcher $eventDispatcher;
+	private EntityEventsInterface $entityEvents;
 
 	/**
 	 * Constructor
 	 *
-	 * @param IDBConnection $db Database connection
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
-	 * @param IUserSession $userSession User session
-	 * @param IGroupManager $groupManager Group manager
-	 * @param ISession $session Session
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher
+	 * @param IDBConnection    $db              Database connection
+	 * @param TenancyServices  $tenancy         Organisation mapper, user session and groups for multi-tenancy and RBAC
+	 * @param EntityEventsInterface $entityEvents Announces configuration events
 	 */
 	public function __construct(
 		IDBConnection $db,
 		// REMOVED: Services should not be in mappers.
-		OrganisationMapper $organisationMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		ISession $session,
-		IEventDispatcher $eventDispatcher,
+		TenancyServices $tenancy,
+		EntityEventsInterface $entityEvents,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_configurations', entityClass: Configuration::class);
 		// REMOVED: Services should not be in mappers.
-		$this->organisationMapper = $organisationMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
-		$this->session = $session;
-		$this->eventDispatcher = $eventDispatcher;
+		$this->organisationMapper = $tenancy->organisationMapper;
+		$this->userSession = $tenancy->userSession;
+		$this->groupManager = $tenancy->groupManager;
+		$this->entityEvents = $entityEvents;
 	}//end __construct()
 
 	/**
@@ -286,10 +271,8 @@ class ConfigurationMapper extends QBMapper {
 	/**
 	 * Update synchronization status for a configuration
 	 *
-	 * @param int $id Configuration ID
-	 * @param string $status Sync status: 'success', 'failed', 'pending'
-	 * @param DateTime $syncDate Synchronization timestamp
-	 * @param string $_message Optional message about the sync result
+	 * @param int                     $id     Configuration ID
+	 * @param ConfigurationSyncResult $result The sync status, its timestamp and the (unstored) message
 	 *
 	 * @return Configuration The updated configuration
 	 * @throws \Exception If configuration not found or user doesn't have permission
@@ -297,16 +280,14 @@ class ConfigurationMapper extends QBMapper {
 	 * @since 0.2.10
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $_message = ''): Configuration {
+	public function updateSyncStatus(int $id, ConfigurationSyncResult $result): Configuration {
 		// Verify RBAC permission to update.
 		// TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
 		// Disabled: $this->verifyRbacPermission(action: 'update', entityType: 'configuration').
 		$configuration = $this->find(id: $id);
-		$configuration->setSyncStatus($status);
-		$configuration->setLastSyncDate($syncDate);
+		$configuration->setSyncStatus($result->status);
+		$configuration->setLastSyncDate($result->syncDate);
 		$configuration->setUpdated(new DateTime());
 
 		return $this->update(entity: $configuration);
@@ -325,27 +306,8 @@ class ConfigurationMapper extends QBMapper {
 		// TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
 		// Disabled: $this->verifyRbacPermission(action: 'create', entityType: 'configuration').
 		if ($entity instanceof Configuration) {
-			// Generate UUID if not set.
-			if (empty($entity->getUuid()) === true) {
-				$entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
-			}
-
-			// Set default type if not provided (required by database).
-			if (empty($entity->getType()) === true) {
-				$entity->setType('default');
-			}
-
-			// Auto-set owner to current user if not already set.
-			if (empty($entity->getOwner()) === true) {
-				$currentUserId = $this->getCurrentUserId();
-				if ($currentUserId !== null) {
-					$entity->setOwner($currentUserId);
-				}
-			}
-
-			$entity->setCreated(new DateTime());
-			$entity->setUpdated(new DateTime());
-		}//end if
+			$this->fillCreateDefaults(configuration: $entity);
+		}
 
 		// Auto-set organisation from active session.
 		$this->setOrganisationOnCreate(entity: $entity);
@@ -356,10 +318,54 @@ class ConfigurationMapper extends QBMapper {
 		$this->invalidateConfigurationCache();
 
 		// Dispatch creation event.
-		$this->eventDispatcher->dispatchTyped(new ConfigurationCreatedEvent(configuration: $result));
+		$this->entityEvents->configurationCreated(configuration: $result);
 
 		return $result;
 	}//end insert()
+
+	/**
+	 * Fill what a new configuration needs and does not carry: a uuid, the
+	 * `default` type (required by the database), the caller as owner, and the
+	 * created and updated stamps.
+	 *
+	 * @param Configuration $configuration The configuration about to be inserted.
+	 *
+	 * @return void
+	 */
+	private function fillCreateDefaults(Configuration $configuration): void {
+		// Generate UUID if not set.
+		if (empty($configuration->getUuid()) === true) {
+			$configuration->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+		}
+
+		// Set default type if not provided (required by database).
+		if (empty($configuration->getType()) === true) {
+			$configuration->setType('default');
+		}
+
+		$this->assignCallerAsOwner(configuration: $configuration);
+
+		$configuration->setCreated(new DateTime());
+		$configuration->setUpdated(new DateTime());
+	}//end fillCreateDefaults()
+
+	/**
+	 * Auto-set the owner to the current user when none is set and a user is signed in.
+	 *
+	 * @param Configuration $configuration The configuration about to be inserted.
+	 *
+	 * @return void
+	 */
+	private function assignCallerAsOwner(Configuration $configuration): void {
+		if (empty($configuration->getOwner()) === false) {
+			return;
+		}
+
+		$currentUserId = $this->getCurrentUserId();
+		if ($currentUserId !== null) {
+			$configuration->setOwner($currentUserId);
+		}
+	}//end assignCallerAsOwner()
 
 	/**
 	 * Update an existing configuration
@@ -388,12 +394,7 @@ class ConfigurationMapper extends QBMapper {
 		$this->invalidateConfigurationCache();
 
 		// Dispatch update event.
-		$this->eventDispatcher->dispatchTyped(
-			new ConfigurationUpdatedEvent(
-				newConfiguration: $result,
-				oldConfiguration: $oldEntity
-			)
-		);
+		$this->entityEvents->configurationUpdated(newConfiguration: $result, oldConfiguration: $oldEntity);
 
 		return $result;
 	}//end update()
@@ -421,7 +422,7 @@ class ConfigurationMapper extends QBMapper {
 		$this->invalidateConfigurationCache();
 
 		// Dispatch deletion event.
-		$this->eventDispatcher->dispatchTyped(new ConfigurationDeletedEvent(configuration: $result));
+		$this->entityEvents->configurationDeleted(configuration: $result);
 
 		return $result;
 	}//end delete()
@@ -507,19 +508,7 @@ class ConfigurationMapper extends QBMapper {
 			->orderBy('created', 'DESC');
 
 		// Apply filters.
-		foreach ($filters ?? [] as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		// Apply search conditions.
 		if (empty($searchConditions) === false) {

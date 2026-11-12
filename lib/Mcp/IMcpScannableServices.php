@@ -9,7 +9,7 @@
  * methods registers an implementation of this interface under the alias key
  * `OCA\OpenRegister\Mcp\IMcpScannableServices::<appId>` (mirrors the existing
  * `OCA\OpenRegister\Mcp\IMcpToolProvider::<appId>` per-app discovery
- * convention — see {@see \OCA\OpenRegister\AppInfo\Application::buildMcpProviderCandidates()}).
+ * convention — see {@see \OCA\OpenRegister\Mcp\PerAppMcpProviderProbe::buildMcpProviderCandidates()}).
  *
  * This is the PROVISIONAL resolution of design.md's "Discovery scope"
  * DEFERRED_QUESTION — the design lists a DI-declared scannable-service list

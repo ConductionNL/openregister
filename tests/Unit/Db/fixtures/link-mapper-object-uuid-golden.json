@@ -1,0 +1,991 @@
+{
+    "AnalyticsLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\AnalyticsLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\AnalyticsLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_analytics_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "AnalyticsLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_analytics_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "AnalyticsLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_analytics_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "AnalyticsLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_analytics_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "BookmarkLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\BookmarkLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\BookmarkLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bookmark_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "BookmarkLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bookmark_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "BookmarkLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_bookmark_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "BookmarkLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_bookmark_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "CalendarLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\CalendarLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\CalendarLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(dtstart, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "CalendarLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(dtstart, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "CalendarLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "CalendarLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "CalendarLink countByObjectUuid rows": {
+        "result": 4,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "CalendarLink countByObjectUuid empty": {
+        "result": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_calendar_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "CollectiveLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\CollectiveLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\CollectiveLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_collective_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "CollectiveLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_collective_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "CollectiveLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_collective_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "CollectiveLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_collective_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "ContactLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\ContactLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\ContactLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ContactLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "ContactLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_contact_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "ContactLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_contact_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "ContactLink countByObjectUuid rows": {
+        "result": 4,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "ContactLink countByObjectUuid empty": {
+        "result": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_contact_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "CospendLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\CospendLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\CospendLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_cospend_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "CospendLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_cospend_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "CospendLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_cospend_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "CospendLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_cospend_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "DeckLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\DeckLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\DeckLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_deck_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "DeckLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_deck_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "DeckLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_deck_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "DeckLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_deck_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "EmailLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\EmailLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\EmailLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(mail_date, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "EmailLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(mail_date, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "EmailLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_email_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "EmailLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_email_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "EmailLink countByObjectUuid rows": {
+        "result": 4,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "EmailLink countByObjectUuid empty": {
+        "result": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_email_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\FlowLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\FlowLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_flow_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FlowLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_flow_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "FlowLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_flow_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "FormLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\FormLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\FormLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FormLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "FormLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "FormLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "FormLink countByObjectUuid rows": {
+        "result": 4,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "FormLink countByObjectUuid empty": {
+        "result": 0,
+        "queries": [
+            "#1 select(COUNT(*))",
+            "#1 from(openregister_form_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "MapLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\MapLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\MapLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_map_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "MapLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_map_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "MapLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_map_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "MapLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_map_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "OpenProjectLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\OpenProjectLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\OpenProjectLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_openproject_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "OpenProjectLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_openproject_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "OpenProjectLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_openproject_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "OpenProjectLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_openproject_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "PhotoLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\PhotoLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\PhotoLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_photo_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "PhotoLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_photo_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "PhotoLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_photo_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "PhotoLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_photo_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "PollLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\PollLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\PollLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_poll_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "PollLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_poll_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "PollLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_poll_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "PollLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_poll_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "TalkLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\TalkLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\TalkLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_talk_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TalkLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_talk_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TalkLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_talk_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "TalkLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_talk_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "TimeTrackerLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\TimeTrackerLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\TimeTrackerLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timetracker_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TimeTrackerLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_timetracker_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "TimeTrackerLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_timetracker_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "TimeTrackerLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_timetracker_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "XwikiLink findByObjectUuid rows": {
+        "result": [
+            [
+                "OCA\\OpenRegister\\Db\\XwikiLink",
+                4
+            ],
+            [
+                "OCA\\OpenRegister\\Db\\XwikiLink",
+                9
+            ]
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_xwiki_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "XwikiLink findByObjectUuid empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_xwiki_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 orderBy(linked_at, DESC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "XwikiLink deleteByObjectUuid rows": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_xwiki_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    },
+    "XwikiLink deleteByObjectUuid empty": {
+        "result": 1,
+        "queries": [
+            "#1 delete(openregister_xwiki_links, NULL)",
+            "#1 param :p1 = obj-uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p1, NULL)",
+            "#1 where(eq(object_uuid, :p1, NULL))",
+            "#1 executeStatement()"
+        ]
+    }
+}

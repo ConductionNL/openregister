@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Settings;
 
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCA\OpenRegister\Settings\PushStatusSources;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
@@ -82,8 +83,7 @@ class OpenRegisterAdminTest extends TestCase {
 		$this->admin = new OpenRegisterAdmin(
 			$this->config,
 			$this->l10n,
-			$this->appManager,
-			$this->appConfig,
+			new PushStatusSources(appManager: $this->appManager, appConfig: $this->appConfig),
 			$this->initialState
 		);
 	}//end setUp()
@@ -143,5 +143,7 @@ class OpenRegisterAdminTest extends TestCase {
 		$result = $this->admin->getForm();
 
 		$this->assertInstanceOf(TemplateResponse::class, $result);
+		$this->assertSame('settings/admin', $result->getTemplateName());
+		$this->assertFalse($result->getParams()['mySetting']);
 	}//end testGetFormWithFalseSetting()
 }//end class

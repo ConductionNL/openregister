@@ -26,54 +26,63 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Controller\Support\SchemaRemoval;
+use OCA\OpenRegister\Controller\Support\SchemasControllerServices;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
-use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\AuthorizationChange;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
+use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\Form\FormDependentsCheck;
-use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
+use OCA\OpenRegister\Service\Hinge\ListPresentationResolverInterface;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
-use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
-use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
+use OCA\OpenRegister\Service\Schema\IncomingDefinition;
+use OCA\OpenRegister\Service\Schema\SchemaChangeRecord;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownInterface;
+use OCA\OpenRegister\Service\SchemaImport\GgmUpload;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
-use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
-use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\SemanticTypeResolver;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
+use OCA\OpenRegister\Service\SemanticTypeResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
-use OCP\IAppConfig;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -113,7 +122,54 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/specs/openapi-generation/spec.md
  */
 class SchemasController extends Controller {
+
+	/**
+	 * The exceptions that answer 422 with the errors of the declaration.
+	 *
+	 * @var array<int, class-string>
+	 */
+	private const DECLARATION_REFUSALS = [
+		UniqueHintException::class,
+		PropertyVocabularyException::class,
+		ReversibilityDeclarationException::class,
+		ReviewDeclarationException::class,
+		RelationDeclarationException::class,
+		CalculationDeclarationException::class,
+		ConsentDeclarationException::class,
+		DependentValueDeclarationException::class,
+		NotificationDeclarationException::class,
+	];
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
+
+	/**
+	 * Message fragments that mark a failed schema write as a validation error (400).
+	 *
+	 * @var array<int, string>
+	 */
+	private const VALIDATION_ERROR_MARKERS = [
+		'Invalid',
+		'must be',
+		'required',
+		'requires translatable',
+		'format',
+		'Property at',
+		'authorization',
+		'handoff',
+	];
+
+	/**
+	 * Message fragments that mark a failed schema write as a conflict (409).
+	 *
+	 * @var array<int, string>
+	 */
+	private const CONFLICT_ERROR_MARKERS = ['constraint', 'duplicate', 'unique'];
+
+	/**
+	 * The `logs` statistics a caller who may not count the trail is given.
+	 *
+	 * @var array{total: int, size: int}
+	 */
+	private const NO_LOG_STATS = ['total' => 0, 'size' => 0];
 
 	/**
 	 * The shared register-scoped schema resolver.
@@ -124,9 +180,9 @@ class SchemasController extends Controller {
 	 * mappers — exercising the REAL resolution path instead of a mock of the very
 	 * thing under test.
 	 *
-	 * @var RegisterScopedSchemaResolver
+	 * @var RegisterScopedSchemaResolverInterface
 	 */
-	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+	private readonly RegisterScopedSchemaResolverInterface $scopedSchemaResolver;
 
 	/**
 	 * The call site for the reference-filter operand check.
@@ -141,6 +197,97 @@ class SchemasController extends Controller {
 	private readonly ReferenceFilterOperandGuard $referenceFilterOperands;
 
 	/**
+	 * The schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * The register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * The object entity mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectEntityMapper;
+
+	/**
+	 * The audit trail mapper.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * The schema cache service.
+	 *
+	 * @var SchemaCacheHandlerInterface
+	 */
+	private readonly SchemaCacheHandlerInterface $schemaCacheService;
+
+	/**
+	 * The facet cache svc.
+	 *
+	 * @var FacetResultCacheClearerInterface
+	 */
+	private readonly FacetResultCacheClearerInterface $facetResults;
+
+	/**
+	 * The logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * The container.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * The schema versioning service.
+	 *
+	 * @var SchemaVersioningService
+	 */
+	private readonly SchemaVersioningService $schemaVersioningService;
+
+	/**
+	 * The schema import service.
+	 *
+	 * @var ?SchemaImportServiceInterface
+	 */
+	private readonly ?SchemaImportServiceInterface $schemaImportService;
+
+	/**
+	 * The semantic type resolver.
+	 *
+	 * @var ?SemanticTypeResolverInterface
+	 */
+	private readonly ?SemanticTypeResolverInterface $semanticTypeResolver;
+
+	/**
+	 * The semantic roles.
+	 *
+	 * @var ?SemanticRoleHandlerInterface
+	 */
+	private readonly ?SemanticRoleHandlerInterface $semanticRoles;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var SchemasControllerServices
+	 */
+	private readonly SchemasControllerServices $services;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for schema operations.
@@ -148,56 +295,35 @@ class SchemasController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param IAppConfig $config App configuration for settings
-	 * @param SchemaMapper $schemaMapper Schema mapper for database operations
-	 * @param RegisterMapper $registerMapper Register mapper for register lookups and schema linkage
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for object queries
-	 * @param UploadService $uploadService Upload service for file uploads
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
-	 * @param OrganisationService $organisationService Organisation service for multi-tenancy
-	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler for caching operations
-	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service for facet caching
-	 * @param SchemaService $schemaService Schema service for exploration operations
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param ContainerInterface $container Container for lazy loading services
-	 * @param SchemaVersioningService $schemaVersioningService Schema versioning service for version operations
-	 * @param JsonLdContextService $jsonLdContextService JSON-LD context service
-	 * @param SchemaImportService $schemaImportService Schema import service for importing schemas
-	 * @param SemanticTypeResolver $semanticTypeResolver Semantic-type → schema resolver (cross-app references)
-	 * @param SemanticRoleHandler|null $semanticRoles Reads and validates the title, status, assignee and term roles
+	 * @param SchemasControllerServices $services The schemas controller services.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud AppFramework requires all services to be constructor-injected.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly IAppConfig $config,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $objectEntityMapper,
-		private readonly UploadService $uploadService,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly OrganisationService $organisationService,
-		private readonly SchemaCacheHandler $schemaCacheService,
-		private readonly FacetCacheHandler $facetCacheSvc,
-		private readonly SchemaService $schemaService,
-		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
-		private readonly SchemaVersioningService $schemaVersioningService,
-		private readonly ?JsonLdContextService $jsonLdContextService = null,
-		private readonly ?SchemaImportService $schemaImportService = null,
-		private readonly ?SemanticTypeResolver $semanticTypeResolver = null,
-		private readonly ?SemanticRoleHandler $semanticRoles = null,
+		SchemasControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
-		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+		$this->services = $services;
+		$this->schemaMapper = $services->mappers->schemaMapper;
+		$this->registerMapper = $services->mappers->registerMapper;
+		$this->objectEntityMapper = $services->mappers->objectEntityMapper;
+		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
+		$this->schemaCacheService = $services->schemas->schemaCacheService;
+		$this->facetResults = $services->schemas->facetResults;
+		$this->logger = $services->platform->logger;
+		$this->container = $services->platform->container;
+		$this->schemaVersioningService = $services->schemas->versioning;
+		$this->schemaImportService = $services->semantics->schemaImportService;
+		$this->semanticTypeResolver = $services->semantics->semanticTypeResolver;
+		$this->semanticRoles = $services->semantics->semanticRoles;
+		$this->scopedSchemaResolver = RegisterScopedSchemaResolvers::over(
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper
 		);
-		$this->referenceFilterOperands = new ReferenceFilterOperandGuard(schemaMapper: $schemaMapper);
+		$this->referenceFilterOperands = new ReferenceFilterOperandGuard(schemaMapper: $this->schemaMapper);
 	}//end __construct()
 
 	/**
@@ -224,86 +350,129 @@ class SchemasController extends Controller {
 	 * entity's serializer owns that contract; copying it here only guarantees
 	 * the copy drifts.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple optional extend/pagination/filter parameters each add one branch.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional extend/pagination/filter parameters each add one branch.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handling pagination + filtering + extend + stats
-	 * in one NC controller action is idiomatic; extracting helpers would obscure the flow.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		// Get request parameters for filtering and searching.
 		$params = $this->request->getParams();
+		$extend = $this->extendList(extend: ($params['_extend'] ?? []));
 
-		// Extract pagination and search parameters.
-		$limit = null;
-		if (isset($params['_limit']) === true) {
-			$limit = (int)$params['_limit'];
+		$schemas    = $this->visibleSchemas(schemas: $this->listSchemas(params: $params));
+		$schemasArr = $this->withExtendedBy(schemasArr: array_map(fn ($schema) => $schema->jsonSerialize(), $schemas));
+
+		// If '@self.stats' is requested, attach statistics to each schema.
+		if (in_array('@self.stats', $extend, true) === true) {
+			$schemasArr = $this->withSchemaStats(schemasArr: $schemasArr);
 		}
 
-		$offset = null;
-		if (isset($params['_offset']) === true) {
-			$offset = (int)$params['_offset'];
-		}
+		return new JSONResponse(data: ['results' => $schemasArr]);
+	}//end index()
 
-		$page = null;
-		if (isset($params['_page']) === true) {
-			$page = (int)$params['_page'];
-		}
-
-		// Note: search parameter not currently used in this endpoint.
-		// Extract extend parameter for additional properties.
-		$extend = $params['_extend'] ?? [];
-
-		// Normalize extend to array if string.
+	/**
+	 * An `_extend` value as a list: a single string becomes a one-entry list.
+	 *
+	 * @param mixed $extend The requested `_extend` value.
+	 *
+	 * @return mixed The list of extend entries.
+	 */
+	private function extendList(mixed $extend): mixed {
 		if (is_string($extend) === true) {
-			$extend = [$extend];
+			return [$extend];
 		}
 
-		// Convert page to offset if provided (page-based pagination).
-		if ($page !== null && $limit !== null) {
-			$offset = ($page - 1) * $limit;
-		}
+		return $extend;
+	}//end extendList()
 
-		// Extract filters from request parameters.
-		$filters = $params['filters'] ?? [];
-
-		// Retrieve schemas using mapper with pagination and filters.
-		$schemas = $this->schemaMapper->findAll(
-			limit: $limit,
-			offset: $offset,
-			filters: $filters,
+	/**
+	 * The page of schemas a listing asks for, with its filters, unscoped by tenancy.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<int, Schema> The schemas.
+	 */
+	private function listSchemas(array $params): array {
+		return $this->schemaMapper->findAll(
+			limit: $this->intParam(params: $params, key: '_limit'),
+			offset: $this->listOffset(params: $params),
+			filters: ($params['filters'] ?? []),
 			searchConditions: [],
 			searchParams: [],
 			_extend: [],
 			_multitenancy: false
 		);
+	}//end listSchemas()
 
-		// Read-visibility guard: this endpoint is @PublicPage so it stays
-		// reachable when OpenRegister is restricted to a user group. Anonymous
-		// callers may only see schemas whose RBAC authorization grants read
-		// access to the `public` group; authenticated users are unaffected.
-		// Visibility is derived from server-side authorization rules, never
-		// from client-supplied parameters.
-		if ($this->isAnonymousRequest() === true) {
-			$schemas = array_values(
-				array_filter(
-					$schemas,
-					fn ($schema) => $this->isPublicReadable(authorization: $schema->getAuthorization())
-				)
-			);
+	/**
+	 * A request parameter as an integer, or null when it is not set.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 * @param string               $key    The parameter name.
+	 *
+	 * @return int|null The value.
+	 */
+	private function intParam(array $params, string $key): ?int {
+		if (isset($params[$key]) === false) {
+			return null;
 		}
 
-		// Serialize schemas to arrays.
-		$schemasArr = array_map(
-			function ($schema) {
-				return $schema->jsonSerialize();
-			},
-			$schemas
-		);
+		return (int)$params[$key];
+	}//end intParam()
 
-		// Batch-load all extendedBy relationships in a single query instead of N queries.
+	/**
+	 * The listing offset: derived from `_page` when a page and a limit are given, else `_offset`.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return int|null The offset.
+	 */
+	private function listOffset(array $params): ?int {
+		$limit = $this->intParam(params: $params, key: '_limit');
+		$page  = $this->intParam(params: $params, key: '_page');
+		if ($page !== null && $limit !== null) {
+			return ($page - 1) * $limit;
+		}
+
+		return $this->intParam(params: $params, key: '_offset');
+	}//end listOffset()
+
+	/**
+	 * The schemas the caller may see in a listing.
+	 *
+	 * Read-visibility guard: this endpoint is @PublicPage so it stays
+	 * reachable when OpenRegister is restricted to a user group. Anonymous
+	 * callers may only see schemas whose RBAC authorization grants read
+	 * access to the `public` group; authenticated users are unaffected.
+	 * Visibility is derived from server-side authorization rules, never
+	 * from client-supplied parameters.
+	 *
+	 * @param array<int, Schema> $schemas The listed schemas.
+	 *
+	 * @return array<int, Schema> The visible schemas.
+	 */
+	private function visibleSchemas(array $schemas): array {
+		if ($this->isAnonymousRequest() === false) {
+			return $schemas;
+		}
+
+		return array_values(
+			array_filter(
+				$schemas,
+				fn ($schema) => $this->isPublicReadable(authorization: $schema->getAuthorization())
+			)
+		);
+	}//end visibleSchemas()
+
+	/**
+	 * Add `@self.extendedBy` to each serialized schema.
+	 *
+	 * Batch-loads all extendedBy relationships in a single query instead of N queries.
+	 *
+	 * @param array<int, array<string, mixed>> $schemasArr The serialized schemas.
+	 *
+	 * @return array<int, array<string, mixed>> The schemas with their extendedBy lists.
+	 */
+	private function withExtendedBy(array $schemasArr): array {
 		$allExtendedBy = $this->schemaMapper->findAllExtendedBy();
 		foreach ($schemasArr as &$schema) {
 			// @psalm-suppress InvalidArrayOffset
@@ -311,37 +480,52 @@ class SchemasController extends Controller {
 			$schema['@self']['extendedBy'] = $allExtendedBy[$schema['id']] ?? [];
 		}
 
-		unset($schema);
 		// Break the reference.
-		// If '@self.stats' is requested, attach statistics to each schema.
-		if (in_array('@self.stats', $extend, true) === true) {
-			// Collect all schema IDs for batch queries.
-			$schemaIds = array_map(fn ($schema) => $schema['id'], $schemasArr);
+		unset($schema);
+		return $schemasArr;
+	}//end withExtendedBy()
 
-			// Batch-load all statistics in 3 queries instead of N*2 queries.
-			$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
-			$objectStats = $this->objectEntityMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+	/**
+	 * Attach the `@self.stats` block to each serialized schema of a list.
+	 *
+	 * Batch-loads the statistics in 3 queries instead of N*2. The audit-trail
+	 * counts are given to an administrator only.
+	 *
+	 * @param array<int, array<string, mixed>> $schemasArr The serialized schemas.
+	 *
+	 * @return array<int, array<string, mixed>> The schemas with a `stats` block.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
+	 */
+	private function withSchemaStats(array $schemasArr): array {
+		$schemaIds = array_map(fn ($schema) => $schema['id'], $schemasArr);
+
+		$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
+		$objectStats = $this->objectEntityMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+		$logStats = [];
+		if ($this->isCurrentUserAdmin() === true) {
 			$logStats = $this->auditTrailMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+		}
 
-			foreach ($schemasArr as &$schema) {
-				$schema['stats'] = [
-					'objects' => $objectStats[$schema['id']] ?? [
-						'total' => 0,
-						'size' => 0,
-						'invalid' => 0,
-						'deleted' => 0,
-						'locked' => 0,
-					],
-					'logs' => $logStats[$schema['id']] ?? ['total' => 0, 'size' => 0],
-					'files' => [ 'total' => 0, 'size' => 0 ],
-					// Add the number of registers referencing this schema.
-					'registers' => $registerCounts[$schema['id']] ?? 0,
-				];
-			}
-		}//end if
+		foreach ($schemasArr as &$schema) {
+			$schema['stats'] = [
+				'objects' => $objectStats[$schema['id']] ?? [
+					'total' => 0,
+					'size' => 0,
+					'invalid' => 0,
+					'deleted' => 0,
+					'locked' => 0,
+				],
+				'logs' => $logStats[$schema['id']] ?? self::NO_LOG_STATS,
+				'files' => [ 'total' => 0, 'size' => 0 ],
+				// Add the number of registers referencing this schema.
+				'registers' => $registerCounts[$schema['id']] ?? 0,
+			];
+		}
 
-		return new JSONResponse(data: ['results' => $schemasArr]);
-	}//end index()
+		unset($schema);
+		return $schemasArr;
+	}//end withSchemaStats()
 
 	/**
 	 * Resolve the {id} route parameter to a Schema, register-scoped when the caller names one.
@@ -383,12 +567,26 @@ class SchemasController extends Controller {
 		// Leave evidence when a slug was ambiguous and nobody said which register they
 		// meant. Silence here is what made the `agent` collision cost a workaround
 		// instead of a bug report.
-		if (is_string($id) === true && is_numeric($id) === false && $registerParam === null) {
+		if ($this->isUnscopedSlug(id: $id, registerParam: $registerParam) === true) {
 			$this->logAmbiguousSlug(slug: $id, resolved: $schema);
 		}
 
 		return $schema;
 	}//end resolveSchema()
+
+	/**
+	 * Whether the {id} is a slug and the caller named no register at all.
+	 *
+	 * @param int|string $id            The {id} route parameter.
+	 * @param mixed      $registerParam The raw `?register=` parameter.
+	 *
+	 * @return bool True when the global slug lookup may have been ambiguous.
+	 *
+	 * @phpstan-assert-if-true string $id
+	 */
+	private function isUnscopedSlug(int|string $id, mixed $registerParam): bool {
+		return is_string($id) === true && is_numeric($id) === false && $registerParam === null;
+	}//end isUnscopedSlug()
 
 
 	/**
@@ -491,97 +689,154 @@ class SchemasController extends Controller {
 	 * @PublicPage
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable)        $id matches the {id} URL route parameter; renaming breaks route binding.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles _extend, _count, RBAC, 404, and several
-	 * response-shaping branches; each is a required rendering path that cannot be extracted without
-	 * splitting the HTTP contract.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show($id): JSONResponse {
 		try {
-			$extend = $this->request->getParam(key: '_extend', default: []);
-			if (is_string($extend) === true) {
-				$extend = [$extend];
-			}
-
-			$schema = $this->resolveSchema(id: $id);
-
-			// Read-visibility guard (@PublicPage): an anonymous caller may only
-			// view a schema whose RBAC authorization grants read access to the
-			// `public` group. Derived from server-side authorization rules,
-			// never from client-supplied parameters.
-			if ($this->isAnonymousRequest() === true
-				&& $this->isPublicReadable(authorization: $schema->getAuthorization()) === false
-			) {
-				return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-			}
-
-			$schemaArr = $schema->jsonSerialize();
-
-			// Add extendedBy property showing UUIDs of schemas that extend this schema.
-			// Note: @psalm-suppress InvalidArrayOffset used here for dynamic array access.
-			$schemaArr['@self'] = $schemaArr['@self'] ?? [];
-			$schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
-
-			// Add property source metadata to distinguish native vs inherited properties.
-			// This is especially useful for schemas using allOf composition.
-			if (($schema->getAllOf() ?? null) !== null && count($schema->getAllOf()) > 0) {
-				$schemaArr['@self']['propertyMetadata'] = $this->schemaMapper->getPropertySourceMetadata($schema);
-			}
-
-			// The semantic roles and the administered help text, resolved in
-			// the caller's language. A list component reads the roles and can
-			// then render a schema it has never seen (REQ-CLH-003).
-			if ($this->semanticRoles !== null) {
-				$properties = ($schema->getProperties() ?? []);
-				$language = $this->negotiatedLanguage();
-				$schemaArr['@self']['roles'] = $this->semanticRoles->roles(properties: $properties);
-				$schemaArr['@self']['help'] = $this->semanticRoles->helpTexts(
-					properties: $properties,
-					language: $language
-				);
-				$schemaArr['@self']['language'] = $language;
-			}
-
-			// If '@self.stats' is requested, attach statistics to the schema.
-			if (in_array('@self.stats', $extend, true) === true) {
-				// Get register counts for all schemas in one call.
-				$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
-				$schemaArr['stats'] = [
-					'objects' => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
-					'logs' => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
-					'files' => [ 'total' => 0, 'size' => 0 ],
-					// Add the number of registers referencing this schema.
-					'registers' => $registerCounts[$schemaArr['id']] ?? 0,
-				];
-			}
-
-			return new JSONResponse(data: $schemaArr);
+			return $this->showSchema(id: $id, extend: $this->extendList(extend: $this->request->getParam(key: '_extend', default: [])));
 		} catch (SchemaNotInRegisterException | RegisterNotFoundException $e) {
 			// Register-scoped refusals carry a diagnosis — which register, how many
 			// same-slug schemas exist elsewhere, the repair command. Flattening them
 			// to a bare "Schema not found" reads as "your slug is wrong", which is
 			// the one conclusion that is certainly false when duplicates exist.
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
+		} catch (DoesNotExistException | \OCA\OpenRegister\Exception\ValidationException $e) {
 			// ValidationException is thrown when schema is not found (includes debugging info).
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[SchemasController] Failed to retrieve schema',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schema_id' => $id,
-					'error_message' => $e->getMessage(),
-				]
-			);
-			return $this->errorResponse(e: $e);
+			return $this->showFailure(e: $e, id: $id);
 		}//end try
 	}//end show()
+
+	/**
+	 * Log a failed schema read and answer with the generic error response.
+	 *
+	 * @param Exception  $e  The failure.
+	 * @param int|string $id The {id} route parameter.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function showFailure(Exception $e, mixed $id): JSONResponse {
+		$this->logger->error(
+			message: '[SchemasController] Failed to retrieve schema',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schema_id' => $id,
+				'error_message' => $e->getMessage(),
+			]
+		);
+		return $this->errorResponse(e: $e);
+	}//end showFailure()
+
+	/**
+	 * The schema read of {@see show()}: resolve, guard anonymous reads, and shape the response.
+	 *
+	 * @param int|string $id     The {id} route parameter — a numeric id, a uuid, or a slug.
+	 * @param mixed      $extend The requested `_extend` entries.
+	 *
+	 * @return JSONResponse The serialized schema, or a 401 for an anonymous caller who may not read it.
+	 */
+	private function showSchema(mixed $id, mixed $extend): JSONResponse {
+		$schema = $this->resolveSchema(id: $id);
+
+		// Read-visibility guard (@PublicPage): an anonymous caller may only
+		// view a schema whose RBAC authorization grants read access to the
+		// `public` group. Derived from server-side authorization rules,
+		// never from client-supplied parameters.
+		if ($this->deniesAnonymousRead(authorization: $schema->getAuthorization()) === true) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+		}
+
+		$schemaArr = $schema->jsonSerialize();
+
+		// Add extendedBy property showing UUIDs of schemas that extend this schema.
+		$schemaArr['@self'] = $schemaArr['@self'] ?? [];
+		$schemaArr['@self']['extendedBy'] = $this->schemaMapper->findExtendedBy($id);
+		$schemaArr['@self'] = $this->withPropertyMetadata(annotations: $schemaArr['@self'], schema: $schema);
+		$schemaArr['@self'] = $this->withSemanticRoles(annotations: $schemaArr['@self'], schema: $schema);
+
+		// If '@self.stats' is requested, attach statistics to the schema.
+		if (in_array('@self.stats', $extend, true) === true) {
+			$schemaArr['stats'] = $this->singleSchemaStats(schemaArr: $schemaArr);
+		}
+
+		return new JSONResponse(data: $schemaArr);
+	}//end showSchema()
+
+	/**
+	 * Whether the caller is anonymous and the authorization grants the `public` group no read.
+	 *
+	 * @param array|null $authorization The entity's authorization block, or null.
+	 *
+	 * @return bool True when the read must be refused.
+	 */
+	private function deniesAnonymousRead(?array $authorization): bool {
+		return $this->isAnonymousRequest() === true && $this->isPublicReadable(authorization: $authorization) === false;
+	}//end deniesAnonymousRead()
+
+	/**
+	 * Add property source metadata to distinguish native vs inherited properties.
+	 *
+	 * This is especially useful for schemas using allOf composition.
+	 *
+	 * @param array<string, mixed> $annotations The `@self` block.
+	 * @param Schema               $schema      The schema.
+	 *
+	 * @return array<string, mixed> The block, with `propertyMetadata` when the schema composes others.
+	 */
+	private function withPropertyMetadata(array $annotations, Schema $schema): array {
+		if (($schema->getAllOf() ?? null) !== null && count($schema->getAllOf()) > 0) {
+			$annotations['propertyMetadata'] = $this->schemaMapper->getPropertySourceMetadata($schema);
+		}
+
+		return $annotations;
+	}//end withPropertyMetadata()
+
+	/**
+	 * Add the semantic roles and the administered help text, resolved in the caller's language.
+	 *
+	 * A list component reads the roles and can then render a schema it has
+	 * never seen (REQ-CLH-003).
+	 *
+	 * @param array<string, mixed> $annotations The `@self` block.
+	 * @param Schema               $schema      The schema.
+	 *
+	 * @return array<string, mixed> The block, with `roles`, `help` and `language` when roles are wired.
+	 */
+	private function withSemanticRoles(array $annotations, Schema $schema): array {
+		if ($this->semanticRoles === null) {
+			return $annotations;
+		}
+
+		$properties = ($schema->getProperties() ?? []);
+		$language   = $this->negotiatedLanguage();
+		$annotations['roles'] = $this->semanticRoles->roles(properties: $properties);
+		$annotations['help']  = $this->semanticRoles->helpTexts(properties: $properties, language: $language);
+		$annotations['language'] = $language;
+		return $annotations;
+	}//end withSemanticRoles()
+
+	/**
+	 * The `stats` block of one serialized schema.
+	 *
+	 * @param array<string, mixed> $schemaArr The serialized schema.
+	 *
+	 * @return array<string, mixed> The object, log, file and register statistics.
+	 */
+	private function singleSchemaStats(array $schemaArr): array {
+		// Get register counts for all schemas in one call.
+		$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
+		return [
+			'objects' => $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $schemaArr['id'])),
+			'logs' => $this->auditLogStats(schemaId: (int)$schemaArr['id']),
+			'files' => [ 'total' => 0, 'size' => 0 ],
+			// Add the number of registers referencing this schema.
+			'registers' => $registerCounts[$schemaArr['id']] ?? 0,
+		];
+	}//end singleSchemaStats()
 
 	/**
 	 * Validate the optional `configuration.jsonld` vocabulary-mapping block.
@@ -608,7 +863,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return JSONResponse|null A 422 response when invalid, else null.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function validateSemanticRoles(array $data): ?JSONResponse {
 		if ($this->semanticRoles === null) {
@@ -680,7 +935,7 @@ class SchemasController extends Controller {
 	 *
 	 * @return string The BCP-47 tag.
 	 *
-	 * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function negotiatedLanguage(): string {
 		$explicit = trim((string)$this->request->getParam('language', ''));
@@ -711,7 +966,28 @@ class SchemasController extends Controller {
 	 * @return JSONResponse|null A 400 naming the bad mapping, or null when there is nothing to refuse.
 	 */
 	private function validateJsonLdMapping(array $data): ?JSONResponse {
-		if ($this->jsonLdContextService === null) {
+		$jsonld = $this->declaredJsonLdMapping(data: $data);
+		if ($jsonld === null) {
+			return null;
+		}
+
+		$errors = $this->services->semantics->jsonLdContextService->validateMapping(jsonld: $jsonld);
+		if (empty($errors) === true) {
+			return null;
+		}
+
+		return $this->invalidJsonLdMapping(errors: $errors);
+	}//end validateJsonLdMapping()
+
+	/**
+	 * The `configuration.jsonld` block to check, or null when there is no checker or no block.
+	 *
+	 * @param array<string,mixed> $data The incoming schema payload.
+	 *
+	 * @return array<string,mixed>|null The mapping block.
+	 */
+	private function declaredJsonLdMapping(array $data): ?array {
+		if ($this->services->semantics->jsonLdContextService === null) {
 			return null;
 		}
 
@@ -725,11 +1001,17 @@ class SchemasController extends Controller {
 			return null;
 		}
 
-		$errors = $this->jsonLdContextService->validateMapping(jsonld: $jsonld);
-		if (empty($errors) === true) {
-			return null;
-		}
+		return $jsonld;
+	}//end declaredJsonLdMapping()
 
+	/**
+	 * The 400 naming the problems of a JSON-LD mapping.
+	 *
+	 * @param array<mixed> $errors The mapping errors.
+	 *
+	 * @return JSONResponse
+	 */
+	private function invalidJsonLdMapping(array $errors): JSONResponse {
 		return new JSONResponse(
 			data: [
 				'error' => 'Invalid jsonld mapping in schema configuration',
@@ -737,7 +1019,7 @@ class SchemasController extends Controller {
 			],
 			statusCode: 400
 		);
-	}//end validateJsonLdMapping()
+	}//end invalidJsonLdMapping()
 
 	/**
 	 * Creates a new schema
@@ -747,12 +1029,6 @@ class SchemasController extends Controller {
 	 * @NoAdminRequired
 	 *
 	 * @NoCSRFRequired
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block at the end is
-	 * repetitive but intentional; extracting it would not reduce cognitive load.
 	 *
 	 * @return JSONResponse JSON response with created schema or error
 	 *
@@ -765,9 +1041,8 @@ class SchemasController extends Controller {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	public function create(): JSONResponse {
-		// Authorization: creating a schema defines a new data model and is
-		// restricted to administrators. Reading schema metadata stays open so
-		// frontends can build their UIs; only create/update/delete are gated.
+		// Creating a schema defines a new data model and is restricted to
+		// administrators. Reading schema metadata stays open for frontends.
 		if ($this->isCurrentUserAdmin() === false) {
 			return new JSONResponse(
 				data: ['error' => 'Only administrators may create schemas'],
@@ -775,17 +1050,105 @@ class SchemasController extends Controller {
 			);
 		}
 
-		// Get request parameters.
 		$data = $this->request->getParams();
 
-		// REGISTER CONTEXT. `POST /api/schemas?register=<id|uuid|slug>` states which
-		// register the new schema belongs to. It is consumed here, never hydrated
-		// onto the Schema entity — a schema row carries no register column; the
-		// linkage lives in `openregister_registers.schemas`.
+		// `?register=<id|uuid|slug>` names the register the new schema belongs to.
+		// It is consumed here, never hydrated: the linkage lives in the register's
+		// `schemas` list, not on the schema row.
 		$registerParam = ($data['register'] ?? null);
 		unset($data['register']);
 
-		// DEBUG: Log incoming request to track duplicate creation.
+		$this->logSchemaCreation(data: $data);
+
+		return $this->createSchema(data: $this->newSchemaBody(data: $data), registerParam: $registerParam);
+	}//end create()
+
+	/**
+	 * The body a new schema is created from: internal parameters and any client `id` removed.
+	 *
+	 * @param array<string, mixed> $data The request parameters, without `register`.
+	 *
+	 * @return array<string, mixed> The schema body.
+	 */
+	private function newSchemaBody(array $data): array {
+		$data = $this->withoutInternalParams(data: $data);
+		if (($data['id'] ?? null) !== null) {
+			unset($data['id']);
+		}
+
+		return $data;
+	}//end newSchemaBody()
+
+	/**
+	 * Validate a new schema body, resolve its register, and insert it.
+	 *
+	 * @param array<string, mixed> $data          The schema body.
+	 * @param mixed                $registerParam The `?register=` parameter, or null.
+	 *
+	 * @return JSONResponse The created schema (201), or the refusal.
+	 */
+	private function createSchema(array $data, mixed $registerParam): JSONResponse {
+		$invalid = $this->validateSchemaBody(data: $data);
+		if ($invalid !== null) {
+			return $invalid;
+		}
+
+		$register = $this->newSchemaRegister(registerParam: $registerParam);
+		if ($register instanceof JSONResponse) {
+			return $register;
+		}
+
+		return $this->insertSchema(data: $data, register: $register);
+	}//end createSchema()
+
+	/**
+	 * The register a new schema is linked to: none without a `?register=`, else the one it names.
+	 *
+	 * @param mixed $registerParam The `?register=` parameter, or null.
+	 *
+	 * @return Register|JSONResponse|null The register, the refusal when it does not resolve, or null.
+	 */
+	private function newSchemaRegister(mixed $registerParam): Register|JSONResponse|null {
+		if ($registerParam === null || $registerParam === '') {
+			return null;
+		}
+
+		return $this->findRegisterForNewSchema(registerParam: $registerParam);
+	}//end newSchemaRegister()
+
+	/**
+	 * Insert a validated new schema and link it to its register.
+	 *
+	 * @param array<string, mixed> $data     The schema body.
+	 * @param Register|null        $register The register, or null for a register-less schema.
+	 *
+	 * @return JSONResponse The created schema (201), or the write error.
+	 */
+	private function insertSchema(array $data, ?Register $register): JSONResponse {
+		try {
+			$schema = $this->schemaMapper->createFromArray(object: $data);
+			$this->linkNewSchemaToRegister(schema: $schema, register: $register);
+
+			// Drop the cached copy so a follow-up read in this worker sees the new schema.
+			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
+
+			return new JSONResponse(data: $schema, statusCode: 201);
+		} catch (Exception $e) {
+			return $this->schemaWriteErrorResponse(
+				e: $e,
+				failure: ['message' => '[SchemasController] Schema creation failed', 'context' => []]
+			);
+		}
+	}//end insertSchema()
+
+	/**
+	 * Log the start of a schema creation with its title and organisation.
+	 *
+	 * @param array<string, mixed> $data The request parameters
+	 *
+	 * @return void
+	 */
+	private function logSchemaCreation(array $data): void {
 		$this->logger->info(
 			message: '[SchemasController::create] Starting schema creation',
 			context: [
@@ -796,256 +1159,248 @@ class SchemasController extends Controller {
 				'organisation' => $data['organisation'] ?? 'not set',
 			]
 		);
+	}//end logSchemaCreation()
 
-		// Remove internal parameters (starting with '_').
+	/**
+	 * Remove internal request parameters (those starting with `_`).
+	 *
+	 * @param array<string, mixed> $data The request parameters
+	 *
+	 * @return array<string, mixed> The parameters without internal ones
+	 */
+	private function withoutInternalParams(array $data): array {
 		foreach (array_keys($data) as $key) {
 			if (str_starts_with($key, '_') === true) {
 				unset($data[$key]);
 			}
 		}
 
-		// Remove ID if present to ensure a new record is created.
-		if (($data['id'] ?? null) !== null) {
-			unset($data['id']);
+		return $data;
+	}//end withoutInternalParams()
+
+	/**
+	 * Run the checks a schema body must pass before it is written.
+	 *
+	 * The JSON-LD vocabulary mapping, duplicated semantic roles (REQ-CLH-003) and
+	 * reference filters reading a property neither schema declares are refused
+	 * before the write, while the author is still waiting.
+	 *
+	 * @param array<string, mixed> $data The schema body
+	 *
+	 * @return JSONResponse|null The first refusal, or null when the body passes
+	 */
+	private function validateSchemaBody(array $data): ?JSONResponse {
+		return $this->validateJsonLdMapping(data: $data)
+			?? $this->validateSemanticRoles(data: $data)
+			?? $this->validateReferenceFilterOperands(data: $data);
+	}//end validateSchemaBody()
+
+	/**
+	 * Resolve the register a new schema is created in.
+	 *
+	 * An unknown register is refused before the schema is written: creating a
+	 * free-floating schema and answering 201 would hide that it is in no register.
+	 * The lookup skips multitenancy, as RegisterMapper::updateFromArray() does;
+	 * the register update that links the schema carries the access check.
+	 *
+	 * @param mixed $registerParam The register id, uuid or slug
+	 *
+	 * @return Register|JSONResponse The register, or a 400 response
+	 */
+	private function findRegisterForNewSchema(mixed $registerParam): Register|JSONResponse {
+		try {
+			return $this->registerMapper->find(id: $registerParam, _multitenancy: false);
+		} catch (Exception $e) {
+			return new JSONResponse(
+				data: [
+					'error' => sprintf(
+						'The register "%s" named by ?register= does not exist or is not accessible, '
+						. 'so the schema was not created. Omit the parameter to create a '
+						. 'register-less schema.',
+						(string)$registerParam
+					),
+				],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+	}//end findRegisterForNewSchema()
+
+	/**
+	 * Add a newly created schema to its register's `schemas` list.
+	 *
+	 * Without the link every register-scoped slug read of the schema is refused
+	 * (SchemaNotInRegisterException). A refused link (cross-tenant register, RBAC)
+	 * is logged, not fatal: the schema itself was created, and
+	 * `occ openregister:registers:relink-schemas` repairs the link.
+	 *
+	 * @param Schema        $schema   The created schema
+	 * @param Register|null $register The register, or null for a register-less schema
+	 *
+	 * @return void
+	 */
+	private function linkNewSchemaToRegister(Schema $schema, ?Register $register): void {
+		if ($register === null || $register->addSchemaId(schemaId: $schema->getId()) !== true) {
+			return;
 		}
 
-		// Validate the optional JSON-LD vocabulary-mapping block (json-ld-output).
-		$jsonLdError = $this->validateJsonLdMapping(data: $data);
-		if ($jsonLdError !== null) {
-			return $jsonLdError;
+		try {
+			$this->registerMapper->update(entity: $register);
+
+			// Register lookups are cached per request; drop the pre-update copy.
+			$this->registerMapper->clearFindCache(registerId: $register->getId());
+		} catch (Exception $linkError) {
+			$this->logger->error(
+				message: '[SchemasController] Schema created but could not be linked to its register',
+				context: [
+					'file'          => __FILE__,
+					'line'          => __LINE__,
+					'schemaId'      => $schema->getId(),
+					'registerId'    => $register->getId(),
+					'error_message' => $linkError->getMessage(),
+				]
+			);
+		}
+	}//end linkNewSchemaToRegister()
+
+	/**
+	 * Map an exception from a schema write to its response.
+	 *
+	 * Declaration refusals name what refused (422, ADR-005), rule conflicts and
+	 * constraint violations keep their own status, and anything else is logged
+	 * and classified by its message.
+	 *
+	 * @param Exception                                               $e       The exception
+	 * @param array{message: string, context: array<string, mixed>} $failure The log message and extra context
+	 *
+	 * @return JSONResponse The error response
+	 */
+	private function schemaWriteErrorResponse(Exception $e, array $failure): JSONResponse {
+		$refusal = $this->declarationRefusal(e: $e);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		// Refuse a duplicated semantic role before the write, naming both
-		// properties (REQ-CLH-003).
-		$roleError = $this->validateSemanticRoles(data: $data);
-		if ($roleError !== null) {
-			return $roleError;
+		$ruleConflict = $this->ruleConflictResponse(e: $e);
+		if ($ruleConflict !== null) {
+			return $ruleConflict;
 		}
 
-		// Refuse a reference filter reading a property neither schema
-		// declares, before the write, while the author is still here.
-		$operandError = $this->validateReferenceFilterOperands(data: $data);
-		if ($operandError !== null) {
-			return $operandError;
+		if ($e instanceof DBException) {
+			return $this->databaseConstraintResponse(e: $e);
 		}
 
-		// Refuse a register context that does not resolve BEFORE writing the schema.
-		// Creating a free-floating schema and reporting 201 is what made the old
-		// behaviour invisible: the caller believed it had a schema in that register.
-		$register = null;
-		if ($registerParam !== null && $registerParam !== '') {
-			try {
-				// `_multitenancy: false` on the LOOKUP only, matching
-				// RegisterMapper::updateFromArray(): resolve the register by id
-				// regardless of which organisation is active, and let the
-				// RegisterMapper::update() below carry the access check. RBAC is left
-				// at its default (on); this is not an authorization opt-out.
-				$register = $this->registerMapper->find(id: $registerParam, _multitenancy: false);
-			} catch (Exception $e) {
+		return $this->unexpectedSchemaWriteError(e: $e, failure: $failure);
+	}//end schemaWriteErrorResponse()
+
+	/**
+	 * The response of a write error that carries its own status: an authorization
+	 * block, a constraint violation or an invalid authorization rule.
+	 *
+	 * @param Exception $e The exception.
+	 *
+	 * @return JSONResponse|null The response, or null for any other exception.
+	 */
+	private function ruleConflictResponse(Exception $e): ?JSONResponse {
+		if ($e instanceof AuthorizationBlockException || $e instanceof DatabaseConstraintException) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
+		}
+
+		if ($e instanceof InvalidAuthorizationRuleException) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
+		}
+
+		return null;
+	}//end ruleConflictResponse()
+
+	/**
+	 * The response of a database error, classified as a schema constraint violation.
+	 *
+	 * @param DBException $e The database exception.
+	 *
+	 * @return JSONResponse The response with the constraint's status.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException::fromDatabaseException is a named constructor.
+	 */
+	private function databaseConstraintResponse(DBException $e): JSONResponse {
+		$constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
+		return new JSONResponse(
+			data: ['error' => $constraintException->getMessage()],
+			statusCode: $constraintException->getHttpStatusCode()
+		);
+	}//end databaseConstraintResponse()
+
+	/**
+	 * The 422 refusal for a declaration the caller wrote and a person is waiting on.
+	 *
+	 * @param Exception $e The exception
+	 *
+	 * @return JSONResponse|null The refusal with its errors, or null for any other exception
+	 */
+	private function declarationRefusal(Exception $e): ?JSONResponse {
+		foreach (self::DECLARATION_REFUSALS as $refusal) {
+			if ($e instanceof $refusal) {
 				return new JSONResponse(
-					data: [
-						'error' => sprintf(
-							'The register "%s" named by ?register= does not exist or is not accessible, '
-							. 'so the schema was not created. Omit the parameter to create a '
-							. 'register-less schema.',
-							(string)$registerParam
-						),
-					],
-					statusCode: Http::STATUS_BAD_REQUEST
+					data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+					statusCode: 422
 				);
 			}
 		}
 
-		try {
-			// Create a new schema from the data.
-			$schema = $this->schemaMapper->createFromArray(object: $data);
+		return null;
+	}//end declarationRefusal()
 
-			// Establish the register linkage the caller asked for. Without this the
-			// register's `schemas` list never learns about the schema, and every
-			// register-scoped slug read of it is refused by
-			// SchemaNotInRegisterException — while writes addressed by numeric id
-			// still land, producing rows the API cannot read back. ImportHandler,
-			// TablesSchemaSyncService and DatabaseIntrospectionService all maintain
-			// this list already; this endpoint was the one register-context schema
-			// creation path that did not.
-			//
-			// A refused linkage (cross-tenant register, RBAC) is logged, not fatal:
-			// the schema itself was created, and answering 500 would hide a
-			// successful write behind an error. The log line is the record and
-			// `occ openregister:registers:relink-schemas` is the repair.
-			if ($register !== null && $register->addSchemaId(schemaId: $schema->getId()) === true) {
-				try {
-					$this->registerMapper->update(entity: $register);
-
-					// Register lookups are cached per request; drop the pre-update
-					// copy so a follow-up read in this same PHP worker observes
-					// the new linkage.
-					$this->registerMapper->clearFindCache(registerId: $register->getId());
-				} catch (Exception $linkError) {
-					$this->logger->error(
-						message: '[SchemasController] Schema created but could not be linked to its register',
-						context: [
-							'file'          => __FILE__,
-							'line'          => __LINE__,
-							'schemaId'      => $schema->getId(),
-							'registerId'    => $register->getId(),
-							'error_message' => $linkError->getMessage(),
-						]
-					);
-				}
-			}
-
-			/*
-			 * NOTE: Organization should already be set from the request data.
-			 * The update() call below was causing duplicate schema creation with different timestamps.
-			 * Since createFromArray() already handles organization assignment, this is commented out.
-				// Set organisation from active organisation for multi-tenancy (if not already set).
-				if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
-				$organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-				$schema->setOrganisation($organisationUuid);
-				$schema = $this->schemaMapper->update($schema);
-				}
-			 */
-
-			// **CACHE INVALIDATION (runtime-schema-api)**: Drop in-memory + persistent
-			// schema cache for the freshly-created ID so any follow-up read in the same
-			// PHP worker observes the new schema. This is the create-side counterpart
-			// of the invalidations already wired into update() and destroy().
-			$this->schemaCacheService->invalidate(schemaId: $schema->getId());
-
-			return new JSONResponse(data: $schema, statusCode: 201);
-		} catch (UniqueHintException $e) {
-			// A nomination naming a property the schema does not declare is the
-			// caller's input and a person is waiting on the answer, so the
-			// refusal names the property rather than being logged and swallowed
-			// (ADR-005). MUST stay above the generic catch below.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (PropertyVocabularyException $e) {
-			// A type, a constraint key or a forwarded key the vocabulary does
-			// not hold is the caller's input and a person is waiting on the
-			// answer, so the refusal names the value rather than being logged
-			// and swallowed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (AuthorizationBlockException $e) {
-			// A deny that contradicts a grant beside it, or one that would leave
-			// nobody holding `manage`. The request was understood; the rules
-			// inside it disagree, which is 422 and not 400.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatusCode()
-			);
-		} catch (ReversibilityDeclarationException $e) {
-			// A bulk action declared reversible that cannot be would put an undo
-			// button in front of an operator that cannot work, and they would
-			// find out on the day they needed it. The refusal names the action
-			// rather than being logged and swallowed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (ReviewDeclarationException $e) {
-			// A review declaration that cannot be honoured is refused with its
-			// reasons, above the generic catch so it does not become a 500.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (RelationDeclarationException $e) {
-			// A relation declaration is the caller's input and a person is waiting
-			// on the answer, so the refusal names the property rather than being
-			// logged and swallowed (ADR-005). It sits above the generic catch
-			// deliberately: below it the refusal would become a 500 and stop
-			// naming anything.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (CalculationDeclarationException $e) {
-			// A calculation a property form forwarded is the caller's input and
-			// a person is waiting on the answer, so the refusal names the node
-			// that refused rather than being logged and swallowed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (ConsentDeclarationException $e) {
-			// An x-openregister-consent declaration that cannot be honoured must
-			// not silently ship a property that never fills evidence — the
-			// refusal names the property rather than being logged (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (DependentValueDeclarationException $e) {
-			// A dependent value table that names nothing constrains nothing,
-			// and the object it was written to guard would save cleanly. The
-			// refusal names the property rather than being logged (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (InvalidAuthorizationRuleException $e) {
-			// A malformed authorization rule names its action, property and
-			// operator; the author needs that, not a bare 500 (#4162).
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
-		} catch (DBException $e) {
-			// Handle database constraint violations with user-friendly messages.
-			$constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
-			return new JSONResponse(
-				data: ['error' => $constraintException->getMessage()],
-				statusCode: $constraintException->getHttpStatusCode()
-			);
-		} catch (DatabaseConstraintException $e) {
-			// Handle our custom database constraint exceptions.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatusCode()
-			);
-		} catch (Exception $e) {
-			// Log the actual error for debugging.
-			$this->logger->error(
-				message: '[SchemasController] Schema creation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
+	/**
+	 * Log an unexpected schema write failure and classify it by its message.
+	 *
+	 * Validation wording answers 400, constraint wording 409, anything else 500.
+	 *
+	 * @param Exception                                               $e       The exception
+	 * @param array{message: string, context: array<string, mixed>} $failure The log message and extra context
+	 *
+	 * @return JSONResponse The error response
+	 */
+	private function unexpectedSchemaWriteError(Exception $e, array $failure): JSONResponse {
+		$this->logger->error(
+			message: $failure['message'],
+			context: array_merge(
+				['file' => __FILE__, 'line' => __LINE__],
+				$failure['context'],
+				[
 					'error_message' => $e->getMessage(),
 					'error_code' => $e->getCode(),
 					'trace' => $e->getTraceAsString(),
 				]
-			);
+			)
+		);
 
-			// Check if this is a validation error by examining the message.
-			if (str_contains($e->getMessage(), 'Invalid') === true
-				|| str_contains($e->getMessage(), 'must be') === true
-				|| str_contains($e->getMessage(), 'required') === true
-				|| str_contains($e->getMessage(), 'requires translatable') === true
-				|| str_contains($e->getMessage(), 'format') === true
-				|| str_contains($e->getMessage(), 'Property at') === true
-				|| str_contains($e->getMessage(), 'authorization') === true
-				|| str_contains($e->getMessage(), 'handoff') === true
-			) {
-				// Return 400 Bad Request for validation errors with actual error message.
-				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		if ($this->messageContainsAny(message: $e->getMessage(), markers: self::VALIDATION_ERROR_MARKERS) === true) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}
+
+		if ($this->messageContainsAny(message: $e->getMessage(), markers: self::CONFLICT_ERROR_MARKERS) === true) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
+		}
+
+		return $this->errorResponse(e: $e);
+	}//end unexpectedSchemaWriteError()
+
+	/**
+	 * Whether a message contains any of the markers (case-sensitive).
+	 *
+	 * @param string             $message The message
+	 * @param array<int, string> $markers The substrings to look for
+	 *
+	 * @return bool True when one marker occurs in the message
+	 */
+	private function messageContainsAny(string $message, array $markers): bool {
+		foreach ($markers as $marker) {
+			if (str_contains($message, $marker) === true) {
+				return true;
 			}
+		}
 
-			// For database constraint violations, return 409 Conflict.
-			if (str_contains($e->getMessage(), 'constraint') === true
-				|| str_contains($e->getMessage(), 'duplicate') === true
-				|| str_contains($e->getMessage(), 'unique') === true
-			) {
-				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
-			}
-
-			// Return 500 for other unexpected errors with actual error message.
-			return $this->errorResponse(e: $e);
-		}//end try
-	}//end create()
+		return false;
+	}//end messageContainsAny()
 
 	/**
 	 * Updates an existing schema
@@ -1077,15 +1432,7 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function update(int $id): JSONResponse {
-		// Get request parameters.
-		$data = $this->request->getParams();
-
-		// Remove internal parameters (starting with '_').
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true) {
-				unset($data[$key]);
-			}
-		}
+		$data = $this->withoutInternalParams(data: $this->request->getParams());
 
 		// `?draft=true` holds the edit beside the published definition instead
 		// of applying it (modelling-schema-draft).
@@ -1109,11 +1456,27 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
 	 */
 	private function assessDependentForms(Schema $existing, array $data): ?array {
-		$check = $this->formDependentsCheck();
-		if ($check === null || (isset($data['properties']) === false && isset($data['required']) === false)) {
+		if (isset($data['properties']) === false && isset($data['required']) === false) {
 			return null;
 		}
 
+		$check = $this->formDependentsCheck();
+		if ($check === null) {
+			return null;
+		}
+
+		return $check->assess(schema: $this->proposedSchema(existing: $existing, data: $data));
+	}//end assessDependentForms()
+
+	/**
+	 * A copy of the stored schema carrying the update's properties and required list.
+	 *
+	 * @param Schema               $existing The stored schema.
+	 * @param array<string, mixed> $data     The update body.
+	 *
+	 * @return Schema The proposed schema; the stored one is not changed.
+	 */
+	private function proposedSchema(Schema $existing, array $data): Schema {
 		$proposed = clone $existing;
 		if (is_array($data['properties'] ?? null) === true) {
 			$proposed->setProperties($data['properties']);
@@ -1123,24 +1486,38 @@ class SchemasController extends Controller {
 			$proposed->setRequired($data['required']);
 		}
 
-		return $check->assess(schema: $proposed);
-	}//end assessDependentForms()
+		return $proposed;
+	}//end proposedSchema()
 
 	/**
 	 * The dependent-form check, resolved lazily like the audit service.
 	 *
-	 * @return FormDependentsCheck|null The check, or null when it cannot be built.
+	 * A check that cannot be built is logged at warning level: the save then
+	 * goes ahead without judging the published forms, and that must leave a trace
+	 * (an owning app's `refuse` setting is skipped with it).
+	 *
+	 * @return FormDependentsCheckInterface|null The check, or null when it cannot be built.
 	 */
-	private function formDependentsCheck(): ?FormDependentsCheck {
+	private function formDependentsCheck(): ?FormDependentsCheckInterface {
 		try {
-			$check = $this->container->get(FormDependentsCheck::class);
-		} catch (\Throwable) {
+			$check = $this->container->get(FormDependentsCheckInterface::class);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasController] The dependent-form check could not be built; the schema save did not re-check the published forms',
+				context: ['error' => $e->getMessage()]
+			);
+
 			return null;
 		}
 
-		if ($check instanceof FormDependentsCheck) {
+		if ($check instanceof FormDependentsCheckInterface) {
 			return $check;
 		}
+
+		$this->logger->warning(
+			message: '[SchemasController] The dependent-form check could not be built; the schema save did not re-check the published forms',
+			context: ['error' => 'the container did not return a FormDependentsCheck']
+		);
 
 		return null;
 	}//end formDependentsCheck()
@@ -1154,11 +1531,6 @@ class SchemasController extends Controller {
 	 * @param int                  $id   The ID of the schema to update
 	 * @param array<string, mixed> $data The update body, internal parameters removed
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block is repetitive but
-	 * intentional; extracting it would not reduce cognitive load.
 	 * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter.
 	 *
 	 * @return JSONResponse JSON response with updated schema or error
@@ -1172,309 +1544,304 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	private function applyUpdate(int $id, array $data): JSONResponse {
-		// Remove immutable fields to prevent tampering.
-		unset($data['id']);
-		unset($data['organisation']);
-		unset($data['owner']);
-		unset($data['created']);
+		// Immutable fields are dropped to prevent tampering.
+		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
 
-		// Authorization: modifying a schema's definition requires manage
-		// permission. This gates ALL updates, not just authorization changes —
+		// Every update needs manage permission, not just authorization changes;
 		// reading schema metadata stays open for frontends.
+		$existingSchema = $this->manageableSchema(id: $id);
+		if ($existingSchema instanceof JSONResponse) {
+			return $existingSchema;
+		}
+
+		$data = $this->withAuthorizationAsStored(document: $data);
+
+		// Validated after the permission check, so an unauthorized caller cannot probe it.
+		$invalid = $this->updateBodyRefusal(existing: $existingSchema, data: $data);
+		if ($invalid !== null) {
+			return $invalid;
+		}
+
+		$update = ['id' => $id, 'data' => $data, 'oldAuthorization' => $existingSchema->getAuthorization()];
+		return $this->classifyAndWriteUpdate(existing: $existingSchema, update: $update);
+	}//end applyUpdate()
+
+	/**
+	 * The stored schema an update or a draft publish writes, when the caller may manage it.
+	 *
+	 * @param int $id The ID of the schema.
+	 *
+	 * @return Schema|JSONResponse The schema, a 404 when it does not exist, or a 403 without manage permission.
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 */
+	private function manageableSchema(int $id): Schema|JSONResponse {
 		try {
-			$existingSchema = $this->schemaMapper->find($id);
+			$schema = $this->schemaMapper->find($id);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		}
 
-		if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
 			return new JSONResponse(
 				data: ['error' => 'User does not have permission to manage this schema'],
 				statusCode: Http::STATUS_FORBIDDEN
 			);
 		}
 
-		// Validate the optional JSON-LD vocabulary-mapping block (json-ld-output).
-		// Runs after the manage-permission check so an unauthorized caller can
-		// never probe mapping validation; an invalid mapping leaves the stored
-		// configuration unchanged (no save happens).
-		$jsonLdError = $this->validateJsonLdMapping(data: $data);
-		if ($jsonLdError !== null) {
-			return $jsonLdError;
+		return $schema;
+	}//end manageableSchema()
+
+	/**
+	 * Why an update body is refused: orphan cleanup, the body itself, or a cross-organisation grant, in that order.
+	 *
+	 * @param Schema               $existing The stored schema.
+	 * @param array<string, mixed> $data     The update body, authorization as stored.
+	 *
+	 * @return JSONResponse|null The first refusal, or null when the body may be classified.
+	 */
+	private function updateBodyRefusal(Schema $existing, array $data): ?JSONResponse {
+		return ($this->orphanCleanupRefusal(schema: $existing, document: $data)
+			?? $this->validateSchemaBody(data: $data)
+			?? $this->crossOrganisationRefusal(old: $existing->getAuthorization(), document: $data));
+	}//end updateBodyRefusal()
+
+	/**
+	 * Classify the definition change, refuse an unbounded external grant, and write the update.
+	 *
+	 * @param Schema               $existing The stored schema.
+	 * @param array<string, mixed> $update   The update: id, data and the old authorization.
+	 *
+	 * @return JSONResponse The updated schema, or the refusal.
+	 */
+	private function classifyAndWriteUpdate(Schema $existing, array $update): JSONResponse {
+		$update = $this->classifySchemaUpdate(existing: $existing, update: $update);
+		if ($update instanceof JSONResponse) {
+			return $update;
 		}
 
-		// Refuse a duplicated semantic role before the write, naming both
-		// properties (REQ-CLH-003).
-		$roleError = $this->validateSemanticRoles(data: $data);
-		if ($roleError !== null) {
-			return $roleError;
+		$refusal = $this->externalGrantRefusal(data: $update['data']);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		// Refuse a reference filter reading a property neither schema
-		// declares, before the write, while the author is still here.
-		$operandError = $this->validateReferenceFilterOperands(data: $data);
-		if ($operandError !== null) {
-			return $operandError;
-		}
+		return $this->writeUpdateWithForms(existing: $existing, update: $update);
+	}//end classifyAndWriteUpdate()
 
-		// Capture prior authorization so a change can be audit-logged below.
-		$oldSchemaAuth = $existingSchema->getAuthorization();
-
-		// Schema versioning gate (schema-versioning-and-object-migration):
-		// classify the incoming definition against the stored one and refuse
-		// an unacknowledged breaking change with the structured HTTP 409
-		// contract. Only runs when the update actually carries a definition.
-		$changeSet = null;
-		$acknowledged = ($this->request->getParam('acknowledgeBreaking') === true
-			|| $this->request->getParam('acknowledgeBreaking') === 'true');
-		if (isset($data['properties']) === true || isset($data['required']) === true) {
-			$proposedDefinition = [
-				'properties' => ($data['properties'] ?? $existingSchema->getProperties() ?? []),
-				'required' => ($data['required'] ?? $existingSchema->getRequired() ?? []),
-			];
-
-			$renames = [];
-			if (is_array($this->request->getParam('renames')) === true) {
-				$renames = $this->request->getParam('renames');
-			}
-
-			$changeSet = $this->schemaVersioningService->classify(
-				existing: $existingSchema,
-				newDefinition: $proposedDefinition,
-				renames: $renames
-			);
-
-			try {
-				$this->schemaVersioningService->enforceGate(
-					changeSet: $changeSet,
-					acknowledged: $acknowledged,
-					schemaId: $id
-				);
-			} catch (BreakingSchemaChangeException $e) {
-				return new JSONResponse(data: $e->toResponse(), statusCode: 409);
-			}
-
-			// Apply the classification-driven semantic version bump unless the
-			// caller pinned an explicit version.
-			if (isset($data['version']) === false && $changeSet->hasChanges() === true) {
-				$data['version'] = $this->schemaVersioningService->nextVersion(
-					existing: $existingSchema,
-					changeSet: $changeSet
-				);
-			}
-		}//end if
-
-		// D-6: A GRANT TO AN EXTERNAL PRINCIPAL CARRIES AN END DATE OR IT DOES
-		// NOT EXIST. Asked BEFORE the write, because a refusal after
-		// updateFromArray would be a refusal of something already saved.
-		if (isset($data['authorization']) === true && is_array($data['authorization']) === true) {
-			$externalRefusal = (new ExternalGrantGuard())->refusalFor($data['authorization']);
-			if ($externalRefusal !== null) {
-				return new JSONResponse(data: $externalRefusal, statusCode: 400);
-			}
-		}
-
-		// Decision 179 (ADR-117 D2): judge the published forms that submit
-		// into this schema against what it is about to become. An owning app
-		// set to `refuse` blocks the save; otherwise the broken forms are
-		// unpublished after the save, and the response lists them.
-		$formAssessment = $this->assessDependentForms(existing: $existingSchema, data: $data);
-		if ($formAssessment !== null && $formAssessment['refused'] === true) {
-			return new JSONResponse(
-				data: [
-					'error' => 'This change would break published forms that submit into this schema. Their owning app refuses the change.',
-					'affectedForms' => $this->formDependentsCheck()?->apply(assessment: $formAssessment) ?? [],
-				],
-				statusCode: 409
-			);
+	/**
+	 * Re-check the published forms that submit into the schema, then write the update.
+	 *
+	 * @param Schema               $existing The stored schema.
+	 * @param array<string, mixed> $update   The classified update.
+	 *
+	 * @return JSONResponse The updated schema, the forms refusal, or the write error.
+	 */
+	private function writeUpdateWithForms(Schema $existing, array $update): JSONResponse {
+		$update['forms'] = $this->assessAndClaimDependentForms(existing: $existing, update: $update);
+		$formsRefusal = $this->dependentFormsRefusal(assessment: $update['forms']);
+		if ($formsRefusal !== null) {
+			return $formsRefusal;
 		}
 
 		try {
-			// Update the schema with the provided data.
-			$updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
-
-			// Record the classified changelog entry once the update applied.
-			if ($changeSet !== null) {
-				$this->schemaVersioningService->recordChangelog(
-					schemaId: $updatedSchema->getId(),
-					version: $updatedSchema->getVersion(),
-					changeSet: $changeSet,
-					acknowledged: $acknowledged
-				);
-			}
-
-			// Log authorization change if authorization was modified.
-			if (isset($data['authorization']) === true) {
-				try {
-					$auditService = $this->container->get(AuthorizationAuditService::class);
-					$auditService->logSchemaAuthorizationChange(
-						$updatedSchema->getId(),
-						$updatedSchema->getTitle() ?? '',
-						$oldSchemaAuth,
-						$updatedSchema->getAuthorization()
-					);
-				} catch (\Throwable $e) {
-					// Audit logging should not break the update operation.
-				}
-			}
-
-			// **CACHE INVALIDATION (runtime-schema-api)**: Clear all schema-related
-			// caches when a schema is updated. `invalidate()` is the runtime-schema-api
-			// entry point — it covers the legacy `invalidateForSchemaChange` cleanup AND
-			// drops the request-scoped find cache on the mapper itself so reads in the
-			// same worker observe the new state.
-			$this->schemaCacheService->invalidate(schemaId: $updatedSchema->getId());
-			$this->facetCacheSvc->invalidateForSchemaChange(
-				schemaId: $updatedSchema->getId(),
-				operation: 'update'
-			);
-
-			if ($formAssessment !== null && $formAssessment['affected'] !== []) {
-				return new JSONResponse(
-					data: array_merge(
-						$updatedSchema->jsonSerialize(),
-						['affectedForms' => $this->formDependentsCheck()?->apply(assessment: $formAssessment) ?? []]
-					)
-				);
-			}
-
-			return new JSONResponse(data: $updatedSchema);
-		} catch (UniqueHintException $e) {
-			// A nomination naming a property the schema does not declare is the
-			// caller's input and a person is waiting on the answer, so the
-			// refusal names the property rather than being logged and swallowed
-			// (ADR-005). MUST stay above the generic catch below.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (PropertyVocabularyException $e) {
-			// A type, a constraint key or a forwarded key the vocabulary does
-			// not hold is the caller's input and a person is waiting on the
-			// answer, so the refusal names the value rather than being logged
-			// and swallowed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (AuthorizationBlockException $e) {
-			// A deny that contradicts a grant beside it, or one that would leave
-			// nobody holding `manage`. The request was understood; the rules
-			// inside it disagree, which is 422 and not 400.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatusCode()
-			);
-		} catch (ReversibilityDeclarationException $e) {
-			// A bulk action declared reversible that cannot be would put an undo
-			// button in front of an operator that cannot work, and they would
-			// find out on the day they needed it. The refusal names the action
-			// rather than being logged and swallowed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (ReviewDeclarationException $e) {
-			// A review declaration that cannot be honoured is refused with its
-			// reasons, above the generic catch so it does not become a 500.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (RelationDeclarationException $e) {
-			// A relation declaration is the caller's input and a person is waiting
-			// on the answer, so the refusal names the property rather than being
-			// logged and swallowed (ADR-005). It sits above the generic catch
-			// deliberately: below it the refusal would become a 500 and stop
-			// naming anything.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (CalculationDeclarationException $e) {
-			// A calculation a property form forwarded is the caller's input and
-			// a person is waiting on the answer, so the refusal names the node
-			// that refused rather than being logged and swallowed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (ConsentDeclarationException $e) {
-			// An x-openregister-consent declaration that cannot be honoured must
-			// not silently ship a property that never fills evidence — the
-			// refusal names the property rather than being logged (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (DependentValueDeclarationException $e) {
-			// A dependent value table that names nothing constrains nothing,
-			// and the object it was written to guard would save cleanly. The
-			// refusal names the property rather than being logged (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (InvalidAuthorizationRuleException $e) {
-			// A malformed authorization rule names its action, property and
-			// operator; the author needs that, not a bare 500 (#4162).
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
-		} catch (DBException $e) {
-			// Handle database constraint violations with user-friendly messages.
-			$constraintException = DatabaseConstraintException::fromDatabaseException(
-				dbException: $e,
-				entityType: 'schema'
-			);
-			return new JSONResponse(
-				data: ['error' => $constraintException->getMessage()],
-				statusCode: $constraintException->getHttpStatusCode()
-			);
-		} catch (DatabaseConstraintException $e) {
-			// Handle our custom database constraint exceptions.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatusCode()
-			);
+			return $this->writeSchemaUpdate(update: $update);
 		} catch (Exception $e) {
-			// Log the actual error for debugging.
-			$this->logger->error(
-				message: '[SchemasController] Schema update failed',
+			return $this->schemaWriteErrorResponse(
+				e: $e,
+				failure: ['message' => '[SchemasController] Schema update failed', 'context' => ['schema_id' => $update['id']]]
+			);
+		}
+	}//end writeUpdateWithForms()
+
+	/**
+	 * Classify a definition change and apply the schema versioning gate.
+	 *
+	 * Only runs when the update carries properties or required. An unacknowledged
+	 * breaking change is refused with the structured 409; otherwise the version is
+	 * bumped from the classification unless the caller pinned one.
+	 *
+	 * @param Schema               $existing The stored schema
+	 * @param array<string, mixed> $update   The update: id, data and oldAuthorization
+	 *
+	 * @return array<string, mixed>|JSONResponse The update with changeSet and acknowledged, or a 409
+	 */
+	private function classifySchemaUpdate(Schema $existing, array $update): array|JSONResponse {
+		$update['changeSet'] = null;
+		$update['acknowledged'] = ($this->request->getParam('acknowledgeBreaking') === true
+			|| $this->request->getParam('acknowledgeBreaking') === 'true');
+		$data = $update['data'];
+		if (isset($data['properties']) === false && isset($data['required']) === false) {
+			return $update;
+		}
+
+		$renames = [];
+		if (is_array($this->request->getParam('renames')) === true) {
+			$renames = $this->request->getParam('renames');
+		}
+
+		$changeSet = $this->schemaVersioningService->classify(
+			existing: $existing,
+			incoming: new IncomingDefinition(
+				definition: [
+					'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
+					'required' => ($data['required'] ?? $existing->getRequired() ?? []),
+				],
+				renames: $renames
+			)
+		);
+
+		try {
+			$this->schemaVersioningService->gateChange(
+				schemaId: $update['id'],
+				record: new SchemaChangeRecord(changeSet: $changeSet, acknowledged: $update['acknowledged'])
+			);
+		} catch (BreakingSchemaChangeException $e) {
+			return new JSONResponse(data: $e->toResponse(), statusCode: 409);
+		}
+
+		if (isset($data['version']) === false && $changeSet->hasChanges() === true) {
+			$update['data']['version'] = $this->schemaVersioningService->nextVersion(existing: $existing, changeSet: $changeSet);
+		}
+
+		$update['changeSet'] = $changeSet;
+		return $update;
+	}//end classifySchemaUpdate()
+
+	/**
+	 * Refuse an authorization block granting an external principal without an end date (D-6).
+	 *
+	 * Asked before the write: a refusal after it would refuse something already saved.
+	 *
+	 * @param array<string, mixed> $data The update body
+	 *
+	 * @return JSONResponse|null A 400 naming the grants, or null when there is nothing to refuse
+	 */
+	private function externalGrantRefusal(array $data): ?JSONResponse {
+		if (isset($data['authorization']) === false || is_array($data['authorization']) === false) {
+			return null;
+		}
+
+		$externalRefusal = RbacChecks::externalGrants()->refusalFor($data['authorization']);
+		if ($externalRefusal === null) {
+			return null;
+		}
+
+		return new JSONResponse(data: $externalRefusal, statusCode: 400);
+	}//end externalGrantRefusal()
+
+	/**
+	 * Judge the published forms that submit into this schema (decision 179, ADR-117 D2).
+	 *
+	 * When this request judges the forms itself it claims the schema, so the
+	 * listener that covers every other schema writer does not judge them again.
+	 *
+	 * @param Schema               $existing The stored schema
+	 * @param array<string, mixed> $update   The update: id and data
+	 *
+	 * @return array<string, mixed>|null The assessment (refused, affected), or null when not judged
+	 */
+	private function assessAndClaimDependentForms(Schema $existing, array $update): ?array {
+		$assessment = $this->assessDependentForms(existing: $existing, data: $update['data']);
+		if ($assessment !== null) {
+			$this->formDependentsCheck()?->claim(schemaId: $update['id']);
+		}
+
+		return $assessment;
+	}//end assessAndClaimDependentForms()
+
+	/**
+	 * The 409 for a change whose dependent forms' owning app refuses it.
+	 *
+	 * @param array<string, mixed>|null $assessment The dependent-form assessment
+	 *
+	 * @return JSONResponse|null The refusal listing the affected forms, or null when the change may go ahead
+	 */
+	private function dependentFormsRefusal(?array $assessment): ?JSONResponse {
+		if ($assessment === null || $assessment['refused'] !== true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'This change would break published forms that submit into this schema. Their owning app refuses the change.',
+				'affectedForms' => $this->formDependentsCheck()?->apply(assessment: $assessment) ?? [],
+			],
+			statusCode: 409
+		);
+	}//end dependentFormsRefusal()
+
+	/**
+	 * Write a classified schema update, record its changelog and audit, and clear caches.
+	 *
+	 * Forms broken by the change are unpublished after the write and listed in the response.
+	 *
+	 * @param array<string, mixed> $update The update: id, data, changeSet, acknowledged, oldAuthorization, forms
+	 *
+	 * @return JSONResponse The updated schema
+	 *
+	 * @throws Exception When the write fails
+	 */
+	private function writeSchemaUpdate(array $update): JSONResponse {
+		$updatedSchema = $this->schemaMapper->updateFromArray(id: $update['id'], object: $update['data']);
+
+		if ($update['changeSet'] !== null) {
+			$this->schemaVersioningService->recordChange(
+				schemaId: $updatedSchema->getId(),
+				record: new SchemaChangeRecord(changeSet: $update['changeSet'], acknowledged: $update['acknowledged'], version: $updatedSchema->getVersion())
+			);
+		}
+
+		if (isset($update['data']['authorization']) === true) {
+			$this->auditSchemaAuthorizationChange(schema: $updatedSchema, oldAuthorization: $update['oldAuthorization']);
+		}
+
+		// `invalidate()` also drops the mapper's request-scoped find cache, so reads
+		// in this worker observe the new state.
+		$this->schemaCacheService->invalidate(schemaId: $updatedSchema->getId());
+		$this->facetResults->clearAll();
+
+		if ($update['forms'] !== null && $update['forms']['affected'] !== []) {
+			return new JSONResponse(
+				data: array_merge(
+					$updatedSchema->jsonSerialize(),
+					['affectedForms' => $this->formDependentsCheck()?->apply(assessment: $update['forms']) ?? []]
+				)
+			);
+		}
+
+		return new JSONResponse(data: $updatedSchema);
+	}//end writeSchemaUpdate()
+
+	/**
+	 * Audit-log a change to a schema's authorization block; a failing audit never breaks the update.
+	 *
+	 * @param Schema $schema           The updated schema
+	 * @param mixed  $oldAuthorization The authorization before the update
+	 *
+	 * @return void
+	 */
+	private function auditSchemaAuthorizationChange(Schema $schema, mixed $oldAuthorization): void {
+		try {
+			$auditService = $this->container->get(AuthorizationAuditService::class);
+			$auditService->recordSchemaChange(
+				change: new AuthorizationChange(
+					entityId: $schema->getId(),
+					entityTitle: $schema->getTitle() ?? '',
+					before: $oldAuthorization,
+					after: $schema->getAuthorization()
+				)
+			);
+		} catch (\Throwable $e) {
+			// Audit logging should not break the update operation.
+			$this->logger->warning(
+				message: '[SchemasController] Schema authorization change not written to the audit trail',
 				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schema_id' => $id,
-					'error_message' => $e->getMessage(),
-					'error_code' => $e->getCode(),
-					'trace' => $e->getTraceAsString(),
+					'schemaId' => $schema->getId(),
+					'exception' => $e->getMessage(),
 				]
 			);
-
-			// Check if this is a validation error by examining the message.
-			if (str_contains($e->getMessage(), 'Invalid') === true
-				|| str_contains($e->getMessage(), 'must be') === true
-				|| str_contains($e->getMessage(), 'required') === true
-				|| str_contains($e->getMessage(), 'requires translatable') === true
-				|| str_contains($e->getMessage(), 'format') === true
-				|| str_contains($e->getMessage(), 'Property at') === true
-				|| str_contains($e->getMessage(), 'authorization') === true
-				|| str_contains($e->getMessage(), 'handoff') === true
-			) {
-				// Return 400 Bad Request for validation errors with actual error message.
-				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-			}
-
-			// For database constraint violations, return 409 Conflict.
-			if (str_contains($e->getMessage(), 'constraint') === true
-				|| str_contains($e->getMessage(), 'duplicate') === true
-				|| str_contains($e->getMessage(), 'unique') === true
-			) {
-				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
-			}
-
-			// Return 500 for other unexpected errors with actual error message.
-			return $this->errorResponse(e: $e);
-		}//end try
-	}//end applyUpdate()
+		}
+	}//end auditSchemaAuthorizationChange()
 
 	/**
 	 * Whether a request value means true (`true` or the string `'true'`).
@@ -1500,17 +1867,9 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	private function saveDraft(int $id, array $data): JSONResponse {
-		try {
-			$schema = $this->schemaMapper->find($id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-		}
-
-		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
-			return new JSONResponse(
-				data: ['error' => 'User does not have permission to manage this schema'],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
+		$schema = $this->manageableSchema(id: $id);
+		if ($schema instanceof JSONResponse) {
+			return $schema;
 		}
 
 		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
@@ -1539,17 +1898,9 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function publishDraft(int $id): JSONResponse {
-		try {
-			$schema = $this->schemaMapper->find($id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-		}
-
-		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
-			return new JSONResponse(
-				data: ['error' => 'User does not have permission to manage this schema'],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
+		$schema = $this->manageableSchema(id: $id);
+		if ($schema instanceof JSONResponse) {
+			return $schema;
 		}
 
 		$draft = $schema->getDraft();
@@ -1557,7 +1908,17 @@ class SchemasController extends Controller {
 			return new JSONResponse(data: ['error' => 'This schema has no draft to publish'], statusCode: 409);
 		}
 
-		$response  = $this->applyUpdate(id: $id, data: $draft);
+		return $this->withDraftCleared(response: $this->applyUpdate(id: $id, data: $draft));
+	}//end publishDraft()
+
+	/**
+	 * Clear the draft of a schema the publish wrote; any other response passes through.
+	 *
+	 * @param JSONResponse $response The response of applying the draft.
+	 *
+	 * @return JSONResponse The stored schema without its draft, or the response as given.
+	 */
+	private function withDraftCleared(JSONResponse $response): JSONResponse {
 		$published = $response->getData();
 		if ($response->getStatus() !== Http::STATUS_OK || $published instanceof Schema === false) {
 			return $response;
@@ -1566,7 +1927,7 @@ class SchemasController extends Controller {
 		$published->setDraft(null);
 
 		return new JSONResponse(data: $this->schemaMapper->update(entity: $published));
-	}//end publishDraft()
+	}//end withDraftCleared()
 
 	/**
 	 * Discard a schema's draft, leaving the published definition as it is
@@ -1584,17 +1945,9 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function discardDraft(int $id): JSONResponse {
-		try {
-			$schema = $this->schemaMapper->find($id);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-		}
-
-		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
-			return new JSONResponse(
-				data: ['error' => 'User does not have permission to manage this schema'],
-				statusCode: Http::STATUS_FORBIDDEN
-			);
+		$schema = $this->manageableSchema(id: $id);
+		if ($schema instanceof JSONResponse) {
+			return $schema;
 		}
 
 		$schema->setDraft(null);
@@ -1679,6 +2032,15 @@ class SchemasController extends Controller {
 			);
 		}
 
+		// The cascade removes the rows of every organisation in the table, which a `manage`
+		// rule does not answer for.
+		if ($deleteObjects === true && $this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(
+				data: ['error' => 'Deleting a schema with its objects is for administrators.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
 		try {
 			// Find the schema first (also validates existence and access).
 			$schemaToDelete = $this->schemaMapper->find(id: $id);
@@ -1697,7 +2059,7 @@ class SchemasController extends Controller {
 			// only returns a real count when BOTH register AND schema are present
 			// in the @self filter, and silently returns 0 on single-axis queries,
 			// which would let DELETE silently succeed on schemas with objects.
-			$objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaToDelete->getId());
+			$objectStats = $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $schemaToDelete->getId()));
 			$objectCount = (int)($objectStats['total'] ?? 0);
 
 			if ($deleteObjects === true) {
@@ -1705,9 +2067,7 @@ class SchemasController extends Controller {
 			}
 
 			return $this->deleteSchemaKeepingObjects(
-				schema: $schemaToDelete,
-				objectCount: $objectCount,
-				force: $force
+				removal: new SchemaRemoval(schema: $schemaToDelete, objectCount: $objectCount, force: $force)
 			);
 		} catch (ArchivalImmutableException $e) {
 			// The cascade refused: this schema holds legally retained records. An HTTP
@@ -1732,20 +2092,19 @@ class SchemasController extends Controller {
 	 * it deletes the schema and orphans the objects, which is unchanged legacy behaviour
 	 * retained for API back-compat and never surfaced in the UI.
 	 *
-	 * @param Schema $schema The schema to delete (already authorized).
-	 * @param int $objectCount The number of live objects referencing the schema.
-	 * @param bool $force Whether ?force=true was passed.
+	 * @param SchemaRemoval $removal The schema to delete (already authorized), the number of live
+	 *                               objects referencing it, and whether ?force=true was passed.
 	 *
 	 * @throws Exception If the delete fails.
 	 *
 	 * @return JSONResponse Empty body on success, or the structured 409 refusal.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The force flag is the API-level disposition, mirrored from the endpoint.
-	 *
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
-	private function deleteSchemaKeepingObjects(Schema $schema, int $objectCount, bool $force): JSONResponse {
-		if ($objectCount > 0 && $force === false) {
+	private function deleteSchemaKeepingObjects(SchemaRemoval $removal): JSONResponse {
+		$schema      = $removal->schema;
+		$objectCount = $removal->objectCount;
+		if ($objectCount > 0 && $removal->force === false) {
 			// Refuse: structured 409 with the orphan count for the caller.
 			return new JSONResponse(
 				data: [
@@ -1774,7 +2133,7 @@ class SchemasController extends Controller {
 		// Only a deliberate ?force=true may bypass the mapper-level guard and orphan
 		// the objects. The magic table is deliberately LEFT IN PLACE on that path —
 		// its rows are the orphans, and dropping it would destroy them unaudited.
-		$this->schemaMapper->delete(entity: $schema, force: $force);
+		$this->schemaMapper->delete(entity: $schema, force: $removal->force);
 
 		if ($objectCount === 0) {
 			// Nothing referenced this schema, so reclaim its (empty) magic table
@@ -1806,7 +2165,14 @@ class SchemasController extends Controller {
 	 */
 	private function cascadeDeleteSchema(Schema $schema): JSONResponse {
 		$schemaId = (int)$schema->getId();
-		$result = $this->getSchemaDeletionService()->cascadeDeleteSchema(schema: $schema);
+
+		try {
+			$result = $this->getSchemaDeletionService()->cascadeDeleteSchema(schema: $schema);
+		} catch (ObjectStateWriteException $e) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
+		} catch (LockedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: LockedException::HTTP_STATUS);
+		}
 
 		$this->invalidateSchemaCaches(schemaId: $schemaId);
 
@@ -1836,10 +2202,7 @@ class SchemasController extends Controller {
 	 */
 	private function invalidateSchemaCaches(int $schemaId): void {
 		$this->schemaCacheService->invalidate(schemaId: $schemaId);
-		$this->facetCacheSvc->invalidateForSchemaChange(
-			schemaId: $schemaId,
-			operation: 'delete'
-		);
+		$this->facetResults->clearAll();
 	}//end invalidateSchemaCaches()
 
 	/**
@@ -1865,12 +2228,12 @@ class SchemasController extends Controller {
 	 *
 	 * @throws \RuntimeException If the service cannot be resolved.
 	 *
-	 * @return SchemaDeletionService The service.
+	 * @return SchemaTeardownInterface The service.
 	 */
-	private function getSchemaDeletionService(): SchemaDeletionService {
-		$service = $this->container->get(SchemaDeletionService::class);
+	private function getSchemaDeletionService(): SchemaTeardownInterface {
+		$service = $this->container->get(SchemaTeardownInterface::class);
 
-		if (($service instanceof SchemaDeletionService) === false) {
+		if (($service instanceof SchemaTeardownInterface) === false) {
 			throw new RuntimeException('SchemaDeletionService could not be resolved');
 		}
 
@@ -1922,234 +2285,302 @@ class SchemasController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is a named constructor and
-	 * DatabaseConstraintException::fromDatabaseException is a factory — no DI alternatives.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) JSON-upload path merges insert + update branches;
-	 * splitting would duplicate error classification.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
-	 * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
 	 */
 	public function upload(?int $id = null): JSONResponse {
-		// Default: create a new schema.
+		$schema = $this->authorizedUploadTarget(id: $id);
+		if ($schema instanceof JSONResponse) {
+			return $schema;
+		}
+
+		$phpArray = $this->checkedUploadDocument(schema: $schema);
+		if ($phpArray instanceof JSONResponse) {
+			return $phpArray;
+		}
+
+		try {
+			return new JSONResponse(data: $this->saveUploadedSchema(schema: $schema, document: $this->uploadDocument(document: $phpArray, id: $id)));
+		} catch (Exception $e) {
+			return $this->schemaWriteErrorResponse(e: $e, failure: $this->uploadFailure(id: $id));
+		}
+	}//end upload()
+
+	/**
+	 * The schema an upload writes, when the caller may make it.
+	 *
+	 * A new schema gets a fresh uuid; an update writes the stored schema.
+	 *
+	 * @param int|null $id The ID of the schema to update, or null for a new schema.
+	 *
+	 * @return Schema|JSONResponse The schema, or the 403 of {@see uploadPermissionError()}.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)  Uuid::v4 is a named constructor.
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 */
+	private function authorizedUploadTarget(?int $id): Schema|JSONResponse {
 		$schema = new Schema();
 		$schema->setUuid(Uuid::v4()->toRfc4122());
 		if ($id !== null) {
-			// If ID is provided, find the existing schema.
 			$schema = $this->schemaMapper->find($id);
 		}
 
-		// SECURITY (H3): gate schema uploads on appropriate permissions.
-		// Updating an existing schema requires manage-permission (same as update/destroy).
-		// Creating a new schema requires admin (same as create).
-		if ($id !== null && $this->checkSchemaManagePermission(schema: $schema) === false) {
+		$denied = $this->uploadPermissionError(schema: $schema, id: $id);
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		return $schema;
+	}//end authorizedUploadTarget()
+
+	/**
+	 * The uploaded document, mapped from its dialect and with authorization as stored, unless it is refused.
+	 *
+	 * @param Schema $schema The schema the upload writes.
+	 *
+	 * @return array<string, mixed>|JSONResponse The document, or the refusal.
+	 */
+	private function checkedUploadDocument(Schema $schema): array|JSONResponse {
+		$phpArray = $this->uploadedDocument();
+		if ($phpArray instanceof JSONResponse) {
+			return $phpArray;
+		}
+
+		$refusal = $this->uploadRefusal(schema: $schema, document: $phpArray);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $phpArray;
+	}//end checkedUploadDocument()
+
+	/**
+	 * The uploaded body as a schema document: decoded, mapped from its dialect, authorization as stored.
+	 *
+	 * @return array<string, mixed>|JSONResponse The document, or the error of reading or mapping it.
+	 */
+	private function uploadedDocument(): array|JSONResponse {
+		$phpArray = $this->services->platform->uploadService->getUploadedJson($this->request->getParams());
+		if ($phpArray instanceof JSONResponse) {
+			return $phpArray;
+		}
+
+		// An explicit `dialect` parameter wins, otherwise the document is sniffed;
+		// undetectable input fails with 422 instead of being mis-ingested.
+		$dialectResult = $this->applyDialect(document: $phpArray);
+		if ($dialectResult instanceof JSONResponse) {
+			return $dialectResult;
+		}
+
+		return $this->withAuthorizationAsStored(document: $dialectResult);
+	}//end uploadedDocument()
+
+	/**
+	 * Why an uploaded document is refused: a cross-organisation grant, an unbounded external grant, or orphan cleanup.
+	 *
+	 * @param Schema               $schema   The schema the upload writes.
+	 * @param array<string, mixed> $document The uploaded document, authorization as stored.
+	 *
+	 * @return JSONResponse|null The first refusal, or null when the upload may be saved.
+	 */
+	private function uploadRefusal(Schema $schema, array $document): ?JSONResponse {
+		$old = $schema->getAuthorization();
+		return ($this->crossOrganisationRefusal(old: $old, document: $document)
+			?? $this->externalGrantRefusal(data: $document)
+			?? $this->orphanCleanupRefusal(schema: $schema, document: $document));
+	}//end uploadRefusal()
+
+	/**
+	 * The log message and context of a failed upload.
+	 *
+	 * @param int|null $id The ID of the schema the upload updates, or null for a new schema.
+	 *
+	 * @return array{message: string, context: array<string, mixed>}
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 */
+	private function uploadFailure(?int $id): array {
+		return ['message' => '[SchemasController] Schema upload failed', 'context' => ['schema_id' => $id]];
+	}//end uploadFailure()
+
+	/**
+	 * The uploaded body as it is saved: an update keeps the stored identity and
+	 * ownership, and a body without a title gets a default one.
+	 *
+	 * @param array<string, mixed> $document The uploaded body.
+	 * @param int|null             $id       The schema being updated, or null for a new one.
+	 *
+	 * @return array<string, mixed> The body to save.
+	 */
+	private function uploadDocument(array $document, ?int $id): array {
+		if ($id !== null) {
+			unset($document['id'], $document['organisation'], $document['owner'], $document['created']);
+		}
+
+		if (empty($document['title']) === true) {
+			$document['title'] = 'New Schema';
+		}
+
+		return $document;
+	}//end uploadDocument()
+
+	/**
+	 * The body with its authorization in the form the schema will store, so
+	 * every check on it judges that form.
+	 *
+	 * @param array<string, mixed> $document The schema body being written.
+	 *
+	 * @return array<string, mixed> The body with a JSON text block decoded; any other text stays for the write to judge.
+	 */
+	private function withAuthorizationAsStored(array $document): array {
+		$stored = RbacRuleChecks::crossOrganisationMarkerChange()->asStored(authorization: ($document['authorization'] ?? null));
+		if (is_array($stored) === true) {
+			$document['authorization'] = $stored;
+		}
+
+		return $document;
+	}//end withAuthorizationAsStored()
+
+	/**
+	 * Refuse a write by a non-administrator that lets a rule cross
+	 * organisations it did not cross before. A schema manager may change the
+	 * rest of the authorization, and remove a marker, but adding or widening
+	 * `crossOrganisation: true` gives every holder of that rule other
+	 * organisations' rows, so it is for administrators only.
+	 *
+	 * @param mixed                $old      The authorization before the write.
+	 * @param array<string, mixed> $document The schema body being written.
+	 *
+	 * @return JSONResponse|null A 403, or null when the write may go ahead.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function crossOrganisationRefusal(mixed $old, array $document): ?JSONResponse {
+		if (array_key_exists('authorization', $document) === false
+			|| RbacRuleChecks::crossOrganisationMarkerChange()->widens(old: $old, new: $document['authorization']) === false
+			|| $this->isCurrentUserAdmin() === true
+		) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'Only an administrator may let a rule read across organisations (crossOrganisation: true)'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end crossOrganisationRefusal()
+
+	/**
+	 * Refuse a schema write by a non-administrator that sets or changes `orphanCleanup`.
+	 *
+	 * The flag makes saves soft-delete rows, so a schema's `manage` rule does not cover it.
+	 *
+	 * @param Schema               $schema   The schema as stored.
+	 * @param array<string, mixed> $document The incoming schema.
+	 *
+	 * @return JSONResponse|null A 403, or null when the write may go on.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function orphanCleanupRefusal(Schema $schema, array $document): ?JSONResponse {
+		if (RbacRuleChecks::orphanCleanupFlag()->changedBy(schema: $schema, document: $document) === false || $this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'Only an administrator can change orphanCleanup on a schema'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end orphanCleanupRefusal()
+
+	/**
+	 * Refuse an upload the caller may not make (H3).
+	 *
+	 * Updating an existing schema needs manage permission, as update and destroy
+	 * do; uploading a new schema needs admin, as create does.
+	 *
+	 * @param Schema   $schema The schema the upload writes
+	 * @param int|null $id     The ID of the schema to update, or null for a new schema
+	 *
+	 * @return JSONResponse|null A 403, or null when the upload is allowed
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 */
+	private function uploadPermissionError(Schema $schema, ?int $id): ?JSONResponse {
+		if ($id === null) {
+			return $this->newSchemaUploadError();
+		}
+
+		return $this->schemaUpdateUploadError(schema: $schema);
+	}//end uploadPermissionError()
+
+	/**
+	 * Refuse an upload that updates a schema the caller may not manage.
+	 *
+	 * @param Schema $schema The stored schema the upload writes.
+	 *
+	 * @return JSONResponse|null A 403, or null when the caller may manage the schema.
+	 */
+	private function schemaUpdateUploadError(Schema $schema): ?JSONResponse {
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
 			return new JSONResponse(
 				data: ['error' => 'You do not have permission to update this schema'],
 				statusCode: Http::STATUS_FORBIDDEN
 			);
 		}
 
-		if ($id === null && $this->isCurrentUserAdmin() === false) {
+		return null;
+	}//end schemaUpdateUploadError()
+
+	/**
+	 * Refuse an upload of a new schema by a caller who is not an administrator.
+	 *
+	 * @return JSONResponse|null A 403, or null for an administrator.
+	 */
+	private function newSchemaUploadError(): ?JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
 			return new JSONResponse(
 				data: ['error' => 'Admin privileges required to upload new schemas'],
 				statusCode: Http::STATUS_FORBIDDEN
 			);
 		}
 
-		// Get the uploaded JSON data.
-		$phpArray = $this->uploadService->getUploadedJson($this->request->getParams());
-		if ($phpArray instanceof JSONResponse) {
-			// Return any error response from the upload service.
-			return $phpArray;
+		return null;
+	}//end newSchemaUploadError()
+
+	/**
+	 * Hydrate a schema from an uploaded document and insert or update it.
+	 *
+	 * A new schema without an organisation gets the active one (multitenancy).
+	 * Either way the schema and facet caches are cleared.
+	 *
+	 * @param Schema               $schema   The new or existing schema
+	 * @param array<string, mixed> $document The uploaded schema document
+	 *
+	 * @return Schema The saved schema
+	 *
+	 * @throws Exception When the write fails
+	 */
+	private function saveUploadedSchema(Schema $schema, array $document): Schema {
+		$schema->hydrate($document);
+
+		if ($schema->getId() !== null) {
+			$schema = $this->schemaMapper->update($schema);
+			$this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'update');
+			$this->facetResults->clearAll();
+			return $schema;
 		}
 
-		// Dialect resolution: explicit `dialect` parameter wins, otherwise the
-		// document is sniffed. Schema.org / GGM inputs are mapped through the
-		// standards importers; json-schema / openapi flow on unchanged.
-		// Undetectable input fails with HTTP 422 instead of being mis-ingested.
-		$dialectResult = $this->applyDialect(document: $phpArray);
-		if ($dialectResult instanceof JSONResponse) {
-			return $dialectResult;
+		$schema = $this->schemaMapper->insert($schema);
+		if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
+			$schema->setOrganisation($this->services->platform->organisationService->getOrganisationForNewEntity());
+			$schema = $this->schemaMapper->update($schema);
 		}
 
-		$phpArray = $dialectResult;
-
-		// Set default title if not provided or empty.
-		if (empty($phpArray['title']) === true) {
-			$phpArray['title'] = 'New Schema';
-		}
-
-		try {
-			// Update the schema with the data from the uploaded JSON.
-			$schema->hydrate($phpArray);
-
-			// Track whether this is a new schema before potential insert.
-			$isNewSchema = ($schema->getId() === null);
-
-			if ($isNewSchema === true) {
-				// Insert a new schema if no ID is set.
-				$schema = $this->schemaMapper->insert($schema);
-
-				// Set organisation from active organisation for multi-tenancy (if not already set).
-				if ($schema->getOrganisation() === null || $schema->getOrganisation() === '') {
-					$organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-					$schema->setOrganisation($organisationUuid);
-					$schema = $this->schemaMapper->update($schema);
-				}
-
-				// **CACHE INVALIDATION**: Clear all schema-related caches when schema is created.
-				$this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
-				$this->facetCacheSvc->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
-			}
-
-			if ($isNewSchema === false) {
-				// Update the existing schema.
-				$schema = $this->schemaMapper->update($schema);
-
-				// **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
-				$this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'update');
-				$this->facetCacheSvc->invalidateForSchemaChange(
-					schemaId: $schema->getId(),
-					operation: 'update'
-				);
-			}
-
-			return new JSONResponse(data: $schema);
-		} catch (UniqueHintException $e) {
-			// A nomination naming a property the schema does not declare is the
-			// caller's input and a person is waiting on the answer, so the
-			// refusal names the property rather than being logged and swallowed
-			// (ADR-005). MUST stay above the generic catch below.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (PropertyVocabularyException $e) {
-			// A type, a constraint key or a forwarded key the vocabulary does
-			// not hold is the caller's input and a person is waiting on the
-			// answer, so the refusal names the value rather than being logged
-			// and swallowed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (AuthorizationBlockException $e) {
-			// A deny that contradicts a grant beside it, or one that would leave
-			// nobody holding `manage`. The request was understood; the rules
-			// inside it disagree, which is 422 and not 400.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $e->getHttpStatusCode()
-			);
-		} catch (ReversibilityDeclarationException $e) {
-			// A bulk action declared reversible that cannot be would put an undo
-			// button in front of an operator that cannot work, and they would
-			// find out on the day they needed it. The refusal names the action
-			// rather than being logged and swallowed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (ReviewDeclarationException $e) {
-			// A review declaration that cannot be honoured is refused with its
-			// reasons, above the generic catch so it does not become a 500.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (RelationDeclarationException $e) {
-			// A relation declaration is the caller's input and a person is waiting
-			// on the answer, so the refusal names the property rather than being
-			// logged and swallowed (ADR-005). It sits above the generic catch
-			// deliberately: below it the refusal would become a 500 and stop
-			// naming anything.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (CalculationDeclarationException $e) {
-			// A calculation a property form forwarded is the caller's input and
-			// a person is waiting on the answer, so the refusal names the node
-			// that refused rather than being logged and swallowed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (ConsentDeclarationException $e) {
-			// An x-openregister-consent declaration that cannot be honoured must
-			// not silently ship a property that never fills evidence — the
-			// refusal names the property rather than being logged (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (DependentValueDeclarationException $e) {
-			// A dependent value table that names nothing constrains nothing,
-			// and the object it was written to guard would save cleanly. The
-			// refusal names the property rather than being logged (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
-				statusCode: 422
-			);
-		} catch (InvalidAuthorizationRuleException $e) {
-			// A malformed authorization rule names its action, property and
-			// operator; the author needs that, not a bare 500 (#4162).
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
-		} catch (DBException $e) {
-			// Handle database constraint violations with user-friendly messages.
-			$constraintException = DatabaseConstraintException::fromDatabaseException(
-				dbException: $e,
-				entityType: 'schema'
-			);
-			return new JSONResponse(
-				data: ['error' => $constraintException->getMessage()],
-				statusCode: $constraintException->getHttpStatusCode()
-			);
-		} catch (DatabaseConstraintException $e) {
-			// Handle our custom database constraint exceptions.
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatusCode());
-		} catch (Exception $e) {
-			// Log the actual error for debugging.
-			$this->logger->error(
-				message: '[SchemasController] Schema upload failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schema_id' => $id,
-					'error_message' => $e->getMessage(),
-					'error_code' => $e->getCode(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			// Check if this is a validation error by examining the message.
-			if (str_contains($e->getMessage(), 'Invalid') === true
-				|| str_contains($e->getMessage(), 'must be') === true
-				|| str_contains($e->getMessage(), 'required') === true
-				|| str_contains($e->getMessage(), 'requires translatable') === true
-				|| str_contains($e->getMessage(), 'format') === true
-				|| str_contains($e->getMessage(), 'Property at') === true
-				|| str_contains($e->getMessage(), 'authorization') === true
-				|| str_contains($e->getMessage(), 'handoff') === true
-			) {
-				// Return 400 Bad Request for validation errors with actual error message.
-				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-			}
-
-			// For database constraint violations, return 409 Conflict.
-			if (str_contains($e->getMessage(), 'constraint') === true
-				|| str_contains($e->getMessage(), 'duplicate') === true
-				|| str_contains($e->getMessage(), 'unique') === true
-			) {
-				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
-			}
-
-			// Return 500 for other unexpected errors with actual error message.
-			return $this->errorResponse(e: $e);
-		}//end try
-	}//end upload()
+		$this->schemaCacheService->invalidateForSchemaChange(schemaId: $schema->getId(), operation: 'create');
+		$this->facetResults->clearAll();
+		return $schema;
+	}//end saveUploadedSchema()
 
 	/**
 	 * Creates and return a json file for a Schema
@@ -2216,45 +2647,7 @@ class SchemasController extends Controller {
 	 */
 	public function related(int|string $id): JSONResponse {
 		try {
-			// Find related schemas using the SchemaMapper (incoming references).
-			$incomingSchemas = $this->schemaMapper->getRelated($id);
-			$incomingSchemasArray = array_map(fn ($schema) => $schema->jsonSerialize(), $incomingSchemas);
-
-			// Find outgoing references: schemas that this schema refers to.
-			// Metadata-read bypass per auth-system "Schema and register
-			// METADATA-READ lookups MUST bypass multi-tenancy" — related-schema
-			// resolution is a catalog read (no object data exposed).
-			$targetSchema = $this->schemaMapper->find($id, _multitenancy: false);
-			$properties = $targetSchema->getProperties() ?? [];
-			$allSchemas = $this->schemaMapper->findAll(_multitenancy: false);
-			$outgoingSchemas = [];
-			foreach ($allSchemas as $schema) {
-				// Skip self.
-				if ($schema->getId() === $targetSchema->getId()) {
-					continue;
-				}
-
-				// Use the same reference logic as getRelated, but reversed.
-				if ($this->schemaMapper->hasReferenceToSchema(
-					properties: $properties,
-					targetSchemaId: (string)$schema->getId(),
-					targetSchemaUuid: $schema->getUuid() ?? '',
-					targetSchemaSlug: $schema->getSlug() ?? ''
-				) === true
-				) {
-					$outgoingSchemas[$schema->getId()] = $schema;
-				}
-			}
-
-			$outgoingSchemasArray = array_map(fn ($schema) => $schema->jsonSerialize(), array_values($outgoingSchemas));
-
-			return new JSONResponse(
-				data: [
-					'incoming' => $incomingSchemasArray,
-					'outgoing' => $outgoingSchemasArray,
-					'total' => count($incomingSchemasArray) + count($outgoingSchemasArray),
-				]
-			);
+			return $this->relatedSchemas(id: $id);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			// Return a 404 error if the target schema doesn't exist.
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
@@ -2263,6 +2656,78 @@ class SchemasController extends Controller {
 			return $this->errorResponse(e: $e);
 		}//end try
 	}//end related()
+
+	/**
+	 * The schemas that refer to a schema (incoming) and the schemas it refers to (outgoing).
+	 *
+	 * @param int|string $id The schema ID.
+	 *
+	 * @return JSONResponse The incoming and outgoing schemas and their total.
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 */
+	private function relatedSchemas(int|string $id): JSONResponse {
+		// Find related schemas using the SchemaMapper (incoming references).
+		$incomingSchemas = $this->schemaMapper->getRelated($id);
+		$incomingSchemasArray = array_map(fn ($schema) => $schema->jsonSerialize(), $incomingSchemas);
+
+		$outgoingSchemasArray = array_map(fn ($schema) => $schema->jsonSerialize(), $this->outgoingSchemas(id: $id));
+
+		return new JSONResponse(
+			data: [
+				'incoming' => $incomingSchemasArray,
+				'outgoing' => $outgoingSchemasArray,
+				'total' => count($incomingSchemasArray) + count($outgoingSchemasArray),
+			]
+		);
+	}//end relatedSchemas()
+
+	/**
+	 * Outgoing references: the schemas a schema refers to.
+	 *
+	 * Metadata-read bypass per auth-system "Schema and register
+	 * METADATA-READ lookups MUST bypass multi-tenancy" — related-schema
+	 * resolution is a catalog read (no object data exposed).
+	 *
+	 * @param int|string $id The schema ID.
+	 *
+	 * @return array<int, Schema> The referenced schemas, once each.
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 */
+	private function outgoingSchemas(int|string $id): array {
+		$targetSchema = $this->schemaMapper->find($id, _multitenancy: false);
+		$properties = $targetSchema->getProperties() ?? [];
+
+		return array_values($this->schemasReferencedBy(target: $targetSchema, properties: $properties));
+	}//end outgoingSchemas()
+
+	/**
+	 * Every other schema the target's properties refer to, keyed by id.
+	 *
+	 * @param Schema               $target     The schema whose references are followed.
+	 * @param array<string, mixed> $properties The target's properties.
+	 *
+	 * @return array<int, Schema> The referenced schemas by id.
+	 */
+	private function schemasReferencedBy(Schema $target, array $properties): array {
+		$allSchemas = $this->schemaMapper->findAll(_multitenancy: false);
+		$outgoingSchemas = [];
+		foreach ($allSchemas as $schema) {
+			// Skip self.
+			if ($schema->getId() === $target->getId()) {
+				continue;
+			}
+
+			// Use the same reference logic as getRelated, but reversed.
+			if ($this->schemaMapper->hasReferenceToSchema(properties: $properties, target: $schema) === true
+			) {
+				$outgoingSchemas[$schema->getId()] = $schema;
+			}
+		}
+
+		return $outgoingSchemas;
+	}//end schemasReferencedBy()
 
 	/**
 	 * Get statistics for a specific schema
@@ -2301,7 +2766,7 @@ class SchemasController extends Controller {
 			// Default every key: mapper variants (and mocked test doubles) may
 			// return partial maps, which otherwise emits "Undefined array key"
 			// PHP warnings for empty schemas.
-			$objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $id);
+			$objectStats = $this->objectEntityMapper->getStatistics(scope: new StatisticsScope(schemaId: $id));
 			$objectStats = array_merge(
 				['total' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0, 'size' => 0],
 				$objectStats
@@ -2320,7 +2785,7 @@ class SchemasController extends Controller {
 					'locked' => ($objectStats['locked'] ?? 0),
 					'size' => ($objectStats['size'] ?? 0),
 				],
-				'logs' => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $id),
+				'logs' => $this->auditLogStats(schemaId: $id),
 				'files' => ['total' => 0, 'size' => 0],
 				// Placeholder for future file statistics.
 				'registers' => $this->schemaMapper->getRegisterCountPerSchema()[$id] ?? 0,
@@ -2360,17 +2825,9 @@ class SchemasController extends Controller {
 			// surface undefined properties — a schema-introspection operation that
 			// MUST require manage permission (same authority as editing the schema),
 			// so an arbitrary user cannot probe another schema's data shape (IDOR).
-			try {
-				$existingSchema = $this->schemaMapper->find($id);
-			} catch (DoesNotExistException $e) {
-				return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-			}
-
-			if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage this schema'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
+			$existingSchema = $this->manageableSchema(id: $id);
+			if ($existingSchema instanceof JSONResponse) {
+				return $existingSchema;
 			}
 
 			$this->logger->info(
@@ -2378,7 +2835,7 @@ class SchemasController extends Controller {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 
-			$explorationResults = $this->schemaService->exploreSchemaProperties($id);
+			$explorationResults = $this->services->schemas->schemaService->exploreSchemaProperties($id);
 
 			$this->logger->info(
 				message: '[SchemasController] Schema exploration completed successfully',
@@ -2419,17 +2876,9 @@ class SchemasController extends Controller {
 			// definition is a schema mutation and MUST require manage permission,
 			// exactly like update()/upload(). Without this guard any authenticated
 			// user could rewrite an arbitrary schema's properties (IDOR).
-			try {
-				$existingSchema = $this->schemaMapper->find($id);
-			} catch (DoesNotExistException $e) {
-				return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
-			}
-
-			if ($this->checkSchemaManagePermission(schema: $existingSchema) === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage this schema'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
+			$existingSchema = $this->manageableSchema(id: $id);
+			if ($existingSchema instanceof JSONResponse) {
+				return $existingSchema;
 			}
 
 			// Get property updates from request.
@@ -2445,7 +2894,7 @@ class SchemasController extends Controller {
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 
-			$updatedSchema = $this->schemaService->updateSchemaFromExploration(
+			$updatedSchema = $this->services->schemas->schemaService->updateSchemaFromExploration(
 				schemaId: $id,
 				propertyUpdates: $propertyUpdates
 			);
@@ -2504,15 +2953,27 @@ class SchemasController extends Controller {
 			return new JSONResponse(['resolved' => false]);
 		}
 
-		// Optional consuming-register hint biases the tie-break; never required.
-		$consumingRegisterId = null;
-		$rawRegister = $this->request->getParam('register');
-		if ($rawRegister !== null && is_numeric($rawRegister) === true) {
-			$consumingRegisterId = (int)$rawRegister;
+		$schema = $this->implementingSchema(resolver: $this->semanticTypeResolver, uri: $uri);
+		if ($schema === null) {
+			return new JSONResponse(['resolved' => false]);
 		}
 
+		return new JSONResponse($this->resolvedSchemaPayload(resolver: $this->semanticTypeResolver, schema: $schema));
+	}//end resolveByImplements()
+
+	/**
+	 * The installed schema implementing a semantic type, or null when none does or resolution fails.
+	 *
+	 * @param SemanticTypeResolverInterface $resolver The semantic type resolver.
+	 * @param string                        $uri      The semantic-type IRI.
+	 *
+	 * @return Schema|null The provider schema.
+	 */
+	private function implementingSchema(SemanticTypeResolverInterface $resolver, string $uri): ?Schema {
+		$consumingRegisterId = $this->consumingRegisterId();
+
 		try {
-			$schema = $this->semanticTypeResolver->resolveSchemaByImplements(
+			return $resolver->resolveSchemaByImplements(
 				uri: $uri,
 				consumingRegisterId: $consumingRegisterId
 			);
@@ -2522,14 +2983,34 @@ class SchemasController extends Controller {
 				message: '[SchemasController] resolveByImplements failed: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'uri' => $uri]
 			);
-			return new JSONResponse(['resolved' => false]);
+			return null;
+		}
+	}//end implementingSchema()
+
+	/**
+	 * The optional consuming-register hint: it biases the tie-break and is never required.
+	 *
+	 * @return int|null The register id, or null when absent or not numeric.
+	 */
+	private function consumingRegisterId(): ?int {
+		$rawRegister = $this->request->getParam('register');
+		if ($rawRegister === null || is_numeric($rawRegister) === false) {
+			return null;
 		}
 
-		if ($schema === null) {
-			return new JSONResponse(['resolved' => false]);
-		}
+		return (int)$rawRegister;
+	}//end consumingRegisterId()
 
-		$register = $this->semanticTypeResolver->findRegisterForSchema(schema: $schema);
+	/**
+	 * The payload of a resolved semantic type: the schema, and its owning register.
+	 *
+	 * @param SemanticTypeResolverInterface $resolver The semantic type resolver.
+	 * @param Schema                        $schema   The provider schema.
+	 *
+	 * @return array<string, mixed> The payload.
+	 */
+	private function resolvedSchemaPayload(SemanticTypeResolverInterface $resolver, Schema $schema): array {
+		$register = $resolver->findRegisterForSchema(schema: $schema);
 
 		$payload = [
 			'resolved' => true,
@@ -2537,8 +3018,8 @@ class SchemasController extends Controller {
 			'schemaSlug' => $schema->getSlug(),
 		];
 
-		return new JSONResponse(array_merge($payload, $this->registerPayload(register: $register)));
-	}//end resolveByImplements()
+		return array_merge($payload, $this->registerPayload(register: $register));
+	}//end resolvedSchemaPayload()
 
 	/**
 	 * Build the register portion of a {@see self::resolveByImplements()} payload.
@@ -2594,7 +3075,8 @@ class SchemasController extends Controller {
 	 * Whether an entity is anonymously readable via RBAC authorization.
 	 *
 	 * A resource is visible to anonymous callers when its authorization block
-	 * grants `read` access to the `public` group. This replaces the former
+	 * grants `read` access to the `public` group, as `"public"` or as
+	 * `{"group": "public"}` with no match. This replaces the former
 	 * published/depublished column gate: anonymous publication is an RBAC
 	 * concern, expressed as a `public`-group read rule on the entity.
 	 *
@@ -2607,8 +3089,7 @@ class SchemasController extends Controller {
 			return false;
 		}
 
-		$readGroups = ($authorization['read'] ?? []);
-		return is_array($readGroups) === true && in_array('public', $readGroups, true) === true;
+		return (new ReadRuleTenancy())->readsPublicUnconditionally(readRules: ($authorization['read'] ?? []));
 	}//end isPublicReadable()
 
 	/**
@@ -2629,23 +3110,15 @@ class SchemasController extends Controller {
 	 * @return array<string, mixed>|JSONResponse The (possibly mapped) schema array, or an error response.
 	 *
 	 * @spec openspec/specs/schema-import/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per supported dialect.
 	 */
 	private function applyDialect(array $document): array|JSONResponse {
 		if ($this->schemaImportService === null) {
 			return $document;
 		}
 
-		$explicit = $this->request->getParam('dialect');
-		if (is_string($explicit) === false || $explicit === '') {
-			$explicit = null;
-		}
-
-		try {
-			$dialect = $this->schemaImportService->resolveUploadDialect(document: $document, explicitDialect: $explicit);
-		} catch (SchemaImportException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatus());
+		$dialect = $this->uploadDialect(document: $document);
+		if ($dialect instanceof JSONResponse) {
+			return $dialect;
 		}
 
 		// Json-schema and openapi documents are ingested as-is (unchanged).
@@ -2653,8 +3126,55 @@ class SchemasController extends Controller {
 			return $document;
 		}
 
-		// Standards dialects are mapped via the importer. The reference is the
-		// explicit `reference` parameter, else the document's own type marker.
+		return $this->mapStandardsDialect(dialect: $dialect, document: $document);
+	}//end applyDialect()
+
+	/**
+	 * The dialect of an uploaded document: the explicit `dialect` parameter, else sniffed.
+	 *
+	 * @param array<string, mixed> $document The decoded upload document.
+	 *
+	 * @return string|JSONResponse The dialect, or the error response when none applies.
+	 */
+	private function uploadDialect(array $document): string|JSONResponse {
+		try {
+			return $this->schemaImportService->resolveUploadDialect(
+				document: $document,
+				explicitDialect: $this->explicitDialect()
+			);
+		} catch (SchemaImportException $e) {
+			return $this->schemaImportErrorResponse(e: $e);
+		}
+	}//end uploadDialect()
+
+	/**
+	 * The `dialect` request parameter, or null when it is absent, empty or not a string.
+	 *
+	 * @return string|null The explicitly requested dialect.
+	 */
+	private function explicitDialect(): ?string {
+		$explicit = $this->request->getParam('dialect');
+		if (is_string($explicit) === false || $explicit === '') {
+			return null;
+		}
+
+		return $explicit;
+	}//end explicitDialect()
+
+	/**
+	 * Map a standards-dialect document (schema.org, ggm) through the importers.
+	 *
+	 * The reference is the explicit `reference` parameter, else the document's
+	 * own type marker. A ggm document carrying `objecttypen` is a normalised GGM
+	 * intermediate and is imported as an upload; every other document is
+	 * imported by reference.
+	 *
+	 * @param string               $dialect  The resolved dialect.
+	 * @param array<string, mixed> $document The decoded upload document.
+	 *
+	 * @return array<string, mixed>|JSONResponse The mapped schema array, or an error response.
+	 */
+	private function mapStandardsDialect(string $dialect, array $document): array|JSONResponse {
 		$reference = $this->resolveDialectReference(dialect: $dialect, document: $document);
 		if ($reference === null) {
 			return new JSONResponse(
@@ -2663,28 +3183,66 @@ class SchemasController extends Controller {
 			);
 		}
 
+		if ($dialect === 'ggm' && isset($document['objecttypen']) === true) {
+			return $this->importGgmIntermediate(document: $document, reference: $reference);
+		}
+
+		return $this->importDialectReference(dialect: $dialect, reference: $reference);
+	}//end mapStandardsDialect()
+
+	/**
+	 * Import an uploaded body that is a normalised GGM intermediate.
+	 *
+	 * @param array<string, mixed> $document  The normalised GGM document.
+	 * @param string               $reference The objecttype to import.
+	 *
+	 * @return array<string, mixed>|JSONResponse The mapped schema array, or an error response.
+	 */
+	private function importGgmIntermediate(array $document, string $reference): array|JSONResponse {
 		try {
-			if ($dialect === 'ggm' && isset($document['objecttypen']) === true) {
-				// Treat the uploaded body as a normalised GGM intermediate.
-				$imported = $this->schemaImportService->importGgmUpload(
-					normalised: $document,
-					reference: $reference,
-					options: ImportOptions::fromArray($this->request->getParams()),
-					sourceLabel: 'upload'
-				);
-			} else {
-				$imported = $this->schemaImportService->import(
-					dialect: $dialect,
-					reference: $reference,
-					options: ImportOptions::fromArray($this->request->getParams())
-				);
-			}
+			$imported = $this->schemaImportService->importGgmUpload(
+				upload: new GgmUpload(normalised: $document, reference: $reference, sourceLabel: 'upload'),
+				options: ImportOptions::fromArray($this->request->getParams())
+			);
 		} catch (SchemaImportException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatus());
+			return $this->schemaImportErrorResponse(e: $e);
 		}
 
 		return $imported->toSchemaArray();
-	}//end applyDialect()
+	}//end importGgmIntermediate()
+
+	/**
+	 * Import a standards type by its reference through the dialect's importer.
+	 *
+	 * @param string $dialect   The resolved dialect.
+	 * @param string $reference The type or objecttype to import.
+	 *
+	 * @return array<string, mixed>|JSONResponse The mapped schema array, or an error response.
+	 */
+	private function importDialectReference(string $dialect, string $reference): array|JSONResponse {
+		try {
+			$imported = $this->schemaImportService->import(
+				dialect: $dialect,
+				reference: $reference,
+				options: ImportOptions::fromArray($this->request->getParams())
+			);
+		} catch (SchemaImportException $e) {
+			return $this->schemaImportErrorResponse(e: $e);
+		}
+
+		return $imported->toSchemaArray();
+	}//end importDialectReference()
+
+	/**
+	 * The error response for a failed dialect resolution or import.
+	 *
+	 * @param SchemaImportException $e The failure.
+	 *
+	 * @return JSONResponse The message with the exception's HTTP status.
+	 */
+	private function schemaImportErrorResponse(SchemaImportException $e): JSONResponse {
+		return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getHttpStatus());
+	}//end schemaImportErrorResponse()
 
 	/**
 	 * Resolve the type reference for a standards-dialect upload.
@@ -2700,12 +3258,48 @@ class SchemasController extends Controller {
 			return $reference;
 		}
 
-		if ($dialect === 'schema.org' && isset($document['@type']) === true && is_string($document['@type']) === true) {
+		return $this->schemaOrgTypeReference(dialect: $dialect, document: $document);
+	}//end resolveDialectReference()
+
+	/**
+	 * The `@type` marker of a schema.org document, used as its reference.
+	 *
+	 * @param string               $dialect  The resolved dialect.
+	 * @param array<string, mixed> $document The decoded document.
+	 *
+	 * @return string|null The type, or null for another dialect or a missing or non-string marker.
+	 */
+	private function schemaOrgTypeReference(string $dialect, array $document): ?string {
+		if ($dialect !== 'schema.org' || isset($document['@type']) === false) {
+			return null;
+		}
+
+		if (is_string($document['@type']) === true) {
 			return $document['@type'];
 		}
 
 		return null;
-	}//end resolveDialectReference()
+	}//end schemaOrgTypeReference()
+
+	/**
+	 * The audit-trail statistics of one schema, for an administrator only.
+	 *
+	 * The count covers every entry of the schema, whichever organisation the
+	 * object belongs to, so a non-admin or anonymous caller is given zeros.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return array The statistics, or zeros for a non-admin.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
+	 */
+	private function auditLogStats(int $schemaId): array {
+		if ($this->isCurrentUserAdmin() === false) {
+			return self::NO_LOG_STATS;
+		}
+
+		return $this->auditTrailMapper->statisticsTotals(scope: new AuditStatisticsScope(schemaId: $schemaId));
+	}//end auditLogStats()
 
 	/**
 	 * Check if the current user is a Nextcloud administrator.
@@ -2732,57 +3326,27 @@ class SchemasController extends Controller {
 	 * Default-SECURE: a schema with no `manage` authorization rule can only be
 	 * managed by administrators. When manage rules are present, membership of
 	 * one of the listed groups grants permission (admins always pass). This is
-	 * deliberately NOT PermissionHandler::hasPermission(), which is default-OPEN
+	 * deliberately NOT PermissionHandlerInterface::hasPermission(), which is default-OPEN
 	 * for object data RBAC and therefore unsuitable for gating schema-definition
 	 * writes. Reading schema metadata is unaffected and stays open.
 	 *
 	 * @param Schema $schema The schema to check manage permission for.
 	 *
 	 * @return bool True if the current user may manage this schema.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function checkSchemaManagePermission(Schema $schema): bool {
 		try {
-			$user = $this->container->get(\OCP\IUserSession::class)->getUser();
-			if ($user === null) {
-				return false;
-			}
+			$rights = RbacRuleChecks::definitionWriteRights(
+				userSession: $this->container->get(\OCP\IUserSession::class),
+				groupManager: $this->container->get(\OCP\IGroupManager::class)
+			);
 
-			$groupManager = $this->container->get(\OCP\IGroupManager::class);
-
-			// Admins always pass.
-			if ($groupManager->isAdmin($user->getUID()) === true) {
-				return true;
-			}
-
-			$authorization = $schema->getAuthorization();
-
-			// Default-secure: no manage rule defined → admin-only (already failed above).
-			if (empty($authorization) === true || isset($authorization['manage']) === false) {
-				return false;
-			}
-
-			$userGroups = $groupManager->getUserGroupIds($user);
-			$manageRules = $authorization['manage'];
-			foreach ($userGroups as $groupId) {
-				foreach ($manageRules as $entry) {
-					if (is_string($entry) === true && $entry === $groupId) {
-						return true;
-					}
-
-					if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-						return true;
-					}
-				}
-			}
+			return $rights->mayManage(authorization: $schema->getAuthorization());
 		} catch (\Throwable $e) {
 			return false;
-		}//end try
-
-		return false;
+		}
 	}//end checkSchemaManagePermission()
+
 
 	/**
 	 * Read the list surface a schema declares: its columns and its search fields.
@@ -2794,7 +3358,7 @@ class SchemasController extends Controller {
 	 * keep them.
 	 *
 	 * @param int|string                $id       The schema id, uuid or slug.
-	 * @param ListPresentationResolver $resolver The resolver.
+	 * @param ListPresentationResolverInterface $resolver The resolver.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -2808,9 +3372,9 @@ class SchemasController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
 	 *
-	 * @spec openspec/changes/objects-as-the-hinge-between-cases/specs/linked-entity-types/spec.md
+	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function listPresentation(int|string $id, ListPresentationResolver $resolver): JSONResponse {
+	public function listPresentation(int|string $id, ListPresentationResolverInterface $resolver): JSONResponse {
 		try {
 			// Metadata read: a schema's own declaration is catalogue data, scoped
 			// the same way the sibling `related` endpoint scopes it.

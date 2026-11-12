@@ -1,0 +1,416 @@
+{
+    "create": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                true
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "alice",
+                true
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ],
+            [
+                "audit",
+                null,
+                "44444444-4444-4444-4444-444444444444",
+                null
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "alice",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": {
+                "log": 1
+            },
+            "description": "archived"
+        },
+        "outcome": "created",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "mapper took its update branch": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                true
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ],
+            [
+                "audit",
+                null,
+                "44444444-4444-4444-4444-444444444444",
+                "update"
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": {
+                "log": 1
+            },
+            "description": "archived"
+        },
+        "outcome": "updated",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "session user owns the create": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                true
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "bob",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ],
+            [
+                "audit",
+                null,
+                "44444444-4444-4444-4444-444444444444",
+                null
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "bob",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": {
+                "log": 1
+            },
+            "description": "archived"
+        },
+        "outcome": "created",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "silent": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                true
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": null,
+            "description": "archived"
+        },
+        "outcome": "created",
+        "log": []
+    },
+    "audit off": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                true
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": null,
+            "description": "archived"
+        },
+        "outcome": "created",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "not persisted": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                true
+            ],
+            [
+                "archival"
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "",
+            "organisation": "org-1",
+            "createdSet": true,
+            "lastLog": null,
+            "description": "archived"
+        },
+        "outcome": null,
+        "log": []
+    },
+    "file property stored": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                true
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ],
+            [
+                "file",
+                "doc",
+                "raw"
+            ],
+            [
+                "store",
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "new",
+                    "doc": 42
+                },
+                null
+            ],
+            [
+                "audit",
+                null,
+                "44444444-4444-4444-4444-444444444444",
+                null
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": {
+                "log": 1
+            },
+            "description": "stored again"
+        },
+        "outcome": "created",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "file property, image not a file": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                true
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ],
+            [
+                "file",
+                "doc",
+                "raw"
+            ],
+            [
+                "store",
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "new",
+                    "doc": 42
+                },
+                "img.png"
+            ],
+            [
+                "audit",
+                null,
+                "44444444-4444-4444-4444-444444444444",
+                null
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "owner": "",
+            "organisation": "org-9",
+            "createdSet": true,
+            "lastLog": {
+                "log": 1
+            },
+            "description": "stored again"
+        },
+        "outcome": "created",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "file write fails": {
+        "trace": [
+            [
+                "retentionGuard",
+                7,
+                true
+            ],
+            [
+                "archival"
+            ],
+            [
+                "insert",
+                "3",
+                "7",
+                null,
+                "",
+                false
+            ],
+            [
+                "cacheName",
+                "44444444-4444-4444-4444-444444444444",
+                "Saved name",
+                "org-9"
+            ],
+            [
+                "file",
+                "doc",
+                "raw"
+            ],
+            [
+                "delete",
+                "44444444-4444-4444-4444-444444444444"
+            ]
+        ],
+        "thrown": "disk full"
+    }
+}

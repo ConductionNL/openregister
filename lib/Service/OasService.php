@@ -33,13 +33,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Exception\OasValidationException;
+use OCA\OpenRegister\Service\Oas\OasIssue;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -57,7 +56,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.TooManyMethods)
  */
-class OasService {
+class OasService implements OasServiceInterface {
 	/**
 	 * Base path to OAS resources
 	 *
@@ -81,18 +80,18 @@ class OasService {
 	 *
 	 * Handles database operations for register entities.
 	 *
-	 * @var RegisterMapper Register mapper instance
+	 * @var RegisterMapperInterface Register mapper instance
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema mapper
 	 *
 	 * Handles database operations for schema entities.
 	 *
-	 * @var SchemaMapper Schema mapper instance
+	 * @var SchemaMapperInterface Schema mapper instance
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * URL generator
@@ -143,6 +142,215 @@ class OasService {
 	private const ALLOWED_STATUS_CODES = ['200', '201', '204', '400', '401', '403', '404', '422', '500', 'default'];
 
 	/**
+	 * Properties every object schema describes before its own.
+	 *
+	 * @var array<string, array<string, mixed>>
+	 */
+	private const CORE_PROPERTIES = [
+		'_self' => [
+			'$ref' => '#/components/schemas/_self',
+			'readOnly' => true,
+			'description' => 'Object metadata including timestamps, ownership, and system information',
+		],
+		'id' => [
+			'type' => 'string',
+			'format' => 'uuid',
+			'readOnly' => true,
+			'example' => '123e4567-e89b-12d3-a456-426614174000',
+			'description' => 'The unique identifier for the object.',
+		],
+	];
+
+	/**
+	 * Description of the `_upsertOn` query parameter.
+	 *
+	 * @var string
+	 */
+	private const UPSERT_ON_DESCRIPTION = 'Create or update by a key this schema declares unique: the record holding the key is updated (200), '
+		.'or created when none does (201). Needs a signed-in caller; cannot be combined with _failIfExists.';
+
+	/**
+	 * The `_upsertOn` query parameter, without its schema (the enum is the schema's own keys).
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const UPSERT_ON_PARAMETER = [
+		'name' => '_upsertOn',
+		'in' => 'query',
+		'required' => false,
+		'description' => self::UPSERT_ON_DESCRIPTION,
+	];
+
+	/**
+	 * Error responses only the upsert answers, by status.
+	 *
+	 * @var array<int, string>
+	 */
+	private const UPSERT_ERRORS = [
+		'401' => 'Upsert: the caller is not signed in.',
+		'409' => 'Upsert: more than one record holds the key (the matches are listed), or a record you cannot change holds it.',
+		'503' => 'Upsert: the key could not be looked up or locked; nothing was written. Retry after the Retry-After seconds.',
+	];
+
+	/**
+	 * Operations on one object: summary and description formats, operationId verb, id parameter suffix.
+	 *
+	 * @var array<string, array{0: string, 1: string, 2: string, 3: string}>
+	 */
+	private const ITEM_OPERATIONS = [
+		'get' => ['Get a %s object by ID', 'get', 'Retrieve a specific %s object by its unique identifier', ' object'],
+		'update' => ['Update a %s object', 'update', 'Update an existing %s object with the provided data', ' object to update'],
+		'delete' => ['Delete a %s object', 'delete', 'Delete a specific %s object by its unique identifier', ' object to delete'],
+		'logs' => ['Get audit logs for a %s object', 'getLogs', 'Retrieve the audit trail for a specific %s object', ' object'],
+		'getFiles' => ['Get files for a %s object', 'getFiles', 'Retrieve all files associated with a specific %s object', ' object'],
+		'uploadFile' => ['Upload a file for a %s object', 'uploadFile', 'Upload a new file and associate it with a specific %s object', ' object'],
+		'lock' => ['Lock a %s object', 'lock', 'Lock a specific %s object to prevent concurrent modifications', ' object to lock'],
+		'unlock' => ['Unlock a %s object', 'unlock', 'Remove the lock from a specific %s object', ' object to unlock'],
+	];
+
+	/**
+	 * Description of a found object after its title, naming both representations.
+	 *
+	 * @var string
+	 */
+	private const OBJECT_FOUND_NOTE = ' found. Send `Accept: application/ld+json` to receive the JSON-LD '
+		. 'representation (`@context`/`@id`/`@type`); the default `application/json` representation is unchanged (json-ld-output).';
+
+	/**
+	 * Request content of a file upload.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const FILE_UPLOAD_CONTENT = [
+		'multipart/form-data' => [
+			'schema' => [
+				'type' => 'object',
+				'properties' => ['file' => ['type' => 'string', 'format' => 'binary', 'description' => 'The file to upload']],
+			],
+		],
+	];
+
+	/**
+	 * The body of a PATCH: a JSON merge patch (RFC 7396) of the object, nothing in it required.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const MERGE_PATCH_BODY = [
+		'required' => true,
+		'content' => [
+			'application/merge-patch+json' => [
+				'schema' => ['type' => 'object'],
+			],
+			'application/json' => [
+				'schema' => ['type' => 'object'],
+			],
+		],
+	];
+
+	/**
+	 * The JSON body of every error response: the shared Error schema.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const ERROR_CONTENT = ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]];
+
+	/**
+	 * The tail of a collection response's description, after "List of <schema>".
+	 *
+	 * @var string
+	 */
+	private const COLLECTION_RESPONSE_NOTE = ' objects with pagination metadata. '
+		. 'Send `Accept: application/ld+json` to receive a JSON-LD `@graph` '
+		. 'document (pagination under `or:` terms); the default '
+		. '`application/json` representation is unchanged (json-ld-output).';
+
+	/**
+	 * The 200 response of a JSON-LD `@context` document endpoint.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const CONTEXT_DOCUMENT_RESPONSE = [
+		'description' => 'JSON-LD context document of the form `{"@context": {…}}`.',
+		'content' => ['application/ld+json' => ['schema' => ['type' => 'object', 'properties' => ['@context' => ['type' => 'object']]]]],
+	];
+
+	/**
+	 * The JSON-LD `@graph` response schema of a collection.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const JSON_LD_COLLECTION_SCHEMA = [
+		'type' => 'object',
+		'description' => 'JSON-LD @graph serialization of the collection.',
+		'properties' => [
+			'@context' => ['type' => 'string', 'format' => 'uri'],
+			'@graph' => ['type' => 'array', 'items' => ['type' => 'object']],
+			'or:total' => ['type' => 'integer'],
+		],
+	];
+
+	/**
+	 * The JSON-LD response schema of a single object.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const JSON_LD_OBJECT_SCHEMA = [
+		'type' => 'object',
+		'description' => 'JSON-LD serialization of the object.',
+		'properties' => [
+			'@context' => ['type' => 'string', 'format' => 'uri'],
+			'@id' => ['type' => 'string', 'format' => 'uri'],
+			'@type' => ['type' => 'string'],
+		],
+	];
+
+	/**
+	 * The query parameters every object operation accepts.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const COMMON_QUERY_PARAMETERS = [
+		[
+			'name' => '_extend',
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Comma-separated list of properties to extend.',
+			'schema' => ['type' => 'string'],
+			'example' => 'property1,property2,property3',
+		],
+		[
+			'name' => '_filter',
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Comma-separated list of properties to include in the response. ',
+			'schema' => ['type' => 'string'],
+			'example' => 'id,name,description',
+		],
+		[
+			'name' => '_unset',
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Comma-separated list of properties to remove from the response.',
+			'schema' => ['type' => 'string'],
+			'example' => 'internalField1,internalField2',
+		],
+	];
+
+	/**
+	 * The full-text search parameter of a collection operation.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const SEARCH_QUERY_PARAMETER = [
+		'name' => '_search',
+		'in' => 'query',
+		'required' => false,
+		'description' => 'Full-text search query to filter objects in the collection.',
+		'schema' => ['type' => 'string'],
+		'example' => 'search term',
+	];
+
+	/**
 	 * What the RBAC declarations mean for the document.
 	 *
 	 * @var OasRbacAnnotator
@@ -150,39 +358,68 @@ class OasService {
 	private OasRbacAnnotator $rbacAnnotator;
 
 	/**
+	 * The RBAC groups (createGroups, readGroups, updateGroups, deleteGroups) of the schema whose paths are being added.
+	 *
+	 * @var array<string, array>
+	 */
+	private array $pathRbac = [];
+
+	/**
+	 * The operationId prefix of the register whose paths are being added; empty for none.
+	 *
+	 * @var string
+	 */
+	private string $operationIdPrefix = '';
+
+	/**
+	 * Reduces property definitions to valid OpenAPI.
+	 *
+	 * @var OasPropertySanitizer
+	 */
+	private readonly OasPropertySanitizer $propertySanitizer;
+
+	/**
 	 * Constructor for OasService
 	 *
-	 * @param RegisterMapper $registerMapper Register mapper for database operations
-	 * @param SchemaMapper $schemaMapper Schema mapper for database operations
-	 * @param IURLGenerator $urlGenerator URL generator for absolute URLs
-	 * @param LoggerInterface|null $logger PSR-3 logger for surfacing validation issues
+	 * @param OasSources $sources Register and schema mappers, URL generator and the optional logger
 	 * @param ?OasRequestValidator $metaValidator Optional validator for the vendored OAS 3.1 meta-schema check.
-	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read. Nullable and
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a property the caller may not read. Nullable and
 	 *                                               last so no construction site shifts; absent, a governed
 	 *                                               property is withheld, which is the safe direction.
 	 */
 	public function __construct(
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
-		IURLGenerator $urlGenerator,
-		?LoggerInterface $logger = null,
+		OasSources $sources,
 		private readonly ?OasRequestValidator $metaValidator = null,
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		?PropertyRbacHandlerInterface $propertyRbac = null,
 	) {
-		$this->registerMapper = $registerMapper;
-		$this->schemaMapper = $schemaMapper;
-		$this->urlGenerator = $urlGenerator;
-		$this->logger = $logger;
+		$this->registerMapper = $sources->registerMapper;
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->urlGenerator = $sources->urlGenerator;
+		$this->logger = $sources->logger;
+		$this->propertySanitizer = new OasPropertySanitizer();
+		$this->wireCollaborators(propertyRbac: $propertyRbac);
+	}//end __construct()
+
+	/**
+	 * Build the report and the RBAC annotator the generation uses.
+	 *
+	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a property the caller may not read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function wireCollaborators(?PropertyRbacHandlerInterface $propertyRbac): void {
 		$this->report = new OasValidationReport();
 		$this->rbacAnnotator = new OasRbacAnnotator(
-			registerMapper: $registerMapper,
-			logger: $logger,
+			registerMapper: $this->registerMapper,
+			logger: $this->logger,
 			propertyRbac: $propertyRbac
 		);
-	}//end __construct()
+	}//end wireCollaborators()
 
 	/**
 	 * Returns the validation report from the most recent createOas() call.
@@ -208,51 +445,144 @@ class OasService {
 	 *
 	 * @return array<string, mixed> The complete OpenAPI specification array
 	 *
-	 * @throws \Exception When base OAS file cannot be read or parsed
-	 * @throws OasValidationException In strict mode, when the generated OAS has validation errors
+	 * @throws \Exception When base OAS file cannot be read or parsed, or, as an OasValidationException,
+	 *                    in strict mode when the generated OAS has validation errors
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 * @spec openspec/specs/oas-validation/spec.md#requirement-server-url-is-absolute
 	 */
 	public function createOas(?string $registerId = null, bool $strict = false): array {
-		// Reset the validation report at the start of every generation pass.
 		$this->report = new OasValidationReport();
+		$this->oas    = $this->getBaseOas();
 
-		// Step 1: Reset OAS to base state from template file.
-		$this->oas = $this->getBaseOas();
-
-		// Step 2: Get registers to document.
-		// If registerId provided, get only that register; otherwise get all registers.
-		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+		$registers = $this->registersFor(registerId: $registerId);
+		$schemas   = $this->schemasOfRegisters(registers: $registers);
+		$this->anchorServerUrls();
 		if ($registerId !== null) {
-			$registers = [$this->registerMapper->find($registerId, _rbac: false, _multitenancy: false)];
+			$this->describeRegister(register: $registers[0]);
 		}
 
-		// Step 3: Extract unique schema IDs from all registers.
-		// Multiple registers may share schemas, so we deduplicate.
+		$this->addSchemaComponents(schemas: $schemas);
+		// Generating for several registers prefixes operationIds with the
+		// register title, so two registers sharing a schema stay unique.
+		$prefixed = ($registerId === null && count($registers) > 1);
+		$this->addAllRegisterPaths(registers: $registers, context: ['schemas' => $schemas, 'prefixed' => $prefixed]);
+
+		$this->assertOasValid(strict: $strict);
+
+		return $this->oas;
+	}//end createOas()
+
+	/**
+	 * Declare the RBAC scopes, then add the paths of every register.
+	 *
+	 * @param array                                $registers The registers.
+	 * @param array{schemas: array, prefixed: bool} $context   The loaded schemas and whether operationIds carry the register prefix.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function addAllRegisterPaths(array $registers, array $context): void {
+		$context['rbac'] = $this->addRbacScopes(schemas: $context['schemas']);
+		$this->oas['paths'] = [];
+		foreach ($registers as $register) {
+			$this->addRegisterPaths(register: $register, context: $context);
+		}
+	}//end addAllRegisterPaths()
+
+	/**
+	 * Check the generated document; in strict mode an invalid one is refused.
+	 *
+	 * @param bool $strict Whether an invalid document fails the generation.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Strict mode is the caller's choice on createOas()
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function assertOasValid(bool $strict): void {
+		$invalid = $this->checkOas();
+		if ($strict === true && $invalid === true) {
+			throw $this->report->strictFailure();
+		}
+	}//end assertOasValid()
+
+	/**
+	 * The registers a document describes: the one asked for, or all of them.
+	 *
+	 * Bypasses RBAC and multi-tenancy: the document describes every register
+	 * and schema, whatever the current user's organisation.
+	 *
+	 * @param string|null $registerId The register id, or null for all.
+	 *
+	 * @return array The registers.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function registersFor(?string $registerId): array {
+		if ($registerId !== null) {
+			return [$this->registerMapper->find($registerId, _rbac: false, _multitenancy: false)];
+		}
+
+		return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+	}//end registersFor()
+
+	/**
+	 * Validate the generated document and log its issues.
+	 *
+	 * @return bool Whether the document has validation errors.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function checkOas(): bool {
+		$this->validateOasIntegrity();
+		$this->logValidationIssues();
+
+		return $this->report->hasErrors();
+	}//end checkOas()
+
+	/**
+	 * The schemas the registers use, each loaded once, indexed by id.
+	 *
+	 * @param array $registers The registers.
+	 *
+	 * @return array<int|string, object> The schemas by id.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function schemasOfRegisters(array $registers): array {
 		$schemaIds = [];
-		foreach ($registers ?? [] as $register) {
+		foreach ($registers as $register) {
 			$schemaIds = array_merge($schemaIds, $register->getSchemas());
 		}
 
-		// Remove duplicates to avoid loading same schema multiple times.
-		$uniqueSchemaIds = array_unique($schemaIds);
-
-		// Step 4: Get all schemas using unique schema IDs and index by schema ID.
-		// Indexing by ID allows fast lookup when processing registers.
-		// Bypass RBAC and multi-tenancy since OAS generation needs all schemas
-		// regardless of the current user's organization.
 		$schemas = [];
-		foreach ($this->schemaMapper->findMultiple($uniqueSchemaIds, _rbac: false, _multitenancy: false) as $schema) {
+		foreach ($this->schemaMapper->findMultiple(array_unique($schemaIds), _rbac: false, _multitenancy: false) as $schema) {
 			$schemas[$schema->getId()] = $schema;
 		}
 
-		// Step 5: Update servers configuration with actual API base URL.
+		return $schemas;
+	}//end schemasOfRegisters()
+
+	/**
+	 * Point the server and the OAuth flow URLs at this instance.
+	 *
+	 * The OAuth flow URLs ship relative in BaseOas.json, and the OAS 3.1
+	 * meta-schema types them `format: uri` (absolute), so a document leaving
+	 * them relative fails its own meta-schema check, and a client resolving
+	 * them against the page lands on the wrong host. Read, rewrite and write
+	 * back rather than taking a reference: psalm cannot analyse a reference
+	 * into a property (UnsupportedPropertyReferenceUsage).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#requirement-server-url-is-absolute
+	 */
+	private function anchorServerUrls(): void {
 		$this->oas['servers'] = [
 			[
 				'url' => $this->urlGenerator->getAbsoluteURL('/apps/openregister/api'),
@@ -260,158 +590,188 @@ class OasService {
 			],
 		];
 
-		// The OAuth flow URLs ship relative in BaseOas.json. The OAS 3.1
-		// meta-schema types them `format: uri` (absolute), so every generated
-		// document failed its own meta-schema check on them, and a client
-		// that resolves them against the page rather than the server lands
-		// on the wrong host. Anchor them to this instance, as the server is.
-		// Read, rewrite, write back, rather than taking a reference into the
-		// array: psalm refuses to analyse a reference into a property
-		// (UnsupportedPropertyReferenceUsage), and a guard it cannot analyse
-		// is a guard nobody checks.
 		$flow = ($this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode'] ?? null);
-		if (is_array($flow) === true) {
-			foreach (['authorizationUrl', 'tokenUrl', 'refreshUrl'] as $urlKey) {
-				if (isset($flow[$urlKey]) === true && str_starts_with((string)$flow[$urlKey], '/') === true) {
-					$flow[$urlKey] = $this->urlGenerator->getAbsoluteURL((string)$flow[$urlKey]);
-				}
-			}
-
-			$this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode'] = $flow;
+		if (is_array($flow) === false) {
+			return;
 		}
 
-		// Step 6: If specific register requested, update info section with register details.
-		if ($registerId !== null) {
-			$register = $registers[0];
+		$this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode'] = $this->absoluteFlowUrls(flow: $flow);
+	}//end anchorServerUrls()
 
-			// Build enhanced description from register description or generate default.
-			$description = $register->getDescription();
-			if (empty($description) === true) {
-				$description = 'API for ' . $register->getTitle() . ' register providing CRUD ';
-				$description .= 'operations, filtering, and search capabilities.';
+	/**
+	 * The OAuth flow with its relative authorization, token and refresh URLs made absolute.
+	 *
+	 * @param array<string, mixed> $flow The authorizationCode flow.
+	 *
+	 * @return array<string, mixed> The flow with absolute URLs.
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#requirement-server-url-is-absolute
+	 */
+	private function absoluteFlowUrls(array $flow): array {
+		foreach (['authorizationUrl', 'tokenUrl', 'refreshUrl'] as $urlKey) {
+			if (isset($flow[$urlKey]) === true && str_starts_with((string)$flow[$urlKey], '/') === true) {
+				$flow[$urlKey] = $this->urlGenerator->getAbsoluteURL((string)$flow[$urlKey]);
 			}
-
-			// Update info section while preserving base contact and license information.
-			$this->oas['info'] = array_merge(
-				$this->oas['info'],
-				[
-					'title' => $register->getTitle() . ' API',
-					'version' => $register->getVersion(),
-					'description' => $description,
-				]
-			);
 		}
 
-		// Step 7: Initialize tags array for API endpoint grouping.
+		return $flow;
+	}//end absoluteFlowUrls()
+
+	/**
+	 * Title, version and description of a single-register document, keeping the base contact and license.
+	 *
+	 * @param object $register The register.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function describeRegister(object $register): void {
+		$description = $register->getDescription();
+		if (empty($description) === true) {
+			$description = 'API for ' . $register->getTitle() . ' register providing CRUD ';
+			$description .= 'operations, filtering, and search capabilities.';
+		}
+
+		$this->oas['info'] = array_merge(
+			$this->oas['info'],
+			[
+				'title' => $register->getTitle() . ' API',
+				'version' => $register->getVersion(),
+				'description' => $description,
+			]
+		);
+	}//end describeRegister()
+
+	/**
+	 * Add each titled schema as a component, with a tag named by its title.
+	 *
+	 * @param array<int|string, object> $schemas The schemas.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function addSchemaComponents(array $schemas): void {
 		$this->oas['tags'] = [];
-
-		// Step 8: Add schemas to components and create tags for each schema.
 		foreach ($schemas as $schema) {
-			// Step 8a: Ensure schema has valid title (skip if empty).
-			$schemaTitle = $schema->getTitle();
-			if (empty($schemaTitle) === true) {
-				continue;
-			}
+			$this->addSchemaComponent(schema: $schema);
+		}
+	}//end addSchemaComponents()
 
-			// Step 8b: Enrich schema definition with OpenAPI-specific properties.
-			$schemaDefinition = $this->enrichSchema(schema: $schema);
-			$sanitizedSchemaName = $this->sanitizeSchemaName(title: $schemaTitle);
+	/**
+	 * Add one titled schema as a component, with a tag named by its title.
+	 *
+	 * @param object $schema The schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function addSchemaComponent(object $schema): void {
+		$schemaTitle = $schema->getTitle();
+		if (empty($schemaTitle) === true) {
+			return;
+		}
 
-			// Step 8c: Validate schema definition before adding to components.
-			if (empty($schemaDefinition) === false) {
-				$this->oas['components']['schemas'][$sanitizedSchemaName] = $schemaDefinition;
+		$schemaDefinition = $this->enrichSchema(schema: $schema);
+		if (empty($schemaDefinition) === true) {
+			return;
+		}
 
-				// Add tag for the schema (keep original title for display).
-				$this->oas['tags'][] = [
-					'name' => $schemaTitle,
-					'description' => $schema->getDescription() ?? 'Operations for ' . $schemaTitle,
-				];
-			}
-		}//end foreach
+		$this->oas['components']['schemas'][$this->propertySanitizer->names->schemaName(title: $schemaTitle)] = $schemaDefinition;
+		$this->oas['tags'][] = [
+			'name' => $schemaTitle,
+			'description' => $schema->getDescription() ?? 'Operations for ' . $schemaTitle,
+		];
+	}//end addSchemaComponent()
 
-		// Step 9: Extract RBAC groups from all schemas and generate OAuth2 scopes.
+	/**
+	 * Declare an OAuth2 scope for every group the schemas grant, plus admin.
+	 *
+	 * @param array<int|string, object> $schemas The schemas.
+	 *
+	 * @return array<int|string, array> Each schema's groups per operation, by schema id.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function addRbacScopes(array $schemas): array {
 		$schemaRbacMap = [];
 		$allGroups = [];
 		foreach ($schemas as $schemaId => $schema) {
 			$rbac = $this->rbacAnnotator->extractSchemaGroups(schema: $schema);
 			$schemaRbacMap[$schemaId] = $rbac;
-			$allGroups = array_merge(
-				$allGroups,
-				$rbac['createGroups'],
-				$rbac['readGroups'],
-				$rbac['updateGroups'],
-				$rbac['deleteGroups']
-			);
+			$allGroups = array_merge($allGroups, $rbac['createGroups'], $rbac['readGroups'], $rbac['updateGroups'], $rbac['deleteGroups']);
 		}
 
-		// Always include admin since it has access to all endpoints.
 		$allGroups[] = 'admin';
-		$allGroups = array_values(array_unique($allGroups));
+		$this->declareScopes(groups: $allGroups);
+		return $schemaRbacMap;
+	}//end addRbacScopes()
 
+	/**
+	 * Declare one OAuth2 scope per distinct group, in first-seen order.
+	 *
+	 * @param array<int, string> $groups The groups, possibly repeated.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function declareScopes(array $groups): void {
 		$scopes = [];
-		foreach ($allGroups as $group) {
+		foreach (array_values(array_unique($groups)) as $group) {
 			$scopes[$group] = $this->rbacAnnotator->getScopeDescription(group: $group);
 		}
 
 		$this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'] = $scopes;
+	}//end declareScopes()
 
-		// Initialize paths array.
-		$this->oas['paths'] = [];
+	/**
+	 * Add the CRUD, extended and JSON-LD context paths for each loaded schema of a register.
+	 *
+	 * @param object                                             $register The register.
+	 * @param array{schemas: array, rbac: array, prefixed: bool} $context  The loaded schemas, their groups,
+	 *                                                                     and whether operationIds carry the register prefix.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function addRegisterPaths(object $register, array $context): void {
+		$this->operationIdPrefix = $this->operationIdPrefixFor(register: $register, prefixed: $context['prefixed']);
 
-		// Determine if we need operationId prefixes for uniqueness.
-		// When generating for all registers, prefix with register slug to avoid collisions.
-		$useRegisterPrefix = ($registerId === null && count($registers) > 1);
-
-		// Add paths for each register.
-		foreach ($registers ?? [] as $register) {
-			// Get schema slugs for the current register.
-			$schemaIds = $register->getSchemas();
-
-			// Build operationId prefix from register title (PascalCase).
-			$operationIdPrefix = '';
-			if ($useRegisterPrefix === true) {
-				$operationIdPrefix = $this->pascalCase(string: $register->getTitle());
+		$noGroups = ['createGroups' => [], 'readGroups' => [], 'updateGroups' => [], 'deleteGroups' => []];
+		foreach ($register->getSchemas() ?? [] as $schemaId) {
+			$schema = ($context['schemas'][$schemaId] ?? null);
+			if ($schema === null) {
+				continue;
 			}
 
-			// Loop through each schema slug to get the schema from the schemas array.
-			foreach ($schemaIds ?? [] as $schemaId) {
-				if (($schemas[$schemaId] ?? null) !== null) {
-					$schema = $schemas[$schemaId];
-					$rbac = $schemaRbacMap[$schemaId] ?? [
-						'createGroups' => [],
-						'readGroups' => [],
-						'updateGroups' => [],
-						'deleteGroups' => [],
-					];
-					$this->addCrudPaths(
-						register: $register,
-						schema: $schema,
-						rbac: $rbac,
-						operationIdPrefix: $operationIdPrefix
-					);
-					$this->addExtendedPaths(register: $register, schema: $schema);
-					$this->addJsonLdContextPaths(register: $register, schema: $schema);
-				}
-			}
-		}//end foreach
+			$this->pathRbac = ($context['rbac'][$schemaId] ?? $noGroups);
+			$this->addCrudPaths(register: $register, schema: $schema);
+			$this->addExtendedPaths(register: $register, schema: $schema);
+			$this->addJsonLdContextPaths(register: $register, schema: $schema);
+		}
+	}//end addRegisterPaths()
 
-		// Validate the final OpenAPI specification before returning.
-		$this->validateOasIntegrity();
-
-		// Log validation issues so operators see them in the standard logs.
-		$this->logValidationIssues();
-
-		// Strict mode: refuse to return invalid output. The report is still
-		// available via getLastValidationReport() so the caller can render it.
-		if ($strict === true && $this->report->hasErrors() === true) {
-			throw new OasValidationException(
-				message: 'Generated OAS failed strict validation: ' . count($this->report->getErrors()) . ' error(s)',
-				report: $this->report,
-			);
+	/**
+	 * The operationId prefix of a register: its PascalCase title when prefixing, otherwise none.
+	 *
+	 * @param object $register The register.
+	 * @param bool   $prefixed Whether operationIds carry the register prefix.
+	 *
+	 * @return string The prefix.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function operationIdPrefixFor(object $register, bool $prefixed): string {
+		if ($prefixed === true) {
+			return $this->propertySanitizer->names->pascalCase(string: $register->getTitle());
 		}
 
-		return $this->oas;
-	}//end createOas()
+		return '';
+	}//end operationIdPrefixFor()
 
 	/**
 	 * Log every validation issue once at the appropriate severity level.
@@ -486,46 +846,7 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function enrichSchema(object $schema): array {
-		$schemaProperties = $schema->getProperties();
-
-		// Start with core API properties.
-		$cleanProperties = [
-			'_self' => [
-				'$ref' => '#/components/schemas/_self',
-				'readOnly' => true,
-				'description' => 'Object metadata including timestamps, ownership, and system information',
-			],
-			'id' => [
-				'type' => 'string',
-				'format' => 'uuid',
-				'readOnly' => true,
-				'example' => '123e4567-e89b-12d3-a456-426614174000',
-				'description' => 'The unique identifier for the object.',
-			],
-		];
-
-		// 🔴 A FIELD NAME IS INFORMATION, AND THE GOVERNED NAMES ARE THE ONES
-		// WORTH PROTECTING. `onderzoek_integriteit`, `schuldhulpverlening`,
-		// `bijzondere_bijstand`: the name alone says what category of fact is
-		// held, and on a record about one person it says the fact is held about
-		// them. A property carries an authorization block or a scope precisely
-		// because it is sensitive, so the set of governed names is by
-		// construction the set most worth not printing.
-		//
-		// The objection is that a schema is a contract. It is smaller than it
-		// looks: the API NEVER returns a property this caller may not read, so
-		// describing it promises a field that will never arrive. Leaving it out
-		// makes the document MORE truthful, not less. It describes the API this
-		// caller actually has.
-		$withheld = 0;
-		foreach ($schemaProperties ?? [] as $propertyName => $propertyDefinition) {
-			if ($this->rbacAnnotator->mayDescribe(schema: $schema, property: (string)$propertyName) === false) {
-				$withheld++;
-				continue;
-			}
-
-			$cleanProperties[$propertyName] = $this->sanitizePropertyDefinition(propertyDefinition: $propertyDefinition);
-		}
+		[$cleanProperties, $withheld] = $this->describableProperties(schema: $schema);
 
 		$described = [
 			'type' => 'object',
@@ -541,6 +862,20 @@ class OasService {
 			$described['required'] = $required;
 		}
 
+		return $this->withWithheldCount(described: $described, withheld: $withheld);
+	}//end enrichSchema()
+
+	/**
+	 * The described schema, marked with how many properties were withheld from it, if any.
+	 *
+	 * @param array<string, mixed> $described The described schema.
+	 * @param int                  $withheld  The number of properties withheld.
+	 *
+	 * @return array<string, mixed> The described schema.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function withWithheldCount(array $described, int $withheld): array {
 		if ($withheld > 0) {
 			// A COUNT, NEVER NAMES. Naming them here would be the leak with an
 			// audit trail attached. Saying nothing would be worse in its own
@@ -552,325 +887,121 @@ class OasService {
 		}
 
 		return $described;
-	}//end enrichSchema()
+	}//end withWithheldCount()
 
 	/**
-	 * Sanitize property definition to be valid OpenAPI schema
+	 * The core API properties plus the sanitised schema properties this caller may read.
 	 *
-	 * This method ensures property definitions conform to OpenAPI 3.1 standards
-	 * by removing invalid properties and normalizing the structure.
+	 * @param object $schema The schema object.
 	 *
-	 * @param mixed $propertyDefinition The property definition to sanitize
+	 * @return array{0: array<string, mixed>, 1: int} The properties and the number withheld.
 	 *
-	 * @return (array[]|mixed|string)[] Valid OpenAPI property definition
-	 *
-	 * @psalm-return array{
-	 *     title?: mixed,
-	 *     writeOnly?: mixed,
-	 *     readOnly?: mixed,
-	 *     nullable?: mixed,
-	 *     '$ref'?: mixed,
-	 *     not?: mixed,
-	 *     oneOf?: mixed,
-	 *     anyOf?: mixed,
-	 *     allOf?: mixed|non-empty-list<non-empty-array>,
-	 *     additionalProperties?: mixed,
-	 *     items?: mixed,
-	 *     properties?: mixed,
-	 *     required?: mixed,
-	 *     minProperties?: mixed,
-	 *     maxProperties?: mixed,
-	 *     uniqueItems?: mixed,
-	 *     minItems?: mixed,
-	 *     maxItems?: mixed,
-	 *     pattern?: mixed,
-	 *     minLength?: mixed,
-	 *     maxLength?: mixed,
-	 *     exclusiveMinimum?: mixed,
-	 *     minimum?: mixed,
-	 *     exclusiveMaximum?: mixed,
-	 *     maximum?: mixed,
-	 *     multipleOf?: mixed,
-	 *     const?: mixed,
-	 *     enum?: mixed,
-	 *     default?: mixed,
-	 *     examples?: mixed,
-	 *     example?: mixed,
-	 *     description?: 'Property value'|mixed,
-	 *     format?: mixed,
-	 *     type?: 'string'|mixed
-	 * }
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many OpenAPI schema keywords require individual validation
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for schema keyword processing
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive OpenAPI schema validation logic
+	 * @spec openspec/specs/oas-generation/spec.md
 	 */
-	private function sanitizePropertyDefinition($propertyDefinition): array {
-		// If it's not an array, convert to basic string type.
-		if (is_array($propertyDefinition) === false) {
-			return [
-				'type' => 'string',
-				'description' => 'Property value',
-			];
-		}
+	private function describableProperties(object $schema): array {
+		$cleanProperties = self::CORE_PROPERTIES;
 
-		// Start with a clean definition.
-		$cleanDef = [];
-
-		// Standard OpenAPI schema keywords that are allowed.
-		$allowedKeywords = [
-			'type',
-			'format',
-			'description',
-			'example',
-			'examples',
-			'default',
-			'enum',
-			'const',
-			'multipleOf',
-			'maximum',
-			'exclusiveMaximum',
-			'minimum',
-			'exclusiveMinimum',
-			'maxLength',
-			'minLength',
-			'pattern',
-			'maxItems',
-			'minItems',
-			'uniqueItems',
-			'maxProperties',
-			'minProperties',
-			'required',
-			'properties',
-			'items',
-			'additionalProperties',
-			'allOf',
-			'anyOf',
-			'oneOf',
-			'not',
-			'$ref',
-			'nullable',
-			'readOnly',
-			'writeOnly',
-			'title',
-		];
-
-		// Copy only valid OpenAPI schema keywords (strips internal fields like
-		// objectConfiguration, inversedBy, authorization, defaultBehavior, etc.).
-		foreach ($allowedKeywords as $keyword) {
-			if (($propertyDefinition[$keyword] ?? null) !== null) {
-				$cleanDef[$keyword] = $propertyDefinition[$keyword];
-			}
-		}
-
-		// Recursively sanitize nested structures (items, properties, composition keywords).
-		if (isset($cleanDef['items']) === true && is_array($cleanDef['items']) === true) {
-			$cleanDef['items'] = $this->sanitizePropertyDefinition(propertyDefinition: $cleanDef['items']);
-		}
-
-		if (isset($cleanDef['properties']) === true && is_array($cleanDef['properties']) === true) {
-			foreach ($cleanDef['properties'] as $subPropName => $subPropDef) {
-				$cleanDef['properties'][$subPropName] = $this->sanitizePropertyDefinition(propertyDefinition: $subPropDef);
-			}
-		}
-
-		foreach (['oneOf', 'anyOf', 'allOf'] as $compositionKey) {
-			if (isset($cleanDef[$compositionKey]) === true && is_array($cleanDef[$compositionKey]) === true) {
-				foreach ($cleanDef[$compositionKey] as $idx => $item) {
-					if (is_array($item) === true) {
-						$cleanDef[$compositionKey][$idx] = $this->sanitizePropertyDefinition(propertyDefinition: $item);
-					}
-				}
-			}
-		}
-
-		// Remove invalid/empty values that violate OpenAPI spec.
-		// OneOf must have at least 1 item, remove if empty.
-		$hasOneOf = ($cleanDef['oneOf'] ?? null) !== null;
-		$oneOfIsEmpty = empty($cleanDef['oneOf']) === true || is_array($cleanDef['oneOf']) === false;
-		if ($hasOneOf === true && $oneOfIsEmpty === true) {
-			unset($cleanDef['oneOf']);
-		}//end if
-
-		// AnyOf must have at least 1 item, remove if empty.
-		$hasAnyOf = ($cleanDef['anyOf'] ?? null) !== null;
-		$anyOfIsEmpty = empty($cleanDef['anyOf']) === true || is_array($cleanDef['anyOf']) === false;
-		if ($hasAnyOf === true && $anyOfIsEmpty === true) {
-			unset($cleanDef['anyOf']);
-		}//end if
-
-		// AllOf must have at least 1 item, remove if empty or invalid.
-		if (isset($cleanDef['allOf']) === true) {
-			if (is_array($cleanDef['allOf']) === false || empty($cleanDef['allOf']) === true) {
-				unset($cleanDef['allOf']);
+		// 🔴 A FIELD NAME IS INFORMATION, AND THE GOVERNED NAMES ARE THE ONES
+		// WORTH PROTECTING. `onderzoek_integriteit`, `schuldhulpverlening`,
+		// `bijzondere_bijstand`: the name alone says what category of fact is
+		// held, and on a record about one person it says the fact is held about
+		// them. A property carries an authorization block or a scope precisely
+		// because it is sensitive, so the set of governed names is by
+		// construction the set most worth not printing.
+		//
+		// The objection is that a schema is a contract. It is smaller than it
+		// looks: the API NEVER returns a property this caller may not read, so
+		// describing it promises a field that will never arrive. Leaving it out
+		// makes the document MORE truthful, not less. It describes the API this
+		// caller actually has.
+		$withheld = 0;
+		foreach ($schema->getProperties() ?? [] as $propertyName => $propertyDefinition) {
+			if ($this->rbacAnnotator->mayDescribe(schema: $schema, property: (string)$propertyName) === false) {
+				$withheld++;
+				continue;
 			}
 
-			if (isset($cleanDef['allOf']) === true && is_array($cleanDef['allOf']) === true) {
-				// Validate each allOf element.
-				$validAllOfItems = [];
-				foreach ($cleanDef['allOf'] as $item) {
-					// Each allOf item must be an object/array.
-					if (is_array($item) === true && empty($item) === false) {
-						$validAllOfItems[] = $item;
-					}
-				}
-
-				// If no valid items remain, remove allOf.
-				if (empty($validAllOfItems) === true) {
-					unset($cleanDef['allOf']);
-				}
-
-				if (empty($validAllOfItems) === false) {
-					$cleanDef['allOf'] = $validAllOfItems;
-				}
-			}//end if
-		}//end if
-
-		// $ref must be a non-empty string, remove if empty.
-		$hasRef = ($cleanDef['$ref'] ?? null) !== null;
-		$refIsEmpty = empty($cleanDef['$ref']) === true || is_string($cleanDef['$ref']) === false;
-		if ($hasRef === true && $refIsEmpty === true) {
-			unset($cleanDef['$ref']);
-		}//end if
-
-		// Normalize bare $ref values (e.g., "vestiging") to proper component references.
-		if (isset($cleanDef['$ref']) === true
-			&& is_string($cleanDef['$ref']) === true
-			&& strpos($cleanDef['$ref'], '#/') !== 0
-		) {
-			$cleanDef['$ref'] = '#/components/schemas/' . $this->sanitizeSchemaName(title: $cleanDef['$ref']);
+			$cleanProperties[$propertyName] = $this->propertySanitizer->sanitize(definition: $propertyDefinition);
 		}
 
-		// Enum must have at least 1 item, remove if empty.
-		$hasEnum = ($cleanDef['enum'] ?? null) !== null;
-		$enumIsEmpty = empty($cleanDef['enum']) === true || is_array($cleanDef['enum']) === false;
-		if ($hasEnum === true && $enumIsEmpty === true) {
-			unset($cleanDef['enum']);
-		}//end if
-
-		// Property-level `required` must be an array (list of required sub-properties),
-		// not a boolean. Booleans leak from schema config and violate OpenAPI spec.
-		if (isset($cleanDef['required']) === true && is_array($cleanDef['required']) === false) {
-			unset($cleanDef['required']);
-		}
-
-		// Validate `type` is a recognized OpenAPI 3.1 type.
-		$validTypes = ['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'];
-		if (isset($cleanDef['type']) === true) {
-			if (is_string($cleanDef['type']) === true
-				&& in_array($cleanDef['type'], $validTypes, true) === false
-			) {
-				$cleanDef['type'] = 'string';
-			}
-		}
-
-		// `items` must be a JSON Schema object, not an array. Fix malformed items.
-		if (isset($cleanDef['items']) === true) {
-			if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
-				// Sequential array (list) — not valid. Use first element or default.
-				$firstItem = $cleanDef['items'][0] ?? null;
-				$cleanDef['items'] = ['type' => 'string'];
-				if (empty($firstItem) === false) {
-					$cleanDef['items'] = $firstItem;
-				}
-			}
-
-			if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {
-				$cleanDef['items'] = ['type' => 'string'];
-			}
-		}
-
-		// Array types must have items definition.
-		if (($cleanDef['type'] ?? null) === 'array' && isset($cleanDef['items']) === false) {
-			$cleanDef['items'] = ['type' => 'string'];
-		}
-
-		// Ensure we have at least a type.
-		if (isset($cleanDef['type']) === false && isset($cleanDef['$ref']) === false) {
-			$cleanDef['type'] = 'string';
-		}
-
-		// Add basic description if missing.
-		if (isset($cleanDef['description']) === false && isset($cleanDef['$ref']) === false) {
-			$cleanDef['description'] = 'Property value';
-		}
-
-		return $cleanDef;
-	}//end sanitizePropertyDefinition()
+		return [$cleanProperties, $withheld];
+	}//end describableProperties()
 
 	/**
 	 * Add CRUD paths for a schema.
 	 *
 	 * @param object $register The register object
 	 * @param object $schema The schema object
-	 * @param array $rbac RBAC groups {createGroups, readGroups, updateGroups, deleteGroups}
-	 * @param string $operationIdPrefix Prefix for operationId to ensure uniqueness across registers
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
-	private function addCrudPaths(object $register, object $schema, array $rbac = [], string $operationIdPrefix = ''): void {
-		$registerSlugValue = $register->getSlug();
-		$registerSlug = $this->slugify(string: $register->getTitle());
-		if ($registerSlugValue !== null && $registerSlugValue !== '') {
-			$registerSlug = $registerSlugValue;
-		}
-
-		$schemaSlugValue = $schema->getSlug();
-		$schemaSlug = $this->slugify(string: $schema->getTitle());
-		if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
-			$schemaSlug = $schemaSlugValue;
-		}
-
-		$basePath = '/objects/' . $registerSlug . '/' . $schemaSlug;
-
-		// Collection endpoints (tags are inside individual operations).
-		$getCollection = $this->createGetCollectionOperation(schema: $schema);
-		$postOn = $this->createPostOperation(schema: $schema);
-
-		// Apply operationId prefix for uniqueness across registers.
-		if ($operationIdPrefix !== '') {
-			$getCollection['operationId'] = $operationIdPrefix . $getCollection['operationId'];
-			$postOn['operationId'] = $operationIdPrefix . $postOn['operationId'];
-		}
-
-		// Append RBAC group info to descriptions and add 403 responses.
-		$this->rbacAnnotator->applyRbacToOperation(operation: $getCollection, groups: $rbac['readGroups'] ?? []);
-		$this->rbacAnnotator->applyRbacToOperation(operation: $postOn, groups: $rbac['createGroups'] ?? []);
-
+	private function addCrudPaths(object $register, object $schema): void {
+		$basePath = $this->basePathOf(register: $register, schema: $schema);
 		$this->oas['paths'][$basePath] = [
-			'get' => $getCollection,
-			'post' => $postOn,
+			'get' => $this->finishOperation(operation: $this->createGetCollectionOperation(schema: $schema), groupsKey: 'readGroups'),
+			'post' => $this->finishOperation(operation: $this->createPostOperation(schema: $schema), groupsKey: 'createGroups'),
 		];
-
-		// Individual resource endpoints (tags are inside individual operations).
-		$getOn = $this->createGetOperation(schema: $schema);
-		$putOn = $this->createPutOperation(schema: $schema);
-		$patchOn = $this->createPatchOperation(schema: $schema);
-		$deleteOn = $this->createDeleteOperation(schema: $schema);
-
-		// Apply operationId prefix for uniqueness across registers.
-		if ($operationIdPrefix !== '') {
-			$getOn['operationId'] = $operationIdPrefix . $getOn['operationId'];
-			$putOn['operationId'] = $operationIdPrefix . $putOn['operationId'];
-			$patchOn['operationId'] = $operationIdPrefix . $patchOn['operationId'];
-			$deleteOn['operationId'] = $operationIdPrefix . $deleteOn['operationId'];
-		}
-
-		// Append RBAC group info to descriptions and add 403 responses.
-		$this->rbacAnnotator->applyRbacToOperation(operation: $getOn, groups: $rbac['readGroups'] ?? []);
-		$this->rbacAnnotator->applyRbacToOperation(operation: $putOn, groups: $rbac['updateGroups'] ?? []);
-		$this->rbacAnnotator->applyRbacToOperation(operation: $patchOn, groups: $rbac['updateGroups'] ?? []);
-		$this->rbacAnnotator->applyRbacToOperation(operation: $deleteOn, groups: $rbac['deleteGroups'] ?? []);
-
 		$this->oas['paths'][$basePath . '/{id}'] = [
-			'get' => $getOn,
-			'put' => $putOn,
-			'patch' => $patchOn,
-			'delete' => $deleteOn,
+			'get' => $this->finishOperation(operation: $this->createGetOperation(schema: $schema), groupsKey: 'readGroups'),
+			'put' => $this->finishOperation(operation: $this->createPutOperation(schema: $schema), groupsKey: 'updateGroups'),
+			'patch' => $this->finishOperation(operation: $this->createPatchOperation(schema: $schema), groupsKey: 'updateGroups'),
+			'delete' => $this->finishOperation(operation: $this->createDeleteOperation(schema: $schema), groupsKey: 'deleteGroups'),
 		];
 	}//end addCrudPaths()
+
+	/**
+	 * The operation with the register's operationId prefix and the schema's groups under the given key applied.
+	 *
+	 * @param array  $operation The OpenAPI operation.
+	 * @param string $groupsKey The RBAC key whose groups may call it.
+	 *
+	 * @return array The finished operation.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function finishOperation(array $operation, string $groupsKey): array {
+		if ($this->operationIdPrefix !== '') {
+			$operation['operationId'] = $this->operationIdPrefix . $operation['operationId'];
+		}
+
+		$this->rbacAnnotator->applyRbacToOperation(operation: $operation, groups: $this->pathRbac[$groupsKey] ?? []);
+		return $operation;
+	}//end finishOperation()
+
+	/**
+	 * The `/objects/{register}/{schema}` base path of a register/schema pair.
+	 *
+	 * @param object $register The register object.
+	 * @param object $schema   The schema object.
+	 *
+	 * @return string The base path.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function basePathOf(object $register, object $schema): string {
+		return '/objects/' . $this->slugOf(entity: $register) . '/' . $this->slugOf(entity: $schema);
+	}//end basePathOf()
+
+	/**
+	 * The slug of a register or schema; its slugified title when it has none.
+	 *
+	 * @param object $entity The register or schema.
+	 *
+	 * @return string The slug.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function slugOf(object $entity): string {
+		$fallback = $this->propertySanitizer->names->slug(string: $entity->getTitle());
+		$slug     = $entity->getSlug();
+		if ($slug === null || $slug === '') {
+			return $fallback;
+		}
+
+		return $slug;
+	}//end slugOf()
 
 	/**
 	 * Add the JSON-LD `@context` document endpoints for a register/schema
@@ -885,62 +1016,52 @@ class OasService {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	private function addJsonLdContextPaths(object $register, object $schema): void {
-		$registerSlug = $register->getSlug();
-		if ($registerSlug === null || $registerSlug === '') {
-			$registerSlug = $this->slugify(string: $register->getTitle());
-		}
-
-		$schemaSlug = $schema->getSlug();
-		if ($schemaSlug === null || $schemaSlug === '') {
-			$schemaSlug = $this->slugify(string: $schema->getTitle());
-		}
-
-		$contextResponse = [
-			'200' => [
-				'description' => 'JSON-LD context document of the form `{"@context": {…}}`.',
-				'content' => [
-					'application/ld+json' => [
-						'schema' => [
-							'type' => 'object',
-							'properties' => [
-								'@context' => ['type' => 'object'],
-							],
-						],
-					],
-				],
-			],
-			'404' => [
-				'description' => 'Register or schema not found',
-				'content' => [
-					'application/json' => [
-						'schema' => ['$ref' => '#/components/schemas/Error'],
-					],
-				],
-			],
-		];
+		$registerSlug = $this->slugOf(entity: $register);
+		$schemaSlug   = $this->slugOf(entity: $schema);
 
 		// Register-wide context document (idempotent across schemas of a register).
-		$this->oas['paths']['/contexts/' . $registerSlug] = [
-			'get' => [
-				'summary' => 'JSON-LD context for register ' . $registerSlug,
-				'operationId' => 'getContext' . $this->pascalCase(string: (string)$registerSlug),
-				'tags' => ['JSON-LD'],
-				'description' => 'Dereferenceable register-wide JSON-LD @context document.',
-				'responses' => $contextResponse,
-			],
-		];
+		$this->oas['paths']['/contexts/' . $registerSlug]['get'] = $this->contextOperation(registerSlug: $registerSlug, schemaSlug: null);
 
 		// Per-schema context document.
-		$this->oas['paths']['/contexts/' . $registerSlug . '/' . $schemaSlug] = [
-			'get' => [
-				'summary' => 'JSON-LD context for ' . $schemaSlug,
-				'operationId' => 'getContext' . $this->pascalCase(string: (string)$registerSlug) . $this->pascalCase(string: (string)$schemaSlug),
-				'tags' => ['JSON-LD'],
-				'description' => 'Dereferenceable per-schema JSON-LD @context document.',
-				'responses' => $contextResponse,
-			],
-		];
+		$this->oas['paths']['/contexts/' . $registerSlug . '/' . $schemaSlug]['get'] = $this->contextOperation(
+			registerSlug: $registerSlug,
+			schemaSlug: $schemaSlug
+		);
 	}//end addJsonLdContextPaths()
+
+	/**
+	 * The GET operation of one dereferenceable JSON-LD context document.
+	 *
+	 * The register-wide document (no schema) is summarised as `register <slug>`
+	 * and named `getContext<Register>`; a per-schema one is summarised by the
+	 * schema slug and named `getContext<Register><Schema>`.
+	 *
+	 * @param string      $registerSlug The register's slug.
+	 * @param string|null $schemaSlug   The schema's slug, or null for the register-wide document.
+	 *
+	 * @return array<string, mixed> The operation.
+	 *
+	 * @spec openspec/specs/json-ld-output/spec.md
+	 */
+	private function contextOperation(string $registerSlug, ?string $schemaSlug): array {
+		$names       = $this->propertySanitizer->names;
+		$operationId = 'getContext' . $names->pascalCase(string: $registerSlug);
+		$subject     = 'register ' . $registerSlug;
+		$scope       = 'register-wide';
+		if ($schemaSlug !== null) {
+			$operationId .= $names->pascalCase(string: $schemaSlug);
+			$subject      = $schemaSlug;
+			$scope        = 'per-schema';
+		}
+
+		return [
+			'summary' => 'JSON-LD context for ' . $subject,
+			'operationId' => $operationId,
+			'tags' => ['JSON-LD'],
+			'description' => 'Dereferenceable ' . $scope . ' JSON-LD @context document.',
+			'responses' => ['200' => self::CONTEXT_DOCUMENT_RESPONSE, '404' => $this->errorResponse(description: 'Register or schema not found')],
+		];
+	}//end contextOperation()
 
 	/**
 	 * Add extended paths for a schema using whitelist approach
@@ -956,49 +1077,13 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function addExtendedPaths(object $register, object $schema): void {
-		$registerSlugValue = $register->getSlug();
-		$registerSlug = $this->slugify(string: $register->getTitle());
-		if ($registerSlugValue !== null && $registerSlugValue !== '') {
-			$registerSlug = $registerSlugValue;
-		}
-
-		$schemaSlugValue = $schema->getSlug();
-		$schemaSlug = $this->slugify(string: $schema->getTitle());
-		if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
-			$schemaSlug = $schemaSlugValue;
-		}
-
-		$basePath = '/objects/' . $registerSlug . '/' . $schemaSlug;
-
-		// Only add whitelisted extended endpoints.
+		$basePath = $this->basePathOf(register: $register, schema: $schema);
 		foreach (self::INCLUDED_EXTENDED_ENDPOINTS ?? [] as $endpoint) {
-			switch ($endpoint) {
-				case 'audit-trails':
-					$this->oas['paths'][$basePath . '/{id}/audit-trails'] = [
-						'get' => $this->createLogsOperation(schema: $schema),
-					];
-					break;
-
-				case 'files':
-					$this->oas['paths'][$basePath . '/{id}/files'] = [
-						'get' => $this->createGetFilesOperation(schema: $schema),
-						'post' => $this->createPostFileOperation(schema: $schema),
-					];
-					break;
-
-				case 'lock':
-					$this->oas['paths'][$basePath . '/{id}/lock'] = [
-						'post' => $this->createLockOperation(schema: $schema),
-					];
-					break;
-
-				case 'unlock':
-					$this->oas['paths'][$basePath . '/{id}/unlock'] = [
-						'post' => $this->createUnlockOperation(schema: $schema),
-					];
-					break;
-			}//end switch
-		}//end foreach
+			$pathItem = $this->extendedPathItem(endpoint: $endpoint, schema: $schema);
+			if ($pathItem !== null) {
+				$this->oas['paths'][$basePath . '/{id}/' . $endpoint] = $pathItem;
+			}
+		}
 
 		// Note: By default, NO extended endpoints are included.
 		// To include them, add them to INCLUDED_EXTENDED_ENDPOINTS constant.
@@ -1006,149 +1091,139 @@ class OasService {
 	}//end addExtendedPaths()
 
 	/**
-	 * Create common query parameters for object operations
+	 * The path item of an extended endpoint (audit-trails, files, lock, unlock); null for any other.
 	 *
-	 * @param bool $isCollection Whether this is for a collection endpoint
-	 * @param object $schema The schema object for generating dynamic filter parameters
-	 *                       (only used for collection endpoints)
+	 * @param string $endpoint The endpoint name, also its path segment.
+	 * @param object $schema   The schema object.
+	 *
+	 * @return array|null The path item.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function extendedPathItem(string $endpoint, object $schema): ?array {
+		return match ($endpoint) {
+			'audit-trails' => ['get' => $this->createLogsOperation(schema: $schema)],
+			'files' => ['get' => $this->createGetFilesOperation(schema: $schema), 'post' => $this->createPostFileOperation(schema: $schema)],
+			'lock' => ['post' => $this->createLockOperation(schema: $schema)],
+			'unlock' => ['post' => $this->createUnlockOperation(schema: $schema)],
+			default => null,
+		};
+	}//end extendedPathItem()
+
+	/**
+	 * Create common query parameters for object operations.
+	 *
+	 * @param bool        $isCollection Whether this is for a collection endpoint
+	 * @param object|null $schema       The schema object for generating dynamic filter parameters
+	 *                                  (only used for collection endpoints)
 	 *
 	 * @return array List of query parameter definitions for OpenAPI spec.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls collection vs single item parameters
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dynamic parameter generation from schema properties
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function createCommonQueryParameters(bool $isCollection = false, ?object $schema = null): array {
-		$parameters = [
-			[
-				'name' => '_extend',
-				'in' => 'query',
-				'required' => false,
-				'description' => 'Comma-separated list of properties to extend.',
-				'schema' => [
-					'type' => 'string',
-				],
-				'example' => 'property1,property2,property3',
-			],
-			[
-				'name' => '_filter',
-				'in' => 'query',
-				'required' => false,
-				'description' => 'Comma-separated list of properties to include in the response. ',
-				'schema' => [
-					'type' => 'string',
-				],
-				'example' => 'id,name,description',
-			],
-			[
-				'name' => '_unset',
-				'in' => 'query',
-				'required' => false,
-				'description' => 'Comma-separated list of properties to remove from the response.',
-				'schema' => [
-					'type' => 'string',
-				],
-				'example' => 'internalField1,internalField2',
-			],
-		];
+		if ($isCollection === false) {
+			return self::COMMON_QUERY_PARAMETERS;
+		}
 
-		// Add collection-specific parameters.
-		if ($isCollection === true) {
-			// Add _search parameter.
-			$parameters[] = [
-				'name' => '_search',
-				'in' => 'query',
-				'required' => false,
-				'description' => 'Full-text search query to filter objects in the collection.',
-				'schema' => [
-					'type' => 'string',
-				],
-				'example' => 'search term',
-			];
+		$parameters = [...self::COMMON_QUERY_PARAMETERS, self::SEARCH_QUERY_PARAMETER];
+		if ($schema === null) {
+			return $parameters;
+		}
 
-			// Add dynamic filter parameters based on schema properties.
-			if ($schema !== null) {
-				$schemaProperties = $schema->getProperties();
-				foreach ($schemaProperties ?? [] as $propertyName => $propertyDefinition) {
-					// Skip metadata properties and internal system properties.
-					if (str_starts_with($propertyName, '@') === true) {
-						continue;
-					}
-
-					// Skip the id property as it's already handled as a path parameter.
-					if ($propertyName === 'id') {
-						continue;
-					}
-
-					// Get property type from definition.
-					$propertyType = $this->getPropertyType(propertyDefinition: $propertyDefinition);
-
-					// Build schema for parameter.
-					$paramSchema = [
-						'type' => $propertyType,
-					];
-
-					// Array types require an items field.
-					if ($propertyType === 'array') {
-						$paramSchema['items'] = ['type' => 'string'];
-					}
-
-					$parameters[] = [
-						'name' => $propertyName,
-						'in' => 'query',
-						'required' => false,
-						'description' => 'Filter results by ' . $propertyName,
-						'schema' => $paramSchema,
-					];
-				}//end foreach
-			}//end if
-		}//end if
-
-		return $parameters;
+		return [...$parameters, ...$this->propertyFilterParameters(schema: $schema)];
 	}//end createCommonQueryParameters()
 
 	/**
-	 * Get OpenAPI type for a property definition
+	 * The filter parameter of every schema property a collection can filter on.
 	 *
-	 * @param mixed $propertyDefinition The property definition from the schema
+	 * @param object $schema The schema.
 	 *
-	 * @return string The OpenAPI type for the property
+	 * @return array The parameters.
 	 *
-	 * @spec openspec/specs/mock-registers/spec.md#requirement-schema-compliance-with-adr-006
+	 * @spec openspec/specs/oas-validation/spec.md
 	 */
-	private function getPropertyType($propertyDefinition): string {
-		$validTypes = ['object', 'array', 'string', 'number', 'integer', 'boolean', 'null'];
-
-		// If the property definition is an array, look for the type key.
-		if (is_array($propertyDefinition) === true && (($propertyDefinition['type'] ?? null) !== null)) {
-			$type = $propertyDefinition['type'];
-			// Validate the type is a recognized OpenAPI type.
-			if (in_array($type, $validTypes, true) === true) {
-				return $type;
+	private function propertyFilterParameters(object $schema): array {
+		$parameters = [];
+		foreach ($schema->getProperties() ?? [] as $propertyName => $propertyDefinition) {
+			// Metadata properties are skipped, and id is already a path parameter.
+			if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
+				continue;
 			}
 
-			return 'string';
+			$parameters[] = $this->propertyFilterParameter(propertyName: $propertyName, propertyDefinition: $propertyDefinition);
 		}
 
-		// If the property definition is a string, assume it's the type.
-		if (is_string($propertyDefinition) === true) {
-			// Map common types to OpenAPI types.
-			$typeMap = [
-				'int' => 'integer',
-				'float' => 'number',
-				'bool' => 'boolean',
-				'string' => 'string',
-				'array' => 'array',
-				'object' => 'object',
-			];
+		return $parameters;
+	}//end propertyFilterParameters()
 
-			return $typeMap[$propertyDefinition] ?? 'string';
+	/**
+	 * The query parameter that filters a collection by one schema property.
+	 *
+	 * @param string $propertyName       The property name
+	 * @param mixed  $propertyDefinition The property definition
+	 *
+	 * @return array<string, mixed> OpenAPI parameter object
+	 */
+	private function propertyFilterParameter(string $propertyName, $propertyDefinition): array {
+		$propertyType = $this->propertySanitizer->typeOf(definition: $propertyDefinition);
+		$paramSchema = ['type' => $propertyType];
+
+		// Array types require an items field.
+		if ($propertyType === 'array') {
+			$paramSchema['items'] = ['type' => 'string'];
 		}
 
-		// Default to string if type cannot be determined.
-		return 'string';
-	}//end getPropertyType()
+		return [
+			'name' => $propertyName,
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Filter results by ' . $propertyName,
+			'schema' => $paramSchema,
+		];
+	}//end propertyFilterParameter()
+
+	/**
+	 * An error response: a description and the shared Error schema as its JSON body.
+	 *
+	 * @param string $description The response description
+	 *
+	 * @return array<string, mixed> OpenAPI response object
+	 */
+	private function errorResponse(string $description): array {
+		return ['description' => $description, 'content' => self::ERROR_CONTENT];
+	}//end errorResponse()
+
+	/**
+	 * The required `id` path parameter of a single-object operation.
+	 *
+	 * @param string $description The parameter description
+	 *
+	 * @return array<string, mixed> OpenAPI parameter object
+	 */
+	private function idPathParameter(string $description): array {
+		return [
+			'name' => 'id',
+			'in' => 'path',
+			'required' => true,
+			'description' => $description,
+			'schema' => ['type' => 'string', 'format' => 'uuid'],
+		];
+	}//end idPathParameter()
+
+	/**
+	 * A JSON content map whose schema references a schema component by its sanitized name.
+	 *
+	 * @param string $schemaName The schema title
+	 *
+	 * @return array<string, mixed> OpenAPI content map
+	 */
+	private function schemaRefContent(string $schemaName): array {
+		$reference = '#/components/schemas/' . $this->propertySanitizer->names->schemaName(title: $schemaName);
+		return ['application/json' => ['schema' => ['$ref' => $reference]]];
+	}//end schemaRefContent()
 
 	/**
 	 * Create GET collection operation.
@@ -1166,70 +1241,52 @@ class OasService {
 			$schemaTitle = 'UnknownSchema';
 		}
 
-		$sanitizedSchemaName = $this->sanitizeSchemaName(title: $schemaTitle);
-
-		// Validate that we have a proper schema reference.
-		if (empty($sanitizedSchemaName) === true) {
-			$sanitizedSchemaName = 'UnknownSchema';
-		}
-
 		return [
 			'summary' => 'Get all ' . $schemaTitle . ' objects',
-			'operationId' => 'getAll' . $this->pascalCase(string: $schemaTitle),
+			'operationId' => 'getAll' . $this->propertySanitizer->names->pascalCase(string: $schemaTitle),
 			'tags' => [$schemaTitle],
 			'description' => 'Retrieve a list of all ' . $schemaTitle . ' objects',
 			'parameters' => $this->createCommonQueryParameters(isCollection: true, schema: $schema),
-			'responses' => [
-				'200' => [
-					'description' => 'List of ' . $schemaTitle . ' objects with pagination metadata. '
-						. 'Send `Accept: application/ld+json` to receive a JSON-LD `@graph` '
-						. 'document (pagination under `or:` terms); the default '
-						. '`application/json` representation is unchanged (json-ld-output).',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'allOf' => [
-									[
-										'$ref' => '#/components/schemas/PaginatedResponse',
-									],
-									[
-										'type' => 'object',
-										'properties' => [
-											'results' => [
-												'type' => 'array',
-												'items' => [
-													'$ref' => '#/components/schemas/' . $sanitizedSchemaName,
-												],
-											],
-										],
-									],
-								],
-							],
-						],
-						'application/ld+json' => [
-							'schema' => [
-								'type' => 'object',
-								'description' => 'JSON-LD @graph serialization of the collection.',
-								'properties' => [
-									'@context' => ['type' => 'string', 'format' => 'uri'],
-									'@graph' => ['type' => 'array', 'items' => ['type' => 'object']],
-									'or:total' => ['type' => 'integer'],
-								],
-							],
-						],
-					],
-				],
-				'400' => [
-					'description' => 'Invalid query parameters',
-					'content' => [
-						'application/json' => [
-							'schema' => ['$ref' => '#/components/schemas/Error'],
-						],
-					],
-				],
-			],
+			'responses' => $this->collectionResponses(schemaTitle: $schemaTitle),
 		];
 	}//end createGetCollectionOperation()
+
+	/**
+	 * The responses of a GET collection operation: the paginated list, or invalid query parameters.
+	 *
+	 * @param string $schemaTitle The schema title.
+	 *
+	 * @return array<int|string, mixed> The responses by status.
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
+	 */
+	private function collectionResponses(string $schemaTitle): array {
+		return [
+			'200' => [
+				'description' => 'List of ' . $schemaTitle . self::COLLECTION_RESPONSE_NOTE,
+				'content' => $this->paginatedContent(schemaTitle: $schemaTitle),
+			],
+			'400' => $this->errorResponse(description: 'Invalid query parameters'),
+		];
+	}//end collectionResponses()
+
+	/**
+	 * The JSON and JSON-LD content of a paginated collection of a schema's objects.
+	 *
+	 * @param string $schemaTitle The schema title.
+	 *
+	 * @return array<string, mixed> OpenAPI content map
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
+	 */
+	private function paginatedContent(string $schemaTitle): array {
+		$items = ['$ref' => '#/components/schemas/' . $this->propertySanitizer->names->schemaName(title: $schemaTitle)];
+		$page  = ['type' => 'object', 'properties' => ['results' => ['type' => 'array', 'items' => $items]]];
+		return [
+			'application/json' => ['schema' => ['allOf' => [['$ref' => '#/components/schemas/PaginatedResponse'], $page]]],
+			'application/ld+json' => ['schema' => self::JSON_LD_COLLECTION_SCHEMA],
+		];
+	}//end paginatedContent()
 
 	/**
 	 * Create GET operation.
@@ -1241,67 +1298,16 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function createGetOperation(object $schema): array {
-		// Get schema name for components reference.
-		$schemaName = 'UnknownSchema';
-		if (($schema->getTitle() !== null) === true && ($schema->getTitle() !== '') === true) {
-			$schemaName = $schema->getTitle();
-		}
+		$operation = $this->itemOperation(schema: $schema, kind: 'get');
+		$operation['parameters'] = array_merge($operation['parameters'], $this->createCommonQueryParameters());
 
-		return [
-			'summary' => 'Get a ' . $schema->getTitle() . ' object by ID',
-			'operationId' => 'get' . $this->pascalCase(string: $schema->getTitle()),
-			'tags' => [$schema->getTitle()],
-			'description' => 'Retrieve a specific ' . $schema->getTitle() . ' object by its unique identifier',
-			'parameters' => array_merge(
-				[
-					[
-						'name' => 'id',
-						'in' => 'path',
-						'required' => true,
-						'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
-						'schema' => [
-							'type' => 'string',
-							'format' => 'uuid',
-						],
-					],
-				],
-				$this->createCommonQueryParameters()
-			),
+		$content = $this->schemaRefContent(schemaName: $this->schemaNameOf(schema: $schema));
+		$content['application/ld+json'] = ['schema' => self::JSON_LD_OBJECT_SCHEMA];
+
+		return $operation + [
 			'responses' => [
-				'200' => [
-					'description' => $schema->getTitle() . ' found. Send '
-						. '`Accept: application/ld+json` to receive the JSON-LD '
-						. 'representation (`@context`/`@id`/`@type`); the default '
-						. '`application/json` representation is unchanged (json-ld-output).',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
-							],
-						],
-						'application/ld+json' => [
-							'schema' => [
-								'type' => 'object',
-								'description' => 'JSON-LD serialization of the object.',
-								'properties' => [
-									'@context' => ['type' => 'string', 'format' => 'uri'],
-									'@id' => ['type' => 'string', 'format' => 'uri'],
-									'@type' => ['type' => 'string'],
-								],
-							],
-						],
-					],
-				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'200' => ['description' => $schema->getTitle() . self::OBJECT_FOUND_NOTE, 'content' => $content],
+				'404' => $this->notFoundResponse(schema: $schema),
 			],
 		];
 	}//end createGetOperation()
@@ -1316,66 +1322,71 @@ class OasService {
 	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
 	 */
 	private function createPutOperation(object $schema): array {
-		// Determine schema name for use in schema references.
-		$schemaName = 'UnknownSchema';
-		if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
-			$schemaName = $schema->getTitle();
-		}
+		$operation = $this->itemOperation(schema: $schema, kind: 'update');
+		$operation['parameters'] = array_merge($operation['parameters'], $this->createCommonQueryParameters());
+		$content = $this->schemaRefContent(schemaName: $this->schemaNameOf(schema: $schema));
 
-		return [
-			'summary' => 'Update a ' . $schema->getTitle() . ' object',
-			'operationId' => 'update' . $this->pascalCase(string: $schema->getTitle()),
-			'tags' => [$schema->getTitle()],
-			'description' => 'Update an existing ' . $schema->getTitle() . ' object with the provided data',
-			'parameters' => array_merge(
-				[
-					[
-						'name' => 'id',
-						'in' => 'path',
-						'required' => true,
-						'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to update',
-						'schema' => [
-							'type' => 'string',
-							'format' => 'uuid',
-						],
-					],
-				],
-				$this->createCommonQueryParameters()
-			),
-			'requestBody' => [
-				'required' => true,
-				'content' => [
-					'application/json' => [
-						'schema' => [
-							'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
-						],
-					],
-				],
-			],
+		return $operation + [
+			'requestBody' => ['required' => true, 'content' => $content],
 			'responses' => [
-				'200' => [
-					'description' => $schema->getTitle() . ' updated successfully',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
-							],
-						],
-					],
-				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'200' => ['description' => $schema->getTitle() . ' updated successfully', 'content' => $content],
+				'404' => $this->notFoundResponse(schema: $schema),
 			],
 		];
 	}//end createPutOperation()
+
+	/**
+	 * The name a schema's component is registered under: its title, or UnknownSchema without one.
+	 *
+	 * @param object $schema The schema object.
+	 *
+	 * @return string The component name, before sanitising.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function schemaNameOf(object $schema): string {
+		if ($schema->getTitle() !== null && $schema->getTitle() !== '') {
+			return $schema->getTitle();
+		}
+
+		return 'UnknownSchema';
+	}//end schemaNameOf()
+
+	/**
+	 * The summary, operationId, tags, description and id parameter of an operation on one object.
+	 *
+	 * @param object $schema The schema object.
+	 * @param string $kind   A key of ITEM_OPERATIONS.
+	 *
+	 * @return array<string, mixed> The start of the operation.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function itemOperation(object $schema, string $kind): array {
+		[$summary, $verb, $description, $idSuffix] = self::ITEM_OPERATIONS[$kind];
+		$title = $schema->getTitle();
+
+		return [
+			'summary' => sprintf($summary, $title),
+			'operationId' => $verb . $this->propertySanitizer->names->pascalCase(string: $title),
+			'tags' => [$title],
+			'description' => sprintf($description, $title),
+			'parameters' => [$this->idPathParameter(description: 'Unique identifier of the ' . $title . $idSuffix)],
+		];
+	}//end itemOperation()
+
+	/**
+	 * The 404 response for an object of the schema.
+	 *
+	 * @param object $schema The schema object.
+	 *
+	 * @return array<string, mixed> The response.
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function notFoundResponse(object $schema): array {
+		return $this->errorResponse(description: $schema->getTitle() . ' not found');
+	}//end notFoundResponse()
 
 	/**
 	 * Create PATCH operation (partial update, objects#patch).
@@ -1395,20 +1406,10 @@ class OasService {
 		$title = $schema->getTitle();
 
 		$operation['summary'] = 'Partially update a ' . $title . ' object';
-		$operation['operationId'] = 'patch' . $this->pascalCase(string: $title);
+		$operation['operationId'] = 'patch' . $this->propertySanitizer->names->pascalCase(string: $title);
 		$operation['description'] = 'Change only the fields sent; fields left out keep their stored value';
 		$operation['parameters'][0]['description'] = 'Unique identifier of the ' . $title . ' object to patch';
-		$operation['requestBody'] = [
-			'required' => true,
-			'content' => [
-				'application/merge-patch+json' => [
-					'schema' => ['type' => 'object'],
-				],
-				'application/json' => [
-					'schema' => ['type' => 'object'],
-				],
-			],
-		];
+		$operation['requestBody'] = self::MERGE_PATCH_BODY;
 
 		return $operation;
 	}//end createPatchOperation()
@@ -1423,52 +1424,40 @@ class OasService {
 	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
 	 */
 	private function createPostOperation(object $schema): array {
-		// Determine schema name for use in schema references.
-		$schemaName = 'UnknownSchema';
-		if (($schema->getTitle() !== null && $schema->getTitle() !== '') === true) {
-			$schemaName = $schema->getTitle();
-		}
+		$schemaName = $this->schemaNameOf(schema: $schema);
 
 		$operation = [
 			'summary' => 'Create a new ' . $schema->getTitle() . ' object',
-			'operationId' => 'create' . $this->pascalCase(string: $schema->getTitle()),
+			'operationId' => 'create' . $this->propertySanitizer->names->pascalCase(string: $schema->getTitle()),
 			'tags' => [$schema->getTitle()],
 			'description' => 'Create a new ' . $schema->getTitle() . ' object with the provided data',
 			'parameters' => $this->createCommonQueryParameters(),
-			'requestBody' => [
-				'required' => true,
-				'content' => [
-					'application/json' => [
-						'schema' => [
-							'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
-						],
-					],
-				],
-			],
-			'responses' => [
-				'201' => [
-					'description' => $schema->getTitle() . ' created successfully.',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/' . $this->sanitizeSchemaName(title: $schemaName),
-							],
-						],
-					],
-				],
-				'400' => [
-					'description' => 'Invalid request body',
-					'content' => [
-						'application/json' => [
-							'schema' => ['$ref' => '#/components/schemas/Error'],
-						],
-					],
-				],
-			],
+			'requestBody' => ['required' => true, 'content' => $this->schemaRefContent(schemaName: $schemaName)],
+			'responses' => $this->createdResponses(title: $schema->getTitle(), schemaName: $schemaName),
 		];
 
 		return $this->withUpsertOnKey(operation: $operation, schema: $schema);
 	}//end createPostOperation()
+
+	/**
+	 * The responses of a POST: the created object, or an invalid request body.
+	 *
+	 * @param string|null $title      The schema title.
+	 * @param string      $schemaName The schema's component name.
+	 *
+	 * @return array<int|string, mixed> The responses by status.
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
+	 */
+	private function createdResponses(?string $title, string $schemaName): array {
+		return [
+			'201' => [
+				'description' => $title . ' created successfully.',
+				'content' => $this->schemaRefContent(schemaName: $schemaName),
+			],
+			'400' => $this->errorResponse(description: 'Invalid request body'),
+		];
+	}//end createdResponses()
 
 	/**
 	 * Document `_upsertOn` on a POST when the schema declares a key that refuses duplicates.
@@ -1496,32 +1485,31 @@ class OasService {
 			return $operation;
 		}
 
-		$operation['parameters'][] = [
-			'name' => '_upsertOn',
-			'in' => 'query',
-			'required' => false,
-			'description' => 'Create or update by a key this schema declares unique: the record holding the key is updated (200), '
-				.'or created when none does (201). Needs a signed-in caller; cannot be combined with _failIfExists.',
-			'schema' => ['type' => 'string', 'enum' => $keys],
-		];
+		return $this->documentUpsert(operation: $operation, keys: $keys);
+	}//end withUpsertOnKey()
 
-		$error = ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]];
+	/**
+	 * Add the `_upsertOn` parameter and the statuses only the upsert answers to a POST.
+	 *
+	 * @param array<string, mixed> $operation The POST operation.
+	 * @param array<int, string>   $keys      The key names the upsert accepts.
+	 *
+	 * @return array<string, mixed> The operation with the upsert documented.
+	 *
+	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 */
+	private function documentUpsert(array $operation, array $keys): array {
+		$operation['parameters'][] = (self::UPSERT_ON_PARAMETER + ['schema' => ['type' => 'string', 'enum' => $keys]]);
 		$operation['responses']['200'] = [
 			'description' => 'Upsert: the record holding the key was updated.',
 			'content' => $operation['responses']['201']['content'],
 		];
-		$operation['responses']['401'] = ['description' => 'Upsert: the caller is not signed in.', 'content' => $error];
-		$operation['responses']['409'] = [
-			'description' => 'Upsert: more than one record holds the key (the matches are listed), or a record you cannot change holds it.',
-			'content' => $error,
-		];
-		$operation['responses']['503'] = [
-			'description' => 'Upsert: the key could not be looked up or locked; nothing was written. Retry after the Retry-After seconds.',
-			'content' => $error,
-		];
+		foreach (self::UPSERT_ERRORS as $status => $description) {
+			$operation['responses'][$status] = $this->errorResponse(description: $description);
+		}
 
 		return $operation;
-	}//end withUpsertOnKey()
+	}//end documentUpsert()
 
 	/**
 	 * Create DELETE operation
@@ -1533,37 +1521,10 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function createDeleteOperation(object $schema): array {
-		return [
-			'summary' => 'Delete a ' . $schema->getTitle() . ' object',
-			'operationId' => 'delete' . $this->pascalCase(string: $schema->getTitle()),
-			'tags' => [$schema->getTitle()],
-			'description' => 'Delete a specific ' . $schema->getTitle() . ' object by its unique identifier',
-			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to delete',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
-			],
+		return $this->itemOperation(schema: $schema, kind: 'delete') + [
 			'responses' => [
-				'204' => [
-					'description' => $schema->getTitle() . ' deleted successfully',
-				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'204' => ['description' => $schema->getTitle() . ' deleted successfully'],
+				'404' => $this->notFoundResponse(schema: $schema),
 			],
 		];
 	}//end createDeleteOperation()
@@ -1578,47 +1539,12 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function createLogsOperation(object $schema): array {
-		return [
-			'summary' => 'Get audit logs for a ' . $schema->getTitle() . ' object',
-			'operationId' => 'getLogs' . $this->pascalCase(string: $schema->getTitle()),
-			'tags' => [$schema->getTitle()],
-			'description' => 'Retrieve the audit trail for a specific ' . $schema->getTitle() . ' object',
-			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
-			],
+		$list = ['schema' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/AuditTrail']]];
+
+		return $this->itemOperation(schema: $schema, kind: 'logs') + [
 			'responses' => [
-				'200' => [
-					'description' => 'Audit logs retrieved successfully',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'type' => 'array',
-								'items' => [
-									'$ref' => '#/components/schemas/AuditTrail',
-								],
-							],
-						],
-					],
-				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'200' => ['description' => 'Audit logs retrieved successfully', 'content' => ['application/json' => $list]],
+				'404' => $this->notFoundResponse(schema: $schema),
 			],
 		];
 	}//end createLogsOperation()
@@ -1633,47 +1559,12 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function createGetFilesOperation(object $schema): array {
-		return [
-			'summary' => 'Get files for a ' . $schema->getTitle() . ' object',
-			'operationId' => 'getFiles' . $this->pascalCase(string: $schema->getTitle()),
-			'tags' => [$schema->getTitle()],
-			'description' => 'Retrieve all files associated with a specific ' . $schema->getTitle() . ' object',
-			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
-			],
+		$list = ['schema' => ['type' => 'array', 'items' => ['$ref' => '#/components/schemas/File']]];
+
+		return $this->itemOperation(schema: $schema, kind: 'getFiles') + [
 			'responses' => [
-				'200' => [
-					'description' => 'Files retrieved successfully',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'type' => 'array',
-								'items' => [
-									'$ref' => '#/components/schemas/File',
-								],
-							],
-						],
-					],
-				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'200' => ['description' => 'Files retrieved successfully', 'content' => ['application/json' => $list]],
+				'404' => $this->notFoundResponse(schema: $schema),
 			],
 		];
 	}//end createGetFilesOperation()
@@ -1688,61 +1579,11 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function createPostFileOperation(object $schema): array {
-		return [
-			'summary' => 'Upload a file for a ' . $schema->getTitle() . ' object',
-			'operationId' => 'uploadFile' . $this->pascalCase(string: $schema->getTitle()),
-			'tags' => [$schema->getTitle()],
-			'description' => 'Upload a new file and associate it with a specific ' . $schema->getTitle() . ' object',
-			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
-			],
-			'requestBody' => [
-				'required' => true,
-				'content' => [
-					'multipart/form-data' => [
-						'schema' => [
-							'type' => 'object',
-							'properties' => [
-								'file' => [
-									'type' => 'string',
-									'format' => 'binary',
-									'description' => 'The file to upload',
-								],
-							],
-						],
-					],
-				],
-			],
+		return $this->itemOperation(schema: $schema, kind: 'uploadFile') + [
+			'requestBody' => ['required' => true, 'content' => self::FILE_UPLOAD_CONTENT],
 			'responses' => [
-				'201' => [
-					'description' => 'File uploaded successfully',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/File',
-							],
-						],
-					],
-				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
+				'201' => ['description' => 'File uploaded successfully', 'content' => $this->schemaRefContent(schemaName: 'File')],
+				'404' => $this->notFoundResponse(schema: $schema),
 			],
 		];
 	}//end createPostFileOperation()
@@ -1757,47 +1598,11 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function createLockOperation(object $schema): array {
-		return [
-			'summary' => 'Lock a ' . $schema->getTitle() . ' object',
-			'operationId' => 'lock' . $this->pascalCase(string: $schema->getTitle()),
-			'tags' => [$schema->getTitle()],
-			'description' => 'Lock a specific ' . $schema->getTitle() . ' object to prevent concurrent modifications',
-			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to lock',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
-			],
+		return $this->itemOperation(schema: $schema, kind: 'lock') + [
 			'responses' => [
-				'200' => [
-					'description' => 'Object locked successfully',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Lock',
-							],
-						],
-					],
-				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
-				'409' => [
-					'description' => 'Object is already locked',
-				],
+				'200' => ['description' => 'Object locked successfully', 'content' => $this->schemaRefContent(schemaName: 'Lock')],
+				'404' => $this->notFoundResponse(schema: $schema),
+				'409' => ['description' => 'Object is already locked'],
 			],
 		];
 	}//end createLockOperation()
@@ -1812,109 +1617,14 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function createUnlockOperation(object $schema): array {
-		return [
-			'summary' => 'Unlock a ' . $schema->getTitle() . ' object',
-			'operationId' => 'unlock' . $this->pascalCase(string: $schema->getTitle()),
-			'tags' => [$schema->getTitle()],
-			'description' => 'Remove the lock from a specific ' . $schema->getTitle() . ' object',
-			'parameters' => [
-				[
-					'name' => 'id',
-					'in' => 'path',
-					'required' => true,
-					'description' => 'Unique identifier of the ' . $schema->getTitle() . ' object to unlock',
-					'schema' => [
-						'type' => 'string',
-						'format' => 'uuid',
-					],
-				],
-			],
+		return $this->itemOperation(schema: $schema, kind: 'unlock') + [
 			'responses' => [
-				'200' => [
-					'description' => 'Object unlocked successfully',
-				],
-				'404' => [
-					'description' => $schema->getTitle() . ' not found',
-					'content' => [
-						'application/json' => [
-							'schema' => [
-								'$ref' => '#/components/schemas/Error',
-							],
-						],
-					],
-				],
-				'409' => [
-					'description' => 'Object is not locked or locked by another user',
-				],
+				'200' => ['description' => 'Object unlocked successfully'],
+				'404' => $this->notFoundResponse(schema: $schema),
+				'409' => ['description' => 'Object is not locked or locked by another user'],
 			],
 		];
 	}//end createUnlockOperation()
-
-	/**
-	 * Convert string to slug
-	 *
-	 * @param string $string The string to convert
-	 *
-	 * @return string The slugified string
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function slugify(string $string): string {
-		return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $string), '-'));
-	}//end slugify()
-
-	/**
-	 * Convert string to PascalCase
-	 *
-	 * @param string $string The string to convert
-	 *
-	 * @return string The PascalCase string
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-14
-	 */
-	private function pascalCase(string $string): string {
-		return str_replace(' ', '', ucwords(str_replace('-', ' ', $this->slugify(string: $string))));
-	}//end pascalCase()
-
-	/**
-	 * Sanitize schema names to be OpenAPI compliant
-	 *
-	 * OpenAPI schema names must match pattern ^[a-zA-Z0-9._-]+$
-	 * This method converts titles with spaces and special characters to valid schema names.
-	 *
-	 * @param string|null $title The schema title to sanitize
-	 *
-	 * @return string The sanitized schema name
-	 *
-	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
-	 */
-	private function sanitizeSchemaName(?string $title): string {
-		// Handle null or empty titles.
-		if (empty($title) === true) {
-			return 'UnknownSchema';
-		}
-
-		// Replace spaces and invalid characters with underscores.
-		$sanitized = preg_replace('/[^a-zA-Z0-9._-]/', '_', $title);
-
-		// Remove multiple consecutive underscores.
-		$sanitized = preg_replace('/_+/', '_', $sanitized);
-
-		// Remove leading/trailing underscores.
-		$sanitized = trim($sanitized, '_');
-
-		// Handle edge case where sanitization results in empty string.
-		if (empty($sanitized) === true) {
-			return 'UnknownSchema';
-		}
-
-		// Ensure it starts with a letter (prepend 'Schema_' if it starts with number).
-		if (preg_match('/^[0-9]/', $sanitized) === true) {
-			$sanitized = 'Schema_' . $sanitized;
-		}
-
-		return $sanitized;
-	}//end sanitizeSchemaName()
 
 	/**
 	 * Validate OpenAPI specification integrity
@@ -1930,63 +1640,20 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function validateOasIntegrity(): void {
-		// Pass 1: $ref / allOf integrity inside component schemas.
-		if (isset($this->oas['components']['schemas']) === true) {
-			$schemaNames = array_keys($this->oas['components']['schemas']);
-			foreach ($schemaNames as $schemaName) {
-				if (is_array($this->oas['components']['schemas'][$schemaName]) === true) {
-					$this->validateSchemaReferences(
-						schema: $this->oas['components']['schemas'][$schemaName],
-						context: 'components.schemas.' . $schemaName
-					);
-				}
-			}
-		}
-
-		// Pass 2: $ref integrity inside path response schemas.
-		if (isset($this->oas['paths']) === true) {
-			$pathNames = array_keys($this->oas['paths']);
-			foreach ($pathNames as $pathName) {
-				$methods = array_keys($this->oas['paths'][$pathName]);
-				foreach ($methods as $method) {
-					$operation = &$this->oas['paths'][$pathName][$method];
-					if (is_array($operation) === true && isset($operation['responses']) === true) {
-						$statusCodes = array_keys($operation['responses']);
-						foreach ($statusCodes as $statusCode) {
-							$respContent = ($operation['responses'][$statusCode]['content'] ?? []);
-							$respSchema = ($respContent['application/json']['schema'] ?? null);
-							if ($respSchema !== null) {
-								$this->validateSchemaReferences(
-									schema: $respSchema,
-									context: 'paths.' . $pathName . '.' . $method . '.responses.' . $statusCode
-								);
-							}
-						}
-					}
-
-					unset($operation);
-				}
-			}//end foreach
-		}//end if
-
-		// Pass 3: server URL must be absolute.
+		$this->report->referenceRepair(
+			componentNames: array_map('strval', array_keys($this->oas['components']['schemas'] ?? []))
+		)->repairDocument(oas: $this->oas);
 		$this->validateServerUrls();
-
-		// Pass 4: operationId uniqueness with auto-suffix de-duplication.
 		$this->validateOperationIdUniqueness();
-
-		// Pass 5: tag consistency — referenced tags must be defined; defined tags must be used.
 		$this->validateTagConsistency();
-
-		// Pass 6: NLGov rules — /core/http-methods and /core/http-response-code whitelists.
 		$this->validateNlGovRules();
 
-		// Pass 7: Strict-mode meta-schema validation against the
-		// vendored OpenAPI 3.1 meta-schema. Best-effort: missing
-		// validator (DI not wired in older fixtures) or missing meta
-		// file (vendoring not run) silently skips this pass.
+		// Best-effort: skipped when no validator is wired or the meta file is not vendored.
 		$this->validateAgainstMetaSchema();
 	}//end validateOasIntegrity()
+
+
+
 
 	/**
 	 * Validate the generated OAS document against the vendored OpenAPI 3.1
@@ -1999,37 +1666,71 @@ class OasService {
 			return;
 		}
 
+		$meta = $this->openApiMetaSchema();
+		if ($meta === null) {
+			return;
+		}
+
+		$this->runMetaSchemaValidation(validator: $this->metaValidator, meta: $meta);
+	}//end validateAgainstMetaSchema()
+
+	/**
+	 * Validate the document against the meta-schema and report its violations; a validator error is logged.
+	 *
+	 * @param OasRequestValidator  $validator The validator.
+	 * @param array<string, mixed> $meta      The meta-schema.
+	 *
+	 * @return void
+	 */
+	private function runMetaSchemaValidation(OasRequestValidator $validator, array $meta): void {
+		try {
+			$this->reportMetaSchemaErrors(errors: $validator->validate(body: $this->oas, schema: $meta));
+		} catch (\Throwable $e) {
+			// Validator errors MUST NOT block OAS generation — log and move on.
+			$this->logger?->warning(
+				'[OasService] meta-schema validation pass errored: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end runMetaSchemaValidation()
+
+	/**
+	 * The vendored OpenAPI 3.1 meta-schema; null when it is missing or unreadable.
+	 *
+	 * @return array<string,mixed>|null The meta-schema.
+	 */
+	private function openApiMetaSchema(): ?array {
 		$metaPath = __DIR__ . '/Resources/meta/openapi-3.1.0.json';
 		if (file_exists($metaPath) === false) {
-			return;
+			return null;
 		}
 
-		$metaJson = (string)file_get_contents($metaPath);
-		$meta = json_decode($metaJson, true);
+		$meta = json_decode((string)file_get_contents($metaPath), true);
 		if (is_array($meta) === false) {
-			return;
+			return null;
 		}
 
-		try {
-			$errors = $this->metaValidator->validate(body: $this->oas, schema: $meta);
-			foreach ($errors as $err) {
-				$this->report->addError(
+		return $meta;
+	}//end openApiMetaSchema()
+
+	/**
+	 * Add each meta-schema violation to the report as an error.
+	 *
+	 * @param array<int,array{path:string,message:string}> $errors The violations.
+	 *
+	 * @return void
+	 */
+	private function reportMetaSchemaErrors(array $errors): void {
+		foreach ($errors as $err) {
+			$this->report->addError(
+				issue: new OasIssue(
 					path: $err['path'],
 					message: 'OpenAPI 3.1 meta-schema violation: ' . $err['message'],
 					code: 'meta-schema-violation'
-				);
-			}
-		} catch (\Throwable $e) {
-			// Validator errors MUST NOT block OAS generation — log and move on.
-			if ($this->logger !== null) {
-				$this->logger->warning(
-					'[OasService] meta-schema validation pass errored: ' . $e->getMessage(),
-					['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
+				)
+			);
 		}
-
-	}//end validateAgainstMetaSchema()
+	}//end reportMetaSchemaErrors()
 
 	/**
 	 * Verify every entry in `servers` uses an absolute URL.
@@ -2045,16 +1746,31 @@ class OasService {
 		}
 
 		foreach ($servers as $idx => $server) {
-			$url = (string)($server['url'] ?? '');
-			if ($url === '' || preg_match('#^https?://#i', $url) !== 1) {
-				$this->report->addError(
-					path: 'servers.' . $idx . '.url',
-					message: 'Server URL must be absolute (http:// or https://). Got: ' . $url,
-					code: OasValidationReport::CODE_RELATIVE_SERVER_URL,
-				);
-			}
+			$this->validateServerUrl(idx: $idx, url: (string)($server['url'] ?? ''));
 		}
 	}//end validateServerUrls()
+
+	/**
+	 * Report one server URL that is not absolute.
+	 *
+	 * @param int|string $idx The server's index.
+	 * @param string     $url The server URL.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	private function validateServerUrl(int|string $idx, string $url): void {
+		if ($url === '' || preg_match('#^https?://#i', $url) !== 1) {
+			$this->report->addError(
+				issue: new OasIssue(
+					path: 'servers.' . $idx . '.url',
+					message: 'Server URL must be absolute (http:// or https://). Got: ' . $url,
+					code: OasValidationReport::CODE_RELATIVE_SERVER_URL
+				)
+			);
+		}
+	}//end validateServerUrl()
 
 	/**
 	 * Walk every operation and ensure operationIds are unique. Collisions are
@@ -2070,49 +1786,77 @@ class OasService {
 		}
 
 		$seen = [];
-		foreach ($this->oas['paths'] as $pathName => &$pathItem) {
-			if (is_array($pathItem) === false) {
+		foreach (array_keys($this->oas['paths']) as $pathName) {
+			if (is_array($this->oas['paths'][$pathName]) === true) {
+				$this->dedupeOperationIds(pathName: $pathName, seen: $seen);
+			}
+		}
+	}//end validateOperationIdUniqueness()
+
+	/**
+	 * Rename the operationIds under one path that an earlier operation already took.
+	 *
+	 * @param int|string        $pathName The path.
+	 * @param array<string,int> $seen     Use count per operationId taken so far.
+	 *
+	 * @return void
+	 */
+	private function dedupeOperationIds(int|string $pathName, array &$seen): void {
+		foreach ($this->oas['paths'][$pathName] as $method => &$operation) {
+			$original = $this->operationIdOf(operation: $operation);
+			if ($original === '') {
 				continue;
 			}
 
-			foreach ($pathItem as $method => &$operation) {
-				if (is_array($operation) === false || isset($operation['operationId']) === false) {
-					continue;
-				}
-
-				$original = (string)$operation['operationId'];
-				if ($original === '') {
-					continue;
-				}
-
-				if (isset($seen[$original]) === false) {
-					$seen[$original] = 1;
-					continue;
-				}
-
-				// Collision — auto-suffix until unique.
-				$seen[$original]++;
-				$candidate = $original . '_' . $seen[$original];
-				while (isset($seen[$candidate]) === true) {
-					$seen[$original]++;
-					$candidate = $original . '_' . $seen[$original];
-				}
-
-				$seen[$candidate] = 1;
-
+			$candidate = $this->claimOperationId(seen: $seen, operationId: $original);
+			if ($candidate !== $original) {
 				$operation['operationId'] = $candidate;
-				$this->report->addAutoCorrection(
-					path: 'paths.' . $pathName . '.' . $method . '.operationId',
-					message: 'Duplicate operationId "' . $original . '" auto-renamed to "' . $candidate . '".',
-					code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID,
-				);
-			}//end foreach
+				$message = 'Duplicate operationId "' . $original . '" auto-renamed to "' . $candidate . '".';
+				$path    = 'paths.' . $pathName . '.' . $method . '.operationId';
+				$this->report->addAutoCorrection(issue: new OasIssue(path: $path, message: $message, code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID));
+			}
+		}
 
-			unset($operation);
-		}//end foreach
+		unset($operation);
+	}//end dedupeOperationIds()
 
-		unset($pathItem);
-	}//end validateOperationIdUniqueness()
+	/**
+	 * Take an operationId: the id itself when free, otherwise the first free `_2`, `_3`, ... form.
+	 *
+	 * @param array<string,int> $seen        Use count per operationId taken so far.
+	 * @param string            $operationId The wanted operationId.
+	 *
+	 * @return string The operationId taken.
+	 */
+	private function claimOperationId(array &$seen, string $operationId): string {
+		if (isset($seen[$operationId]) === false) {
+			$seen[$operationId] = 1;
+			return $operationId;
+		}
+
+		do {
+			$seen[$operationId]++;
+			$candidate = $operationId . '_' . $seen[$operationId];
+		} while (isset($seen[$candidate]) === true);
+
+		$seen[$candidate] = 1;
+		return $candidate;
+	}//end claimOperationId()
+
+	/**
+	 * The operationId of an operation; '' when it is not an operation or has none.
+	 *
+	 * @param mixed $operation A path item entry.
+	 *
+	 * @return string The operationId.
+	 */
+	private function operationIdOf($operation): string {
+		if (is_array($operation) === false || isset($operation['operationId']) === false) {
+			return '';
+		}
+
+		return (string)$operation['operationId'];
+	}//end operationIdOf()
 
 	/**
 	 * Cross-check declared `tags` against tag references in path operations.
@@ -2129,6 +1873,18 @@ class OasService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateTagConsistency(): void {
+		$declaredTags = $this->declaredTags();
+		$usedTags = $this->usedTags();
+		$this->addOrphanTags(declaredTags: $declaredTags, usedTags: $usedTags);
+		$this->reportUnusedTags(declaredTags: $declaredTags, usedTags: $usedTags);
+	}//end validateTagConsistency()
+
+	/**
+	 * The top-level tag names, each with its index in the tags array.
+	 *
+	 * @return array<string,int|string> Index by tag name.
+	 */
+	private function declaredTags(): array {
 		$declaredTags = [];
 		foreach (($this->oas['tags'] ?? []) as $idx => $tagDef) {
 			if (is_array($tagDef) === true && isset($tagDef['name']) === true) {
@@ -2136,6 +1892,15 @@ class OasService {
 			}
 		}
 
+		return $declaredTags;
+	}//end declaredTags()
+
+	/**
+	 * The tag names operations use, each with the paths of the operations using it.
+	 *
+	 * @return array<string,array<int,string>> Operation paths by tag name.
+	 */
+	private function usedTags(): array {
 		$usedTags = [];
 		foreach (($this->oas['paths'] ?? []) as $pathName => $pathItem) {
 			if (is_array($pathItem) === false) {
@@ -2143,50 +1908,74 @@ class OasService {
 			}
 
 			foreach ($pathItem as $method => $operation) {
-				if (is_array($operation) === false) {
-					continue;
-				}
-
-				foreach (($operation['tags'] ?? []) as $tagName) {
-					if (is_string($tagName) === false || $tagName === '') {
-						continue;
-					}
-
+				foreach ($this->operationTags(operation: $operation) as $tagName) {
 					$usedTags[$tagName][] = 'paths.' . $pathName . '.' . $method;
 				}
 			}
 		}
 
-		// Orphan tags — used in operations but not declared.
+		return $usedTags;
+	}//end usedTags()
+
+	/**
+	 * The non-empty string tags of an operation.
+	 *
+	 * @param mixed $operation A path item entry.
+	 *
+	 * @return array<int,string> The tag names.
+	 */
+	private function operationTags($operation): array {
+		if (is_array($operation) === false || is_array($operation['tags'] ?? []) === false) {
+			return [];
+		}
+
+		return array_filter(($operation['tags'] ?? []), fn ($tagName): bool => is_string($tagName) === true && $tagName !== '');
+	}//end operationTags()
+
+	/**
+	 * Declare, with a generated description, every used tag that is not declared.
+	 *
+	 * @param array<string,int|string>         $declaredTags Index by declared tag name.
+	 * @param array<string,array<int,string>> $usedTags     Operation paths by used tag name.
+	 *
+	 * @return void
+	 */
+	private function addOrphanTags(array $declaredTags, array $usedTags): void {
 		foreach ($usedTags as $tagName => $usages) {
 			if (isset($declaredTags[$tagName]) === true) {
 				continue;
 			}
 
-			$this->oas['tags'][] = [
-				'name' => $tagName,
-				'description' => 'Operations for ' . $tagName,
-			];
+			$this->oas['tags'][] = ['name' => $tagName, 'description' => 'Operations for ' . $tagName];
 			$this->report->addAutoCorrection(
-				path: $usages[0],
-				message: 'Tag "' . $tagName . '" used by operations but not declared in top-level tags; auto-added.',
-				code: OasValidationReport::CODE_ORPHAN_TAG,
+				issue: new OasIssue(
+					path: $usages[0],
+					message: 'Tag "' . $tagName . '" used by operations but not declared in top-level tags; auto-added.',
+					code: OasValidationReport::CODE_ORPHAN_TAG
+				)
 			);
 		}
+	}//end addOrphanTags()
 
-		// Unused tags — declared but never referenced.
-		foreach (array_keys($declaredTags) as $tagName) {
-			if (isset($usedTags[$tagName]) === true) {
-				continue;
-			}
-
+	/**
+	 * Warn about every declared tag no operation uses.
+	 *
+	 * @param array<string,int|string>         $declaredTags Index by declared tag name.
+	 * @param array<string,array<int,string>> $usedTags     Operation paths by used tag name.
+	 *
+	 * @return void
+	 */
+	private function reportUnusedTags(array $declaredTags, array $usedTags): void {
+		foreach (array_diff_key($declaredTags, $usedTags) as $tagName => $idx) {
 			$this->report->addWarning(
-				path: 'tags[' . $declaredTags[$tagName] . '].name',
-				message: 'Top-level tag "' . $tagName . '" is declared but not referenced by any operation.',
-				code: OasValidationReport::CODE_UNUSED_TAG,
+				issue: new OasIssue(
+					path: 'tags[' . $idx . '].name',
+					message: 'Top-level tag "' . $tagName . '" is declared but not referenced by any operation.',
+					code: OasValidationReport::CODE_UNUSED_TAG
+				)
 			);
 		}
-	}//end validateTagConsistency()
+	}//end reportUnusedTags()
 
 	/**
 	 * NLGov API Design Rules — narrow checks that are verifiable from the
@@ -2200,183 +1989,84 @@ class OasService {
 	 * @return void
 	 */
 	private function validateNlGovRules(): void {
-		if (isset($this->oas['paths']) === false || is_array($this->oas['paths']) === false) {
+		$paths = ($this->oas['paths'] ?? null);
+		if (is_array($paths) === false) {
 			return;
 		}
 
-		$allowedMethods = array_flip(self::ALLOWED_HTTP_METHODS);
-		$pathItemFields = array_flip(self::PATH_ITEM_FIELDS);
-		$allowedCodes = array_flip(self::ALLOWED_STATUS_CODES);
-
-		foreach ($this->oas['paths'] as $pathName => $pathItem) {
-			if (is_array($pathItem) === false) {
-				continue;
+		foreach ($paths as $pathName => $pathItem) {
+			if (is_array($pathItem) === true) {
+				$this->validateNlGovPath(pathName: $pathName, pathItem: $pathItem);
 			}
-
-			foreach ($pathItem as $method => $operation) {
-				$methodKey = strtolower((string)$method);
-				if (isset($pathItemFields[$methodKey]) === true) {
-					continue;
-				}
-
-				if (isset($allowedMethods[$methodKey]) === false) {
-					$reason = 'violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).';
-					$message = sprintf('Non-standard HTTP method "%s" %s', (string)$method, $reason);
-					$this->report->addError(
-						path: 'paths.' . $pathName . '.' . $method,
-						message: $message,
-						code: OasValidationReport::CODE_INVALID_HTTP_METHOD,
-					);
-					continue;
-				}
-
-				if (is_array($operation) === false) {
-					continue;
-				}
-
-				foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
-					$statusKey = (string)$statusCode;
-					if (isset($allowedCodes[$statusKey]) === false) {
-						$this->report->addWarning(
-							path: 'paths.' . $pathName . '.' . $method . '.responses.' . $statusCode,
-							message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
-							code: OasValidationReport::CODE_INVALID_STATUS_CODE,
-						);
-					}
-				}
-			}//end foreach
-		}//end foreach
+		}
 	}//end validateNlGovRules()
 
 	/**
-	 * Validate schema references recursively
+	 * Check every operation of a path against the NLGov rules.
 	 *
-	 * @param array<string, mixed> $schema The schema to validate (passed by reference for modifications)
-	 * @param string $context Context information for debugging
+	 * @param int|string $pathName The path.
+	 * @param array      $pathItem The path's operations.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive schema validation with multiple reference types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for allOf, $ref, and nested validation
-	 *
-	 * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
+	 * @spec openspec/specs/oas-validation/spec.md
 	 */
-	private function validateSchemaReferences(array &$schema, string $context): void {
-		// Check allOf constructs.
-		if (isset($schema['allOf']) === true) {
-			if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
-				unset($schema['allOf']);
-			}
+	private function validateNlGovPath(int|string $pathName, array $pathItem): void {
+		foreach (array_keys($pathItem) as $method) {
+			$this->checkNlGovOperation(pathName: $pathName, method: $method);
+		}
+	}//end validateNlGovPath()
 
-			if (isset($schema['allOf']) === true && is_array($schema['allOf']) === true) {
-				$validAllOfItems = [];
-				foreach ($schema['allOf'] as $index => $item) {
-					// Suppress unused variable warning for $index - only processing items.
-					unset($index);
-					if (is_array($item) === false || empty($item) === true) {
-						continue;
-					}
-
-					// Validate each allOf item has required structure.
-					$hasValidRef = ($item['$ref'] ?? null) !== null
-						&& empty($item['$ref']) === false
-						&& is_string($item['$ref']) === true;
-					if ($hasValidRef === true) {
-						$validAllOfItems[] = $item;
-						continue;
-					}
-
-					if (($item['type'] ?? null) !== null || (($item['properties'] ?? null) !== null) === true) {
-						$validAllOfItems[] = $item;
-					}
-				}
-
-				// If no valid items remain, remove allOf.
-				if (empty($validAllOfItems) === true) {
-					unset($schema['allOf']);
-					$this->report->addAutoCorrection(
-						path: $context . '.allOf',
-						message: 'allOf with no valid items was removed.',
-						code: OasValidationReport::CODE_INVALID_ALLOF,
-					);
-				}
-
-				if (empty($validAllOfItems) === false) {
-					$schema['allOf'] = $validAllOfItems;
-				}
-			}//end if
-		}//end if
-
-		// Check $ref validity.
-		if (($schema['$ref'] ?? null) !== null) {
-			if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
-				unset($schema['$ref']);
-			}
-
-			if (isset($schema['$ref']) === true && is_string($schema['$ref']) === true) {
-				// Check if reference points to existing schema.
-				$refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
-				if (strpos($schema['$ref'], '#/components/schemas/') === 0
-					&& isset($this->oas['components']['schemas'][$refPath]) === false
-				) {
-					// Try case-insensitive match against existing component names.
-					$resolved = false;
-					foreach (array_keys($this->oas['components']['schemas'] ?? []) as $existingName) {
-						if (strtolower($existingName) === strtolower($refPath)) {
-							$schema['$ref'] = '#/components/schemas/' . $existingName;
-							$resolved = true;
-							break;
-						}
-					}
-
-					// If no match found, remove the broken $ref and fall back to string type.
-					if ($resolved === false) {
-						unset($schema['$ref']);
-						if (isset($schema['type']) === false) {
-							$schema['type'] = 'string';
-							$schema['description'] = $schema['description'] ?? 'Reference to ' . $refPath;
-						}
-
-						$this->report->addError(
-							path: $context . '.$ref',
-							message: 'Dangling $ref to "#/components/schemas/' . $refPath . '"; substituted with type=string.',
-							code: OasValidationReport::CODE_DANGLING_REF,
-						);
-					}
-				}//end if
-			}//end if
-		}//end if
-
-		// Recursively check nested schemas (by reference so fixes are applied).
-		if (($schema['properties'] ?? null) !== null) {
-			foreach ($schema['properties'] as $propName => &$property) {
-				if (is_array($property) === true) {
-					$this->validateSchemaReferences(schema: $property, context: "{$context}.properties.{$propName}");
-				}
-			}
-
-			unset($property);
+	/**
+	 * Check one path item entry against the NLGov method and status code rules.
+	 *
+	 * @param int|string $pathName The path.
+	 * @param int|string $method   The key under the path.
+	 *
+	 * @return void
+	 */
+	private function checkNlGovOperation(int|string $pathName, int|string $method): void {
+		$methodKey = strtolower((string)$method);
+		if (isset(array_flip(self::PATH_ITEM_FIELDS)[$methodKey]) === true) {
+			return;
 		}
 
-		if (($schema['items'] ?? null) !== null && is_array($schema['items']) === true) {
-			$this->validateSchemaReferences(schema: $schema['items'], context: "{$context}.items");
+		$path = 'paths.' . $pathName . '.' . $method;
+		if (isset(array_flip(self::ALLOWED_HTTP_METHODS)[$methodKey]) === false) {
+			$reason = 'violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).';
+			$message = sprintf('Non-standard HTTP method "%s" %s', (string)$method, $reason);
+			$this->report->addError(issue: new OasIssue(path: $path, message: $message, code: OasValidationReport::CODE_INVALID_HTTP_METHOD));
+			return;
 		}
 
-		// Recursively check oneOf/anyOf/allOf items for broken refs.
-		foreach (['oneOf', 'anyOf', 'allOf'] as $compositionKey) {
-			if (($schema[$compositionKey] ?? null) !== null && is_array($schema[$compositionKey]) === true) {
-				foreach ($schema[$compositionKey] as $idx => &$compositionItem) {
-					if (is_array($compositionItem) === true) {
-						$this->validateSchemaReferences(
-							schema: $compositionItem,
-							context: "{$context}.{$compositionKey}[{$idx}]"
-						);
-					}
-				}
+		$this->checkNlGovStatusCodes(path: $path, operation: $this->oas['paths'][$pathName][$method]);
+	}//end checkNlGovOperation()
 
-				unset($compositionItem);
+	/**
+	 * Warn about every non-standard response status code of an operation.
+	 *
+	 * @param string $path      The operation's path in the document.
+	 * @param mixed  $operation The operation.
+	 *
+	 * @return void
+	 */
+	private function checkNlGovStatusCodes(string $path, $operation): void {
+		if (is_array($operation) === false) {
+			return;
+		}
+
+		$allowedCodes = array_flip(self::ALLOWED_STATUS_CODES);
+		foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
+			if (isset($allowedCodes[(string)$statusCode]) === false) {
+				$this->report->addWarning(
+					issue: new OasIssue(
+						path: $path . '.responses.' . $statusCode,
+						message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
+						code: OasValidationReport::CODE_INVALID_STATUS_CODE
+					)
+				);
 			}
 		}
-	}//end validateSchemaReferences()
+	}//end checkNlGovStatusCodes()
 
 }//end class

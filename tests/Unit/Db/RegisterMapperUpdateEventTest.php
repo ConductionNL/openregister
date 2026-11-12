@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -36,6 +37,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * Drives the real RegisterMapper::update() and checks which saves dispatch
@@ -109,14 +111,14 @@ class RegisterMapperUpdateEventTest extends TestCase {
 
 		return new class(
 			$db,
-			$this->createMock(SchemaMapper::class),
-			$dispatcher,
-			$this->createMock(ContainerInterface::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
+			new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
 			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			new RegisterMapperServices(
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(ContainerInterface::class),
+				$dispatcher,
+				$this->createMock(LoggerInterface::class)
+			)
 		) extends RegisterMapper {
 			/**
 			 * Return the stored row mapped through the real entity.

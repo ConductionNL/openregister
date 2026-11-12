@@ -3,7 +3,7 @@
 namespace Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\Chunk;
+use OCA\OpenRegister\Files\Db\Chunk;
 use PHPUnit\Framework\TestCase;
 
 class ChunkTest extends TestCase {

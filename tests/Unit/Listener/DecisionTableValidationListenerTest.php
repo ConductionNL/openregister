@@ -78,6 +78,65 @@ class DecisionTableValidationListenerTest extends TestCase {
 		$this->assertStringContainsString('already used by decision table u-2', $event->getErrors()['message']);
 	}
 
+	/**
+	 * A key clash that cannot be checked is not "no clash": the save is refused, since a duplicate key lets the
+	 * store pick either table at random.
+	 *
+	 * @return void
+	 */
+	public function testAKeyThatCannotBeCheckedRefusesTheSave(): void {
+		$schema = new Schema();
+		$schema->setSlug('decision-table');
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturn($schema);
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('searchObjectsBySlug')->willThrowException(new \RuntimeException('search is down'));
+		$register = new Register();
+		$register->setSlug('decision-tables');
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturn($register);
+		$listener = new DecisionTableValidationListener($schemas, new DecisionTableValidator(), $objects, $registers);
+
+		$event = new ObjectCreatingEvent($this->row(DecisionTableStoreTest::shippingTable()));
+		$listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame(DecisionTableValidationListener::ERROR_CODE, $event->getErrors()['code']);
+		$this->assertStringContainsString('the key "parcel-carrier" could not be checked', $event->getErrors()['message']);
+	}//end testAKeyThatCannotBeCheckedRefusesTheSave()
+
+	/**
+	 * A schema or register that cannot be READ (as opposed to one that does not exist) cannot be told from the
+	 * decision-table one, so the save is refused instead of waved through unvalidated.
+	 *
+	 * @return void
+	 */
+	public function testASchemaOrRegisterThatCannotBeReadRefusesTheSave(): void {
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willThrowException(new \RuntimeException('database is down'));
+		$listener = new DecisionTableValidationListener(
+			$schemas,
+			new DecisionTableValidator(),
+			$this->createMock(ObjectService::class),
+			$this->createMock(RegisterMapper::class)
+		);
+		$event = new ObjectCreatingEvent($this->row(['anything' => true]));
+		$listener->handle($event);
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertStringContainsString('could not be checked against the decision-table rules', $event->getErrors()['message']);
+
+		$schema = new Schema();
+		$schema->setSlug('decision-table');
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturn($schema);
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willThrowException(new \RuntimeException('database is down'));
+		$listener = new DecisionTableValidationListener($schemas, new DecisionTableValidator(), $this->createMock(ObjectService::class), $registers);
+		$event = new ObjectCreatingEvent($this->row(DecisionTableStoreTest::shippingTable()));
+		$listener->handle($event);
+		$this->assertTrue($event->isPropagationStopped());
+	}//end testASchemaOrRegisterThatCannotBeReadRefusesTheSave()
+
 	public function testUpdatingATableKeepsItsOwnKey(): void {
 		$self  = $this->row(DecisionTableStoreTest::shippingTable());
 		$event = new ObjectUpdatingEvent($this->row(DecisionTableStoreTest::shippingTable()), $self);

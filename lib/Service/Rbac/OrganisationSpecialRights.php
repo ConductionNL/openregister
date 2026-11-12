@@ -69,11 +69,11 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use InvalidArgumentException;
 use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
@@ -90,59 +90,7 @@ use Throwable;
  *
  * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
  */
-class OrganisationSpecialRights {
-
-	/**
-	 * The special right to manage the grants and the owning group of a record.
-	 *
-	 * @var string
-	 */
-	public const GRANT_MANAGE = 'grant_manage';
-
-	/**
-	 * The special right to run an agent.
-	 *
-	 * @var string
-	 */
-	public const AGENT_USE = 'agent_use';
-
-	/**
-	 * The special right to have a language model called on one's behalf.
-	 *
-	 * @var string
-	 */
-	public const LLM_USE = 'llm_use';
-
-	/**
-	 * Every special right an organisation carries, in the order the editor shows them.
-	 *
-	 * @var string[]
-	 */
-	public const ALL = [
-		self::AGENT_USE,
-		self::LLM_USE,
-		self::GRANT_MANAGE,
-	];
-
-	/**
-	 * The rights where `*` means every signed-in user, and a missing key means nobody narrowed it.
-	 *
-	 * Not `grant_manage`: a right that decides who reads a record is never given
-	 * to everybody by a wildcard or by leaving it out.
-	 *
-	 * @var string[]
-	 */
-	public const OPEN_BY_DEFAULT = [
-		self::AGENT_USE,
-		self::LLM_USE,
-	];
-
-	/**
-	 * The entry that gives a right to every signed-in user.
-	 *
-	 * @var string
-	 */
-	public const EVERYONE = '*';
+class OrganisationSpecialRights implements OrganisationSpecialRightsInterface {
 
 	/**
 	 * Organisations read per page when giving a right in all of them.
@@ -154,16 +102,16 @@ class OrganisationSpecialRights {
 	/**
 	 * Constructor.
 	 *
-	 * @param OrganisationMapper $organisations Loads the organisation a record belongs to.
-	 * @param RegisterMapper $registers Loads a record's register, for a narrowed entry.
-	 * @param SchemaMapper $schemas Loads a record's schema, for a narrowed entry.
+	 * @param OrganisationMapperInterface $organisations Loads the organisation a record belongs to.
+	 * @param RegisterMapperInterface $registers Loads a record's register, for a narrowed entry.
+	 * @param SchemaMapperInterface $schemas Loads a record's schema, for a narrowed entry.
 	 * @param LoggerInterface $logger Logger.
 	 * @param IGroupManager $groupManager Says whether a caller is an administrator, and which groups it is in.
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisations,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly OrganisationMapperInterface $organisations,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly LoggerInterface $logger,
 		private readonly IGroupManager $groupManager,
 	) {
@@ -192,24 +140,53 @@ class OrganisationSpecialRights {
 			return false;
 		}
 
+		$mine = array_filter(
+			$this->rightEntries(right: $right, object: $object),
+			fn (mixed $entry): bool => $this->namesAGroupOf(entry: $entry, userGroups: $userGroups)
+		);
+
+		return $this->anyCovers(entries: $mine, object: $object);
+	}//end holdsOn()
+
+	/**
+	 * The entries of a special right in the organisation the record belongs to.
+	 *
+	 * @param string       $right  The special right's key.
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return array<int|string, mixed> The entries; empty when the organisation or the right is missing.
+	 */
+	private function rightEntries(string $right, ObjectEntity $object): array {
 		$organisation = $this->organisationOf(object: $object);
 		if ($organisation === null) {
-			return false;
+			return [];
 		}
 
 		$entries = ($organisation->getAuthorization()[$right] ?? null);
 		if (is_array($entries) === false) {
-			return false;
+			return [];
 		}
 
+		return $entries;
+	}//end rightEntries()
+
+	/**
+	 * Whether one of the entries covers the record's register and schema, asked in order.
+	 *
+	 * @param array<int|string, mixed> $entries The caller's entries of the right.
+	 * @param ObjectEntity             $object  The record.
+	 *
+	 * @return bool True at the first entry that covers it.
+	 */
+	private function anyCovers(array $entries, ObjectEntity $object): bool {
 		foreach ($entries as $entry) {
-			if ($this->entryAdmits(entry: $entry, userGroups: $userGroups, object: $object) === true) {
+			if ($this->entryCovers(entry: $entry, object: $object) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end holdsOn()
+	}//end anyCovers()
 
 	/**
 	 * Whether a caller may use something a special right guards, in one organisation.
@@ -375,11 +352,8 @@ class OrganisationSpecialRights {
 	 * One entry per group. Giving a group the right again replaces its entry, so
 	 * an app that changes its list of schemas does not leave the old one behind.
 	 *
-	 * @param string $organisationUuid The organisation.
-	 * @param string $right The special right's key.
-	 * @param string $group The group that holds it.
-	 * @param string|null $register The register it is narrowed to, or null for all.
-	 * @param string[]|null $schemas The schemas it is narrowed to, or null for all.
+	 * @param string            $organisationUuid The organisation.
+	 * @param SpecialRightGrant $grant            The right, the group that holds it and what it is narrowed to.
 	 *
 	 * @return bool True when the stored block changed.
 	 *
@@ -387,52 +361,46 @@ class OrganisationSpecialRights {
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function give(
-		string $organisationUuid,
-		string $right,
-		string $group,
-		?string $register = null,
-		?array $schemas = null,
-	): bool {
+	public function give(string $organisationUuid, SpecialRightGrant $grant): bool {
 		$organisation = $this->organisations->findByUuid($organisationUuid);
 		$authorization = $organisation->getAuthorization();
 
-		$entry = $group;
-		if ($register !== null || $schemas !== null) {
-			$entry = ['group' => $group];
-			if ($register !== null) {
-				$entry['register'] = $register;
-			}
-
-			if ($schemas !== null) {
-				$entry['schemas'] = array_values($schemas);
-			}
-		}
-
 		$before = [];
-		if (is_array($authorization[$right] ?? null) === true) {
-			$before = array_values($authorization[$right]);
+		if (is_array($authorization[$grant->right] ?? null) === true) {
+			$before = array_values($authorization[$grant->right]);
 		}
 
-		$after = [];
-		foreach ($before as $existing) {
-			if ($this->groupOf(entry: $existing) !== $group) {
-				$after[] = $existing;
-			}
-		}
-
-		$after[] = $entry;
-
+		$after = $this->withEntry(entries: $before, grant: $grant);
 		if ($after === $before) {
 			return false;
 		}
 
-		$authorization[$right] = $after;
+		$authorization[$grant->right] = $after;
 		$organisation->setAuthorization($authorization);
 		$this->organisations->update($organisation);
 
 		return true;
 	}//end give()
+
+	/**
+	 * The entries with the grant's group's entry replaced by the grant's, last.
+	 *
+	 * @param array<int, mixed> $entries The entries as stored.
+	 * @param SpecialRightGrant $grant   The grant.
+	 *
+	 * @return array<int, mixed> The entries.
+	 */
+	private function withEntry(array $entries, SpecialRightGrant $grant): array {
+		$after = [];
+		foreach ($entries as $existing) {
+			if ($this->groupOf(entry: $existing) !== $grant->group) {
+				$after[] = $existing;
+			}
+		}
+
+		$after[] = $grant->entry();
+		return $after;
+	}//end withEntry()
 
 	/**
 	 * Give a group a special right in every organisation of the instance.
@@ -442,21 +410,13 @@ class OrganisationSpecialRights {
 	 * each. Run again on every upgrade: an organisation made since is covered
 	 * then, and one that already has the entry is not written.
 	 *
-	 * @param string $right The special right's key.
-	 * @param string $group The group that holds it.
-	 * @param string|null $register The register it is narrowed to, or null for all.
-	 * @param string[]|null $schemas The schemas it is narrowed to, or null for all.
+	 * @param SpecialRightGrant $grant The right, the group that holds it and what it is narrowed to.
 	 *
 	 * @return array{organisations: int, changed: int} How many organisations were seen and written.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function giveInEveryOrganisation(
-		string $right,
-		string $group,
-		?string $register = null,
-		?array $schemas = null,
-	): array {
+	public function giveInEveryOrganisation(SpecialRightGrant $grant): array {
 		$answer = ['organisations' => 0, 'changed' => 0];
 		$offset = 0;
 		do {
@@ -465,18 +425,10 @@ class OrganisationSpecialRights {
 			$read = count($page);
 			foreach ($page as $organisation) {
 				$answer['organisations']++;
-				if ($this->give(
-					organisationUuid: (string)$organisation->getUuid(),
-					right: $right,
-					group: $group,
-					register: $register,
-					schemas: $schemas
-				) === true
-				) {
+				if ($this->give(organisationUuid: (string)$organisation->getUuid(), grant: $grant) === true) {
 					$answer['changed']++;
 				}
 			}
-
 		} while ($read === self::PAGE);
 
 		return $answer;
@@ -531,46 +483,77 @@ class OrganisationSpecialRights {
 	}//end groupOf()
 
 	/**
-	 * Whether one entry gives one of the caller's groups the right on this record.
+	 * Whether one entry names one of the caller's groups.
 	 *
-	 * @param mixed $entry The entry as stored.
+	 * @param mixed    $entry      The entry as stored.
 	 * @param string[] $userGroups The caller's group ids.
+	 *
+	 * @return bool True when it does.
+	 */
+	private function namesAGroupOf(mixed $entry, array $userGroups): bool {
+		$group = $this->groupOf(entry: $entry);
+
+		return $group !== null && in_array(needle: $group, haystack: $userGroups, strict: true) === true;
+	}//end namesAGroupOf()
+
+	/**
+	 * Whether one entry reaches this record: a plain group reaches every record, a narrowed one only its register and schemas.
+	 *
+	 * @param mixed        $entry  The entry as stored.
 	 * @param ObjectEntity $object The record.
 	 *
 	 * @return bool True when it does.
 	 */
-	private function entryAdmits(mixed $entry, array $userGroups, ObjectEntity $object): bool {
-		$group = $this->groupOf(entry: $entry);
-		if ($group === null || in_array(needle: $group, haystack: $userGroups, strict: true) === false) {
-			return false;
-		}
-
+	private function entryCovers(mixed $entry, ObjectEntity $object): bool {
 		if (is_array($entry) === false) {
 			return true;
 		}
 
-		if (array_key_exists('register', $entry) === true
-			&& $this->names(wanted: [$entry['register']], names: $this->namesOf(
-				id: (string)$object->getRegister(),
-				load: fn (string $id): Register => $this->registers->find(id: $id, _rbac: false, _multitenancy: false)
-			)) === false
-		) {
+		return $this->registerCovers(entry: $entry, object: $object) === true
+			&& $this->schemasCover(entry: $entry, object: $object) === true;
+	}//end entryCovers()
+
+	/**
+	 * Whether a narrowed entry's register, when it names one, is the record's register.
+	 *
+	 * @param array<string, mixed> $entry  The entry as stored.
+	 * @param ObjectEntity         $object The record.
+	 *
+	 * @return bool True when the entry names no register or names this one.
+	 */
+	private function registerCovers(array $entry, ObjectEntity $object): bool {
+		if (array_key_exists('register', $entry) === false) {
+			return true;
+		}
+
+		return $this->names(wanted: [$entry['register']], names: $this->namesOf(
+			id: (string)$object->getRegister(),
+			load: fn (string $id): Register => $this->registers->find(id: $id, _rbac: false, _multitenancy: false)
+		));
+	}//end registerCovers()
+
+	/**
+	 * Whether a narrowed entry's schema list, when it has one, names the record's schema.
+	 *
+	 * @param array<string, mixed> $entry  The entry as stored.
+	 * @param ObjectEntity         $object The record.
+	 *
+	 * @return bool True when the entry has no schema list or it names this schema; false for a list that is not a list.
+	 */
+	private function schemasCover(array $entry, ObjectEntity $object): bool {
+		if (array_key_exists('schemas', $entry) === false) {
+			return true;
+		}
+
+		if (is_array($entry['schemas']) === false) {
 			return false;
 		}
 
-		if (array_key_exists('schemas', $entry) === true) {
-			if (is_array($entry['schemas']) === false) {
-				return false;
-			}
-
-			return $this->names(wanted: $entry['schemas'], names: $this->namesOf(
-				id: (string)$object->getSchema(),
-				load: fn (string $id): Schema => $this->schemas->find(id: $id, _rbac: false, _multitenancy: false)
-			));
-		}
-
-		return true;
-	}//end entryAdmits()
+		return $this->names(wanted: $entry['schemas'], names: $this->namesOf(
+			id: (string)$object->getSchema(),
+			load: fn (string $id): Schema => $this->schemas->find(id: $id, _rbac: false, _multitenancy: false)
+		));
+	}//end schemasCover()
 
 	/**
 	 * Whether one of the wanted references is among the names a record answers to.

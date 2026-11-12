@@ -39,9 +39,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -50,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class GroupReconciler {
+class GroupReconciler implements GroupReconcilerInterface {
 
 	/**
 	 * App-config key prefix under which each app's declared group list is stored
@@ -63,17 +60,13 @@ class GroupReconciler {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Live register lookup.
-	 * @param SchemaMapper $schemaMapper Live schema lookup.
-	 * @param IAppConfig $appConfig Stores each app's declared group list.
+	 * @param GroupDeclarationSources $sources Live registers, live schemas and stored declarations.
 	 * @param RbacGroupCollector $collector Declared-group extraction.
 	 * @param GroupProvisioner $provisioner Create-only group provisioning.
 	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly IAppConfig $appConfig,
+		private readonly GroupDeclarationSources $sources,
 		private readonly RbacGroupCollector $collector,
 		private readonly GroupProvisioner $provisioner,
 		private readonly LoggerInterface $logger,
@@ -92,32 +85,47 @@ class GroupReconciler {
 	 */
 	public function reconcile(): array {
 		try {
-			$declared = $this->collectDeclared();
-			if (empty($declared) === true) {
-				return [
-					'declared' => [],
-					'created' => [],
-				];
-			}
-
-			$result = $this->provisioner->provision(groups: $declared, declaredBy: 'group-reconciler');
-
-			return [
-				'declared' => $declared,
-				'created' => $result['created'],
-			];
+			return $this->sweep();
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[GroupReconciler] sweep failed: ' . $e->getMessage(),
 				context: ['exception' => $e]
 			);
 
-			return [
-				'declared' => [],
-				'created' => [],
-			];
-		}//end try
+			return $this->nothingReconciled();
+		}
 	}//end reconcile()
+
+	/**
+	 * Provision every group the declarations name.
+	 *
+	 * @return array{declared: string[], created: string[]} What was declared and what was created.
+	 */
+	private function sweep(): array {
+		$declared = $this->collectDeclared();
+		if (empty($declared) === true) {
+			return $this->nothingReconciled();
+		}
+
+		$result = $this->provisioner->provision(groups: $declared, declaredBy: 'group-reconciler');
+
+		return [
+			'declared' => $declared,
+			'created' => $result['created'],
+		];
+	}//end sweep()
+
+	/**
+	 * The outcome of a sweep that declared nothing, or failed.
+	 *
+	 * @return array{declared: string[], created: string[]} Empty lists.
+	 */
+	private function nothingReconciled(): array {
+		return [
+			'declared' => [],
+			'created' => [],
+		];
+	}//end nothingReconciled()
 
 	/**
 	 * Collect every declared group id on the instance.
@@ -159,7 +167,7 @@ class GroupReconciler {
 	 */
 	private function fromLiveRegisters(): array {
 		$groups = [];
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+		foreach ($this->sources->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
 			$groups = array_merge(
 				$groups,
 				$this->collector->fromAuthorizationBlock(authorization: $register->getAuthorization())
@@ -181,7 +189,7 @@ class GroupReconciler {
 	 */
 	private function fromLiveSchemas(): array {
 		$groups = [];
-		foreach ($this->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
+		foreach ($this->sources->schemaMapper->findAll(_rbac: false, _multitenancy: false) as $schema) {
 			$groups = array_merge(
 				$groups,
 				$this->collector->fromSchemaDefinition(
@@ -208,12 +216,12 @@ class GroupReconciler {
 	 */
 	private function fromStoredDeclarations(): array {
 		$groups = [];
-		foreach ($this->appConfig->getKeys('openregister') as $key) {
+		foreach ($this->sources->appConfig->getKeys('openregister') as $key) {
 			if (str_starts_with($key, self::DECLARED_GROUPS_PREFIX) === false) {
 				continue;
 			}
 
-			$stored = json_decode($this->appConfig->getValueString('openregister', $key, '[]'), true);
+			$stored = json_decode($this->sources->appConfig->getValueString('openregister', $key, '[]'), true);
 			if (is_array($stored) === false) {
 				continue;
 			}

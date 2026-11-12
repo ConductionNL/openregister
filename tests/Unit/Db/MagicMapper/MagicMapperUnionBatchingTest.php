@@ -24,12 +24,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -56,27 +62,32 @@ class MagicMapperUnionBatchingTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
 				return match ($id) {
-					DateTimeNormalizer::class => $dateTimeNormalizer,
+					DateTimeNormalizerInterface::class => $dateTimeNormalizer,
 					ConditionMatcher::class => $conditionMatcher,
-					SchemaTypeConverter::class => $schemaTypeConverter,
+					SchemaTypeConverterInterface::class => $schemaTypeConverter,
 					default => null,
 				};
 			}
 		);
 
 		$this->mapper = new MagicMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IConfig::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(SettingsService::class),
-			$container
+			$this->mysqlConnection(),
+			new MagicMapperLookups(
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(RegisterMapper::class),
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->createMock(IConfig::class),
+				$this->createMock(IAppConfig::class),
+				$this->createMock(IEventDispatcher::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end setUp()
 
@@ -242,7 +253,6 @@ class MagicMapperUnionBatchingTest extends TestCase {
 			[
 				'rows' => $rows,
 				'query' => ['_search' => 'x', '_offset' => 1, '_limit' => 2],
-				'isPostgres' => false,
 			]
 		);
 
@@ -264,7 +274,7 @@ class MagicMapperUnionBatchingTest extends TestCase {
 
 		$page = $this->call(
 			'mergeUnionBatchRows',
-			['rows' => $rows, 'query' => ['_search' => 'x'], 'isPostgres' => false]
+			['rows' => $rows, 'query' => ['_search' => 'x']]
 		);
 
 		$this->assertSame(['aa', 'mm', 'zz'], array_column($page, '_uuid'));
@@ -285,7 +295,7 @@ class MagicMapperUnionBatchingTest extends TestCase {
 
 		$page = $this->call(
 			'mergeUnionBatchRows',
-			['rows' => $rows, 'query' => ['_order' => ['title' => 'ASC']], 'isPostgres' => false]
+			['rows' => $rows, 'query' => ['_order' => ['title' => 'ASC']]]
 		);
 
 		$this->assertSame(['a', 'c', 'b'], array_column($page, '_uuid'));
@@ -296,6 +306,14 @@ class MagicMapperUnionBatchingTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testMergeClampsANumericLimitToTheMaximumPage(): void {
+		$rows = array_map(static fn (int $index): array => ['_uuid' => sprintf('%05d', $index)], range(1, 1001));
+
+		$merged = $this->call('mergeUnionBatchRows', ['rows' => $rows, 'query' => ['_limit' => 5000]]);
+
+		$this->assertCount(1000, $merged);
+	}//end testMergeClampsANumericLimitToTheMaximumPage()
+
 	public function testMergeWithoutALimitReturnsTheRestOfTheSet(): void {
 		$rows = [
 			['_uuid' => 'a'],
@@ -305,9 +323,20 @@ class MagicMapperUnionBatchingTest extends TestCase {
 
 		$page = $this->call(
 			'mergeUnionBatchRows',
-			['rows' => $rows, 'query' => ['_offset' => 1, '_limit' => false], 'isPostgres' => false]
+			['rows' => $rows, 'query' => ['_offset' => 1, '_limit' => false]]
 		);
 
 		$this->assertSame(['b', 'c'], array_column($page, '_uuid'));
 	}//end testMergeWithoutALimitReturnsTheRestOfTheSet()
+	/**
+	 * A connection on a MySQL platform, the non-PostgreSQL dialect the union merge assertions are written for.
+	 *
+	 * @return IDBConnection The connection.
+	 */
+	private function mysqlConnection(): IDBConnection {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($this->createMock(AbstractMySQLPlatform::class));
+
+		return $db;
+	}//end mysqlConnection()
 }//end class

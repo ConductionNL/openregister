@@ -190,6 +190,17 @@ final class FlowResumeState implements JsonSerializable {
 			return new self();
 		}
 
+		return new self(self::valueBagsOf(stored: $stored));
+	}//end fromArray()
+
+	/**
+	 * The stored slots that are a value bag under a node id.
+	 *
+	 * @param array<mixed> $stored The decoded column.
+	 *
+	 * @return array<string, array<string, mixed>> The value bags by node id.
+	 */
+	private static function valueBagsOf(array $stored): array {
 		$byNode = [];
 		foreach ($stored as $nodeId => $values) {
 			// A JSON round trip turns a list into integer keys, which are not
@@ -201,8 +212,8 @@ final class FlowResumeState implements JsonSerializable {
 			$byNode[$nodeId] = $values;
 		}
 
-		return new self($byNode);
-	}//end fromArray()
+		return $byNode;
+	}//end valueBagsOf()
 
 	/**
 	 * The storable form, or null when there is nothing worth storing.

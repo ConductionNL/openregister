@@ -1,0 +1,147 @@
+<?php
+
+/**
+ * OpenRegister Example Set Acting As
+ *
+ * Runs one call as a cast account, so a service that reads the session (the
+ * sharing guard, the link mint guard) decides for that account as it would for
+ * a live click. Only from occ or the daily refresh job, never while somebody
+ * is signed in, and the previous user is always put back.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\ExampleSet
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git_id>
+ *
+ * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\ExampleSet;
+
+use OCP\IUser;
+use OCP\IUserManager;
+use OCP\IUserSession;
+
+/**
+ * One call as a cast account, scoped and restored.
+ *
+ * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+ */
+class ExampleSetActingAs {
+	/**
+	 * Whether this process is the command line (occ, system cron).
+	 *
+	 * @var boolean
+	 */
+	private readonly bool $cli;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IUserSession $userSession Holds the active user.
+	 * @param IUserManager $userManager Finds the account to act as.
+	 * @param bool|null    $cli         Whether this process is the command line; null reads PHP_SAPI.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly IUserSession $userSession,
+		private readonly IUserManager $userManager,
+		?bool $cli=null,
+	) {
+		$this->cli = ($cli ?? (PHP_SAPI === 'cli'));
+	}//end __construct()
+
+	/**
+	 * Run the daily refresh, which may act as cast accounts even when cron runs inside a web request.
+	 *
+	 * @param callable $run The refresh.
+	 *
+	 * @return mixed What the refresh returns.
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-refresh-makes-the-access-links-and-grants-of-a-set-again
+	 */
+	public static function inBackgroundJob(callable $run): mixed {
+		return ExampleSetBackgroundRun::inBackgroundJob(run: $run);
+	}//end inBackgroundJob()
+
+	/**
+	 * Why this process may not act for a set's accounts, or '': only the command line or the daily refresh job may,
+	 * and never while somebody is signed in. Deleting what a set made is held to the same rule.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+	 */
+	public function refusal(): string {
+		if ($this->cli === false && ExampleSetBackgroundRun::isOpen() === false) {
+			return 'an example set acts as an account only from occ or the background job';
+		}
+
+		$signedIn = $this->userSession->getUser();
+		if ($signedIn !== null) {
+			return 'an example set does not act as an account while "'.$signedIn->getUID().'" is signed in';
+		}
+
+		return '';
+	}//end refusal()
+
+	/**
+	 * Run one call as an account, and put the previous user back however the call ends.
+	 *
+	 * @param string   $uid       The account to act as.
+	 * @param callable $operation The call.
+	 *
+	 * @return mixed What the call returns.
+	 *
+	 * @throws ExampleSetException When this is no command line or background run, somebody is signed in, or the
+	 *                             account does not exist.
+	 *
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
+	 */
+	public function run(string $uid, callable $operation): mixed {
+		$user = $this->accountToActAs(uid: $uid);
+		$previous = $this->userSession->getUser();
+
+		$this->userSession->setVolatileActiveUser($user);
+		try {
+			return $operation();
+		} finally {
+			$this->userSession->setVolatileActiveUser($previous);
+		}
+	}//end run()
+
+	/**
+	 * The account to act as, once acting as another account is allowed here at all.
+	 *
+	 * @param string $uid The account to act as.
+	 *
+	 * @return IUser The account.
+	 *
+	 * @throws ExampleSetException When acting as is refused or the account does not exist.
+	 */
+	private function accountToActAs(string $uid): IUser {
+		$refusal = $this->refusal();
+		if ($refusal !== '') {
+			throw new ExampleSetException($refusal);
+		}
+
+		$user = $this->userManager->get($uid);
+		if ($user === null) {
+			throw new ExampleSetException('no account "'.$uid.'" to act as');
+		}
+
+		return $user;
+	}//end accountToActAs()
+}//end class

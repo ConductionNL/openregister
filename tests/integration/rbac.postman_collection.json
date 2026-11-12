@@ -778,7 +778,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"name\": \"RBAC E2E Cross-Org B\", \"description\": \"PHASE-4 RBAC cross-org isolation fixture (test 3a/3b)\"}"
+              "raw": "{\"name\": \"RBAC E2E Cross-Org B {{$timestamp}}\", \"description\": \"PHASE-4 RBAC cross-org isolation fixture (test 3a/3b)\"}"
             }
           },
           "response": [],
@@ -788,10 +788,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// Idempotent-friendly: on a slug collision the service returns the EXISTING",
-                  "// organisation (200/201 either way) rather than erroring, so a repeated local",
-                  "// run against a reused dev instance does not fail here.",
-                  "pm.test('cross-org fixture organisation created (or already exists)', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "// The name carries a timestamp: a name whose slug is taken is refused with 409,",
+                  "// so a repeated run against a reused dev instance needs a fresh name.",
+                  "pm.test('cross-org fixture organisation created', () => pm.expect(pm.response.code).to.equal(201));",
                   "const d = pm.response.json();",
                   "const uuid = d.organisation && d.organisation.uuid;",
                   "pm.expect(uuid, 'org B must have a uuid').to.be.a('string').and.not.empty;",

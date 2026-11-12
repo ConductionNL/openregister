@@ -30,6 +30,7 @@ use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Configuration\FinishedImportJob;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder
@@ -165,7 +166,7 @@ class AppImportJobRecorderTest extends TestCase {
 	public function testRecordAppendsAJobThatCreatedObjects(): void {
 		$recorder = $this->recorder(created: 405, all: 405);
 
-		$this->assertTrue($recorder->record('learniq.demo', 'job-1', '0.4.0', 405));
+		$this->assertTrue($recorder->recordFinished(new FinishedImportJob('learniq.demo', 'job-1', '0.4.0', 405)));
 
 		$jobs = $recorder->jobs('learniq.demo');
 		$this->assertCount(1, $jobs);
@@ -184,7 +185,7 @@ class AppImportJobRecorderTest extends TestCase {
 		$recorder = $this->recorder(created: 0, all: 12);
 		$this->logger->expects($this->never())->method('warning');
 
-		$this->assertFalse($recorder->record('learniq.demo', 'job-2', '0.4.1', 12));
+		$this->assertFalse($recorder->recordFinished(new FinishedImportJob('learniq.demo', 'job-2', '0.4.1', 12)));
 		$this->assertSame([], $recorder->jobs('learniq.demo'));
 	}
 
@@ -199,7 +200,7 @@ class AppImportJobRecorderTest extends TestCase {
 			->method('warning')
 			->with($this->stringContains('learniq.demo'), $this->anything());
 
-		$this->assertFalse($recorder->record('learniq.demo', 'job-3', '0.4.0', 405));
+		$this->assertFalse($recorder->recordFinished(new FinishedImportJob('learniq.demo', 'job-3', '0.4.0', 405)));
 	}
 
 	/**
@@ -211,7 +212,7 @@ class AppImportJobRecorderTest extends TestCase {
 		$recorder = $this->recorder();
 
 		for ($i = 1; $i <= 52; $i++) {
-			$recorder->record('decidesk.profile.municipality', 'job-' . $i, '1.0.0', 3);
+			$recorder->recordFinished(new FinishedImportJob('decidesk.profile.municipality', 'job-' . $i, '1.0.0', 3));
 		}
 
 		$jobs = $recorder->jobs('decidesk.profile.municipality');
@@ -227,8 +228,8 @@ class AppImportJobRecorderTest extends TestCase {
 	 */
 	public function testForgetDropsOneJobAndTheKeyWithTheLast(): void {
 		$recorder = $this->recorder();
-		$recorder->record('learniq.demo', 'job-a', '1', 3);
-		$recorder->record('learniq.demo', 'job-b', '1', 3);
+		$recorder->recordFinished(new FinishedImportJob('learniq.demo', 'job-a', '1', 3));
+		$recorder->recordFinished(new FinishedImportJob('learniq.demo', 'job-b', '1', 3));
 
 		$recorder->forget('learniq.demo', 'job-a');
 		$this->assertSame(['job-b'], array_column($recorder->jobs('learniq.demo'), 'jobId'));
@@ -245,8 +246,8 @@ class AppImportJobRecorderTest extends TestCase {
 	public function testAppForJobFindsTheOwningAppIdEvenBehindAHashedKey(): void {
 		$recorder = $this->recorder();
 		$longAppId = 'decidesk.profile.' . str_repeat('x', 60);
-		$recorder->record('learniq.demo', 'job-a', '1', 3);
-		$recorder->record($longAppId, 'job-long', '1', 3);
+		$recorder->recordFinished(new FinishedImportJob('learniq.demo', 'job-a', '1', 3));
+		$recorder->recordFinished(new FinishedImportJob($longAppId, 'job-long', '1', 3));
 
 		$this->assertSame('learniq.demo', $recorder->appForJob('job-a'));
 		$this->assertSame($longAppId, $recorder->appForJob('job-long'));

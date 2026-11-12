@@ -37,11 +37,15 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 
 /**
  * Set, keep, leave and hide drafts.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One rule set (decisions 180 and 216): every save path and both list
+ * emitters ask one of these questions, and none of them has a second home to move to.
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
  */
@@ -69,6 +73,16 @@ class DraftStatusPolicy {
 	private static array $promotions = [];
 
 	/**
+	 * Object uuids whose save is moving them out of draft right now.
+	 *
+	 * Set by the one save that used the allowance and read by the mapper,
+	 * which makes the stored status part of its UPDATE (see consumeLeaving()).
+	 *
+	 * @var array<string, true>
+	 */
+	private static array $leaving = [];
+
+	/**
 	 * Allow one promotion out of draft for an object, after full validation.
 	 *
 	 * @param string $uuid The object.
@@ -82,6 +96,23 @@ class DraftStatusPolicy {
 	}//end allowPromotion()
 
 	/**
+	 * Whether the save that followed allowPromotion() used the allowance for an object.
+	 *
+	 * A save that leaves draft consumes the allowance. One that did not (the
+	 * stored object had already left draft, because a parallel request won)
+	 * leaves it standing, and the caller must not announce a creation again.
+	 *
+	 * @param string $uuid The object.
+	 *
+	 * @return bool True when no allowance for the object remains.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public static function promotionWasUsed(string $uuid): bool {
+		return isset(self::$promotions[$uuid]) === false;
+	}//end promotionWasUsed()
+
+	/**
 	 * Forget every allowance (tests, and a submit that was refused after allowing).
 	 *
 	 * @return void
@@ -90,7 +121,30 @@ class DraftStatusPolicy {
 	 */
 	public static function resetPromotions(): void {
 		self::$promotions = [];
+		self::$leaving = [];
 	}//end resetPromotions()
+
+	/**
+	 * Whether this write is the one that moves the object out of draft, and forget it.
+	 *
+	 * The first write after the status resolved to leave draft carries the
+	 * status change, so only that write is conditional. A later write of the
+	 * same object in the same request (the file write of a file-bearing save,
+	 * an automatic transition, a created-event listener) finds the row already
+	 * active and must not be refused for it.
+	 *
+	 * @param string $uuid The object.
+	 *
+	 * @return bool True for the write that leaves draft.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public static function consumeLeaving(string $uuid): bool {
+		$leaving = isset(self::$leaving[$uuid]) === true;
+		unset(self::$leaving[$uuid]);
+
+		return $leaving;
+	}//end consumeLeaving()
 
 	/**
 	 * The status a save stores, given what the entity holds and what `@self` asks.
@@ -100,23 +154,64 @@ class DraftStatusPolicy {
 	 *
 	 * @return string|null The status to store; null keeps the date-deduced status.
 	 *
-	 * @throws ValidationException When the move is not allowed.
+	 * @throws ValidationException When the move is not allowed, or (DraftAlreadyLeftException) the draft to promote already left draft.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
 	public function resolveStatus(ObjectEntity $entity, array $selfData): ?string {
 		$current = $entity->getStatus();
-		if (array_key_exists('status', $selfData) === false || $selfData['status'] === null || $selfData['status'] === '') {
-			return $current;
-		}
 
-		$asked = (string)$selfData['status'];
-		if ($asked === $current) {
+		// An allowance for an object that is no longer a draft means a parallel
+		// request sent it first. This save would be an ordinary update that
+		// announces the creation a second time, so it is refused.
+		$this->refuseSecondPromotion(entity: $entity, current: $current);
+
+		$asked = $this->askedStatus(selfData: $selfData);
+		if ($asked === null || $asked === $current) {
 			return $current;
 		}
 
 		return $this->resolveMove(entity: $entity, asked: $asked);
-		}//end resolveStatus()
+	}//end resolveStatus()
+
+	/**
+	 * Refuse a save of an object that left draft while a promotion allowance for it is still open.
+	 *
+	 * @param ObjectEntity $entity  The object being saved.
+	 * @param string|null  $current Its stored status.
+	 *
+	 * @return void
+	 *
+	 * @throws DraftAlreadyLeftException When a parallel request already sent it.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	private function refuseSecondPromotion(ObjectEntity $entity, ?string $current): void {
+		if ($entity->getId() !== null
+			&& $current !== ObjectEntity::STATUS_DRAFT
+			&& isset(self::$promotions[(string)$entity->getUuid()]) === true
+		) {
+			throw new DraftAlreadyLeftException(message: 'This draft has already left draft.');
+		}
+	}//end refuseSecondPromotion()
+
+	/**
+	 * The status a write asks for, or null when it asks for none (absent, null or empty).
+	 *
+	 * @param array $selfData The write's `@self` block.
+	 *
+	 * @return string|null The asked status
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	private function askedStatus(array $selfData): ?string {
+		$status = ($selfData['status'] ?? null);
+		if ($status === null || $status === '') {
+			return null;
+		}
+
+		return (string)$status;
+	}//end askedStatus()
 
 	/**
 	 * The status a requested move lands on, or a refusal.
@@ -130,28 +225,59 @@ class DraftStatusPolicy {
 	 */
 	private function resolveMove(ObjectEntity $entity, string $asked): string {
 		if ($asked === ObjectEntity::STATUS_DRAFT) {
-			if ($entity->getId() === null) {
-				return ObjectEntity::STATUS_DRAFT;
-			}
-
-			throw new ValidationException(message: 'A saved object cannot go back to draft.');
+			return $this->keepDraft(entity: $entity);
 		}
 
 		if ($asked === ObjectEntity::STATUS_ACTIVE && $entity->isDraft() === true) {
-			$uuid = (string)$entity->getUuid();
-			if (isset(self::$promotions[$uuid]) === true) {
-				unset(self::$promotions[$uuid]);
-
-				return ObjectEntity::STATUS_ACTIVE;
-			}
-
-			throw new ValidationException(
-				message: 'A draft leaves draft through the form submit or its owner\'s activate action, which check every required field first.'
-			);
+			return $this->promote(entity: $entity);
 		}
 
 		throw new ValidationException(message: sprintf('Status "%s" is not one an object can be given here.', $asked));
 	}//end resolveMove()
+
+	/**
+	 * A new object may be created as a draft; a saved one cannot go back to draft.
+	 *
+	 * @param ObjectEntity $entity The object being saved.
+	 *
+	 * @return string The draft status
+	 *
+	 * @throws ValidationException When the object is already saved.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	private function keepDraft(ObjectEntity $entity): string {
+		if ($entity->getId() === null) {
+			return ObjectEntity::STATUS_DRAFT;
+		}
+
+		throw new ValidationException(message: 'A saved object cannot go back to draft.');
+	}//end keepDraft()
+
+	/**
+	 * Promote a draft to active, consuming its allowance; without one the move is refused.
+	 *
+	 * @param ObjectEntity $entity The draft.
+	 *
+	 * @return string The active status
+	 *
+	 * @throws ValidationException When no allowance was given.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	private function promote(ObjectEntity $entity): string {
+		$uuid = (string)$entity->getUuid();
+		if (isset(self::$promotions[$uuid]) === true) {
+			unset(self::$promotions[$uuid]);
+			self::$leaving[$uuid] = true;
+
+			return ObjectEntity::STATUS_ACTIVE;
+		}
+
+		throw new ValidationException(
+			message: 'A draft leaves draft through the form submit or its owner\'s activate action, which check every required field first.'
+		);
+	}//end promote()
 
 	/**
 	 * Whether a write saves a draft: the payload asks for draft, or the stored object is one and the payload does not leave it.
@@ -164,17 +290,30 @@ class DraftStatusPolicy {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
 	public function isDraftWrite(array $object, ?ObjectEntity $existing): bool {
-		$asked = null;
-		if (is_array($object['@self'] ?? null) === true && is_string($object['@self']['status'] ?? null) === true) {
-			$asked = $object['@self']['status'];
-		}
-
+		$asked = $this->askedSelfStatus(object: $object);
 		if ($asked !== null) {
 			return $asked === ObjectEntity::STATUS_DRAFT;
 		}
 
 		return $existing !== null && $existing->isDraft() === true;
 	}//end isDraftWrite()
+
+	/**
+	 * The string status a write's `@self` block asks for, or null.
+	 *
+	 * @param array $object The written object.
+	 *
+	 * @return string|null The asked status
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	private function askedSelfStatus(array $object): ?string {
+		if (is_array($object['@self'] ?? null) === true && is_string($object['@self']['status'] ?? null) === true) {
+			return $object['@self']['status'];
+		}
+
+		return null;
+	}//end askedSelfStatus()
 
 	/**
 	 * The `required` entries a draft is excused from: all of them, list and property-level.
@@ -203,9 +342,9 @@ class DraftStatusPolicy {
 	/**
 	 * The properties the server fills, excused from `required` while a payload is judged in full.
 	 *
-	 * A property with a default, a computation or the serverSet marker is
-	 * filled on save or by a creating listener, so a payload without it is
-	 * complete. The form submit and the owner's activation excuse the same
+	 * A property with a default, a computation, a generated identifier
+	 * (`x-openregister-generated`) or the serverSet marker is filled on save or
+	 * by a creating listener, so a payload without it is complete. The form submit and the owner's activation excuse the same
 	 * set, so a draft that one accepts the other accepts too.
 	 *
 	 * @param Schema               $schema The schema.
@@ -213,7 +352,7 @@ class DraftStatusPolicy {
 	 *
 	 * @return array<string, string> Property => reason, in ValidateObject's notSupplied shape.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::marker() reads a schema property; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::isServerFilled() reads a schema property; there is no instance to inject.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
@@ -224,10 +363,7 @@ class DraftStatusPolicy {
 				continue;
 			}
 
-			$filled = array_key_exists('default', $property) === true
-				|| isset($property['computed']) === true
-				|| FormDestinationValidator::marker(property: $property, name: FormDestinationValidator::MARKER_SERVER_SET);
-			if ($filled === true) {
+			if (FormDestinationValidator::isServerFilled(property: $property) === true) {
 				$excused[(string)$name] = 'server-set';
 			}
 		}
@@ -251,12 +387,11 @@ class DraftStatusPolicy {
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-lifetime-must-default-to-thirty-days-and-a-schema-must-be-able-to-change-it-or-opt-out
 	 */
 	public function draftLifetimeDays(Schema $schema): ?int {
-		$configuration = ($schema->getConfiguration() ?? []);
-		if (array_key_exists(self::LIFETIME_KEY, $configuration) === false || $configuration[self::LIFETIME_KEY] === null) {
+		$days = (($schema->getConfiguration() ?? [])[self::LIFETIME_KEY] ?? null);
+		if ($days === null) {
 			return self::DEFAULT_LIFETIME_DAYS;
 		}
 
-		$days = $configuration[self::LIFETIME_KEY];
 		if (is_int($days) === false || $days < 1) {
 			return null;
 		}
@@ -284,18 +419,17 @@ class DraftStatusPolicy {
 	 * that looks its target up past that rule asks here, so somebody who
 	 * cannot read a draft cannot change it either.
 	 *
-	 * @param ObjectEntity $object The stored object.
-	 * @param Schema       $schema Its schema.
-	 * @param string|null  $userId The caller, null when nobody is signed in.
+	 * @param DraftSubject $subject The stored object and its schema.
+	 * @param string|null  $userId  The caller, null when nobody is signed in.
 	 *
 	 * @return bool True when the caller may not touch it.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
 	 */
-	public function keptFrom(ObjectEntity $object, Schema $schema, ?string $userId): bool {
-		return $object->isDraft() === true
-			&& $this->draftsVisibleToOthers(schema: $schema) === false
-			&& $object->getOwner() !== $userId;
+	public function keptFrom(DraftSubject $subject, ?string $userId): bool {
+		return $subject->object->isDraft() === true
+			&& $this->draftsVisibleToOthers(schema: $subject->schema) === false
+			&& $subject->object->getOwner() !== $userId;
 	}//end keptFrom()
 
 	/**

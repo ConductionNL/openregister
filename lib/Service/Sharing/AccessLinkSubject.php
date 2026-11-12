@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\AccessLink;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
  */
-class AccessLinkSubject {
+class AccessLinkSubject implements AccessLinkSubjectInterface {
 
 	/**
 	 * The object uuid a subject resolves to, or null.

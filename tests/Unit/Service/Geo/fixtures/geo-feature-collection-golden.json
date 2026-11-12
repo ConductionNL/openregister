@@ -1,0 +1,861 @@
+{
+    "area assoc ring": {
+        "result": 0.0,
+        "warnings": [
+            "Undefined array key 0",
+            "Undefined array key 1",
+            "Undefined array key 1",
+            "Undefined array key 2",
+            "Undefined array key 2",
+            "Undefined array key 3",
+            "Undefined array key 3",
+            "Undefined array key 0"
+        ]
+    },
+    "area multipolygon": {
+        "result": 1491833.26,
+        "warnings": []
+    },
+    "area multipolygon scalar coords": {
+        "result": 0.0,
+        "warnings": [
+            "foreach() argument must be of type array|object, string given"
+        ]
+    },
+    "area no type": {
+        "result": null,
+        "warnings": []
+    },
+    "area point": {
+        "result": null,
+        "warnings": []
+    },
+    "area polygon": {
+        "result": 761140.11,
+        "warnings": []
+    },
+    "area polygon no coordinates": {
+        "result": 0.0,
+        "warnings": []
+    },
+    "area ring with bad vertices": {
+        "result": 714606693757.13,
+        "warnings": []
+    },
+    "area short ring": {
+        "result": 0.0,
+        "warnings": []
+    },
+    "area vertex without latitude": {
+        "result": 12363718145.18,
+        "warnings": [
+            "Undefined array key 1",
+            "Undefined array key 1"
+        ]
+    },
+    "area with hole": {
+        "result": 730693.15,
+        "warnings": []
+    },
+    "collection auto-detect": {
+        "result": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            4.9,
+                            52.3
+                        ]
+                    },
+                    "properties": {
+                        "id": 1,
+                        "name": "a",
+                        "kind": "x"
+                    },
+                    "id": 1
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "@self": {
+                            "id": "u-2"
+                        },
+                        "name": "b"
+                    },
+                    "id": "u-2"
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ],
+                            [
+                                [
+                                    4.002,
+                                    52.002
+                                ],
+                                [
+                                    4.004,
+                                    52.002
+                                ],
+                                [
+                                    4.004,
+                                    52.004
+                                ],
+                                [
+                                    4.002,
+                                    52.004
+                                ],
+                                [
+                                    4.002,
+                                    52.002
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "id": 4,
+                        "location": {
+                            "type": "Point",
+                            "coordinates": "x"
+                        }
+                    },
+                    "id": 4
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            1,
+                            2
+                        ]
+                    },
+                    "properties": {
+                        "0": {
+                            "type": "Point",
+                            "coordinates": [
+                                1,
+                                2
+                            ]
+                        },
+                        "name": "numeric key"
+                    }
+                }
+            ]
+        },
+        "warnings": []
+    },
+    "collection by property": {
+        "result": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            4.9,
+                            52.3
+                        ]
+                    },
+                    "properties": {
+                        "id": 1,
+                        "name": "a",
+                        "kind": "x"
+                    },
+                    "id": 1
+                }
+            ]
+        },
+        "warnings": []
+    },
+    "collection empty fields": {
+        "result": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "_area_m2": 761140.11
+                    },
+                    "id": "u-2"
+                }
+            ]
+        },
+        "warnings": []
+    },
+    "collection fields and area": {
+        "result": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            4.9,
+                            52.3
+                        ]
+                    },
+                    "properties": {
+                        "id": 1,
+                        "name": "a"
+                    },
+                    "id": 1
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "name": "b",
+                        "_area_m2": 761140.11
+                    },
+                    "id": "u-2"
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ],
+                            [
+                                [
+                                    4.002,
+                                    52.002
+                                ],
+                                [
+                                    4.004,
+                                    52.002
+                                ],
+                                [
+                                    4.004,
+                                    52.004
+                                ],
+                                [
+                                    4.002,
+                                    52.004
+                                ],
+                                [
+                                    4.002,
+                                    52.002
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "id": 4,
+                        "_area_m2": 730693.15
+                    },
+                    "id": 4
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            1,
+                            2
+                        ]
+                    },
+                    "properties": {
+                        "name": "numeric key"
+                    }
+                }
+            ]
+        },
+        "warnings": []
+    },
+    "feature linestring area": {
+        "result": {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        1,
+                        2
+                    ],
+                    [
+                        3,
+                        4
+                    ]
+                ]
+            },
+            "properties": []
+        },
+        "warnings": []
+    },
+    "feature multipolygon area": {
+        "result": {
+            "type": "Feature",
+            "geometry": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [
+                                4.0,
+                                52.0
+                            ],
+                            [
+                                4.01,
+                                52.0
+                            ],
+                            [
+                                4.01,
+                                52.01
+                            ],
+                            [
+                                4.0,
+                                52.01
+                            ],
+                            [
+                                4.0,
+                                52.0
+                            ]
+                        ]
+                    ],
+                    [],
+                    "x",
+                    [
+                        [
+                            [
+                                4.0,
+                                52.0
+                            ],
+                            [
+                                4.01,
+                                52.0
+                            ],
+                            [
+                                4.01,
+                                52.01
+                            ],
+                            [
+                                4.0,
+                                52.01
+                            ],
+                            [
+                                4.0,
+                                52.0
+                            ]
+                        ],
+                        [
+                            [
+                                4.002,
+                                52.002
+                            ],
+                            [
+                                4.004,
+                                52.002
+                            ],
+                            [
+                                4.004,
+                                52.004
+                            ],
+                            [
+                                4.002,
+                                52.004
+                            ],
+                            [
+                                4.002,
+                                52.002
+                            ]
+                        ]
+                    ]
+                ]
+            },
+            "properties": {
+                "id": 9,
+                "_area_m2": 1491833.26
+            },
+            "id": 9
+        },
+        "warnings": []
+    },
+    "feature none": {
+        "result": null,
+        "warnings": []
+    },
+    "wfs all": {
+        "result": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            4.9,
+                            52.3
+                        ]
+                    },
+                    "properties": {
+                        "id": 1,
+                        "name": "a",
+                        "kind": "x"
+                    },
+                    "id": 1
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "@self": {
+                            "id": "u-2"
+                        },
+                        "name": "b"
+                    },
+                    "id": "u-2"
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ],
+                            [
+                                [
+                                    4.002,
+                                    52.002
+                                ],
+                                [
+                                    4.004,
+                                    52.002
+                                ],
+                                [
+                                    4.004,
+                                    52.004
+                                ],
+                                [
+                                    4.002,
+                                    52.004
+                                ],
+                                [
+                                    4.002,
+                                    52.002
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "id": 4,
+                        "location": {
+                            "type": "Point",
+                            "coordinates": "x"
+                        }
+                    },
+                    "id": 4
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            1,
+                            2
+                        ]
+                    },
+                    "properties": {
+                        "0": {
+                            "type": "Point",
+                            "coordinates": [
+                                1,
+                                2
+                            ]
+                        },
+                        "name": "numeric key"
+                    }
+                }
+            ],
+            "numberReturned": 4
+        },
+        "warnings": []
+    },
+    "wfs capped": {
+        "result": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            4.9,
+                            52.3
+                        ]
+                    },
+                    "properties": {
+                        "id": 1,
+                        "name": "a",
+                        "kind": "x"
+                    },
+                    "id": 1
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "@self": {
+                            "id": "u-2"
+                        },
+                        "name": "b"
+                    },
+                    "id": "u-2"
+                }
+            ],
+            "numberReturned": 2
+        },
+        "warnings": []
+    },
+    "wfs negative cap": {
+        "result": {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            4.9,
+                            52.3
+                        ]
+                    },
+                    "properties": {
+                        "id": 1,
+                        "name": "a",
+                        "kind": "x"
+                    },
+                    "id": 1
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "@self": {
+                            "id": "u-2"
+                        },
+                        "name": "b"
+                    },
+                    "id": "u-2"
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [
+                                    4.0,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.0
+                                ],
+                                [
+                                    4.01,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.01
+                                ],
+                                [
+                                    4.0,
+                                    52.0
+                                ]
+                            ],
+                            [
+                                [
+                                    4.002,
+                                    52.002
+                                ],
+                                [
+                                    4.004,
+                                    52.002
+                                ],
+                                [
+                                    4.004,
+                                    52.004
+                                ],
+                                [
+                                    4.002,
+                                    52.004
+                                ],
+                                [
+                                    4.002,
+                                    52.002
+                                ]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "id": 4,
+                        "location": {
+                            "type": "Point",
+                            "coordinates": "x"
+                        }
+                    },
+                    "id": 4
+                },
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            1,
+                            2
+                        ]
+                    },
+                    "properties": {
+                        "0": {
+                            "type": "Point",
+                            "coordinates": [
+                                1,
+                                2
+                            ]
+                        },
+                        "name": "numeric key"
+                    }
+                }
+            ],
+            "numberReturned": 4
+        },
+        "warnings": []
+    },
+    "wfs zero": {
+        "result": {
+            "type": "FeatureCollection",
+            "features": [],
+            "numberReturned": 0
+        },
+        "warnings": []
+    }
+}

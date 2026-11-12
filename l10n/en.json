@@ -1,5 +1,6 @@
 {
     "translations": {
+        "Marketplace": "Marketplace",
         "%1$s %2$s created": "%1$s %2$s created",
         "{schema} {title} created": "{schema} {title} created",
         "%1$s %2$s updated": "%1$s %2$s updated",
@@ -431,6 +432,7 @@
         "Costs": "Costs",
         "Count": "Count",
         "Counting objects...": "Counting objects...",
+        "We could not count the objects. Close this window and try again.": "We could not count the objects. Close this window and try again.",
         "Create": "Create",
         "Create API Token": "Create API Token",
         "Create Agent": "Create Agent",
@@ -1605,7 +1607,7 @@
         "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted.": "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted.",
         "Browser Web Push (VAPID)": "Browser Web Push (VAPID)",
         "Browser web push is configured": "Browser web push is configured",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.",
         "VAPID public key": "VAPID public key",
         "Browser web push is not configured": "Browser web push is not configured",
         "No VAPID keypair is configured yet. Generate one with the following occ command to enable browser notifications:": "No VAPID keypair is configured yet. Generate one with the following occ command to enable browser notifications:",
@@ -3310,7 +3312,8 @@
         "The value could not be saved": "The value could not be saved",
         "Audit trail export ready": "Audit trail export ready",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Your audit trail export of %1$s entries was saved to %2$s%3$s.",
-        "Open Files": "Open Files"
+        "Open Files": "Open Files",
+        "Some objects could not be copied.": "Some objects could not be copied."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

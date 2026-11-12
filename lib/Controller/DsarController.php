@@ -36,8 +36,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\AvgComplianceService;
-use OCA\OpenRegister\Service\DsarService;
+use OCA\OpenRegister\Controller\Support\AdminGroupMembership;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\DsarControllerServices;
+use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
+use OCA\OpenRegister\Service\DsarServiceInterface;
+use OCA\OpenRegister\Service\DsarSubjectQuery;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -50,24 +54,48 @@ use OCP\IUserSession;
  */
 class DsarController extends Controller {
 	/**
+	 * DSAR composition service.
+	 *
+	 * @var DsarServiceInterface
+	 */
+	private readonly DsarServiceInterface $dsarService;
+
+	/**
+	 * AVG compliance auditor.
+	 *
+	 * @var AvgComplianceServiceInterface
+	 */
+	private readonly AvgComplianceServiceInterface $complianceService;
+
+	/**
+	 * Current user (admin gate).
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager (admin gate).
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App identifier.
 	 * @param IRequest $request Active request.
-	 * @param DsarService $dsarService DSAR composition service.
-	 * @param AvgComplianceService $complianceService AVG compliance auditor.
-	 * @param IUserSession $userSession Current user (admin gate).
-	 * @param IGroupManager $groupManager Group manager (admin gate).
+	 * @param DsarControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly DsarService $dsarService,
-		private readonly AvgComplianceService $complianceService,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		DsarControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->dsarService = $services->dsarService;
+		$this->complianceService = $services->complianceService;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
 
 	}//end __construct()
 
@@ -91,33 +119,17 @@ class DsarController extends Controller {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function access(): JSONResponse {
-		if ($this->isAdmin() === false) {
-			return $this->forbidden();
+		$subject = $this->requestedSubject();
+		if ($subject instanceof JSONResponse) {
+			return $subject;
 		}
 
-		$subject = (string)($this->request->getParam(key: 'subject') ?? '');
-		if ($subject === '') {
-			return $this->missingSubject();
-		}
-
-		$type = $this->request->getParam(key: 'type');
-		$mode = (string)($this->request->getParam(key: 'mode') ?? 'exact');
-
-		$typeString = null;
-		if ($type !== null && $type !== '') {
-			$typeString = (string)$type;
-		}
-
-		$results = $this->dsarService->findObjectsForSubject(
-			subject: $subject,
-			type: $typeString,
-			mode: $mode
-		);
+		$results = $this->objectsForSubject(subject: $subject);
 
 		return new JSONResponse(
 			data: [
 				'subject' => $subject,
-				'type' => $type,
+				'type' => $this->request->getParam(key: 'type'),
 				'count' => count($results),
 				'results' => $results,
 			]
@@ -139,28 +151,12 @@ class DsarController extends Controller {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function portability(): JSONResponse {
-		if ($this->isAdmin() === false) {
-			return $this->forbidden();
+		$subject = $this->requestedSubject();
+		if ($subject instanceof JSONResponse) {
+			return $subject;
 		}
 
-		$subject = (string)($this->request->getParam(key: 'subject') ?? '');
-		if ($subject === '') {
-			return $this->missingSubject();
-		}
-
-		$type = $this->request->getParam(key: 'type');
-		$mode = (string)($this->request->getParam(key: 'mode') ?? 'exact');
-
-		$typeString = null;
-		if ($type !== null && $type !== '') {
-			$typeString = (string)$type;
-		}
-
-		$results = $this->dsarService->findObjectsForSubject(
-			subject: $subject,
-			type: $typeString,
-			mode: $mode
-		);
+		$results = $this->objectsForSubject(subject: $subject);
 
 		$exportObjects = array_map(static fn (array $row) => $row['object'], $results);
 
@@ -196,29 +192,18 @@ class DsarController extends Controller {
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
 	public function erasure(): JSONResponse {
-		if ($this->isAdmin() === false) {
-			return $this->forbidden();
+		$subject = $this->requestedSubject();
+		if ($subject instanceof JSONResponse) {
+			return $subject;
 		}
 
-		$subject = (string)($this->request->getParam(key: 'subject') ?? '');
-		if ($subject === '') {
-			return $this->missingSubject();
-		}
-
-		$type = $this->request->getParam(key: 'type');
 		$dryRun = filter_var(
 			$this->request->getParam(key: 'dryRun', default: false),
 			FILTER_VALIDATE_BOOLEAN
 		);
 
-		$typeString = null;
-		if ($type !== null && $type !== '') {
-			$typeString = (string)$type;
-		}
-
-		$summary = $this->dsarService->eraseObjectsForSubject(
-			subject: $subject,
-			type: $typeString,
+		$summary = $this->dsarService->eraseObjectsFor(
+			query: new DsarSubjectQuery(subject: $subject, type: $this->typeParam(), mode: 'exact'),
 			dryRun: $dryRun
 		);
 
@@ -249,17 +234,11 @@ class DsarController extends Controller {
 		$objectId = (int)($this->request->getParam(key: 'objectId') ?? 0);
 		$changes = $this->request->getParam(key: 'changes', default: []);
 		if ($objectId === 0) {
-			return new JSONResponse(
-				data: ['error' => '`objectId` is required'],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+			return $this->unprocessable(error: '`objectId` is required');
 		}
 
 		if (is_array($changes) === false || $changes === []) {
-			return new JSONResponse(
-				data: ['error' => '`changes` must be a non-empty object'],
-				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+			return $this->unprocessable(error: '`changes` must be a non-empty object');
 		}
 
 		$updated = $this->dsarService->rectifyObjectForSubject(
@@ -276,6 +255,67 @@ class DsarController extends Controller {
 
 		return new JSONResponse(data: $updated);
 	}//end rectification()
+
+	/**
+	 * The subject a subject-rights request names, once the caller is known to be an admin.
+	 *
+	 * @return string|JSONResponse The non-empty subject, or the 403 / 422 refusal
+	 */
+	private function requestedSubject(): string|JSONResponse {
+		if ($this->isAdmin() === false) {
+			return $this->forbidden();
+		}
+
+		$subject = (string)($this->request->getParam(key: 'subject') ?? '');
+		if ($subject === '') {
+			return $this->missingSubject();
+		}
+
+		return $subject;
+	}//end requestedSubject()
+
+	/**
+	 * The objects that mention the subject, narrowed to the requested type and matched by the requested mode.
+	 *
+	 * @param string $subject The data subject
+	 *
+	 * @return array<int, array<string, mixed>> The matches
+	 */
+	private function objectsForSubject(string $subject): array {
+		$mode = (string)($this->request->getParam(key: 'mode') ?? 'exact');
+
+		return $this->dsarService->findObjectsFor(
+			query: new DsarSubjectQuery(subject: $subject, type: $this->typeParam(), mode: $mode)
+		);
+	}//end objectsForSubject()
+
+	/**
+	 * The requested object type, or null for every type.
+	 *
+	 * @return string|null The type
+	 */
+	private function typeParam(): ?string {
+		$type = $this->request->getParam(key: 'type');
+		if ($type !== null && $type !== '') {
+			return (string)$type;
+		}
+
+		return null;
+	}//end typeParam()
+
+	/**
+	 * A 422 naming what is wrong with the request.
+	 *
+	 * @param string $error What is wrong
+	 *
+	 * @return JSONResponse 422
+	 */
+	private function unprocessable(string $error): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => $error],
+			statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+		);
+	}//end unprocessable()
 
 	/**
 	 * GET /api/avg/compliance — run compliance checks.
@@ -309,17 +349,7 @@ class DsarController extends Controller {
 	 * @return bool True when the active user is an admin.
 	 */
 	private function isAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return in_array(
-			needle: 'admin',
-			haystack: $this->groupManager->getUserGroupIds($user),
-			strict: true
-		);
-
+		return AdminGroupMembership::ofCaller(userSession: $this->userSession, groupManager: $this->groupManager);
 	}//end isAdmin()
 
 	/**

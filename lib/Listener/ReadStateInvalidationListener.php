@@ -32,8 +32,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
+use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -49,14 +49,14 @@ final class ReadStateInvalidationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ReadStateService $readState The read-state primitive, which owns the write.
-	 * @param SubstantiveChangeEvaluator $evaluator Decides whether the change was news.
-	 * @param IUserSession $userSession Names the actor, whose own read state survives.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ReadStateServiceInterface                    $readState   The read-state primitive, which owns the write.
+	 * @param SubstantiveChangeEvaluatorInterface $evaluator   Decides whether the change was news.
+	 * @param IUserSession                        $userSession Names the actor, whose own read state survives.
+	 * @param LoggerInterface                     $logger      PSR logger.
 	 */
 	public function __construct(
-		private readonly ReadStateService $readState,
-		private readonly SubstantiveChangeEvaluator $evaluator,
+		private readonly ReadStateServiceInterface $readState,
+		private readonly SubstantiveChangeEvaluatorInterface $evaluator,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -72,32 +72,43 @@ final class ReadStateInvalidationListener implements IEventListener {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function handle(Event $event): void {
-		if (($event instanceof ObjectUpdatedEvent) === false) {
+		if ($event instanceof ObjectUpdatedEvent) {
+			try {
+				$this->invalidateIfSubstantive(event: $event);
+			} catch (\Throwable $e) {
+				$this->logger->debug(
+					sprintf('[ReadStateInvalidationListener] invalidation skipped: %s', $e->getMessage())
+				);
+			}
+		}
+
+	}//end handle()
+
+	/**
+	 * Mark the object unread for everyone but the actor, when the change is substantive.
+	 *
+	 * @param ObjectUpdatedEvent $event The committed update.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 */
+	private function invalidateIfSubstantive(ObjectUpdatedEvent $event): void {
+		$new = $event->getNewObject();
+		$uuid = (string)$new->getUuid();
+		if ($uuid === '') {
 			return;
 		}
 
-		try {
-			$new = $event->getNewObject();
-			$uuid = (string)$new->getUuid();
-			if ($uuid === '') {
-				return;
-			}
+		if ($this->evaluator->isSubstantive(new: $new, old: $event->getOldObject()) === false) {
+			// A technical touch or a recomputed value. Nobody has anything
+			// new to see, so nobody's badge lights up.
+			return;
+		}
 
-			if ($this->evaluator->isSubstantive(new: $new, old: $event->getOldObject()) === false) {
-				// A technical touch or a recomputed value. Nobody has anything
-				// new to see, so nobody's badge lights up.
-				return;
-			}
-
-			$this->readState->invalidate(
-				objectUuid: $uuid,
-				actorUid: $this->userSession->getUser()?->getUID()
-			);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf('[ReadStateInvalidationListener] invalidation skipped: %s', $e->getMessage())
-			);
-		}//end try
-
-	}//end handle()
+		$this->readState->invalidate(
+			objectUuid: $uuid,
+			actorUid: $this->userSession->getUser()?->getUID()
+		);
+	}//end invalidateIfSubstantive()
 }//end class

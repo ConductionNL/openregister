@@ -1,0 +1,321 @@
+<?php
+
+/**
+ * GraphQL API Controller.
+ *
+ * Provides a GraphQL endpoint at /api/graphql and an interactive
+ * GraphiQL explorer at /api/graphql/explorer.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/graphql-api/spec.md
+ * @spec openspec/specs/graphql-api/spec.md
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-1
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2
+ */
+
+namespace OCA\OpenRegister\Search\Controller;
+
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Search\Controller\Support\GraphQLControllerServices;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
+use OCP\AppFramework\Http\ContentSecurityPolicy;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Response;
+use OCP\IRequest;
+
+/**
+ * Controller for the GraphQL API endpoint.
+ *
+ * Accepts POST requests with GraphQL queries (JSON body) and returns
+ * standard GraphQL responses. Also serves the GraphiQL explorer UI.
+ *
+ * @psalm-suppress UnusedClass - Registered via routes.php
+ */
+class GraphQLController extends Controller {
+
+	/**
+	 * The GraphiQL explorer page. `{nonce}`, `{endpoint}` and `{requestToken}`
+	 * are filled in per request by getGraphiQLHtml().
+	 *
+	 * @var string
+	 */
+	private const EXPLORER_PAGE = <<<'HTML'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>OpenRegister GraphQL Explorer</title>
+    <style nonce="{nonce}">
+        body { height: 100vh; margin: 0; overflow: hidden; }
+        #graphiql { height: 100vh; }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/graphiql@3/graphiql.min.css" />
+</head>
+<body>
+    <div id="graphiql">Loading...</div>
+    <script nonce="{nonce}" src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script nonce="{nonce}" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script nonce="{nonce}" src="https://unpkg.com/graphiql@3/graphiql.min.js" crossorigin></script>
+    <script nonce="{nonce}">
+        const fetcher = GraphiQL.createFetcher({
+            url: '{endpoint}',
+            headers: {
+                'requesttoken': '{requestToken}',
+            },
+        });
+
+        const root = ReactDOM.createRoot(document.getElementById('graphiql'));
+        root.render(
+            React.createElement(GraphiQL, {
+                fetcher: fetcher,
+                defaultEditorToolsVisibility: true,
+            })
+        );
+    </script>
+</body>
+</html>
+HTML;
+	/**
+	 * GraphQLController constructor.
+	 *
+	 * @param IRequest                  $request  Request object
+	 * @param GraphQLControllerServices $services The GraphQL executor and the explorer page's services
+	 */
+	public function __construct(
+		IRequest $request,
+		private readonly GraphQLControllerServices $services,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+
+	}//end __construct()
+
+	/**
+	 * Execute a GraphQL query.
+	 *
+	 * Accepts a JSON body with: query (string), variables (object), operationName (string).
+	 *
+	 * @return JSONResponse The GraphQL response
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @CORS
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-1
+	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: 240, period: 60)]
+	public function execute(): JSONResponse {
+		$body = file_get_contents('php://input');
+		$data = json_decode($body, true);
+
+		if ($data === null || isset($data['query']) === false) {
+			return $this->badRequestResponse();
+		}
+
+		$query = $data['query'];
+		$variables = ($data['variables'] ?? null);
+		$operationName = ($data['operationName'] ?? null);
+
+		$result = $this->services->graphQLService->execute($query, $variables, $operationName);
+
+		return $this->resultResponse(result: $result);
+	}//end execute()
+
+	/**
+	 * The 400 for a request body that is not JSON with a `query` field.
+	 *
+	 * @return JSONResponse
+	 */
+	private function badRequestResponse(): JSONResponse {
+		return new JSONResponse(
+			[
+				'errors' => [
+					[
+						'message' => 'Request body must be JSON with a "query" field',
+						'extensions' => ['code' => 'BAD_REQUEST'],
+					],
+				],
+			],
+			400
+		);
+	}//end badRequestResponse()
+
+	/**
+	 * The response for an executed query, with a Retry-After header when it was rate limited.
+	 *
+	 * @param array<string, mixed> $result The GraphQL result.
+	 *
+	 * @return JSONResponse
+	 */
+	private function resultResponse(array $result): JSONResponse {
+		// Determine HTTP status: 200 for data (even with partial errors), 400 for query errors only.
+		$status = 200;
+		if (isset($result['data']) === false && isset($result['errors']) === true) {
+			$status = $this->errorStatus(result: $result);
+		}
+
+		$response = new JSONResponse($result, $status);
+		if ($status === 429) {
+			$retryAfter = ($result['errors'][0]['extensions']['retryAfter'] ?? 60);
+			$response->addHeader('Retry-After', (string)$retryAfter);
+		}
+
+		return $response;
+	}//end resultResponse()
+
+	/**
+	 * The status of a result that carries errors and no data: 429 when rate limited, else 400.
+	 *
+	 * @param array<string, mixed> $result The GraphQL result.
+	 *
+	 * @return int
+	 */
+	private function errorStatus(array $result): int {
+		$firstCode = ($result['errors'][0]['extensions']['code'] ?? null);
+		if ($firstCode === 'RATE_LIMITED') {
+			return 429;
+		}
+
+		return 400;
+	}//end errorStatus()
+
+	/**
+	 * Serve the GraphiQL interactive explorer.
+	 *
+	 * @return Response The HTML response with GraphiQL
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 * @no-admin-idor-exempt No per-object resource: returns the static GraphiQL explorer HTML page; no data access.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2
+	 */
+	public function explorer(): Response {
+		$html = $this->getGraphiQLHtml();
+
+		// Create a response that renders raw HTML.
+		// @psalm-suppress MissingTemplateParam.
+		$response = new class($html) extends Response {
+
+			/**
+			 * The HTML content to render.
+			 *
+			 * @var string
+			 */
+			private string $html;
+
+			/**
+			 * Constructor.
+			 *
+			 * @param string $html The HTML content
+			 */
+			public function __construct(string $html) {
+				parent::__construct();
+				$this->html = $html;
+				// @phpcs:ignore CustomSniffs.Functions.NamedParameters
+				$this->addHeader('Content-Type', 'text/html; charset=utf-8');
+			}//end __construct()
+
+			/**
+			 * Render the HTML body.
+			 *
+			 * @return string The HTML
+			 *
+			 * @spec exclude Framework Response::render() override on an inline anonymous class for the GraphiQL
+			 *              explorer; the explorer route is owned by retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2.
+			 */
+			public function render(): string {
+				return $this->html;
+			}//end render()
+		};
+
+		$response->setContentSecurityPolicy($this->explorerPolicy());
+
+		return $response;
+	}//end explorer()
+
+	/**
+	 * The explorer's content security policy, relaxed for the CDN-hosted GraphiQL assets.
+	 *
+	 * @return ContentSecurityPolicy
+	 */
+	private function explorerPolicy(): ContentSecurityPolicy {
+		// Relax CSP to allow CDN-hosted GraphiQL assets.
+		$csp = new ContentSecurityPolicy();
+		$csp->addAllowedScriptDomain('https://unpkg.com');
+		$csp->addAllowedScriptDomain('\'unsafe-inline\'');
+		$csp->addAllowedStyleDomain('https://unpkg.com');
+		$csp->addAllowedFontDomain('https://unpkg.com');
+		$csp->addAllowedConnectDomain('\'self\'');
+		$csp->allowInlineStyle(true);
+		$csp->allowEvalScript(true);
+
+		return $csp;
+	}//end explorerPolicy()
+
+	/**
+	 * Get the GraphiQL HTML page.
+	 *
+	 * Uses the CDN-hosted GraphiQL for simplicity.
+	 *
+	 * @return string The HTML content
+	 */
+	private function getGraphiQLHtml(): string {
+		$endpoint = $this->explorerEndpoint();
+
+		// Get CSP nonce for inline scripts and CSRF request token for auth.
+		$nonce = $this->services->nonceManager->getNonce();
+		$requestToken = $this->services->csrfManager->getToken()->getEncryptedValue();
+
+		return strtr(
+			self::EXPLORER_PAGE,
+			[
+				'{nonce}' => $nonce,
+				'{endpoint}' => $endpoint,
+				'{requestToken}' => $requestToken,
+			]
+		);
+
+	}//end getGraphiQLHtml()
+
+	/**
+	 * The URL the explorer posts queries to, always through /index.php.
+	 *
+	 * @return string
+	 */
+	private function explorerEndpoint(): string {
+		$endpoint = $this->services->urlGenerator->linkToRoute('openregister.graphQL.execute');
+
+		// Ensure /index.php is included for environments without URL rewriting.
+		if (str_contains(haystack: $endpoint, needle: '/index.php') === false) {
+			$endpoint = '/index.php' . $endpoint;
+		}
+
+		return $endpoint;
+	}//end explorerEndpoint()
+}//end class

@@ -28,7 +28,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use Psr\Log\LoggerInterface;
 
@@ -41,12 +40,10 @@ class FlowLifecycleGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper     $runs      Counts runs pinned to a version.
 	 * @param FlowNodePreflight $preflight Inspects a graph for dead ends.
 	 * @param LoggerInterface   $logger    Records every refusal and its reason.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $runs,
 		private readonly FlowNodePreflight $preflight,
 		private readonly LoggerInterface $logger,
 	) {
@@ -71,9 +68,7 @@ class FlowLifecycleGuard {
 		}
 
 		$this->refuse(
-			reason: FlowLifecycleRefused::REASON_IMMUTABLE,
-			flowId: $flowId,
-			state: $state
+			refusal: new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_IMMUTABLE, flowId: $flowId, state: $state)
 		);
 
 	}//end refuseEditUnlessDraft()
@@ -96,9 +91,7 @@ class FlowLifecycleGuard {
 		}
 
 		$this->refuse(
-			reason: FlowLifecycleRefused::REASON_NOT_A_DRAFT,
-			flowId: $flowId,
-			state: $state
+			refusal: new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_NOT_A_DRAFT, flowId: $flowId, state: $state)
 		);
 
 	}//end refusePublishUnlessDraft()
@@ -121,9 +114,7 @@ class FlowLifecycleGuard {
 		}
 
 		$this->refuse(
-			reason: FlowLifecycleRefused::REASON_NOT_PUBLISHED,
-			flowId: $flowId,
-			state: $state
+			refusal: new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_NOT_PUBLISHED, flowId: $flowId, state: $state)
 		);
 
 	}//end refuseDeprecateUnlessPublished()
@@ -146,59 +137,21 @@ class FlowLifecycleGuard {
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function refusePublishOnDeadEnd(string $flowId, array $graph): void {
-		$findings = $this->preflight->inspect(
-			flow: [
-				'nodes' => (array)($graph['nodes'] ?? []),
-				'edges' => (array)($graph['edges'] ?? []),
-			]
-		);
-
-		$deadEnds = [];
-		foreach (($findings['warnings'] ?? []) as $warning) {
-			if (($warning['reason'] ?? '') === FlowNodePreflight::REASON_DEAD_END) {
-				$deadEnds[] = (string)($warning['step'] ?? '');
-			}
-		}
-
+		$deadEnds = (new FlowDeadEndSteps(preflight: $this->preflight))->inGraph(graph: $graph);
 		if ($deadEnds === []) {
 			return;
 		}
 
 		$this->refuse(
-			reason: FlowLifecycleRefused::REASON_DEAD_END,
-			flowId: $flowId,
-			state: FlowVersion::STATUS_DRAFT,
-			detail: 'Offending steps: ' . implode(separator: ', ', array: $deadEnds) . '.'
+			refusal: new FlowLifecycleRefused(
+				reason: FlowLifecycleRefused::REASON_DEAD_END,
+				flowId: $flowId,
+				state: FlowVersion::STATUS_DRAFT,
+				detail: 'Offending steps: ' . implode(separator: ', ', array: $deadEnds) . '.'
+			)
 		);
 
 	}//end refusePublishOnDeadEnd()
-
-	/**
-	 * Refuse to remove a version a still-movable run is pinned to.
-	 *
-	 * @param string  $flowId  The flow.
-	 * @param integer $version The version being removed.
-	 *
-	 * @return void
-	 *
-	 * @throws FlowLifecycleRefused When a non-terminal run is pinned to it.
-	 *
-	 * @spec openspec/specs/flow-definition-versioning/spec.md
-	 */
-	public function refuseRemoveWhilePinned(string $flowId, int $version): void {
-		$pinned = $this->runs->countActivePinnedTo(flowUuid: $flowId, version: $version);
-		if ($pinned === 0) {
-			return;
-		}
-
-		$this->refuse(
-			reason: FlowLifecycleRefused::REASON_VERSION_IN_USE,
-			flowId: $flowId,
-			state: null,
-			detail: $pinned . ' run(s) are still pinned to version ' . $version . '.'
-		);
-
-	}//end refuseRemoveWhilePinned()
 
 	/**
 	 * Log the refusal, then throw it.
@@ -207,10 +160,7 @@ class FlowLifecycleGuard {
 	 * lets an operator answer "why did publishing do nothing" without a
 	 * debugger, which is the complaint every silent guard produces.
 	 *
-	 * @param string      $reason One of the FlowLifecycleRefused REASON_* constants.
-	 * @param string      $flowId The flow.
-	 * @param string|null $state  The state that caused it.
-	 * @param string|null $detail Extra human detail.
+	 * @param FlowLifecycleRefused $refusal The refusal.
 	 *
 	 * @return void
 	 *
@@ -218,22 +168,15 @@ class FlowLifecycleGuard {
 	 *
 	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
-	private function refuse(string $reason, string $flowId, ?string $state, ?string $detail = null): void {
-		$refusal = new FlowLifecycleRefused(
-			reason: $reason,
-			flowId: $flowId,
-			state: $state,
-			detail: $detail
-		);
-
+	private function refuse(FlowLifecycleRefused $refusal): void {
 		$this->logger->warning(
 			message: '[FlowLifecycleGuard] Refused: ' . $refusal->getMessage(),
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'flow' => $flowId,
-				'reason' => $reason,
-				'state' => $state,
+				'flow' => $refusal->getFlowId(),
+				'reason' => $refusal->getReason(),
+				'state' => $refusal->getState(),
 			]
 		);
 

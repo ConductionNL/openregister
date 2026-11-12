@@ -20,15 +20,15 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogueInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -36,20 +36,20 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * List the example sets.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
+ * @spec openspec/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
  */
 class ExampleSetListCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetCatalogue $catalogue Finds the fragments.
-	 * @param ExampleSetRecord    $record    Says whether a set is installed.
+	 * @param ExampleSetCatalogueInterface $catalogue Finds the fragments.
+	 * @param ExampleSetRecordInterface $record    Says whether a set is installed.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ExampleSetCatalogue $catalogue,
-		private readonly ExampleSetRecord $record,
+		private readonly ExampleSetCatalogueInterface $catalogue,
+		private readonly ExampleSetRecordInterface $record,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -59,7 +59,7 @@ class ExampleSetListCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:example-set:list')
@@ -76,7 +76,7 @@ class ExampleSetListCommand extends Command {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Symfony's signature; the command takes no input.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$sets = $this->catalogue->sets();

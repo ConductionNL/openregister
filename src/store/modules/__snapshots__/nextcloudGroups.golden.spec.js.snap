@@ -1,0 +1,335 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Nextcloud groups golden application: groups 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "admin",
+      "name": "admin",
+      "userCount": 0,
+    },
+    {
+      "id": "staff",
+      "name": "staff",
+      "userCount": 0,
+    },
+  ],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden application: groups missing 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden application: network 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [
+    [
+      "Error loading Nextcloud groups:",
+      "Failed to fetch",
+    ],
+  ],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden application: no groups 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden application: no ocs 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden application: refused 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden application: unreadable 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [
+    [
+      "Error loading Nextcloud groups:",
+      "Unexpected token",
+    ],
+  ],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden organisation: groups 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "admin",
+      "name": "admin",
+      "userCount": 0,
+    },
+    {
+      "id": "staff",
+      "name": "staff",
+      "userCount": 0,
+    },
+  ],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden organisation: groups missing 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden organisation: network 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [
+    [
+      "Error loading Nextcloud groups:",
+      "Failed to fetch",
+    ],
+  ],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden organisation: no groups 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden organisation: no ocs 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden organisation: refused 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [],
+  "returned": undefined,
+}
+`;
+
+exports[`Nextcloud groups golden organisation: unreadable 1`] = `
+{
+  "calls": [
+    [
+      "/ocs/v1.php/cloud/groups?format=json",
+      {
+        "headers": {
+          "OCS-APIRequest": "true",
+        },
+      },
+    ],
+  ],
+  "groups": [
+    {
+      "id": "cached",
+    },
+  ],
+  "logged": [
+    [
+      "Error loading Nextcloud groups:",
+      "Unexpected token",
+    ],
+  ],
+  "returned": undefined,
+}
+`;

@@ -359,4 +359,16 @@ export default [
 			'@stylistic/exp-list-style': 'off',
 		},
 	},
+
+	{
+		// Golden fixtures record what the code under test was given, and an
+		// empty key is one of the inputs it has to survive (an empty slug in the
+		// slug/id lookup, an empty CSV header in the row import). The rule
+		// guards hand-written JSON; here the "" key is the test, not a typo.
+		name: 'conduction/golden-fixtures-empty-keys',
+		files: ['tests/**/fixtures/*.json'],
+		rules: {
+			'json/no-empty-keys': 'off',
+		},
+	},
 ]

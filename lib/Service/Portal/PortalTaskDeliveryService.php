@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Portal;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -49,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
  */
-class PortalTaskDeliveryService {
+class PortalTaskDeliveryService implements PortalTaskDeliveryServiceInterface, PortalTaskDeliveryRequestInterface, PortalTaskReminderInterface {
 
 	/**
 	 * Constructor.
@@ -71,7 +72,7 @@ class PortalTaskDeliveryService {
 	 * apart. Never throws: each failure is logged with the task, and the
 	 * rows that could be written are returned.
 	 *
-	 * @param Task $task The external task.
+	 * @param TaskInterface $task The external task.
 	 * @param string $kind `ask`, `re-ask` or `reminder`.
 	 * @param array<string, mixed> $message What portaliq renders.
 	 *
@@ -79,29 +80,71 @@ class PortalTaskDeliveryService {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
-	public function request(Task $task, string $kind, array $message): array {
+	public function request(TaskInterface $task, string $kind, array $message): array {
+		return $this->record(request: new DeliveryRequest(task: $task, kind: $kind, message: $message));
+	}//end request()
+
+	/**
+	 * Record one delivery request on every channel. Never throws.
+	 *
+	 * @param DeliveryRequest $request The task, the kind of ask and its message.
+	 *
+	 * @return array<int, PortalTaskDelivery> The rows written (possibly none).
+	 */
+	private function record(DeliveryRequest $request): array {
 		$written = [];
 		foreach (PortalTaskDelivery::CHANNELS as $channel) {
-			$row = new PortalTaskDelivery();
-			$row->setTaskUuid((string)$task->getUuid());
-			$row->setPartyReference((string)$task->getAssignee());
-			$row->setChannel($channel);
-			$row->setKind($kind);
-			$row->setMessage($message);
-
-			try {
-				$written[] = $this->deliveries->insert($row);
-			} catch (Throwable $failure) {
-				$this->logger->warning(
-					'[PortalTaskDeliveryService] Could not record the ' . $channel . ' delivery request of task '
-					. $task->getUuid() . '; the task and its run stand, the delivery state reads not-recorded: ' . $failure->getMessage(),
-					['task' => $task->getUuid(), 'channel' => $channel, 'kind' => $kind]
-				);
+			$row = $this->insert(request: $request, channel: $channel);
+			if ($row !== null) {
+				$written[] = $row;
 			}
 		}
 
 		return $written;
-	}//end request()
+	}//end record()
+
+	/**
+	 * Write the request's row for one channel, or log why it could not be written.
+	 *
+	 * @param DeliveryRequest $request The task, the kind of ask and its message.
+	 * @param string          $channel The channel.
+	 *
+	 * @return PortalTaskDelivery|null The row written, or null.
+	 */
+	private function insert(DeliveryRequest $request, string $channel): ?PortalTaskDelivery {
+		$task = $request->task;
+		$row = self::rowFor(request: $request, channel: $channel);
+
+		try {
+			return $this->deliveries->insert($row);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				'[PortalTaskDeliveryService] Could not record the ' . $channel . ' delivery request of task '
+				. $task->getUuid() . '; the task and its run stand, the delivery state reads not-recorded: ' . $failure->getMessage(),
+				['task' => $task->getUuid(), 'channel' => $channel, 'kind' => $request->kind]
+			);
+			return null;
+		}
+	}//end insert()
+
+	/**
+	 * The delivery row for one channel of a request, not yet written.
+	 *
+	 * @param DeliveryRequest $request The task, the kind of ask and its message.
+	 * @param string          $channel The channel.
+	 *
+	 * @return PortalTaskDelivery The row.
+	 */
+	private static function rowFor(DeliveryRequest $request, string $channel): PortalTaskDelivery {
+		$row = new PortalTaskDelivery();
+		$row->setTaskUuid((string)$request->task->getUuid());
+		$row->setPartyReference((string)$request->task->getAssignee());
+		$row->setChannel($channel);
+		$row->setKind($request->kind);
+		$row->setMessage($request->message);
+
+		return $row;
+	}//end rowFor()
 
 	/**
 	 * The message an ask, re-ask or reminder carries to portaliq.
@@ -109,14 +152,14 @@ class PortalTaskDeliveryService {
 	 * Descriptors and the case anchor, never case data: portaliq reads the
 	 * case itself through its subject-scoped readers (ADR-046 rule 3).
 	 *
-	 * @param Task $task The external task.
+	 * @param TaskInterface $task The external task.
 	 * @param string|null $reason The re-ask reason, when this is a re-ask.
 	 *
 	 * @return array<string, mixed> The message.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
-	public function messageFor(Task $task, ?string $reason = null): array {
+	public function messageFor(TaskInterface $task, ?string $reason = null): array {
 		$metadata = ($task->getMetadata() ?? []);
 
 		return [
@@ -128,14 +171,25 @@ class PortalTaskDeliveryService {
 			'partyReference' => $task->getAssignee(),
 			'dueAt' => $task->getDueAt()?->format('c'),
 			'expiresAt' => $task->getExpiresAt()?->format('c'),
-			'case' => [
-				'uuid' => $task->getObjectUuid(),
-				'register' => $task->getRegisterId(),
-				'schema' => $task->getSchemaId(),
-			],
+			'case' => self::caseAnchor(task: $task),
 			'upload' => ($metadata['upload'] ?? null),
 		];
 	}//end messageFor()
+
+	/**
+	 * The case the task is about, by uuid, register and schema only.
+	 *
+	 * @param TaskInterface $task The external task.
+	 *
+	 * @return array{uuid: mixed, register: mixed, schema: mixed} The anchor.
+	 */
+	private static function caseAnchor(TaskInterface $task): array {
+		return [
+			'uuid' => $task->getObjectUuid(),
+			'register' => $task->getRegisterId(),
+			'schema' => $task->getSchemaId(),
+		];
+	}//end caseAnchor()
 
 	/**
 	 * The delivery state of one task, summarised for its row.

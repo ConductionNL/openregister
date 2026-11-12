@@ -37,11 +37,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Controller\Support\ChatStreamControllerServices;
+use OCA\OpenRegister\Controller\Support\ChatStreamTurn;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
+use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannels;
+use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Response;
@@ -94,23 +99,23 @@ class ChatStreamController extends Controller {
 	/**
 	 * Chat service for processing messages.
 	 *
-	 * @var ChatService
+	 * @var ChatServiceInterface
 	 */
-	private readonly ChatService $chatService;
+	private readonly ChatServiceInterface $chatService;
 
 	/**
 	 * Conversation mapper.
 	 *
-	 * @var ConversationMapper
+	 * @var ConversationMapperInterface
 	 */
-	private readonly ConversationMapper $conversationMapper;
+	private readonly ConversationMapperInterface $conversationMapper;
 
 	/**
 	 * Agent mapper.
 	 *
-	 * @var AgentMapper
+	 * @var AgentMapperInterface
 	 */
-	private readonly AgentMapper $agentMapper;
+	private readonly AgentMapperInterface $agentMapper;
 
 	/**
 	 * Logger.
@@ -148,32 +153,17 @@ class ChatStreamController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param ChatService $chatService Chat service.
-	 * @param ConversationMapper $conversationMapper Conversation mapper.
-	 * @param AgentMapper $agentMapper Agent mapper.
-	 * @param LoggerInterface $logger Logger.
-	 * @param IUserSession $userSession User session.
-	 * @param IDBConnection $db Database connection.
+	 * @param ChatStreamControllerServices $services The chat stream controller services.
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		ChatService $chatService,
-		ConversationMapper $conversationMapper,
-		AgentMapper $agentMapper,
-		LoggerInterface $logger,
-		IUserSession $userSession,
-		IDBConnection $db,
-	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->chatService = $chatService;
-		$this->conversationMapper = $conversationMapper;
-		$this->agentMapper = $agentMapper;
-		$this->logger = $logger;
-		$this->userSession = $userSession;
-		$this->db = $db;
+	public function __construct(IRequest $request, ChatStreamControllerServices $services) {
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		$this->chatService = $services->chat->chatService;
+		$this->conversationMapper = $services->chat->conversationMapper;
+		$this->agentMapper = $services->chat->agentMapper;
+		$this->logger = $services->chat->logger;
+		$this->userSession = $services->platform->userSession;
+		$this->db = $services->platform->db;
 	}//end __construct()
 
 	/**
@@ -225,177 +215,10 @@ class ChatStreamController extends Controller {
 		$this->emitSseHeaders();
 
 		try {
-			$user = $this->userSession->getUser();
-			if ($user === null) {
-				$this->emitAndExit(
-					eventType: 'error',
-					payload: ['code' => 'unauthenticated', 'message' => 'Authentication required']
-				);
-			}
-
-			$userId = $user->getUID();
-			$rawBody = file_get_contents('php://input');
-			if ($rawBody === false || $rawBody === '') {
-				$rawBody = '[]';
-			}
-
-			$body = json_decode($rawBody, associative: true) ?? [];
-
-			$userMessage = trim((string)($body['message'] ?? ''));
-			if ($userMessage === '') {
-				$this->emitAndExit(
-					eventType: 'error',
-					payload: ['code' => 'missing_message', 'message' => 'message content is required']
-				);
-			}
-
-			// Resolve agent + conversation.
-			$agentUuid = (string)($body['agentUuid'] ?? '');
-			$conversationUuid = (string)($body['conversationUuid'] ?? '');
-			$context = $body['context'] ?? null;
-
-			// Widget UX: when the widget opens a fresh chat it doesn't know which
-			// agent to use (no agent picker in v1). Fall back to an agent the
-			// CURRENT USER can access (owner / non-private / invited), never the
-			// first agent in the table — that would cross tenant/user boundaries
-			// in a multi-user deployment.
-			if ($conversationUuid === '' && $agentUuid === '') {
-				$agentUuid = $this->pickFallbackAgentForUser(userId: $userId);
-			}
-
-			if ($conversationUuid === '' && $agentUuid === '') {
-				$this->emitAndExit(
-					eventType: 'error',
-					payload: [
-						'code' => 'missing_agent',
-						'message' => 'No agent available; configure one in OpenRegister settings.',
-					]
-				);
-			}
-
-			try {
-				$conversation = $this->resolveConversation(
-					conversationUuid: $conversationUuid,
-					agentUuid: $agentUuid,
-					userId: $userId
-				);
-			} catch (RuntimeException $e) {
-				if ($e->getMessage() === self::ERROR_FORBIDDEN) {
-					$this->emitAndExit(
-						eventType: 'error',
-						payload: ['code' => 'forbidden', 'message' => 'Forbidden']
-					);
-				}
-
-				throw $e;
-			}
-
-			// Special rights (decision 239), before the model is called. The
-			// SSE headers are already on the wire, so a refusal is the same
-			// `forbidden` frame as a conversation that is not the caller's;
-			// ChatService::processMessage() checks again for every other path.
-			$agent = null;
-			if ($conversation->getAgentId() !== null) {
-				$agent = $this->agentMapper->find($conversation->getAgentId());
-			}
-
-			$missingRight = $this->chatService->missingRight(conversation: $conversation, agent: $agent, userId: $userId);
-			if ($missingRight !== null) {
-				$this->emitAndExit(
-					eventType: 'error',
-					payload: [
-						'code' => 'forbidden',
-						'message' => 'You do not hold the special right ' . $missingRight . ' in this organisation',
-						'right' => $missingRight,
-					]
-				);
-			}
-
-			// Persist the CnAiContext snapshot on the user-authored Message
-			// row that ChatService::processMessage will create. The
-			// orchestrator's Version1Date20260511130000 migration ships the
-			// column; ChatService now accepts `context` and forwards it to
-			// MessageHistoryHandler::storeMessage(). Reject anything other
-			// than an associative array so a bad client payload doesn't
-			// overflow the column or break the JSON encoding.
-			$contextArr = [];
-			if (is_array($context) === true) {
-				$contextArr = $context;
-			}
-
-			// Emit a heartbeat right after headers so the client knows we're alive
-			// (the synchronous LLM call may take >15s on cold-load).
-			$this->emitSseEvent(eventType: 'heartbeat', payload: ['ts' => gmdate('c')]);
-			$this->lastEventAt = $this->now();
-
-			// Build the streaming channel and register four callbacks. Each
-			// callback funnels through `forwardWithHeartbeat()` which checks
-			// wall-clock since the last emit and interleaves a `heartbeat`
-			// frame when more than 15s have elapsed (design D3). When the
-			// active provider supports LLPhant streaming the handler invokes
-			// the channel; otherwise the channel sits idle and the existing
-			// initial heartbeat is the only one — that's the synchronous-
-			// fallback degradation explicitly allowed by the SSE contract.
-			$channel = new StreamYieldChannel();
-			$channel->onToken(
-				fn (string $delta) => $this->forwardWithHeartbeat(
-					eventType: 'token',
-					payload: ['delta' => $delta]
-				)
-			);
-			$channel->onToolCall(
-				fn (array $payload) => $this->forwardWithHeartbeat(
-					eventType: 'tool_call',
-					payload: $payload
-				)
-			);
-			$channel->onToolResult(
-				fn (array $payload) => $this->forwardWithHeartbeat(
-					eventType: 'tool_result',
-					payload: $payload
-				)
-			);
-			// There is deliberately no `onHeartbeat` registration: the channel
-			// has no heartbeat pub/sub, because no producer moment exists that
-			// `forwardWithHeartbeat()` above does not already cover. See the
-			// note at the foot of StreamYieldChannel.
-			$result = $this->chatService->processMessage(
-				conversationId: $conversation->getId(),
-				userId: $userId,
-				userMessage: $userMessage,
-				selectedViews: [],
-				selectedTools: [],
-				ragSettings: [],
-				context: $contextArr,
-				channel: $channel
-			);
-
-			// Emit final event with the full assistant text.
-			$finalPayload = [
-				'messageId' => (string)($result['messageId'] ?? ''),
-				'conversationUuid' => $conversation->getUuid(),
-				'fullText' => (string)($result['response'] ?? $result['message'] ?? ''),
-				'context' => $context,
-			];
-			$this->emitAndExit(eventType: 'final', payload: $finalPayload);
+			$this->runStream();
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[ChatStreamController] Stream failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e,
-					'error' => $e->getMessage(),
-				]
-			);
-			$this->emitAndExit(
-				eventType: 'error',
-				payload: [
-					'code' => 'stream_failed',
-					'message' => self::PUBLIC_ERROR_MESSAGE,
-				]
-			);
-		}//end try
+			$this->failStream(exception: $e);
+		}
 
 		// Unreachable — emitAndExit() never returns. Present so static
 		// analysers do not complain about the declared `: Response` return
@@ -403,6 +226,237 @@ class ChatStreamController extends Controller {
 		// we get anywhere near this line.
 		return new Response();
 	}//end stream()
+
+	/**
+	 * Read the turn, resolve its conversation, process it and emit the final frame.
+	 *
+	 * @return void
+	 */
+	private function runStream(): void {
+		$turn = $this->readTurn();
+		$this->resolveTurnAgent(turn: $turn);
+		$turn->conversation = $this->turnConversation(turn: $turn);
+		$this->refuseMissingRight(turn: $turn);
+
+		// Emit a heartbeat right after headers so the client knows we're alive
+		// (the synchronous LLM call may take >15s on cold-load).
+		$this->emitSseEvent(eventType: 'heartbeat', payload: ['ts' => gmdate('c')]);
+		$this->lastEventAt = $this->now();
+
+		$this->emitFinal(turn: $turn, result: $this->processTurn(turn: $turn));
+	}//end runStream()
+
+	/**
+	 * Read the caller and the request body into a turn; stop when either is missing.
+	 *
+	 * @return ChatStreamTurn The turn.
+	 */
+	private function readTurn(): ChatStreamTurn {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			$this->emitAndExit(
+				eventType: 'error',
+				payload: ['code' => 'unauthenticated', 'message' => 'Authentication required']
+			);
+		}
+
+		$turn         = new ChatStreamTurn();
+		$turn->userId = $user->getUID();
+		$body         = $this->readBody();
+		$turn->message          = $this->requireMessage(body: $body);
+		$turn->agentUuid        = (string)($body['agentUuid'] ?? '');
+		$turn->conversationUuid = (string)($body['conversationUuid'] ?? '');
+		$turn->context          = $body['context'] ?? null;
+		return $turn;
+	}//end readTurn()
+
+	/**
+	 * The decoded request body, [] when it is empty or not JSON.
+	 *
+	 * @return array The body.
+	 */
+	private function readBody(): array {
+		$rawBody = file_get_contents('php://input');
+		if ($rawBody === false || $rawBody === '') {
+			$rawBody = '[]';
+		}
+
+		return json_decode($rawBody, associative: true) ?? [];
+	}//end readBody()
+
+	/**
+	 * The trimmed message; stops the stream when it is empty.
+	 *
+	 * @param array $body The request body.
+	 *
+	 * @return string The message.
+	 */
+	private function requireMessage(array $body): string {
+		$userMessage = trim((string)($body['message'] ?? ''));
+		if ($userMessage === '') {
+			$this->emitAndExit(
+				eventType: 'error',
+				payload: ['code' => 'missing_message', 'message' => 'message content is required']
+			);
+		}
+
+		return $userMessage;
+	}//end requireMessage()
+
+	/**
+	 * Pick a fallback agent for a fresh chat; stop when there is none.
+	 *
+	 * Widget UX: when the widget opens a fresh chat it doesn't know which
+	 * agent to use (no agent picker in v1). Fall back to an agent the
+	 * CURRENT USER can access (owner / non-private / invited), never the
+	 * first agent in the table — that would cross tenant/user boundaries
+	 * in a multi-user deployment.
+	 *
+	 * @param ChatStreamTurn $turn The turn.
+	 *
+	 * @return void
+	 */
+	private function resolveTurnAgent(ChatStreamTurn $turn): void {
+		if ($turn->conversationUuid === '' && $turn->agentUuid === '') {
+			$turn->agentUuid = $this->pickFallbackAgentForUser(userId: $turn->userId);
+		}
+
+		if ($turn->conversationUuid === '' && $turn->agentUuid === '') {
+			$this->emitAndExit(
+				eventType: 'error',
+				payload: ['code' => 'missing_agent', 'message' => 'No agent available; configure one in OpenRegister settings.']
+			);
+		}
+	}//end resolveTurnAgent()
+
+	/**
+	 * The turn's conversation; a conversation the caller does not own stops the stream.
+	 *
+	 * @param ChatStreamTurn $turn The turn.
+	 *
+	 * @return Conversation The conversation.
+	 */
+	private function turnConversation(ChatStreamTurn $turn): Conversation {
+		try {
+			return $this->resolveConversation(turn: $turn);
+		} catch (RuntimeException $e) {
+			if ($e->getMessage() === self::ERROR_FORBIDDEN) {
+				$this->emitAndExit(eventType: 'error', payload: ['code' => 'forbidden', 'message' => 'Forbidden']);
+			}
+
+			throw $e;
+		}
+	}//end turnConversation()
+
+	/**
+	 * Stop the stream when the caller lacks a special right the conversation needs.
+	 *
+	 * Checked before the model is called. The SSE headers are already on the
+	 * wire, so a refusal is a `forbidden` frame like a conversation that is not
+	 * the caller's; ChatService checks again for every other path.
+	 *
+	 * @param ChatStreamTurn $turn The turn, with its conversation resolved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	private function refuseMissingRight(ChatStreamTurn $turn): void {
+		$missingRight = $this->chatService->missingRightIn(conversationId: $turn->conversation->getId(), userId: $turn->userId);
+		if ($missingRight !== null) {
+			$this->emitAndExit(
+				eventType: 'error',
+				payload: [
+					'code' => 'forbidden',
+					'message' => 'You do not hold the special right ' . $missingRight . ' in this organisation',
+					'right' => $missingRight,
+				]
+			);
+		}
+	}//end refuseMissingRight()
+
+	/**
+	 * Process the turn through the chat service, streaming over a channel.
+	 *
+	 * Persist the CnAiContext snapshot on the user-authored Message row only
+	 * when it is an array, so a bad client payload doesn't overflow the
+	 * column or break the JSON encoding.
+	 *
+	 * @param ChatStreamTurn $turn The turn.
+	 *
+	 * @return array The chat service result.
+	 */
+	private function processTurn(ChatStreamTurn $turn): array {
+		$context = [];
+		if (is_array($turn->context) === true) {
+			$context = $turn->context;
+		}
+
+		return $this->chatService->processMessage(
+			conversationId: $turn->conversation->getId(),
+			userId: $turn->userId,
+			userMessage: $turn->message,
+			selectedViews: [],
+			selectedTools: [],
+			ragSettings: [],
+			context: $context,
+			channel: $this->streamChannel()
+		);
+	}//end processTurn()
+
+	/**
+	 * A channel whose token, tool call and tool result callbacks emit frames.
+	 *
+	 * Each callback funnels through `forwardWithHeartbeat()`, which interleaves
+	 * a `heartbeat` frame when more than 15s have elapsed (design D3). There is
+	 * deliberately no `onHeartbeat` registration; see the note at the foot of
+	 * StreamYieldChannel.
+	 *
+	 * @return ChatStreamChannelInterface The channel.
+	 */
+	private function streamChannel(): ChatStreamChannelInterface {
+		$channel = StreamYieldChannels::channel();
+		$channel->onToken(fn (string $delta) => $this->forwardWithHeartbeat(eventType: 'token', payload: ['delta' => $delta]));
+		$channel->onToolCall(fn (array $payload) => $this->forwardWithHeartbeat(eventType: 'tool_call', payload: $payload));
+		$channel->onToolResult(fn (array $payload) => $this->forwardWithHeartbeat(eventType: 'tool_result', payload: $payload));
+		return $channel;
+	}//end streamChannel()
+
+	/**
+	 * Emit the final frame with the full assistant text.
+	 *
+	 * @param ChatStreamTurn $turn   The turn.
+	 * @param array          $result The chat service result.
+	 *
+	 * @return void
+	 */
+	private function emitFinal(ChatStreamTurn $turn, array $result): void {
+		$finalPayload = [
+			'messageId' => (string)($result['messageId'] ?? ''),
+			'conversationUuid' => $turn->conversation->getUuid(),
+			'fullText' => (string)($result['response'] ?? $result['message'] ?? ''),
+			'context' => $turn->context,
+		];
+		$this->emitAndExit(eventType: 'final', payload: $finalPayload);
+	}//end emitFinal()
+
+	/**
+	 * Log the failure and emit the generic `stream_failed` error frame.
+	 *
+	 * @param Throwable $exception The failure.
+	 *
+	 * @return void
+	 */
+	private function failStream(Throwable $exception): void {
+		$this->logger->error(
+			message: '[ChatStreamController] Stream failed',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception, 'error' => $exception->getMessage()]
+		);
+		$this->emitAndExit(
+			eventType: 'error',
+			payload: ['code' => 'stream_failed', 'message' => self::PUBLIC_ERROR_MESSAGE]
+		);
+	}//end failStream()
 
 	/**
 	 * Emit a single SSE frame, release any open DB transaction, then exit.
@@ -612,7 +666,7 @@ class ChatStreamController extends Controller {
 		try {
 			// Cheap cap — we only need the first match. Twenty rows is
 			// enough headroom for any realistic instance.
-			$agents = $this->agentMapper->findAll(limit: 20);
+			$agents = $this->agentMapper->findAll(query: new ListQuery(limit: 20));
 			foreach ($agents as $agent) {
 				if ($this->agentMapper->canUserAccessAgent(agent: $agent, userId: $userId) === true) {
 					return (string)$agent->getUuid();
@@ -638,9 +692,8 @@ class ChatStreamController extends Controller {
 	 * security review (any authed user could otherwise read/append to
 	 * another user's thread by guessing the uuid).
 	 *
-	 * @param string $conversationUuid Conversation UUID or '' to create new.
-	 * @param string $agentUuid Agent UUID (required when creating new).
-	 * @param string $userId Current user ID.
+	 * @param ChatStreamTurn $turn The turn: its conversation UUID ('' to create new),
+	 *                             agent UUID (required when creating new) and caller.
 	 *
 	 * @return Conversation Resolved conversation.
 	 *
@@ -651,9 +704,10 @@ class ChatStreamController extends Controller {
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	private function resolveConversation(string $conversationUuid, string $agentUuid, string $userId): Conversation {
-		if ($conversationUuid !== '') {
-			$conversation = $this->conversationMapper->findByUuid(uuid: $conversationUuid);
+	private function resolveConversation(ChatStreamTurn $turn): Conversation {
+		$userId = $turn->userId;
+		if ($turn->conversationUuid !== '') {
+			$conversation = $this->conversationMapper->findByUuid(uuid: $turn->conversationUuid);
 
 			// IDOR guard: findByUuid() does not scope by user, so we MUST
 			// verify the conversation belongs to the caller. Without this
@@ -667,7 +721,7 @@ class ChatStreamController extends Controller {
 		}
 
 		// Need an agent to create a new conversation.
-		$agent = $this->agentMapper->findByUuid(uuid: $agentUuid);
+		$agent = $this->agentMapper->findByUuid(uuid: $turn->agentUuid);
 
 		$conversation = new Conversation();
 		$conversation->setUserId($userId);

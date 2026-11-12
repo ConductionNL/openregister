@@ -20,11 +20,14 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject::validateReadOnlyConstraints
@@ -53,12 +56,9 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->validator = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $this->urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 	}//end setUp()
 
@@ -82,8 +82,7 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		);
 
 		$violations = $this->validator->validateReadOnlyConstraints(
-			incomingObject: ['verifiedActorId' => 'actor-123', 'title' => 'hello'],
-			existingObject: [],
+			check: new WriteConstraintCheck(incoming: ['verifiedActorId' => 'actor-123', 'title' => 'hello'], stored: []),
 			schema: $schema
 		);
 
@@ -100,8 +99,7 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		);
 
 		$violations = $this->validator->validateReadOnlyConstraints(
-			incomingObject: ['verifiedActorId' => 'attacker-uid', 'title' => 'unchanged'],
-			existingObject: ['verifiedActorId' => 'original-actor', 'title' => 'unchanged'],
+			check: new WriteConstraintCheck(incoming: ['verifiedActorId' => 'attacker-uid', 'title' => 'unchanged'], stored: ['verifiedActorId' => 'original-actor', 'title' => 'unchanged']),
 			schema: $schema
 		);
 
@@ -121,8 +119,7 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		);
 
 		$violations = $this->validator->validateReadOnlyConstraints(
-			incomingObject: ['verifiedActorId' => 'original-actor'],
-			existingObject: ['verifiedActorId' => 'original-actor'],
+			check: new WriteConstraintCheck(incoming: ['verifiedActorId' => 'original-actor'], stored: ['verifiedActorId' => 'original-actor']),
 			schema: $schema
 		);
 
@@ -140,8 +137,7 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		);
 
 		$violations = $this->validator->validateReadOnlyConstraints(
-			incomingObject: ['title' => 'updated title'],
-			existingObject: ['verifiedActorId' => 'original-actor', 'title' => 'old title'],
+			check: new WriteConstraintCheck(incoming: ['title' => 'updated title'], stored: ['verifiedActorId' => 'original-actor', 'title' => 'old title']),
 			schema: $schema
 		);
 
@@ -157,8 +153,7 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		);
 
 		$violations = $this->validator->validateReadOnlyConstraints(
-			incomingObject: ['verifiedActorId' => 'X', 'createdAt' => '2099-01-01'],
-			existingObject: ['verifiedActorId' => 'A', 'createdAt' => '2024-01-01'],
+			check: new WriteConstraintCheck(incoming: ['verifiedActorId' => 'X', 'createdAt' => '2099-01-01'], stored: ['verifiedActorId' => 'A', 'createdAt' => '2024-01-01']),
 			schema: $schema
 		);
 
@@ -177,8 +172,7 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		);
 
 		$violations = $this->validator->validateReadOnlyConstraints(
-			incomingObject: ['verifiedActorId' => 'same', 'title' => 'changed'],
-			existingObject: ['verifiedActorId' => 'same', 'title' => 'original'],
+			check: new WriteConstraintCheck(incoming: ['verifiedActorId' => 'same', 'title' => 'changed'], stored: ['verifiedActorId' => 'same', 'title' => 'original']),
 			schema: $schema
 		);
 
@@ -194,8 +188,7 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		);
 
 		$violations = $this->validator->validateReadOnlyConstraints(
-			incomingObject: ['someField' => 'X'],
-			existingObject: ['someField' => 'A'],
+			check: new WriteConstraintCheck(incoming: ['someField' => 'X'], stored: ['someField' => 'A']),
 			schema: $schema
 		);
 
@@ -208,8 +201,7 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		$schema->setTitle('empty');
 		// No properties at all.
 		$violations = $this->validator->validateReadOnlyConstraints(
-			incomingObject: ['anything' => 'goes'],
-			existingObject: ['anything' => 'changed'],
+			check: new WriteConstraintCheck(incoming: ['anything' => 'goes'], stored: ['anything' => 'changed']),
 			schema: $schema
 		);
 
@@ -227,8 +219,7 @@ class Wave12ReadOnlyEnforcementTest extends TestCase {
 		);
 
 		$violations = $this->validator->validateReadOnlyConstraints(
-			incomingObject: ['count' => '42'],
-			existingObject: ['count' => 42],
+			check: new WriteConstraintCheck(incoming: ['count' => '42'], stored: ['count' => 42]),
 			schema: $schema
 		);
 

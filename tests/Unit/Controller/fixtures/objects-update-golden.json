@@ -1,0 +1,1361 @@
+{
+    "failure anything else": {
+        "status": 403,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "no"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure append only": {
+        "status": 405,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "SCHEMA_APPEND_ONLY",
+            "message": "SCHEMA_APPEND_ONLY: Schema \"sch\" is append-only; create operations are not permitted.",
+            "schema": "sch",
+            "operation": "create"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure custom validation": {
+        "status": 400,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "validation": "bad"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure external write": {
+        "status": 418,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "external"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure folder denied": {
+        "status": 403,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "folder_access_denied"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure hook stopped": {
+        "status": 422,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "stopped",
+            "errors": {
+                "e": 1
+            }
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure locked": {
+        "status": 423,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "Object is locked by ",
+            "lockedBy": null,
+            "lockedByRun": null
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure object state": {
+        "status": 409,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "frozen"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure translation conflict": {
+        "status": 400,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": {
+                "code": "TRANSLATION_TARGET_CONFLICT",
+                "property": "title",
+                "targetLanguage": "nl",
+                "message": "Cannot mix language-keyed body for \"title\" with X-Translation-Target-Language: nl"
+            }
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "failure validation": {
+        "status": 400,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "validation": "bad"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "read ambiguous": {
+        "status": 409,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "message": "Identifier \"object-1\" matches more than one object in this register and schema",
+            "error": "ambiguous-identifier"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            }
+        ]
+    },
+    "read denied": {
+        "status": 403,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "denied"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            }
+        ]
+    },
+    "read gone": {
+        "status": 404,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "Not Found"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            }
+        ]
+    },
+    "read locked by another": {
+        "status": 423,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "Object is locked by bob",
+            "lockedBy": "bob",
+            "lockedByRun": null
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            }
+        ]
+    },
+    "read other register": {
+        "status": 404,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "Object not found in specified register/schema"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            }
+        ]
+    },
+    "read other schema": {
+        "status": 404,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "Object not found in specified register/schema"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            }
+        ]
+    },
+    "read own lock": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "stored-uuid",
+                "slug": null,
+                "name": "stored-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": "3",
+                "schema": "7",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": "2026-05-05T10:00:00+00:00",
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "stored-uuid"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "read read fails": {
+        "status": 500,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "Internal server error"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "error": "[ObjectsController] Unexpected exception in update findSilent"
+            },
+            {
+                "error": "[OCA\\OpenRegister\\Controller\\ObjectsController] secret detail"
+            }
+        ]
+    },
+    "register not found": {
+        "status": 404,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "message": "Register not found: 'reg'"
+        },
+        "calls": []
+    },
+    "save admin": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "stored-uuid",
+                "slug": null,
+                "name": "stored-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": "3",
+                "schema": "7",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": "2026-05-05T10:00:00+00:00",
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "stored-uuid"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    false,
+                    false
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save keeps a lock held by another": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "stored-uuid",
+                "slug": null,
+                "name": "stored-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": "3",
+                "schema": "7",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": {
+                    "user": "bob",
+                    "expiration": "2099-01-01T00:00:00+00:00"
+                },
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": "2026-05-05T10:00:00+00:00",
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "stored-uuid"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save multipart decodes": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "stored-uuid",
+                "slug": null,
+                "name": "stored-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": "3",
+                "schema": "7",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": "2026-05-05T10:00:00+00:00",
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "stored-uuid"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "list": [
+                            "a"
+                        ],
+                        "text": "plain"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save plain body": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "stored-uuid",
+                "slug": null,
+                "name": "stored-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": "3",
+                "schema": "7",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": "2026-05-05T10:00:00+00:00",
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "stored-uuid"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save releases own lock": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "stored-uuid",
+                "slug": null,
+                "name": "stored-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": "3",
+                "schema": "7",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": "2026-05-05T10:00:00+00:00",
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "stored-uuid"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "unlockObject": [
+                    "stored-uuid",
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save reserved keys go": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "stored-uuid",
+                "slug": null,
+                "name": "stored-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": "3",
+                "schema": "7",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": "2026-05-05T10:00:00+00:00",
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "stored-uuid"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x",
+                        "@self": {
+                            "slug": "s"
+                        }
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "save stored uuid missing": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "stored-uuid",
+                "slug": null,
+                "name": "stored-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": "3",
+                "schema": "7",
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": "2026-05-05T10:00:00+00:00",
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "stored-uuid"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "object-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
+    "schema not found": {
+        "status": 404,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "message": "Schema not found: 'sch'"
+        },
+        "calls": []
+    },
+    "stale version": {
+        "status": 409,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "Conflict: the object was modified since it was read. Re-read and retry.",
+            "code": "version-conflict",
+            "message": "This object changed since you read it. Re-read it and try again.",
+            "conflicts": [],
+            "changedBy": null,
+            "changedAt": null,
+            "expectedUpdated": "2026-01-01T00:00:00+00:00",
+            "currentUpdated": "2026-05-05T10:00:00+00:00"
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            }
+        ]
+    }
+}

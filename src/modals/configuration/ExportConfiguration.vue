@@ -11,7 +11,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		name="export-configuration-dialog"
 		:title="t('openregister', 'Export Configuration')"
 		size="small"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="errorMessage" type="error">
 			<p>{{ errorMessage }}</p>
 		</NcNoteCard>
@@ -27,47 +27,109 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Cancel
-			</NcButton>
-			<NcButton
+			<CloseCancelButton label="Cancel" @click="closeModal" />
+			<BusyButton
+				:busy="loading"
 				:disabled="loading || !isValid"
 				variant="primary"
 				@click="exportConfiguration">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Export v-else :size="20" />
+					<Export :size="20" />
 				</template>
 				Export
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
 
 <script>
+/**
+ * The file name of an export: the one the server names, or a dated default.
+ *
+ * @param {object} response The export response
+ * @param {string|number} id The configuration id
+ * @return {string} The file name
+ */
+function exportFilename(response, id) {
+	const contentDisposition = response.headers['content-disposition']
+	return contentDisposition
+		? contentDisposition.split('filename=')[1].replace(/"/g, '')
+		: `configuration_${id}_${new Date().toISOString().split('T')[0]}.json`
+}
+
+/**
+ * Hand an export to the browser as a JSON file download.
+ *
+ * @param {object} response The export response
+ * @param {string|number} id The configuration id
+ * @return {void}
+ */
+function downloadExport(response, id) {
+	const blob = new Blob([response.data], { type: 'application/json' })
+	const downloadUrl = window.URL.createObjectURL(blob)
+	const link = document.createElement('a')
+	link.href = downloadUrl
+	link.download = exportFilename(response, id)
+	document.body.appendChild(link)
+	link.click()
+	document.body.removeChild(link)
+	window.URL.revokeObjectURL(downloadUrl)
+}
+
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
 	NcDialog,
-	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+
+/**
+ * Download the export of a configuration, with or without its objects.
+ *
+ * @param {number|string} id The configuration id
+ * @param {boolean} includeObjects Whether the objects are exported too
+ * @return {Promise<object>} The blob response
+ */
+function requestExport(id, includeObjects) {
+	// Generate the export URL with query parameters
+	const url = generateUrl(`/apps/openregister/api/configurations/${id}/export`)
+	const params = { includeObjects }
+
+	// Make the API call
+	return axios({
+		url,
+		method: 'GET',
+		params,
+		responseType: 'blob', // Important for file download
+	})
+}
+
+/**
+ * Why the export failed: the server's error, the error's message, or a
+ * generic one.
+ *
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function exportFailureText(error) {
+	return (
+		error.response?.data?.error
+		|| error.message
+		|| 'Failed to export configuration'
+	)
+}
 
 export default {
 	name: 'ExportConfiguration',
 	components: {
 		NcDialog,
-		NcButton,
-		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
 		// Icons
-		Cancel,
+		BusyButton,
+		CloseCancelButton,
 		Export,
 	},
 
@@ -123,8 +185,7 @@ export default {
 		 * @spec exclude Modal action plumbing — triggers configuration export download.
 		 */
 		async exportConfiguration() {
-			const item = configurationStore.configurationItem
-			if (!item?.id) {
+			if (!configurationStore.configurationItem?.id) {
 				this.error = 'Invalid configuration selected'
 				return
 			}
@@ -133,56 +194,31 @@ export default {
 			this.error = null
 
 			try {
-				// Generate the export URL with query parameters
-				const url = generateUrl(
-					`/apps/openregister/api/configurations/${item.id}/export`,
-				)
-				const params = { includeObjects: this.includeObjects }
-
-				// Make the API call
-				const response = await axios({
-					url,
-					method: 'GET',
-					params,
-					responseType: 'blob', // Important for file download
-				})
-
-				// Create a download link
-				const blob = new Blob([response.data], { type: 'application/json' })
-				const downloadUrl = window.URL.createObjectURL(blob)
-				const link = document.createElement('a')
-
-				// Get filename from response headers or generate a default one
-				const contentDisposition = response.headers['content-disposition']
-				const filename = contentDisposition
-					? contentDisposition.split('filename=')[1].replace(/"/g, '')
-					: `configuration_${item.id}_${new Date().toISOString().split('T')[0]}.json`
-
-				link.href = downloadUrl
-				link.download = filename
-				document.body.appendChild(link)
-				link.click()
-				document.body.removeChild(link)
-				window.URL.revokeObjectURL(downloadUrl)
-
-				this.closeModal()
+				await this.downloadConfiguration()
 			} catch (error) {
-				this.error =
-					error.response?.data?.error
-					|| error.message
-					|| 'Failed to export configuration'
+				this.error = exportFailureText(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Download the export of the current configuration, save it and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async downloadConfiguration() {
+			const id = configurationStore.configurationItem.id
+			const response = await requestExport(id, this.includeObjects)
+			downloadExport(response, id)
+			this.closeModal()
 		},
 	},
 }
 </script>
 
-<style>
-.formContainer {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-}
+<style lang="scss">
+@use '../../styles/modals.scss' as *;
+
+@include form-container;
 </style>

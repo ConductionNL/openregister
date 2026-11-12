@@ -1,0 +1,743 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditConfiguration option searches searchAgents with bareList 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 2,
+    },
+    {
+      "id": 3,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/agents?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchAgents with empty 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching agents:",
+      "Cannot read properties of null (reading 'results')",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/agents?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchAgents with failed 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching agents:",
+      "down",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/agents?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchAgents with results 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 1,
+    },
+    {
+      "id": 2,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/agents?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchApplications with bareList 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 2,
+    },
+    {
+      "id": 3,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/applications?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchApplications with empty 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching applications:",
+      "Cannot read properties of null (reading 'results')",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/applications?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchApplications with failed 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching applications:",
+      "down",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/applications?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchApplications with results 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 1,
+    },
+    {
+      "id": 2,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/applications?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchObjects with bareList 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 2,
+    },
+    {
+      "id": 3,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/objects?_search=a+b%26c&_limit=10&_register%5B%5D=r1&_schema%5B%5D=s1",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchObjects with empty 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching objects:",
+      "Cannot read properties of null (reading 'results')",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/objects?_search=a+b%26c&_limit=10&_register%5B%5D=r1&_schema%5B%5D=s1",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchObjects with failed 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching objects:",
+      "down",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/objects?_search=a+b%26c&_limit=10&_register%5B%5D=r1&_schema%5B%5D=s1",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchObjects with results 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 1,
+    },
+    {
+      "id": 2,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/objects?_search=a+b%26c&_limit=10&_register%5B%5D=r1&_schema%5B%5D=s1",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchRegisters with bareList 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 2,
+    },
+    {
+      "id": 3,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/registers?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchRegisters with empty 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching registers:",
+      "Cannot read properties of null (reading 'results')",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/registers?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchRegisters with failed 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching registers:",
+      "down",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/registers?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchRegisters with results 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 1,
+    },
+    {
+      "id": 2,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/registers?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchSchemas with bareList 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 2,
+    },
+    {
+      "id": 3,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/schemas?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchSchemas with empty 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching schemas:",
+      "Cannot read properties of null (reading 'results')",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/schemas?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchSchemas with failed 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching schemas:",
+      "down",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/schemas?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchSchemas with results 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 1,
+    },
+    {
+      "id": 2,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/schemas?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchSources with bareList 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 2,
+    },
+    {
+      "id": 3,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/sources?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchSources with empty 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching sources:",
+      "Cannot read properties of null (reading 'results')",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/sources?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchSources with failed 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching sources:",
+      "down",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/sources?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchSources with results 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 1,
+    },
+    {
+      "id": 2,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/sources?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchViews with bareList 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 2,
+    },
+    {
+      "id": 3,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/views?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchViews with empty 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching views:",
+      "Cannot read properties of null (reading 'results')",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/views?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchViews with failed 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [
+    [
+      "Error searching views:",
+      "down",
+    ],
+  ],
+  "options": [],
+  "urls": [
+    "/index.php/apps/openregister/api/views?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;
+
+exports[`EditConfiguration option searches searchViews with results 1`] = `
+{
+  "beforeTimer": {
+    "fetched": 0,
+    "loading": false,
+  },
+  "during": true,
+  "justBefore": {
+    "fetched": 0,
+  },
+  "loading": false,
+  "logged": [],
+  "options": [
+    {
+      "id": 9,
+    },
+    {
+      "id": 1,
+    },
+    {
+      "id": 2,
+    },
+  ],
+  "urls": [
+    "/index.php/apps/openregister/api/views?_search=a%20b%26c&_limit=10",
+  ],
+}
+`;

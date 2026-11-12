@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\WebPushDispatchJob;
-use OCA\OpenRegister\Service\WebPush\WebPushService;
+use OCA\OpenRegister\Notifications\BackgroundJob\WebPushDispatchJob;
+use OCA\OpenRegister\Notifications\Service\WebPush\WebPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

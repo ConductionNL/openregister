@@ -43,7 +43,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Service;
 
-use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\Response;
@@ -52,7 +51,6 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -93,18 +91,16 @@ class PublicPageResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppManager $appManager Resolves a leaf app's install path.
+	 * @param PublicPageManifests $manifests Resolves a leaf app's install path, and logs.
 	 * @param IUserSession $userSession Tells a signed-in visitor from an anonymous one.
 	 * @param IURLGenerator $urlGenerator Builds the login redirect.
 	 * @param IRequest $request The current request, for the address to return to.
-	 * @param LoggerInterface $logger PSR logger.
 	 */
 	public function __construct(
-		private readonly IAppManager $appManager,
+		private readonly PublicPageManifests $manifests,
 		private readonly IUserSession $userSession,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IRequest $request,
-		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
@@ -204,24 +200,41 @@ class PublicPageResolver {
 
 		$routes = [];
 		foreach ($pages as $page) {
-			if (is_array($page) === false || is_string($page['route'] ?? null) === false) {
-				continue;
+			$route = self::publicRouteOf(page: $page);
+			if ($route !== null) {
+				$routes[] = $route;
 			}
-
-			$config = ($page['config'] ?? []);
-			if (is_array($config) === false || ($config['mode'] ?? null) !== self::PUBLIC_MODE) {
-				continue;
-			}
-
-			if (str_starts_with($page['route'], self::PUBLIC_PREFIX) === false) {
-				continue;
-			}
-
-			$routes[] = $page['route'];
 		}
 
 		return $routes;
 	}//end declaredRoutes()
+
+	/**
+	 * The route of a page that is declared public; null for any other page.
+	 *
+	 * A page is public only when it is in public mode AND its route is under
+	 * the public prefix.
+	 *
+	 * @param mixed $page One manifest page.
+	 *
+	 * @return string|null
+	 */
+	private static function publicRouteOf(mixed $page): ?string {
+		if (is_array($page) === false || is_string($page['route'] ?? null) === false) {
+			return null;
+		}
+
+		$config = ($page['config'] ?? []);
+		if (is_array($config) === false || ($config['mode'] ?? null) !== self::PUBLIC_MODE) {
+			return null;
+		}
+
+		if (str_starts_with($page['route'], self::PUBLIC_PREFIX) === false) {
+			return null;
+		}
+
+		return $page['route'];
+	}//end publicRouteOf()
 
 	/**
 	 * Whether a manifest route pattern matches a concrete path.
@@ -239,28 +252,39 @@ class PublicPageResolver {
 	 */
 	public static function routeMatches(string $route, string $path): bool {
 		$routeParts = explode('/', trim($route, '/'));
-		$pathParts = explode('/', trim($path, '/'));
+		$pathParts  = explode('/', trim($path, '/'));
 		if (count($routeParts) !== count($pathParts)) {
 			return false;
 		}
 
 		foreach ($routeParts as $index => $segment) {
-			$actual = $pathParts[$index];
-			if ($actual === '') {
-				return false;
-			}
-
-			if (str_starts_with($segment, ':') === true) {
-				continue;
-			}
-
-			if ($segment !== $actual) {
+			if (self::segmentMatches(segment: $segment, actual: $pathParts[$index]) === false) {
 				return false;
 			}
 		}
 
 		return true;
 	}//end routeMatches()
+
+	/**
+	 * Whether one route segment admits one path segment.
+	 *
+	 * @param string $segment The route segment; `:param` admits any non-empty segment.
+	 * @param string $actual  The path segment.
+	 *
+	 * @return bool
+	 */
+	private static function segmentMatches(string $segment, string $actual): bool {
+		if ($actual === '') {
+			return false;
+		}
+
+		if (str_starts_with($segment, ':') === true) {
+			return true;
+		}
+
+		return $segment === $actual;
+	}//end segmentMatches()
 
 	/**
 	 * The app's bundled manifest, or an empty array.
@@ -273,17 +297,8 @@ class PublicPageResolver {
 	 * @return array<string, mixed> The decoded manifest.
 	 */
 	private function loadManifest(string $appId): array {
-		try {
-			$appPath = $this->appManager->getAppPath($appId);
-		} catch (Throwable $missing) {
-			$this->logger->debug(
-				'[PublicPageResolver] App path not found for ' . $appId . ': ' . $missing->getMessage()
-			);
-			return [];
-		}
-
-		$file = $appPath . '/src/manifest.json';
-		if (is_readable($file) === false) {
+		$file = $this->manifestFile(appId: $appId);
+		if ($file === null) {
 			return [];
 		}
 
@@ -294,10 +309,35 @@ class PublicPageResolver {
 
 		$decoded = json_decode($raw, associative: true);
 		if (is_array($decoded) === false) {
-			$this->logger->warning('[PublicPageResolver] The manifest of ' . $appId . ' is not valid JSON');
+			$this->manifests->logger->warning('[PublicPageResolver] The manifest of ' . $appId . ' is not valid JSON');
 			return [];
 		}
 
 		return $decoded;
 	}//end loadManifest()
+
+	/**
+	 * The path of the app's readable bundled manifest; null when there is none.
+	 *
+	 * @param string $appId The leaf app id.
+	 *
+	 * @return string|null
+	 */
+	private function manifestFile(string $appId): ?string {
+		try {
+			$appPath = $this->manifests->appManager->getAppPath($appId);
+		} catch (Throwable $missing) {
+			$this->manifests->logger->debug(
+				'[PublicPageResolver] App path not found for ' . $appId . ': ' . $missing->getMessage()
+			);
+			return null;
+		}
+
+		$file = $appPath . '/src/manifest.json';
+		if (is_readable($file) === false) {
+			return null;
+		}
+
+		return $file;
+	}//end manifestFile()
 }//end class

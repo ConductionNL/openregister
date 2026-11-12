@@ -28,6 +28,13 @@ non-computed property SHALL count.
 - **THEN** the object stays read for every user who had seen it
 - @e2e exclude {derivation, covered by unit tests}
 
+#### Scenario: a re-save that only changes how values are stored changes nothing
+
+- **GIVEN** an object a user has seen
+- **WHEN** a background save writes it again with an empty value as '' instead of null, a list as its JSON text, 11 instead of 11.0, or a map's keys in another order
+- **THEN** the object stays read for that user
+- @e2e exclude {comparison, covered by unit tests}
+
 #### Scenario: marking back to unread works
 
 - **GIVEN** an object a user has read

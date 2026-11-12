@@ -41,7 +41,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-delivery-failure-never-fails-the-task
  */
-class TaskProjectionService {
+class TaskProjectionService implements TaskProjectionServiceInterface {
 
 	/**
 	 * Constructor.

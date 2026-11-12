@@ -33,6 +33,8 @@ use DateTimeInterface;
  * The version and `updated` stamp are what makes a QUEUED move safe: the job
  * applies it only while they still match, because a newer write has made its
  * own decision and this one is stale.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class AutoTransitionDecision {
 
@@ -88,43 +90,48 @@ final class AutoTransitionDecision {
 	/**
 	 * Capture the decision.
 	 *
-	 * @param string $uuid The object's uuid.
-	 * @param string $register The object's register reference.
-	 * @param string $schema The object's schema reference.
-	 * @param string $schemaSlug The schema's slug.
+	 * @param AutoTransitionSubject   $subject   The object the move was decided for.
 	 * @param AutoTransitionCandidate $candidate The move to make.
-	 * @param string|null $version The object's version at decision time.
-	 * @param mixed $updated The object's `updated` stamp at decision time, as the
-	 *                       entity holds it. Normalised here rather than by the
-	 *                       caller: this is the only class that stores the value,
-	 *                       so it is the only one that needs to know the entity
-	 *                       may hand back a date object, a string, or nothing.
+	 * @param string|null             $version   The object's version at decision time.
+	 * @param mixed                   $updated   The object's `updated` stamp at decision time, as the
+	 *                                           entity holds it. Normalised here rather than by the
+	 *                                           caller: this is the only class that stores the value,
+	 *                                           so it is the only one that needs to know the entity
+	 *                                           may hand back a date object, a string, or nothing.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		string $uuid,
-		string $register,
-		string $schema,
-		string $schemaSlug,
+		AutoTransitionSubject $subject,
 		AutoTransitionCandidate $candidate,
 		?string $version,
 		mixed $updated,
 	) {
+		$this->uuid = $subject->uuid;
+		$this->register = $subject->register;
+		$this->schema = $subject->schema;
+		$this->schemaSlug = $subject->schemaSlug;
+		$this->candidate = $candidate;
+		$this->version = $version;
+		$this->updated = self::normaliseUpdated(updated: $updated);
+	}//end __construct()
+
+	/**
+	 * The `updated` stamp as ISO 8601, or null when the entity holds no string or date.
+	 *
+	 * @param mixed $updated The stamp as the entity holds it.
+	 *
+	 * @return string|null The normalised stamp.
+	 */
+	private static function normaliseUpdated(mixed $updated): ?string {
 		if ($updated instanceof DateTimeInterface === true) {
-			$updated = $updated->format(DATE_ATOM);
+			return $updated->format(DATE_ATOM);
 		}
 
 		if (is_string($updated) === false) {
-			$updated = null;
+			return null;
 		}
 
-		$this->uuid = $uuid;
-		$this->register = $register;
-		$this->schema = $schema;
-		$this->schemaSlug = $schemaSlug;
-		$this->candidate = $candidate;
-		$this->version = $version;
-		$this->updated = $updated;
-	}//end __construct()
+		return $updated;
+	}//end normaliseUpdated()
 }//end class

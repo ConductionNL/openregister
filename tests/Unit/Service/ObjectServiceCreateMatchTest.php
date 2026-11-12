@@ -24,9 +24,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -68,6 +69,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The create check sees the incoming object, so a `match` on it can pass.
@@ -117,9 +119,9 @@ class ObjectServiceCreateMatchTest extends TestCase {
 		);
 
 		$logger = new NullLogger();
-		$conditionMatcher = new ConditionMatcher($userSession, $container, new OperatorEvaluator($logger), $logger);
+		$conditionMatcher = new ConditionMatcher(new ConditionUserResolvers($userSession), $container, new OperatorEvaluator($logger), $logger);
 
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,
@@ -131,7 +133,7 @@ class ObjectServiceCreateMatchTest extends TestCase {
 			$container
 		);
 
-		$this->objectService = new ObjectService(
+		$this->objectService = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -170,7 +172,7 @@ class ObjectServiceCreateMatchTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		// planninq's plannedTimeEntry: a member books time for themselves.
 		$schema = new Schema();
@@ -204,9 +206,10 @@ class ObjectServiceCreateMatchTest extends TestCase {
 	 * @return void
 	 */
 	public function testACreateThatSatisfiesTheMatchIsAllowed(): void {
+		$this->expectNotToPerformAssertions();
+
 		$this->checkCreate(['user' => 'alice', 'hours' => 4]);
 
-		$this->addToAssertionCount(1);
 	}//end testACreateThatSatisfiesTheMatchIsAllowed()
 
 	/**
@@ -231,6 +234,60 @@ class ObjectServiceCreateMatchTest extends TestCase {
 		$this->checkCreate(['hours' => 4, '@self' => ['user' => 'alice']]);
 	}//end testAForgedSelfBlockDoesNotSatisfyTheMatch()
 	/**
+	 * A metadata key in the request body cannot supply what a create rule's
+	 * match reads: `_owner` and `_organisation` are set by the system.
+	 *
+	 * @return void
+	 */
+	public function testABodyMetadataKeyDoesNotSatisfyTheMatch(): void {
+		foreach (['_owner' => 'alice', '_organisation' => 'org-target'] as $field => $value) {
+			$schema = new Schema();
+			$schema->setId(683);
+			$schema->setTitle('Guarded');
+			$schema->setAuthorization(['create' => [['group' => 'planners', 'match' => [$field => $value]]], 'read' => ['planners']]);
+			$this->objectService->setSchema(schema: $schema);
+
+			try {
+				$this->checkCreate(object: ['title' => 'x', $field => $value]);
+				$this->fail(message: 'a body ' . $field . ' satisfied the create rule');
+			} catch (NotAuthorizedException $e) {
+				$this->addToAssertionCount(count: 1);
+			}
+		}
+	}//end testABodyMetadataKeyDoesNotSatisfyTheMatch()
+
+	/**
+	 * The transient record the create rule reads holds the body without its `@self` block or metadata keys.
+	 *
+	 * Listeners of a custom scope receive this record, so the strip must hold on the record
+	 * itself, not only in what the matcher reads.
+	 *
+	 * @return void
+	 */
+	public function testTheCreateCheckRecordCarriesNoSelfBlock(): void {
+		$method = new ReflectionMethod(ObjectService::class, 'buildIncomingObjectForCreateCheck');
+		$incoming = $method->invoke(
+			$this->objectService,
+			['title' => 't', '@self' => ['organisation' => 'org-a', 'owner' => 'alice'], '_owner' => 'alice', 0 => 'n']
+		);
+
+		$this->assertSame(expected: ['title' => 't', 0 => 'n'], actual: array_diff_key($incoming->getObject(), ['id' => true]));
+		$this->assertNull(actual: $incoming->getOwner());
+	}//end testTheCreateCheckRecordCarriesNoSelfBlock()
+
+	/**
+	 * Ordinary properties still answer a create rule after the metadata keys are dropped.
+	 *
+	 * @return void
+	 */
+	public function testOrdinaryPropertiesBesideAMetadataKeyStillCount(): void {
+		$this->expectNotToPerformAssertions();
+
+		$this->checkCreate(object: ['user' => 'alice', '_owner' => 'bob', 'hours' => 4]);
+
+	}//end testOrdinaryPropertiesBesideAMetadataKeyStillCount()
+
+	/**
 	 * A schema whose default scope is private still takes creates.
 	 *
 	 * The incoming data is not an object yet, so the private scope does not
@@ -239,6 +296,8 @@ class ObjectServiceCreateMatchTest extends TestCase {
 	 * @return void
 	 */
 	public function testAPrivateDefaultScopeDoesNotBlockACreate(): void {
+		$this->expectNotToPerformAssertions();
+
 		$schema = new Schema();
 		$schema->setId(682);
 		$schema->setTitle('Private note');
@@ -253,6 +312,5 @@ class ObjectServiceCreateMatchTest extends TestCase {
 
 		$this->checkCreate(['title' => 'mine']);
 
-		$this->addToAssertionCount(1);
 	}//end testAPrivateDefaultScopeDoesNotBlockACreate()
 }//end class

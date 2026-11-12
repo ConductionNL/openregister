@@ -1,0 +1,2681 @@
+{
+    "postgres-trgm / fail none": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": [
+                    "searchable_name",
+                    "both_flags"
+                ]
+            }
+        }
+    ],
+    "postgres-trgm / fail _rel_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": [
+                    "searchable_name",
+                    "both_flags"
+                ]
+            }
+        }
+    ],
+    "postgres-trgm / fail _arr_gin_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": [
+                    "searchable_name",
+                    "both_flags"
+                ]
+            }
+        }
+    ],
+    "postgres-trgm / fail _facet_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [],
+                "searchableIndexes": [
+                    "searchable_name",
+                    "both_flags"
+                ]
+            }
+        }
+    ],
+    "postgres-trgm / fail searchable_name_trgm_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Skipped searchable trgm index (incompatible column or already present)",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "column": "searchable_name",
+                "error": "refused: searchable_name_trgm_idx"
+            }
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": [
+                    "both_flags"
+                ]
+            }
+        }
+    ],
+    "postgres-trgm / fail _name_trgm_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Skipped baseline _name trgm index",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: _name_trgm_idx"
+            }
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Skipped searchable trgm index (incompatible column or already present)",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "column": "searchable_name",
+                "error": "refused: _name_trgm_idx"
+            }
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": [
+                    "both_flags"
+                ]
+            }
+        }
+    ],
+    "postgres-trgm / fail deleted_owner_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_searchable_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"searchable_name\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_trgm_idx ON oc_openregister_table_1_2 USING GIN (\"both_flags\" gin_trgm_ops)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": [
+                    "searchable_name",
+                    "both_flags"
+                ]
+            }
+        }
+    ],
+    "postgres-trgm / fail _uuid_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Failed to create some table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: _uuid_idx"
+            }
+        }
+    ],
+    "postgres-trgm / fail _relations_gin_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Failed to create some table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: _relations_gin_idx"
+            }
+        }
+    ],
+    "postgres-trgm / fail _slug_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Failed to create some table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: _slug_idx"
+            }
+        }
+    ],
+    "postgres-trgm / empty properties": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_trgm_idx ON oc_openregister_table_1_2 USING GIN (_name gin_trgm_ops)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [],
+                "facetIndexes": [],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "postgres-no-trgm / fail none": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "postgres-no-trgm / fail _rel_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "postgres-no-trgm / fail _arr_gin_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "postgres-no-trgm / fail _facet_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "postgres-no-trgm / fail searchable_name_trgm_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "postgres-no-trgm / fail _name_trgm_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "postgres-no-trgm / fail deleted_owner_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (\"related_object\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (\"related_schema\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_ref_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_ref\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_items_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"items_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_top_inversed_arr_gin_idx ON oc_openregister_table_1_2 USING GIN (\"top_inversed\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (\"facet_field\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (\"both_flags\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (\"untyped\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (\"related_facet\")"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (\"q_uote\")"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "items_ref (GIN)",
+                    "items_inversed (GIN)",
+                    "top_inversed (GIN)",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "postgres-no-trgm / fail _uuid_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Failed to create some table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: _uuid_idx"
+            }
+        }
+    ],
+    "postgres-no-trgm / fail _relations_gin_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Failed to create some table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: _relations_gin_idx"
+            }
+        }
+    ],
+    "postgres-no-trgm / fail _slug_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Failed to create some table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: _slug_idx"
+            }
+        }
+    ],
+    "postgres-no-trgm / empty properties": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_relations_gin_idx ON oc_openregister_table_1_2 USING GIN (_relations)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_live_owner_idx ON oc_openregister_table_1_2 (_owner) WHERE _deleted IS NULL"
+        },
+        {
+            "prepare": "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [],
+                "facetIndexes": [],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "mariadb / fail none": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (`related_object`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (`related_schema`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (`facet_field`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (`both_flags`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (`untyped`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (`q_uote`)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "mariadb / fail _rel_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (`related_object`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (`related_schema`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (`facet_field`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (`both_flags`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (`untyped`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (`q_uote`)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "mariadb / fail _arr_gin_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (`related_object`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (`related_schema`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (`facet_field`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (`both_flags`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (`untyped`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (`q_uote`)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "mariadb / fail _facet_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (`related_object`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (`related_schema`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (`facet_field`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (`both_flags`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (`untyped`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (`q_uote`)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "related_facet"
+                ],
+                "facetIndexes": [],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "mariadb / fail searchable_name_trgm_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (`related_object`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (`related_schema`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (`facet_field`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (`both_flags`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (`untyped`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (`q_uote`)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "mariadb / fail _name_trgm_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (`related_object`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (`related_schema`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (`facet_field`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (`both_flags`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (`untyped`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (`q_uote`)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "mariadb / fail deleted_owner_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Skipped _deleted/_owner index",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: deleted_owner_idx"
+            }
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (`related_object`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (`related_schema`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (`facet_field`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (`both_flags`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (`untyped`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (`q_uote`)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "mariadb / fail _uuid_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Failed to create some table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: _uuid_idx"
+            }
+        }
+    ],
+    "mariadb / fail _relations_gin_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_object_rel_idx ON oc_openregister_table_1_2 (`related_object`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_schema_rel_idx ON oc_openregister_table_1_2 (`related_schema`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_facet_field_facet_idx ON oc_openregister_table_1_2 (`facet_field`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_both_flags_facet_idx ON oc_openregister_table_1_2 (`both_flags`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_untyped_facet_idx ON oc_openregister_table_1_2 (`untyped`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_rel_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_related_facet_facet_idx ON oc_openregister_table_1_2 (`related_facet`)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_q_uote_facet_idx ON oc_openregister_table_1_2 (`q_uote`)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [
+                    "related_object",
+                    "related_schema",
+                    "related_facet"
+                ],
+                "facetIndexes": [
+                    "facet_field",
+                    "both_flags",
+                    "untyped",
+                    "related_facet",
+                    "q_uote"
+                ],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "mariadb / fail _slug_idx": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "log": "warning",
+            "message": "[MagicMapper] Failed to create some table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "error": "refused: _slug_idx"
+            }
+        }
+    ],
+    "mariadb / empty properties": [
+        {
+            "sql": "CREATE UNIQUE INDEX IF NOT EXISTS openregister_table_1_2_uuid_idx ON oc_openregister_table_1_2 (_uuid)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_register_schema_idx ON oc_openregister_table_1_2 (_register, _schema)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_organisation_idx ON oc_openregister_table_1_2 (_organisation)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_owner_idx ON oc_openregister_table_1_2 (_owner)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_created_idx ON oc_openregister_table_1_2 (_created)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_updated_idx ON oc_openregister_table_1_2 (_updated)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_name_idx ON oc_openregister_table_1_2 (_name)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_slug_idx ON oc_openregister_table_1_2 (_slug)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_uri_idx ON oc_openregister_table_1_2 (_uri)"
+        },
+        {
+            "sql": "CREATE INDEX IF NOT EXISTS openregister_table_1_2_last_user_activity_idx ON oc_openregister_table_1_2 (_last_user_activity)"
+        },
+        {
+            "sql": "CREATE INDEX openregister_table_1_2_deleted_owner_idx ON oc_openregister_table_1_2 (_deleted, _owner)"
+        },
+        {
+            "log": "debug",
+            "message": "[MagicMapper] Created table indexes",
+            "context": {
+                "tableName": "openregister_table_1_2",
+                "baseIndexCount": 11,
+                "relationIndexes": [],
+                "facetIndexes": [],
+                "searchableIndexes": []
+            }
+        }
+    ],
+    "metadata columns": {
+        "_id": {
+            "name": "_id",
+            "type": "bigint",
+            "nullable": false,
+            "autoincrement": true,
+            "primary": true
+        },
+        "_uuid": {
+            "name": "_uuid",
+            "type": "string",
+            "length": 40,
+            "nullable": false,
+            "unique": true,
+            "index": true
+        },
+        "_slug": {
+            "name": "_slug",
+            "type": "string",
+            "length": 255,
+            "nullable": true,
+            "index": true
+        },
+        "_uri": {
+            "name": "_uri",
+            "type": "text",
+            "nullable": true
+        },
+        "_version": {
+            "name": "_version",
+            "type": "string",
+            "length": 50,
+            "nullable": true
+        },
+        "_register": {
+            "name": "_register",
+            "type": "string",
+            "length": 255,
+            "nullable": false,
+            "index": true
+        },
+        "_schema": {
+            "name": "_schema",
+            "type": "string",
+            "length": 255,
+            "nullable": false,
+            "index": true
+        },
+        "_owner": {
+            "name": "_owner",
+            "type": "string",
+            "length": 64,
+            "nullable": true,
+            "index": true
+        },
+        "_organisation": {
+            "name": "_organisation",
+            "type": "string",
+            "length": 36,
+            "nullable": true,
+            "index": true
+        },
+        "_application": {
+            "name": "_application",
+            "type": "string",
+            "length": 255,
+            "nullable": true
+        },
+        "_folder": {
+            "name": "_folder",
+            "type": "string",
+            "length": 255,
+            "nullable": true
+        },
+        "_name": {
+            "name": "_name",
+            "type": "string",
+            "length": 255,
+            "nullable": true,
+            "index": true
+        },
+        "_description": {
+            "name": "_description",
+            "type": "text",
+            "nullable": true
+        },
+        "_summary": {
+            "name": "_summary",
+            "type": "text",
+            "nullable": true
+        },
+        "_image": {
+            "name": "_image",
+            "type": "text",
+            "nullable": true
+        },
+        "_size": {
+            "name": "_size",
+            "type": "string",
+            "length": 50,
+            "nullable": true
+        },
+        "_schema_version": {
+            "name": "_schema_version",
+            "type": "string",
+            "length": 50,
+            "nullable": true
+        },
+        "_created": {
+            "name": "_created",
+            "type": "datetime",
+            "nullable": true,
+            "index": true
+        },
+        "_updated": {
+            "name": "_updated",
+            "type": "datetime",
+            "nullable": true,
+            "index": true
+        },
+        "_last_user_activity": {
+            "name": "_last_user_activity",
+            "type": "datetime",
+            "nullable": true,
+            "index": true
+        },
+        "_expires": {
+            "name": "_expires",
+            "type": "datetime",
+            "nullable": true,
+            "index": true
+        },
+        "_files": {
+            "name": "_files",
+            "type": "json",
+            "nullable": true
+        },
+        "_relations": {
+            "name": "_relations",
+            "type": "json",
+            "nullable": true
+        },
+        "_locked": {
+            "name": "_locked",
+            "type": "json",
+            "nullable": true
+        },
+        "_authorization": {
+            "name": "_authorization",
+            "type": "json",
+            "nullable": true
+        },
+        "_validation": {
+            "name": "_validation",
+            "type": "json",
+            "nullable": true
+        },
+        "_quality": {
+            "name": "_quality",
+            "type": "json",
+            "nullable": true
+        },
+        "_deleted": {
+            "name": "_deleted",
+            "type": "json",
+            "nullable": true
+        },
+        "_archived": {
+            "name": "_archived",
+            "type": "json",
+            "nullable": true
+        },
+        "_frozen": {
+            "name": "_frozen",
+            "type": "json",
+            "nullable": true
+        },
+        "_status": {
+            "name": "_status",
+            "type": "string",
+            "length": 16,
+            "nullable": true,
+            "index": true
+        },
+        "_geo": {
+            "name": "_geo",
+            "type": "json",
+            "nullable": true
+        },
+        "_retention": {
+            "name": "_retention",
+            "type": "json",
+            "nullable": true
+        },
+        "_groups": {
+            "name": "_groups",
+            "type": "json",
+            "nullable": true
+        },
+        "_tmlo": {
+            "name": "_tmlo",
+            "type": "json",
+            "nullable": true
+        }
+    }
+}

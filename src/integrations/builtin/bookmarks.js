@@ -23,6 +23,48 @@
 import { t } from '@nextcloud/l10n'
 
 /**
+ * The bookmarks integration descriptor.
+ *
+ * @param {object} library The @conduction/nextcloud-vue exports.
+ * @return {object} The descriptor.
+ */
+function bookmarksDescriptor(library) {
+	return {
+		id: 'bookmarks',
+		label: t('openregister', 'Bookmarks'),
+		icon: 'Bookmark',
+		group: 'docs',
+		requiredApp: 'bookmarks',
+		storage: 'link-table',
+		referenceType: 'bookmarks',
+		...bookmarksComponents(library),
+		defaultSize: { w: 4, h: 3 },
+	}
+}
+
+/**
+ * The tab and card the descriptor renders: the dedicated bookmarks ones when
+ * the library ships them, the generic integration ones otherwise.
+ *
+ * @param {object} library The @conduction/nextcloud-vue exports.
+ * @param {object} [library.CnBookmarksTab] The dedicated bookmarks tab.
+ * @param {object} [library.CnBookmarksCard] The dedicated bookmarks card.
+ * @param {object} library.CnIntegrationTab The generic integration tab.
+ * @param {object} library.CnIntegrationCard The generic integration card.
+ * @return {{tab: object, widget: object}} The components.
+ */
+function bookmarksComponents({
+	CnBookmarksTab,
+	CnBookmarksCard,
+	CnIntegrationTab,
+	CnIntegrationCard,
+}) {
+	const tab = CnBookmarksTab ?? CnIntegrationTab
+	const widget = CnBookmarksCard ?? CnIntegrationCard
+	return { tab, widget }
+}
+
+/**
  * Register the bookmarks integration into the supplied registry instance.
  *
  * Call this from ensureIntegrationRegistry() after registerLeafIntegrations()
@@ -43,30 +85,9 @@ export function registerBookmarksIntegration(registry) {
 	}
 
 	import('@conduction/nextcloud-vue')
-		.then(
-			({
-				CnBookmarksTab,
-				CnBookmarksCard,
-				CnIntegrationTab,
-				CnIntegrationCard,
-			}) => {
-				const tab = CnBookmarksTab ?? CnIntegrationTab
-				const widget = CnBookmarksCard ?? CnIntegrationCard
-
-				registry.register({
-					id: 'bookmarks',
-					label: t('openregister', 'Bookmarks'),
-					icon: 'Bookmark',
-					group: 'docs',
-					requiredApp: 'bookmarks',
-					storage: 'link-table',
-					referenceType: 'bookmarks',
-					tab,
-					widget,
-					defaultSize: { w: 4, h: 3 },
-				})
-			},
-		)
+		.then((library) => {
+			registry.register(bookmarksDescriptor(library))
+		})
 		.catch((e) => {
 			console.error('[bookmarks] failed to register bookmarks integration', e)
 		})

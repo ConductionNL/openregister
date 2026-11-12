@@ -65,3 +65,17 @@ API, an import, a flow node or a bulk job.
   business units.
 - The i18n content path: reused for the message.
 - No second evaluator, no second calendar, no second validation stage.
+
+## Open questions (Ruben)
+
+`RelativeTimeCondition` (`$age`) is built and tested but nothing evaluates it. Three answers are needed.
+
+1. **Which calendar a condition uses (task 3.2b).** The spec says "the calendar the record type, unit and instance resolution already selects"; `WorkingCalendarService::resolve()` knows a named calendar, the organisation's calendar and the default, but no record-type level.
+   - Proposed: the `$age` node may name `calendar`; otherwise the object's organisation calendar; otherwise the default. A named calendar that does not exist is refused at schema save.
+   - Options: (a) as proposed; (b) add a schema-level `x-openregister-calendar` first (the record-type level), then organisation, then default; (c) wait for working-calendar-admin to define the order.
+2. **Which evaluator carries `$age` first (task 1.2b).**
+   - Proposed: `NamedConditionEvaluator`, so it works in administered validations (`x-openregister-validations`) and named conditions straight away, with `now` from `ITimeFactory`.
+   - Options: (a) as proposed; (b) also route `LifecycleConditionEvaluator` and `StateConditionEvaluator` through the named evaluator in the same change; (c) only the sweep (question 3).
+3. **The sweep (task 3.3b).** `compile()` returns `{property, operator, value}` for an indexed query, but no job runs relative-time rules over a schema.
+   - Proposed: a TimedJob per schema with `$age` rules that selects due objects with the compiled comparison through `MagicRbacHandler` and fires the rule's action once per object (recorded, so it does not fire again).
+   - Options: (a) as proposed; (b) no sweep: `$age` only on save and read, so escalation needs a later change; (c) reuse flow timers instead of a new job.

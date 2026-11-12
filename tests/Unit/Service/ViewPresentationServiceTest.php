@@ -26,9 +26,11 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\ViewPresentationService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Search\Service\CalendarRange;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -109,6 +111,30 @@ class ViewPresentationServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->service->getKanbanBoard(view: $view);
 	}//end testGetKanbanBoardThrowsWhenRegisterOrSchemaMissing()
+
+	public function testGetKanbanBoardRefusesToGroupOnAnExplicitRevealProperty(): void {
+		$view = $this->createView(
+			['viewType' => 'kanban', 'kanban' => ['groupByField' => 'citizenServiceNumber']],
+			['registers' => [1], 'schemas' => [2]]
+		);
+		$propertyRbac = $this->createMock(originalClassName: PropertyRbacHandler::class);
+		$propertyRbac->method('canReadProperty')->willReturn(true);
+		$service = new ViewPresentationService(
+			schemaMapper: $this->schemaMapper,
+			objectService: $this->objectService,
+			logger: $this->logger,
+			propertyRbac: $propertyRbac
+		);
+		$this->schemaMapper->method('find')->willReturn(
+			$this->createSchema(
+				['citizenServiceNumber' => ['type' => 'string', 'authorization' => ['read' => [['group' => 'staff']], 'reveal' => 'explicit']]]
+			)
+		);
+
+		$this->objectService->expects($this->never())->method('searchObjectsPaginated');
+		$this->expectException(InvalidArgumentException::class);
+		$service->getKanbanBoard(view: $view);
+	}//end testGetKanbanBoardRefusesToGroupOnAnExplicitRevealProperty()
 
 	// ── getKanbanBoard() — column derivation + pagination (REQ-VIEW-KANBAN-02) ──
 
@@ -227,7 +253,7 @@ class ViewPresentationServiceTest extends TestCase {
 		$view = $this->createView(['viewType' => 'kanban'], ['registers' => [1], 'schemas' => [2]]);
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+		$this->service->getCalendarObjects(view: $view, range: new CalendarRange(start: '2026-07-01', end: '2026-07-31'));
 	}//end testGetCalendarObjectsThrowsWhenViewTypeIsNotCalendar()
 
 	public function testGetCalendarObjectsThrowsWhenDateFieldMissing(): void {
@@ -237,7 +263,7 @@ class ViewPresentationServiceTest extends TestCase {
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+		$this->service->getCalendarObjects(view: $view, range: new CalendarRange(start: '2026-07-01', end: '2026-07-31'));
 	}//end testGetCalendarObjectsThrowsWhenDateFieldMissing()
 
 	// ── getCalendarObjects() — date-range query (REQ-VIEW-CAL-04) ──
@@ -259,7 +285,7 @@ class ViewPresentationServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+		$result = $this->service->getCalendarObjects(view: $view, range: new CalendarRange(start: '2026-07-01', end: '2026-07-31'));
 
 		$this->assertSame('calendar', $result['viewType']);
 		$this->assertSame('dueDate', $result['dateField']);
@@ -289,7 +315,7 @@ class ViewPresentationServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+		$result = $this->service->getCalendarObjects(view: $view, range: new CalendarRange(start: '2026-07-01', end: '2026-07-31'));
 
 		$ids = array_column($result['objects'], 'id');
 		sort($ids);
@@ -339,7 +365,7 @@ class ViewPresentationServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+		$result = $this->service->getCalendarObjects(view: $view, range: new CalendarRange(start: '2026-07-01', end: '2026-07-31'));
 
 		$this->assertCount(1, $result['objects'], 'The same row must not render twice on the calendar');
 		$this->assertSame(1, $result['total']);
@@ -375,7 +401,7 @@ class ViewPresentationServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+		$result = $this->service->getCalendarObjects(view: $view, range: new CalendarRange(start: '2026-07-01', end: '2026-07-31'));
 
 		$this->assertCount(2, $result['objects']);
 		$this->assertSame(2, $result['total']);
@@ -411,7 +437,7 @@ class ViewPresentationServiceTest extends TestCase {
 			}
 		);
 
-		$result = $this->service->getCalendarObjects(view: $view, rangeStart: '2026-07-01', rangeEnd: '2026-07-31');
+		$result = $this->service->getCalendarObjects(view: $view, range: new CalendarRange(start: '2026-07-01', end: '2026-07-31'));
 
 		$this->assertCount(1, $result['objects']);
 	}//end testGetCalendarObjectsCollapsesAnEntityAndItsRenderedArrayForm()

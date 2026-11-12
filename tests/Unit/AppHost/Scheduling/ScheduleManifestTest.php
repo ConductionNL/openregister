@@ -73,4 +73,36 @@ class ScheduleManifestTest extends TestCase {
 		$this->assertSame([], $m->schedules);
 		$this->assertCount(2, $m->diagnostics);
 	}
+	public function testDiagnosticsNameTheRejectedEntries(): void {
+		$m = ScheduleManifest::fromManifest('app', [
+			'schedules' => [
+				3 => 'not-an-object',
+				4 => ['id' => 'bad', 'cron' => 'not-a-cron', 'action' => 'openconnector:synchronization'],
+			],
+		], $this->cron);
+
+		$this->assertSame('app', $m->applicationId);
+		$this->assertSame(
+			['Schedule #3 is not an object.', 'Schedule "bad" has an unparseable cron expression.'],
+			$m->diagnostics
+		);
+	}
+
+	public function testWithoutAnEvaluatorACronEntryIsNotChecked(): void {
+		$m = ScheduleManifest::fromManifest('app', [
+			'schedules' => [
+				['id' => 'bad', 'cron' => 'not-a-cron', 'action' => 'openconnector:synchronization'],
+			],
+		]);
+
+		$this->assertCount(1, $m->schedules);
+		$this->assertSame([], $m->diagnostics);
+	}
+
+	public function testANonListBlockYieldsNoSchedules(): void {
+		$m = ScheduleManifest::fromManifest('app', ['schedules' => 'nightly'], $this->cron);
+
+		$this->assertSame([], $m->schedules);
+		$this->assertSame([], $m->diagnostics);
+	}
 }//end class

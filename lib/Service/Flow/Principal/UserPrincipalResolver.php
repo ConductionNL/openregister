@@ -34,7 +34,7 @@ use OCP\IUserManager;
 /**
  * Resolves `{type: 'user'}` references.
  */
-class UserPrincipalResolver implements IPrincipalResolver {
+class UserPrincipalResolver implements IPrincipalResolver, UserPrincipalResolverInterface {
 
 	/**
 	 * Constructor.

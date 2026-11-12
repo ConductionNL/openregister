@@ -1,0 +1,764 @@
+{
+    "pg-trgm / no search / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "color": "red"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / no search / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "color": "red"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / search / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(COALESCE(similarity(\"title\"::text, 'it''s'), 0), COALESCE(similarity(\"body_text\"::text, 'it''s'), 0)) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "it's",
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / search / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(COALESCE(similarity(\"title\"::text, 'it''s'), 0), COALESCE(similarity(\"body_text\"::text, 'it''s'), 0)) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "it's",
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / empty search / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "",
+                        "@self": {
+                            "register": 3
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / empty search / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "",
+                        "@self": {
+                            "register": 3
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / self schema null / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / self schema null / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / self not array / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(COALESCE(similarity(\"title\"::text, 'q'), 0), COALESCE(similarity(\"body_text\"::text, 'q'), 0)) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": "x",
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / self not array / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(COALESCE(similarity(\"title\"::text, 'q'), 0), COALESCE(similarity(\"body_text\"::text, 'q'), 0)) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": "x",
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / search without properties": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg-trgm / search, no text columns": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a AND b",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / no search / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "color": "red"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / no search / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "color": "red"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / search / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(CASE WHEN \"title\"::text ILIKE '%it''s%' THEN 1 ELSE 0 END, CASE WHEN \"body_text\"::text ILIKE '%it''s%' THEN 1 ELSE 0 END) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "it's",
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / search / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(CASE WHEN \"title\"::text ILIKE '%it''s%' THEN 1 ELSE 0 END, CASE WHEN \"body_text\"::text ILIKE '%it''s%' THEN 1 ELSE 0 END) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "it's",
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / empty search / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "",
+                        "@self": {
+                            "register": 3
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / empty search / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "",
+                        "@self": {
+                            "register": 3
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / self schema null / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / self schema null / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / self not array / metadataOnly false": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(CASE WHEN \"title\"::text ILIKE '%q%' THEN 1 ELSE 0 END, CASE WHEN \"body_text\"::text ILIKE '%q%' THEN 1 ELSE 0 END) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": "x",
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / self not array / metadataOnly true": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(CASE WHEN \"title\"::text ILIKE '%q%' THEN 1 ELSE 0 END, CASE WHEN \"body_text\"::text ILIKE '%q%' THEN 1 ELSE 0 END) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": "x",
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / search without properties": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, \"title\"::text AS \"title\", \"body_text\"::text AS \"body_text\", NULL::text AS \"other_schema_col\", \"count\"::text AS \"count\", '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "pg / search, no text columns": {
+        "sql": "SELECT _id::text AS _id, _uuid::text AS _uuid, NULL::text AS _slug, NULL::text AS _uri, NULL::text AS _version, _register::text AS _register, _schema::text AS _schema, NULL::text AS _owner, NULL::text AS _organisation, NULL::text AS _application, NULL::text AS _folder, _name::text AS _name, NULL::text AS _description, NULL::text AS _summary, NULL::text AS _image, NULL::text AS _size, NULL::text AS _schema_version, NULL::text AS _created, NULL::text AS _updated, NULL::text AS _last_user_activity, NULL::text AS _expires, NULL::text AS _files, NULL::text AS _relations, NULL::text AS _locked, NULL::text AS _authorization, NULL::text AS _validation, NULL::text AS _quality, NULL::text AS _deleted, NULL::text AS _archived, NULL::text AS _frozen, NULL::text AS _status, NULL::text AS _geo, NULL::text AS _retention, NULL::text AS _groups, NULL::text AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a AND b",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / no search / metadataOnly false": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`body_text` AS CHAR) AS `body_text`, NULL AS `other_schema_col`, CAST(`count` AS CHAR) AS `count`, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "color": "red"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / no search / metadataOnly true": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "color": "red"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / search / metadataOnly false": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`body_text` AS CHAR) AS `body_text`, NULL AS `other_schema_col`, CAST(`count` AS CHAR) AS `count`, '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(CASE WHEN CAST(`title` AS CHAR) LIKE '%it''s%' THEN 1 ELSE 0 END, CASE WHEN CAST(`body_text` AS CHAR) LIKE '%it''s%' THEN 1 ELSE 0 END) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "it's",
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / search / metadataOnly true": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(CASE WHEN CAST(`title` AS CHAR) LIKE '%it''s%' THEN 1 ELSE 0 END, CASE WHEN CAST(`body_text` AS CHAR) LIKE '%it''s%' THEN 1 ELSE 0 END) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "it's",
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / empty search / metadataOnly false": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`body_text` AS CHAR) AS `body_text`, NULL AS `other_schema_col`, CAST(`count` AS CHAR) AS `count`, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "",
+                        "@self": {
+                            "register": 3
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / empty search / metadataOnly true": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "",
+                        "@self": {
+                            "register": 3
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / self schema null / metadataOnly false": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`body_text` AS CHAR) AS `body_text`, NULL AS `other_schema_col`, CAST(`count` AS CHAR) AS `count`, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / self schema null / metadataOnly true": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": {
+                            "schema": 4
+                        }
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / self not array / metadataOnly false": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`body_text` AS CHAR) AS `body_text`, NULL AS `other_schema_col`, CAST(`count` AS CHAR) AS `count`, '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(CASE WHEN CAST(`title` AS CHAR) LIKE '%q%' THEN 1 ELSE 0 END, CASE WHEN CAST(`body_text` AS CHAR) LIKE '%q%' THEN 1 ELSE 0 END) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": "x",
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / self not array / metadataOnly true": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, GREATEST(CASE WHEN CAST(`title` AS CHAR) LIKE '%q%' THEN 1 ELSE 0 END, CASE WHEN CAST(`body_text` AS CHAR) LIKE '%q%' THEN 1 ELSE 0 END) AS _search_score FROM oc_openregister_table_3_4 WHERE a = 1",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "@self": "x",
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / search without properties": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, CAST(`title` AS CHAR) AS `title`, CAST(`body_text` AS CHAR) AS `body_text`, NULL AS `other_schema_col`, CAST(`count` AS CHAR) AS `count`, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [
+                        "title",
+                        "body_text",
+                        "count"
+                    ],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    },
+    "maria / search, no text columns": {
+        "sql": "SELECT CAST(_id AS CHAR) AS _id, CAST(_uuid AS CHAR) AS _uuid, NULL AS _slug, NULL AS _uri, NULL AS _version, CAST(_register AS CHAR) AS _register, CAST(_schema AS CHAR) AS _schema, NULL AS _owner, NULL AS _organisation, NULL AS _application, NULL AS _folder, CAST(_name AS CHAR) AS _name, NULL AS _description, NULL AS _summary, NULL AS _image, NULL AS _size, NULL AS _schema_version, NULL AS _created, NULL AS _updated, NULL AS _last_user_activity, NULL AS _expires, NULL AS _files, NULL AS _relations, NULL AS _locked, NULL AS _authorization, NULL AS _validation, NULL AS _quality, NULL AS _deleted, NULL AS _archived, NULL AS _frozen, NULL AS _status, NULL AS _geo, NULL AS _retention, NULL AS _groups, NULL AS _tmlo, '3' AS _union_register_id, '4' AS _union_schema_id, 0 AS _search_score FROM oc_openregister_table_3_4 WHERE a AND b",
+        "events": [
+            {
+                "where": {
+                    "query": {
+                        "_search": "q"
+                    },
+                    "schema": 4,
+                    "existingColumns": [],
+                    "registerId": 3,
+                    "tableName": "openregister_table_3_4"
+                }
+            }
+        ]
+    }
+}

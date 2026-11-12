@@ -1,0 +1,95 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DeletedIndex.convertFiltersToApiFormat maps empty values 1`] = `
+{
+  "apiFilters": {},
+  "order": [],
+  "range": [],
+}
+`;
+
+exports[`DeletedIndex.convertFiltersToApiFormat maps every filter 1`] = `
+{
+  "apiFilters": {
+    "@self.deleted.deleted": {
+      "gte": "2026-01-01",
+      "lte": "2026-02-01",
+    },
+    "@self.deleted.deletedBy": "alice",
+    "@self.register": 1,
+    "@self.schema": 2,
+  },
+  "order": [
+    "@self.register",
+    "@self.schema",
+    "@self.deleted.deletedBy",
+    "@self.deleted.deleted",
+  ],
+  "range": [
+    "gte",
+    "lte",
+  ],
+}
+`;
+
+exports[`DeletedIndex.convertFiltersToApiFormat maps filters in another order 1`] = `
+{
+  "apiFilters": {
+    "@self.deleted.deleted": {
+      "gte": "a",
+      "lte": "b",
+    },
+    "@self.deleted.deletedBy": "x",
+    "@self.register": 9,
+  },
+  "order": [
+    "@self.register",
+    "@self.deleted.deletedBy",
+    "@self.deleted.deleted",
+  ],
+  "range": [
+    "gte",
+    "lte",
+  ],
+}
+`;
+
+exports[`DeletedIndex.convertFiltersToApiFormat maps no filters 1`] = `
+{
+  "apiFilters": {},
+  "order": [],
+  "range": [],
+}
+`;
+
+exports[`DeletedIndex.convertFiltersToApiFormat maps only a start date 1`] = `
+{
+  "apiFilters": {
+    "@self.deleted.deleted": {
+      "gte": "2026-01-01",
+    },
+  },
+  "order": [
+    "@self.deleted.deleted",
+  ],
+  "range": [
+    "gte",
+  ],
+}
+`;
+
+exports[`DeletedIndex.convertFiltersToApiFormat maps only an end date 1`] = `
+{
+  "apiFilters": {
+    "@self.deleted.deleted": {
+      "lte": "2026-02-01",
+    },
+  },
+  "order": [
+    "@self.deleted.deleted",
+  ],
+  "range": [
+    "lte",
+  ],
+}
+`;

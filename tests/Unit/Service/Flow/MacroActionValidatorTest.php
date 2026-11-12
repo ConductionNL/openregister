@@ -161,17 +161,32 @@ class MacroActionValidatorTest extends TestCase {
 	}//end testAMacroWithNoFlowIsRefusedWithoutALookup()
 
 	/**
-	 * The mirror: a flow nothing will ever run. Saved quietly it reads as a
-	 * bound macro to anyone looking at the schema afterwards.
+	 * A named flow is an action's body on its own (object-actions D-1), so it
+	 * binds without `macro: true` and its flow is checked like any other.
 	 *
 	 * @return void
 	 */
-	public function testAFlowWithoutMacroTrueIsRefused(): void {
-		$refusals = $this->validator->refusals($this->configuration(['flow' => 'flow-1']));
+	public function testAFlowWithoutMacroIsABindingWhoseFlowIsChecked(): void {
+		$this->flows->expects($this->once())->method('findByUuid')->with('flow-1')
+			->willReturn($this->flow(FlowVersion::STATUS_PUBLISHED, [['id' => 't', 'type' => FlowNextHint::MANUAL_TRIGGER]]));
+
+		$configuration = ['x-openregister-action' => ['close' => ['name' => 'Close', 'description' => 'Close it.', 'flow' => 'flow-1']]];
+
+		$this->assertSame([], $this->validator->refusals($configuration));
+		$this->assertCount(1, MacroActionBinding::parse($configuration));
+	}//end testAFlowWithoutMacroIsABindingWhoseFlowIsChecked()
+
+	/**
+	 * `macro: false` beside a flow contradicts itself and is refused.
+	 *
+	 * @return void
+	 */
+	public function testAFlowWithMacroFalseIsRefused(): void {
+		$refusals = $this->validator->refusals($this->configuration(['macro' => false, 'flow' => 'flow-1']));
 
 		$this->assertCount(1, $refusals);
-		$this->assertStringContainsString('"macro" is not true', $refusals[0]);
-	}//end testAFlowWithoutMacroTrueIsRefused()
+		$this->assertStringContainsString('"macro" is false', $refusals[0]);
+	}//end testAFlowWithMacroFalseIsRefused()
 
 	/**
 	 * A declared action that says nothing about macros is left alone. Most

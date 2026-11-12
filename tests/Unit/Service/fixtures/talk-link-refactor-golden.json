@@ -1,0 +1,3110 @@
+{
+    "available: actor count throws": {
+        "return": [
+            {
+                "token": "tok-p2",
+                "name": "Shown name",
+                "type": 2,
+                "participantCount": null
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomsForUser",
+                [
+                    "alice",
+                    [],
+                    true
+                ]
+            ],
+            [
+                "p2",
+                "getToken",
+                []
+            ],
+            [
+                "p2",
+                "getName",
+                []
+            ],
+            [
+                "p2",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "p2",
+                "getType",
+                []
+            ],
+            [
+                "ps",
+                "getNumberOfActors",
+                [
+                    "p2"
+                ]
+            ]
+        ]
+    },
+    "available: blank search": {
+        "return": [
+            {
+                "token": "tok-b1",
+                "name": "Shown name",
+                "type": 2,
+                "participantCount": 5
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomsForUser",
+                [
+                    "alice",
+                    [],
+                    true
+                ]
+            ],
+            [
+                "b1",
+                "getToken",
+                []
+            ],
+            [
+                "b1",
+                "getName",
+                []
+            ],
+            [
+                "b1",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "b1",
+                "getType",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "b1"
+                ]
+            ]
+        ]
+    },
+    "available: mixed rooms": {
+        "return": [
+            {
+                "token": "tok-a1",
+                "name": "Shown name",
+                "type": 2,
+                "participantCount": 5
+            },
+            {
+                "token": "t4",
+                "name": "Plain",
+                "type": 3,
+                "participantCount": 5
+            },
+            {
+                "token": "t5",
+                "name": "",
+                "type": null,
+                "participantCount": 5
+            },
+            {
+                "token": "tok-a8",
+                "name": "Other",
+                "type": 2,
+                "participantCount": 5
+            },
+            {
+                "token": "tok-a9",
+                "name": "Raw name",
+                "type": 2,
+                "participantCount": 5
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomsForUser",
+                [
+                    "alice",
+                    [],
+                    true
+                ]
+            ],
+            [
+                "a1",
+                "getToken",
+                []
+            ],
+            [
+                "a1",
+                "getName",
+                []
+            ],
+            [
+                "a1",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "a1",
+                "getType",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "a1"
+                ]
+            ],
+            [
+                "a2",
+                "getToken",
+                []
+            ],
+            [
+                "a3",
+                "getToken",
+                []
+            ],
+            [
+                "a4",
+                "getToken",
+                []
+            ],
+            [
+                "a4",
+                "getName",
+                []
+            ],
+            [
+                "a4",
+                "getType",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "a4"
+                ]
+            ],
+            [
+                "a5",
+                "getToken",
+                []
+            ],
+            [
+                "a5",
+                "getName",
+                []
+            ],
+            [
+                "a5",
+                "getType",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "a5"
+                ]
+            ],
+            [
+                "a6",
+                "getToken",
+                []
+            ],
+            [
+                "a6",
+                "getName",
+                []
+            ],
+            [
+                "a6",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "a6",
+                "getType",
+                []
+            ],
+            [
+                "a7",
+                "getToken",
+                []
+            ],
+            [
+                "a7",
+                "getName",
+                []
+            ],
+            [
+                "a7",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "a7",
+                "getType",
+                []
+            ],
+            [
+                "a8",
+                "getToken",
+                []
+            ],
+            [
+                "a8",
+                "getName",
+                []
+            ],
+            [
+                "a8",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "a8",
+                "getType",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "a8"
+                ]
+            ],
+            [
+                "a9",
+                "getToken",
+                []
+            ],
+            [
+                "a9",
+                "getName",
+                []
+            ],
+            [
+                "a9",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "a9",
+                "getType",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "a9"
+                ]
+            ]
+        ]
+    },
+    "available: no manager": {
+        "return": [],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "debug",
+                "Talk Manager not resolvable: no OCA\\Talk\\Manager"
+            ]
+        ],
+        "talk": []
+    },
+    "available: no participant service": {
+        "return": [
+            {
+                "token": "tok-p1",
+                "name": "Shown name",
+                "type": 2,
+                "participantCount": null
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "debug",
+                "Talk ParticipantService not resolvable: no OCA\\Talk\\Service\\ParticipantService"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomsForUser",
+                [
+                    "alice",
+                    [],
+                    true
+                ]
+            ],
+            [
+                "p1",
+                "getToken",
+                []
+            ],
+            [
+                "p1",
+                "getName",
+                []
+            ],
+            [
+                "p1",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "p1",
+                "getType",
+                []
+            ]
+        ]
+    },
+    "available: no talk": {
+        "return": [],
+        "calls": [],
+        "talk": []
+    },
+    "available: no user": {
+        "return": [],
+        "calls": [],
+        "talk": []
+    },
+    "available: rooms not array": {
+        "return": [],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomsForUser",
+                [
+                    "alice",
+                    [],
+                    true
+                ]
+            ]
+        ]
+    },
+    "available: rooms throw": {
+        "return": [],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "debug",
+                "Talk Manager::getRoomsForUser failed: boom"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomsForUser",
+                [
+                    "alice",
+                    [],
+                    true
+                ]
+            ]
+        ]
+    },
+    "available: search": {
+        "return": [
+            {
+                "token": "tok-s2",
+                "name": "ÉÉN Zaak",
+                "type": 2,
+                "participantCount": 5
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomsForUser",
+                [
+                    "alice",
+                    [],
+                    true
+                ]
+            ],
+            [
+                "s1",
+                "getToken",
+                []
+            ],
+            [
+                "s1",
+                "getName",
+                []
+            ],
+            [
+                "s1",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "s2",
+                "getToken",
+                []
+            ],
+            [
+                "s2",
+                "getName",
+                []
+            ],
+            [
+                "s2",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "s2",
+                "getType",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "s2"
+                ]
+            ]
+        ]
+    },
+    "create: bad type": {
+        "exception": "Exception",
+        "message": "Invalid room type (must be 2=group or 3=public)",
+        "code": 400,
+        "calls": [],
+        "talk": []
+    },
+    "create: createRoom not object": {
+        "exception": "Exception",
+        "message": "Talk createRoom returned no room",
+        "code": 500,
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "createRoom",
+                [
+                    2,
+                    "Zaak [or:abc-1]",
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "create: createRoom throws": {
+        "exception": "Exception",
+        "message": "Failed to create Talk room: boom",
+        "code": 500,
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "warning",
+                "Failed to create Talk room: boom"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "createRoom",
+                [
+                    2,
+                    "Zaak [or:abc-1]",
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "create: description and invite throw": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok-th",
+                "roomId": 12,
+                "roomName": "Shown name",
+                "roomType": 2,
+                "subtitle": "T:Group",
+                "participantCount": 1,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "bob"
+                    },
+                    "text": "Hallo",
+                    "timestamp": 1767323045
+                },
+                "lastActivity": "2026-02-03T04:05:06+01:00",
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok-th"
+            },
+            "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "roomName",
+                "roomType",
+                "subtitle",
+                "participantCount",
+                "lastMessageData",
+                "lastActivity",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\RoomService"
+            ],
+            [
+                "debug",
+                "Failed to set Talk room description: boom"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "debug",
+                "Failed to add owner as Talk participant: boom"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok-th",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 2,
+                        "subtitle": "T:Group",
+                        "participantCount": 1,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "users",
+                                "id": "bob"
+                            },
+                            "text": "Hallo",
+                            "timestamp": 1767323045
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok-th"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "participantCount",
+                        "lastMessageData",
+                        "lastActivity",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "createRoom",
+                [
+                    2,
+                    "Zaak [or:abc-1]",
+                    "alice"
+                ]
+            ],
+            [
+                "rs",
+                "setDescription",
+                [
+                    "th",
+                    "D"
+                ]
+            ],
+            [
+                "ps",
+                "addUsers",
+                [
+                    "th",
+                    [
+                        {
+                            "actorType": "users",
+                            "actorId": "alice"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "th",
+                "getToken",
+                []
+            ],
+            [
+                "th",
+                "getId",
+                []
+            ],
+            [
+                "th",
+                "getName",
+                []
+            ],
+            [
+                "th",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "th",
+                "getType",
+                []
+            ],
+            [
+                "th",
+                "getDescription",
+                []
+            ],
+            [
+                "ps",
+                "getNumberOfActors",
+                [
+                    "th"
+                ]
+            ],
+            [
+                "th",
+                "getLastActivity",
+                []
+            ],
+            [
+                "th",
+                "getLastMessage",
+                []
+            ],
+            [
+                "comment",
+                "getMessage",
+                []
+            ],
+            [
+                "comment",
+                "getActorType",
+                []
+            ],
+            [
+                "comment",
+                "getActorId",
+                []
+            ],
+            [
+                "comment",
+                "getCreationDateTime",
+                []
+            ]
+        ]
+    },
+    "create: empty description, services missing": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tk",
+                "roomId": 3,
+                "roomName": "Zaak",
+                "roomType": 2,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": null,
+                "lastActivity": null,
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tk"
+            },
+            "lastMessageData": null,
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "roomName",
+                "roomType",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "debug",
+                "Talk ParticipantService not resolvable: no OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "debug",
+                "Talk ParticipantService not resolvable: no OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tk",
+                        "roomId": 3,
+                        "roomName": "Zaak",
+                        "roomType": 2,
+                        "subtitle": null,
+                        "participantCount": null,
+                        "lastMessage": null,
+                        "lastActivity": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tk"
+                    },
+                    "lastMessageData": null,
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "createRoom",
+                [
+                    2,
+                    "Zaak [or:abc-1]",
+                    "alice"
+                ]
+            ],
+            [
+                "nb",
+                "getToken",
+                []
+            ],
+            [
+                "nb",
+                "getId",
+                []
+            ],
+            [
+                "nb",
+                "getName",
+                []
+            ],
+            [
+                "nb",
+                "getType",
+                []
+            ]
+        ]
+    },
+    "create: full": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok-new",
+                "roomId": 12,
+                "roomName": "Shown name",
+                "roomType": 3,
+                "subtitle": "Over de zaak",
+                "participantCount": 5,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "bob"
+                    },
+                    "text": "Hallo",
+                    "timestamp": 1767323045
+                },
+                "lastActivity": "2026-02-03T04:05:06+01:00",
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok-new"
+            },
+            "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "roomName",
+                "roomType",
+                "subtitle",
+                "participantCount",
+                "lastMessageData",
+                "lastActivity",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\RoomService"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok-new",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 3,
+                        "subtitle": "Over de zaak",
+                        "participantCount": 5,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "users",
+                                "id": "bob"
+                            },
+                            "text": "Hallo",
+                            "timestamp": 1767323045
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok-new"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "participantCount",
+                        "lastMessageData",
+                        "lastActivity",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "createRoom",
+                [
+                    3,
+                    "Zaak [or:abc-1]",
+                    "alice"
+                ]
+            ],
+            [
+                "services",
+                "setDescription",
+                [
+                    "new",
+                    "Over de zaak"
+                ]
+            ],
+            [
+                "services",
+                "addUsers",
+                [
+                    "new",
+                    [
+                        {
+                            "actorType": "users",
+                            "actorId": "alice"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "new",
+                "getToken",
+                []
+            ],
+            [
+                "new",
+                "getId",
+                []
+            ],
+            [
+                "new",
+                "getName",
+                []
+            ],
+            [
+                "new",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "new",
+                "getType",
+                []
+            ],
+            [
+                "new",
+                "getDescription",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "new"
+                ]
+            ],
+            [
+                "new",
+                "getLastActivity",
+                []
+            ],
+            [
+                "new",
+                "getLastMessage",
+                []
+            ],
+            [
+                "comment",
+                "getMessage",
+                []
+            ],
+            [
+                "comment",
+                "getActorType",
+                []
+            ],
+            [
+                "comment",
+                "getActorId",
+                []
+            ],
+            [
+                "comment",
+                "getCreationDateTime",
+                []
+            ]
+        ]
+    },
+    "create: no talk": {
+        "exception": "Exception",
+        "message": "Talk is not available",
+        "code": 503,
+        "calls": [],
+        "talk": []
+    },
+    "create: no user": {
+        "exception": "Exception",
+        "message": "No user logged in",
+        "code": 0,
+        "calls": [],
+        "talk": []
+    },
+    "create: services without methods": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok-nm",
+                "roomId": 12,
+                "roomName": "Shown name",
+                "roomType": 2,
+                "subtitle": "T:Group",
+                "participantCount": null,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "bob"
+                    },
+                    "text": "Hallo",
+                    "timestamp": 1767323045
+                },
+                "lastActivity": "2026-02-03T04:05:06+01:00",
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok-nm"
+            },
+            "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "roomName",
+                "roomType",
+                "subtitle",
+                "lastMessageData",
+                "lastActivity",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\RoomService"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok-nm",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 2,
+                        "subtitle": "T:Group",
+                        "participantCount": null,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "users",
+                                "id": "bob"
+                            },
+                            "text": "Hallo",
+                            "timestamp": 1767323045
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok-nm"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "lastMessageData",
+                        "lastActivity",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "createRoom",
+                [
+                    2,
+                    "Zaak [or:abc-1]",
+                    "alice"
+                ]
+            ],
+            [
+                "nm",
+                "getToken",
+                []
+            ],
+            [
+                "nm",
+                "getId",
+                []
+            ],
+            [
+                "nm",
+                "getName",
+                []
+            ],
+            [
+                "nm",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "nm",
+                "getType",
+                []
+            ],
+            [
+                "nm",
+                "getDescription",
+                []
+            ],
+            [
+                "nm",
+                "getLastActivity",
+                []
+            ],
+            [
+                "nm",
+                "getLastMessage",
+                []
+            ],
+            [
+                "comment",
+                "getMessage",
+                []
+            ],
+            [
+                "comment",
+                "getActorType",
+                []
+            ],
+            [
+                "comment",
+                "getActorId",
+                []
+            ],
+            [
+                "comment",
+                "getCreationDateTime",
+                []
+            ]
+        ]
+    },
+    "create: token empty": {
+        "exception": "Exception",
+        "message": "Talk room has no token after create",
+        "code": 500,
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "createRoom",
+                [
+                    2,
+                    "Zaak [or:abc-1]",
+                    "alice"
+                ]
+            ],
+            [
+                "services",
+                "addUsers",
+                [
+                    "te",
+                    [
+                        {
+                            "actorType": "users",
+                            "actorId": "alice"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "te",
+                "getToken",
+                []
+            ]
+        ]
+    },
+    "create: token throws": {
+        "exception": "Exception",
+        "message": "Talk room has no token after create",
+        "code": 500,
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "createRoom",
+                [
+                    2,
+                    "Zaak [or:abc-1]",
+                    "alice"
+                ]
+            ],
+            [
+                "services",
+                "addUsers",
+                [
+                    "tt",
+                    [
+                        {
+                            "actorType": "users",
+                            "actorId": "alice"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "tt",
+                "getToken",
+                []
+            ]
+        ]
+    },
+    "link: comment date not a date": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok",
+                "roomId": 12,
+                "roomName": "Shown name",
+                "roomType": 2,
+                "subtitle": "T:Group",
+                "participantCount": 5,
+                "lastMessage": {
+                    "actor": {
+                        "type": "",
+                        "id": ""
+                    },
+                    "text": "",
+                    "timestamp": null
+                },
+                "lastActivity": "2026-02-03T04:05:06+01:00",
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok"
+            },
+            "lastMessageData": "{\"actor\":{\"type\":\"\",\"id\":\"\"},\"text\":\"\",\"timestamp\":null}",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "roomName",
+                "roomType",
+                "subtitle",
+                "participantCount",
+                "lastMessageData",
+                "lastActivity",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 2,
+                        "subtitle": "T:Group",
+                        "participantCount": 5,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "",
+                                "id": ""
+                            },
+                            "text": "",
+                            "timestamp": null
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"\",\"id\":\"\"},\"text\":\"\",\"timestamp\":null}",
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "participantCount",
+                        "lastMessageData",
+                        "lastActivity",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "tok",
+                    "alice"
+                ]
+            ],
+            [
+                "r6",
+                "getId",
+                []
+            ],
+            [
+                "r6",
+                "getName",
+                []
+            ],
+            [
+                "r6",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "r6",
+                "getType",
+                []
+            ],
+            [
+                "r6",
+                "getDescription",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "r6"
+                ]
+            ],
+            [
+                "r6",
+                "getLastActivity",
+                []
+            ],
+            [
+                "r6",
+                "getLastMessage",
+                []
+            ],
+            [
+                "cm",
+                "getMessage",
+                []
+            ],
+            [
+                "cm",
+                "getActorType",
+                []
+            ],
+            [
+                "cm",
+                "getActorId",
+                []
+            ],
+            [
+                "cm",
+                "getCreationDateTime",
+                []
+            ]
+        ]
+    },
+    "link: display name throws, types": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok",
+                "roomId": 12,
+                "roomName": "Raw name",
+                "roomType": 1,
+                "subtitle": "T:Direct message",
+                "participantCount": 5,
+                "lastMessage": null,
+                "lastActivity": null,
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok"
+            },
+            "lastMessageData": null,
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "roomName",
+                "roomType",
+                "subtitle",
+                "participantCount",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok",
+                        "roomId": 12,
+                        "roomName": "Raw name",
+                        "roomType": 1,
+                        "subtitle": "T:Direct message",
+                        "participantCount": 5,
+                        "lastMessage": null,
+                        "lastActivity": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok"
+                    },
+                    "lastMessageData": null,
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "participantCount",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "tok",
+                    "alice"
+                ]
+            ],
+            [
+                "r3",
+                "getId",
+                []
+            ],
+            [
+                "r3",
+                "getName",
+                []
+            ],
+            [
+                "r3",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "r3",
+                "getType",
+                []
+            ],
+            [
+                "r3",
+                "getDescription",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "r3"
+                ]
+            ],
+            [
+                "r3",
+                "getLastActivity",
+                []
+            ],
+            [
+                "r3",
+                "getLastMessage",
+                []
+            ]
+        ]
+    },
+    "link: duplicate": {
+        "exception": "Exception",
+        "message": "Room already linked to this object",
+        "code": 409,
+        "calls": [],
+        "talk": []
+    },
+    "link: fallback lookup, bare room": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok",
+                "roomId": null,
+                "roomName": "Bare",
+                "roomType": 6,
+                "subtitle": "T:Note to self",
+                "participantCount": null,
+                "lastMessage": null,
+                "lastActivity": null,
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok"
+            },
+            "lastMessageData": null,
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomName",
+                "roomType",
+                "subtitle",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "debug",
+                "Talk ParticipantService not resolvable: no OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok",
+                        "roomId": null,
+                        "roomName": "Bare",
+                        "roomType": 6,
+                        "subtitle": "T:Note to self",
+                        "participantCount": null,
+                        "lastMessage": null,
+                        "lastActivity": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok"
+                    },
+                    "lastMessageData": null,
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "tok",
+                    "alice"
+                ]
+            ],
+            [
+                "manager",
+                "getRoomByToken",
+                [
+                    "tok"
+                ]
+            ],
+            [
+                "b1",
+                "getId",
+                []
+            ],
+            [
+                "b1",
+                "getName",
+                []
+            ],
+            [
+                "b1",
+                "getType",
+                []
+            ]
+        ]
+    },
+    "link: full room": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok",
+                "roomId": 12,
+                "roomName": "Shown name",
+                "roomType": 2,
+                "subtitle": "T:Group",
+                "participantCount": 5,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "bob"
+                    },
+                    "text": "Hallo",
+                    "timestamp": 1767323045
+                },
+                "lastActivity": "2026-02-03T04:05:06+01:00",
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok"
+            },
+            "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "roomName",
+                "roomType",
+                "subtitle",
+                "participantCount",
+                "lastMessageData",
+                "lastActivity",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 2,
+                        "subtitle": "T:Group",
+                        "participantCount": 5,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "users",
+                                "id": "bob"
+                            },
+                            "text": "Hallo",
+                            "timestamp": 1767323045
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "participantCount",
+                        "lastMessageData",
+                        "lastActivity",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "tok",
+                    "alice"
+                ]
+            ],
+            [
+                "r1",
+                "getId",
+                []
+            ],
+            [
+                "r1",
+                "getName",
+                []
+            ],
+            [
+                "r1",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "r1",
+                "getType",
+                []
+            ],
+            [
+                "r1",
+                "getDescription",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "r1"
+                ]
+            ],
+            [
+                "r1",
+                "getLastActivity",
+                []
+            ],
+            [
+                "r1",
+                "getLastMessage",
+                []
+            ],
+            [
+                "comment",
+                "getMessage",
+                []
+            ],
+            [
+                "comment",
+                "getActorType",
+                []
+            ],
+            [
+                "comment",
+                "getActorId",
+                []
+            ],
+            [
+                "comment",
+                "getCreationDateTime",
+                []
+            ]
+        ]
+    },
+    "link: manager unresolvable": {
+        "exception": "Exception",
+        "message": "Talk is not available",
+        "code": 503,
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "debug",
+                "Talk Manager not resolvable: no OCA\\Talk\\Manager"
+            ]
+        ],
+        "talk": []
+    },
+    "link: no user": {
+        "exception": "Exception",
+        "message": "No user logged in",
+        "code": 0,
+        "calls": [],
+        "talk": []
+    },
+    "link: old manager, room odd": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok",
+                "roomId": 12,
+                "roomName": null,
+                "roomType": null,
+                "subtitle": "Beschrijving",
+                "participantCount": null,
+                "lastMessage": null,
+                "lastActivity": null,
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok"
+            },
+            "lastMessageData": null,
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "subtitle",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok",
+                        "roomId": 12,
+                        "roomName": null,
+                        "roomType": null,
+                        "subtitle": "Beschrijving",
+                        "participantCount": null,
+                        "lastMessage": null,
+                        "lastActivity": null,
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok"
+                    },
+                    "lastMessageData": null,
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "subtitle",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "old",
+                "getRoomByToken",
+                [
+                    "tok"
+                ]
+            ],
+            [
+                "r2",
+                "getId",
+                []
+            ],
+            [
+                "r2",
+                "getName",
+                []
+            ],
+            [
+                "r2",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "r2",
+                "getType",
+                []
+            ],
+            [
+                "r2",
+                "getDescription",
+                []
+            ],
+            [
+                "r2",
+                "getLastActivity",
+                []
+            ],
+            [
+                "r2",
+                "getLastMessage",
+                []
+            ]
+        ]
+    },
+    "link: room not found anywhere": {
+        "exception": "Exception",
+        "message": "Talk room not found",
+        "code": 404,
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "tok",
+                    "alice"
+                ]
+            ],
+            [
+                "manager",
+                "getRoomByToken",
+                [
+                    "tok"
+                ]
+            ]
+        ]
+    },
+    "link: talk disabled": {
+        "exception": "Exception",
+        "message": "Talk is not available",
+        "code": 503,
+        "calls": [],
+        "talk": []
+    },
+    "link: type 4, actor count throws, bare comment": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok",
+                "roomId": 12,
+                "roomName": "Shown name",
+                "roomType": 4,
+                "subtitle": "T:System",
+                "participantCount": null,
+                "lastMessage": {
+                    "actor": {
+                        "type": "",
+                        "id": ""
+                    },
+                    "text": "",
+                    "timestamp": null
+                },
+                "lastActivity": "2026-02-03T04:05:06+01:00",
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok"
+            },
+            "lastMessageData": "{\"actor\":{\"type\":\"\",\"id\":\"\"},\"text\":\"\",\"timestamp\":null}",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "roomName",
+                "roomType",
+                "subtitle",
+                "lastMessageData",
+                "lastActivity",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 4,
+                        "subtitle": "T:System",
+                        "participantCount": null,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "",
+                                "id": ""
+                            },
+                            "text": "",
+                            "timestamp": null
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"\",\"id\":\"\"},\"text\":\"\",\"timestamp\":null}",
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "lastMessageData",
+                        "lastActivity",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "tok",
+                    "alice"
+                ]
+            ],
+            [
+                "r4",
+                "getId",
+                []
+            ],
+            [
+                "r4",
+                "getName",
+                []
+            ],
+            [
+                "r4",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "r4",
+                "getType",
+                []
+            ],
+            [
+                "r4",
+                "getDescription",
+                []
+            ],
+            [
+                "svc",
+                "getNumberOfActors",
+                [
+                    "r4"
+                ]
+            ],
+            [
+                "r4",
+                "getLastActivity",
+                []
+            ],
+            [
+                "r4",
+                "getLastMessage",
+                []
+            ]
+        ]
+    },
+    "link: type 9, comment date throws": {
+        "return": {
+            "json": {
+                "id": null,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "tok",
+                "roomId": 12,
+                "roomName": "Shown name",
+                "roomType": 9,
+                "subtitle": null,
+                "participantCount": 5,
+                "lastMessage": {
+                    "actor": {
+                        "type": "guests",
+                        "id": "g1"
+                    },
+                    "text": "5",
+                    "timestamp": null
+                },
+                "lastActivity": "2026-02-03T04:05:06+01:00",
+                "linkedBy": "alice",
+                "linkedAt": "<NOW>",
+                "url": "/index.php/call/tok"
+            },
+            "lastMessageData": "{\"actor\":{\"type\":\"guests\",\"id\":\"g1\"},\"text\":\"5\",\"timestamp\":null}",
+            "updated": [
+                "objectUuid",
+                "registerId",
+                "schemaId",
+                "roomToken",
+                "roomId",
+                "roomName",
+                "roomType",
+                "participantCount",
+                "lastMessageData",
+                "lastActivity",
+                "linkedBy",
+                "linkedAt"
+            ]
+        },
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "insert",
+                {
+                    "json": {
+                        "id": null,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "tok",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 9,
+                        "subtitle": null,
+                        "participantCount": 5,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "guests",
+                                "id": "g1"
+                            },
+                            "text": "5",
+                            "timestamp": null
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "alice",
+                        "linkedAt": "<NOW>",
+                        "url": "/index.php/call/tok"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"guests\",\"id\":\"g1\"},\"text\":\"5\",\"timestamp\":null}",
+                    "updated": [
+                        "objectUuid",
+                        "registerId",
+                        "schemaId",
+                        "roomToken",
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "participantCount",
+                        "lastMessageData",
+                        "lastActivity",
+                        "linkedBy",
+                        "linkedAt"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "tok",
+                    "alice"
+                ]
+            ],
+            [
+                "r5",
+                "getId",
+                []
+            ],
+            [
+                "r5",
+                "getName",
+                []
+            ],
+            [
+                "r5",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "r5",
+                "getType",
+                []
+            ],
+            [
+                "r5",
+                "getDescription",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "r5"
+                ]
+            ],
+            [
+                "r5",
+                "getLastActivity",
+                []
+            ],
+            [
+                "r5",
+                "getLastMessage",
+                []
+            ],
+            [
+                "cm",
+                "getMessage",
+                []
+            ],
+            [
+                "cm",
+                "getActorType",
+                []
+            ],
+            [
+                "cm",
+                "getActorId",
+                []
+            ],
+            [
+                "cm",
+                "getCreationDateTime",
+                []
+            ]
+        ]
+    },
+    "rooms: no talk, stale rows kept": {
+        "return": [
+            {
+                "id": 7,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "a",
+                "roomId": null,
+                "roomName": "Old name",
+                "roomType": null,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": null,
+                "lastActivity": null,
+                "linkedBy": "carol",
+                "linkedAt": null,
+                "url": "/index.php/call/a"
+            }
+        ],
+        "calls": [],
+        "talk": []
+    },
+    "rooms: no user": {
+        "return": [
+            {
+                "id": 7,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "a",
+                "roomId": null,
+                "roomName": "Old name",
+                "roomType": null,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": null,
+                "lastActivity": null,
+                "linkedBy": "carol",
+                "linkedAt": null,
+                "url": "/index.php/call/a"
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ]
+        ],
+        "talk": []
+    },
+    "rooms: none linked": {
+        "return": [],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "debug",
+                "Talk Manager not resolvable: no OCA\\Talk\\Manager"
+            ]
+        ],
+        "talk": []
+    },
+    "rooms: refresh stale, keep fresh": {
+        "return": [
+            {
+                "id": 7,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "stale",
+                "roomId": 12,
+                "roomName": "Shown name",
+                "roomType": 2,
+                "subtitle": "T:Group",
+                "participantCount": 5,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "bob"
+                    },
+                    "text": "Hallo",
+                    "timestamp": 1767323045
+                },
+                "lastActivity": "2026-02-03T04:05:06+01:00",
+                "linkedBy": "carol",
+                "linkedAt": null,
+                "url": "/index.php/call/stale"
+            },
+            {
+                "id": 7,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "fresh",
+                "roomId": null,
+                "roomName": "Old name",
+                "roomType": null,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": null,
+                "lastActivity": "2999-01-01T00:00:00+00:00",
+                "linkedBy": "carol",
+                "linkedAt": null,
+                "url": "/index.php/call/fresh"
+            },
+            {
+                "id": 7,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "neverActive",
+                "roomId": 12,
+                "roomName": "Shown name",
+                "roomType": 2,
+                "subtitle": "T:Group",
+                "participantCount": 5,
+                "lastMessage": {
+                    "actor": {
+                        "type": "users",
+                        "id": "bob"
+                    },
+                    "text": "Hallo",
+                    "timestamp": 1767323045
+                },
+                "lastActivity": "2026-02-03T04:05:06+01:00",
+                "linkedBy": "carol",
+                "linkedAt": "2000-01-01T00:00:00+00:00",
+                "url": "/index.php/call/neverActive"
+            },
+            {
+                "id": 7,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "linkedFuture",
+                "roomId": null,
+                "roomName": "Old name",
+                "roomType": null,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": null,
+                "lastActivity": null,
+                "linkedBy": "carol",
+                "linkedAt": "2999-01-01T00:00:00+00:00",
+                "url": "/index.php/call/linkedFuture"
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "update",
+                {
+                    "json": {
+                        "id": 7,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "stale",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 2,
+                        "subtitle": "T:Group",
+                        "participantCount": 5,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "users",
+                                "id": "bob"
+                            },
+                            "text": "Hallo",
+                            "timestamp": 1767323045
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "carol",
+                        "linkedAt": null,
+                        "url": "/index.php/call/stale"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+                    "updated": [
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "participantCount",
+                        "lastMessageData",
+                        "lastActivity"
+                    ]
+                }
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "update",
+                {
+                    "json": {
+                        "id": 7,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "neverActive",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 2,
+                        "subtitle": "T:Group",
+                        "participantCount": 5,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "users",
+                                "id": "bob"
+                            },
+                            "text": "Hallo",
+                            "timestamp": 1767323045
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "carol",
+                        "linkedAt": "2000-01-01T00:00:00+00:00",
+                        "url": "/index.php/call/neverActive"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+                    "updated": [
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "participantCount",
+                        "lastMessageData",
+                        "lastActivity"
+                    ]
+                }
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "stale",
+                    "alice"
+                ]
+            ],
+            [
+                "r7",
+                "getId",
+                []
+            ],
+            [
+                "r7",
+                "getName",
+                []
+            ],
+            [
+                "r7",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "r7",
+                "getType",
+                []
+            ],
+            [
+                "r7",
+                "getDescription",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "r7"
+                ]
+            ],
+            [
+                "r7",
+                "getLastActivity",
+                []
+            ],
+            [
+                "r7",
+                "getLastMessage",
+                []
+            ],
+            [
+                "comment",
+                "getMessage",
+                []
+            ],
+            [
+                "comment",
+                "getActorType",
+                []
+            ],
+            [
+                "comment",
+                "getActorId",
+                []
+            ],
+            [
+                "comment",
+                "getCreationDateTime",
+                []
+            ],
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "neverActive",
+                    "alice"
+                ]
+            ],
+            [
+                "r7",
+                "getId",
+                []
+            ],
+            [
+                "r7",
+                "getName",
+                []
+            ],
+            [
+                "r7",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "r7",
+                "getType",
+                []
+            ],
+            [
+                "r7",
+                "getDescription",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "r7"
+                ]
+            ],
+            [
+                "r7",
+                "getLastActivity",
+                []
+            ],
+            [
+                "r7",
+                "getLastMessage",
+                []
+            ],
+            [
+                "comment",
+                "getMessage",
+                []
+            ],
+            [
+                "comment",
+                "getActorType",
+                []
+            ],
+            [
+                "comment",
+                "getActorId",
+                []
+            ],
+            [
+                "comment",
+                "getCreationDateTime",
+                []
+            ]
+        ]
+    },
+    "rooms: room gone": {
+        "return": [
+            {
+                "id": 7,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "gone",
+                "roomId": null,
+                "roomName": "Old name",
+                "roomType": null,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": null,
+                "lastActivity": null,
+                "linkedBy": "carol",
+                "linkedAt": null,
+                "url": "/index.php/call/gone"
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ]
+        ],
+        "talk": []
+    },
+    "rooms: update throws": {
+        "return": [
+            {
+                "id": 7,
+                "objectUuid": "abc-1",
+                "registerId": 1,
+                "schemaId": 2,
+                "roomToken": "x",
+                "roomId": null,
+                "roomName": "Old name",
+                "roomType": null,
+                "subtitle": null,
+                "participantCount": null,
+                "lastMessage": null,
+                "lastActivity": null,
+                "linkedBy": "carol",
+                "linkedAt": null,
+                "url": "/index.php/call/x"
+            }
+        ],
+        "calls": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "update",
+                {
+                    "json": {
+                        "id": 7,
+                        "objectUuid": "abc-1",
+                        "registerId": 1,
+                        "schemaId": 2,
+                        "roomToken": "x",
+                        "roomId": 12,
+                        "roomName": "Shown name",
+                        "roomType": 2,
+                        "subtitle": "T:Group",
+                        "participantCount": 5,
+                        "lastMessage": {
+                            "actor": {
+                                "type": "users",
+                                "id": "bob"
+                            },
+                            "text": "Hallo",
+                            "timestamp": 1767323045
+                        },
+                        "lastActivity": "2026-02-03T04:05:06+01:00",
+                        "linkedBy": "carol",
+                        "linkedAt": null,
+                        "url": "/index.php/call/x"
+                    },
+                    "lastMessageData": "{\"actor\":{\"type\":\"users\",\"id\":\"bob\"},\"text\":\"Hallo\",\"timestamp\":1767323045}",
+                    "updated": [
+                        "roomId",
+                        "roomName",
+                        "roomType",
+                        "subtitle",
+                        "participantCount",
+                        "lastMessageData",
+                        "lastActivity"
+                    ]
+                }
+            ],
+            [
+                "debug",
+                "Stale talk link for room x: db gone"
+            ]
+        ],
+        "talk": [
+            [
+                "manager",
+                "getRoomForUserByToken",
+                [
+                    "x",
+                    "alice"
+                ]
+            ],
+            [
+                "r8",
+                "getId",
+                []
+            ],
+            [
+                "r8",
+                "getName",
+                []
+            ],
+            [
+                "r8",
+                "getDisplayName",
+                [
+                    "alice"
+                ]
+            ],
+            [
+                "r8",
+                "getType",
+                []
+            ],
+            [
+                "r8",
+                "getDescription",
+                []
+            ],
+            [
+                "services",
+                "getNumberOfActors",
+                [
+                    "r8"
+                ]
+            ],
+            [
+                "r8",
+                "getLastActivity",
+                []
+            ],
+            [
+                "r8",
+                "getLastMessage",
+                []
+            ],
+            [
+                "comment",
+                "getMessage",
+                []
+            ],
+            [
+                "comment",
+                "getActorType",
+                []
+            ],
+            [
+                "comment",
+                "getActorId",
+                []
+            ],
+            [
+                "comment",
+                "getCreationDateTime",
+                []
+            ]
+        ]
+    }
+}

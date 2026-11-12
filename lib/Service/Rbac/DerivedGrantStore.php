@@ -29,15 +29,13 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCP\IAppConfig;
-use OCP\IConfig;
 use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -45,9 +43,9 @@ use Psr\Log\LoggerInterface;
 /**
  * Reads the rules, keeps the derived grants, and recounts when a rule moves.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
-class DerivedGrantStore {
+class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLoginInterface {
 
 	/**
 	 * The app every key below belongs to.
@@ -84,15 +82,13 @@ class DerivedGrantStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param IConfig              $config      Per-user preferences.
-	 * @param IAppConfig           $appConfig   Where the rules are declared.
+	 * @param DerivedGrantConfig   $stores      Per-user preferences and the declared rules.
 	 * @param IUserManager         $userManager The accounts a re-run walks.
 	 * @param DerivedGrantResolver $resolver    The pure derivation.
 	 * @param LoggerInterface      $logger      Where a rule nobody can read is reported.
 	 */
 	public function __construct(
-		private readonly IConfig $config,
-		private readonly IAppConfig $appConfig,
+		private readonly DerivedGrantConfig $stores,
 		private readonly IUserManager $userManager,
 		private readonly DerivedGrantResolver $resolver,
 		private readonly LoggerInterface $logger,
@@ -104,15 +100,10 @@ class DerivedGrantStore {
 	 *
 	 * @return array<int, mixed> The rules, or an empty list when none are declared.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function rules(): array {
-		try {
-			$raw = $this->appConfig->getValueString(app: self::APP_ID, key: self::RULES_KEY, default: '');
-		} catch (\Throwable $e) {
-			return [];
-		}
-
+		$raw = $this->storedRules();
 		if (trim($raw) === '') {
 			return [];
 		}
@@ -133,13 +124,26 @@ class DerivedGrantStore {
 	}//end rules()
 
 	/**
+	 * The stored rule set as written, or '' when it cannot be read.
+	 *
+	 * @return string The stored JSON, or ''.
+	 */
+	private function storedRules(): string {
+		try {
+			return $this->stores->appConfig->getValueString(app: self::APP_ID, key: self::RULES_KEY, default: '');
+		} catch (\Throwable $e) {
+			return '';
+		}
+	}//end storedRules()
+
+	/**
 	 * The grants one account currently holds by derivation.
 	 *
 	 * @param string|null $userId The account.
 	 *
 	 * @return array<int, array<string, mixed>> The grants.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function grantsFor(?string $userId): array {
 		if ($userId === null || $userId === '') {
@@ -147,7 +151,7 @@ class DerivedGrantStore {
 		}
 
 		return $this->decodeList(
-			raw: $this->config->getUserValue($userId, self::APP_ID, self::GRANTS_KEY, '')
+			raw: $this->stores->config->getUserValue($userId, self::APP_ID, self::GRANTS_KEY, '')
 		);
 	}//end grantsFor()
 
@@ -158,10 +162,10 @@ class DerivedGrantStore {
 	 *
 	 * @return array<string, mixed> The claims.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function claimsFor(string $userId): array {
-		$raw = $this->config->getUserValue($userId, self::APP_ID, self::CLAIMS_KEY, '');
+		$raw = $this->stores->config->getUserValue($userId, self::APP_ID, self::CLAIMS_KEY, '');
 		if (trim($raw) === '') {
 			return [];
 		}
@@ -186,7 +190,7 @@ class DerivedGrantStore {
 	 *
 	 * @return array<int, array<string, mixed>> The grants that were stored.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function apply(string $userId, array $claims): array {
 		$derived = $this->resolver->derive(claims: $claims, rules: $this->rules());
@@ -198,8 +202,8 @@ class DerivedGrantStore {
 			);
 		}
 
-		$this->config->setUserValue($userId, self::APP_ID, self::CLAIMS_KEY, (string)json_encode($claims));
-		$this->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, (string)json_encode($derived['grants']));
+		$this->stores->config->setUserValue($userId, self::APP_ID, self::CLAIMS_KEY, (string)json_encode($claims));
+		$this->stores->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, (string)json_encode($derived['grants']));
 
 		return $derived['grants'];
 	}//end apply()
@@ -215,10 +219,10 @@ class DerivedGrantStore {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function forget(string $userId): void {
-		$this->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, '[]');
+		$this->stores->config->setUserValue($userId, self::APP_ID, self::GRANTS_KEY, '[]');
 	}//end forget()
 
 	/**
@@ -227,35 +231,62 @@ class DerivedGrantStore {
 	 * @return array{users: integer, changed: integer, grantsBefore: integer, grantsAfter: integer, accounts: array<int, string>}
 	 *         What the re-run did.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function reapply(): array {
 		$accounts = $this->accountsWithClaims();
 
-		$changed = [];
-		$before = 0;
-		$after = 0;
-
+		$moves = [];
 		foreach ($accounts as $userId) {
-			$held = $this->grantsFor(userId: $userId);
-			$holds = $this->apply(userId: $userId, claims: $this->claimsFor(userId: $userId));
+			$moves[] = $this->reapplyFor(userId: $userId);
+		}
 
-			$before += count($held);
-			$after += count($holds);
+		return self::reapplySummary(accounts: $accounts, moves: $moves);
+	}//end reapply()
 
-			if (json_encode($held) !== json_encode($holds)) {
-				$changed[] = $userId;
+	/**
+	 * Re-run the derivation for one account: how many grants it held and holds, and whether they moved.
+	 *
+	 * @param string $userId The account.
+	 *
+	 * @return array{user: string, before: int, after: int, changed: bool} The move.
+	 */
+	private function reapplyFor(string $userId): array {
+		$held = $this->grantsFor(userId: $userId);
+		$holds = $this->apply(userId: $userId, claims: $this->claimsFor(userId: $userId));
+
+		return [
+			'user' => $userId,
+			'before' => count($held),
+			'after' => count($holds),
+			'changed' => (json_encode($held) !== json_encode($holds)),
+		];
+	}//end reapplyFor()
+
+	/**
+	 * What a re-run did, over every account's move.
+	 *
+	 * @param array<int, string>                                                   $accounts The accounts re-run.
+	 * @param array<int, array{user: string, before: int, after: int, changed: bool}> $moves    One move per account.
+	 *
+	 * @return array{users: integer, changed: integer, grantsBefore: integer, grantsAfter: integer, accounts: array<int, string>}
+	 */
+	private static function reapplySummary(array $accounts, array $moves): array {
+		$changed = [];
+		foreach ($moves as $move) {
+			if ($move['changed'] === true) {
+				$changed[] = $move['user'];
 			}
 		}
 
 		return [
 			'users' => count($accounts),
 			'changed' => count($changed),
-			'grantsBefore' => $before,
-			'grantsAfter' => $after,
+			'grantsBefore' => array_sum(array_column($moves, 'before')),
+			'grantsAfter' => array_sum(array_column($moves, 'after')),
 			'accounts' => $changed,
 		];
-	}//end reapply()
+	}//end reapplySummary()
 
 	/**
 	 * Every account that has claims stored.
@@ -268,21 +299,8 @@ class DerivedGrantStore {
 	 * @return array<int, string> The account ids.
 	 */
 	private function accountsWithClaims(): array {
-		$accounts = [];
-
 		try {
-			$this->userManager->callForSeenUsers(
-				function (IUser $user) use (&$accounts): ?bool {
-					if ($this->claimsFor(userId: $user->getUID()) !== []) {
-						$accounts[] = $user->getUID();
-					}
-
-					// Null rather than false: the callback's return value is
-					// what stops the walk, and stopping it here would silently
-					// leave the rest of the accounts unre-derived.
-					return null;
-				}
-			);
+			return $this->walkAccountsWithClaims();
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[DerivedGrantStore] Could not walk the accounts to re-derive; reporting none',
@@ -290,9 +308,32 @@ class DerivedGrantStore {
 			);
 			return [];
 		}
+	}//end accountsWithClaims()
+
+	/**
+	 * Walk the seen accounts and collect those with claims stored.
+	 *
+	 * @return array<int, string> The account ids, in walk order.
+	 *
+	 * @throws \Throwable Whatever the walk throws; the caller reports none.
+	 */
+	private function walkAccountsWithClaims(): array {
+		$accounts = [];
+		$this->userManager->callForSeenUsers(
+			function (IUser $user) use (&$accounts): ?bool {
+				if ($this->claimsFor(userId: $user->getUID()) !== []) {
+					$accounts[] = $user->getUID();
+				}
+
+				// Null rather than false: the callback's return value is
+				// what stops the walk, and stopping it here would silently
+				// leave the rest of the accounts unre-derived.
+				return null;
+			}
+		);
 
 		return $accounts;
-	}//end accountsWithClaims()
+	}//end walkAccountsWithClaims()
 
 	/**
 	 * A stored JSON list, or an empty one.

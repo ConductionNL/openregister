@@ -50,7 +50,7 @@ namespace OCA\OpenRegister\Service\Archival;
 /**
  * The MDTO `waardering` values, and every spelling that means each one.
  */
-final class Appraisal {
+final class Appraisal implements AppraisalInterface {
 
 	/**
 	 * Keep forever. The record goes to an e-Depot, it is never destroyed.
@@ -95,18 +95,6 @@ final class Appraisal {
 		self::ANONYMISE,
 		self::NOT_YET_DETERMINED,
 	];
-
-	/**
-	 * Every spelling that means RETAIN_PERMANENTLY.
-	 *
-	 * Three occur in the wild for "keep forever": MDTO and the selectielijst use
-	 * `blijvend_bewaren`, a ZGW resultaattype may carry the shorter `bewaren`,
-	 * and TMLO's own constant is `blijvend_bewaren` again. They mean the same
-	 * thing to an archivist and must not reach a reader as two appraisals.
-	 *
-	 * @var string[]
-	 */
-	public const RETAIN_PERMANENTLY_ALIASES = ['retain_permanently', 'bewaren', 'blijvend_bewaren'];
 
 	/**
 	 * Every spelling that means DESTROY.

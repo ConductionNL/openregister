@@ -1,0 +1,910 @@
+{
+    "add provider": {
+        "results": [
+            null,
+            null,
+            null,
+            [
+                "openregister",
+                "openconnector",
+                "third"
+            ],
+            "{\"tools\":[{\"id\":\"openregister.registers\",\"name\":\"registers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"q\":{\"type\":\"string\"}}}},{\"id\":\"openregister.schemas\",\"name\":\"schemas\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openregister.empty\",\"name\":\"empty\",\"inputSchema\":{\"properties\":{},\"type\":\"object\"}},{\"id\":\"openregister.nullprops\",\"name\":\"nullprops\",\"inputSchema\":{\"type\":\"custom\",\"properties\":{},\"required\":[\"x\"]}},{\"id\":\"openregister.scalar\",\"name\":\"scalar\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openconnector.sources\",\"name\":\"sources\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openconnector.registers\",\"name\":\"registers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openconnector.boom\",\"name\":\"boom\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openconnector.typed\",\"name\":\"typed\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"third.registers\",\"name\":\"registers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}}]}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\n    \\\"app\\\": \\\"openregister\\\",\\n    \\\"tool\\\": \\\"openregister.registers\\\",\\n    \\\"args\\\": [],\\n    \\\"empty\\\": []\\n}\"}],\"isError\":false}"
+        ],
+        "calls": [
+            [
+                "op",
+                "add",
+                {
+                    "app": "openconnector",
+                    "tools": [
+                        {
+                            "id": "openconnector.sources",
+                            "name": "sources"
+                        },
+                        {
+                            "id": "openconnector.registers",
+                            "name": "registers"
+                        },
+                        {
+                            "id": "openconnector.boom",
+                            "name": "boom"
+                        },
+                        {
+                            "id": "openconnector.typed",
+                            "name": "typed"
+                        }
+                    ],
+                    "throws": {
+                        "openconnector.boom": "exception",
+                        "openconnector.typed": "type"
+                    }
+                }
+            ],
+            [
+                "op",
+                "add",
+                {
+                    "app": "openregister",
+                    "tools": []
+                }
+            ],
+            [
+                "log",
+                "debug",
+                "[McpToolsService] addProvider() skipped \u2014 provider with same appId already registered",
+                {
+                    "appId": "openregister",
+                    "incomingClass": "scripted provider",
+                    "existingClass": "scripted provider"
+                }
+            ],
+            [
+                "op",
+                "add",
+                {
+                    "app": "third",
+                    "tools": [
+                        {
+                            "id": "third.registers",
+                            "name": "registers"
+                        },
+                        {
+                            "name": "nameless"
+                        }
+                    ]
+                }
+            ],
+            [
+                "op",
+                "providers",
+                null
+            ],
+            [
+                "op",
+                "list",
+                null
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "openregister",
+                    "toolId": "other.wrong"
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "openregister",
+                    "toolId": ""
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "openregister",
+                    "toolId": "openregisterx.close"
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "third",
+                    "toolId": ""
+                }
+            ],
+            [
+                "op",
+                "call",
+                "registers"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "registers",
+                    "arguments": []
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[MCP] Short-name tool collision \u2014 first provider wins; use namespaced id to disambiguate.",
+                {
+                    "tool": "registers",
+                    "winningAppId": "openregister",
+                    "collisionCount": 2
+                }
+            ],
+            [
+                "invoke",
+                "openregister",
+                "openregister.registers",
+                []
+            ]
+        ]
+    },
+    "no providers": {
+        "results": [
+            "{\"tools\":[]}",
+            {
+                "thrown": "InvalidArgumentException",
+                "message": "Unknown tool: x"
+            },
+            "{\"result\":{\"error\":\"Unknown tool: x\"},\"isError\":true}",
+            []
+        ],
+        "calls": [
+            [
+                "op",
+                "list",
+                null
+            ],
+            [
+                "op",
+                "call",
+                "x"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "x",
+                    "arguments": []
+                }
+            ],
+            [
+                "op",
+                "invoke",
+                "x"
+            ],
+            [
+                "op",
+                "providers",
+                null
+            ]
+        ]
+    },
+    "one provider": {
+        "results": [
+            "{\"tools\":[{\"id\":\"openregister.registers\",\"name\":\"registers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"q\":{\"type\":\"string\"}}}},{\"id\":\"openregister.schemas\",\"name\":\"schemas\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openregister.empty\",\"name\":\"empty\",\"inputSchema\":{\"properties\":{},\"type\":\"object\"}},{\"id\":\"openregister.nullprops\",\"name\":\"nullprops\",\"inputSchema\":{\"type\":\"custom\",\"properties\":{},\"required\":[\"x\"]}},{\"id\":\"openregister.scalar\",\"name\":\"scalar\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}}]}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\n    \\\"app\\\": \\\"openregister\\\",\\n    \\\"tool\\\": \\\"openregister.registers\\\",\\n    \\\"args\\\": {\\n        \\\"a\\\": 1,\\n        \\\"nested\\\": {\\n            \\\"b\\\": [\\n                true,\\n                null\\n            ]\\n        }\\n    },\\n    \\\"empty\\\": []\\n}\"}],\"isError\":false}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\n    \\\"app\\\": \\\"openregister\\\",\\n    \\\"tool\\\": \\\"openregister.registers\\\",\\n    \\\"args\\\": [],\\n    \\\"empty\\\": []\\n}\"}],\"isError\":false}",
+            {
+                "thrown": "InvalidArgumentException",
+                "message": "Unknown tool: sources"
+            },
+            {
+                "thrown": "InvalidArgumentException",
+                "message": "Unknown tool: openconnector.registers"
+            },
+            {
+                "thrown": "InvalidArgumentException",
+                "message": "Unknown tool: boom"
+            },
+            {
+                "thrown": "InvalidArgumentException",
+                "message": "Unknown tool: typed"
+            },
+            {
+                "thrown": "InvalidArgumentException",
+                "message": "Unknown tool: nameless"
+            },
+            {
+                "thrown": "InvalidArgumentException",
+                "message": "Unknown tool: missing"
+            },
+            "{\"result\":{\"app\":\"openregister\",\"tool\":\"openregister.schemas\",\"args\":{\"a\":1,\"nested\":{\"b\":[true,null]}},\"empty\":[]},\"isError\":false}",
+            "{\"result\":{\"app\":\"openregister\",\"tool\":\"openregister.registers\",\"args\":[],\"empty\":[]},\"isError\":false}",
+            "{\"result\":{\"error\":\"Unknown tool: boom\"},\"isError\":true}",
+            "{\"result\":{\"error\":\"Unknown tool: openconnector.typed\"},\"isError\":true}",
+            "{\"result\":{\"error\":\"Unknown tool: missing\"},\"isError\":true}",
+            "{\"result\":{\"error\":\"Unknown tool: nameless\"},\"isError\":true}",
+            "{\"result\":{\"app\":\"openregister\",\"tool\":\"\",\"args\":[],\"empty\":[]},\"isError\":false}"
+        ],
+        "calls": [
+            [
+                "op",
+                "list",
+                null
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "openregister",
+                    "toolId": "other.wrong"
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "openregister",
+                    "toolId": ""
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "openregister",
+                    "toolId": "openregisterx.close"
+                }
+            ],
+            [
+                "op",
+                "call",
+                "openregister.registers"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "openregister.registers",
+                    "arguments": {
+                        "a": 1,
+                        "nested": {
+                            "b": [
+                                true,
+                                null
+                            ]
+                        }
+                    }
+                }
+            ],
+            [
+                "invoke",
+                "openregister",
+                "openregister.registers",
+                {
+                    "a": 1,
+                    "nested": {
+                        "b": [
+                            true,
+                            null
+                        ]
+                    }
+                }
+            ],
+            [
+                "op",
+                "call",
+                "registers"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "registers",
+                    "arguments": []
+                }
+            ],
+            [
+                "invoke",
+                "openregister",
+                "openregister.registers",
+                []
+            ],
+            [
+                "op",
+                "call",
+                "sources"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "sources",
+                    "arguments": {
+                        "a": 1,
+                        "nested": {
+                            "b": [
+                                true,
+                                null
+                            ]
+                        }
+                    }
+                }
+            ],
+            [
+                "op",
+                "call",
+                "openconnector.registers"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "openconnector.registers",
+                    "arguments": []
+                }
+            ],
+            [
+                "op",
+                "call",
+                "boom"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "boom",
+                    "arguments": {
+                        "a": 1,
+                        "nested": {
+                            "b": [
+                                true,
+                                null
+                            ]
+                        }
+                    }
+                }
+            ],
+            [
+                "op",
+                "call",
+                "typed"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "typed",
+                    "arguments": []
+                }
+            ],
+            [
+                "op",
+                "call",
+                "nameless"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "nameless",
+                    "arguments": []
+                }
+            ],
+            [
+                "op",
+                "call",
+                "missing"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "missing",
+                    "arguments": []
+                }
+            ],
+            [
+                "op",
+                "invoke",
+                "openregister.schemas"
+            ],
+            [
+                "invoke",
+                "openregister",
+                "openregister.schemas",
+                {
+                    "a": 1,
+                    "nested": {
+                        "b": [
+                            true,
+                            null
+                        ]
+                    }
+                }
+            ],
+            [
+                "op",
+                "invoke",
+                "registers"
+            ],
+            [
+                "invoke",
+                "openregister",
+                "openregister.registers",
+                []
+            ],
+            [
+                "op",
+                "invoke",
+                "boom"
+            ],
+            [
+                "op",
+                "invoke",
+                "openconnector.typed"
+            ],
+            [
+                "op",
+                "invoke",
+                "missing"
+            ],
+            [
+                "op",
+                "invoke",
+                "nameless"
+            ],
+            [
+                "op",
+                "invoke",
+                ""
+            ],
+            [
+                "invoke",
+                "openregister",
+                "",
+                []
+            ]
+        ]
+    },
+    "three providers": {
+        "results": [
+            "{\"tools\":[{\"id\":\"openregister.registers\",\"name\":\"registers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"q\":{\"type\":\"string\"}}}},{\"id\":\"openregister.schemas\",\"name\":\"schemas\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openregister.empty\",\"name\":\"empty\",\"inputSchema\":{\"properties\":{},\"type\":\"object\"}},{\"id\":\"openregister.nullprops\",\"name\":\"nullprops\",\"inputSchema\":{\"type\":\"custom\",\"properties\":{},\"required\":[\"x\"]}},{\"id\":\"openregister.scalar\",\"name\":\"scalar\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openconnector.sources\",\"name\":\"sources\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openconnector.registers\",\"name\":\"registers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openconnector.boom\",\"name\":\"boom\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"openconnector.typed\",\"name\":\"typed\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}},{\"id\":\"third.registers\",\"name\":\"registers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{}}}]}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\n    \\\"app\\\": \\\"openregister\\\",\\n    \\\"tool\\\": \\\"openregister.registers\\\",\\n    \\\"args\\\": {\\n        \\\"a\\\": 1,\\n        \\\"nested\\\": {\\n            \\\"b\\\": [\\n                true,\\n                null\\n            ]\\n        }\\n    },\\n    \\\"empty\\\": []\\n}\"}],\"isError\":false}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\n    \\\"app\\\": \\\"openregister\\\",\\n    \\\"tool\\\": \\\"openregister.registers\\\",\\n    \\\"args\\\": [],\\n    \\\"empty\\\": []\\n}\"}],\"isError\":false}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\n    \\\"app\\\": \\\"openconnector\\\",\\n    \\\"tool\\\": \\\"openconnector.sources\\\",\\n    \\\"args\\\": {\\n        \\\"a\\\": 1,\\n        \\\"nested\\\": {\\n            \\\"b\\\": [\\n                true,\\n                null\\n            ]\\n        }\\n    },\\n    \\\"empty\\\": []\\n}\"}],\"isError\":false}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\n    \\\"app\\\": \\\"openconnector\\\",\\n    \\\"tool\\\": \\\"openconnector.registers\\\",\\n    \\\"args\\\": [],\\n    \\\"empty\\\": []\\n}\"}],\"isError\":false}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"error\\\":\\\"provider failed for openconnector.boom\\\"}\"}],\"isError\":true}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"error\\\":\\\"bad argument for openconnector.typed\\\"}\"}],\"isError\":true}",
+            "{\"content\":[{\"type\":\"text\",\"text\":\"{\\n    \\\"app\\\": \\\"third\\\",\\n    \\\"tool\\\": \\\"nameless\\\",\\n    \\\"args\\\": [],\\n    \\\"empty\\\": []\\n}\"}],\"isError\":false}",
+            {
+                "thrown": "InvalidArgumentException",
+                "message": "Unknown tool: missing"
+            },
+            "{\"result\":{\"app\":\"openregister\",\"tool\":\"openregister.schemas\",\"args\":{\"a\":1,\"nested\":{\"b\":[true,null]}},\"empty\":[]},\"isError\":false}",
+            "{\"result\":{\"app\":\"openregister\",\"tool\":\"openregister.registers\",\"args\":[],\"empty\":[]},\"isError\":false}",
+            "{\"result\":{\"error\":\"provider failed for openconnector.boom\"},\"isError\":true}",
+            "{\"result\":{\"error\":\"bad argument for openconnector.typed\"},\"isError\":true}",
+            "{\"result\":{\"error\":\"Unknown tool: missing\"},\"isError\":true}",
+            "{\"result\":{\"app\":\"third\",\"tool\":\"nameless\",\"args\":[],\"empty\":[]},\"isError\":false}",
+            "{\"result\":{\"app\":\"openregister\",\"tool\":\"\",\"args\":[],\"empty\":[]},\"isError\":false}"
+        ],
+        "calls": [
+            [
+                "op",
+                "list",
+                null
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "openregister",
+                    "toolId": "other.wrong"
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "openregister",
+                    "toolId": ""
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "openregister",
+                    "toolId": "openregisterx.close"
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[McpToolsService] Dropping tool descriptor with non-conforming namespace prefix",
+                {
+                    "providerClass": "scripted provider",
+                    "appId": "third",
+                    "toolId": ""
+                }
+            ],
+            [
+                "op",
+                "call",
+                "openregister.registers"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "openregister.registers",
+                    "arguments": {
+                        "a": 1,
+                        "nested": {
+                            "b": [
+                                true,
+                                null
+                            ]
+                        }
+                    }
+                }
+            ],
+            [
+                "invoke",
+                "openregister",
+                "openregister.registers",
+                {
+                    "a": 1,
+                    "nested": {
+                        "b": [
+                            true,
+                            null
+                        ]
+                    }
+                }
+            ],
+            [
+                "op",
+                "call",
+                "registers"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "registers",
+                    "arguments": []
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "[MCP] Short-name tool collision \u2014 first provider wins; use namespaced id to disambiguate.",
+                {
+                    "tool": "registers",
+                    "winningAppId": "openregister",
+                    "collisionCount": 2
+                }
+            ],
+            [
+                "invoke",
+                "openregister",
+                "openregister.registers",
+                []
+            ],
+            [
+                "op",
+                "call",
+                "sources"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "sources",
+                    "arguments": {
+                        "a": 1,
+                        "nested": {
+                            "b": [
+                                true,
+                                null
+                            ]
+                        }
+                    }
+                }
+            ],
+            [
+                "invoke",
+                "openconnector",
+                "openconnector.sources",
+                {
+                    "a": 1,
+                    "nested": {
+                        "b": [
+                            true,
+                            null
+                        ]
+                    }
+                }
+            ],
+            [
+                "op",
+                "call",
+                "openconnector.registers"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "openconnector.registers",
+                    "arguments": []
+                }
+            ],
+            [
+                "invoke",
+                "openconnector",
+                "openconnector.registers",
+                []
+            ],
+            [
+                "op",
+                "call",
+                "boom"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "boom",
+                    "arguments": {
+                        "a": 1,
+                        "nested": {
+                            "b": [
+                                true,
+                                null
+                            ]
+                        }
+                    }
+                }
+            ],
+            [
+                "invoke",
+                "openconnector",
+                "openconnector.boom",
+                {
+                    "a": 1,
+                    "nested": {
+                        "b": [
+                            true,
+                            null
+                        ]
+                    }
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[MCP] Tool execution failed",
+                {
+                    "tool": "boom",
+                    "error": "provider failed for openconnector.boom"
+                }
+            ],
+            [
+                "op",
+                "call",
+                "typed"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "typed",
+                    "arguments": []
+                }
+            ],
+            [
+                "invoke",
+                "openconnector",
+                "openconnector.typed",
+                []
+            ],
+            [
+                "log",
+                "error",
+                "[MCP] Tool execution failed",
+                {
+                    "tool": "typed",
+                    "error": "bad argument for openconnector.typed"
+                }
+            ],
+            [
+                "op",
+                "call",
+                "nameless"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "nameless",
+                    "arguments": []
+                }
+            ],
+            [
+                "invoke",
+                "third",
+                "nameless",
+                []
+            ],
+            [
+                "op",
+                "call",
+                "missing"
+            ],
+            [
+                "log",
+                "debug",
+                "[MCP] Tool call",
+                {
+                    "tool": "missing",
+                    "arguments": []
+                }
+            ],
+            [
+                "op",
+                "invoke",
+                "openregister.schemas"
+            ],
+            [
+                "invoke",
+                "openregister",
+                "openregister.schemas",
+                {
+                    "a": 1,
+                    "nested": {
+                        "b": [
+                            true,
+                            null
+                        ]
+                    }
+                }
+            ],
+            [
+                "op",
+                "invoke",
+                "registers"
+            ],
+            [
+                "log",
+                "warning",
+                "[MCP] Short-name tool collision \u2014 first provider wins; use namespaced id to disambiguate.",
+                {
+                    "tool": "registers",
+                    "winningAppId": "openregister",
+                    "collisionCount": 2
+                }
+            ],
+            [
+                "invoke",
+                "openregister",
+                "openregister.registers",
+                []
+            ],
+            [
+                "op",
+                "invoke",
+                "boom"
+            ],
+            [
+                "invoke",
+                "openconnector",
+                "openconnector.boom",
+                []
+            ],
+            [
+                "log",
+                "error",
+                "[MCP] invokeTool failed",
+                {
+                    "tool": "boom",
+                    "error": "provider failed for openconnector.boom"
+                }
+            ],
+            [
+                "op",
+                "invoke",
+                "openconnector.typed"
+            ],
+            [
+                "invoke",
+                "openconnector",
+                "openconnector.typed",
+                {
+                    "a": 1,
+                    "nested": {
+                        "b": [
+                            true,
+                            null
+                        ]
+                    }
+                }
+            ],
+            [
+                "log",
+                "error",
+                "[MCP] invokeTool failed",
+                {
+                    "tool": "openconnector.typed",
+                    "error": "bad argument for openconnector.typed"
+                }
+            ],
+            [
+                "op",
+                "invoke",
+                "missing"
+            ],
+            [
+                "op",
+                "invoke",
+                "nameless"
+            ],
+            [
+                "invoke",
+                "third",
+                "nameless",
+                []
+            ],
+            [
+                "op",
+                "invoke",
+                ""
+            ],
+            [
+                "invoke",
+                "openregister",
+                "",
+                []
+            ]
+        ]
+    }
+}

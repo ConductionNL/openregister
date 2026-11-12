@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Exception;
 
 use Exception;
-use OCA\OpenRegister\Service\Oas\OasValidationReport;
+use OCA\OpenRegister\Service\Oas\OasValidationReportInterface;
 use Throwable;
 
 /**
@@ -37,13 +37,13 @@ class OasValidationException extends Exception {
 	 * Constructor for OasValidationException.
 	 *
 	 * @param string $message Human-readable summary of the failure.
-	 * @param OasValidationReport $report The full validation report.
+	 * @param OasValidationReportInterface $report The full validation report.
 	 * @param int $code HTTP-style code (default 422).
 	 * @param Throwable|null $previous Optional underlying exception.
 	 */
 	public function __construct(
 		string $message,
-		private readonly OasValidationReport $report,
+		private readonly OasValidationReportInterface $report,
 		int $code = 422,
 		?Throwable $previous = null,
 	) {
@@ -54,9 +54,9 @@ class OasValidationException extends Exception {
 	/**
 	 * Returns the validation report associated with this exception.
 	 *
-	 * @return OasValidationReport The validation report.
+	 * @return OasValidationReportInterface The validation report.
 	 */
-	public function getReport(): OasValidationReport {
+	public function getReport(): OasValidationReportInterface {
 		return $this->report;
 	}//end getReport()
 }//end class

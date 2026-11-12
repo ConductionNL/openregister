@@ -6,7 +6,6 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 <template>
 	<NcAppContent>
 		<CnIndexPage
-			ref="indexPage"
 			:title="t('openregister', 'Organisations')"
 			:description="
 				t(
@@ -21,13 +20,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 			:viewMode="organisationStore.viewMode"
 			:selectable="true"
 			:selectedIds="selectedOrganisations"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Create Organisation')"
 			rowKey="uuid"
@@ -100,72 +93,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 								>{{ t('openregister', 'Active') }}</span
 							>
 						</h2>
-						<NcActions
-							:primary="true"
-							:menuName="t('openregister', 'Actions')">
-							<template #icon>
-								<DotsHorizontal :size="20" />
-							</template>
-							<NcActionButton
-								closeAfterClick
-								@click="viewOrganisation(object)">
-								<template #icon>
-									<Eye :size="20" />
-								</template>
-								{{ t('openregister', 'View') }}
-							</NcActionButton>
-							<NcActionButton
-								v-if="!isActiveOrganisation(object)"
-								closeAfterClick
-								@click="setActiveOrganisation(object.uuid)">
-								<template #icon>
-									<Check :size="20" />
-								</template>
-								{{ t('openregister', 'Set as Active') }}
-							</NcActionButton>
-							<NcActionButton
-								v-if="canEditOrganisation(object)"
-								closeAfterClick
-								@click="editOrganisation(object)">
-								<template #icon>
-									<Pencil :size="20" />
-								</template>
-								{{ t('openregister', 'Edit') }}
-							</NcActionButton>
-							<NcActionButton
-								v-if="object.website"
-								closeAfterClick
-								@click="goToOrganisation(object)">
-								<template #icon>
-									<OpenInNew :size="20" />
-								</template>
-								{{ t('openregister', 'Go to organisation') }}
-							</NcActionButton>
-							<NcActionButton
-								closeAfterClick
-								@click="openJoinModal(object)">
-								<template #icon>
-									<AccountMultiplePlus :size="20" />
-								</template>
-								{{ t('openregister', 'Add User') }}
-							</NcActionButton>
-							<NcActionButton
-								v-if="canDeleteOrganisation(object)"
-								closeAfterClick
-								@click="
-									() => {
-										organisationStore.setOrganisationItem(object)
-										navigationStore.setModal(
-											'deleteOrganisation',
-										)
-									}
-								">
-								<template #icon>
-									<TrashCanOutline :size="20" />
-								</template>
-								{{ t('openregister', 'Delete') }}
-							</NcActionButton>
-						</NcActions>
+						<ActionMenu :actions="organisationActions(object)" primary />
 					</div>
 
 					<div class="organisationInfo">
@@ -214,11 +142,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 							t('openregister', 'Active')
 						}}</span>
 					</div>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -254,64 +178,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 
 			<!-- Custom row actions for table view -->
 			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton closeAfterClick @click="viewOrganisation(row)">
-						<template #icon>
-							<Eye :size="20" />
-						</template>
-						{{ t('openregister', 'View') }}
-					</NcActionButton>
-					<NcActionButton
-						v-if="!isActiveOrganisation(row)"
-						closeAfterClick
-						@click="setActiveOrganisation(row.uuid)">
-						<template #icon>
-							<Check :size="20" />
-						</template>
-						{{ t('openregister', 'Set as Active') }}
-					</NcActionButton>
-					<NcActionButton
-						v-if="canEditOrganisation(row)"
-						closeAfterClick
-						@click="editOrganisation(row)">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						{{ t('openregister', 'Edit') }}
-					</NcActionButton>
-					<NcActionButton
-						v-if="row.website"
-						closeAfterClick
-						@click="goToOrganisation(row)">
-						<template #icon>
-							<OpenInNew :size="20" />
-						</template>
-						{{ t('openregister', 'Go to organisation') }}
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="openJoinModal(row)">
-						<template #icon>
-							<AccountMultiplePlus :size="20" />
-						</template>
-						{{ t('openregister', 'Add User') }}
-					</NcActionButton>
-					<NcActionButton
-						v-if="canDeleteOrganisation(row)"
-						closeAfterClick
-						@click="
-							() => {
-								organisationStore.setOrganisationItem(row)
-								navigationStore.setModal('deleteOrganisation')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="organisationActions(row)" />
 			</template>
 		</CnIndexPage>
 
@@ -330,43 +197,79 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 <script>
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import { NcActionButton, NcActions, NcAppContent, NcButton } from '@nextcloud/vue'
+import { NcActionButton, NcAppContent, NcButton } from '@nextcloud/vue'
 import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import Check from 'vue-material-design-icons/Check.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
 import SwitchOrganisationModal from '../../modals/organisation/SwitchOrganisationModal.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
 import { reloadAppData } from '../../services/AppInitializationService.js'
+import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
+import {
+	BUILTIN_ACTIONS_OFF,
+	timestampColumns,
+} from '../indexPageOptions.js'
+
+/**
+ * The message for a switch of the active organisation that failed.
+ *
+ * @param {Error} error The failure
+ * @return {string} The message
+ */
+function switchFailure(error) {
+	return t(
+		'openregister',
+		'Failed to change active organisation: {error}',
+		{ error: error.message },
+	)
+}
+
+/**
+ * The question asked before leaving an organisation.
+ *
+ * @param {object} organisation The organisation
+ * @return {string} The question
+ */
+function leaveQuestion(organisation) {
+	return t('openregister', "Are you sure you want to leave '{name}'?", {
+		name: organisation.name,
+	})
+}
+
+/**
+ * The message for leaving an organisation that failed.
+ *
+ * @param {Error} error The failure
+ * @return {string} The message
+ */
+function leaveFailure(error) {
+	return t('openregister', 'Failed to leave organisation: {error}', {
+		error: error.message,
+	})
+}
 
 export default {
 	name: 'OrganisationsIndex',
 	components: {
+		IndexRowDescription,
+		ActionMenu,
+		NcActionButton,
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
 		NcButton,
 		OfficeBuilding,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
 		AccountPlus,
-		AccountMultiplePlus,
 		SwapHorizontal,
-		Eye,
-		OpenInNew,
-		Check,
 		SwitchOrganisationModal,
 	},
 
 	data() {
 		return {
+			builtinActionsOff: BUILTIN_ACTIONS_OFF,
 			selectedOrganisations: [],
 			showOrganisationSwitcher: false,
 			isRefreshing: false,
@@ -386,16 +289,7 @@ export default {
 				{ key: 'users', label: t('openregister', 'Members') },
 				{ key: 'owner', label: t('openregister', 'Owner') },
 				{ key: 'status', label: t('openregister', 'Status') },
-				{
-					key: 'created',
-					label: t('openregister', 'Created'),
-					sortable: true,
-				},
-				{
-					key: 'updated',
-					label: t('openregister', 'Updated'),
-					sortable: true,
-				},
+				...timestampColumns(),
 			]
 		},
 
@@ -460,6 +354,78 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The menu of one organisation.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {object} organisation - list row
+		 * @return {Array<object>}
+		 */
+		organisationActions(organisation) {
+			return [
+				viewAction(() => this.viewOrganisation(organisation)),
+				this.activateAction(organisation),
+				editAction(() => this.editOrganisation(organisation), {
+					hidden: !this.canEditOrganisation(organisation),
+				}),
+				...this.memberActions(organisation),
+				deleteAction(() => this.openDeleteModal(organisation), {
+					hidden: !this.canDeleteOrganisation(organisation),
+				}),
+			]
+		},
+
+		/**
+		 * The entry that makes an organisation the active one.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} organisation - organisation row
+		 * @return {object}
+		 */
+		activateAction(organisation) {
+			return {
+				label: t('openregister', 'Set as Active'),
+				icon: Check,
+				hidden: this.isActiveOrganisation(organisation),
+				run: () => this.setActiveOrganisation(organisation.uuid),
+			}
+		},
+
+		/**
+		 * The website and add-user entries.
+		 *
+		 * @spec exclude UI plumbing — menu entries.
+		 * @param {object} organisation - organisation row
+		 * @return {Array<object>}
+		 */
+		memberActions(organisation) {
+			return [
+				{
+					label: t('openregister', 'Go to organisation'),
+					icon: OpenInNew,
+					hidden: !organisation.website,
+					run: () => this.goToOrganisation(organisation),
+				},
+				{
+					label: t('openregister', 'Add User'),
+					icon: AccountMultiplePlus,
+					run: () => this.openJoinModal(organisation),
+				},
+			]
+		},
+
+		/**
+		 * Open the delete modal of an organisation.
+		 *
+		 * @spec exclude UI plumbing — store delegation.
+		 * @param {object} organisation - organisation row
+		 * @return {void}
+		 */
+		openDeleteModal(organisation) {
+			organisationStore.setOrganisationItem(organisation)
+			navigationStore.setModal('deleteOrganisation')
+		},
+
 		/**
 		 * Reload the organisation list from the store.
 		 *
@@ -576,13 +542,7 @@ export default {
 				// Reload all hot-loaded data for the new organisation context
 				await reloadAppData()
 			} catch (error) {
-				showError(
-					t(
-						'openregister',
-						'Failed to change active organisation: {error}',
-						{ error: error.message },
-					),
-				)
+				showError(switchFailure(error))
 			}
 		},
 
@@ -614,13 +574,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async leaveOrganisation(organisation) {
-			if (
-				!confirm(
-					t('openregister', "Are you sure you want to leave '{name}'?", {
-						name: organisation.name,
-					}),
-				)
-			) {
+			if (!confirm(leaveQuestion(organisation))) {
 				return
 			}
 
@@ -628,11 +582,7 @@ export default {
 				await organisationStore.leaveOrganisation(organisation.uuid)
 				showSuccess(t('openregister', 'Left organisation successfully'))
 			} catch (error) {
-				showError(
-					t('openregister', 'Failed to leave organisation: {error}', {
-						error: error.message,
-					}),
-				)
+				showError(leaveFailure(error))
 			}
 		},
 
@@ -784,6 +734,8 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 /* Table row accent for the active organisation. Drawn with an inset box-shadow,
    never border-left: a border adds layout width and shifts the row's cell
    content sideways, while box-shadow paints inside the box. Matches
@@ -835,15 +787,7 @@ export default {
 	white-space: nowrap;
 }
 
-.defaultBadge {
-	background: var(--color-warning);
-	color: var(--color-primary-text);
-}
-
-.activeBadge {
-	background: var(--color-success);
-	color: white;
-}
+@include default-badge-rules;
 
 /* Cards styling */
 .active-org-card {
@@ -883,13 +827,7 @@ export default {
 }
 
 /* Title with badges layout */
-.titleWithBadges {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-	margin-bottom: 4px;
-}
+@include title-with-badges;
 
 .statusActive {
 	color: var(--color-success);

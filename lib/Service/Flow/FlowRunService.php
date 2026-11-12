@@ -35,15 +35,11 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStep;
-use OCA\OpenRegister\Db\FlowRunStepMapper;
-use OCA\OpenRegister\Db\FlowStateMapper;
-use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Exception\FlowRunExpired;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
-use OCP\IAppConfig;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -57,7 +53,7 @@ use Throwable;
  * signal, persist — plus the stream walk's wiring and the in-request advance; each is one
  * entry into the same engine and belongs beside the others.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 50 against 50, and the
- * one branch is the version-pin refusal in advanceStream(): the same rule
+ * one branch is the version-pin refusal in advanceBranch(): the same rule
  * execute() enforces, applied to the completion path so a week-old task
  * continues the graph its run was pinned to.
  * @SuppressWarnings(PHPMD.TooManyMethods) 28 against 25, from or-flow-run-node's
@@ -69,7 +65,7 @@ use Throwable;
  * into unrelated existing methods would hide one code path inside another
  * that has nothing to do with it.
  */
-class FlowRunService {
+class FlowRunService implements FlowRunServiceInterface {
 	/**
 	 * How long one run may take, in minutes, when nothing overrides it.
 	 *
@@ -82,54 +78,6 @@ class FlowRunService {
 	 * @var integer
 	 */
 	private const DEFAULT_MAX_RUNTIME_MINUTES = 60;
-
-	/**
-	 * The context key an arriving signal's payload lands at.
-	 *
-	 * Read by whichever node suspended waiting for it, and cleared once that
-	 * walk finishes — a signal answers one question, and leaving it behind would
-	 * let a later suspension read an answer meant for an earlier one.
-	 *
-	 * @var string
-	 */
-	public const SIGNAL_CONTEXT_KEY = 'signal';
-
-	/**
-	 * The context key the run's ACTING IDENTITY travels under.
-	 *
-	 * Stamped by {@see self::baseContextFor()} from the run — never from the
-	 * context, per ADR-099 — and read back by every node whose work needs the
-	 * run's rights. Exported so consumers reference one name instead of each
-	 * hard-coding the literal; the VALUE is frozen, because it is stored inside
-	 * every parked run's context and a rename would strand them.
-	 *
-	 * @var string
-	 */
-	public const RUN_AS_CONTEXT_KEY = 'runAs';
-
-	/**
-	 * The context key the run's FLOW id travels under.
-	 *
-	 * Stamped from the run, like the acting identity, so a node can name the
-	 * flow it belongs to (a sent-email event does) without a lookup.
-	 *
-	 * @var string
-	 */
-	public const FLOW_ID_CONTEXT_KEY = 'flowId';
-
-	/**
-	 * The trigger a direct node invocation carries (or-flow-run-node).
-	 *
-	 * Unlike {@see FlowRunVersionPin::TRIGGER_TEST}, this trigger is NOT
-	 * exempt from the published-version requirement: a direct-invoked node
-	 * still runs against a real, published graph (RN-3) — it is the AUTHORING
-	 * trust that is absent here (this is an app button, not the editor), not
-	 * the soundness/publication requirement every live dispatch already
-	 * carries.
-	 *
-	 * @var string
-	 */
-	public const TRIGGER_DIRECT_NODE = 'direct-node';
 
 	/**
 	 * The acting-identity scope handed to every dispatcher this service builds.
@@ -152,76 +100,47 @@ class FlowRunService {
 	private bool $runAsScopeResolved = false;
 
 	/**
-	 * Loads and writes back the state that belongs to the FLOW, not the run.
-	 *
-	 * A separate collaborator because it handles a different lifetime: the token
-	 * dies with its run, this outlives every run of the flow. See
-	 * {@see FlowStateBinding}.
-	 *
-	 * @var FlowStateBinding
-	 */
-	private readonly FlowStateBinding $flowState;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper $mapper Persists runs.
-	 * @param FlowStateMapper $stateMapper Persists state that outlives a run.
-	 * @param FlowEngine $engine Walks the graph.
-	 * @param FlowNodeRegistry $registry Resolves step types.
-	 * @param LoggerInterface $logger The logger.
-	 * @param ContainerInterface $container Lazily resolves OrganisationService.
-	 * @param FlowRunStepMapper|null $steps Records one row per node execution.
-	 *                                      Nullable so the cron worker and the
-	 *                                      unit tests can build this service
-	 *                                      without it; history is then simply
-	 *                                      not recorded, never faked.
-	 * @param IAppConfig|null $appConfig Reads the instance-wide runtime
-	 * @param FlowStreamMapper|null $streamMapper Stream rows; with the two below, enables the stream walk.
-	 * @param FlowPlaceClaims|null $claims The claim protocol.
-	 * @param FlowRunCommit|null $commit The locked delta commit path.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected collaborators, appended so
-	 * the three test suites that construct this service positionally keep their slots.
-	 *                                   ceiling. Nullable on the same terms
-	 *                                   as $steps; absent, the compiled-in
-	 *                                   default applies.
+	 * @param FlowRunStores       $stores    The run rows, flow state, step history and stream persistence.
+	 *                                       A test-built service leaves the optional ones null; history is
+	 *                                       then simply not recorded and the run walks one in-memory stream.
+	 * @param FlowRunWalkServices $walk      The engine, the step types, the runtime ceiling and the hop audit.
+	 * @param LoggerInterface     $logger    The logger.
+	 * @param ContainerInterface  $container Lazily resolves OrganisationService.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $mapper,
-		FlowStateMapper $stateMapper,
-		private readonly FlowEngine $engine,
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowRunStores $stores,
+		private readonly FlowRunWalkServices $walk,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
-		private readonly ?FlowRunStepMapper $steps = null,
-		private readonly ?IAppConfig $appConfig = null,
-		private readonly ?FlowStreamMapper $streamMapper = null,
-		private readonly ?FlowPlaceClaims $claims = null,
-		private readonly ?FlowRunCommit $commit = null,
 	) {
-		// Built here rather than injected, deliberately: this service's
-		// constructor is called explicitly by three test suites, and inserting or
-		// swapping a parameter would silently shift every later slot for them.
-		// The binding needs nothing this service was not already given.
-		$this->flowState = new FlowStateBinding(stateMapper: $stateMapper, logger: $logger);
-
 	}//end __construct()
+
+	/**
+	 * The flow's own state table, bound to the run context.
+	 *
+	 * Made on demand rather than injected: the binding needs nothing this
+	 * service was not already given, and holds no state of its own.
+	 *
+	 * @return FlowStateBinding The binding.
+	 */
+	private function flowState(): FlowStateBinding {
+		return new FlowStateBinding(stateMapper: $this->stores->stateMapper, logger: $this->logger);
+	}//end flowState()
 
 	/**
 	 * The run's step history — its numbering, and its recording.
 	 *
-	 * Made on demand rather than injected: this constructor is called explicitly
-	 * by three test suites, and inserting a parameter would silently shift every
-	 * later slot for them. It holds no state beyond the collaborators this
-	 * service already has.
+	 * Made on demand rather than injected: it holds no state beyond the
+	 * collaborators this service already has.
 	 *
 	 * @return FlowStepHistory The history recorder.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
 	 */
 	private function stepHistory(): FlowStepHistory {
-		return new FlowStepHistory(steps: $this->steps, logger: $this->logger);
+		return new FlowStepHistory(steps: $this->stores->steps, logger: $this->logger, hopAudit: $this->walk->hopAudit);
 	}//end stepHistory()
 
 	/**
@@ -229,10 +148,8 @@ class FlowRunService {
 	 * parts are not wired (a test-constructed service) — the engine then
 	 * walks a single in-memory stream exactly as before.
 	 *
-	 * @param FlowRun $run The run about to be walked.
-	 * @param array $flow The resolved flow document (for a per-flow stream cap).
-	 * @param string|null $onlyStream Restrict the walk to one stream (an in-request advance).
-	 * @param int|null $budget Firings the walk may commit; null for unbounded.
+	 * @param FlowRunPass            $pass    The run about to be walked and its resolved flow document (for a per-flow stream cap).
+	 * @param FlowStreamAdvance|null $advance The one stream an in-request advance is restricted to, and its budget; null for the whole run, unbounded.
 	 *
 	 * @return FlowStreamWalk|null The collaborator.
 	 *
@@ -240,28 +157,60 @@ class FlowRunService {
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
-	private function streamWalkFor(FlowRun $run, array $flow, ?string $onlyStream = null, ?int $budget = null): ?FlowStreamWalk {
-		if ($this->streamMapper === null || $this->claims === null || $this->commit === null) {
+	private function streamWalkFor(FlowRunPass $pass, ?FlowStreamAdvance $advance): ?FlowStreamWalk {
+		$streams = $this->stores->streams;
+		if ($this->hasStreamParts(streams: $streams) === false) {
 			return null;
 		}
 
-		$cap = null;
-		$limits = (array)($flow['limits'] ?? []);
-		if (array_key_exists('streams', $limits) === true) {
-			$cap = (int)$limits['streams'];
-		}
+		$cap = $this->streamCap(flow: $pass->flow);
 
 		return new FlowStreamWalk(
-			run: $run,
-			claims: $this->claims,
-			commit: $this->commit,
-			streamMapper: $this->streamMapper,
-			owner: FlowPlaceClaims::newOwner(),
-			runCap: $cap,
-			onlyStream: $onlyStream,
-			budget: $budget
+			run: $pass->run,
+			parts: new FlowStreamWalkParts(claims: $streams->claims, commit: $streams->commit, streamMapper: $streams->streamMapper),
+			limits: new FlowStreamWalkLimits(
+				owner: FlowPlaceClaims::newOwner(),
+				runCap: $cap,
+				onlyStream: $advance?->streamId,
+				budget: $advance?->firings()
+			)
 		);
 	}//end streamWalkFor()
+
+	/**
+	 * Whether every collaborator a stream walk needs was wired.
+	 *
+	 * @param FlowRunStreamStores $streams The stream rows, the place claims and the commit.
+	 *
+	 * @return bool True when the stream mapper, the place claims and the commit are present.
+	 *
+	 * @phpstan-assert-if-true !null $streams->streamMapper
+	 * @phpstan-assert-if-true !null $streams->claims
+	 * @phpstan-assert-if-true !null $streams->commit
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	private function hasStreamParts(FlowRunStreamStores $streams): bool {
+		return $streams->streamMapper !== null && $streams->claims !== null && $streams->commit !== null;
+	}//end hasStreamParts()
+
+	/**
+	 * The run-wide stream cap the flow declares under `limits.streams`, or null.
+	 *
+	 * @param array<string, mixed> $flow The flow document.
+	 *
+	 * @return int|null The cap.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	private function streamCap(array $flow): ?int {
+		$limits = (array)($flow['limits'] ?? []);
+		if (array_key_exists('streams', $limits) === true) {
+			return (int)$limits['streams'];
+		}
+
+		return null;
+	}//end streamCap()
 
 	/**
 	 * Release the claims a failed walk still holds, so a pass that died inside
@@ -300,75 +249,105 @@ class FlowRunService {
 	 * `$budget` is `0` (nothing; the run is left queued), a count, or `"all"`
 	 * (bounded by the same three things a worker is).
 	 *
-	 * @param FlowRun $run The run, already resolved and pinned.
-	 * @param array $flow The pinned flow document.
-	 * @param object $subject The subject.
-	 * @param string $streamId The completing branch.
-	 * @param int|string $budget `0`, `N`, or `"all"`.
+	 * @param FlowRunPass       $pass    The run, already resolved and pinned, its flow document and subject.
+	 * @param FlowStreamAdvance $advance The completing branch and its budget.
 	 *
 	 * @return FlowRun The run as it stands after the advance.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-completions-advance-budget-must-apply-to-the-completing-branch
 	 */
-	public function advanceStream(FlowRun $run, array $flow, object $subject, string $streamId, int|string $budget): FlowRun {
-		$firings = null;
-		if ($budget !== 'all') {
-			$firings = max(0, (int)$budget);
-		}
-
-		if ($firings === 0) {
-			$run->setStatus(FlowRun::STATUS_QUEUED);
-			$run->setUpdated(new DateTime());
-
-			return $this->mapper->update($run);
+	public function advanceBranch(FlowRunPass $pass, FlowStreamAdvance $advance): FlowRun {
+		$run = $pass->run;
+		if ($advance->firings() === 0) {
+			return $this->requeue(run: $run);
 		}
 
 		// 🔴 THE RUN'S PIN OUTRANKS THE CALLER'S DOCUMENT, here as in execute():
 		// a completion that lands a week after the run started must continue
 		// the graph the run was pinned to, not the one its author has since
 		// edited. An unpinned (draft test) run passes its document through.
-		$pinned = (new FlowPublishedGraph($this->container))->overlayOnto(run: $run, live: $flow);
+		$pinned = $this->pinned(pass: $pass);
 		if ($pinned === null) {
 			return $this->failUnresolvableVersion(run: $run);
 		}
 
-		$flow = $pinned;
-
 		// Resume-after-human-answer must see the subject as it stands: the
 		// answer the task asked for landed on the OBJECT, and the stored items
 		// still hold the trigger-time snapshot of it.
-		$this->refreshSubjectItems(run: $run, subject: $subject);
+		$this->refreshSubjectItems(run: $run, subject: $pass->subject);
 
-		$walk = $this->streamWalkFor(run: $run, flow: $flow, onlyStream: $streamId, budget: $firings);
+		$walk = $this->streamWalkFor(pass: $pinned, advance: $advance);
 		if ($walk === null) {
 			// Without the stream layer there is no branch to scope to; the
 			// queue advances the whole run on its next pass.
-			$run->setStatus(FlowRun::STATUS_QUEUED);
-			$run->setUpdated(new DateTime());
-
-			return $this->mapper->update($run);
+			return $this->requeue(run: $run);
 		}
 
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$run->setUpdated(new DateTime());
-		$this->mapper->update($run);
+		$this->stores->mapper->update($run);
 
-		$guard = $this->guardFor(run: $run, flow: $flow);
-		$context = $this->nodeContextFor(run: $run, resuming: true, guard: $guard);
+		$guard = $this->guardFor(run: $run, flow: $pinned->flow);
+		$context = $this->nodeContextFor(run: $run, guard: $guard);
+		$context['resuming'] = true;
 
-		$result = $this->engine->run(
-			flow: $flow,
-			store: new FlowRunMarkingStore(run: $run),
-			subject: $subject,
-			dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
-			context: $context,
-			items: ($run->getItems() ?? []),
-			startAt: null,
-			streams: $walk
+		$start = $this->startFor(pass: $pinned, guard: $guard);
+		$result = $this->walk->engine->run(
+			start: $start->withContext(context: $context)->withStreams(streams: $walk),
+			origin: new FlowRunOrigin(items: ($run->getItems() ?? []))
 		);
 
 		return $this->persistResult(run: $run, result: $result);
-	}//end advanceStream()
+	}//end advanceBranch()
+
+	/**
+	 * Leave a run queued, so the worker advances it on its next pass.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return FlowRun The updated run.
+	 */
+	private function requeue(FlowRun $run): FlowRun {
+		$run->setStatus(FlowRun::STATUS_QUEUED);
+		$run->setUpdated(new DateTime());
+
+		return $this->stores->mapper->update($run);
+	}//end requeue()
+
+	/**
+	 * The pass over the graph the run is pinned to, or null when that version cannot be resolved.
+	 *
+	 * An unpinned (draft test) run passes the caller's document through.
+	 *
+	 * @param FlowRunPass $pass The run and the caller's (live) flow document.
+	 *
+	 * @return FlowRunPass|null The pinned pass.
+	 */
+	private function pinned(FlowRunPass $pass): ?FlowRunPass {
+		$flow = (new FlowPublishedGraph($this->container))->overlayOnto(run: $pass->run, live: $pass->flow);
+		if ($flow === null) {
+			return null;
+		}
+
+		return $pass->withFlow(flow: $flow);
+	}//end pinned()
+
+	/**
+	 * The engine's starting point for a pass, dispatching through the run's guard.
+	 *
+	 * @param FlowRunPass  $pass  The run, its pinned flow document and subject.
+	 * @param FlowRunGuard $guard The run's liveness handle.
+	 *
+	 * @return FlowRunStart The start, before its context and streams are attached.
+	 */
+	private function startFor(FlowRunPass $pass, FlowRunGuard $guard): FlowRunStart {
+		return new FlowRunStart(
+			flow: $pass->flow,
+			store: new FlowRunMarkingStore(run: $pass->run),
+			subject: $pass->subject,
+			dispatcher: new RegistryStepDispatcher(registry: $this->walk->registry, guard: $guard, scope: $this->identityScope())
+		);
+	}//end startFor()
 
 	/**
 	 * Make an unattributed refusal visible on the flow, and stop a dead schedule.
@@ -390,15 +369,15 @@ class FlowRunService {
 	 * replace it — the caller still gets `FlowUnattributed`, which is the part
 	 * that actually prevents the run.
 	 *
-	 * @param string            $flowId  The flow that could not be attributed.
-	 * @param string            $trigger What started the run.
-	 * @param FlowUnattributed  $refusal The refusal, whose message is stored.
+	 * @param FlowUnattributed $refusal The refusal: the flow that could not be attributed, what started
+	 *                                  the run, and the message that is stored.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
-	private function recordUnattributed(string $flowId, string $trigger, FlowUnattributed $refusal): void {
+	private function recordUnattributed(FlowUnattributed $refusal): void {
+		$flowId = $refusal->getFlowId();
 		try {
 			$mapper = $this->container->get('OCA\OpenRegister\Db\FlowMapper');
 			$flow = $mapper->findByUuid($flowId);
@@ -406,7 +385,7 @@ class FlowRunService {
 			$flow->setStatus(Flow::STATUS_ERROR);
 			$flow->setStatusMessage($refusal->getMessage());
 
-			if ($trigger === 'schedule') {
+			if ($refusal->getTrigger() === 'schedule') {
 				$flow->setEnabled(false);
 			}
 
@@ -493,8 +472,10 @@ class FlowRunService {
 	 *   the run failed underneath it. A node working in pages checkpoints
 	 *   itself; one that returns quickly never needs to.
 	 *
-	 * @param FlowRun $run The run being executed.
-	 * @param boolean $resuming Whether this walk resumes a suspended run.
+	 * The context reports a fresh walk (`resuming` false); a caller that
+	 * resumes a suspended run sets `resuming` itself.
+	 *
+	 * @param FlowRun      $run   The run being executed.
 	 * @param FlowRunGuard $guard The run's liveness handle.
 	 *
 	 * @return array The node context.
@@ -504,11 +485,11 @@ class FlowRunService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowToken::fromArray and
 	 * FlowResumeState::fromArray are stateless rehydrators for value objects;
 	 * injecting a factory to call them would add a dependency without removing
-	 * any coupling. Carried over from execute(), which held the same suppression
+	 * any coupling. Carried over from executePass(), which held the same suppression
 	 * for the same two calls before they moved here.
 	 */
-	private function nodeContextFor(FlowRun $run, bool $resuming, FlowRunGuard $guard): array {
-		$context = $this->baseContextFor(run: $run, resuming: $resuming);
+	private function nodeContextFor(FlowRun $run, FlowRunGuard $guard): array {
+		$context = $this->baseContextFor(run: $run, resuming: false);
 
 		$context[FlowToken::CONTEXT_KEY] = FlowToken::fromArray(($context[FlowToken::CONTEXT_KEY] ?? null));
 		$context[FlowResumeState::CONTEXT_KEY] = FlowResumeState::fromArray(($context[FlowResumeState::CONTEXT_KEY] ?? null));
@@ -520,7 +501,7 @@ class FlowRunService {
 		$context[FlowRunContext::CONTEXT_RUN] = (string)$run->getUuid();
 		$context[FlowRunContext::CONTEXT_BASE] = $this->stepHistory()->baseFor(runUuid: (string)$run->getUuid());
 
-		$this->flowState->attach(run: $run, context: $context);
+		$this->flowState()->attach(run: $run, context: $context);
 
 		return $context;
 	}//end nodeContextFor()
@@ -572,11 +553,13 @@ class FlowRunService {
 	 */
 	private function guardFor(FlowRun $run, array $flow): FlowRunGuard {
 		return new FlowRunGuard(
-			mapper: $this->mapper,
+			mapper: $this->stores->mapper,
 			logger: $this->logger,
-			runUuid: (string)$run->getUuid(),
-			startedAt: microtime(true),
-			budget: $this->runtimeBudgetSeconds(flow: $flow)
+			clock: new FlowRunGuardClock(
+				runUuid: (string)$run->getUuid(),
+				startedAt: microtime(true),
+				budget: $this->runtimeBudgetSeconds(flow: $flow)
+			)
 		);
 
 	}//end guardFor()
@@ -605,8 +588,8 @@ class FlowRunService {
 		}
 
 		$minutes = self::DEFAULT_MAX_RUNTIME_MINUTES;
-		if ($this->appConfig !== null) {
-			$minutes = (int)$this->appConfig->getValueString(
+		if ($this->walk->appConfig !== null) {
+			$minutes = (int)$this->walk->appConfig->getValueString(
 				'openregister',
 				'flow_max_runtime_minutes',
 				(string)self::DEFAULT_MAX_RUNTIME_MINUTES
@@ -624,51 +607,21 @@ class FlowRunService {
 	 * arbitrary graph must not sit on that critical path — so the trigger only
 	 * records the intent and returns.
 	 *
-	 * @param string $flowId The flow to run.
-	 * @param array $subject `{uuid, register, schema}` of the object.
-	 * @param string $trigger What caused this run.
-	 * @param array $context Run-level metadata.
-	 * @param string|null $user The user whose action caused it.
+	 * @param string              $flowId  The flow to run.
+	 * @param FlowRunQueueOptions $options The subject, the trigger, run-level metadata and the user who caused it.
 	 *
 	 * @return FlowRun The queued run.
 	 *
-	 * @throws FlowLifecycleRefused When the trigger is not `test` and the flow
-	 *                     has no published version (or its published version
-	 *                     is unsound) — `requirePublishedAndSound()`'s
-	 *                     refusal. Pre-existing but previously undeclared
-	 *                     here: `FlowController::run()` already catches it
-	 *                     around this same call chain, so the contract was
-	 *                     always real, just missing from this signature —
-	 *                     surfaced by phpstan flagging a new caller's catch
-	 *                     of it as dead, which it was not.
-	 * @throws FlowDeadEnd When a node has no outgoing edge and does not end the
-	 *                     flow, so the run is refused rather than started. Declared
-	 *                     because it is part of this method's contract: every
-	 *                     dispatch path arrives here, and a caller that cannot see
-	 *                     the refusal in the signature will not handle it — which
-	 *                     is how it reached HTTP as a bare 500.
-	 * @throws FlowUnattributed When nothing names the identity the run would
-	 *                         execute as. Declared for the same reason: the
-	 *                         schedule sweep must catch it PER FLOW, and a caller
-	 *                         that cannot see it in the signature lets one
-	 *                         unattributed flow abort the whole sweep.
-	 * @throws DelegationRefused When the trigger asserts a delegation that is no
-	 *                         longer live. Declared for the same reason again —
-	 *                         and it is a DIFFERENT fault from the one above, so
-	 *                         it must not be folded into it: "nobody was named"
-	 *                         and "the person named it may no longer act as them"
-	 *                         want opposite fixes.
+	 * @throws FlowLifecycleRefused When the flow has no sound published version (trigger other than `test`).
+	 * @throws FlowDeadEnd          When a node has no outgoing edge and does not end the flow.
+	 * @throws FlowUnattributed     When nothing names the identity the run would execute as.
+	 * @throws DelegationRefused    When the trigger asserts a delegation that is no longer live.
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 */
-	public function queue(
-		string $flowId,
-		array $subject = [],
-		string $trigger = 'manual',
-		array $context = [],
-		?string $user = null,
-	): FlowRun {
+	public function queueRun(string $flowId, FlowRunQueueOptions $options): FlowRun {
+		$trigger = $options->trigger;
 		// Every dispatch path arrives here — manual, trigger, schedule, MCP,
 		// the workflow-engine operation and a sub-flow call — so this is the
 		// one place a refusal covers all of them. Guarding `FlowService::run()`
@@ -687,14 +640,14 @@ class FlowRunService {
 		//
 		// This is the general form of a defect this codebase has now patched
 		// five times one call site at a time (or#2158: FlowMcpToolProvider,
-		// FlowRunService::execute(), FlowRunController::test(), and
+		// FlowRunService::executePass(), FlowRunController::test(), and
 		// FlowScheduleService::fire(), which spells out that an ownerless run
 		// makes every attribution-requiring node refuse — ObjectWriteNode
 		// answers "this flow run has no owner"). Fixing it HERE covers all six
 		// dispatch paths for the same reason the dead-end refusal lives here,
 		// so the next path added inherits it instead of becoming the sixth.
 		$attribution = (new FlowRunAttribution($this->container, $this->logger))
-			->resolve(flowId: $flowId, user: $user, trigger: $trigger);
+			->resolve(flowId: $flowId, user: $options->user, trigger: $trigger);
 
 		// REFUSE, rather than record a run every node will reject one at a time.
 		//
@@ -709,21 +662,7 @@ class FlowRunService {
 		// this guard the nodes BEFORE the first object write still ran, so a
 		// flow could send mail and then fail to record why.
 		if ($attribution['user'] === null) {
-			$refusal = new FlowUnattributed(flowId: $flowId, trigger: $trigger);
-
-			$this->logger->warning(
-				message: '[FlowRunService] Refused to queue an unattributed run',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'flow' => $flowId,
-					'trigger' => $trigger,
-				]
-			);
-
-			$this->recordUnattributed(flowId: $flowId, trigger: $trigger, refusal: $refusal);
-
-			throw $refusal;
+			$this->refuseUnattributed(refusal: new FlowUnattributed(flowId: $flowId, trigger: $trigger, reason: ($attribution['refusal'] ?? null)));
 		}
 
 		// 🔴 RE-RESOLVE, never trust the definition. The save-time check answered
@@ -732,24 +671,41 @@ class FlowRunService {
 		// it ever fires — and the whole point of a revocation is that the next
 		// firing stops. Treating a stored trigger as standing authorization would
 		// make revocation cosmetic for exactly the runs nobody is watching.
-		$park = (new FlowDelegationCheck($this->container, $this->logger))->refuseIfRevoked(
-			flowId: $flowId,
-			trigger: $trigger,
-			declaredBy: $attribution['declaredBy'],
-			runAs: $attribution['user']
+		$park = (new FlowDelegationCheck($this->container, $this->logger))->verify(
+			run: new DelegatedRun(flowId: $flowId, trigger: $trigger, declaredBy: $attribution['declaredBy'], runAs: $attribution['user'])
 		);
 
-		$run = (new FlowRunRow())->build(
-			flowId: $flowId,
-			subject: $subject,
-			trigger: $trigger,
-			context: $context,
-			attribution: $attribution,
-			version: $version?->getVersion()
+		$run = (new FlowRunRow(attribution: $attribution, version: $version?->getVersion()))->build(flowId: $flowId, options: $options);
+
+		return $this->parkIfAwaiting(run: $this->stores->mapper->insert($run), park: $park);
+	}//end queueRun()
+
+	/**
+	 * Log, record on the flow, and throw the refusal of a run nothing attributes.
+	 *
+	 * @param FlowUnattributed $refusal The refusal, naming the flow and the trigger.
+	 *
+	 * @return never
+	 *
+	 * @throws FlowUnattributed Always: the refusal itself.
+	 *
+	 * @spec openspec/specs/delegated-identity/spec.md
+	 */
+	private function refuseUnattributed(FlowUnattributed $refusal): never {
+		$this->logger->warning(
+			message: '[FlowRunService] Refused to queue an unattributed run',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'flow' => $refusal->getFlowId(),
+				'trigger' => $refusal->getTrigger(),
+			]
 		);
 
-		return $this->parkIfAwaiting(run: $this->mapper->insert($run), park: $park);
-	}//end queue()
+		$this->recordUnattributed(refusal: $refusal);
+
+		throw $refusal;
+	}//end refuseUnattributed()
 
 	/**
 	 * Park a freshly-inserted run whose delegation is still unanswered.
@@ -759,9 +715,8 @@ class FlowRunService {
 	 * the worker reads in a separate process on a cron tick, not inside this
 	 * call.
 	 *
-	 * Resolved through the container, like every other collaborator on this path:
-	 * three test suites build this service by hand, and a new constructor
-	 * parameter would shift every later slot for them. Not a new fail-open —
+	 * Resolved through the container, like every other collaborator on this path.
+	 * Not a new fail-open —
 	 * {@see FlowDelegationCheck} already resolved the same service to get here.
 	 *
 	 * @param FlowRun    $run  The inserted run.
@@ -777,16 +732,14 @@ class FlowRunService {
 		}
 
 		$parking = new FlowConsentParking(
-			runs: $this->mapper,
+			runs: $this->stores->mapper,
 			delegation: $this->container->get(DelegationService::class),
 			logger: $this->logger
 		);
 
-		return $parking->park(
+		return $parking->parkFor(
 			run: $run,
-			declaredBy: $park['principal'],
-			runAs: $park['actingAs'],
-			reason: $park['reason']
+			ask: new ConsentAsk(declaredBy: $park['principal'], runAs: $park['actingAs'], reason: $park['reason'])
 		);
 	}//end parkIfAwaiting()
 
@@ -806,7 +759,7 @@ class FlowRunService {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function hasActiveRun(string $flowId): bool {
-		return $this->mapper->hasActiveRun(flowId: $flowId);
+		return $this->stores->mapper->hasActiveRun(flowId: $flowId);
 	}//end hasActiveRun()
 
 
@@ -832,16 +785,18 @@ class FlowRunService {
 			return null;
 		}
 
-		return $this->queue(
+		return $this->queueRun(
 			flowId: (string)$run->getFlowId(),
-			subject: [
-				'uuid' => $run->getSubjectUuid(),
-				'register' => $run->getSubjectRegister(),
-				'schema' => $run->getSubjectSchema(),
-			],
-			trigger: 'retry',
-			context: ($run->getContext() ?? []),
-			user: $run->getTriggeredBy()
+			options: new FlowRunQueueOptions(
+				subject: [
+					'uuid' => $run->getSubjectUuid(),
+					'register' => $run->getSubjectRegister(),
+					'schema' => $run->getSubjectSchema(),
+				],
+				trigger: 'retry',
+				context: ($run->getContext() ?? []),
+				user: $run->getTriggeredBy()
+			)
 		);
 
 	}//end retry()
@@ -881,6 +836,13 @@ class FlowRunService {
 	 * the seam exists to close, silently: the wrong person's answer arrives
 	 * correctly formatted.
 	 *
+	 * Signals that arrive before the run wakes are merged, not replaced: a later
+	 * signal adds the keys the waiting one lacks. A key both carry with different
+	 * values is a conflict between two signallers: the answer already waiting
+	 * stands, the later value is refused and logged, so one signaller can never
+	 * overwrite what another delivered (and the two answers are never mixed
+	 * under one key).
+	 *
 	 * @param FlowRun $run The suspended run to wake.
 	 * @param array $payload What the signaller wants the run to know.
 	 *
@@ -896,15 +858,71 @@ class FlowRunService {
 			return null;
 		}
 
+		// Two listeners on one event may each signal the same suspended run.
+		// The signal still waiting is kept and the new payload adds the keys it
+		// lacks. A key both set to different values is refused for the later
+		// signal (the waiting answer stands, and the conflict is logged), so the
+		// stored answer never mixes two signallers' values under one key; a
+		// consumed signal is removed by persistResult(), so nothing left over
+		// from an earlier question can reach here.
 		$context = ($run->getContext() ?? []);
+		$waiting = ($context[self::SIGNAL_CONTEXT_KEY] ?? null);
+		if (is_array($waiting) === true) {
+			$this->warnOnConflicts(run: $run, keys: $this->conflictingKeys(waiting: $waiting, payload: $payload));
+			$payload = ($waiting + $payload);
+		}
+
 		$context[self::SIGNAL_CONTEXT_KEY] = $payload;
 
 		$run->setContext($context);
 		$run->setResumeAt(new DateTime());
 		$run->setUpdated(new DateTime());
 
-		return $this->mapper->update($run);
+		return $this->stores->mapper->update($run);
 	}//end signal()
+
+	/**
+	 * Log a second signal that answered an already-answered key differently; the first answer stands.
+	 *
+	 * @param FlowRun                $run  The run, for the conflict log.
+	 * @param array<int, int|string> $keys The conflicting keys.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	private function warnOnConflicts(FlowRun $run, array $keys): void {
+		if ($keys === []) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[FlowRunService] A second signal on run ' . (string)$run->getUuid()
+				. ' carried a different value for a key already answered; the first answer stands.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid(), 'keys' => $keys]
+		);
+	}//end warnOnConflicts()
+
+	/**
+	 * The keys a new signal answers differently from the answer already waiting.
+	 *
+	 * @param array<string, mixed> $waiting The answer already waiting.
+	 * @param array<string, mixed> $payload The new signal.
+	 *
+	 * @return array<int, int|string> The conflicting keys, in payload order.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	private function conflictingKeys(array $waiting, array $payload): array {
+		$conflicts = [];
+		foreach ($payload as $key => $value) {
+			if (array_key_exists($key, $waiting) === true && $waiting[$key] !== $value) {
+				$conflicts[] = $key;
+			}
+		}
+
+		return $conflicts;
+	}//end conflictingKeys()
 
 	/**
 	 * Execute (or continue) a run to its next stopping point.
@@ -912,11 +930,8 @@ class FlowRunService {
 	 * Called by the queue worker, never by a trigger. Returns the run in
 	 * whatever state the walk left it: terminal, or suspended and resumable.
 	 *
-	 * @param FlowRun $run The run to advance.
-	 * @param array $flow The flow document.
-	 * @param object $subject The object the run is about.
-	 * @param array $seedItems Items to start from; ignored when resuming.
-	 * @param string|null $startAt Node to start from (run-from-here); ignored when resuming.
+	 * @param FlowRunPass   $pass   The run, the caller's flow document and the subject.
+	 * @param FlowRunOrigin $origin The seed items and start node; ignored when resuming.
 	 *
 	 * @return FlowRun The updated run.
 	 *
@@ -926,11 +941,11 @@ class FlowRunService {
 	 * rehydrator for a value object; injecting a factory to call it would add a
 	 * dependency without removing any coupling.
 	 */
-	public function execute(FlowRun $run, array $flow, object $subject, ?array $seedItems = null, ?string $startAt = null): FlowRun {
-		if ($run->isTerminal() === true) {
+	public function executePass(FlowRunPass $pass, FlowRunOrigin $origin): FlowRun {
+		if ($pass->run->isTerminal() === true) {
 			// Re-executing a finished run would repeat every side effect it
 			// already performed. Retry creates a NEW run instead.
-			return $run;
+			return $pass->run;
 		}
 
 		// 🔴 THE RUN'S PIN OUTRANKS THE CALLER'S DOCUMENT. Four call sites hand
@@ -939,27 +954,30 @@ class FlowRunService {
 		// the exact defect versioning exists to remove. Enforcing it HERE covers
 		// all four, so the next caller inherits the rule instead of becoming the
 		// fifth exception.
-		$pinned = (new FlowPublishedGraph($this->container))->overlayOnto(run: $run, live: $flow);
-
+		$pinned = $this->pinned(pass: $pass);
 		if ($pinned === null) {
-			return $this->failUnresolvableVersion(run: $run);
+			return $this->failUnresolvableVersion(run: $pass->run);
 		}
 
-		$flow = $pinned;
+		return $this->walk(pass: $pinned, origin: $origin);
+	}//end executePass()
 
-		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
-		if ($resuming === true) {
-			// Stored items win on resume (below), but the subject's own fields
-			// on them are a trigger-time snapshot: see refreshSubjectItems().
-			$this->refreshSubjectItems(run: $run, subject: $subject);
-		}
+	/**
+	 * Walk a marked-running run through the engine and persist what it reached.
+	 *
+	 * @param FlowRunPass   $pass   The run, already marked running, its pinned flow document and subject.
+	 * @param FlowRunOrigin $origin The caller's seed items and start node for a fresh run.
+	 *
+	 * @return FlowRun The persisted run.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	private function walk(FlowRunPass $pass, FlowRunOrigin $origin): FlowRun {
+		$run = $pass->run;
+		$resuming = $this->markRunning(run: $run, subject: $pass->subject);
 
-		$run->setStatus(FlowRun::STATUS_RUNNING);
-		$run->setUpdated(new DateTime());
-		$this->mapper->update($run);
-
-		$items = $seedItems;
-		$start = $startAt;
+		$items = $origin->items;
+		$start = $origin->startAt;
 		if ($resuming === true) {
 			// On resume the stored items win: they are what the run was
 			// carrying when it paused. Re-seeding from the subject would throw
@@ -969,23 +987,40 @@ class FlowRunService {
 			$start = null;
 		}
 
-		$guard = $this->guardFor(run: $run, flow: $flow);
-		$context = $this->nodeContextFor(run: $run, resuming: $resuming, guard: $guard);
-		$walk = $this->streamWalkFor(run: $run, flow: $flow);
+		$guard = $this->guardFor(run: $run, flow: $pass->flow);
+		$context = $this->nodeContextFor(run: $run, guard: $guard);
+		$context['resuming'] = $resuming;
+		$walk = $this->streamWalkFor(pass: $pass, advance: null);
 
 		try {
-			$result = $this->engine->run(
-				flow: $flow,
-				store: new FlowRunMarkingStore(run: $run),
-				subject: $subject,
-				dispatcher: new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope()),
-				context: $context,
-				items: $items,
-				startAt: $start,
-				streams: $walk
+			$begin = $this->startFor(pass: $pass, guard: $guard);
+			$result = $this->walk->engine->run(
+				start: $begin->withContext(context: $context)->withStreams(streams: $walk),
+				origin: new FlowRunOrigin(items: $items, startAt: $start)
 			);
-		} catch (FlowRunExpired $e) {
+		} catch (Throwable $e) {
 			$this->releaseWalk(walk: $walk);
+			return $this->failWalk(run: $run, error: $e);
+		}//end try
+
+		return $this->persistResult(run: $run, result: $result);
+	}//end walk()
+
+	/**
+	 * Fail a run whose walk threw: a run that stopped at its runtime ceiling is
+	 * logged as a warning, anything else as an error.
+	 *
+	 * The caller has already released the walk's claims.
+	 *
+	 * @param FlowRun   $run   The run.
+	 * @param Throwable $error What the walk threw.
+	 *
+	 * @return FlowRun The failed run.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	private function failWalk(FlowRun $run, Throwable $error): FlowRun {
+		if ($error instanceof FlowRunExpired) {
 			// The run stopped ITSELF at a checkpoint, having used its budget.
 			// Recorded as a first-class outcome rather than folded into the crash
 			// path below: nothing went wrong with the work, and the message has to
@@ -997,40 +1032,69 @@ class FlowRunService {
 					'line' => __LINE__,
 					'run' => $run->getUuid(),
 					'flow' => $run->getFlowId(),
-					'error' => $e->getMessage(),
+					'error' => $error->getMessage(),
 				]
 			);
 
-			$run->setStatus(FlowRun::STATUS_FAILED);
-			$run->setError($e->getMessage());
-			$run->setUpdated(new DateTime());
+			return $this->failRun(run: $run, error: $error);
+		}
 
-			return $this->mapper->update($run);
-		} catch (Throwable $e) {
-			$this->releaseWalk(walk: $walk);
-			// The engine itself failing (rather than a step) is not something
-			// the run should be left `running` for — that status would make it
-			// look claimed by a worker forever.
-			$this->logger->error(
-				message: '[FlowRunService] Flow run failed outside the walk',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid(), 'error' => $e->getMessage()]
-			);
+		// The engine itself failing (rather than a step) is not something
+		// the run should be left `running` for — that status would make it
+		// look claimed by a worker forever.
+		$this->logger->error(
+			message: '[FlowRunService] Flow run failed outside the walk',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid(), 'error' => $error->getMessage()]
+		);
 
-			$run->setStatus(FlowRun::STATUS_FAILED);
-			$run->setError($e->getMessage());
-			$run->setUpdated(new DateTime());
+		return $this->failRun(run: $run, error: $error);
+	}//end failWalk()
 
-			return $this->mapper->update($run);
-		}//end try
+	/**
+	 * Mark a run as running, refreshing the subject's fields on a resumed run's items.
+	 *
+	 * Stored items win on resume, but the subject's own fields on them are a
+	 * trigger-time snapshot: see refreshSubjectItems().
+	 *
+	 * @param FlowRun $run The run.
+	 * @param object $subject The flow's subject.
+	 *
+	 * @return bool True when the run resumes from a suspension.
+	 */
+	private function markRunning(FlowRun $run, object $subject): bool {
+		$resuming = ($run->getStatus() === FlowRun::STATUS_SUSPENDED);
+		if ($resuming === true) {
+			$this->refreshSubjectItems(run: $run, subject: $subject);
+		}
 
-		return $this->persistResult(run: $run, result: $result);
-	}//end execute()
+		$run->setStatus(FlowRun::STATUS_RUNNING);
+		$run->setUpdated(new DateTime());
+		$this->stores->mapper->update($run);
+
+		return $resuming;
+	}//end markRunning()
+
+	/**
+	 * Record a run as failed with the error's message.
+	 *
+	 * @param FlowRun $run The run.
+	 * @param Throwable $error What stopped it.
+	 *
+	 * @return FlowRun The updated run.
+	 */
+	private function failRun(FlowRun $run, Throwable $error): FlowRun {
+		$run->setStatus(FlowRun::STATUS_FAILED);
+		$run->setError($error->getMessage());
+		$run->setUpdated(new DateTime());
+
+		return $this->stores->mapper->update($run);
+	}//end failRun()
 
 	/**
 	 * Run exactly ONE named node of a queued run's published graph, and stop.
 	 *
 	 * The mode or-flow-run-node's tasks.md asked for, distinct from
-	 * {@see execute()}'s `startAt`: `startAt` still walks the WHOLE graph
+	 * {@see executePass()}'s `startAt`: `startAt` still walks the WHOLE graph
 	 * onward from a chosen node, following every real edge, join and loop it
 	 * meets. This does not walk at all — it dispatches the one named step
 	 * directly through {@see RegistryStepDispatcher}, exactly the way
@@ -1041,33 +1105,29 @@ class FlowRunService {
 	 * output onward would silently run MORE of the flow than the caller was
 	 * authorized (RN-1) to run.
 	 *
-	 * The queued run this expects came from {@see queue()} with
+	 * The queued run this expects came from {@see queueRun()} with
 	 * `trigger: self::TRIGGER_DIRECT_NODE`, so it already carries a resolved
 	 * attribution and a version pin exactly like any other dispatch — a
 	 * direct-invoked node still needs to know WHOSE rights it writes with and
 	 * WHICH published graph it belongs to.
 	 *
-	 * @param FlowRun $run The queued run.
-	 * @param array $flow The flow document (used only to resolve the published pin).
-	 * @param object $subject The subject object the node acts on.
-	 * @param string $nodeId The node to run.
-	 * @param array $config The caller's config, overlaid on the published step's config after
-	 *                      pinning (caller keys win). The pin replaces the graph's nodes, so
-	 *                      this is the only way a picker's choice reaches the node.
+	 * The node to run is the one the run was queued for, named in its context
+	 * under {@see FlowRunServiceInterface::NODE_ID_CONTEXT_KEY}.
 	 *
-	 * @return FlowRun The updated run: COMPLETED with the node's output items,
-	 *                 or FAILED with the node's exception recorded. Never
-	 *                 SUSPENDED — see {@see failSuspendedNode()}.
+	 * @param FlowRunPass          $pass   The queued run, its flow document (used only to resolve the pin) and subject.
+	 * @param array<string, mixed> $config The caller's config, overlaid on the published step's config.
+	 *
+	 * @return FlowRun The updated run.
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-a-node-type-opts-in-to-direct-invocation
-	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#scenario-the-callers-config-reaches-the-node
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::fromSubject/normalise are
 	 * stateless value normalisers, the same ones execute() calls under the same
 	 * suppression reasoning already given there: injecting a factory to call
 	 * them would add a dependency without removing any coupling.
 	 */
-	public function executeNode(FlowRun $run, array $flow, object $subject, string $nodeId, array $config = []): FlowRun {
+	public function runNode(FlowRunPass $pass, array $config=[]): FlowRun {
+		$run = $pass->run;
 		if ($run->getStatus() !== FlowRun::STATUS_QUEUED) {
 			// Parked awaiting delegated-identity consent, or otherwise not
 			// ready to proceed — the same "do not double-act" rule execute()
@@ -1076,44 +1136,84 @@ class FlowRunService {
 			return $run;
 		}
 
-		$pinned = (new FlowPublishedGraph($this->container))->overlayOnto(run: $run, live: $flow);
+		$pinned = $this->pinned(pass: $pass);
 		if ($pinned === null) {
 			return $this->failUnresolvableVersion(run: $run);
 		}
 
-		$step = $this->stepById(pinned: $pinned, nodeId: $nodeId);
+		$nodeId = (string)(($run->getContext() ?? [])[self::NODE_ID_CONTEXT_KEY] ?? '');
+		$step = $this->stepById(pinned: $pinned->flow, nodeId: $nodeId);
 		if ($step === null) {
 			return $this->failMissingNode(run: $run, nodeId: $nodeId);
 		}
 
-		if ($config !== []) {
-			$step['config'] = array_merge((array)($step['config'] ?? []), $config);
-		}
+		$step = $this->withCallerConfig(step: $step, config: $config);
 
 		$run->setStatus(FlowRun::STATUS_RUNNING);
 		$run->setUpdated(new DateTime());
-		$this->mapper->update($run);
+		$this->stores->mapper->update($run);
 
-		$items = FlowItems::fromSubject(subject: $subject);
-		$guard = $this->guardFor(run: $run, flow: $pinned);
-		$context = $this->nodeContextFor(run: $run, resuming: false, guard: $guard);
-		$dispatcher = new RegistryStepDispatcher(registry: $this->registry, guard: $guard, scope: $this->identityScope());
-		$stepType = (string)($step['type'] ?? '');
-		$startedAt = microtime(true);
+		$items = FlowItems::fromSubject(subject: $pass->subject);
+		$guard = $this->guardFor(run: $run, flow: $pinned->flow);
+		$context = $this->nodeContextFor(run: $run, guard: $guard);
+		$dispatcher = new RegistryStepDispatcher(registry: $this->walk->registry, guard: $guard, scope: $this->identityScope());
+		$hop = new FlowNodeHop(nodeId: $nodeId, stepType: (string)($step['type'] ?? ''), startedAt: microtime(true));
+		$call = new FlowNodeCallRun(run: $run, hop: $hop, context: $context, itemsIn: count($items));
 
 		try {
 			$output = FlowItems::normalise(value: $dispatcher->dispatch(step: $step, items: $items, context: $context));
-			$this->completeNodeRun(run: $run, nodeId: $nodeId, stepType: $stepType, items: $items, output: $output, context: $context, startedAt: $startedAt);
-		} catch (FlowSuspension $suspension) {
-			$this->failSuspendedNode(run: $run, nodeId: $nodeId, stepType: $stepType, suspension: $suspension, startedAt: $startedAt);
+			$this->completeNodeRun(call: $call, output: $output);
 		} catch (Throwable $e) {
-			$this->failThrownNode(run: $run, nodeId: $nodeId, stepType: $stepType, error: $e, startedAt: $startedAt);
+			$this->failNode(call: $call, error: $e);
 		}
 
 		$run->setUpdated(new DateTime());
 
-		return $this->mapper->update($run);
-	}//end executeNode()
+		return $this->stores->mapper->update($run);
+	}//end runNode()
+
+	/**
+	 * Overlay the caller's config onto the published step, when the caller sent any.
+	 *
+	 * @param array<string, mixed> $step   The published step.
+	 * @param array<string, mixed> $config The caller's config.
+	 *
+	 * @return array<string, mixed> The step to dispatch.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+	 */
+	private function withCallerConfig(array $step, array $config): array {
+		if ($config === []) {
+			return $step;
+		}
+
+		$step['config'] = array_merge(
+			(array)($step['config'] ?? []),
+			$this->callerConfigFor(stepType: (string)($step['type'] ?? ''), config: $config)
+		);
+
+		return $step;
+	}//end withCallerConfig()
+
+	/**
+	 * Record a single-node run that did not complete: a suspension the
+	 * single-node path cannot honour, or a thrown failure.
+	 *
+	 * @param FlowNodeCallRun $call  The run and the hop being recorded.
+	 * @param Throwable       $error What the dispatch threw.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+	 */
+	private function failNode(FlowNodeCallRun $call, Throwable $error): void {
+		if ($error instanceof FlowSuspension) {
+			$this->failSuspendedNode(call: $call, suspension: $error);
+			return;
+		}
+
+		$this->failThrownNode(call: $call, error: $error);
+	}//end failNode()
 
 	/**
 	 * Find one step by id in a resolved graph's `nodes` list.
@@ -1134,6 +1234,54 @@ class FlowRunService {
 
 		return null;
 	}//end stepById()
+
+	/**
+	 * Keep only the caller's keys that the node declares it reads.
+	 *
+	 * The caller of a direct invocation may read the subject, which is not the
+	 * same as being the flow's author: a key the node's own vocabulary
+	 * ({@see IFlowNodeConfigKeys::configKeys()}, else the keys of its
+	 * {@see IFlowNodeConfigForm}) does not list is one the author never meant
+	 * to expose, so it never reaches the node. A node that declares neither
+	 * takes nothing from the caller (fail closed): the published step's own
+	 * config is all it runs with.
+	 *
+	 * @param string $stepType The published step's node type.
+	 * @param array $config The caller's config.
+	 *
+	 * @return array The caller's config limited to the node's declared keys.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#scenario-the-callers-config-reaches-the-node
+	 */
+	private function callerConfigFor(string $stepType, array $config): array {
+		try {
+			$node = $this->walk->registry->get(type: $stepType);
+		} catch (Throwable) {
+			// The dispatcher refuses an unknown type itself; nothing of the caller's reaches it.
+			return [];
+		}
+
+		$declared = null;
+		if ($node instanceof IFlowNodeConfigKeys) {
+			$declared = array_map(static fn ($key): string => (string)$key, $node->configKeys());
+		} else if ($node instanceof IFlowNodeConfigForm) {
+			$declared = array_map(
+				static fn ($field): string => (string)(((array)$field)['key'] ?? ''),
+				$node->configForm()
+			);
+		}
+
+		if ($declared === null) {
+			$this->logger->warning(
+				message: '[FlowRunService] A direct-invoke caller sent config to a node that declares no config keys; it was ignored.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $stepType, 'keys' => array_keys($config)]
+			);
+
+			return [];
+		}
+
+		return array_intersect_key($config, array_flip($declared));
+	}//end callerConfigFor()
 
 	/**
 	 * Fail a run whose named node is not part of the graph it is pinned to.
@@ -1159,43 +1307,23 @@ class FlowRunService {
 		));
 		$run->setUpdated(new DateTime());
 
-		return $this->mapper->update($run);
+		return $this->stores->mapper->update($run);
 	}//end failMissingNode()
 
 	/**
-	 * Write a completed direct-invoke hop back onto the run.
+	 * The log entry of a single node that completed, with the step's report when it filed one.
 	 *
-	 * @param FlowRun $run The run.
-	 * @param string $nodeId The node that ran.
-	 * @param string $stepType The step's type.
-	 * @param array $items The items the node received.
-	 * @param array $output The items the node returned.
-	 * @param array $context The node context (for its {@see FlowStepReport}).
-	 * @param float $startedAt `microtime(true)` when the node was called.
+	 * @param FlowNodeCallRun   $call   The hop being recorded, the items in and the node context.
+	 * @param array<int, mixed> $output What the node produced.
 	 *
-	 * @return void
+	 * @return array<string, mixed> The log entry.
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
-	private function completeNodeRun(
-		FlowRun $run,
-		string $nodeId,
-		string $stepType,
-		array $items,
-		array $output,
-		array $context,
-		float $startedAt
-	): void {
-		$entry = [
-			'transition' => $nodeId,
-			'type' => $stepType,
-			'status' => 'completed',
-			'itemsIn' => count($items),
-			'itemsOut' => count($output),
-			'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
-		];
+	private function completedEntry(FlowNodeCallRun $call, array $output): array {
+		$entry = $call->hop->logEntry(status: 'completed', detail: ['itemsIn' => $call->itemsIn, 'itemsOut' => count($output)]);
 
-		$report = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		$report = ($call->context[FlowStepReport::CONTEXT_KEY] ?? null);
 		if ($report instanceof FlowStepReport === true) {
 			$detail = $report->take();
 			if ($detail !== []) {
@@ -1203,6 +1331,22 @@ class FlowRunService {
 			}
 		}
 
+		return $entry;
+	}//end completedEntry()
+
+	/**
+	 * Record a single node that completed: its output, the completed status and its log entry.
+	 *
+	 * @param FlowNodeCallRun   $call   The run and the hop being recorded.
+	 * @param array<int, mixed> $output What the node produced.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
+	 */
+	private function completeNodeRun(FlowNodeCallRun $call, array $output): void {
+		$entry = $this->completedEntry(call: $call, output: $output);
+		$run = $call->run;
 		$run->setItems($output);
 		$run->setStatus(FlowRun::STATUS_COMPLETED);
 		$run->setLog(array_merge(($run->getLog() ?? []), [$entry]));
@@ -1218,75 +1362,49 @@ class FlowRunService {
 	 * the one isolated hop this method ran. Reported as a clear failure
 	 * rather than silently parking a run nothing will ever signal.
 	 *
-	 * @param FlowRun $run The run.
-	 * @param string $nodeId The node that suspended.
-	 * @param string $stepType The step's type.
-	 * @param FlowSuspension $suspension What the node asked to wait for.
-	 * @param float $startedAt `microtime(true)` when the node was called.
+	 * @param FlowNodeCallRun $call       The run and the node that suspended, its type and start.
+	 * @param FlowSuspension  $suspension What the node asked to wait for.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
-	private function failSuspendedNode(FlowRun $run, string $nodeId, string $stepType, FlowSuspension $suspension, float $startedAt): void {
+	private function failSuspendedNode(FlowNodeCallRun $call, FlowSuspension $suspension): void {
+		$run = $call->run;
 		$run->setStatus(FlowRun::STATUS_FAILED);
 		$run->setError(
 			'This node suspended, which the direct-invoke endpoint does not '
 			. 'support — it must complete synchronously: ' . $suspension->getMessage()
 		);
-		$run->setLog(array_merge(
-			($run->getLog() ?? []),
-			[
-				[
-					'transition' => $nodeId,
-					'type' => $stepType,
-					'status' => 'failed',
-					'reason' => 'suspended-unsupported',
-					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
-				],
-			]
-		));
+		$run->setLog(array_merge(($run->getLog() ?? []), [$call->hop->logEntry(status: 'failed', detail: ['reason' => 'suspended-unsupported'])]));
 	}//end failSuspendedNode()
 
 	/**
 	 * Fail a run whose one node threw.
 	 *
-	 * @param FlowRun $run The run.
-	 * @param string $nodeId The node that threw.
-	 * @param string $stepType The step's type.
-	 * @param Throwable $error What the node threw.
-	 * @param float $startedAt `microtime(true)` when the node was called.
+	 * @param FlowNodeCallRun $call  The run and the node that threw, its type and start.
+	 * @param Throwable       $error What the node threw.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
-	private function failThrownNode(FlowRun $run, string $nodeId, string $stepType, Throwable $error, float $startedAt): void {
+	private function failThrownNode(FlowNodeCallRun $call, Throwable $error): void {
+		$run = $call->run;
 		$this->logger->warning(
 			message: '[FlowRunService] Direct-invoked node failed',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'run' => $run->getUuid(),
-				'node' => $nodeId,
+				'node' => $call->hop->nodeId,
 				'error' => $error->getMessage(),
 			]
 		);
 
 		$run->setStatus(FlowRun::STATUS_FAILED);
 		$run->setError($error->getMessage());
-		$run->setLog(array_merge(
-			($run->getLog() ?? []),
-			[
-				[
-					'transition' => $nodeId,
-					'type' => $stepType,
-					'status' => 'failed',
-					'error' => $error->getMessage(),
-					'durationMs' => (int)round((microtime(true) - $startedAt) * 1000),
-				],
-			]
-		));
+		$run->setLog(array_merge(($run->getLog() ?? []), [$call->hop->logEntry(status: 'failed', detail: ['error' => $error->getMessage()])]));
 	}//end failThrownNode()
 
 	/**
@@ -1303,7 +1421,7 @@ class FlowRunService {
 	 * re-reads the run row under its lock — sees the refreshed buffers too.
 	 *
 	 * A subjectless run, or one whose stored items never carried the subject,
-	 * is untouched: {@see FlowItems::refreshSubjectProjection()} matches by
+	 * is untouched: {@see FlowSubjectItems::refreshSubjectProjection()} matches by
 	 * identity and only ever touches the item that IS the subject.
 	 *
 	 * @param FlowRun $run The resumed run, mutated in place.
@@ -1311,7 +1429,7 @@ class FlowRunService {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::refreshSubjectProjection
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowSubjectItems::refreshSubjectProjection
 	 * is a pure function on value shapes; a factory to call it would add a
 	 * dependency to say the same thing.
 	 *
@@ -1323,20 +1441,13 @@ class FlowRunService {
 			return;
 		}
 
-		$run->setItems(FlowItems::refreshSubjectProjection(
-			items: ($run->getItems() ?? []),
-			subject: $subject,
-			subjectUuid: $subjectUuid
-		));
+		$live = new LiveSubject(subject: $subject, uuid: $subjectUuid);
+		$run->setItems(FlowSubjectItems::refreshSubjectProjection(items: ($run->getItems() ?? []), subject: $live));
 
 		$stored = $run->getPlaceItems();
 		if (is_array($stored) === true && $stored !== []) {
 			foreach ($stored as $place => $bucket) {
-				$stored[$place] = FlowItems::refreshSubjectProjection(
-					items: (array)$bucket,
-					subject: $subject,
-					subjectUuid: $subjectUuid
-				);
+				$stored[$place] = FlowSubjectItems::refreshSubjectProjection(items: (array)$bucket, subject: $live);
 			}
 
 			$run->setPlaceItems($stored);
@@ -1369,7 +1480,7 @@ class FlowRunService {
 			(string)$run->getFlowId()
 		));
 
-		$this->mapper->update($run);
+		$this->stores->mapper->update($run);
 
 		return $run;
 
@@ -1389,6 +1500,70 @@ class FlowRunService {
 
 
 	/**
+	 * Persist the flow's state with any copied writeOnly action input redacted.
+	 *
+	 * Flow state outlives the run and the request, and no key tells where an
+	 * author put a value, so each value this run wrote that is a whole copy of
+	 * a held secret (four or more characters) is replaced; values earlier runs
+	 * stored, and the rest of the write, stand.
+	 *
+	 * The caller then persists the state ({@see FlowStateBinding::persist()}).
+	 *
+	 * @param array<string, mixed> $context   The run context, holding the state handle.
+	 * @param mixed                $secretRef The run's inputsRef.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
+	 */
+	private function redactStateWrites(array $context, mixed $secretRef): void {
+		$handle = ($context[FlowStateHandle::CONTEXT_KEY] ?? null);
+		if ($handle instanceof FlowStateHandle && $handle->isDirty() === true) {
+			// Only the values THIS run wrote, by the same whole-value rule as
+			// the items: what earlier runs stored (cursors, timestamps) is
+			// written back as it was loaded.
+			foreach ($handle->writtenKeys() as $key) {
+				$value    = $handle->get(key: $key);
+				$redacted = ObjectActionSecrets::redactCopies(data: $value, ref: $secretRef);
+				if ($redacted !== $value) {
+					$handle->set(key: $key, value: $redacted);
+				}
+			}
+		}
+	}//end redactStateWrites()
+
+	/**
+	 * The result with every writeOnly action input redacted.
+	 *
+	 * 🔴 A WRITEONLY ACTION INPUT NEVER REACHES STORAGE. The steps carry it in
+	 * their items at `json.inputs.<name>` (the action-inputs node puts it there
+	 * so later steps can read `{{inputs.pin}}`), and the log samples every
+	 * step's items, so the log, the step rows, the final items and the error
+	 * are redacted before the one place a walk's result is stored. By key,
+	 * never by value: the context and the items carry the subject uuid and
+	 * counters a resumed run reads, which a value match corrupts.
+	 *
+	 * @param array $result    The engine's result envelope.
+	 * @param mixed $secretRef The run's inputsRef.
+	 *
+	 * @return array The envelope, with `log` and `items` always set.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
+	 */
+	private function withoutSecrets(array $result, mixed $secretRef): array {
+		$result['log'] = ObjectActionSecrets::redactLog(log: (array)($result['log'] ?? []), ref: $secretRef);
+		$result['items'] = ObjectActionSecrets::redactItems(items: (array)($result['items'] ?? []), ref: $secretRef);
+		// Copies a later step made (`json.code` from `{{inputs.pin}}`): whole strings only.
+		$result['log']   = (array)ObjectActionSecrets::redactCopies(data: $result['log'], ref: $secretRef);
+		$result['items'] = (array)ObjectActionSecrets::redactCopies(data: $result['items'], ref: $secretRef);
+		if (is_string($result['error'] ?? null) === true) {
+			$result['error'] = ObjectActionSecrets::redactText(text: $result['error'], ref: $secretRef);
+		}
+
+		return $result;
+	}//end withoutSecrets()
+
+	/**
 	 * Write back what a walk produced.
 	 *
 	 * @param FlowRun $run The run to update.
@@ -1396,20 +1571,26 @@ class FlowRunService {
 	 *
 	 * @return FlowRun The updated run.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped holder of writeOnly inputs.
+	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	private function persistResult(FlowRun $run, array $result): FlowRun {
 		$status = (string)($result['status'] ?? FlowRun::STATUS_FAILED);
 
+		// A writeOnly action input never reaches storage ({@see self::withoutSecrets()}).
+		$secretRef = (((array)($result['context'] ?? []))[ObjectActionSecrets::CONTEXT_KEY] ?? null);
+		$result = $this->withoutSecrets(result: $result, secretRef: $secretRef);
+
 		// The log is appended, not replaced: a resumed run's history is the
 		// whole run, not just the segment since it last woke up.
-		$log = array_merge(($run->getLog() ?? []), (array)($result['log'] ?? []));
+		$log = array_merge(($run->getLog() ?? []), $result['log']);
 
 		// Promote THIS segment's entries to step rows. Only the new entries —
 		// `$result['log']`, not the merged `$log` — or every resume would
 		// re-record the whole history it had already written.
-		$this->stepHistory()->record(run: $run, entries: (array)($result['log'] ?? []));
+		$this->stepHistory()->record(run: $run, entries: $result['log']);
 
 		// The token travels as an object so steps can write to it; the column
 		// holds JSON. Serialising here — on the suspended path as much as the
@@ -1433,7 +1614,8 @@ class FlowRunService {
 		// Only written when a node actually changed something: a flow that
 		// merely READS its state should not touch the row on every tick, and a
 		// five-minute schedule makes that difference thousands of writes a week.
-		$this->flowState->persist(run: $run, context: $context);
+		$this->redactStateWrites(context: $context, secretRef: $secretRef);
+		$this->flowState()->persist(run: $run, context: $context);
 		unset($context[FlowStateHandle::CONTEXT_KEY]);
 
 		// Same reason as the state handle one line up: it is a live collaborator,
@@ -1458,7 +1640,8 @@ class FlowRunService {
 		unset($context[self::SIGNAL_CONTEXT_KEY]);
 
 		$run->setStatus($status);
-		$run->setItems((array)($result['items'] ?? []));
+		$run->setItems($result['items']);
+		$context = (array)ObjectActionSecrets::redactCopies(data: $context, ref: $secretRef);
 		$run->setContext($context);
 		$run->setLog($log);
 		$run->setError(($result['error'] ?? null));
@@ -1477,9 +1660,10 @@ class FlowRunService {
 		// The correlation key mirrors `resumeAt`: meaningful only while
 		// suspended, cleared on every other outcome so a finished run can
 		// never be the addressee of a business-key signal (design D-7).
-		$run->setCorrelationKey($this->correlationKeyFrom(context: $context, suspended: ($status === FlowRun::STATUS_SUSPENDED)));
+		$correlationKey = $this->correlationKeyFrom(context: $context, suspended: ($status === FlowRun::STATUS_SUSPENDED));
+		$run->setCorrelationKey(ObjectActionSecrets::redactCopies(data: $correlationKey, ref: $secretRef));
 
-		$persisted = $this->mapper->update($run);
+		$persisted = $this->stores->mapper->update($run);
 
 		$this->recordLastRun(run: $persisted, status: $status);
 
@@ -1551,24 +1735,49 @@ class FlowRunService {
 			return null;
 		}
 
-		$byNode = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
+		return $this->firstCorrelationKey(byNode: ($context[FlowResumeState::CONTEXT_KEY] ?? null));
+	}//end correlationKeyFrom()
+
+	/**
+	 * The first non-blank correlation key among the stored resume slots.
+	 *
+	 * @param mixed $byNode The stored resume slots, keyed by node.
+	 *
+	 * @return string|null The key, or null when no slot carries one.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	private function firstCorrelationKey(mixed $byNode): ?string {
 		if (is_array($byNode) === false) {
 			return null;
 		}
 
 		foreach ($byNode as $slot) {
-			if (is_array($slot) === false) {
-				continue;
-			}
-
-			$key = trim((string)($slot['correlationKey'] ?? ''));
+			$key = $this->slotCorrelationKey(slot: $slot);
 			if ($key !== '') {
 				return $key;
 			}
 		}
 
 		return null;
-	}//end correlationKeyFrom()
+	}//end firstCorrelationKey()
+
+	/**
+	 * One resume slot's trimmed correlation key; empty for a malformed slot.
+	 *
+	 * @param mixed $slot The stored slot.
+	 *
+	 * @return string The key, or '' when the slot carries none.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	private function slotCorrelationKey(mixed $slot): string {
+		if (is_array($slot) === false) {
+			return '';
+		}
+
+		return trim((string)($slot['correlationKey'] ?? ''));
+	}//end slotCorrelationKey()
 
 	/**
 	 * Copy a finished run's outcome onto its flow.
@@ -1626,4 +1835,19 @@ class FlowRunService {
 
 	}//end recordLastRun()
 
+	/**
+	 * The items a run starts from, read from a seed exactly as a caller sent it.
+	 *
+	 * @param mixed $value The seed as sent.
+	 *
+	 * @return array<int, array<string, mixed>> The well-formed items.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Moved here with the call from FlowTestRunController:
+	 * FlowItems::normalise is a pure value-normaliser with no state to inject.
+	 *
+	 * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+	 */
+	public function seedItemsFrom(mixed $value): array {
+		return FlowItems::normalise(value: $value);
+	}//end seedItemsFrom()
 }//end class

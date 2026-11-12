@@ -40,6 +40,7 @@ use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Listener\Support\SourceRecordChangeServices;
 
 class SourceRecordChangeListenerTest extends TestCase {
 
@@ -75,11 +76,9 @@ class SourceRecordChangeListenerTest extends TestCase {
 	private function listener(bool $deferralEnabled): SourceRecordChangeListener {
 		$this->deferral->method('isDeferralEnabled')->willReturn($deferralEnabled);
 		return new SourceRecordChangeListener(
-			$this->schemaMapper,
+			new SourceRecordChangeServices($this->schemaMapper, $this->deferral, $this->recompute),
 			$this->logger,
-			$this->cacheFactory,
-			$this->deferral,
-			$this->recompute
+			$this->cacheFactory
 		);
 	}//end listener()
 

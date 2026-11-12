@@ -1,0 +1,733 @@
+{
+    "describe alias and description": {
+        "result": {
+            "path": "/p",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": {
+                "description": "d",
+                "definition": "e"
+            },
+            "forwards": [
+                "description"
+            ],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 1
+            },
+            "errors": []
+        }
+    },
+    "describe app wrong and two spellings": {
+        "result": {
+            "path": "/p",
+            "app": "5",
+            "form": "",
+            "definitions": null,
+            "map": [],
+            "forwards": [],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 0
+            },
+            "errors": [
+                {
+                    "code": "extends-form-field-not-a-string",
+                    "key": "app",
+                    "path": "/p",
+                    "message": "'app' at '/p' must be a string."
+                },
+                {
+                    "code": "extends-form-two-spellings",
+                    "key": "map",
+                    "path": "/p",
+                    "message": "'map' and 'forwards' at '/p' both say what the form forwards. Keep one."
+                }
+            ]
+        }
+    },
+    "describe default path": {
+        "result": {
+            "path": "x-openregister-extends-form",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": {
+                "title": "name",
+                "type": "propertyType",
+                "definition": "text",
+                "description": "text",
+                "hideOnCreate": "auto",
+                "3": "x"
+            },
+            "forwards": [
+                "title",
+                "type",
+                "description"
+            ],
+            "forwardsType": true,
+            "counts": {
+                "forwards": 3
+            },
+            "errors": [
+                {
+                    "code": "extends-form-unknown-key",
+                    "key": "3",
+                    "path": "x-openregister-extends-form",
+                    "message": "'3' at 'x-openregister-extends-form' is not in the property vocabulary, so no form can forward it."
+                }
+            ]
+        }
+    },
+    "describe empty": {
+        "result": {
+            "path": "/p",
+            "app": "",
+            "form": "",
+            "definitions": null,
+            "map": [],
+            "forwards": [],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 0
+            },
+            "errors": [
+                {
+                    "code": "extends-form-forwards-nothing",
+                    "key": "map",
+                    "path": "/p",
+                    "message": "'x-openregister-extends-form' at '/p' must carry a 'map' object or a 'forwards' list."
+                }
+            ]
+        }
+    },
+    "describe empty definitions": {
+        "result": {
+            "path": "/p",
+            "app": "",
+            "form": "",
+            "definitions": "",
+            "map": {
+                "title": "name"
+            },
+            "forwards": [
+                "title"
+            ],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 1
+            },
+            "errors": [
+                {
+                    "code": "extends-form-no-definitions",
+                    "key": "definitions",
+                    "path": "/p",
+                    "message": "'x-openregister-extends-form' at '/p' must name its 'definitions', or the form renders no fields."
+                }
+            ]
+        }
+    },
+    "describe empty map": {
+        "result": {
+            "path": "/p",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": [],
+            "forwards": [],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 0
+            },
+            "errors": []
+        }
+    },
+    "describe forwards": {
+        "result": {
+            "path": "/p",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": {
+                "title": "title",
+                "type": "type",
+                "colour": "colour"
+            },
+            "forwards": [
+                "title",
+                "type"
+            ],
+            "forwardsType": true,
+            "counts": {
+                "forwards": 2
+            },
+            "errors": [
+                {
+                    "code": "extends-form-unknown-key",
+                    "key": "colour",
+                    "path": "/p",
+                    "message": "'colour' at '/p' is not in the property vocabulary, so no form can forward it."
+                }
+            ]
+        }
+    },
+    "describe forwards nothing": {
+        "result": {
+            "path": "/p",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": [],
+            "forwards": [],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 0
+            },
+            "errors": [
+                {
+                    "code": "extends-form-forwards-nothing",
+                    "key": "map",
+                    "path": "/p",
+                    "message": "'x-openregister-extends-form' at '/p' must carry a 'map' object or a 'forwards' list."
+                }
+            ]
+        }
+    },
+    "describe list definitions empty": {
+        "result": {
+            "path": "/p",
+            "app": "",
+            "form": "",
+            "definitions": [],
+            "map": {
+                "title": "title"
+            },
+            "forwards": [
+                "title"
+            ],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 1
+            },
+            "errors": [
+                {
+                    "code": "extends-form-no-definitions",
+                    "key": "definitions",
+                    "path": "/p",
+                    "message": "'x-openregister-extends-form' at '/p' must name its 'definitions', or the form renders no fields."
+                }
+            ]
+        }
+    },
+    "describe map": {
+        "result": {
+            "path": "/p",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": {
+                "title": "name",
+                "type": "propertyType",
+                "definition": "text",
+                "description": "text",
+                "hideOnCreate": "auto",
+                "3": "x"
+            },
+            "forwards": [
+                "title",
+                "type",
+                "description"
+            ],
+            "forwardsType": true,
+            "counts": {
+                "forwards": 3
+            },
+            "errors": [
+                {
+                    "code": "extends-form-unknown-key",
+                    "key": "3",
+                    "path": "/p",
+                    "message": "'3' at '/p' is not in the property vocabulary, so no form can forward it."
+                }
+            ]
+        }
+    },
+    "describe map bad fields": {
+        "result": {
+            "path": "/p",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": {
+                "title": "",
+                "type": 5,
+                "colour": "c",
+                "shade": null
+            },
+            "forwards": [
+                "title",
+                "type"
+            ],
+            "forwardsType": true,
+            "counts": {
+                "forwards": 2
+            },
+            "errors": [
+                {
+                    "code": "extends-form-field-not-a-string",
+                    "key": "title",
+                    "path": "/p",
+                    "message": "The field 'title' reads at '/p' must be a non-empty string."
+                },
+                {
+                    "code": "extends-form-field-not-a-string",
+                    "key": "type",
+                    "path": "/p",
+                    "message": "The field 'type' reads at '/p' must be a non-empty string."
+                },
+                {
+                    "code": "extends-form-unknown-key",
+                    "key": "colour",
+                    "path": "/p",
+                    "message": "'colour' at '/p' is not in the property vocabulary, so no form can forward it."
+                },
+                {
+                    "code": "extends-form-field-not-a-string",
+                    "key": "shade",
+                    "path": "/p",
+                    "message": "The field 'shade' reads at '/p' must be a non-empty string."
+                },
+                {
+                    "code": "extends-form-unknown-key",
+                    "key": "shade",
+                    "path": "/p",
+                    "message": "'shade' at '/p' is not in the property vocabulary, so no form can forward it."
+                }
+            ]
+        }
+    },
+    "describe map not array forwards array": {
+        "result": {
+            "path": "/p",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": {
+                "enum": "enum"
+            },
+            "forwards": [
+                "enum"
+            ],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 1
+            },
+            "errors": []
+        }
+    },
+    "describe no definitions": {
+        "result": {
+            "path": "/p",
+            "app": "",
+            "form": "",
+            "definitions": null,
+            "map": {
+                "title": "name"
+            },
+            "forwards": [
+                "title"
+            ],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 1
+            },
+            "errors": [
+                {
+                    "code": "extends-form-no-definitions",
+                    "key": "definitions",
+                    "path": "/p",
+                    "message": "'x-openregister-extends-form' at '/p' must name its 'definitions', or the form renders no fields."
+                }
+            ]
+        }
+    },
+    "describe not an object": {
+        "result": {
+            "path": "/p",
+            "app": "",
+            "form": "",
+            "definitions": null,
+            "map": [],
+            "forwards": [],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 0
+            },
+            "errors": [
+                {
+                    "code": "extends-form-not-an-object",
+                    "key": "x-openregister-extends-form",
+                    "path": "/p",
+                    "message": "'x-openregister-extends-form' at '/p' must be an object."
+                }
+            ]
+        }
+    },
+    "describe null": {
+        "result": {
+            "path": "/p",
+            "app": "",
+            "form": "",
+            "definitions": null,
+            "map": [],
+            "forwards": [],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 0
+            },
+            "errors": [
+                {
+                    "code": "extends-form-not-an-object",
+                    "key": "x-openregister-extends-form",
+                    "path": "/p",
+                    "message": "'x-openregister-extends-form' at '/p' must be an object."
+                }
+            ]
+        }
+    },
+    "describe source alias only": {
+        "result": {
+            "path": "/p",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": {
+                "definition": "d"
+            },
+            "forwards": [
+                "description"
+            ],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 1
+            },
+            "errors": []
+        }
+    },
+    "describe two spellings": {
+        "result": {
+            "path": "/p",
+            "app": "dossiq",
+            "form": "case",
+            "definitions": "caseDefinitions",
+            "map": [],
+            "forwards": [],
+            "forwardsType": false,
+            "counts": {
+                "forwards": 0
+            },
+            "errors": [
+                {
+                    "code": "extends-form-two-spellings",
+                    "key": "map",
+                    "path": "/p",
+                    "message": "'map' and 'forwards' at '/p' both say what the form forwards. Keep one."
+                }
+            ]
+        }
+    },
+    "forwards alias and description": {
+        "result": [
+            "description"
+        ]
+    },
+    "forwards app and form not strings": {
+        "result": [
+            "title"
+        ]
+    },
+    "forwards app wrong and two spellings": {
+        "result": []
+    },
+    "forwards empty": {
+        "result": []
+    },
+    "forwards empty definitions": {
+        "result": [
+            "title"
+        ]
+    },
+    "forwards empty map": {
+        "result": []
+    },
+    "forwards forwards": {
+        "result": [
+            "title",
+            "type"
+        ]
+    },
+    "forwards forwards nothing": {
+        "result": []
+    },
+    "forwards list definitions empty": {
+        "result": [
+            "title"
+        ]
+    },
+    "forwards map": {
+        "result": [
+            "title",
+            "type",
+            "description"
+        ]
+    },
+    "forwards map bad fields": {
+        "result": [
+            "title",
+            "type"
+        ]
+    },
+    "forwards map not array forwards array": {
+        "result": [
+            "enum"
+        ]
+    },
+    "forwards no definitions": {
+        "result": [
+            "title"
+        ]
+    },
+    "forwards not an object": {
+        "result": []
+    },
+    "forwards null": {
+        "result": []
+    },
+    "forwards source alias only": {
+        "result": [
+            "description"
+        ]
+    },
+    "forwards two spellings": {
+        "result": []
+    },
+    "fromSchema both": {
+        "result": {
+            "configuration/x-openregister-extends-form": {
+                "app": "dossiq",
+                "form": "case",
+                "definitions": "caseDefinitions",
+                "map": {
+                    "title": "name",
+                    "type": "propertyType",
+                    "definition": "text",
+                    "description": "text",
+                    "hideOnCreate": "auto",
+                    "3": "x"
+                }
+            },
+            "properties/b/x-openregister-extends-form": [],
+            "properties/4/x-openregister-extends-form": {
+                "k": 1,
+                "2": "v"
+            }
+        }
+    },
+    "fromSchema configuration scalar": {
+        "result": {
+            "configuration/x-openregister-extends-form": []
+        }
+    },
+    "fromSchema none": {
+        "result": []
+    },
+    "validate alias and description": {
+        "result": []
+    },
+    "validate app and form not strings": {
+        "result": [
+            {
+                "code": "extends-form-field-not-a-string",
+                "key": "app",
+                "path": "/p",
+                "message": "'app' at '/p' must be a string."
+            },
+            {
+                "code": "extends-form-field-not-a-string",
+                "key": "form",
+                "path": "/p",
+                "message": "'form' at '/p' must be a string."
+            }
+        ]
+    },
+    "validate app wrong and two spellings": {
+        "result": [
+            {
+                "code": "extends-form-field-not-a-string",
+                "key": "app",
+                "path": "/p",
+                "message": "'app' at '/p' must be a string."
+            },
+            {
+                "code": "extends-form-two-spellings",
+                "key": "map",
+                "path": "/p",
+                "message": "'map' and 'forwards' at '/p' both say what the form forwards. Keep one."
+            }
+        ]
+    },
+    "validate default path": {
+        "result": [
+            {
+                "code": "extends-form-not-an-object",
+                "key": "x-openregister-extends-form",
+                "path": "x-openregister-extends-form",
+                "message": "'x-openregister-extends-form' at 'x-openregister-extends-form' must be an object."
+            }
+        ]
+    },
+    "validate empty": {
+        "result": [
+            {
+                "code": "extends-form-forwards-nothing",
+                "key": "map",
+                "path": "/p",
+                "message": "'x-openregister-extends-form' at '/p' must carry a 'map' object or a 'forwards' list."
+            }
+        ]
+    },
+    "validate empty definitions": {
+        "result": [
+            {
+                "code": "extends-form-no-definitions",
+                "key": "definitions",
+                "path": "/p",
+                "message": "'x-openregister-extends-form' at '/p' must name its 'definitions', or the form renders no fields."
+            }
+        ]
+    },
+    "validate empty map": {
+        "result": []
+    },
+    "validate forwards": {
+        "result": [
+            {
+                "code": "extends-form-unknown-key",
+                "key": "colour",
+                "path": "/p",
+                "message": "'colour' at '/p' is not in the property vocabulary, so no form can forward it."
+            }
+        ]
+    },
+    "validate forwards nothing": {
+        "result": [
+            {
+                "code": "extends-form-forwards-nothing",
+                "key": "map",
+                "path": "/p",
+                "message": "'x-openregister-extends-form' at '/p' must carry a 'map' object or a 'forwards' list."
+            }
+        ]
+    },
+    "validate list definitions empty": {
+        "result": [
+            {
+                "code": "extends-form-no-definitions",
+                "key": "definitions",
+                "path": "/p",
+                "message": "'x-openregister-extends-form' at '/p' must name its 'definitions', or the form renders no fields."
+            }
+        ]
+    },
+    "validate map": {
+        "result": [
+            {
+                "code": "extends-form-unknown-key",
+                "key": "3",
+                "path": "/p",
+                "message": "'3' at '/p' is not in the property vocabulary, so no form can forward it."
+            }
+        ]
+    },
+    "validate map bad fields": {
+        "result": [
+            {
+                "code": "extends-form-field-not-a-string",
+                "key": "title",
+                "path": "/p",
+                "message": "The field 'title' reads at '/p' must be a non-empty string."
+            },
+            {
+                "code": "extends-form-field-not-a-string",
+                "key": "type",
+                "path": "/p",
+                "message": "The field 'type' reads at '/p' must be a non-empty string."
+            },
+            {
+                "code": "extends-form-unknown-key",
+                "key": "colour",
+                "path": "/p",
+                "message": "'colour' at '/p' is not in the property vocabulary, so no form can forward it."
+            },
+            {
+                "code": "extends-form-field-not-a-string",
+                "key": "shade",
+                "path": "/p",
+                "message": "The field 'shade' reads at '/p' must be a non-empty string."
+            },
+            {
+                "code": "extends-form-unknown-key",
+                "key": "shade",
+                "path": "/p",
+                "message": "'shade' at '/p' is not in the property vocabulary, so no form can forward it."
+            }
+        ]
+    },
+    "validate map not array forwards array": {
+        "result": []
+    },
+    "validate no definitions": {
+        "result": [
+            {
+                "code": "extends-form-no-definitions",
+                "key": "definitions",
+                "path": "/p",
+                "message": "'x-openregister-extends-form' at '/p' must name its 'definitions', or the form renders no fields."
+            }
+        ]
+    },
+    "validate not an object": {
+        "result": [
+            {
+                "code": "extends-form-not-an-object",
+                "key": "x-openregister-extends-form",
+                "path": "/p",
+                "message": "'x-openregister-extends-form' at '/p' must be an object."
+            }
+        ]
+    },
+    "validate null": {
+        "result": [
+            {
+                "code": "extends-form-not-an-object",
+                "key": "x-openregister-extends-form",
+                "path": "/p",
+                "message": "'x-openregister-extends-form' at '/p' must be an object."
+            }
+        ]
+    },
+    "validate source alias only": {
+        "result": []
+    },
+    "validate two spellings": {
+        "result": [
+            {
+                "code": "extends-form-two-spellings",
+                "key": "map",
+                "path": "/p",
+                "message": "'map' and 'forwards' at '/p' both say what the form forwards. Keep one."
+            }
+        ]
+    }
+}

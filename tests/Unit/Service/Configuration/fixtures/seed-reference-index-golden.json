@@ -1,0 +1,341 @@
+{
+    "empty list": {
+        "isEmpty": true,
+        "referencedBefore": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ],
+        "referencedAfter": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ],
+        "replaced": [],
+        "logs": []
+    },
+    "full": {
+        "isEmpty": false,
+        "referencedBefore": [
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            true,
+            true,
+            true
+        ],
+        "referencedAfter": [
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            true,
+            true,
+            true
+        ],
+        "replaced": [
+            {
+                "title": "Case",
+                "zaaktype": "uuid-zt-1",
+                "besluit": "uuid-bt-1",
+                "nested": {
+                    "deep": [
+                        "uuid-doc",
+                        "plain",
+                        5,
+                        null,
+                        "@ref:"
+                    ]
+                },
+                "@self": {
+                    "slug": "case-1",
+                    "schema": "zaak"
+                }
+            },
+            {
+                "title": "Second",
+                "link": "uuid-zt-1",
+                "ambiguous": "@ref:dup",
+                "missing": "@ref:nope",
+                "missingQualified": "@ref:zaak:nope"
+            },
+            {
+                "title": "Third",
+                "colons": "uuid-abc",
+                "notToken": "x@ref:zt-1",
+                "upper": "@REF:zt-1",
+                "list": [
+                    "uuid-zt-1",
+                    "uuid-bt-1"
+                ]
+            },
+            "not an array",
+            {
+                "value": "uuid-self",
+                "@self": {
+                    "slug": "self-ref",
+                    "note": "@ref:zt-1"
+                }
+            }
+        ],
+        "logs": [
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:\" \u2014 no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Ambiguous seed reference \"@ref:dup\"; slug exists in multiple schemas \u2014 use @ref:<schema>:<slug>. Left unresolved.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:nope\" \u2014 no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:zaak:nope\" \u2014 no imported object for that schema+slug.",
+                []
+            ]
+        ]
+    },
+    "nothing recorded": {
+        "isEmpty": false,
+        "referencedBefore": [
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            true,
+            true,
+            true
+        ],
+        "referencedAfter": [
+            true,
+            true,
+            true,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true,
+            true,
+            true,
+            true
+        ],
+        "replaced": [
+            {
+                "title": "Case",
+                "zaaktype": "@ref:zt-1",
+                "besluit": "@ref:besluittype:bt-1",
+                "nested": {
+                    "deep": [
+                        "@ref:doc",
+                        "plain",
+                        5,
+                        null,
+                        "@ref:"
+                    ]
+                },
+                "@self": {
+                    "slug": "case-1",
+                    "schema": "zaak"
+                }
+            },
+            {
+                "title": "Second",
+                "link": "@ref::zt-1",
+                "ambiguous": "@ref:dup",
+                "missing": "@ref:nope",
+                "missingQualified": "@ref:zaak:nope"
+            },
+            {
+                "title": "Third",
+                "colons": "@ref:a:b:c",
+                "notToken": "x@ref:zt-1",
+                "upper": "@REF:zt-1",
+                "list": [
+                    "@ref:zt-1",
+                    "@ref:besluittype:bt-1"
+                ]
+            },
+            "not an array",
+            {
+                "value": "@ref:self-ref",
+                "@self": {
+                    "slug": "self-ref",
+                    "note": "@ref:zt-1"
+                }
+            }
+        ],
+        "logs": [
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:zt-1\" \u2014 no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:besluittype:bt-1\" \u2014 no imported object for that schema+slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:doc\" \u2014 no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:\" \u2014 no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref::zt-1\" \u2014 no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:dup\" \u2014 no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:nope\" \u2014 no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:zaak:nope\" \u2014 no imported object for that schema+slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:a:b:c\" \u2014 no imported object for that schema+slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:zt-1\" \u2014 no imported object with that slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:besluittype:bt-1\" \u2014 no imported object for that schema+slug.",
+                []
+            ],
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:self-ref\" \u2014 no imported object with that slug.",
+                []
+            ]
+        ]
+    },
+    "nothing referenced": {
+        "isEmpty": true,
+        "referencedBefore": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ],
+        "referencedAfter": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+        ],
+        "replaced": [
+            {
+                "title": "plain",
+                "n": [
+                    1,
+                    2
+                ]
+            },
+            "x"
+        ],
+        "logs": []
+    },
+    "only qualified refs": {
+        "isEmpty": false,
+        "referencedBefore": [
+            true,
+            false
+        ],
+        "referencedAfter": [
+            true,
+            false
+        ],
+        "replaced": [
+            {
+                "a": "ux"
+            },
+            {
+                "b": [
+                    "@ref:t:y"
+                ]
+            }
+        ],
+        "logs": [
+            [
+                "warning",
+                "[ImportHandler] Unresolved seed reference \"@ref:t:y\" \u2014 no imported object for that schema+slug.",
+                []
+            ]
+        ]
+    }
+}

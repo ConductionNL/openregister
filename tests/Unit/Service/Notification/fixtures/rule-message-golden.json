@@ -1,0 +1,452 @@
+{
+    "null / broadcast": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "null / fr": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "null / nl": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "null / en": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "null / de": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "number / broadcast": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "number / fr": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "number / nl": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "number / en": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "number / de": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty string / broadcast": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty string / fr": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty string / nl": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty string / en": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty string / de": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty map / broadcast": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty map / fr": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty map / nl": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty map / en": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "empty map / de": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": "Open in Open Register."
+    },
+    "plain / broadcast": {
+        "subject": "Hello Offerte",
+        "body": "Hello Offerte",
+        "body with actions": "Hello Offerte"
+    },
+    "plain / fr": {
+        "subject": "Hello Offerte",
+        "body": "Hello Offerte",
+        "body with actions": "Hello Offerte"
+    },
+    "plain / nl": {
+        "subject": "Hello Offerte",
+        "body": "Hello Offerte",
+        "body with actions": "Hello Offerte"
+    },
+    "plain / en": {
+        "subject": "Hello Offerte",
+        "body": "Hello Offerte",
+        "body with actions": "Hello Offerte"
+    },
+    "plain / de": {
+        "subject": "Hello Offerte",
+        "body": "Hello Offerte",
+        "body with actions": "Hello Offerte"
+    },
+    "translated placeholder / broadcast": {
+        "subject": "Task Bel klant",
+        "body": "Task Bel klant",
+        "body with actions": "Task Bel klant"
+    },
+    "translated placeholder / fr": {
+        "subject": "Task Bel klant",
+        "body": "Task Bel klant",
+        "body with actions": "Task Bel klant"
+    },
+    "translated placeholder / nl": {
+        "subject": "Task Bel klant",
+        "body": "Task Bel klant",
+        "body with actions": "Task Bel klant"
+    },
+    "translated placeholder / en": {
+        "subject": "Task Call client",
+        "body": "Task Call client",
+        "body with actions": "Task Call client"
+    },
+    "translated placeholder / de": {
+        "subject": "Task Bel klant",
+        "body": "Task Bel klant",
+        "body with actions": "Task Bel klant"
+    },
+    "nl en / broadcast": {
+        "subject": "NL Offerte",
+        "body": "NL Offerte",
+        "body with actions": "NL Offerte"
+    },
+    "nl en / fr": {
+        "subject": "NL Offerte",
+        "body": "NL Offerte",
+        "body with actions": "NL Offerte"
+    },
+    "nl en / nl": {
+        "subject": "NL Offerte",
+        "body": "NL Offerte",
+        "body with actions": "NL Offerte"
+    },
+    "nl en / en": {
+        "subject": "EN Offerte",
+        "body": "EN Offerte",
+        "body with actions": "EN Offerte"
+    },
+    "nl en / de": {
+        "subject": "NL Offerte",
+        "body": "NL Offerte",
+        "body with actions": "NL Offerte"
+    },
+    "en only / broadcast": {
+        "subject": "EN only",
+        "body": "EN only",
+        "body with actions": "EN only"
+    },
+    "en only / fr": {
+        "subject": "EN only",
+        "body": "EN only",
+        "body with actions": "EN only"
+    },
+    "en only / nl": {
+        "subject": "EN only",
+        "body": "EN only",
+        "body with actions": "EN only"
+    },
+    "en only / en": {
+        "subject": "EN only",
+        "body": "EN only",
+        "body with actions": "EN only"
+    },
+    "en only / de": {
+        "subject": "EN only",
+        "body": "EN only",
+        "body with actions": "EN only"
+    },
+    "nl only / broadcast": {
+        "subject": "NL only",
+        "body": "NL only",
+        "body with actions": "NL only"
+    },
+    "nl only / fr": {
+        "subject": "NL only",
+        "body": "NL only",
+        "body with actions": "NL only"
+    },
+    "nl only / nl": {
+        "subject": "NL only",
+        "body": "NL only",
+        "body with actions": "NL only"
+    },
+    "nl only / en": {
+        "subject": "NL only",
+        "body": "NL only",
+        "body with actions": "NL only"
+    },
+    "nl only / de": {
+        "subject": "NL only",
+        "body": "NL only",
+        "body with actions": "NL only"
+    },
+    "default de / broadcast": {
+        "subject": "DE",
+        "body": "DE",
+        "body with actions": "DE"
+    },
+    "default de / fr": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "default de / nl": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "default de / en": {
+        "subject": "DE",
+        "body": "DE",
+        "body with actions": "DE"
+    },
+    "default de / de": {
+        "subject": "DE",
+        "body": "DE",
+        "body with actions": "DE"
+    },
+    "default missing / broadcast": {
+        "subject": "EN",
+        "body": "EN",
+        "body with actions": "EN"
+    },
+    "default missing / fr": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "default missing / nl": {
+        "subject": "EN",
+        "body": "EN",
+        "body with actions": "EN"
+    },
+    "default missing / en": {
+        "subject": "EN",
+        "body": "EN",
+        "body with actions": "EN"
+    },
+    "default missing / de": {
+        "subject": "EN",
+        "body": "EN",
+        "body with actions": "EN"
+    },
+    "default not a string / broadcast": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "default not a string / fr": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "default not a string / nl": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "default not a string / en": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "default not a string / de": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "only other locale / broadcast": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "only other locale / fr": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "only other locale / nl": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "only other locale / en": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "only other locale / de": {
+        "subject": "FR",
+        "body": "FR",
+        "body with actions": "FR"
+    },
+    "only the meta key / broadcast": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "only the meta key / fr": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "only the meta key / nl": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "only the meta key / en": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "only the meta key / de": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "locale not a string / broadcast": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "locale not a string / fr": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "locale not a string / nl": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "locale not a string / en": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "locale not a string / de": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "nothing usable / broadcast": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "nothing usable / fr": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "nothing usable / nl": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "nothing usable / en": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "nothing usable / de": {
+        "subject": "rule-name",
+        "body": "",
+        "body with actions": ""
+    },
+    "empty text under a locale / broadcast": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "empty text under a locale / fr": {
+        "subject": "",
+        "body": "",
+        "body with actions": ""
+    },
+    "empty text under a locale / nl": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "empty text under a locale / en": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "empty text under a locale / de": {
+        "subject": "NL",
+        "body": "NL",
+        "body with actions": "NL"
+    },
+    "numeric keys / broadcast": {
+        "subject": "first",
+        "body": "first",
+        "body with actions": "first"
+    },
+    "numeric keys / fr": {
+        "subject": "first",
+        "body": "first",
+        "body with actions": "first"
+    },
+    "numeric keys / nl": {
+        "subject": "first",
+        "body": "first",
+        "body with actions": "first"
+    },
+    "numeric keys / en": {
+        "subject": "first",
+        "body": "first",
+        "body with actions": "first"
+    },
+    "numeric keys / de": {
+        "subject": "first",
+        "body": "first",
+        "body with actions": "first"
+    }
+}

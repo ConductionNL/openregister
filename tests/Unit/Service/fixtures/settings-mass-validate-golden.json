@@ -1,0 +1,2534 @@
+{
+    "defaults, empty batches": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 3,
+                "batchSize": 1000,
+                "mode": "serial",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 1,
+                "estimatedDuration": "2s"
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 3,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 1,
+                "totalBatches": 1,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "serial"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 3,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 1,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "serial",
+                    "max_objects": 0,
+                    "batch_size": 1000,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "bad mode": [
+        [
+            "thrown",
+            "InvalidArgumentException",
+            "Invalid mode parameter. Must be \"serial\" or \"parallel\""
+        ]
+    ],
+    "batch size zero": [
+        [
+            "thrown",
+            "InvalidArgumentException",
+            "Invalid batch size. Must be between 1 and 5000"
+        ]
+    ],
+    "batch size too large": [
+        [
+            "thrown",
+            "InvalidArgumentException",
+            "Invalid batch size. Must be between 1 and 5000"
+        ]
+    ],
+    "batch size at limits": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 2,
+                "batchSize": 5000,
+                "mode": "serial",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 1,
+                "estimatedDuration": "2s"
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 1,
+                "totalBatches": 1,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "serial"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 2,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 1,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "serial",
+                    "max_objects": 2,
+                    "batch_size": 5000,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "max objects caps": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 2,
+                "batchSize": 1,
+                "mode": "serial",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 2,
+                "estimatedDuration": "4s"
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 1,
+                "totalBatches": 2,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 1
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 2,
+                "totalBatches": 2,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "serial"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 2,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 2,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "serial",
+                    "max_objects": 2,
+                    "batch_size": 1,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "max objects one above total": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 3,
+                "batchSize": 2,
+                "mode": "serial",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 2,
+                "estimatedDuration": "4s"
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 1,
+                "totalBatches": 2,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 2
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 2,
+                "totalBatches": 2,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "serial"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 3,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 2,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "serial",
+                    "max_objects": 4,
+                    "batch_size": 2,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "max objects above total": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 3,
+                "batchSize": 2,
+                "mode": "serial",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 2,
+                "estimatedDuration": "4s"
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 1,
+                "totalBatches": 2,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 2
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 2,
+                "totalBatches": 2,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "serial"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 3,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 2,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "serial",
+                    "max_objects": 9,
+                    "batch_size": 2,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "nothing to do": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 0,
+                "batchSize": 1000,
+                "mode": "serial",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 0,
+                "estimatedDuration": "0s"
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "serial"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 0,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 0,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "serial",
+                    "max_objects": 0,
+                    "batch_size": 1000,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "twelve batches": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 23,
+                "batchSize": 2,
+                "mode": "serial",
+                "collectErrors": true
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 12,
+                "estimatedDuration": "24s"
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 1,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 2
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 2,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 4
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 3,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 6
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 4,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 8
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 5,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 10
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 6,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 12
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 7,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 14
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 8,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 16
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 9,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 18
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 10,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.debug",
+            "[SettingsService] 🧹 MEMORY CLEANUP",
+            {
+                "memoryUsage": "CLOCK",
+                "peakMemory": "CLOCK"
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 20
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 11,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 22
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 12,
+                "totalBatches": 12,
+                "processed": 0,
+                "successful": 0,
+                "failed": 0,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "serial"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 23,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 12,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "serial",
+                    "max_objects": 0,
+                    "batch_size": 2,
+                    "collect_errors": true
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "serial with objects": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 3,
+                "batchSize": 1000,
+                "mode": "serial",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 1,
+                "estimatedDuration": "2s"
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 3,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Service\\ObjectService"
+        ],
+        [
+            "save",
+            "uuid-0",
+            {
+                "id": "uuid-0",
+                "n": 0
+            }
+        ],
+        [
+            "save",
+            "uuid-1",
+            {
+                "id": "uuid-1",
+                "n": 1
+            }
+        ],
+        [
+            "log.error",
+            "[SettingsService] Mass validation failed for object uuid-1: rejected",
+            []
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 1,
+                "totalBatches": 1,
+                "processed": 2,
+                "successful": 1,
+                "failed": 1,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 2
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 1,
+                "failed": 1,
+                "total": 2,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "serial"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": false,
+                "message": "Mass validation stopped after 1 errors (processed 2 out of 3 objects)",
+                "stats": {
+                    "total_objects": 3,
+                    "processed_objects": 2,
+                    "successful_saves": 1,
+                    "failed_saves": 1,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 1,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [
+                    {
+                        "object_id": "uuid-1",
+                        "object_name": "uuid-1",
+                        "register": null,
+                        "schema": null,
+                        "error": "rejected",
+                        "batch_mode": "serial_optimized"
+                    }
+                ],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "serial",
+                    "max_objects": 0,
+                    "batch_size": 1000,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "parallel nothing": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 0,
+                "batchSize": 1000,
+                "mode": "parallel",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 0,
+                "estimatedDuration": "0s"
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "parallel"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 0,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 0,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "parallel",
+                    "max_objects": 0,
+                    "batch_size": 1000,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "parallel with five jobs": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 5,
+                "batchSize": 1,
+                "mode": "parallel",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 5,
+                "estimatedDuration": "10s"
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🔄 PROCESSING PARALLEL CHUNK",
+            {
+                "chunkIndex": 1,
+                "totalChunks": 2,
+                "batchesInChunk": 4
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 1
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 2
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 3
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ COMPLETED PARALLEL CHUNK",
+            {
+                "chunkIndex": 1,
+                "chunkTime": "CLOCK",
+                "objectsProcessed": 0,
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🔄 PROCESSING PARALLEL CHUNK",
+            {
+                "chunkIndex": 2,
+                "totalChunks": 2,
+                "batchesInChunk": 1
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 4
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ COMPLETED PARALLEL CHUNK",
+            {
+                "chunkIndex": 2,
+                "chunkTime": "CLOCK",
+                "objectsProcessed": 0,
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "parallel"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 5,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 5,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "parallel",
+                    "max_objects": 0,
+                    "batch_size": 1,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "parallel with jobs": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 3,
+                "batchSize": 1,
+                "mode": "parallel",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 3,
+                "estimatedDuration": "6s"
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🔄 PROCESSING PARALLEL CHUNK",
+            {
+                "chunkIndex": 1,
+                "totalChunks": 1,
+                "batchesInChunk": 3
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 1
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 2
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ COMPLETED PARALLEL CHUNK",
+            {
+                "chunkIndex": 1,
+                "chunkTime": "CLOCK",
+                "objectsProcessed": 0,
+                "totalProcessed": 0
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 0,
+                "failed": 0,
+                "total": 0,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "parallel"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed successfully",
+                "stats": {
+                    "total_objects": 3,
+                    "processed_objects": 0,
+                    "successful_saves": 0,
+                    "failed_saves": 0,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 3,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "parallel",
+                    "max_objects": 0,
+                    "batch_size": 1,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "serial with objects, collect errors": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 3,
+                "batchSize": 1000,
+                "mode": "serial",
+                "collectErrors": true
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 1,
+                "estimatedDuration": "2s"
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 3,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Service\\ObjectService"
+        ],
+        [
+            "save",
+            "uuid-0",
+            {
+                "id": "uuid-0",
+                "n": 0
+            }
+        ],
+        [
+            "save",
+            "uuid-1",
+            {
+                "id": "uuid-1",
+                "n": 1
+            }
+        ],
+        [
+            "log.error",
+            "[SettingsService] Mass validation failed for object uuid-1: rejected",
+            []
+        ],
+        [
+            "save",
+            "uuid-2",
+            {
+                "id": "uuid-2",
+                "n": 2
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📈 MASS VALIDATION PROGRESS",
+            {
+                "batchNumber": 1,
+                "totalBatches": 1,
+                "processed": 3,
+                "successful": 2,
+                "failed": 1,
+                "batchDuration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "totalProcessed": 3
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 2,
+                "failed": 1,
+                "total": 3,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "serial"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed with 1 errors out of 3 objects (2 successful)",
+                "stats": {
+                    "total_objects": 3,
+                    "processed_objects": 3,
+                    "successful_saves": 2,
+                    "failed_saves": 1,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 1,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [
+                    {
+                        "object_id": "uuid-1",
+                        "object_name": "uuid-1",
+                        "register": null,
+                        "schema": null,
+                        "error": "rejected",
+                        "batch_mode": "serial_optimized"
+                    }
+                ],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "serial",
+                    "max_objects": 0,
+                    "batch_size": 1000,
+                    "collect_errors": true
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "parallel with objects": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 3,
+                "batchSize": 2,
+                "mode": "parallel",
+                "collectErrors": false
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 2,
+                "estimatedDuration": "4s"
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🔄 PROCESSING PARALLEL CHUNK",
+            {
+                "chunkIndex": 1,
+                "totalChunks": 1,
+                "batchesInChunk": 2
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 2,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Service\\ObjectService"
+        ],
+        [
+            "save",
+            "uuid-0",
+            {
+                "id": "uuid-0",
+                "n": 0
+            }
+        ],
+        [
+            "save",
+            "uuid-1",
+            {
+                "id": "uuid-1",
+                "n": 1
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 1,
+                    "_offset": 2
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "save",
+            "uuid-0",
+            {
+                "id": "uuid-0",
+                "n": 0
+            }
+        ],
+        [
+            "save",
+            "uuid-1",
+            {
+                "id": "uuid-1",
+                "n": 1
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ COMPLETED PARALLEL CHUNK",
+            {
+                "chunkIndex": 1,
+                "chunkTime": "CLOCK",
+                "objectsProcessed": 4,
+                "totalProcessed": 4
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 2,
+                "failed": 2,
+                "total": 4,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "parallel"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": false,
+                "message": "Mass validation stopped after 2 errors (processed 4 out of 3 objects)",
+                "stats": {
+                    "total_objects": 3,
+                    "processed_objects": 4,
+                    "successful_saves": 2,
+                    "failed_saves": 2,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 2,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [
+                    {
+                        "object_id": "uuid-1",
+                        "object_name": "uuid-1",
+                        "register": null,
+                        "schema": null,
+                        "error": "rejected",
+                        "batch_mode": "parallel_optimized"
+                    },
+                    {
+                        "object_id": "uuid-1",
+                        "object_name": "uuid-1",
+                        "register": null,
+                        "schema": null,
+                        "error": "rejected",
+                        "batch_mode": "parallel_optimized"
+                    }
+                ],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "parallel",
+                    "max_objects": 0,
+                    "batch_size": 2,
+                    "collect_errors": false
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ],
+    "parallel with objects, collect errors": [
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Db\\MagicMapperInterface"
+        ],
+        [
+            "count",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🚀 STARTING MASS VALIDATION",
+            {
+                "totalObjects": 3,
+                "batchSize": 1000,
+                "mode": "parallel",
+                "collectErrors": true
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 📋 BATCH JOBS CREATED",
+            {
+                "totalBatches": 1,
+                "estimatedDuration": "2s"
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] 🔄 PROCESSING PARALLEL CHUNK",
+            {
+                "chunkIndex": 1,
+                "totalChunks": 1,
+                "batchesInChunk": 1
+            }
+        ],
+        [
+            "searchObjects",
+            [
+                {
+                    "@self": {
+                        "register": 1,
+                        "schema": 2
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false,
+                    "_limit": 3,
+                    "_offset": 0
+                },
+                null,
+                false,
+                false,
+                null,
+                null
+            ]
+        ],
+        [
+            "container.get",
+            "OCA\\OpenRegister\\Service\\ObjectService"
+        ],
+        [
+            "save",
+            "uuid-0",
+            {
+                "id": "uuid-0",
+                "n": 0
+            }
+        ],
+        [
+            "save",
+            "uuid-1",
+            {
+                "id": "uuid-1",
+                "n": 1
+            }
+        ],
+        [
+            "save",
+            "uuid-2",
+            {
+                "id": "uuid-2",
+                "n": 2
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ COMPLETED PARALLEL CHUNK",
+            {
+                "chunkIndex": 1,
+                "chunkTime": "CLOCK",
+                "objectsProcessed": 3,
+                "totalProcessed": 3
+            }
+        ],
+        [
+            "log.info",
+            "[SettingsService] ✅ MASS VALIDATION COMPLETED",
+            {
+                "successful": 2,
+                "failed": 1,
+                "total": 3,
+                "duration": "CLOCK",
+                "objectsPerSecond": "CLOCK",
+                "mode": "parallel"
+            }
+        ],
+        [
+            "result",
+            {
+                "success": true,
+                "message": "Mass validation completed with 1 errors out of 3 objects (2 successful)",
+                "stats": {
+                    "total_objects": 3,
+                    "processed_objects": 3,
+                    "successful_saves": 2,
+                    "failed_saves": 1,
+                    "duration_seconds": "CLOCK",
+                    "batches_processed": 1,
+                    "objects_per_second": "CLOCK"
+                },
+                "errors": [
+                    {
+                        "object_id": "uuid-1",
+                        "object_name": "uuid-1",
+                        "register": null,
+                        "schema": null,
+                        "error": "rejected",
+                        "batch_mode": "parallel_optimized"
+                    }
+                ],
+                "batches_processed": 0,
+                "timestamp": "CLOCK",
+                "config_used": {
+                    "mode": "parallel",
+                    "max_objects": 0,
+                    "batch_size": 1000,
+                    "collect_errors": true
+                },
+                "memory_usage": {
+                    "start_memory": "CLOCK",
+                    "end_memory": "CLOCK",
+                    "peak_memory": "CLOCK",
+                    "memory_used": "CLOCK",
+                    "peak_percentage": "CLOCK",
+                    "formatted": {
+                        "actual_used": "CLOCK",
+                        "peak_usage": "CLOCK",
+                        "peak_percentage": "CLOCK"
+                    }
+                }
+            }
+        ]
+    ]
+}

@@ -76,7 +76,7 @@ class FileSettingsOpenAnonymiserPasswordTest extends TestCase {
 			}
 		);
 
-		return new FileSettingsHandler($config, 'openregister');
+		return new FileSettingsHandler($config);
 
 	}//end handler()
 

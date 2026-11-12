@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\File;
+use OCA\OpenRegister\Files\Db\File;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -187,11 +187,11 @@ class FilePublicationWindowTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSerialisedFormCarriesTheWindow(): void {
-		$serialised = $this->file(published: '2020-01-01 00:00:00', depublished: '2030-01-01 00:00:00')
-			->jsonSerialize();
+		$depublished = date('Y-m-d 00:00:00', strtotime('+10 years'));
+		$serialised  = $this->file(published: '2020-01-01 00:00:00', depublished: $depublished)->jsonSerialize();
 
 		$this->assertSame('2020-01-01T00:00:00+00:00', $serialised['published']);
-		$this->assertSame('2030-01-01T00:00:00+00:00', $serialised['depublished']);
+		$this->assertSame((new DateTime($depublished))->format('c'), $serialised['depublished']);
 		$this->assertTrue($serialised['isPublished']);
 
 	}//end testTheSerialisedFormCarriesTheWindow()

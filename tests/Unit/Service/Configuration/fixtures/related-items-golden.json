@@ -1,0 +1,384 @@
+{
+    "empty": {
+        "result": {
+            "relatedFiles": 1,
+            "relatedNotes": 0,
+            "relatedTasks": 0
+        },
+        "calls": [
+            [
+                "log.debug",
+                "[ImportHandler] Processing related items for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_count": 0,
+                    "notes_count": 0,
+                    "tasks_count": 0
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Related items processed for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_created": 0,
+                    "notes_created": 0,
+                    "tasks_created": 0
+                }
+            ]
+        ]
+    },
+    "everything": {
+        "result": {
+            "relatedFiles": 3,
+            "relatedNotes": 2,
+            "relatedTasks": 2
+        },
+        "calls": [
+            [
+                "log.debug",
+                "[ImportHandler] Processing related items for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_count": 7,
+                    "notes_count": 5,
+                    "tasks_count": 4
+                }
+            ],
+            [
+                "addFile",
+                "uuid-1",
+                "plain.txt",
+                "hello",
+                true,
+                [
+                    "a"
+                ]
+            ],
+            [
+                "addFile",
+                "uuid-1",
+                "b64.bin",
+                "bytes",
+                false,
+                []
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Seed file base64 decode failed - skipping",
+                {
+                    "object_uuid": "uuid-1",
+                    "name": "bad.bin"
+                }
+            ],
+            [
+                "addFile",
+                "uuid-1",
+                "fails.txt",
+                "boom",
+                false,
+                []
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Seed file creation failed",
+                {
+                    "object_uuid": "uuid-1",
+                    "name": "fails.txt",
+                    "error": "disk full"
+                }
+            ],
+            [
+                "addFile",
+                "uuid-1",
+                "7",
+                "",
+                false,
+                [
+                    "single"
+                ]
+            ],
+            [
+                "createNote",
+                "uuid-1",
+                "First"
+            ],
+            [
+                "createNote",
+                "uuid-1",
+                "fail"
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Seed note creation failed",
+                {
+                    "object_uuid": "uuid-1",
+                    "error": "note failed"
+                }
+            ],
+            [
+                "createNote",
+                "uuid-1",
+                "5"
+            ],
+            [
+                "createTask",
+                [
+                    4,
+                    9,
+                    "uuid-1",
+                    "Seed title",
+                    {
+                        "summary": "Call back",
+                        "description": "D",
+                        "status": "in-process",
+                        "priority": 3,
+                        "due": "2026-01-01"
+                    }
+                ]
+            ],
+            [
+                "createTask",
+                [
+                    4,
+                    9,
+                    "uuid-1",
+                    "Seed title",
+                    {
+                        "summary": "fail",
+                        "description": "",
+                        "status": "needs-action",
+                        "priority": 0,
+                        "due": null
+                    }
+                ]
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Seed task creation failed",
+                {
+                    "object_uuid": "uuid-1",
+                    "summary": "fail",
+                    "error": "task failed"
+                }
+            ],
+            [
+                "createTask",
+                [
+                    4,
+                    9,
+                    "uuid-1",
+                    "Seed title",
+                    {
+                        "summary": "Minimal",
+                        "description": "",
+                        "status": "needs-action",
+                        "priority": 0,
+                        "due": null
+                    }
+                ]
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Related items processed for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_created": 3,
+                    "notes_created": 2,
+                    "tasks_created": 2
+                }
+            ]
+        ]
+    },
+    "no-services": {
+        "result": {
+            "relatedFiles": 0,
+            "relatedNotes": 0,
+            "relatedTasks": 0
+        },
+        "calls": [
+            [
+                "log.debug",
+                "[ImportHandler] Processing related items for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_count": 7,
+                    "notes_count": 5,
+                    "tasks_count": 4
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Related items processed for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_created": 0,
+                    "notes_created": 0,
+                    "tasks_created": 0
+                }
+            ]
+        ]
+    },
+    "no-user": {
+        "result": {
+            "relatedFiles": 5,
+            "relatedNotes": 1,
+            "relatedTasks": 4
+        },
+        "calls": [
+            [
+                "log.debug",
+                "[ImportHandler] Processing related items for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_count": 7,
+                    "notes_count": 5,
+                    "tasks_count": 4
+                }
+            ],
+            [
+                "addFile",
+                "uuid-1",
+                "plain.txt",
+                "hello",
+                true,
+                [
+                    "a"
+                ]
+            ],
+            [
+                "addFile",
+                "uuid-1",
+                "b64.bin",
+                "bytes",
+                false,
+                []
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Seed file base64 decode failed - skipping",
+                {
+                    "object_uuid": "uuid-1",
+                    "name": "bad.bin"
+                }
+            ],
+            [
+                "addFile",
+                "uuid-1",
+                "fails.txt",
+                "boom",
+                false,
+                []
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Seed file creation failed",
+                {
+                    "object_uuid": "uuid-1",
+                    "name": "fails.txt",
+                    "error": "disk full"
+                }
+            ],
+            [
+                "addFile",
+                "uuid-1",
+                "7",
+                "",
+                false,
+                [
+                    "single"
+                ]
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Skipping seed notes - no user session available",
+                {
+                    "object_uuid": "uuid-1",
+                    "count": 5
+                }
+            ],
+            [
+                "log.warning",
+                "[ImportHandler] Skipping seed tasks - no user session available",
+                {
+                    "object_uuid": "uuid-1",
+                    "count": 4
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Related items processed for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_created": 3,
+                    "notes_created": 0,
+                    "tasks_created": 0
+                }
+            ]
+        ]
+    },
+    "only-notes": {
+        "result": {
+            "other": true,
+            "relatedFiles": 0,
+            "relatedNotes": 1,
+            "relatedTasks": 0
+        },
+        "calls": [
+            [
+                "log.debug",
+                "[ImportHandler] Processing related items for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_count": 0,
+                    "notes_count": 1,
+                    "tasks_count": 0
+                }
+            ],
+            [
+                "createNote",
+                "uuid-1",
+                "Only"
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Related items processed for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_created": 0,
+                    "notes_created": 1,
+                    "tasks_created": 0
+                }
+            ]
+        ]
+    },
+    "scalars": {
+        "result": {
+            "relatedFiles": 0,
+            "relatedNotes": 0,
+            "relatedTasks": 0
+        },
+        "calls": [
+            [
+                "log.debug",
+                "[ImportHandler] Processing related items for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_count": 1,
+                    "notes_count": 1,
+                    "tasks_count": 0
+                }
+            ],
+            [
+                "log.debug",
+                "[ImportHandler] Related items processed for seed object",
+                {
+                    "object_uuid": "uuid-1",
+                    "files_created": 0,
+                    "notes_created": 0,
+                    "tasks_created": 0
+                }
+            ]
+        ]
+    }
+}

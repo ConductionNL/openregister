@@ -1,0 +1,54 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ViewObject state (golden) builds a blank object with a register and schema 1`] = `"{"@self":{"id":"","uuid":"","uri":"","register":3,"schema":9,"relations":"","files":"","folder":"","updated":"","created":"","locked":null,"owner":""},"title":"Untitled","count":0,"tags":[],"meta":{},"flag":false,"other":null}"`;
+
+exports[`ViewObject state (golden) builds a blank object without them 1`] = `"{"@self":{"id":"","uuid":"","uri":"","register":"","schema":"","relations":"","files":"","folder":"","updated":"","created":"","locked":null,"owner":""}}"`;
+
+exports[`ViewObject state (golden) lists the rows of a new object 1`] = `"[["title",""],["count",0],["tags",[]],["meta",{}],["flag",false],["other",""]]"`;
+
+exports[`ViewObject state (golden) lists the rows of a new object without a schema 1`] = `"[]"`;
+
+exports[`ViewObject state (golden) lists the rows of a new object without schema properties 1`] = `"[]"`;
+
+exports[`ViewObject state (golden) lists the rows of a stored object 1`] = `"[["title","Kept"],["extra",1],["count",0],["tags",[]],["meta",{}],["flag",false],["other",""]]"`;
+
+exports[`ViewObject state (golden) lists the rows of a stored object without a schema 1`] = `"[["title","Kept"]]"`;
+
+exports[`ViewObject state (golden) resets everything on close 1`] = `
+{
+  "cleared": [
+    "timer-a",
+    "timer-c",
+    "close-timer",
+  ],
+  "ctx": {
+    "activeAttachment": null,
+    "activeTab": 0,
+    "closeModalTimeout": "close-timer",
+    "error": null,
+    "isCopied": false,
+    "isUpdated": false,
+    "pendingNotifications": {},
+    "propertyChangeDebounceTimers": {},
+    "registerSchemaSelectionConfirmed": false,
+    "registerTitle": "",
+    "schemaTitle": "",
+    "selectedAttachments": [],
+    "selectedRegisterForNewObject": null,
+    "selectedSchemaForNewObject": null,
+    "success": null,
+  },
+  "dialog": [
+    [
+      null,
+    ],
+  ],
+  "modal": [
+    [
+      null,
+    ],
+  ],
+  "registers": null,
+  "schemas": null,
+}
+`;

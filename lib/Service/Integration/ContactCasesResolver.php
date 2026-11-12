@@ -121,27 +121,56 @@ class ContactCasesResolver {
 	 * @return array<string,mixed> The row.
 	 */
 	private function rowFor(array $link, callable $resolve): array {
-		$register = (string)($link['register'] ?? ($link['registerId'] ?? ''));
-		$schema = (string)($link['schema'] ?? ($link['schemaId'] ?? ''));
-		$uuid = (string)($link['objectUuid'] ?? '');
+		$row = $this->unreadRow(link: $link);
+		if ($row['objectUuid'] === '') {
+			return $row;
+		}
 
-		$row = [
+		$object = $this->readLinked(link: $link, resolve: $resolve);
+		if (is_array($object) === false || $object === []) {
+			return $row;
+		}
+
+		return $this->readableRow(row: $row, object: $object);
+	}//end rowFor()
+
+	/**
+	 * A link's row before its object is read: identified, but not readable.
+	 *
+	 * @param array<string,mixed> $link The link.
+	 *
+	 * @return array<string,mixed> The row.
+	 */
+	private function unreadRow(array $link): array {
+		$schema = (string)($link['schema'] ?? ($link['schemaId'] ?? ''));
+
+		return [
 			'schema' => $schema,
 			'schemaLabel' => (string)($link['schemaLabel'] ?? $schema),
-			'objectUuid' => $uuid,
+			'objectUuid' => (string)($link['objectUuid'] ?? ''),
 			'role' => (string)($link['role'] ?? ''),
 			'title' => '',
 			'status' => '',
 			'url' => '',
 			'readable' => false,
 		];
+	}//end unreadRow()
 
-		if ($uuid === '') {
-			return $row;
-		}
+	/**
+	 * Read the object a link points at.
+	 *
+	 * @param array<string,mixed> $link    The link, with an object uuid.
+	 * @param callable            $resolve The object reader.
+	 *
+	 * @return mixed The object as the reader returned it, or null when the read threw (logged).
+	 */
+	private function readLinked(array $link, callable $resolve): mixed {
+		$register = (string)($link['register'] ?? ($link['registerId'] ?? ''));
+		$schema = (string)($link['schema'] ?? ($link['schemaId'] ?? ''));
+		$uuid = (string)($link['objectUuid'] ?? '');
 
 		try {
-			$object = $resolve($register, $schema, $uuid);
+			return $resolve($register, $schema, $uuid);
 		} catch (Throwable $e) {
 			// A read that threw is not a link that does not exist. It is
 			// counted, and the reason is logged where an administrator can
@@ -151,20 +180,26 @@ class ContactCasesResolver {
 				['objectUuid' => $uuid, 'exception' => $e->getMessage()]
 			);
 
-			return $row;
+			return null;
 		}
+	}//end readLinked()
 
-		if (is_array($object) === false || $object === []) {
-			return $row;
-		}
-
+	/**
+	 * A row filled from the object its link points at.
+	 *
+	 * @param array<string,mixed> $row    The unread row.
+	 * @param array<string,mixed> $object The object, not empty.
+	 *
+	 * @return array<string,mixed> The readable row.
+	 */
+	private function readableRow(array $row, array $object): array {
 		$row['readable'] = true;
-		$row['title'] = $this->titleOf(object: $object, uuid: $uuid);
+		$row['title'] = $this->titleOf(object: $object, uuid: $row['objectUuid']);
 		$row['status'] = (string)($object['status'] ?? '');
 		$row['url'] = (string)($object['url'] ?? '');
 
 		return $row;
-	}//end rowFor()
+	}//end readableRow()
 
 	/**
 	 * What to call an object in the panel.

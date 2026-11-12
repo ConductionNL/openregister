@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Activity;
 
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\Activity\IFilter;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -55,7 +55,7 @@ class Filter implements IFilter {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function getIdentifier(): string {
-		return Application::APP_ID;
+		return AppIdentity::APP_ID;
 	}//end getIdentifier()
 
 	/**
@@ -89,7 +89,7 @@ class Filter implements IFilter {
 	 */
 	public function getIcon(): string {
 		return $this->urlGenerator->getAbsoluteURL(
-			$this->urlGenerator->imagePath(Application::APP_ID, 'app-dark.svg')
+			$this->urlGenerator->imagePath(AppIdentity::APP_ID, 'app-dark.svg')
 		);
 	}//end getIcon()
 
@@ -116,6 +116,6 @@ class Filter implements IFilter {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function allowedApps(): array {
-		return [Application::APP_ID];
+		return [AppIdentity::APP_ID];
 	}//end allowedApps()
 }//end class

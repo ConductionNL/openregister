@@ -1,0 +1,561 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ViewObject complexity golden clicks a row: alreadySelected 1`] = `[]`;
+
+exports[`ViewObject complexity golden clicks a row: button 1`] = `[]`;
+
+exports[`ViewObject complexity golden clicks a row: freeForm 1`] = `
+[
+  [
+    "editable?",
+    "free",
+    undefined,
+  ],
+  [
+    "select",
+    "free",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden clicks a row: input 1`] = `[]`;
+
+exports[`ViewObject complexity golden clicks a row: insideInput 1`] = `[]`;
+
+exports[`ViewObject complexity golden clicks a row: integerType 1`] = `
+[
+  [
+    "editable?",
+    "i",
+    undefined,
+  ],
+  [
+    "select",
+    "i",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden clicks a row: lockedQuiet 1`] = `
+[
+  [
+    "editable?",
+    "s",
+    "v",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden clicks a row: lockedWithWarning 1`] = `
+[
+  [
+    "editable?",
+    "s",
+    "v",
+  ],
+  [
+    "warning",
+    "locked",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden clicks a row: objectType 1`] = `
+[
+  [
+    "editable?",
+    "o",
+    undefined,
+  ],
+  [
+    "warning",
+    "Property '<o>' has type 'object' which is not supported for inline editing. Use the Data tab for complex types.",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden clicks a row: stringType 1`] = `
+[
+  [
+    "editable?",
+    "s",
+    "v",
+  ],
+  [
+    "select",
+    "s",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden clicks a row: valueFromForm 1`] = `
+[
+  [
+    "editable?",
+    "o",
+    5,
+  ],
+  [
+    "warning",
+    "Property '<o>' has type 'object' which is not supported for inline editing. Use the Data tab for complex types.",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden clicks a row: valueFromRows 1`] = `
+[
+  [
+    "editable?",
+    "o",
+    {
+      "x": 1,
+    },
+  ],
+  [
+    "warning",
+    "Property '<o>' has type 'object' which is not supported for inline editing. Use the Data tab for complex types.",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden lists the form fields 1`] = `
+[
+  [
+    "none",
+    "none",
+    {},
+  ],
+  [
+    "none",
+    "mixed",
+    {
+      "count": {
+        "description": "Property: count",
+        "title": "count",
+        "type": "number",
+      },
+      "empty": {
+        "description": "Property: empty",
+        "title": "empty",
+        "type": "string",
+      },
+      "flag": {
+        "description": "Property: flag",
+        "title": "flag",
+        "type": "boolean",
+      },
+      "list": {
+        "description": "Property: list",
+        "title": "list",
+        "type": "array",
+      },
+      "missing": {
+        "description": "Property: missing",
+        "title": "missing",
+        "type": "string",
+      },
+      "nested": {
+        "description": "Property: nested",
+        "title": "nested",
+        "type": "object",
+      },
+      "own": {
+        "description": "Property: own",
+        "title": "own",
+        "type": "string",
+      },
+      "text": {
+        "description": "Property: text",
+        "title": "text",
+        "type": "string",
+      },
+    },
+  ],
+  [
+    "bare",
+    "none",
+    {},
+  ],
+  [
+    "bare",
+    "mixed",
+    {
+      "count": {
+        "description": "Property: count",
+        "title": "count",
+        "type": "number",
+      },
+      "empty": {
+        "description": "Property: empty",
+        "title": "empty",
+        "type": "string",
+      },
+      "flag": {
+        "description": "Property: flag",
+        "title": "flag",
+        "type": "boolean",
+      },
+      "list": {
+        "description": "Property: list",
+        "title": "list",
+        "type": "array",
+      },
+      "missing": {
+        "description": "Property: missing",
+        "title": "missing",
+        "type": "string",
+      },
+      "nested": {
+        "description": "Property: nested",
+        "title": "nested",
+        "type": "object",
+      },
+      "own": {
+        "description": "Property: own",
+        "title": "own",
+        "type": "string",
+      },
+      "text": {
+        "description": "Property: text",
+        "title": "text",
+        "type": "string",
+      },
+    },
+  ],
+  [
+    "props",
+    "none",
+    {
+      "blank": {
+        "type": "string",
+      },
+      "own": {
+        "type": "number",
+      },
+    },
+  ],
+  [
+    "props",
+    "mixed",
+    {
+      "blank": {
+        "type": "string",
+      },
+      "count": {
+        "description": "Property: count",
+        "title": "count",
+        "type": "number",
+      },
+      "empty": {
+        "description": "Property: empty",
+        "title": "empty",
+        "type": "string",
+      },
+      "flag": {
+        "description": "Property: flag",
+        "title": "flag",
+        "type": "boolean",
+      },
+      "list": {
+        "description": "Property: list",
+        "title": "list",
+        "type": "array",
+      },
+      "missing": {
+        "description": "Property: missing",
+        "title": "missing",
+        "type": "string",
+      },
+      "nested": {
+        "description": "Property: nested",
+        "title": "nested",
+        "type": "object",
+      },
+      "own": {
+        "type": "number",
+      },
+      "text": {
+        "description": "Property: text",
+        "title": "text",
+        "type": "string",
+      },
+    },
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden merges inherited schema properties 1`] = `
+[
+  [
+    "none",
+    null,
+  ],
+  [
+    "plain",
+    {
+      "id": 9,
+      "properties": {
+        "own": {
+          "type": "string",
+        },
+      },
+    },
+  ],
+  [
+    "emptyAllOf",
+    {
+      "allOf": [],
+      "id": 9,
+      "properties": {
+        "own": {
+          "type": "string",
+        },
+      },
+    },
+  ],
+  [
+    "byId",
+    {
+      "allOf": [
+        1,
+        {
+          "id": 2,
+        },
+      ],
+      "id": 9,
+      "properties": {
+        "a": {
+          "type": "string",
+        },
+        "b": {
+          "type": "boolean",
+        },
+        "shared": {
+          "type": "string",
+        },
+      },
+    },
+  ],
+  [
+    "byUuid",
+    {
+      "allOf": [
+        "u-1",
+        {
+          "id": "u-2",
+        },
+      ],
+      "id": 9,
+      "properties": {
+        "a": {
+          "type": "string",
+        },
+        "b": {
+          "type": "boolean",
+        },
+        "shared": {
+          "type": "number",
+        },
+      },
+    },
+  ],
+  [
+    "byString",
+    {
+      "allOf": [
+        "1",
+        "3",
+        "404",
+      ],
+      "id": 9,
+      "properties": {
+        "a": {
+          "type": "string",
+        },
+        "shared": {
+          "type": "number",
+        },
+      },
+    },
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden turns values into strings 1`] = `
+[
+  "",
+  "",
+  "s",
+  "1",
+  "0",
+  "true",
+  "false",
+  "[1]",
+  "{"a":1}",
+  "[object Object]",
+  "10",
+  "Symbol(x)",
+]
+`;
+
+exports[`ViewObject complexity golden watches the schema: allOfUnresolved 1`] = `
+[
+  [
+    "getSchema",
+    4,
+    {
+      "setItem": true,
+    },
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden watches the schema: anyOfUnresolved 1`] = `
+[
+  [
+    "getSchema",
+    4,
+    {
+      "setItem": true,
+    },
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden watches the schema: fetchFails 1`] = `
+[
+  [
+    "getSchema",
+    4,
+    {
+      "setItem": true,
+    },
+  ],
+  [
+    "initializeData",
+  ],
+  [
+    "forceUpdate",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden watches the schema: noId 1`] = `
+[
+  [
+    "initializeData",
+  ],
+  [
+    "forceUpdate",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden watches the schema: none 1`] = `[]`;
+
+exports[`ViewObject complexity golden watches the schema: oneOfUnresolved 1`] = `
+[
+  [
+    "getSchema",
+    4,
+    {
+      "setItem": true,
+    },
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden watches the schema: plain 1`] = `[]`;
+
+exports[`ViewObject complexity golden watches the schema: resolved 1`] = `
+[
+  [
+    "initializeData",
+  ],
+  [
+    "forceUpdate",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden words the property errors 1`] = `
+[
+  [
+    "unknown",
+    "x",
+    "Property 'unknown' is not defined in the current schema. This property exists in the object but is not part of the schema definition.",
+  ],
+  [
+    "req",
+    null,
+    "Required property 'req' is missing or empty",
+  ],
+  [
+    "req",
+    undefined,
+    "Required property 'req' is missing or empty",
+  ],
+  [
+    "req",
+    "",
+    "Required property 'req' is missing or empty",
+  ],
+  [
+    "flagged",
+    "",
+    "Required property 'flagged' is missing or empty",
+  ],
+  [
+    "num",
+    "1",
+    "Property 'num' should be number but is string",
+  ],
+  [
+    "num",
+    1,
+    "Property 'num' has an invalid value",
+  ],
+  [
+    "list",
+    [],
+    "Property 'list' has an invalid value",
+  ],
+  [
+    "list",
+    {},
+    "Property 'list' should be array but is object",
+  ],
+  [
+    "when",
+    "nope",
+    "Property 'when' should be a valid date-time format",
+  ],
+  [
+    "when",
+    "2026-01-01T00:00:00Z",
+    "Property 'when' has an invalid value",
+  ],
+  [
+    "fixed",
+    "other",
+    "Property 'fixed' should be 'k' but is 'other'",
+  ],
+  [
+    "fixed",
+    "k",
+    "Property 'fixed' has an invalid value",
+  ],
+  [
+    "free",
+    "ok",
+    "Property 'free' has an invalid value",
+  ],
+  [
+    "free",
+    null,
+    "Property 'free' should be string but is object",
+  ],
+]
+`;
+
+exports[`ViewObject complexity golden words the property errors 2`] = `"Property 'a' is not defined in the current schema. This property exists in the object but is not part of the schema definition."`;

@@ -30,8 +30,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched to request a registry subscription on an object.
  *
@@ -41,7 +39,7 @@ use OCP\EventDispatcher\Event;
  *
  * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
  */
-class RegistrySubscriptionRequestedEvent extends Event {
+class RegistrySubscriptionRequestedEvent extends AbstractRegistrySubscriptionEvent {
 
 	/**
 	 * Constructor.
@@ -53,23 +51,14 @@ class RegistrySubscriptionRequestedEvent extends Event {
 	 * @param string $identityValue The object's identity value at that registry.
 	 */
 	public function __construct(
-		private readonly string $objectUuid,
+		string $objectUuid,
 		private readonly string $register,
 		private readonly string $schema,
-		private readonly string $registry,
-		private readonly string $identityValue,
+		string $registry,
+		string $identityValue,
 	) {
-		parent::__construct();
+		parent::__construct(objectUuid: $objectUuid, registry: $registry, identityValue: $identityValue);
 	}//end __construct()
-
-	/**
-	 * Get the triggering object's UUID.
-	 *
-	 * @return string
-	 */
-	public function getObjectUuid(): string {
-		return $this->objectUuid;
-	}//end getObjectUuid()
 
 	/**
 	 * Get the triggering object's register slug/id.
@@ -90,35 +79,17 @@ class RegistrySubscriptionRequestedEvent extends Event {
 	}//end getSchema()
 
 	/**
-	 * Get the registry id (`brp`, `kvk`, ...).
-	 *
-	 * @return string
-	 */
-	public function getRegistry(): string {
-		return $this->registry;
-	}//end getRegistry()
-
-	/**
-	 * Get the object's identity value at the registry.
-	 *
-	 * @return string
-	 */
-	public function getIdentityValue(): string {
-		return $this->identityValue;
-	}//end getIdentityValue()
-
-	/**
 	 * Flatten for a job boundary / CloudEvent payload.
 	 *
 	 * @return array<string, string>
 	 */
 	public function getPayload(): array {
 		return [
-			'objectUuid' => $this->objectUuid,
+			'objectUuid' => $this->getObjectUuid(),
 			'register' => $this->register,
 			'schema' => $this->schema,
-			'registry' => $this->registry,
-			'identityValue' => $this->identityValue,
+			'registry' => $this->getRegistry(),
+			'identityValue' => $this->getIdentityValue(),
 		];
 	}//end getPayload()
 }//end class

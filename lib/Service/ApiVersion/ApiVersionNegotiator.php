@@ -36,7 +36,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCP\IRequest;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
  */
-class ApiVersionNegotiator {
+class ApiVersionNegotiator implements ApiVersionNegotiatorInterface {
 
 	/**
 	 * The request header a consumer sets to name the contract it speaks.
@@ -60,16 +60,6 @@ class ApiVersionNegotiator {
 	 */
 	public const REQUEST_HEADER = 'API-Version';
 
-	/**
-	 * The response header naming the contract that answered.
-	 *
-	 * Sent on every answer, including one the caller did not ask a version
-	 * for, because a consumer that can read which contract served it can
-	 * notice a default moving under it before its parser does.
-	 *
-	 * @var string
-	 */
-	public const RESPONSE_HEADER = 'API-Version';
 
 	/**
 	 * Constructor.
@@ -91,16 +81,12 @@ class ApiVersionNegotiator {
 	 *
 	 * @return ApiVersionNegotiation What was asked for, and what answers.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function negotiate(IRequest $request): ApiVersionNegotiation {
 		$named = $this->readRequestedIdentifier(request: $request);
 		if ($named === null) {
-			return new ApiVersionNegotiation(
-				requestedId: null,
-				version: $this->catalogue->current(),
-				source: ApiVersionNegotiation::SOURCE_DEFAULT,
-			);
+			return $this->defaultNegotiation();
 		}
 
 		[$identifier, $source] = $named;
@@ -114,11 +100,25 @@ class ApiVersionNegotiator {
 	}//end negotiate()
 
 	/**
+	 * The negotiation of a request that names no version: the current one.
+	 *
+	 * @return ApiVersionNegotiation The negotiation.
+	 */
+	private function defaultNegotiation(): ApiVersionNegotiation {
+		return new ApiVersionNegotiation(
+			requestedId: null,
+			version: $this->catalogue->current(),
+			source: ApiVersionNegotiation::SOURCE_DEFAULT,
+		);
+
+	}//end defaultNegotiation()
+
+	/**
 	 * The identifiers this instance would accept, for a refusal message.
 	 *
 	 * @return array<int, string> The served identifiers, lowest first.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function acceptableIdentifiers(): array {
 		return $this->catalogue->servedIdentifiers();

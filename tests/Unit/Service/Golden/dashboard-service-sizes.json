@@ -1,0 +1,1166 @@
+{
+    "sizes all": {
+        "result": {
+            "processed": 3,
+            "failed": 4
+        },
+        "calls": [
+            "registers.find [1,false,false]",
+            "schemas.find [10,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "log [DashboardService] Failed to update object 666: no save []",
+            "registers.find [1,false,false]",
+            "schemas.find [11,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null]",
+            "log [DashboardService] Failed to update object 666: no save []",
+            "registers.find [2,false,false]",
+            "schemas.find [10,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#2\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#2\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#2\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "log [DashboardService] Failed to update object 666: no save []",
+            "registers.find [404,false,false]",
+            "log [DashboardService] Skipping pair 404/10: no register []"
+        ]
+    },
+    "sizes register": {
+        "result": {
+            "processed": 1,
+            "failed": 1
+        },
+        "calls": [
+            "registers.find [2,false,false]",
+            "schemas.find [10,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#2\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#2\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#2\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "log [DashboardService] Failed to update object 666: no save []"
+        ]
+    },
+    "sizes schema": {
+        "result": {
+            "processed": 1,
+            "failed": 1
+        },
+        "calls": [
+            "registers.find [1,false,false]",
+            "schemas.find [11,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null]",
+            "log [DashboardService] Failed to update object 666: no save []"
+        ]
+    },
+    "sizes both": {
+        "result": {
+            "processed": 1,
+            "failed": 1
+        },
+        "calls": [
+            "registers.find [1,false,false]",
+            "schemas.find [10,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "log [DashboardService] Failed to update object 666: no save []"
+        ]
+    },
+    "sizes pairs fail": {
+        "thrown": "Exception: Failed to recalculate sizes: no pairs",
+        "calls": [
+            "log [DashboardService] Failed to recalculate sizes: no pairs []"
+        ]
+    },
+    "log sizes all": {
+        "result": {
+            "processed": 1,
+            "failed": 1
+        },
+        "calls": [
+            "audit.findAll [null,null,[],{\"created\":\"DESC\"},null]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#200\"]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#666\"]",
+            "log [DashboardService] Failed to update log 666: no log save []"
+        ]
+    },
+    "log sizes both": {
+        "result": {
+            "processed": 1,
+            "failed": 1
+        },
+        "calls": [
+            "audit.findAll [null,null,{\"register\":1,\"schema\":10},{\"created\":\"DESC\"},null]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#200\"]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#666\"]",
+            "log [DashboardService] Failed to update log 666: no log save []"
+        ]
+    },
+    "log sizes register": {
+        "result": {
+            "processed": 1,
+            "failed": 1
+        },
+        "calls": [
+            "audit.findAll [null,null,{\"register\":1},{\"created\":\"DESC\"},null]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#200\"]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#666\"]",
+            "log [DashboardService] Failed to update log 666: no log save []"
+        ]
+    },
+    "log sizes schema": {
+        "result": {
+            "processed": 1,
+            "failed": 1
+        },
+        "calls": [
+            "audit.findAll [null,null,{\"schema\":10},{\"created\":\"DESC\"},null]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#200\"]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#666\"]",
+            "log [DashboardService] Failed to update log 666: no log save []"
+        ]
+    },
+    "all sizes": {
+        "result": {
+            "objects": {
+                "processed": 2,
+                "failed": 2
+            },
+            "logs": {
+                "processed": 1,
+                "failed": 1
+            },
+            "total": {
+                "processed": 3,
+                "failed": 3
+            }
+        },
+        "calls": [
+            "registers.find [1,false,false]",
+            "schemas.find [10,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "log [DashboardService] Failed to update object 666: no save []",
+            "registers.find [1,false,false]",
+            "schemas.find [11,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null]",
+            "log [DashboardService] Failed to update object 666: no save []",
+            "audit.findAll [null,null,{\"register\":1},{\"created\":\"DESC\"},null]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#200\"]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#666\"]",
+            "log [DashboardService] Failed to update log 666: no log save []"
+        ]
+    },
+    "all sizes fail": {
+        "thrown": "Exception: Failed to recalculate all sizes: Failed to recalculate sizes: no pairs",
+        "calls": [
+            "log [DashboardService] Failed to recalculate sizes: no pairs []",
+            "log [DashboardService] Failed to recalculate all sizes: Failed to recalculate sizes: no pairs []"
+        ]
+    },
+    "calculate all": {
+        "result": {
+            "status": "success",
+            "scope": {
+                "register": null,
+                "schema": null
+            },
+            "results": {
+                "objects": {
+                    "processed": 3,
+                    "failed": 4
+                },
+                "logs": {
+                    "processed": 1,
+                    "failed": 1
+                },
+                "total": {
+                    "processed": 4,
+                    "failed": 5
+                }
+            },
+            "summary": {
+                "total_processed": 4,
+                "total_failed": 5,
+                "success_rate": -25.0
+            }
+        },
+        "calls": [
+            "registers.find [1,false,false]",
+            "schemas.find [10,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "log [DashboardService] Failed to update object 666: no save []",
+            "registers.find [1,false,false]",
+            "schemas.find [11,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#11\",null]",
+            "log [DashboardService] Failed to update object 666: no save []",
+            "registers.find [2,false,false]",
+            "schemas.find [10,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#2\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#2\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#2\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "log [DashboardService] Failed to update object 666: no save []",
+            "registers.find [404,false,false]",
+            "log [DashboardService] Skipping pair 404/10: no register []",
+            "audit.findAll [null,null,[],{\"created\":\"DESC\"},null]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#200\"]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#666\"]",
+            "log [DashboardService] Failed to update log 666: no log save []"
+        ]
+    },
+    "calculate both": {
+        "result": {
+            "status": "success",
+            "scope": {
+                "register": {
+                    "id": 1,
+                    "title": "Register 1"
+                },
+                "schema": {
+                    "id": 10,
+                    "title": "Schema 10"
+                }
+            },
+            "results": {
+                "objects": {
+                    "processed": 1,
+                    "failed": 1
+                },
+                "logs": {
+                    "processed": 1,
+                    "failed": 1
+                },
+                "total": {
+                    "processed": 2,
+                    "failed": 2
+                }
+            },
+            "summary": {
+                "total_processed": 2,
+                "total_failed": 2,
+                "success_rate": 0.0
+            }
+        },
+        "calls": [
+            "registers.find [1,true,true]",
+            "schemas.find [10,[],true,true]",
+            "registers.find [1,false,false]",
+            "schemas.find [10,[],false,false]",
+            "objects.findAllInRegisterSchemaTable [\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null,null,null,[]]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#100\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "objects.update [\"OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity#666\",\"OCA\\\\OpenRegister\\\\Db\\\\Register#1\",\"OCA\\\\OpenRegister\\\\Db\\\\Schema#10\",null]",
+            "log [DashboardService] Failed to update object 666: no save []",
+            "audit.findAll [null,null,{\"register\":1,\"schema\":10},{\"created\":\"DESC\"},null]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#200\"]",
+            "audit.update [\"OCA\\\\OpenRegister\\\\Db\\\\AuditTrail#666\"]",
+            "log [DashboardService] Failed to update log 666: no log save []"
+        ]
+    },
+    "calculate foreign": {
+        "thrown": "Exception: Size calculation failed: Schema not found or invalid: Schema does not belong to the specified register",
+        "calls": [
+            "registers.find [1,true,true]",
+            "schemas.find [99,[],true,true]",
+            "log [DashboardService] Size calculation failed: Schema not found or invalid: Schema does not belong to the specified register []"
+        ]
+    },
+    "calculate no register": {
+        "thrown": "Exception: Size calculation failed: Register not found: no register",
+        "calls": [
+            "registers.find [404,true,true]",
+            "log [DashboardService] Size calculation failed: Register not found: no register []"
+        ]
+    },
+    "calculate no schema": {
+        "thrown": "Exception: Size calculation failed: Schema not found or invalid: no schema",
+        "calls": [
+            "schemas.find [404,[],true,true]",
+            "log [DashboardService] Size calculation failed: Schema not found or invalid: no schema []"
+        ]
+    },
+    "listing all": {
+        "result": [
+            {
+                "id": "totals",
+                "title": "System Totals",
+                "description": "Total statistics across all registers and schemas",
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            },
+            {
+                "id": 1,
+                "uuid": null,
+                "slug": null,
+                "title": "Register 1",
+                "version": null,
+                "description": null,
+                "schemas": [
+                    {
+                        "id": 10,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": null,
+                        "title": "Schema 10",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null,
+                        "stats": {
+                            "objects": {
+                                "total": 11,
+                                "size": 12,
+                                "invalid": 13,
+                                "deleted": 14,
+                                "locked": 15
+                            },
+                            "logs": {
+                                "total": 21,
+                                "size": 22
+                            },
+                            "webhookLogs": {
+                                "total": 31,
+                                "size": 0
+                            },
+                            "files": {
+                                "total": 0,
+                                "size": 0
+                            }
+                        }
+                    },
+                    {
+                        "id": 11,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": null,
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null,
+                        "stats": {
+                            "objects": {
+                                "total": 11,
+                                "size": 12,
+                                "invalid": 13,
+                                "deleted": 14,
+                                "locked": 15
+                            },
+                            "logs": {
+                                "total": 21,
+                                "size": 22
+                            },
+                            "webhookLogs": {
+                                "total": 31,
+                                "size": 0
+                            },
+                            "files": {
+                                "total": 0,
+                                "size": 0
+                            }
+                        }
+                    }
+                ],
+                "source": null,
+                "tablePrefix": null,
+                "folder": null,
+                "updated": null,
+                "created": null,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": [],
+                "sharedWith": [],
+                "groups": [],
+                "type": null,
+                "languages": null,
+                "configuration": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "deleted": null,
+                "_mail": null,
+                "_contacts": null,
+                "_notes": null,
+                "_todos": null,
+                "_calendar": null,
+                "_talk": null,
+                "_deck": null,
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                }
+            },
+            {
+                "id": 3,
+                "uuid": null,
+                "slug": null,
+                "title": "Register 3",
+                "version": null,
+                "description": null,
+                "schemas": [],
+                "source": null,
+                "tablePrefix": null,
+                "folder": null,
+                "updated": null,
+                "created": null,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": [],
+                "sharedWith": [],
+                "groups": [],
+                "type": null,
+                "languages": null,
+                "configuration": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "deleted": null,
+                "_mail": null,
+                "_contacts": null,
+                "_notes": null,
+                "_todos": null,
+                "_calendar": null,
+                "_talk": null,
+                "_deck": null,
+                "stats": [],
+                "error": "schema conflict"
+            },
+            {
+                "id": "orphaned",
+                "title": "Orphaned Items",
+                "description": "Items referencing non-existent registers/schemas or invalid combinations",
+                "stats": {
+                    "objects": {
+                        "total": 0,
+                        "size": 0,
+                        "invalid": 0,
+                        "deleted": 0,
+                        "locked": 0
+                    },
+                    "logs": {
+                        "total": 0,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            }
+        ],
+        "calls": [
+            "registers.findAll [null,null,[],[],[],true,true]",
+            "objects.getStatistics [null,null,[]]",
+            "registers.getSchemasByRegisterId [1,true,true]",
+            "objects.getStatistics [1,null,[]]",
+            "objects.getStatistics [1,10,[]]",
+            "objects.getStatistics [1,11,[]]",
+            "registers.getSchemasByRegisterId [3,true,true]",
+            "log [DashboardService] Skipping a register whose schemas could not be loaded: schema conflict {\"register\":3}",
+            "registers.findAll [null,null,[],[],[],true,true]",
+            "registers.getSchemasByRegisterId [1,true,true]",
+            "registers.getSchemasByRegisterId [3,true,true]",
+            "log [DashboardService] Failed to get orphaned statistics: schema conflict []"
+        ]
+    },
+    "listing narrowed": {
+        "result": [
+            {
+                "id": "totals",
+                "title": "System Totals",
+                "description": "Total statistics across all registers and schemas",
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            },
+            {
+                "id": 1,
+                "uuid": null,
+                "slug": null,
+                "title": "Register 1",
+                "version": null,
+                "description": null,
+                "schemas": [
+                    {
+                        "id": 11,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": null,
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null,
+                        "stats": {
+                            "objects": {
+                                "total": 11,
+                                "size": 12,
+                                "invalid": 13,
+                                "deleted": 14,
+                                "locked": 15
+                            },
+                            "logs": {
+                                "total": 21,
+                                "size": 22
+                            },
+                            "webhookLogs": {
+                                "total": 31,
+                                "size": 0
+                            },
+                            "files": {
+                                "total": 0,
+                                "size": 0
+                            }
+                        }
+                    }
+                ],
+                "source": null,
+                "tablePrefix": null,
+                "folder": null,
+                "updated": null,
+                "created": null,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": [],
+                "sharedWith": [],
+                "groups": [],
+                "type": null,
+                "languages": null,
+                "configuration": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "deleted": null,
+                "_mail": null,
+                "_contacts": null,
+                "_notes": null,
+                "_todos": null,
+                "_calendar": null,
+                "_talk": null,
+                "_deck": null,
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                }
+            },
+            {
+                "id": 3,
+                "uuid": null,
+                "slug": null,
+                "title": "Register 3",
+                "version": null,
+                "description": null,
+                "schemas": [],
+                "source": null,
+                "tablePrefix": null,
+                "folder": null,
+                "updated": null,
+                "created": null,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": [],
+                "sharedWith": [],
+                "groups": [],
+                "type": null,
+                "languages": null,
+                "configuration": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "deleted": null,
+                "_mail": null,
+                "_contacts": null,
+                "_notes": null,
+                "_todos": null,
+                "_calendar": null,
+                "_talk": null,
+                "_deck": null,
+                "stats": [],
+                "error": "schema conflict"
+            },
+            {
+                "id": "orphaned",
+                "title": "Orphaned Items",
+                "description": "Items referencing non-existent registers/schemas or invalid combinations",
+                "stats": {
+                    "objects": {
+                        "total": 0,
+                        "size": 0,
+                        "invalid": 0,
+                        "deleted": 0,
+                        "locked": 0
+                    },
+                    "logs": {
+                        "total": 0,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            }
+        ],
+        "calls": [
+            "registers.findAll [null,null,{\"id\":1},[],[],true,true]",
+            "objects.getStatistics [1,11,[]]",
+            "registers.getSchemasByRegisterId [1,true,true]",
+            "objects.getStatistics [1,null,[]]",
+            "objects.getStatistics [1,11,[]]",
+            "registers.getSchemasByRegisterId [3,true,true]",
+            "log [DashboardService] Skipping a register whose schemas could not be loaded: schema conflict {\"register\":3}",
+            "registers.findAll [null,null,[],[],[],true,true]",
+            "registers.getSchemasByRegisterId [1,true,true]",
+            "registers.getSchemasByRegisterId [3,true,true]",
+            "log [DashboardService] Failed to get orphaned statistics: schema conflict []"
+        ]
+    },
+    "listing with an Error": {
+        "result": [
+            {
+                "id": "totals",
+                "title": "System Totals",
+                "description": "Total statistics across all registers and schemas",
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            },
+            {
+                "id": 1,
+                "uuid": null,
+                "slug": null,
+                "title": "Register 1",
+                "version": null,
+                "description": null,
+                "schemas": [
+                    {
+                        "id": 10,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": null,
+                        "title": "Schema 10",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null,
+                        "stats": {
+                            "objects": {
+                                "total": 11,
+                                "size": 12,
+                                "invalid": 13,
+                                "deleted": 14,
+                                "locked": 15
+                            },
+                            "logs": {
+                                "total": 21,
+                                "size": 22
+                            },
+                            "webhookLogs": {
+                                "total": 31,
+                                "size": 0
+                            },
+                            "files": {
+                                "total": 0,
+                                "size": 0
+                            }
+                        }
+                    },
+                    {
+                        "id": 11,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": null,
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null,
+                        "stats": {
+                            "objects": {
+                                "total": 11,
+                                "size": 12,
+                                "invalid": 13,
+                                "deleted": 14,
+                                "locked": 15
+                            },
+                            "logs": {
+                                "total": 21,
+                                "size": 22
+                            },
+                            "webhookLogs": {
+                                "total": 31,
+                                "size": 0
+                            },
+                            "files": {
+                                "total": 0,
+                                "size": 0
+                            }
+                        }
+                    }
+                ],
+                "source": null,
+                "tablePrefix": null,
+                "folder": null,
+                "updated": null,
+                "created": null,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": [],
+                "sharedWith": [],
+                "groups": [],
+                "type": null,
+                "languages": null,
+                "configuration": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "deleted": null,
+                "_mail": null,
+                "_contacts": null,
+                "_notes": null,
+                "_todos": null,
+                "_calendar": null,
+                "_talk": null,
+                "_deck": null,
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                }
+            },
+            {
+                "id": 3,
+                "uuid": null,
+                "slug": null,
+                "title": "Register 3",
+                "version": null,
+                "description": null,
+                "schemas": [],
+                "source": null,
+                "tablePrefix": null,
+                "folder": null,
+                "updated": null,
+                "created": null,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": [],
+                "sharedWith": [],
+                "groups": [],
+                "type": null,
+                "languages": null,
+                "configuration": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "deleted": null,
+                "_mail": null,
+                "_contacts": null,
+                "_notes": null,
+                "_todos": null,
+                "_calendar": null,
+                "_talk": null,
+                "_deck": null,
+                "stats": [],
+                "error": "schema conflict"
+            },
+            {
+                "id": "orphaned",
+                "title": "Orphaned Items",
+                "description": "Items referencing non-existent registers/schemas or invalid combinations",
+                "stats": {
+                    "objects": {
+                        "total": 0,
+                        "size": 0,
+                        "invalid": 0,
+                        "deleted": 0,
+                        "locked": 0
+                    },
+                    "logs": {
+                        "total": 0,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            }
+        ],
+        "calls": [
+            "registers.findAll [null,null,[],[],[],true,true]",
+            "objects.getStatistics [null,null,[]]",
+            "registers.getSchemasByRegisterId [1,true,true]",
+            "objects.getStatistics [1,null,[]]",
+            "objects.getStatistics [1,10,[]]",
+            "objects.getStatistics [1,11,[]]",
+            "registers.getSchemasByRegisterId [3,true,true]",
+            "log [DashboardService] Skipping a register whose schemas could not be loaded: schema conflict {\"register\":3}",
+            "registers.findAll [null,null,[],[],[],true,true]",
+            "registers.getSchemasByRegisterId [1,true,true]",
+            "registers.getSchemasByRegisterId [3,true,true]",
+            "log [DashboardService] Failed to get orphaned statistics: schema conflict []"
+        ]
+    }
+}

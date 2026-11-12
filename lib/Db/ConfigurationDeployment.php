@@ -68,6 +68,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class ConfigurationDeployment extends Entity implements JsonSerializable {
+	use HydrateBySettersTrait;
 
 	/**
 	 * Every value in the set is live.
@@ -190,30 +191,6 @@ class ConfigurationDeployment extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function hydrate(array $object): static {
-		foreach ($object as $key => $value) {
-			$method = 'set'.ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore properties this entity does not carry.
-			}
-		}
-
-		return $this;
-
-	}//end hydrate()
-
-	/**
 	 * Whether this deployment restores an earlier one.
 	 *
 	 * @return boolean True when it names a deployment it restores.
@@ -238,27 +215,16 @@ class ConfigurationDeployment extends Entity implements JsonSerializable {
 	}//end readChanges()
 
 	/**
-	 * JSON serialisation.
+	 * Convert the entity to a JSON serialisable array.
 	 *
-	 * @return array<string, mixed> The serialised deployment.
+	 * @return array<string, mixed>
 	 */
 	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'name' => $this->name,
-			'setUuid' => $this->setUuid,
-			'author' => $this->author,
-			'approver' => $this->approver,
-			'deployedBy' => $this->deployedBy,
-			'deployedAt' => $this->deployedAt?->format(DateTime::ATOM),
-			'restores' => $this->restoresUuid,
-			'isRollback' => $this->isRollback(),
-			'changes' => $this->readChanges(),
-			'changeCount' => ($this->changeCount ?? 0),
-			'state' => $this->state,
-			'created' => $this->created?->format(DateTime::ATOM),
-		];
+		$typed = new TypedFieldsJson();
+		$json = $typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
+		$json = array_merge($json, ['changes' => $this->readChanges(), 'changeCount' => ($this->changeCount ?? 0)]);
+		$json = $typed->renamed(json: $json, names: ['restoresUuid' => 'restores']);
 
+		return $typed->inserted(json: $json, entriesAfter: ['restores' => ['isRollback' => $this->isRollback()]]);
 	}//end jsonSerialize()
 }//end class

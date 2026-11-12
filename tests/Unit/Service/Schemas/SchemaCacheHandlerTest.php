@@ -143,6 +143,68 @@ class SchemaCacheHandlerTest extends TestCase {
 	}
 
 	/**
+	 * A query builder that records the cache rows written through it.
+	 *
+	 * Updates land in $writes['update'] as column => value, one entry per statement;
+	 * inserts land in $writes['insert'] as the values array.
+	 *
+	 * @param int          $updatedRows What an UPDATE statement reports.
+	 * @param \ArrayObject $writes      Receives the recorded writes.
+	 *
+	 * @return IQueryBuilder&MockObject The query builder.
+	 */
+	private function recordingQueryBuilder(int $updatedRows, \ArrayObject $writes): IQueryBuilder|MockObject {
+		$writes['update'] = [];
+		$writes['insert'] = [];
+		$pending = [];
+		$mode = null;
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$expr = $this->createMock(IExpressionBuilder::class);
+		$expr->method('eq')->willReturn('mock_expr');
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('createNamedParameter')->willReturnArgument(0);
+		$qb->method('where')->willReturnSelf();
+		$qb->method('andWhere')->willReturnSelf();
+		$qb->method('update')->willReturnCallback(
+			function () use ($qb, &$mode, &$pending): IQueryBuilder {
+				$mode = 'update';
+				$pending = [];
+				return $qb;
+			}
+		);
+		$qb->method('insert')->willReturnCallback(
+			function () use ($qb, &$mode, &$pending): IQueryBuilder {
+				$mode = 'insert';
+				$pending = [];
+				return $qb;
+			}
+		);
+		$qb->method('set')->willReturnCallback(
+			function (string $column, mixed $value) use ($qb, &$pending): IQueryBuilder {
+				$pending[$column] = $value;
+				return $qb;
+			}
+		);
+		$qb->method('values')->willReturnCallback(
+			function (array $values) use ($qb, &$pending): IQueryBuilder {
+				$pending = $values;
+				return $qb;
+			}
+		);
+		$qb->method('executeStatement')->willReturnCallback(
+			function () use ($writes, &$mode, &$pending, $updatedRows): int {
+				$list = $writes[$mode];
+				$list[] = $pending;
+				$writes[$mode] = $list;
+				return $mode === 'update' ? $updatedRows : 1;
+			}
+		);
+
+		return $qb;
+	}
+
+	/**
 	 * Create a mock query builder that returns a mock result.
 	 */
 	private function createMockQueryBuilder(mixed $fetchResult = false, int $executeStatementResult = 0): IQueryBuilder|MockObject {
@@ -298,13 +360,22 @@ class SchemaCacheHandlerTest extends TestCase {
 		$schema->setConfiguration(['key' => 'val']);
 		$schema->setProperties(['f1' => ['type' => 'string']]);
 
-		$qb = $this->createMockQueryBuilder(false, 0);
+		$writes = new \ArrayObject();
+		$qb = $this->recordingQueryBuilder(0, $writes);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		// cacheSchema internally calls cacheSchemaConfiguration and cacheSchemaProperties.
 		// They write to the DB. If no exception, it passes.
 		$this->handler->cacheSchema($schema);
-		$this->assertTrue(true);
+
+		// The schema, its configuration and its properties each get a row.
+		$this->assertCount(3, $writes['insert']);
+		$this->assertSame(
+			['schema_object', 'configuration', 'properties'],
+			array_column($writes['insert'], 'cache_key')
+		);
+		$this->assertSame(json_encode($schema->getConfiguration()), $writes['insert'][1]['cache_data']);
+		$this->assertSame(json_encode(['f1' => ['type' => 'string']]), $writes['insert'][2]['cache_data']);
 	}
 
 	// -----------------------------------------------------------------------
@@ -315,22 +386,29 @@ class SchemaCacheHandlerTest extends TestCase {
 		$schema = $this->createSchemaWithId(20);
 		$schema->setConfiguration(['facetable' => true, 'sortable' => false]);
 
-		$qb = $this->createMockQueryBuilder(false, 0);
+		$writes = new \ArrayObject();
+		$qb = $this->recordingQueryBuilder(0, $writes);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		$this->handler->cacheSchemaConfiguration($schema);
-		$this->assertTrue(true);
+
+		$this->assertCount(1, $writes['insert']);
+		$this->assertSame(20, $writes['insert'][0]['schema_id']);
+		$this->assertSame(json_encode($schema->getConfiguration()), $writes['insert'][0]['cache_data']);
 	}
 
 	public function testCacheSchemaConfigurationWithNullConfig(): void {
 		$schema = $this->createSchemaWithId(22);
 		// Configuration defaults to null if not set.
 
-		$qb = $this->createMockQueryBuilder(false, 0);
+		$writes = new \ArrayObject();
+		$qb = $this->recordingQueryBuilder(0, $writes);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		$this->handler->cacheSchemaConfiguration($schema);
-		$this->assertTrue(true);
+
+		$this->assertCount(1, $writes['insert']);
+		$this->assertSame(json_encode($schema->getConfiguration()), $writes['insert'][0]['cache_data']);
 	}
 
 	// -----------------------------------------------------------------------
@@ -341,22 +419,28 @@ class SchemaCacheHandlerTest extends TestCase {
 		$schema = $this->createSchemaWithId(21);
 		$schema->setProperties(['field1' => ['type' => 'string']]);
 
-		$qb = $this->createMockQueryBuilder(false, 0);
+		$writes = new \ArrayObject();
+		$qb = $this->recordingQueryBuilder(0, $writes);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		$this->handler->cacheSchemaProperties($schema);
-		$this->assertTrue(true);
+
+		$this->assertCount(1, $writes['insert']);
+		$this->assertSame(json_encode(['field1' => ['type' => 'string']]), $writes['insert'][0]['cache_data']);
 	}
 
 	public function testCacheSchemaPropertiesWithEmptyProperties(): void {
 		$schema = $this->createSchemaWithId(23);
 		$schema->setProperties([]);
 
-		$qb = $this->createMockQueryBuilder(false, 0);
+		$writes = new \ArrayObject();
+		$qb = $this->recordingQueryBuilder(0, $writes);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		$this->handler->cacheSchemaProperties($schema);
-		$this->assertTrue(true);
+
+		$this->assertCount(1, $writes['insert']);
+		$this->assertSame('[]', $writes['insert'][0]['cache_data']);
 	}
 
 	// -----------------------------------------------------------------------
@@ -778,31 +862,46 @@ class SchemaCacheHandlerTest extends TestCase {
 	public function testSetCachedDataEnforcesMaxTtl(): void {
 		$schema = $this->createMockSchemaWithId(300);
 
-		$qb = $this->createMockQueryBuilder(false, 0);
+		$writes = new \ArrayObject();
+		$qb = $this->recordingQueryBuilder(0, $writes);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		$this->handler->cacheSchema($schema, 999999);
-		$this->assertTrue(true);
+
+		// 999999 seconds is capped at the eight-hour maximum.
+		foreach ($writes['insert'] as $row) {
+			$this->assertSame(28800, $row['expires']->getTimestamp() - $row['created']->getTimestamp());
+		}
 	}
 
 	public function testSetCachedDataUpdatesExistingRecord(): void {
 		$schema = $this->createMockSchemaWithId(301);
 
 		// executeStatement returns 1 (update succeeded, no insert).
-		$qb = $this->createMockQueryBuilder(false, 1);
+		$writes = new \ArrayObject();
+		$qb = $this->recordingQueryBuilder(1, $writes);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		$this->handler->cacheSchema($schema);
-		$this->assertTrue(true);
+
+		// Every row already existed, so nothing is inserted.
+		$this->assertCount(3, $writes['update']);
+		$this->assertSame([], $writes['insert']);
 	}
 
 	public function testSetCachedDataWithZeroTtl(): void {
 		$schema = $this->createMockSchemaWithId(302);
 
-		$qb = $this->createMockQueryBuilder(false, 0);
+		$writes = new \ArrayObject();
+		$qb = $this->recordingQueryBuilder(0, $writes);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
 
 		$this->handler->cacheSchema($schema, 0);
-		$this->assertTrue(true);
+
+		// A zero TTL stores rows that never expire.
+		$this->assertNotEmpty($writes['insert']);
+		foreach ($writes['insert'] as $row) {
+			$this->assertNull($row['expires']);
+		}
 	}
 }

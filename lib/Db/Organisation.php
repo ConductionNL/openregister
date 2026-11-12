@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Organisation\OrganisationFieldTypes;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
 
@@ -63,6 +64,12 @@ use Symfony\Component\Uid\Uuid;
  * @method void setBandwidthQuota(?int $bandwidthQuota)
  * @method int|null getRequestQuota()
  * @method void setRequestQuota(?int $requestQuota)
+ * @method int|null getUserQuota()
+ * @method void setUserQuota(?int $userQuota)
+ * @method int|null getObjectQuota()
+ * @method void setObjectQuota(?int $objectQuota)
+ * @method string|null getObjectQuotaSchema()
+ * @method void setObjectQuotaSchema(?string $objectQuotaSchema)
  * @method array|null getAuthorization()
  * @method static setAuthorization(array|string|null $authorization)
  * @method string|null getStatus()
@@ -139,6 +146,40 @@ use Symfony\Component\Uid\Uuid;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Organisation extends Entity implements JsonSerializable {
+	use IsoTimestampsTrait;
+	use AuthorizationRulesTrait;
+
+	/**
+	 * Resources whose default authorization is a create/read/update/delete block.
+	 *
+	 * @var list<string>
+	 */
+	private const CRUD_RESOURCES = [
+		'register',
+		'schema',
+		'object',
+		'view',
+		'agent',
+		'configuration',
+		'application',
+	];
+
+	/**
+	 * The special rights and who holds each in a new organisation.
+	 *
+	 * `agent_use` and `llm_use` go to every signed-in user until an administrator
+	 * or the owner narrows them, so a new organisation behaves as an upgraded one
+	 * does after Repair\OpenSpecialRightsToEveryone. `grant_manage` decides who
+	 * reads a record, so nobody holds it by default. See
+	 * Service\Rbac\OrganisationSpecialRights.
+	 *
+	 * @var array<string, list<string>>
+	 */
+	private const SPECIAL_RIGHT_DEFAULTS = [
+		'agent_use' => ['*'],
+		'llm_use' => ['*'],
+		'grant_manage' => [],
+	];
 
 	/**
 	 * Unique identifier for the organisation
@@ -234,6 +275,28 @@ class Organisation extends Entity implements JsonSerializable {
 	 * @var integer|null API request quota per day
 	 */
 	protected ?int $requestQuota = null;
+
+	/**
+	 * How many members the organisation may have; NULL = no limit.
+	 *
+	 * @var integer|null User quota
+	 */
+	protected ?int $userQuota = null;
+
+	/**
+	 * How many live objects the organisation may hold, of the schema
+	 * `objectQuotaSchema` names (every schema when it names none); NULL = no limit.
+	 *
+	 * @var integer|null Object quota
+	 */
+	protected ?int $objectQuota = null;
+
+	/**
+	 * The slug of the schema the object quota counts, such as `case`; NULL counts every schema.
+	 *
+	 * @var string|null Object quota schema slug
+	 */
+	protected ?string $objectQuotaSchema = null;
 
 	/**
 	 * Authorization rules for this organisation
@@ -599,55 +662,9 @@ class Organisation extends Entity implements JsonSerializable {
 	 * Sets up the entity type mappings for proper database handling.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'users', type: 'json');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'active', type: 'boolean');
-		$this->addType(fieldName: 'storageQuota', type: 'integer');
-		$this->addType(fieldName: 'bandwidthQuota', type: 'integer');
-		$this->addType(fieldName: 'requestQuota', type: 'integer');
-		$this->addType(fieldName: 'authorization', type: 'json');
-		$this->addType(fieldName: 'parent', type: 'string');
-		$this->addType(fieldName: 'mail', type: 'json');
-		$this->addType(fieldName: 'contacts', type: 'json');
-		$this->addType(fieldName: 'notes', type: 'json');
-		$this->addType(fieldName: 'todos', type: 'json');
-		$this->addType(fieldName: 'calendar', type: 'json');
-		$this->addType(fieldName: 'talk', type: 'json');
-		$this->addType(fieldName: 'deck', type: 'json');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'environment', type: 'string');
-		$this->addType(fieldName: 'provisionedAt', type: 'datetime');
-		$this->addType(fieldName: 'suspendedAt', type: 'datetime');
-		$this->addType(fieldName: 'deprovisionedAt', type: 'datetime');
-		$this->addType(fieldName: 'retainedAt', type: 'datetime');
-		// Identity facet (ADR-022 §3): the statutory identifiers a leaf app
-		// used to keep in its own publisher/vendor record.
-		$this->addType(fieldName: 'type', type: 'string');
-		$this->addType(fieldName: 'isLocalTenant', type: 'boolean');
-		$this->addType(fieldName: 'remoteInstanceUrl', type: 'string');
-		$this->addType(fieldName: 'contactEmail', type: 'string');
-		$this->addType(fieldName: 'defaultPermissionLevel', type: 'string');
-		$this->addType(fieldName: 'qualityScore', type: 'integer');
-		$this->addType(fieldName: 'qualityStatus', type: 'string');
-		$this->addType(fieldName: 'summary', type: 'string');
-		$this->addType(fieldName: 'oin', type: 'string');
-		$this->addType(fieldName: 'tooi', type: 'string');
-		$this->addType(fieldName: 'rsin', type: 'string');
-		$this->addType(fieldName: 'kvk', type: 'string');
-		$this->addType(fieldName: 'legalName', type: 'string');
-		$this->addType(fieldName: 'pki', type: 'string');
-		$this->addType(fieldName: 'image', type: 'string');
-		// Relationship facet.
-		$this->addType(fieldName: 'registrationStatus', type: 'string');
-		$this->addType(fieldName: 'mergedInto', type: 'string');
-		$this->addType(fieldName: 'mergedAt', type: 'datetime');
+		foreach (OrganisationFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -869,57 +886,21 @@ class Organisation extends Entity implements JsonSerializable {
 	 * }
 	 */
 	private function getDefaultAuthorization(): array {
-		return [
-			'register' => [
+		$authorization = [];
+		foreach (self::CRUD_RESOURCES as $resource) {
+			$authorization[$resource] = [
 				'create' => [],
 				'read' => [],
 				'update' => [],
 				'delete' => [],
-			],
-			'schema' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'object' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'view' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'agent' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'configuration' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			'application' => [
-				'create' => [],
-				'read' => [],
-				'update' => [],
-				'delete' => [],
-			],
-			// Every signed-in user, until an administrator or the owner narrows
-			// it: a new organisation behaves as an upgraded one does after
-			// Repair\OpenSpecialRightsToEveryone. See Service\Rbac\OrganisationSpecialRights.
-			'agent_use' => ['*'],
-			'llm_use' => ['*'],
-			// Nobody: a right that decides who reads a record is not open by default.
-			'grant_manage' => [],
-		];
+			];
+		}
+
+		foreach (self::SPECIAL_RIGHT_DEFAULTS as $right => $holders) {
+			$authorization[$right] = $holders;
+		}
+
+		return $authorization;
 	}//end getDefaultAuthorization()
 
 	/**
@@ -930,34 +911,6 @@ class Organisation extends Entity implements JsonSerializable {
 	public function getAuthorization(): array {
 		return $this->authorization ?? $this->getDefaultAuthorization();
 	}//end getAuthorization()
-
-	/**
-	 * Set authorization rules for this organisation
-	 *
-	 * @param array|string|null $authorization Authorization rules structure or JSON string
-	 *
-	 * @return static Returns this organisation for method chaining
-	 */
-	public function setAuthorization(array|string|null $authorization): static {
-		// Handle JSON string from database (type safety).
-		if (is_string($authorization) === true) {
-			try {
-				$decoded = json_decode($authorization, true);
-				// Invalid JSON, use default.
-				$authorization = null;
-				if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-					$authorization = $decoded;
-				}
-			} catch (\Exception $e) {
-				// If decoding fails, use default.
-				$authorization = null;
-			}
-		}
-
-		$this->authorization = $authorization ?? $this->getDefaultAuthorization();
-		$this->markFieldUpdated(attribute: 'authorization');
-		return $this;
-	}//end setAuthorization()
 
 	/**
 	 * Get parent organisation UUID
@@ -1017,13 +970,16 @@ class Organisation extends Entity implements JsonSerializable {
 	 *         storage: int|null,
 	 *         bandwidth: int|null,
 	 *         requests: int|null,
-	 *         users: null,
+	 *         users: int|null,
+	 *         objects: int|null,
+	 *         objectsSchema: string|null,
 	 *         groups: null
 	 *     },
 	 *     usage: array{
-	 *         storage: 0,
-	 *         bandwidth: 0,
-	 *         requests: 0,
+	 *         storage: null,
+	 *         bandwidth: null,
+	 *         requests: null,
+	 *         objects: null,
 	 *         users: int<0, max>,
 	 *         groups: int<0, max>
 	 *     },
@@ -1035,26 +991,54 @@ class Organisation extends Entity implements JsonSerializable {
 	public function jsonSerialize(): array {
 		$users = $this->getUserIds();
 		$groups = $this->getGroups();
-		$provisionedAt = null;
-		$suspendedAt = null;
-		$deprovisionedAt = null;
-		if ($this->provisionedAt instanceof DateTime) {
-			$provisionedAt = $this->provisionedAt->format('c');
-		}
 
-		if ($this->suspendedAt instanceof DateTime) {
-			$suspendedAt = $this->suspendedAt->format('c');
-		}
+		return array_merge(
+			$this->identityJson(users: $users, groups: $groups),
+			[
+				'quota' => $this->quotaJson(),
+				'usage' => $this->usageJson(users: $users, groups: $groups),
+			],
+			$this->tenancyJson(),
+			$this->registryJson(),
+			$this->lifecycleJson(),
+			$this->workspaceJson()
+		);
+	}//end jsonSerialize()
 
-		if ($this->deprovisionedAt instanceof DateTime) {
-			$deprovisionedAt = $this->deprovisionedAt->format('c');
-		}
+	/**
+	 * The usage block of the serialised organisation.
+	 *
+	 * Storage, bandwidth and requests are measured by OrganisationUsageService;
+	 * the entity cannot measure them, so they are null here rather than a 0 that
+	 * reads as "nothing used".
+	 *
+	 * @param array $users  The member user ids.
+	 * @param array $groups The member groups.
+	 *
+	 * @return array<string, int|null> The usage block.
+	 */
+	private function usageJson(array $users, array $groups): array {
+		return [
+			'storage' => null,
+			'bandwidth' => null,
+			'requests' => null,
+			'objects' => null,
+			'users' => count($users),
+			'groups' => count($groups),
+		];
+	}//end usageJson()
 
-		$mergedAt = null;
-		if ($this->mergedAt instanceof DateTime) {
-			$mergedAt = $this->mergedAt->format('c');
-		}
-
+	/**
+	 * The identity and membership part of the serialised organisation.
+	 *
+	 * @param array $users  The member user ids.
+	 * @param array $groups The member groups.
+	 *
+	 * @return array<string, mixed> Keys id to children, in output order.
+	 *
+	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 */
+	private function identityJson(array $users, array $groups): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -1067,25 +1051,37 @@ class Organisation extends Entity implements JsonSerializable {
 			'active' => $this->isActive(),
 			'parent' => $this->parent,
 			'children' => $this->children ?? [],
-			'quota' => [
-				'storage' => $this->storageQuota,
-				'bandwidth' => $this->bandwidthQuota,
-				'requests' => $this->requestQuota,
-				'users' => null,
-				// To be set via admin configuration.
-				'groups' => null,
-				// To be set via admin configuration.
-			],
-			'usage' => [
-				'storage' => 0,
-				// To be calculated from actual usage.
-				'bandwidth' => 0,
-				// To be calculated from actual usage.
-				'requests' => 0,
-				// To be calculated from actual usage.
-				'users' => count($users),
-				'groups' => count($groups),
-			],
+		];
+	}//end identityJson()
+
+	/**
+	 * The quota part of the serialised organisation.
+	 *
+	 * @return array<string, mixed> The configured quotas; groups is set via admin configuration.
+	 *
+	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 */
+	private function quotaJson(): array {
+		return [
+			'storage' => $this->storageQuota,
+			'bandwidth' => $this->bandwidthQuota,
+			'requests' => $this->requestQuota,
+			'users' => $this->userQuota,
+			'objects' => $this->objectQuota,
+			'objectsSchema' => $this->objectQuotaSchema,
+			'groups' => null,
+		];
+	}//end quotaJson()
+
+	/**
+	 * The tenancy part of the serialised organisation.
+	 *
+	 * @return array<string, mixed> Keys authorization to defaultPermissionLevel, in output order.
+	 *
+	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 */
+	private function tenancyJson(): array {
+		return [
 			'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
 			'status' => $this->status ?? 'active',
 			'environment' => $this->environment ?? 'production',
@@ -1094,6 +1090,18 @@ class Organisation extends Entity implements JsonSerializable {
 			'remoteInstanceUrl' => $this->remoteInstanceUrl,
 			'contactEmail' => $this->contactEmail,
 			'defaultPermissionLevel' => $this->defaultPermissionLevel,
+		];
+	}//end tenancyJson()
+
+	/**
+	 * The registry part of the serialised organisation: quality and legal identifiers.
+	 *
+	 * @return array<string, mixed> Keys qualityScore to mergedInto, in output order.
+	 *
+	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 */
+	private function registryJson(): array {
+		return [
 			'qualityScore' => $this->qualityScore,
 			'qualityStatus' => $this->qualityStatus,
 			'summary' => $this->summary,
@@ -1106,13 +1114,37 @@ class Organisation extends Entity implements JsonSerializable {
 			'image' => $this->image,
 			'registrationStatus' => $this->registrationStatus,
 			'mergedInto' => $this->mergedInto,
-			'mergedAt' => $mergedAt,
-			'provisionedAt' => $provisionedAt,
-			'suspendedAt' => $suspendedAt,
-			'deprovisionedAt' => $deprovisionedAt,
+		];
+	}//end registryJson()
+
+	/**
+	 * The lifecycle dates of the serialised organisation, as ISO 8601.
+	 *
+	 * @return array<string, string|null> Keys mergedAt to updated, in output order.
+	 *
+	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 */
+	private function lifecycleJson(): array {
+		return [
+			'mergedAt' => $this->mergedAt?->format('c'),
+			'provisionedAt' => $this->provisionedAt?->format('c'),
+			'suspendedAt' => $this->suspendedAt?->format('c'),
+			'deprovisionedAt' => $this->deprovisionedAt?->format('c'),
 			'retainedAt' => $this->retainedAt?->format('c'),
 			'created' => $this->getCreatedFormatted(),
 			'updated' => $this->getUpdatedFormatted(),
+		];
+	}//end lifecycleJson()
+
+	/**
+	 * The workspace links of the serialised organisation.
+	 *
+	 * @return array<string, array|null> The linked mail, contacts, notes, todos, calendar, talk and deck.
+	 *
+	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 */
+	private function workspaceJson(): array {
+		return [
 			'_mail' => $this->mail,
 			'_contacts' => $this->contacts,
 			'_notes' => $this->notes,
@@ -1121,7 +1153,7 @@ class Organisation extends Entity implements JsonSerializable {
 			'_talk' => $this->talk,
 			'_deck' => $this->deck,
 		];
-	}//end jsonSerialize()
+	}//end workspaceJson()
 
 	/**
 	 * String representation of the organisation
@@ -1140,30 +1172,4 @@ class Organisation extends Entity implements JsonSerializable {
 
 		return $this->uuid;
 	}//end __toString()
-
-	/**
-	 * Get created date formatted as ISO 8601 string or null
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getCreatedFormatted(): ?string {
-		if ($this->created !== null) {
-			return $this->created->format('c');
-		}
-
-		return null;
-	}//end getCreatedFormatted()
-
-	/**
-	 * Get updated date formatted as ISO 8601 string or null
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getUpdatedFormatted(): ?string {
-		if ($this->updated !== null) {
-			return $this->updated->format('c');
-		}
-
-		return null;
-	}//end getUpdatedFormatted()
 }//end class

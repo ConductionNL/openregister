@@ -42,6 +42,9 @@
       (`null` on the side where the key was absent), which a single mask token
       for both would have collapsed.
       `AppHostSettingsService::secretConfigKeys()` is the per-app hook.
+      The declaration lives at the top level of `<app>_register.json`
+      (`"<key>": {"x-openregister-secret": true}`, `register.d/` merged);
+      `AppHostSettingsService::secretKeysFor()` masks the union of both.
 - [x] 1.3 OpenRegister's own `SettingsService` domains route through the
       writer. Unblocked — the writer exists and is a two-line call — but it is
       a separate service with its own write paths, so it is its own task rather

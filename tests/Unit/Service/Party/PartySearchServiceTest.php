@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
+use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -25,7 +26,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * A person query over the administered cap is refused, never truncated.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 class PartySearchServiceTest extends TestCase {
 
@@ -76,7 +77,7 @@ class PartySearchServiceTest extends TestCase {
 		$this->parties = $this->createMock(PartyService::class);
 		$this->audit = $this->getMockBuilder(AuditTrailMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['createPartyQueryRefusalEntry'])
+			->onlyMethods(['recordPartyQueryRefusal'])
 			->getMock();
 		$this->config = $this->createMock(IAppConfig::class);
 
@@ -112,7 +113,7 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testABroadSearchIsRefusedNotTruncated(): void {
 		$this->capIs(cap: 10);
@@ -120,7 +121,7 @@ class PartySearchServiceTest extends TestCase {
 		// THE POINT OF THE REFUSAL: nothing is read, so nothing can leak as a
 		// truncated page that looks like a complete answer.
 		$this->objects->expects($this->never())->method('findAll');
-		$this->audit->expects($this->once())->method('createPartyQueryRefusalEntry')->willReturn(new AuditTrail());
+		$this->audit->expects($this->once())->method('recordPartyQueryRefusal')->willReturn(new AuditTrail());
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(403);
@@ -134,16 +135,16 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testTheRefusedAttemptIsOnTheTrail(): void {
 		$this->capIs(cap: 10);
 		$this->objects->method('count')->willReturn(40);
 
 		$recorded = [];
-		$this->audit->method('createPartyQueryRefusalEntry')->willReturnCallback(
-			function (string $query, int $cap, int $would, ?int $schema) use (&$recorded): AuditTrail {
-				$recorded = ['query' => $query, 'cap' => $cap, 'would' => $would, 'schema' => $schema];
+		$this->audit->method('recordPartyQueryRefusal')->willReturnCallback(
+			function (PartyQueryRefusal $refusal) use (&$recorded): AuditTrail {
+				$recorded = ['query' => $refusal->query, 'cap' => $refusal->cap, 'would' => $refusal->would, 'schema' => $refusal->schema];
 
 				return new AuditTrail();
 			}
@@ -168,7 +169,7 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testAQueryInsideTheCapAnswers(): void {
 		$this->capIs(cap: 10);
@@ -177,7 +178,7 @@ class PartySearchServiceTest extends TestCase {
 		$party = new ObjectEntity();
 		$party->setUuid('party-a');
 		$this->objects->method('findAll')->willReturn([$party, $party]);
-		$this->audit->expects($this->never())->method('createPartyQueryRefusalEntry');
+		$this->audit->expects($this->never())->method('recordPartyQueryRefusal');
 
 		$found = $this->service->search(query: 'jansen');
 
@@ -192,7 +193,7 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testAnEmptyQueryIsRefused(): void {
 		$this->capIs(cap: 10);
@@ -209,7 +210,7 @@ class PartySearchServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
+	 * @spec openspec/specs/party-model/spec.md#requirement-a-person-query-over-the-administered-cap-is-refused-req-prm-004
 	 */
 	public function testANonsenseCapFallsBackToTheDefault(): void {
 		$this->capIs(cap: 0);

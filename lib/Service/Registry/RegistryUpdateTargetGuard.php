@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Registry;
 
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -45,11 +45,11 @@ class RegistryUpdateTargetGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemaMapper Resolves the row's schema.
+	 * @param SchemaMapperInterface $schemaMapper Resolves the row's schema.
 	 * @param RegistryOwnedPropertyGuard $ownedPropertyGuard The pure owned-vs-supplied decision.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegistryOwnedPropertyGuard $ownedPropertyGuard,
 	) {
 	}//end __construct()

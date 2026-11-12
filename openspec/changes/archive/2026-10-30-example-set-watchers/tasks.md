@@ -1,0 +1,3 @@
+- [x] T01 ExampleSetWatchers writes, proves and takes away follows; wired through the engine kinds, catalogue, record, installer, remover and the install command's report
+- [x] T02 PHPUnit: a follow is written once, kept on a second install, reported missing when gone, taken away on remove; five faulty forms are refused
+- [x] T03 The Zuiddrecht cast gains Anouk Bakker

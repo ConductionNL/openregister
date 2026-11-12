@@ -23,41 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched when an object is created
  */
-class ObjectCreatedEvent extends Event {
-
-	/**
-	 * The newly created object entity
-	 *
-	 * @var ObjectEntity The object entity that was created
-	 */
-	private ObjectEntity $object;
-
-	/**
-	 * Constructor for ObjectCreatedEvent
-	 *
-	 * @param ObjectEntity $object The object entity that was created
-	 *
-	 * @return void
-	 */
-	public function __construct(ObjectEntity $object) {
-		parent::__construct();
-		$this->object = $object;
-	}//end __construct()
-
-	/**
-	 * Get the created object entity
-	 *
-	 * @return ObjectEntity The object entity that was created
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getObject(): ObjectEntity {
-		return $this->object;
-	}//end getObject()
+class ObjectCreatedEvent extends AbstractObjectEntityEvent {
 }//end class

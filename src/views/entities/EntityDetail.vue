@@ -49,27 +49,11 @@
 				</div>
 
 				<!-- Actions Bar -->
-				<div class="viewActionsBar">
-					<div class="viewInfo">
-						<span class="viewTotalCount">
-							{{
-								t('openregister', 'Entity ID: {id}', {
-									id: entity.id,
-								})
-							}}
-						</span>
-					</div>
-					<div class="viewActions">
-						<NcActions :forceName="true" :inline="1" menuName="Actions">
-							<NcActionButton closeAfterClick @click="refreshEntity">
-								<template #icon>
-									<Refresh :size="20" />
-								</template>
-								{{ t('openregister', 'Refresh') }}
-							</NcActionButton>
-						</NcActions>
-					</div>
-				</div>
+				<ListActionsBar
+					:summary="
+						t('openregister', 'Entity ID: {id}', { id: entity.id })
+					"
+					:actions="[refreshAction(refreshEntity)]" />
 
 				<!-- Entity Information Card -->
 				<div class="card">
@@ -77,69 +61,18 @@
 						<h2>{{ t('openregister', 'Entity Information') }}</h2>
 					</div>
 
-					<table class="statisticsTable entityInfoTable">
-						<tbody>
-							<tr>
-								<th scope="row">
-									<strong>{{ t('openregister', 'Value') }}</strong>
-								</th>
-								<td>{{ entity.value }}</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<strong>{{ t('openregister', 'Type') }}</strong>
-								</th>
-								<td>
-									<span class="badge badge-type">{{
-										entity.type
-									}}</span>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<strong>{{
-										t('openregister', 'Category')
-									}}</strong>
-								</th>
-								<td>
-									<span class="badge badge-category">{{
-										entity.category
-									}}</span>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<strong>{{
-										t('openregister', 'Detected At')
-									}}</strong>
-								</th>
-								<td>{{ formatDate(entity.detectedAt) }}</td>
-							</tr>
-							<tr>
-								<th scope="row">
-									<strong>{{
-										t('openregister', 'Confidence Score')
-									}}</strong>
-								</th>
-								<td>
-									{{
-										entity.confidence
-											? (entity.confidence * 100).toFixed(2)
-												+ '%'
-											: '-'
-									}}
-								</td>
-							</tr>
-							<tr v-if="entity.source">
-								<th scope="row">
-									<strong>{{
-										t('openregister', 'Source')
-									}}</strong>
-								</th>
-								<td>{{ entity.source }}</td>
-							</tr>
-						</tbody>
-					</table>
+					<EntityStatsTable
+						class="statisticsTable entityInfoTable"
+						labelWidth="30%"
+						:entity="entity"
+						:fields="[
+							'value',
+							'type',
+							'category',
+							'detectedAt',
+							'confidence',
+							'source',
+						]" />
 				</div>
 
 				<!-- Relations Section -->
@@ -259,8 +192,6 @@ import { showError } from '@nextcloud/dialogs'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
-	NcActionButton,
-	NcActions,
 	NcAppContent,
 	NcButton,
 	NcEmptyContent,
@@ -273,8 +204,11 @@ import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import EntityStatsTable from './EntityStatsTable.vue'
+import { displayDateTime } from '../../services/displayDateTime.js'
+import { refreshAction } from '../../services/menuActions.js'
 
 /**
  * Entity detail view showing entity information and relations
@@ -301,20 +235,19 @@ import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
  * @copyright 2024 Conduction B.V.
  * @license EUPL-1.2
  * @version 1.0.0
- * @link https://github.com/ConductionNL/openregister
+ * @see https://github.com/ConductionNL/openregister
  */
 export default {
 	name: 'EntityDetail',
 	components: {
+		EntityStatsTable,
+		ListActionsBar,
 		NcAppContent,
 		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
-		NcActions,
-		NcActionButton,
 		AccountOutline,
 		ArrowLeft,
-		Refresh,
 		AlertCircleOutline,
 		LinkVariantOff,
 		FileDocumentOutline,
@@ -338,6 +271,8 @@ export default {
 	},
 
 	methods: {
+		refreshAction,
+
 		t,
 
 		/**
@@ -352,32 +287,62 @@ export default {
 			this.error = null
 
 			try {
-				const entityId = this.$route.params.id
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/entities/{id}', {
-						id: entityId,
-					}),
-				)
-
-				if (response.data.success) {
-					this.entity = response.data.data
-					// Relations are returned in the same response.
-					this.relations = response.data.relations || []
-				} else {
-					this.error =
-						response.data.message
-						|| t('openregister', 'Failed to load entity')
-				}
+				const response = await axios.get(this.entityUrl())
+				this.showEntityAnswer(response.data)
 			} catch (error) {
-				console.error('Failed to load entity:', error)
-				this.error =
-					error.response?.data?.message
-					|| t('openregister', 'Failed to load entity')
-				showError(this.error)
+				this.showEntityFailure(error)
 			} finally {
 				this.loading = false
 				this.loadingRelations = false
 			}
+		},
+
+		/**
+		 * The URL of the entity the route names.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @return {string} The URL
+		 */
+		entityUrl() {
+			const entityId = this.$route.params.id
+			return generateUrl('/apps/openregister/api/entities/{id}', {
+				id: entityId,
+			})
+		},
+
+		/**
+		 * Take the entity and its relations from a successful answer, or the
+		 * refusal's message.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @param {object} data The answer
+		 * @return {void}
+		 */
+		showEntityAnswer(data) {
+			if (data.success) {
+				this.entity = data.data
+				// Relations are returned in the same response.
+				this.relations = data.relations || []
+			} else {
+				this.error =
+					data.message
+					|| t('openregister', 'Failed to load entity')
+			}
+		},
+
+		/**
+		 * Log and show a failed entity load in the API's words or the default.
+		 *
+		 * @spec exclude detail-view API fetch plumbing (linked-entity-types contract)
+		 * @param {Error} error The failed request
+		 * @return {void}
+		 */
+		showEntityFailure(error) {
+			console.error('Failed to load entity:', error)
+			this.error =
+				error.response?.data?.message
+				|| t('openregister', 'Failed to load entity')
+			showError(this.error)
 		},
 
 		/**
@@ -455,37 +420,22 @@ export default {
 			}
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude detail-view date-formatting display helper
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
 
 <style scoped lang="scss">
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+@use '../../styles/views.scss' as *;
+@use './cardRules.scss' as *;
+
+@include view-container-2;
 
 .viewHeader {
 	margin-bottom: 20px;
 }
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
+@include view-header-title;
 
 .viewHeaderTitleIndented {
 	margin: 0;
@@ -496,35 +446,7 @@ export default {
 	gap: 12px;
 }
 
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
+@include view-header-p;
 
 .entityDetailContainer {
 	max-width: 1200px;
@@ -539,11 +461,7 @@ export default {
 }
 
 .cardHeader {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
+	@include card-header-row;
 	background: var(--color-background-hover);
 }
 
@@ -556,50 +474,7 @@ export default {
 	gap: 8px;
 }
 
-.entityInfoTable {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.entityInfoTable tbody tr {
-	border-bottom: 1px solid var(--color-border);
-}
-
-.entityInfoTable tbody tr:last-child {
-	border-bottom: none;
-}
-
-.entityInfoTable td,
-.entityInfoTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: normal;
-}
-
-.entityInfoTable td:first-child,
-.entityInfoTable th:first-child {
-	width: 30%;
-	color: var(--color-text-maxcontrast);
-}
-
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badge-type {
-	background: var(--color-primary-light);
-	color: var(--color-primary-element);
-}
-
-.badge-category {
-	background: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-}
+@include badge-rules-2;
 
 .badge-count {
 	background: var(--color-primary-element);

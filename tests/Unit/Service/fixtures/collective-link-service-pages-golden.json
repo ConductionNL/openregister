@@ -1,0 +1,235 @@
+{
+    "no user": {
+        "result": [],
+        "calls": []
+    },
+    "listing fails": {
+        "result": [],
+        "calls": [
+            "getCollectives(alice)",
+            "warning CollectiveLinkService::getAvailablePages failed: listing down"
+        ]
+    },
+    "no collectives": {
+        "result": [],
+        "calls": [
+            "getCollectives(alice)"
+        ]
+    },
+    "all pages": {
+        "result": [
+            {
+                "pageId": 11,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "Meeting Notes",
+                "emoji": "📝",
+                "lastModified": "2023-11-14T22:13:20+00:00",
+                "url": "/apps/collectives.start.index?fileId=11"
+            },
+            {
+                "pageId": 12,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "Budget",
+                "emoji": null,
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=12"
+            },
+            {
+                "pageId": 13,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "notes archive",
+                "emoji": null,
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=13"
+            },
+            {
+                "pageId": 15,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "Old",
+                "emoji": "y",
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=15"
+            },
+            {
+                "pageId": 12,
+                "collectiveId": 4,
+                "collectiveName": "Side",
+                "title": "Budget",
+                "emoji": null,
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=12"
+            },
+            {
+                "pageId": 11,
+                "collectiveId": 4,
+                "collectiveName": "Side",
+                "title": "Meeting Notes",
+                "emoji": "📝",
+                "lastModified": "2023-11-14T22:13:20+00:00",
+                "url": "/apps/collectives.start.index?fileId=11"
+            }
+        ],
+        "calls": [
+            "getCollectives(alice)",
+            "findAll(1, alice)",
+            "findAll(2, alice)",
+            "findAll(3, alice)",
+            "findAll(4, alice)"
+        ]
+    },
+    "empty search": {
+        "result": [
+            {
+                "pageId": 11,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "Meeting Notes",
+                "emoji": "📝",
+                "lastModified": "2023-11-14T22:13:20+00:00",
+                "url": "/apps/collectives.start.index?fileId=11"
+            },
+            {
+                "pageId": 12,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "Budget",
+                "emoji": null,
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=12"
+            },
+            {
+                "pageId": 13,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "notes archive",
+                "emoji": null,
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=13"
+            },
+            {
+                "pageId": 15,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "Old",
+                "emoji": "y",
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=15"
+            },
+            {
+                "pageId": 12,
+                "collectiveId": 4,
+                "collectiveName": "Side",
+                "title": "Budget",
+                "emoji": null,
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=12"
+            },
+            {
+                "pageId": 11,
+                "collectiveId": 4,
+                "collectiveName": "Side",
+                "title": "Meeting Notes",
+                "emoji": "📝",
+                "lastModified": "2023-11-14T22:13:20+00:00",
+                "url": "/apps/collectives.start.index?fileId=11"
+            }
+        ],
+        "calls": [
+            "getCollectives(alice)",
+            "findAll(1, alice)",
+            "findAll(2, alice)",
+            "findAll(3, alice)",
+            "findAll(4, alice)"
+        ]
+    },
+    "search lower": {
+        "result": [
+            {
+                "pageId": 11,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "Meeting Notes",
+                "emoji": "📝",
+                "lastModified": "2023-11-14T22:13:20+00:00",
+                "url": "/apps/collectives.start.index?fileId=11"
+            },
+            {
+                "pageId": 13,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "notes archive",
+                "emoji": null,
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=13"
+            },
+            {
+                "pageId": 11,
+                "collectiveId": 4,
+                "collectiveName": "Side",
+                "title": "Meeting Notes",
+                "emoji": "📝",
+                "lastModified": "2023-11-14T22:13:20+00:00",
+                "url": "/apps/collectives.start.index?fileId=11"
+            }
+        ],
+        "calls": [
+            "getCollectives(alice)",
+            "findAll(1, alice)",
+            "findAll(2, alice)",
+            "findAll(3, alice)",
+            "findAll(4, alice)"
+        ]
+    },
+    "search mixed case": {
+        "result": [
+            {
+                "pageId": 11,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "Meeting Notes",
+                "emoji": "📝",
+                "lastModified": "2023-11-14T22:13:20+00:00",
+                "url": "/apps/collectives.start.index?fileId=11"
+            },
+            {
+                "pageId": 13,
+                "collectiveId": 1,
+                "collectiveName": "Team",
+                "title": "notes archive",
+                "emoji": null,
+                "lastModified": null,
+                "url": "/apps/collectives.start.index?fileId=13"
+            },
+            {
+                "pageId": 11,
+                "collectiveId": 4,
+                "collectiveName": "Side",
+                "title": "Meeting Notes",
+                "emoji": "📝",
+                "lastModified": "2023-11-14T22:13:20+00:00",
+                "url": "/apps/collectives.start.index?fileId=11"
+            }
+        ],
+        "calls": [
+            "getCollectives(alice)",
+            "findAll(1, alice)",
+            "findAll(2, alice)",
+            "findAll(3, alice)",
+            "findAll(4, alice)"
+        ]
+    },
+    "search none": {
+        "result": [],
+        "calls": [
+            "getCollectives(alice)",
+            "findAll(1, alice)",
+            "findAll(2, alice)",
+            "findAll(3, alice)",
+            "findAll(4, alice)"
+        ]
+    }
+}

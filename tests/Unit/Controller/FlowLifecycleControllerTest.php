@@ -21,11 +21,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowControllerFactory;
 use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
@@ -79,7 +81,7 @@ class FlowLifecycleControllerTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FlowController(
+		$this->controller = FlowControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(EventCatalogService::class),
@@ -87,7 +89,7 @@ class FlowLifecycleControllerTest extends TestCase {
 			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
 			$this->createMock(FlowNodePreflight::class),
 			$this->flows,
-			new FlowAccess($session, $groups, $auth),
+			new FlowAccess(new CallerContext($session, $groups), $auth),
 			$this->versions
 		);
 	}//end setUp()

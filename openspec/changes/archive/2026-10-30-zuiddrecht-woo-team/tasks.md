@@ -1,0 +1,2 @@
+- [x] T01 Cast group woo-en-informatie with Pieter, Thomas and Anouk; Anouk is its team leader
+- [x] T02 PHPUnit: the shipped Zuiddrecht set names the team and its leader

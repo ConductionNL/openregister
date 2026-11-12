@@ -6,26 +6,7 @@
 		:loadingMessage="t('openregister', 'Loading retention settings...')">
 		<!-- Actions slot -->
 		<template #actions>
-			<NcButton
-				variant="error"
-				:disabled="loading || saving || rebasing"
-				@click="showRebaseDialog">
-				<template #icon>
-					<NcLoadingIcon v-if="rebasing" :size="20" />
-					<Refresh v-else :size="20" />
-				</template>
-				Rebase
-			</NcButton>
-			<NcButton
-				variant="primary"
-				:disabled="loading || saving || rebasing"
-				@click="saveSettings">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<Save v-else :size="20" />
-				</template>
-				Save
-			</NcButton>
+			<SectionSaveActions v-bind="saveActions" />
 		</template>
 
 		<!-- Section Description -->
@@ -115,251 +96,27 @@
 			</p>
 
 			<div class="retention-table">
-				<div class="retention-row">
+				<div v-for="row in retentionRows" :key="row.id" class="retention-row">
 					<div class="retention-label">
-						<label for="retention-object-archive"
-							><strong>Soft Delete After Inactivity</strong></label
-						>
+						<label :for="row.id"><strong>{{ row.label }}</strong></label>
 						<p class="retention-description">
-							Time since last CRUD action before object is soft-deleted
+							{{ row.description }}
 						</p>
 					</div>
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
-								id="retention-object-archive"
-								v-model.number="
-									retentionOptions.objectArchiveRetention
-								"
+								:id="row.id"
+								v-model.number="retentionOptions[row.option]"
 								type="number"
 								:disabled="loading || saving"
-								placeholder="31536000000"
+								:placeholder="row.placeholder"
 								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.objectArchiveRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-object-delete"
-							><strong
-								>Permanent Delete After Soft Delete</strong
-							></label
-						>
-						<p class="retention-description">
-							Time from soft-delete to permanent deletion
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-object-delete"
-								v-model.number="
-									retentionOptions.objectDeleteRetention
-								"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="63072000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.objectDeleteRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-search-trail"
-							><strong>Search Trail Retention</strong></label
-						>
-						<p class="retention-description">
-							Retention period for search query audit trails and
-							analytics
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-search-trail"
-								v-model.number="
-									retentionOptions.searchTrailRetention
-								"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="2592000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.searchTrailRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-create-log"
-							><strong>Create Action Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for object creation audit logs
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-create-log"
-								v-model.number="retentionOptions.createLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="2592000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.createLogRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-read-log"
-							><strong>Read Action Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for object access/view audit logs
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-read-log"
-								v-model.number="retentionOptions.readLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="86400000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(retentionOptions.readLogRetention)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-update-log"
-							><strong>Update Action Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for object modification audit logs
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-update-log"
-								v-model.number="retentionOptions.updateLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="604800000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.updateLogRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-delete-log"
-							><strong>Delete Action Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for object deletion audit logs
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-delete-log"
-								v-model.number="retentionOptions.deleteLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="2592000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.deleteLogRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-webhook-log"
-							><strong>Webhook Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for webhook delivery logs and retry
-							attempts
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-webhook-log"
-								v-model.number="retentionOptions.webhookLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="2592000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.webhookLogRetention,
-							)
-						}}
+						{{ formatRetentionPeriod(retentionOptions[row.option]) }}
 					</div>
 				</div>
 			</div>
@@ -369,36 +126,92 @@
 
 <script>
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
-	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
 /**
  * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
  */
-import { mapStores } from 'pinia'
-import Save from 'vue-material-design-icons/ContentSave.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { useSettingsStore } from '../../../store/settings.js'
+import SectionSaveActions from './SectionSaveActions.vue'
+import { settingsSectionState } from './settingsSectionState.js'
+
+const RETENTION_ROWS = [
+	{
+		id: 'retention-object-archive',
+		option: 'objectArchiveRetention',
+		label: 'Soft Delete After Inactivity',
+		description: 'Time since last CRUD action before object is soft-deleted',
+		placeholder: '31536000000',
+	},
+	{
+		id: 'retention-object-delete',
+		option: 'objectDeleteRetention',
+		label: 'Permanent Delete After Soft Delete',
+		description: 'Time from soft-delete to permanent deletion',
+		placeholder: '63072000000',
+	},
+	{
+		id: 'retention-search-trail',
+		option: 'searchTrailRetention',
+		label: 'Search Trail Retention',
+		description: 'Retention period for search query audit trails and analytics',
+		placeholder: '2592000000',
+	},
+	{
+		id: 'retention-create-log',
+		option: 'createLogRetention',
+		label: 'Create Action Logs',
+		description: 'Retention period for object creation audit logs',
+		placeholder: '2592000000',
+	},
+	{
+		id: 'retention-read-log',
+		option: 'readLogRetention',
+		label: 'Read Action Logs',
+		description: 'Retention period for object access/view audit logs',
+		placeholder: '86400000',
+	},
+	{
+		id: 'retention-update-log',
+		option: 'updateLogRetention',
+		label: 'Update Action Logs',
+		description: 'Retention period for object modification audit logs',
+		placeholder: '604800000',
+	},
+	{
+		id: 'retention-delete-log',
+		option: 'deleteLogRetention',
+		label: 'Delete Action Logs',
+		description: 'Retention period for object deletion audit logs',
+		placeholder: '2592000000',
+	},
+	{
+		id: 'retention-webhook-log',
+		option: 'webhookLogRetention',
+		label: 'Webhook Logs',
+		description: 'Retention period for webhook delivery logs and retry attempts',
+		placeholder: '2592000000',
+	},
+]
 
 export default {
 	name: 'RetentionConfiguration',
 
 	components: {
+		SectionSaveActions,
 		NcSelect,
 		SettingsSection,
-		NcButton,
-		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		Refresh,
-		Save,
+	},
+
+	mixins: [settingsSectionState],
+
+	data() {
+		return { retentionRows: RETENTION_ROWS }
 	},
 
 	computed: {
-		...mapStores(useSettingsStore),
-
 		retentionOptions: {
 			/**
 			 * Read retention options from the store.
@@ -534,36 +347,6 @@ export default {
 		},
 
 		/**
-		 * Whether the settings store is loading, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		loading() {
-			return this.settingsStore.loading
-		},
-
-		/**
-		 * Whether retention settings are saving, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		saving() {
-			return this.settingsStore.saving
-		},
-
-		/**
-		 * Whether a rebase is in progress, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		rebasing() {
-			return this.settingsStore.rebasing
-		},
-
-		/**
 		 * Retention status CSS class from the store, for display.
 		 *
 		 * @spec exclude UI plumbing — derived status-styling helper
@@ -595,16 +378,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Show the rebase confirmation dialog.
-		 *
-		 * @spec exclude UI plumbing — dialog visibility toggle via store
-		 * @return {void}
-		 */
-		showRebaseDialog() {
-			this.settingsStore.showRebaseDialog()
-		},
-
 		/**
 		 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
 		 */
@@ -650,27 +423,16 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
-.section-description-full {
-	margin-bottom: 24px;
-	padding: 16px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
+@include section-description-full-2;
 
-.main-description {
-	color: var(--color-text-light);
-	line-height: 1.5;
-	margin: 0 0 12px 0;
-}
+@include main-description-2;
 
-.toggle-status {
-	margin: 0 0 12px 0;
-	color: var(--color-text-light);
-}
+@include toggle-status;
 
 .warning-box {
 	background: rgba(var(--color-warning), 0.1);
@@ -680,27 +442,15 @@ export default {
 	border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
-.impact-description {
-	margin: 0;
-	color: var(--color-text-light);
-	line-height: 1.5;
-}
+@include impact-description;
 
 .option-section {
 	margin: 24px 0;
 }
 
-.option-description {
-	color: var(--color-text-maxcontrast);
-	margin: 8px 0 16px 0;
-	line-height: 1.4;
-}
+@include option-description;
 
-.option-section h4 {
-	color: var(--color-text-light);
-	margin: 24px 0 16px 0;
-	font-size: 16px;
-}
+@include option-section-h4;
 
 .trail-switches {
 	display: flex;
@@ -809,10 +559,7 @@ export default {
 	padding: 8px 0;
 }
 
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
+@include loading-icon;
 
 @media (max-width: 768px) {
 	.retention-row {
@@ -826,18 +573,6 @@ export default {
 		padding: 8px 12px;
 		border-radius: var(--border-radius);
 		border: 1px solid var(--color-border-dark);
-	}
-
-	.section-header-inline {
-		position: static;
-		flex-direction: column;
-		gap: 12px;
-		align-items: stretch;
-		margin-bottom: 20px;
-	}
-
-	.button-group {
-		justify-content: center;
 	}
 }
 </style>

@@ -1,0 +1,640 @@
+{
+    "components not array": {
+        "results": {
+            "isAvailable": {
+                "result": true
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    },
+                    {
+                        "id": "demo",
+                        "label": "Example data",
+                        "description": "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.",
+                        "objectCount": 0,
+                        "icon": "DatabaseOutline"
+                    }
+                ]
+            },
+            "install": {
+                "result": {
+                    "objects": 0,
+                    "registers": 0,
+                    "schemas": 0
+                }
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getInstalledApps"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ConfigurationService"
+            ],
+            [
+                "apps.getAppVersion",
+                "openregister"
+            ],
+            [
+                "importer.importFromApp",
+                {
+                    "appId": "openregister.demo",
+                    "data": {
+                        "components": "x"
+                    },
+                    "version": "9.8.7",
+                    "force": true
+                }
+            ],
+            [
+                "log.info",
+                "[DemoDataService] imported demo data: 0 object(s), 0 register(s), 0 schema(s).",
+                {
+                    "app": "openregister"
+                }
+            ]
+        ]
+    },
+    "empty objects": {
+        "results": {
+            "isAvailable": {
+                "result": true
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    },
+                    {
+                        "id": "demo",
+                        "label": "Example data",
+                        "description": "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.",
+                        "objectCount": 0,
+                        "icon": "DatabaseOutline"
+                    }
+                ]
+            },
+            "install": {
+                "result": {
+                    "objects": 0,
+                    "registers": 0,
+                    "schemas": 0
+                }
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getInstalledApps"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ConfigurationService"
+            ],
+            [
+                "apps.getAppVersion",
+                "openregister"
+            ],
+            [
+                "importer.importFromApp",
+                {
+                    "appId": "openregister.demo",
+                    "data": {
+                        "components": {
+                            "objects": []
+                        }
+                    },
+                    "version": "9.8.7",
+                    "force": true
+                }
+            ],
+            [
+                "log.info",
+                "[DemoDataService] imported demo data: 0 object(s), 0 register(s), 0 schema(s).",
+                {
+                    "app": "openregister"
+                }
+            ]
+        ]
+    },
+    "importer scalar counts": {
+        "results": {
+            "isAvailable": {
+                "result": true
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    },
+                    {
+                        "id": "demo",
+                        "label": "Example data",
+                        "description": "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.",
+                        "objectCount": 3,
+                        "icon": "DatabaseOutline"
+                    }
+                ]
+            },
+            "install": {
+                "result": {
+                    "objects": 3,
+                    "registers": 1,
+                    "schemas": 0
+                }
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getInstalledApps"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ConfigurationService"
+            ],
+            [
+                "apps.getAppVersion",
+                "openregister"
+            ],
+            [
+                "importer.importFromApp",
+                {
+                    "appId": "openregister.demo",
+                    "data": {
+                        "components": {
+                            "objects": [
+                                {
+                                    "a": 1
+                                },
+                                {
+                                    "b": 2
+                                },
+                                {
+                                    "c": 3
+                                }
+                            ],
+                            "registers": [
+                                "r"
+                            ]
+                        }
+                    },
+                    "version": "9.8.7",
+                    "force": true
+                }
+            ],
+            [
+                "log.info",
+                "[DemoDataService] imported demo data: 3 object(s), 1 register(s), 0 schema(s).",
+                {
+                    "app": "openregister"
+                }
+            ]
+        ]
+    },
+    "invalid json": {
+        "results": {
+            "isAvailable": {
+                "result": true
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    }
+                ]
+            },
+            "install": {
+                "exception": "RuntimeException",
+                "message": "The demo dataset is not valid JSON: <app>/lib/Settings/openregister_mock_register.json"
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ]
+        ]
+    },
+    "json scalar": {
+        "results": {
+            "isAvailable": {
+                "result": true
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    }
+                ]
+            },
+            "install": {
+                "exception": "RuntimeException",
+                "message": "The demo dataset is not valid JSON: <app>/lib/Settings/openregister_mock_register.json"
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ]
+        ]
+    },
+    "no components": {
+        "results": {
+            "isAvailable": {
+                "result": true
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    },
+                    {
+                        "id": "demo",
+                        "label": "Example data",
+                        "description": "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.",
+                        "objectCount": 0,
+                        "icon": "DatabaseOutline"
+                    }
+                ]
+            },
+            "install": {
+                "result": {
+                    "objects": 0,
+                    "registers": 0,
+                    "schemas": 0
+                }
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getInstalledApps"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ConfigurationService"
+            ],
+            [
+                "apps.getAppVersion",
+                "openregister"
+            ],
+            [
+                "importer.importFromApp",
+                {
+                    "appId": "openregister.demo",
+                    "data": {
+                        "x": 1
+                    },
+                    "version": "9.8.7",
+                    "force": true
+                }
+            ],
+            [
+                "log.info",
+                "[DemoDataService] imported demo data: 0 object(s), 0 register(s), 0 schema(s).",
+                {
+                    "app": "openregister"
+                }
+            ]
+        ]
+    },
+    "no descriptor": {
+        "results": {
+            "isAvailable": {
+                "result": false
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    }
+                ]
+            },
+            "install": {
+                "exception": "RuntimeException",
+                "message": "No demo dataset ships with this app (/lib/Settings/openregister_mock_register.json not found)."
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ]
+        ]
+    },
+    "objects not array": {
+        "results": {
+            "isAvailable": {
+                "result": true
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    },
+                    {
+                        "id": "demo",
+                        "label": "Example data",
+                        "description": "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.",
+                        "objectCount": 0,
+                        "icon": "DatabaseOutline"
+                    }
+                ]
+            },
+            "install": {
+                "result": {
+                    "objects": 0,
+                    "registers": 0,
+                    "schemas": 0
+                }
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getInstalledApps"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ConfigurationService"
+            ],
+            [
+                "apps.getAppVersion",
+                "openregister"
+            ],
+            [
+                "importer.importFromApp",
+                {
+                    "appId": "openregister.demo",
+                    "data": {
+                        "components": {
+                            "objects": "x"
+                        }
+                    },
+                    "version": "9.8.7",
+                    "force": true
+                }
+            ],
+            [
+                "log.info",
+                "[DemoDataService] imported demo data: 0 object(s), 0 register(s), 0 schema(s).",
+                {
+                    "app": "openregister"
+                }
+            ]
+        ]
+    },
+    "openregister missing": {
+        "results": {
+            "isAvailable": {
+                "result": true
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    },
+                    {
+                        "id": "demo",
+                        "label": "Example data",
+                        "description": "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.",
+                        "objectCount": 3,
+                        "icon": "DatabaseOutline"
+                    }
+                ]
+            },
+            "install": {
+                "exception": "RuntimeException",
+                "message": "Demo data needs OpenRegister, which is not installed."
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getInstalledApps"
+            ]
+        ]
+    },
+    "three objects": {
+        "results": {
+            "isAvailable": {
+                "result": true
+            },
+            "listChoices": {
+                "result": [
+                    {
+                        "id": "none",
+                        "label": "None, I will set this up myself",
+                        "description": "Nothing is imported. You start with an empty app and add your own data.",
+                        "objectCount": 0,
+                        "icon": "CloseCircleOutline"
+                    },
+                    {
+                        "id": "demo",
+                        "label": "Example data",
+                        "description": "Sample values for every schema this app supplies, generated from the schemas themselves. It shows the lists, detail pages and dashboards working rather than telling a story. Safe to run more than once, and you can delete it afterwards.",
+                        "objectCount": 3,
+                        "icon": "DatabaseOutline"
+                    }
+                ]
+            },
+            "install": {
+                "result": {
+                    "objects": 3,
+                    "registers": 2,
+                    "schemas": 1
+                }
+            }
+        },
+        "log": [
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getAppPath",
+                "openregister"
+            ],
+            [
+                "apps.getInstalledApps"
+            ],
+            [
+                "container.get",
+                "OCA\\OpenRegister\\Service\\ConfigurationService"
+            ],
+            [
+                "apps.getAppVersion",
+                "openregister"
+            ],
+            [
+                "importer.importFromApp",
+                {
+                    "appId": "openregister.demo",
+                    "data": {
+                        "components": {
+                            "objects": [
+                                {
+                                    "a": 1
+                                },
+                                {
+                                    "b": 2
+                                },
+                                {
+                                    "c": 3
+                                }
+                            ],
+                            "registers": [
+                                "r"
+                            ]
+                        }
+                    },
+                    "version": "9.8.7",
+                    "force": true
+                }
+            ],
+            [
+                "log.info",
+                "[DemoDataService] imported demo data: 3 object(s), 2 register(s), 1 schema(s).",
+                {
+                    "app": "openregister"
+                }
+            ]
+        ]
+    }
+}

@@ -28,6 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiTokenSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EdepotSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController;
 use OCA\OpenRegister\Controller\Settings\EdepotSettingsController;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
@@ -37,7 +40,7 @@ use OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport;
 use OCA\OpenRegister\Service\Edepot\Transport\RestApiTransport;
 use OCA\OpenRegister\Service\Edepot\Transport\SftpTransport;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -54,9 +57,16 @@ use RuntimeException;
  * Unit tests for the connection reports sent from the settings controllers.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\LlmSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ConnectionReporting
+ * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices
  * @covers \OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController
  * @covers \OCA\OpenRegister\Controller\Settings\EdepotSettingsController
  * @uses \OCA\OpenRegister\Service\Connection\ConnectionReporter
+ * @uses \OCA\OpenRegister\Controller\Support\ApiTokenSettingsControllerServices
  */
 class SettingsConnectionReportTest extends TestCase {
 
@@ -132,7 +142,7 @@ class SettingsConnectionReportTest extends TestCase {
 
 		$this->request->method('getParams')->willReturn([]);
 
-		return new LlmSettingsController(
+		return LlmSettingsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			db: $this->createMock(originalClassName: IDBConnection::class),
@@ -218,7 +228,7 @@ class SettingsConnectionReportTest extends TestCase {
 			$clientService->method('newClient')->willReturn($client);
 		}
 
-		return new ApiTokenSettingsController(
+		return ApiTokenSettingsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			config: $config,
@@ -321,7 +331,7 @@ class SettingsConnectionReportTest extends TestCase {
 			$rest->method('testConnection')->willReturn($outcome);
 		}
 
-		return new EdepotSettingsController(
+		return EdepotSettingsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			appConfig: $this->createMock(originalClassName: IAppConfig::class),

@@ -1,0 +1,993 @@
+{
+  "info": {
+    "_postman_id": "or-t31-mcp-sessions-2026-11-09",
+    "name": "OpenRegister MCP server sessions (needs memcache)",
+    "description": "@newman exclude needs a Nextcloud distributed cache (memcache.distributed, e.g. APCu or Redis): MCP sessions created by `initialize` are stored there, and on an instance without one every session-gated JSON-RPC call answers -32000 \"Invalid or expired session\". The CI Newman instance configures no memcache.\n\nLane T31: the session-gated half of POST /api/mcp (McpServerController#handle): ping, tools/list as admin and as a non-admin with their own session, unknown method (-32601), tools/call without a name and resources/read without a uri (-32602). The session-free half (initialize, missing/unknown session, parse/shape errors, notifications, anonymous refusal) runs in CI in openregister-api-entityrelations-gdprentities.postman_collection.json.\n\nSELF-SEEDING: `00 setup` creates its own schema, register, object and two non-admin users with a random per-run suffix; `99 teardown` deletes them. Variables: base_url (default http://localhost:8080), admin_user, admin_password. Basic auth at collection level.\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{admin_user}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{admin_password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "00 setup",
+      "item": [
+        {
+          "name": "init run variables",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const run = Math.random().toString(36).slice(2, 8);",
+                  "pm.collectionVariables.set('t31_run', run);",
+                  "pm.collectionVariables.set('t31_user', 't31u1' + run);",
+                  "pm.collectionVariables.set('t31_password', 'T31-pass-' + run + '-Aa9!xyz');",
+                  "pm.collectionVariables.set('t31_user2', 't31u2' + run);",
+                  "pm.collectionVariables.set('t31_password2', 'T31-pass2-' + run + '-Bb8!xyz');",
+                  "pm.collectionVariables.set('t31_register_slug', 't31-reg-' + run);",
+                  "pm.collectionVariables.set('t31_schema_slug', 't31-sch-' + run);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admin is authenticated and /user/me names the admin', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(JSON.stringify(b)).to.include(pm.variables.get('admin_user'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/user/me"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "create non-admin user user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OCS created user (200, ocs status ok)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().ocs.meta.statuscode).to.be.oneOf([100, 200]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"userid\": \"{{t31_user}}\",\n \"password\": \"{{t31_password}}\",\n \"displayName\": \"T31 user\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "create non-admin user user2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OCS created user2 (200, ocs status ok)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().ocs.meta.statuscode).to.be.oneOf([100, 200]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"userid\": \"{{t31_user2}}\",\n \"password\": \"{{t31_password2}}\",\n \"displayName\": \"T31 user2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "create schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schema created (201) with the slug sent', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.slug).to.eql(pm.collectionVariables.get('t31_schema_slug'));",
+                  "  pm.collectionVariables.set('t31_schema_id', b.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"title\": \"T31 schema {{t31_run}}\",\n \"slug\": \"{{t31_schema_slug}}\",\n \"required\": [\n  \"name\"\n ],\n \"properties\": {\n  \"name\": {\n   \"type\": \"string\"\n  },\n  \"note\": {\n   \"type\": \"string\"\n  }\n }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "create register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register created (201) with the slug sent', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.slug).to.eql(pm.collectionVariables.get('t31_register_slug'));",
+                  "  pm.collectionVariables.set('t31_register_id', b.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"title\": \"T31 register {{t31_run}}\",\n \"slug\": \"{{t31_register_slug}}\",\n \"schemas\": [\n  {{t31_schema_id}}\n ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "create object",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object created (201) with the name sent', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const b = pm.response.json();",
+                  "  pm.expect(b.name || (b['@self'] && b.name)).to.eql('t31-object');",
+                  "  const id = b.id || b.uuid || (b['@self'] && b['@self'].id);",
+                  "  pm.expect(id, 'object id').to.be.a('string');",
+                  "  pm.collectionVariables.set('t31_object_id', id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"name\": \"t31-object\",\n \"note\": \"seeded by T31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "41 mcp-server sessions",
+      "item": [
+        {
+          "name": "initialize - admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 JSON-RPC initialize result with Mcp-Session-Id header', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var j = pm.response.json();",
+                  "    pm.expect(j.jsonrpc).to.eql('2.0');",
+                  "    pm.expect(j.id).to.eql(1);",
+                  "    pm.expect(j).to.not.have.property('error');",
+                  "    pm.expect(j.result.protocolVersion).to.be.a('string').and.not.empty;",
+                  "    pm.expect(j.result.serverInfo.name).to.be.a('string').and.not.empty;",
+                  "    pm.expect(j.result.capabilities).to.have.property('tools');",
+                  "    var sid = pm.response.headers.get('Mcp-Session-Id');",
+                  "    pm.expect(sid).to.be.a('string').and.not.empty;",
+                  "    pm.collectionVariables.set('t31_mcp_session', sid);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"initialize\", \"params\": {\"protocolVersion\": \"2025-03-26\", \"capabilities\": {}, \"clientInfo\": {\"name\": \"t31-newman\", \"version\": \"1.0\"}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "ping - with session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 ping returns an empty result', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var j = pm.response.json();",
+                  "    pm.expect(j.id).to.eql(2);",
+                  "    pm.expect(j).to.not.have.property('error');",
+                  "    pm.expect(j).to.have.property('result');",
+                  "    pm.expect(Object.keys(j.result)).to.have.lengthOf(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{t31_mcp_session}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 2, \"method\": \"ping\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "tools/list - admin with session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 tools/list returns a tools array', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var j = pm.response.json();",
+                  "    pm.expect(j.id).to.eql(3);",
+                  "    pm.expect(j, JSON.stringify(j.error || {})).to.not.have.property('error');",
+                  "    pm.expect(j.result.tools).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{t31_mcp_session}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 3, \"method\": \"tools/list\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "unknown method - -32601",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('JSON-RPC -32601 Method not found (HTTP 200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var j = pm.response.json();",
+                  "    pm.expect(j.id).to.eql(4);",
+                  "    pm.expect(j).to.not.have.property('result');",
+                  "    pm.expect(j.error.code).to.eql(-32601);",
+                  "    pm.expect(j.error.message).to.eql('Method not found: t31/nope');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{t31_mcp_session}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 4, \"method\": \"t31/nope\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "tools/call without name - -32602",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('JSON-RPC -32602 Missing required parameter: name', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var j = pm.response.json();",
+                  "    pm.expect(j.id).to.eql(5);",
+                  "    pm.expect(j.error.code).to.eql(-32602);",
+                  "    pm.expect(j.error.message).to.include('Missing required parameter: name');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{t31_mcp_session}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 5, \"method\": \"tools/call\", \"params\": {\"arguments\": {}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "resources/read without uri - -32602",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('JSON-RPC -32602 Missing required parameter: uri', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var j = pm.response.json();",
+                  "    pm.expect(j.id).to.eql(6);",
+                  "    pm.expect(j.error.code).to.eql(-32602);",
+                  "    pm.expect(j.error.message).to.include('Missing required parameter: uri');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{t31_mcp_session}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 6, \"method\": \"resources/read\", \"params\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "initialize - non-admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 non-admin may open an MCP session (NoAdminRequired)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var j = pm.response.json();",
+                  "    pm.expect(j.id).to.eql(14);",
+                  "    pm.expect(j).to.not.have.property('error');",
+                  "    pm.expect(j.result.protocolVersion).to.be.a('string');",
+                  "    var sid = pm.response.headers.get('Mcp-Session-Id');",
+                  "    pm.expect(sid).to.be.a('string').and.not.empty;",
+                  "    pm.expect(sid).to.not.eql(pm.collectionVariables.get('t31_mcp_session'));",
+                  "    pm.collectionVariables.set('t31_mcp_session_user', sid);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 14, \"method\": \"initialize\", \"params\": {}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{t31_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{t31_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "tools/list - non-admin with own session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 tools/list for non-admin', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var j = pm.response.json();",
+                  "    pm.expect(j.id).to.eql(15);",
+                  "    pm.expect(j, JSON.stringify(j.error || {})).to.not.have.property('error');",
+                  "    pm.expect(j.result.tools).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Mcp-Session-Id",
+                "value": "{{t31_mcp_session_user}}"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/mcp",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"jsonrpc\": \"2.0\", \"id\": 15, \"method\": \"tools/list\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{t31_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{t31_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 teardown",
+      "item": [
+        {
+          "name": "delete object",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object removed or already gone', () => { pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]); });",
+                  "pm.test('no PHP error in body', () => pm.expect(pm.response.text()).to.not.include('Fatal error'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{t31_register_id}}/{{t31_schema_id}}/{{t31_object_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "delete register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register removed or already gone', () => { pm.expect(pm.response.code).to.be.oneOf([200, 204, 404, 409]); });",
+                  "pm.test('no PHP error in body', () => pm.expect(pm.response.text()).to.not.include('Fatal error'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{t31_register_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "delete schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schema removed or already gone', () => { pm.expect(pm.response.code).to.be.oneOf([200, 204, 404, 409]); });",
+                  "pm.test('no PHP error in body', () => pm.expect(pm.response.text()).to.not.include('Fatal error'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{t31_schema_id}}"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "delete user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('user deleted', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().ocs.meta.statuscode).to.be.oneOf([100, 200]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/ocs/v2.php/cloud/users/{{t31_user}}?format=json"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "delete user2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('user2 deleted', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().ocs.meta.statuscode).to.be.oneOf([100, 200]); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/ocs/v2.php/cloud/users/{{t31_user2}}?format=json"
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "admin_user",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "admin_password",
+      "value": "admin",
+      "type": "string"
+    },
+    {
+      "key": "t31_run",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "t31_user",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "t31_password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "t31_user2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "t31_password2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "t31_register_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "t31_register_slug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "t31_schema_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "t31_schema_slug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "t31_object_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

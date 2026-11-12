@@ -8,12 +8,18 @@ name: Documentation
 # merged to development satisfied its review and published nothing.
 on:
   push:
-    branches: [development]
+    branches: [main]
   pull_request:
-    branches: [development]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
+    permissions:
+      contents: write
+      packages: write
     uses: ConductionNL/.github/.github/workflows/documentation.yml@main
     # A reusable workflow receives NO secrets by default. Without this block the
     # callee's publish step finds CF_API_TOKEN empty, skips itself on its own

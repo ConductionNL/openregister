@@ -1,0 +1,189 @@
+[
+    [
+        "refused",
+        "No objects provided for transfer list"
+    ],
+    [
+        "info",
+        "[TransferListService] Created transfer list",
+        {
+            "uuid": "<uuid>",
+            "objectCount": 2
+        }
+    ],
+    [
+        "save",
+        {
+            "uuid": "<uuid>",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a",
+                    "schema": "7",
+                    "register": "3"
+                },
+                {
+                    "uuid": "b",
+                    "schema": "7",
+                    "register": "3"
+                }
+            ],
+            "exclusions": [],
+            "approvalMetadata": null,
+            "attempts": [],
+            "transferResult": null,
+            "packageFormat": "zip",
+            "createdAt": "<now>",
+            "objectCount": 2
+        }
+    ],
+    [
+        "returned",
+        {
+            "uuid": "<uuid>",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a",
+                    "schema": "7",
+                    "register": "3"
+                },
+                {
+                    "uuid": "b",
+                    "schema": "7",
+                    "register": "3"
+                }
+            ],
+            "exclusions": [],
+            "approvalMetadata": null,
+            "attempts": [],
+            "transferResult": null,
+            "packageFormat": "zip",
+            "createdAt": "<now>",
+            "objectCount": 2,
+            "saved": true
+        }
+    ],
+    [
+        "info",
+        "[TransferListService] Created transfer list",
+        {
+            "uuid": "<uuid>",
+            "objectCount": 2
+        }
+    ],
+    [
+        "save",
+        {
+            "uuid": "<uuid>",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a",
+                    "schema": "7",
+                    "register": "3"
+                },
+                {
+                    "uuid": "b",
+                    "schema": "7",
+                    "register": "3"
+                }
+            ],
+            "exclusions": [],
+            "approvalMetadata": null,
+            "attempts": [],
+            "transferResult": null,
+            "packageFormat": "bagit",
+            "createdAt": "<now>",
+            "objectCount": 2
+        }
+    ],
+    [
+        "returned",
+        {
+            "uuid": "<uuid>",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a",
+                    "schema": "7",
+                    "register": "3"
+                },
+                {
+                    "uuid": "b",
+                    "schema": "7",
+                    "register": "3"
+                }
+            ],
+            "exclusions": [],
+            "approvalMetadata": null,
+            "attempts": [],
+            "transferResult": null,
+            "packageFormat": "bagit",
+            "createdAt": "<now>",
+            "objectCount": 2,
+            "saved": true
+        }
+    ],
+    [
+        "info",
+        "[TransferListService] Created transfer list",
+        {
+            "uuid": "<uuid>",
+            "objectCount": 2
+        }
+    ],
+    [
+        "save",
+        {
+            "uuid": "<uuid>",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a",
+                    "schema": "7",
+                    "register": "3"
+                },
+                {
+                    "uuid": "b",
+                    "schema": "7",
+                    "register": "3"
+                }
+            ],
+            "exclusions": [],
+            "approvalMetadata": null,
+            "attempts": [],
+            "transferResult": null,
+            "packageFormat": "zip",
+            "createdAt": "<now>",
+            "objectCount": 2
+        }
+    ],
+    [
+        "returned",
+        {
+            "uuid": "<uuid>",
+            "status": "in_review",
+            "objectReferences": [
+                {
+                    "uuid": "a",
+                    "schema": "7",
+                    "register": "3"
+                },
+                {
+                    "uuid": "b",
+                    "schema": "7",
+                    "register": "3"
+                }
+            ],
+            "exclusions": [],
+            "approvalMetadata": null,
+            "attempts": [],
+            "transferResult": null,
+            "packageFormat": "zip",
+            "createdAt": "<now>",
+            "objectCount": 2,
+            "saved": true
+        }
+    ]
+]

@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Service\Notification\ReplyThreadResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\ReplyThreadResolver;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -211,4 +211,27 @@ class ReplyThreadResolverTest extends TestCase {
 		$this->assertFalse($this->resolver->mayFileAutomatically(ReplyThreadResolver::UNTHREADED));
 		$this->assertFalse($this->resolver->mayFileAutomatically(ReplyThreadResolver::AMBIGUOUS));
 	}//end testOnlyAThreadedResultMayBeFiledWithoutAPerson()
+
+	/**
+	 * One message linked to two objects is two objects, not the first of them.
+	 */
+	public function testAMessageLinkedToTwoObjectsIsAmbiguous(): void {
+		$answer = (new ReplyThreadResolver())->resolve(
+			headers: ['In-Reply-To' => '<a@x>'],
+			lookup: static fn (string $id): array => ['objectUuids' => ['case-1', ' case-2 ', '']]
+		);
+
+		$this->assertSame(ReplyThreadResolver::AMBIGUOUS, $answer['state']);
+		$this->assertSame(['case-1', 'case-2'], $answer['candidates']);
+	}
+
+	public function testAMessageLinkedToOneObjectThroughTheListIsThreaded(): void {
+		$answer = (new ReplyThreadResolver())->resolve(
+			headers: ['In-Reply-To' => '<a@x>'],
+			lookup: static fn (string $id): array => ['objectUuids' => ['case-1']]
+		);
+
+		$this->assertSame(ReplyThreadResolver::THREADED, $answer['state']);
+		$this->assertSame('case-1', $answer['objectUuid']);
+	}
 }//end class

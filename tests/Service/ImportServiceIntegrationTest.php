@@ -25,6 +25,9 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
 
 /**
  * Integration tests for ImportService
@@ -300,16 +303,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->assertIsArray($result);
@@ -333,16 +332,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -363,16 +358,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->assertIsArray($result);
@@ -396,16 +387,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -453,16 +440,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$boolSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $boolSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -504,16 +487,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -542,16 +521,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -576,16 +551,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -615,16 +586,12 @@ class ImportServiceIntegrationTest extends TestCase {
 
 		// First import
 		$result1 = $this->service->importFromCsv(
-			$filePath1,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath1,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 		$this->collectObjectUuids($result1);
 
@@ -635,16 +602,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath2 = $this->createTempCsv($csv);
 
 		$result2 = $this->service->importFromCsv(
-			$filePath2,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath2,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 		$this->collectObjectUuids($result2);
 
@@ -674,16 +637,13 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			true, // publish = true
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+				options: new ImportOptions(publish: true),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -708,16 +668,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -742,9 +698,10 @@ class ImportServiceIntegrationTest extends TestCase {
 		$this->expectException(\Exception::class);
 
 		$this->service->importFromCsv(
-			'/nonexistent/path/to/file.csv',
-			$this->testRegister,
-			$this->testSchema
+			request: new ImportRequest(
+				filePath: '/nonexistent/path/to/file.csv',
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
 		);
 	}
 
@@ -761,9 +718,10 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			null
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister),
+			),
 		);
 	}
 
@@ -785,16 +743,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -822,16 +776,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -853,16 +803,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -887,16 +833,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -940,16 +882,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$numSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $numSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -998,16 +936,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$objSchema,
-			false,
-			false,
-			false,
-			false,
-			false,
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $objSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);
@@ -1038,16 +972,12 @@ class ImportServiceIntegrationTest extends TestCase {
 		$filePath = $this->createTempCsv($csv);
 
 		$result = $this->service->importFromCsv(
-			$filePath,
-			$this->testRegister,
-			$this->testSchema,
-			false,
-			false,
-			false,
-			false,
-			false, // publish = false
-			null,
-			true
+			request: new ImportRequest(
+				filePath: $filePath,
+				scope: new ImportScope(register: $this->testRegister, schema: $this->testSchema),
+			),
+			_rbac: false,
+			_multitenancy: false,
 		);
 
 		$this->collectObjectUuids($result);

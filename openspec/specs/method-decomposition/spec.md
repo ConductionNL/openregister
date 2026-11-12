@@ -199,7 +199,6 @@ Cache settings management with TTL configuration, invalidation rules, and cache 
 - `lib/Service/TextExtraction/ObjectHandler.php` (5)
 - `lib/Service/Object/ValidationHandler.php` (5)
 - `lib/Service/Object/QueryHandler.php` (5)
-- `lib/Service/Object/PerformanceHandler.php` (5)
 - `lib/Service/Index/Backends/Elasticsearch/ElasticsearchDocumentIndexer.php` (5)
 - `lib/Service/HookExecutor.php` (5)
 - `lib/Service/GraphQL/SchemaGenerator.php` (5)

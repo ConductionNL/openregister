@@ -43,6 +43,28 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class DedupeConfigurationsCommand extends Command {
 	/**
+	 * The command description.
+	 */
+	private const DESCRIPTION = 'Remove duplicate app configuration rows (keeps the newest per app). '
+		. 'Configuration rows are metadata only — registers, schemas and objects are untouched.';
+
+	/**
+	 * The help text of the --apply option.
+	 */
+	private const APPLY_HELP = 'Actually delete the duplicate rows. Without this flag the command runs in dry-run '
+		. 'mode and only reports what it would delete.';
+
+	/**
+	 * The dry-run closing message: app count, then row count.
+	 */
+	private const DRY_RUN_SUMMARY = '<comment>%d app(s), %d duplicate row(s) would be deleted. Re-run with --apply.</comment>';
+
+	/**
+	 * The closing message after deleting: row count, then app count.
+	 */
+	private const DELETED_SUMMARY = '<info>Deleted %d duplicate configuration row(s) across %d app(s).</info>';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
@@ -61,23 +83,9 @@ class DedupeConfigurationsCommand extends Command {
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:configurations:dedupe')
-			->setDescription(
-				'Remove duplicate app configuration rows (keeps the newest per app). '
-				. 'Configuration rows are metadata only — registers, schemas and objects are untouched.'
-			)
-			->addOption(
-				'apply',
-				null,
-				InputOption::VALUE_NONE,
-				'Actually delete the duplicate rows. Without this flag the command runs in dry-run '
-				. 'mode and only reports what it would delete.'
-			)
-			->addOption(
-				'app',
-				null,
-				InputOption::VALUE_REQUIRED,
-				'Limit to a single app id (default: every app).'
-			);
+			->setDescription(self::DESCRIPTION)
+			->addOption('apply', null, InputOption::VALUE_NONE, self::APPLY_HELP)
+			->addOption('app', null, InputOption::VALUE_REQUIRED, 'Limit to a single app id (default: every app).');
 
 	}//end configure()
 
@@ -90,80 +98,106 @@ class DedupeConfigurationsCommand extends Command {
 	 * @return int 0 on success.
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$apply = (bool)$input->getOption('apply');
-		$appFilter = $input->getOption('app');
+		$plan = self::planDeletions(rows: $this->readRows(appFilter: $input->getOption('app')));
+		$this->printPlan(plan: $plan, output: $output);
+		$output->writeln($this->settle(plan: $plan, apply: (bool) $input->getOption('apply')));
 
-		// Read every configuration row's id + app, newest first.
+		return 0;
+	}//end execute()
+
+	/**
+	 * Every configuration row's id, app and title, newest first.
+	 *
+	 * @param mixed $appFilter The --app value, or null for every app.
+	 *
+	 * @return array<int,array<string,mixed>> The rows.
+	 */
+	private function readRows(mixed $appFilter): array {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'app', 'title')
-			->from('openregister_configurations')
-			->orderBy('id', 'DESC');
+		$qb->select('id', 'app', 'title')->from('openregister_configurations')->orderBy('id', 'DESC');
 
 		if ($appFilter !== null) {
 			$qb->where($qb->expr()->eq('app', $qb->createNamedParameter($appFilter, IQueryBuilder::PARAM_STR)));
 		}
 
 		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
+		$rows   = $result->fetchAll();
 		$result->closeCursor();
 
-		$plan = self::planDeletions(rows: $rows);
+		return $rows;
+	}//end readRows()
 
-		$dupeApps = count($plan);
-		$deleteIds = [];
-
+	/**
+	 * Print one line per app with duplicates.
+	 *
+	 * @param array<string,array{keep:int,delete:int[]}> $plan   The per-app plan.
+	 * @param OutputInterface                            $output Console output.
+	 *
+	 * @return void
+	 */
+	private function printPlan(array $plan, OutputInterface $output): void {
 		foreach ($plan as $app => $group) {
-			$deleteIds = array_merge($deleteIds, $group['delete']);
-			$output->writeln(
-				sprintf(
-					'app=%s: keep id=%d, %d duplicate(s): %s',
-					$app,
-					$group['keep'],
-					count($group['delete']),
-					implode(', ', array_slice($group['delete'], 0, 10)) . $this->overflowMark(total: count($group['delete']))
-				)
-			);
+			$output->writeln($this->planLine(app: (string) $app, group: $group));
 		}
+	}//end printPlan()
 
-		// The number of rows this run would delete, as opposed to the number of
-		// APPS they belong to. It was never assigned: under PHP 8 an undefined
-		// variable reads as null, so `=== 0` was always false and the
-		// "no duplicates" branch could never fire — a clean run reported
-		// "0 app(s), row(s) would be deleted" instead of saying there was
-		// nothing to do.
-		$dupeRows = count($deleteIds);
+	/**
+	 * The report line for one app: the kept id and the first ten duplicates.
+	 *
+	 * @param string                         $app   The app id.
+	 * @param array{keep:int,delete:int[]}   $group The app's keep/delete plan.
+	 *
+	 * @return string
+	 */
+	private function planLine(string $app, array $group): string {
+		return sprintf(
+			'app=%s: keep id=%d, %d duplicate(s): %s',
+			$app,
+			$group['keep'],
+			count($group['delete']),
+			implode(', ', array_slice($group['delete'], 0, 10)) . $this->overflowMark(total: count($group['delete']))
+		);
+	}//end planLine()
 
-		if ($dupeRows === 0) {
-			$output->writeln('<info>No duplicate configuration rows found.</info>');
-			return 0;
+	/**
+	 * Delete the planned rows when --apply is set; the closing message either way.
+	 *
+	 * @param array<string,array{keep:int,delete:int[]}> $plan  The per-app plan.
+	 * @param bool                                       $apply Whether to delete.
+	 *
+	 * @return string The closing message.
+	 */
+	private function settle(array $plan, bool $apply): string {
+		$deleteIds = array_merge(...array_column($plan, 'delete'));
+		if ($deleteIds === []) {
+			return '<info>No duplicate configuration rows found.</info>';
 		}
 
 		if ($apply === false) {
-			$output->writeln(
-				sprintf(
-					'<comment>%d app(s), %d duplicate row(s) would be deleted. Re-run with --apply.</comment>',
-					$dupeApps,
-					$dupeRows
-				)
-			);
-			return 0;
+			return sprintf(self::DRY_RUN_SUMMARY, count($plan), count($deleteIds));
 		}
 
-		// Delete in chunks to keep the IN() list bounded.
+		return sprintf(self::DELETED_SUMMARY, $this->deleteRows(ids: $deleteIds), count($plan));
+	}//end settle()
+
+	/**
+	 * Delete rows by id in chunks, to keep the IN() list bounded.
+	 *
+	 * @param int[] $ids The ids to delete.
+	 *
+	 * @return int The number of rows deleted.
+	 */
+	private function deleteRows(array $ids): int {
 		$deleted = 0;
-		foreach (array_chunk($deleteIds, 500) as $chunk) {
+		foreach (array_chunk($ids, 500) as $chunk) {
 			$del = $this->db->getQueryBuilder();
 			$del->delete('openregister_configurations')
 				->where($del->expr()->in('id', $del->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)));
 			$deleted += $del->executeStatement();
 		}
 
-		$output->writeln(
-			sprintf('<info>Deleted %d duplicate configuration row(s) across %d app(s).</info>', $deleted, $dupeApps)
-		);
-
-		return 0;
-	}//end execute()
+		return $deleted;
+	}//end deleteRows()
 
 	/**
 	 * The "and N more" marker when a delete list was truncated at ten.
@@ -194,18 +228,8 @@ class DedupeConfigurationsCommand extends Command {
 	 * @return array<string,array{keep:int,delete:int[]}> Per-app keep/delete plan (only apps with duplicates).
 	 */
 	public static function planDeletions(array $rows): array {
-		$byApp = [];
-		foreach ($rows as $row) {
-			$app = (string)($row['app'] ?? '');
-			if ($app === '') {
-				continue;
-			}
-
-			$byApp[$app][] = (int)$row['id'];
-		}
-
 		$plan = [];
-		foreach ($byApp as $app => $ids) {
+		foreach (self::idsByApp(rows: $rows) as $app => $ids) {
 			if (count($ids) < 2) {
 				continue;
 			}
@@ -218,4 +242,25 @@ class DedupeConfigurationsCommand extends Command {
 
 		return $plan;
 	}//end planDeletions()
+
+	/**
+	 * Row ids grouped by app, in row order; rows without an app are left out.
+	 *
+	 * @param array<int,array<string,mixed>> $rows Rows with 'id' and 'app'.
+	 *
+	 * @return array<string,int[]> The ids per app.
+	 */
+	private static function idsByApp(array $rows): array {
+		$byApp = [];
+		foreach ($rows as $row) {
+			$app = (string)($row['app'] ?? '');
+			if ($app === '') {
+				continue;
+			}
+
+			$byApp[$app][] = (int)$row['id'];
+		}
+
+		return $byApp;
+	}//end idsByApp()
 }//end class

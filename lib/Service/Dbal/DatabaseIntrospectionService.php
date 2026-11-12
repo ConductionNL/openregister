@@ -38,9 +38,9 @@ use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Service\Schema\SchemaDiffService;
 use Psr\Log\LoggerInterface;
@@ -55,7 +55,21 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Depends on the DBAL schema value
  *   objects plus the OR mapper/diff seams the design names explicitly.
  */
-class DatabaseIntrospectionService {
+class DatabaseIntrospectionService implements DatabaseIntrospectionServiceInterface {
+	/**
+	 * The engine namespaces whose objects are never user tables.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SYSTEM_NAMESPACES = [
+		'pg_catalog.',
+		'information_schema.',
+		'pg_toast.',
+		'mysql.',
+		'performance_schema.',
+		'sys.',
+	];
+
 	/**
 	 * The object-source provider id every introspected schema is bound to.
 	 *
@@ -73,21 +87,17 @@ class DatabaseIntrospectionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param DbalConnectionFactory $connectionFactory Opens the DBAL connection for a source.
-	 * @param SqlTypeMapper $typeMapper SQL column → JSON-Schema mapping.
-	 * @param RegisterMapper $registerMapper Register persistence.
-	 * @param SchemaMapper $schemaMapper Schema persistence.
-	 * @param SchemaDiffService $diffService Classifies structural drift between runs.
+	 * @param IntrospectionTools $tools The connection factory, the SQL type mapper and the schema differ.
+	 * @param RegisterMapperInterface $registerMapper Register persistence.
+	 * @param SchemaMapperInterface $schemaMapper Schema persistence.
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly DbalConnectionFactory $connectionFactory,
-		private readonly SqlTypeMapper $typeMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly SchemaDiffService $diffService,
+		private readonly IntrospectionTools $tools,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -109,9 +119,107 @@ class DatabaseIntrospectionService {
 	 */
 	public function buildBlueprint(Source $source): array {
 		$sourceId = $this->sourceId(source: $source);
-		$connection = $this->connectionFactory->getConnection(source: $source);
-		$schemaManager = $connection->createSchemaManager();
+		$tables   = $this->introspectSource(source: $source, sourceId: $sourceId);
 
+		$authConfig = ($source->getAuthConfig() ?? []);
+		$writable   = (($authConfig['writable'] ?? false) === true);
+
+		$schemas = [];
+		foreach ($tables as $record) {
+			$schemas[] = $this->toSchemaDefinition(record: $record, writable: $writable);
+		}
+
+		return [
+			'register' => $this->registerBlueprint(source: $source, sourceId: $sourceId),
+			'schemas' => $schemas,
+		];
+	}//end buildBlueprint()
+
+	/**
+	 * The virtual register a database source is introspected into.
+	 *
+	 * @param Source $source   The database source.
+	 * @param string $sourceId The owning source id.
+	 *
+	 * @return array<string, string> title, slug, source and description.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function registerBlueprint(Source $source, string $sourceId): array {
+		return [
+			'title' => (string)($source->getTitle() ?? ('Database ' . $sourceId)),
+			'slug' => $this->slugify(value: 'db-' . $sourceId),
+			'source' => $sourceId,
+			'description' => 'Virtual register introspected from database source ' . $sourceId . '.',
+		];
+	}//end registerBlueprint()
+
+	/**
+	 * Introspect every user table and view of a source into working records, foreign keys applied.
+	 *
+	 * @param Source $source   The `type: database` source.
+	 * @param string $sourceId The source id.
+	 *
+	 * @return array<string, array<string, mixed>> The working records, keyed by table name.
+	 *
+	 * @throws DbalConnectionException When the source cannot be connected.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function introspectSource(Source $source, string $sourceId): array {
+		$pass = new SourceIntrospection(
+			connection: $this->tools->connectionFactory->getConnection(source: $source),
+			sourceId: $sourceId
+		);
+
+		// First pass: introspect every table/view into a working record so the
+		// second pass can resolve foreign-key targets and add inverse sides.
+		$tables = $this->workingRecords(pass: $pass);
+
+		// Second pass: map single-column foreign keys onto the relation dialect
+		// and add the inverse side on the referenced schema.
+		$this->applyForeignKeys(schemaManager: $pass->schemaManager, tables: $tables);
+
+		return $tables;
+	}//end introspectSource()
+
+	/**
+	 * The working record of every user table, then of every user view not already a table.
+	 *
+	 * @param SourceIntrospection $pass The schema manager and the owning source id.
+	 *
+	 * @return array<string, array<string, mixed>> The records, keyed by table name.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function workingRecords(SourceIntrospection $pass): array {
+		$tableNames = $this->userTableNames(schemaManager: $pass->schemaManager);
+		$viewNames  = $this->userViewNames(schemaManager: $pass->schemaManager);
+
+		$tables = [];
+		foreach ($tableNames as $tableName) {
+			$tables[$tableName] = $this->introspectTable(pass: $pass, table: new TableRef(name: $tableName, isView: false));
+		}
+
+		foreach ($viewNames as $viewName) {
+			if (isset($tables[$viewName]) === false) {
+				$tables[$viewName] = $this->introspectView(pass: $pass, viewName: $viewName);
+			}
+		}
+
+		return $tables;
+	}//end workingRecords()
+
+	/**
+	 * The source's table names, system objects left out, sorted.
+	 *
+	 * @param AbstractSchemaManager $schemaManager The schema manager.
+	 *
+	 * @return array<int, string> The table names.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function userTableNames(AbstractSchemaManager $schemaManager): array {
 		$tableNames = array_values(
 			array_filter(
 				$schemaManager->listTableNames(),
@@ -120,6 +228,19 @@ class DatabaseIntrospectionService {
 		);
 		sort($tableNames);
 
+		return $tableNames;
+	}//end userTableNames()
+
+	/**
+	 * The source's view names, unqualified, system objects left out, each once, sorted.
+	 *
+	 * @param AbstractSchemaManager $schemaManager The schema manager.
+	 *
+	 * @return array<int, string> The view names.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function userViewNames(AbstractSchemaManager $schemaManager): array {
 		$viewNames = [];
 		foreach ($schemaManager->listViews() as $view) {
 			if ($this->isSystemObject(name: $view->getName()) === true) {
@@ -134,68 +255,33 @@ class DatabaseIntrospectionService {
 
 		sort($viewNames);
 
-		// First pass: introspect every table/view into a working record so the
-		// second pass can resolve foreign-key targets and add inverse sides.
-		$tables = [];
-		foreach ($tableNames as $tableName) {
-			$tables[$tableName] = $this->introspectTable(
-				schemaManager: $schemaManager,
-				sourceId: $sourceId,
-				tableName: $tableName,
-				isView: false
-			);
+		return $viewNames;
+	}//end userViewNames()
+
+	/**
+	 * Introspect one view into a working record.
+	 *
+	 * DBAL 3.x schema managers list columns for TABLES only; a view's
+	 * properties are derived from a single sample row instead (portable
+	 * across mysql/pgsql/sqlite). An empty view yields no properties but is
+	 * still served list-only via SELECT *.
+	 *
+	 * @param SourceIntrospection $pass     The open connection, its schema manager and the owning source id.
+	 * @param string              $viewName The view name.
+	 *
+	 * @return array<string, mixed> The working record.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function introspectView(SourceIntrospection $pass, string $viewName): array {
+		$record = $this->introspectTable(pass: $pass, table: new TableRef(name: $viewName, isView: true));
+
+		if ($record['properties'] === []) {
+			$record['properties'] = $this->viewColumnsFromSample(connection: $pass->connection, viewName: $viewName);
 		}
 
-		foreach ($viewNames as $viewName) {
-			if (isset($tables[$viewName]) === true) {
-				continue;
-			}
-
-			$record = $this->introspectTable(
-				schemaManager: $schemaManager,
-				sourceId: $sourceId,
-				tableName: $viewName,
-				isView: true
-			);
-
-			// DBAL 3.x schema managers list columns for TABLES only; derive a
-			// view's properties from a single sample row instead (portable
-			// across mysql/pgsql/sqlite). An empty view yields no properties
-			// but is still served list-only via SELECT *.
-			if ($record['properties'] === []) {
-				$record['properties'] = $this->viewColumnsFromSample(connection: $connection, viewName: $viewName);
-			}
-
-			$tables[$viewName] = $record;
-		}//end foreach
-
-		$slugByTable = [];
-		foreach ($tables as $tableName => $record) {
-			$slugByTable[$tableName] = $record['slug'];
-		}
-
-		// Second pass: map single-column foreign keys onto the relation dialect
-		// and add the inverse side on the referenced schema.
-		$this->applyForeignKeys(schemaManager: $schemaManager, tables: $tables, slugByTable: $slugByTable);
-
-		$authConfig = ($source->getAuthConfig() ?? []);
-		$writable = (($authConfig['writable'] ?? false) === true);
-
-		$schemas = [];
-		foreach ($tables as $record) {
-			$schemas[] = $this->toSchemaDefinition(record: $record, writable: $writable);
-		}
-
-		return [
-			'register' => [
-				'title' => (string)($source->getTitle() ?? ('Database ' . $sourceId)),
-				'slug' => $this->slugify(value: 'db-' . $sourceId),
-				'source' => $sourceId,
-				'description' => 'Virtual register introspected from database source ' . $sourceId . '.',
-			],
-			'schemas' => $schemas,
-		];
-	}//end buildBlueprint()
+		return $record;
+	}//end introspectView()
 
 	/**
 	 * Introspect a source and persist the register + schemas idempotently.
@@ -214,79 +300,162 @@ class DatabaseIntrospectionService {
 	 */
 	public function introspect(Source $source): array {
 		$blueprint = $this->buildBlueprint(source: $source);
-		$sourceId = $this->sourceId(source: $source);
+		$sourceId  = $this->sourceId(source: $source);
 
 		$register = $this->upsertRegister(definition: $blueprint['register'], sourceId: $sourceId);
-		$existingSchemas = $this->existingSchemasByTable(register: $register);
-
-		$created = [];
-		$updated = [];
-		$drift = [];
-		$schemaIds = [];
+		$run      = new SchemaPersistRun();
+		$run->existingSchemas = $this->existingSchemasByTable(register: $register);
 
 		foreach ($blueprint['schemas'] as $definition) {
-			$table = $definition['configuration']['x-openregister-object-source']['config']['table'];
-
-			if (isset($existingSchemas[$table]) === true) {
-				$existing = $existingSchemas[$table];
-				$changeSet = $this->diffService->diff(
-					old: ['properties' => $existing->getProperties(), 'required' => $existing->getRequired()],
-					new: ['properties' => $definition['properties'], 'required' => ($definition['required'] ?? [])]
-				);
-
-				if ($changeSet->hasChanges() === true) {
-					$drift[] = ['table' => $table, 'changes' => $changeSet->getChanges()];
-					$this->logger->info(
-						sprintf('[DbalIntrospection] drift on table "%s": %d change(s)', $table, count($changeSet->getChanges()))
-					);
-				}
-
-				$saved = $this->schemaMapper->updateFromArray(id: (int)$existing->getId(), object: $definition);
-				$updated[] = $table;
-				$schemaIds[] = (int)$saved->getId();
-				continue;
-			}//end if
-
-			$saved = $this->schemaMapper->createFromArray(object: $definition);
-			$created[] = $table;
-			$schemaIds[] = (int)$saved->getId();
-		}//end foreach
+			$this->persistSchema(run: $run, definition: $definition);
+		}
 
 		// Keep the register's schema-id list in sync with what we just wrote.
-		$register->setSchemas(array_values(array_unique($schemaIds)));
+		$register->setSchemas(array_values(array_unique($run->schemaIds)));
 		$this->registerMapper->update($register);
 
+		return $this->persistResult(run: $run, register: $register);
+	}//end introspect()
+
+	/**
+	 * Write one blueprint schema: update the one already bound to its table, else create it.
+	 *
+	 * @param SchemaPersistRun     $run        The persistence pass.
+	 * @param array<string, mixed> $definition The blueprint schema definition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function persistSchema(SchemaPersistRun $run, array $definition): void {
+		$table = $definition['configuration']['x-openregister-object-source']['config']['table'];
+
+		if (isset($run->existingSchemas[$table]) === true) {
+			$this->updateSchema(run: $run, definition: $definition);
+			return;
+		}
+
+		$saved = $this->schemaMapper->createFromArray(object: $definition);
+		$run->created[]   = $table;
+		$run->schemaIds[] = (int)$saved->getId();
+	}//end persistSchema()
+
+	/**
+	 * Update the schema already bound to a blueprint table, logging any structural drift first.
+	 *
+	 * @param SchemaPersistRun     $run        The persistence pass.
+	 * @param array<string, mixed> $definition The blueprint schema definition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function updateSchema(SchemaPersistRun $run, array $definition): void {
+		$table    = $definition['configuration']['x-openregister-object-source']['config']['table'];
+		$existing = $run->existingSchemas[$table];
+		$this->recordDrift(run: $run, definition: $definition);
+
+		$saved = $this->schemaMapper->updateFromArray(id: (int)$existing->getId(), object: $definition);
+		$run->updated[]   = $table;
+		$run->schemaIds[] = (int)$saved->getId();
+	}//end updateSchema()
+
+	/**
+	 * Diff a blueprint schema against the one bound to its table; record and log the drift when there is any.
+	 *
+	 * @param SchemaPersistRun     $run        The persistence pass.
+	 * @param array<string, mixed> $definition The blueprint schema definition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function recordDrift(SchemaPersistRun $run, array $definition): void {
+		$table     = $definition['configuration']['x-openregister-object-source']['config']['table'];
+		$existing  = $run->existingSchemas[$table];
+		$changeSet = $this->tools->diffService->diff(
+			old: ['properties' => $existing->getProperties(), 'required' => $existing->getRequired()],
+			new: ['properties' => $definition['properties'], 'required' => ($definition['required'] ?? [])]
+		);
+
+		if ($changeSet->hasChanges() === true) {
+			$run->drift[] = ['table' => $table, 'changes' => $changeSet->getChanges()];
+			$this->logger->info(
+				sprintf('[DbalIntrospection] drift on table "%s": %d change(s)', $table, count($changeSet->getChanges()))
+			);
+		}
+	}//end recordDrift()
+
+	/**
+	 * The outcome of a persistence pass: the register id and what was created, updated and drifted.
+	 *
+	 * @param SchemaPersistRun $run      The finished persistence pass.
+	 * @param Register         $register The persisted register.
+	 *
+	 * @return array{register: int, created: array<int, string>, updated: array<int, string>, drift: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function persistResult(SchemaPersistRun $run, Register $register): array {
 		return [
 			'register' => (int)$register->getId(),
-			'created' => $created,
-			'updated' => $updated,
-			'drift' => $drift,
+			'created' => $run->created,
+			'updated' => $run->updated,
+			'drift' => $run->drift,
 		];
-	}//end introspect()
+	}//end persistResult()
 
 	/**
 	 * Introspect one table/view into a working record.
 	 *
-	 * @param AbstractSchemaManager $schemaManager The schema manager.
-	 * @param string $sourceId The owning source id.
-	 * @param string $tableName The table/view name.
-	 * @param bool $isView Whether this is a view.
+	 * @param SourceIntrospection $pass  The schema manager and the owning source id.
+	 * @param TableRef            $table The table/view name, and whether it is a view.
 	 *
 	 * @return array<string, mixed> The working table record.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function introspectTable(AbstractSchemaManager $schemaManager, string $sourceId, string $tableName, bool $isView): array {
-		$columns = $schemaManager->listTableColumns($tableName);
-		$primaryKey = $this->primaryKeyColumns(schemaManager: $schemaManager, tableName: $tableName, isView: $isView);
+	private function introspectTable(SourceIntrospection $pass, TableRef $table): array {
+		$tableName  = $table->name;
+		$isView     = $table->isView;
+		$columns    = $pass->schemaManager->listTableColumns($tableName);
+		$primaryKey = $this->primaryKeyColumns(schemaManager: $pass->schemaManager, table: $table);
 
-		$properties = [];
-		$required = [];
+		[$properties, $required, $nonFilterable] = $this->columnProperties(columns: $columns, primaryKey: $primaryKey);
+		[$idColumn, $idColumns] = $this->resolveIdentity(primaryKey: $primaryKey, tableName: $tableName);
+
+		return [
+			'table' => $tableName,
+			'slug' => $this->slugify(value: $tableName),
+			'title' => $tableName,
+			'isView' => $isView,
+			'idColumn' => $idColumn,
+			'idColumns' => $idColumns,
+			'properties' => $this->withStringPrimaryKeys(properties: $properties, primaryKey: $primaryKey),
+			'required' => $required,
+			'nonFilterable' => $nonFilterable,
+			'sourceId' => $pass->sourceId,
+		];
+	}//end introspectTable()
+
+	/**
+	 * The JSON-Schema property of each column, the required columns, and the columns that cannot be filtered on.
+	 *
+	 * @param array<int|string, Column> $columns    The table's columns.
+	 * @param array<int, string>        $primaryKey The primary-key columns.
+	 *
+	 * @return array{0: array<string, array<string, mixed>>, 1: array<int, string>, 2: array<int, string>}
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function columnProperties(array $columns, array $primaryKey): array {
+		$properties    = [];
+		$required      = [];
 		$nonFilterable = [];
 
 		foreach ($columns as $column) {
-			$name = $column->getName();
-			$fragment = $this->typeMapper->mapColumn(column: $column);
+			$name     = $column->getName();
+			$fragment = $this->tools->typeMapper->mapColumn(column: $column);
 
 			if (($fragment['x-filterable'] ?? true) === false) {
 				$nonFilterable[] = $name;
@@ -300,19 +469,29 @@ class DatabaseIntrospectionService {
 			}
 		}
 
-		[$idColumn, $idColumns] = $this->resolveIdentity(primaryKey: $primaryKey, tableName: $tableName);
+		return [$properties, $required, $nonFilterable];
+	}//end columnProperties()
 
-		// Primary-key columns are declared `type: string`: the virtual object
-		// id IS a string (reads present it as one, URLs deliver it as one),
-		// so an integer declaration would fail write validation for the very
-		// value the read path returns. The database still stores/coerces the
-		// native column type.
-		$pkColumns = ($idColumns ?? []);
-		if ($idColumn !== null) {
-			$pkColumns = [$idColumn];
-		}
-
-		foreach ($pkColumns as $pkColumn) {
+	/**
+	 * The properties with every primary-key column declared `type: string`.
+	 *
+	 * The virtual object id IS a string (reads present it as one, URLs deliver
+	 * it as one), so an integer declaration would fail write validation for the
+	 * very value the read path returns. The database still stores/coerces the
+	 * native column type.
+	 *
+	 * The id columns are exactly the primary-key columns: one for a single id,
+	 * all of them for a composite id, none when there is no primary key.
+	 *
+	 * @param array<string, array<string, mixed>> $properties The column properties.
+	 * @param array<int, string>                  $primaryKey The ordered primary-key columns (possibly empty).
+	 *
+	 * @return array<string, array<string, mixed>> The properties.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function withStringPrimaryKeys(array $properties, array $primaryKey): array {
+		foreach ($primaryKey as $pkColumn) {
 			if (isset($properties[$pkColumn]) === true) {
 				$properties[$pkColumn] = array_merge(
 					$properties[$pkColumn],
@@ -322,19 +501,8 @@ class DatabaseIntrospectionService {
 			}
 		}
 
-		return [
-			'table' => $tableName,
-			'slug' => $this->slugify(value: $tableName),
-			'title' => $tableName,
-			'isView' => $isView,
-			'idColumn' => $idColumn,
-			'idColumns' => $idColumns,
-			'properties' => $properties,
-			'required' => $required,
-			'nonFilterable' => $nonFilterable,
-			'sourceId' => $sourceId,
-		];
-	}//end introspectTable()
+		return $properties;
+	}//end withStringPrimaryKeys()
 
 	/**
 	 * Derive a view's properties from a single sample row.
@@ -351,59 +519,84 @@ class DatabaseIntrospectionService {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function viewColumnsFromSample(Connection $connection, string $viewName): array {
-		try {
-			$qb = $connection->createQueryBuilder();
-			$qb->select('*')
-				->from($connection->getDatabasePlatform()->quoteIdentifier($viewName))
-				->setMaxResults(1);
-			$row = $qb->executeQuery()->fetchAssociative();
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				sprintf('[DbalIntrospection] could not sample view "%s": %s', $viewName, $e->getMessage())
-			);
-			return [];
-		}
-
+		$row = $this->sampleViewRow(connection: $connection, viewName: $viewName);
 		if (is_array($row) === false) {
 			return [];
 		}
 
 		$properties = [];
 		foreach ($row as $column => $value) {
-			$properties[(string)$column] = match (gettype($value)) {
-				'integer' => ['type' => 'integer'],
-				'double' => ['type' => 'number'],
-				'boolean' => ['type' => 'boolean'],
-				default => ['type' => 'string'],
-			};
+			$properties[(string)$column] = $this->sampledValueType(value: $value);
 		}
 
 		return $properties;
 	}//end viewColumnsFromSample()
 
 	/**
+	 * Read one row of a view with `SELECT * … LIMIT 1`, logging a warning when the view cannot be sampled.
+	 *
+	 * @param Connection $connection The open connection.
+	 * @param string     $viewName   The view name.
+	 *
+	 * @return array<string, mixed>|false The sample row; false when the view is empty or could not be sampled.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function sampleViewRow(Connection $connection, string $viewName): array|false {
+		try {
+			$qb = $connection->createQueryBuilder();
+			$qb->select('*')
+				->from($connection->getDatabasePlatform()->quoteIdentifier($viewName))
+				->setMaxResults(1);
+			return $qb->executeQuery()->fetchAssociative();
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				sprintf('[DbalIntrospection] could not sample view "%s": %s', $viewName, $e->getMessage())
+			);
+			return false;
+		}
+	}//end sampleViewRow()
+
+	/**
+	 * Type a sampled view value from its PHP type.
+	 *
+	 * @param mixed $value The sampled value.
+	 *
+	 * @return array<string, string> The JSON-Schema type fragment.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function sampledValueType(mixed $value): array {
+		return match (gettype($value)) {
+			'integer' => ['type' => 'integer'],
+			'double' => ['type' => 'number'],
+			'boolean' => ['type' => 'boolean'],
+			default => ['type' => 'string'],
+		};
+	}//end sampledValueType()
+
+	/**
 	 * Resolve the ordered primary-key column names for a table.
 	 *
 	 * @param AbstractSchemaManager $schemaManager The schema manager.
-	 * @param string $tableName The table name.
-	 * @param bool $isView Whether this is a view (never has a PK).
+	 * @param TableRef              $table         The table name, and whether it is a view (never has a PK).
 	 *
 	 * @return array<int, string> The PK column names in order (possibly empty).
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function primaryKeyColumns(AbstractSchemaManager $schemaManager, string $tableName, bool $isView): array {
-		if ($isView === true) {
+	private function primaryKeyColumns(AbstractSchemaManager $schemaManager, TableRef $table): array {
+		if ($table->isView === true) {
 			return [];
 		}
 
 		try {
-			$table = $schemaManager->introspectTable($tableName);
+			$introspected = $schemaManager->introspectTable($table->name);
 		} catch (Throwable $e) {
 			return [];
 		}
 
-		return $this->tablePrimaryKey(table: $table);
+		return $this->tablePrimaryKey(table: $introspected);
 	}//end primaryKeyColumns()
 
 	/**
@@ -481,69 +674,153 @@ class DatabaseIntrospectionService {
 	/**
 	 * Map single-column foreign keys onto the relation dialect and add inverses.
 	 *
-	 * @param AbstractSchemaManager $schemaManager The schema manager.
-	 * @param array<string, array<string, mixed>> $tables The working records, keyed by table name (mutated).
-	 * @param array<string, string> $slugByTable Table name → schema slug.
+	 * Each record carries its schema slug; the records' keys are the tables a
+	 * key may target.
+	 *
+	 * @param AbstractSchemaManager               $schemaManager The schema manager.
+	 * @param array<string, array<string, mixed>> $tables        The working records, keyed by table name (mutated).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function applyForeignKeys(AbstractSchemaManager $schemaManager, array &$tables, array $slugByTable): void {
+	private function applyForeignKeys(AbstractSchemaManager $schemaManager, array &$tables): void {
 		foreach ($tables as $tableName => $record) {
 			if ($record['isView'] === true) {
 				continue;
 			}
 
-			$foreignKeys = $this->foreignKeysFor(schemaManager: $schemaManager, tableName: $tableName);
-			foreach ($foreignKeys as $fk) {
-				$localColumns = array_values($fk->getLocalColumns());
-				if (count($localColumns) !== 1) {
-					$this->logger->info(
-						sprintf('[DbalIntrospection] skipping multi-column foreign key on "%s" (v1 maps single-column FKs only)', $tableName)
-					);
-					continue;
-				}
-
-				$localColumn = $localColumns[0];
-				$foreignTable = $this->shortName(name: $fk->getForeignTableName());
-				if (isset($slugByTable[$foreignTable]) === false) {
-					continue;
-				}
-
-				$targetSlug = $slugByTable[$foreignTable];
-
-				// Owning side: keep the raw key but type it as a relation.
-				// A `format` is carried over only when the column's own type
-				// mapping produced one (e.g. GUID → uuid) — external primary
-				// keys are commonly plain integers/strings with no JSON-Schema
-				// format, and relation resolution keys on $ref + handling.
-				$relationProperty = [
-					'type' => 'string',
-					'$ref' => $targetSlug,
-					'objectConfiguration' => ['handling' => 'related-object'],
-				];
-
-				$existingFormat = ($tables[$tableName]['properties'][$localColumn]['format'] ?? null);
-				if (is_string($existingFormat) === true && $existingFormat !== '') {
-					$relationProperty['format'] = $existingFormat;
-				}
-
-				$tables[$tableName]['properties'][$localColumn] = $relationProperty;
-
-				// Inverse side on the referenced schema.
-				$inverseName = $tableName . '_via_' . $localColumn;
-				$tables[$foreignTable]['properties'][$inverseName] = [
-					'type' => 'array',
-					'items' => [
-						'$ref' => $slugByTable[$tableName],
-						'inversedBy' => $localColumn,
-					],
-					'objectConfiguration' => ['handling' => 'related-object'],
-				];
-			}//end foreach
-		}//end foreach
+			foreach ($this->foreignKeysFor(schemaManager: $schemaManager, tableName: $tableName) as $key) {
+				$this->applyForeignKey(key: $key, tables: $tables);
+			}
+		}
 	}//end applyForeignKeys()
+
+	/**
+	 * Map one foreign key onto the relation dialect and add its inverse.
+	 *
+	 * A multi-column key is skipped (v1 maps single-column keys only), as is
+	 * a key whose target table is not introspected.
+	 *
+	 * @param TableForeignKey                     $key    The constraint and its owning table.
+	 * @param array<string, array<string, mixed>> $tables The working records, keyed by table name (mutated).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function applyForeignKey(TableForeignKey $key, array &$tables): void {
+		if (count($key->constraint->getLocalColumns()) !== 1) {
+			$this->logger->info(
+				sprintf('[DbalIntrospection] skipping multi-column foreign key on "%s" (v1 maps single-column FKs only)', $key->tableName)
+			);
+			return;
+		}
+
+		if (isset($tables[$this->foreignTableOf(key: $key)]) === false) {
+			return;
+		}
+
+		$this->applyOwningSide(key: $key, tables: $tables);
+		$this->applyInverseSide(key: $key, tables: $tables);
+	}//end applyForeignKey()
+
+	/**
+	 * Type the local column of a single-column foreign key as a relation to the referenced schema.
+	 *
+	 * @param TableForeignKey                     $key    The constraint and its owning table.
+	 * @param array<string, array<string, mixed>> $tables The working records, keyed by table name (mutated).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function applyOwningSide(TableForeignKey $key, array &$tables): void {
+		$localColumn    = $this->localColumnOf(key: $key);
+		$existingFormat = ($tables[$key->tableName]['properties'][$localColumn]['format'] ?? null);
+		$tables[$key->tableName]['properties'][$localColumn] = $this->relationProperty(
+			targetSlug: $tables[$this->foreignTableOf(key: $key)]['slug'],
+			existingFormat: $existingFormat
+		);
+	}//end applyOwningSide()
+
+	/**
+	 * Add the inverse side of a single-column foreign key on the referenced schema.
+	 *
+	 * @param TableForeignKey                     $key    The constraint and its owning table.
+	 * @param array<string, array<string, mixed>> $tables The working records, keyed by table name (mutated).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function applyInverseSide(TableForeignKey $key, array &$tables): void {
+		$localColumn = $this->localColumnOf(key: $key);
+		$inverseName = $key->tableName . '_via_' . $localColumn;
+		$tables[$this->foreignTableOf(key: $key)]['properties'][$inverseName] = [
+			'type' => 'array',
+			'items' => [
+				'$ref' => $tables[$key->tableName]['slug'],
+				'inversedBy' => $localColumn,
+			],
+			'objectConfiguration' => ['handling' => 'related-object'],
+		];
+	}//end applyInverseSide()
+
+	/**
+	 * The local column of a single-column foreign key.
+	 *
+	 * @param TableForeignKey $key The constraint and its owning table.
+	 *
+	 * @return string The column name.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function localColumnOf(TableForeignKey $key): string {
+		return array_values($key->constraint->getLocalColumns())[0];
+	}//end localColumnOf()
+
+	/**
+	 * The short name of the table a foreign key references.
+	 *
+	 * @param TableForeignKey $key The constraint and its owning table.
+	 *
+	 * @return string The referenced table name.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function foreignTableOf(TableForeignKey $key): string {
+		return $this->shortName(name: $key->constraint->getForeignTableName());
+	}//end foreignTableOf()
+
+	/**
+	 * The owning side of a foreign key: the raw key, typed as a relation.
+	 *
+	 * A `format` is carried over only when the column's own type mapping
+	 * produced one (e.g. GUID → uuid): external primary keys are commonly
+	 * plain integers/strings with no JSON-Schema format, and relation
+	 * resolution keys on $ref + handling.
+	 *
+	 * @param string $targetSlug     The referenced schema's slug.
+	 * @param mixed  $existingFormat The column's mapped format, if any.
+	 *
+	 * @return array<string, mixed> The relation property.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function relationProperty(string $targetSlug, mixed $existingFormat): array {
+		$relationProperty = [
+			'type' => 'string',
+			'$ref' => $targetSlug,
+			'objectConfiguration' => ['handling' => 'related-object'],
+		];
+
+		if (is_string($existingFormat) === true && $existingFormat !== '') {
+			$relationProperty['format'] = $existingFormat;
+		}
+
+		return $relationProperty;
+	}//end relationProperty()
 
 	/**
 	 * List the foreign keys for a table, tolerating platforms/views that error.
@@ -551,16 +828,21 @@ class DatabaseIntrospectionService {
 	 * @param AbstractSchemaManager $schemaManager The schema manager.
 	 * @param string $tableName The table name.
 	 *
-	 * @return array<int, ForeignKeyConstraint> The foreign-key constraints (possibly empty).
+	 * @return array<int, TableForeignKey> The foreign-key constraints with their table (possibly empty).
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function foreignKeysFor(AbstractSchemaManager $schemaManager, string $tableName): array {
 		try {
-			return array_values($schemaManager->listTableForeignKeys($tableName));
+			$constraints = array_values($schemaManager->listTableForeignKeys($tableName));
 		} catch (Throwable $e) {
 			return [];
 		}
+
+		return array_map(
+			static fn (ForeignKeyConstraint $constraint): TableForeignKey => new TableForeignKey(tableName: $tableName, constraint: $constraint),
+			$constraints
+		);
 	}//end foreignKeysFor()
 
 	/**
@@ -574,12 +856,51 @@ class DatabaseIntrospectionService {
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
 	private function toSchemaDefinition(array $record, bool $writable = false): array {
+		return [
+			'title' => $record['title'],
+			'slug' => $record['slug'],
+			'properties' => $record['properties'],
+			'required' => $record['required'],
+			'configuration' => [
+				'x-openregister-object-source' => [
+					'provider' => self::PROVIDER_ID,
+					'readOnly' => $this->isReadOnlySchema(record: $record, writable: $writable),
+					'config' => $this->objectSourceConfig(record: $record),
+				],
+			],
+		];
+	}//end toSchemaDefinition()
+
+	/**
+	 * The provider config of a working record: source, table and id column, then the optional keys it carries.
+	 *
+	 * @param array<string, mixed> $record The working table record.
+	 *
+	 * @return array<string, mixed> The `config` block of the object-source annotation.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function objectSourceConfig(array $record): array {
 		$config = [
 			'sourceId' => $record['sourceId'],
 			'table' => $record['table'],
 			'idColumn' => $record['idColumn'],
 		];
 
+		return array_merge($config, $this->optionalSourceConfig(record: $record));
+	}//end objectSourceConfig()
+
+	/**
+	 * The optional provider config keys of a working record: composite id columns, non-filterable columns, view flag.
+	 *
+	 * @param array<string, mixed> $record The working table record.
+	 *
+	 * @return array<string, mixed> The keys the record carries, in that order.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function optionalSourceConfig(array $record): array {
+		$config = [];
 		if ($record['idColumns'] !== null) {
 			$config['idColumns'] = $record['idColumns'];
 		}
@@ -592,29 +913,27 @@ class DatabaseIntrospectionService {
 			$config['isView'] = true;
 		}
 
-		// Opt-in writes (design D2): tables of a writable source get
-		// `readOnly: false`; views are read-only ALWAYS. The write dispatch
-		// additionally re-verifies the Source's writable flag live, so a stale
-		// annotation can never authorize a write on its own.
-		$readOnly = true;
-		if ($writable === true && $record['isView'] !== true) {
-			$readOnly = false;
-		}
+		return $config;
+	}//end optionalSourceConfig()
 
-		return [
-			'title' => $record['title'],
-			'slug' => $record['slug'],
-			'properties' => $record['properties'],
-			'required' => $record['required'],
-			'configuration' => [
-				'x-openregister-object-source' => [
-					'provider' => self::PROVIDER_ID,
-					'readOnly' => $readOnly,
-					'config' => $config,
-				],
-			],
-		];
-	}//end toSchemaDefinition()
+	/**
+	 * Whether the schema of a working record is read-only.
+	 *
+	 * Opt-in writes (design D2): tables of a writable source get
+	 * `readOnly: false`; views are read-only ALWAYS. The write dispatch
+	 * additionally re-verifies the Source's writable flag live, so a stale
+	 * annotation can never authorize a write on its own.
+	 *
+	 * @param array<string, mixed> $record   The working table record.
+	 * @param bool                 $writable Whether the backing source currently allows writes.
+	 *
+	 * @return bool True unless the source is writable and the record is a table.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function isReadOnlySchema(array $record, bool $writable): bool {
+		return ($writable === true && $record['isView'] !== true) === false;
+	}//end isReadOnlySchema()
 
 	/**
 	 * Find or create the register for a source and return it.
@@ -719,15 +1038,7 @@ class DatabaseIntrospectionService {
 		$lower = strtolower($name);
 		$short = strtolower($this->shortName(name: $name));
 
-		$systemNamespaces = [
-			'pg_catalog.',
-			'information_schema.',
-			'pg_toast.',
-			'mysql.',
-			'performance_schema.',
-			'sys.',
-		];
-		foreach ($systemNamespaces as $prefix) {
+		foreach (self::SYSTEM_NAMESPACES as $prefix) {
 			if (str_starts_with($lower, $prefix) === true) {
 				return true;
 			}

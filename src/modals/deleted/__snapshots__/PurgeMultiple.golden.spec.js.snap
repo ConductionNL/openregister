@@ -1,0 +1,548 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges empty, answering allDeleted 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges empty, answering noCounts 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges empty, answering noneDeleted 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges empty, answering nullResult 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges empty, answering someFailed 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges empty, answering textCounts 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges empty, answering throwsNamed 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges empty, answering throwsSilent 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges missing, answering allDeleted 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges missing, answering noCounts 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges missing, answering noneDeleted 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges missing, answering nullResult 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges missing, answering someFailed 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges missing, answering textCounts 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges missing, answering throwsNamed 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges missing, answering throwsSilent 1`] = `
+{
+  "log": [
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "No objects selected for deletion",
+    "loading": false,
+    "success": null,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges two, answering allDeleted 1`] = `
+{
+  "log": [
+    [
+      "permanentlyDeleteMultiple",
+      [
+        "a",
+        7,
+      ],
+      true,
+    ],
+    [
+      "emit",
+      "deleted-objects-permanently-deleted",
+      [
+        "a",
+        7,
+      ],
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "Successfully permanently deleted {count} objects {"count":2}",
+    "timer": true,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges two, answering noCounts 1`] = `
+{
+  "log": [
+    [
+      "permanentlyDeleteMultiple",
+      [
+        "a",
+        7,
+      ],
+      true,
+    ],
+    [
+      "emit",
+      "deleted-objects-permanently-deleted",
+      [
+        "a",
+        7,
+      ],
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "No objects were permanently deleted",
+    "timer": true,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges two, answering noneDeleted 1`] = `
+{
+  "log": [
+    [
+      "permanentlyDeleteMultiple",
+      [
+        "a",
+        7,
+      ],
+      true,
+    ],
+    [
+      "emit",
+      "deleted-objects-permanently-deleted",
+      [
+        "a",
+        7,
+      ],
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "No objects were permanently deleted",
+    "timer": true,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges two, answering nullResult 1`] = `
+{
+  "log": [
+    [
+      "permanentlyDeleteMultiple",
+      [
+        "a",
+        7,
+      ],
+      true,
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Cannot read properties of null (reading 'deleted')",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges two, answering someFailed 1`] = `
+{
+  "log": [
+    [
+      "permanentlyDeleteMultiple",
+      [
+        "a",
+        7,
+      ],
+      true,
+    ],
+    [
+      "emit",
+      "deleted-objects-permanently-deleted",
+      [
+        "a",
+        7,
+      ],
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "Successfully permanently deleted {count} objects {"count":1}, {failed} failed {"failed":1}",
+    "timer": true,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges two, answering textCounts 1`] = `
+{
+  "log": [
+    [
+      "permanentlyDeleteMultiple",
+      [
+        "a",
+        7,
+      ],
+      true,
+    ],
+    [
+      "emit",
+      "deleted-objects-permanently-deleted",
+      [
+        "a",
+        7,
+      ],
+    ],
+    [
+      "after 2999 ms",
+    ],
+    [
+      "setDialog",
+      false,
+    ],
+    [
+      "clearSelectedForBulkAction",
+    ],
+  ],
+  "state": {
+    "error": false,
+    "loading": false,
+    "success": true,
+    "successMessage": "Successfully permanently deleted {count} objects {"count":"2"}, {failed} failed {"failed":"1"}",
+    "timer": true,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges two, answering throwsNamed 1`] = `
+{
+  "log": [
+    [
+      "permanentlyDeleteMultiple",
+      [
+        "a",
+        7,
+      ],
+      true,
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "Denied",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;
+
+exports[`PurgeMultiple.permanentlyDeleteMultiple purges two, answering throwsSilent 1`] = `
+{
+  "log": [
+    [
+      "permanentlyDeleteMultiple",
+      [
+        "a",
+        7,
+      ],
+      true,
+    ],
+    [
+      "after 2999 ms",
+    ],
+  ],
+  "state": {
+    "error": "An error occurred while permanently deleting the objects",
+    "loading": false,
+    "success": false,
+    "successMessage": "",
+    "timer": false,
+  },
+}
+`;

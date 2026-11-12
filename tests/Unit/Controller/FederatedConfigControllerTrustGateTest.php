@@ -31,6 +31,9 @@ namespace Unit\Controller;
 use OCA\OpenRegister\Controller\FederatedConfigController;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Service\Config\FederatedConfigTransport;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FederatedConfigControllerFactory;
+use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -43,6 +46,8 @@ use PHPUnit\Framework\TestCase;
  * Reading and writing the trust configuration is administrators only.
  *
  * @covers \OCA\OpenRegister\Controller\FederatedConfigController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses   \OCA\OpenRegister\Service\Config\FederatedConfigService
  */
 class FederatedConfigControllerTrustGateTest extends TestCase {
 
@@ -107,15 +112,13 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->willReturn($isAdmin);
 
-		return new FederatedConfigController(
+		return FederatedConfigControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
 			$this->createMock(FederatedConfigAccess::class),
-			$this->userSession,
-			$this->createMock(IConfig::class),
-			$this->groupManager
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(\Psr\Log\LoggerInterface::class)),
+			$this->createMock(IConfig::class));
 
 	}//end controllerFor()
 
@@ -278,4 +281,46 @@ class FederatedConfigControllerTrustGateTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 
 	}//end testAnAdminCanSetATrustField()
+
+	/**
+	 * The documented upgrade action sends a JSON `true`; the controller casts it
+	 * to "1", and the allowance must still be stored as on, so installs work.
+	 *
+	 * @return void
+	 */
+	public function testAJsonTrueTurnsTheAllowanceOn(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->expects($this->once())
+			->method('setValueString')
+			->with('openregister', 'federated_config_allow_unverified_bundles', 'true');
+		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$this->createMock(\OCA\OpenRegister\Service\Credential\CredentialBrokerService::class),
+				$this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
+				$this->createMock(\OCP\Http\Client\IClientService::class)
+			),
+			$this->createMock(\OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry::class),
+			$appConfig,
+			$this->createMock(\Psr\Log\LoggerInterface::class)
+		);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $name, mixed $default = null): mixed => match ($name) {
+				'field' => 'allowUnverifiedBundles',
+				'value' => true,
+				default => $default,
+			}
+		);
+		$this->userSession->method('getUser')->willReturn($this->createMock(IUser::class));
+		$this->groupManager->method('isAdmin')->willReturn(true);
+		$controller = FederatedConfigControllerFactory::create(
+			'openregister',
+			$this->request,
+			$service,
+			$this->createMock(FederatedConfigAccess::class),
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(\Psr\Log\LoggerInterface::class)),
+			$this->createMock(IConfig::class));
+
+		$this->assertSame(200, $controller->setTrust()->getStatus());
+
+	}//end testAJsonTrueTurnsTheAllowanceOn()
 }//end class

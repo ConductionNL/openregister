@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
-use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
+use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -50,9 +50,12 @@ use Throwable;
 /**
  * Validates a working calendar before it is persisted.
  *
+ * @spec openspec/specs/flow-business-timers/spec.md
+ *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  */
 class WorkingCalendarValidationListener implements IEventListener {
+	use ValidatesPreWriteObject;
 
 	/**
 	 * The error code the refusal carries, so a client can branch on it.
@@ -64,42 +67,23 @@ class WorkingCalendarValidationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param WorkingCalendarWriteGuard $guard Recognises and validates a calendar write.
+	 * @param WorkingCalendarWriteGuardInterface $guard Recognises and validates a calendar write.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly WorkingCalendarWriteGuard $guard,
+		private readonly WorkingCalendarWriteGuardInterface $guard,
 		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
 
 	/**
-	 * Reject a save whose working calendar the engine could not resolve.
-	 *
-	 * @param Event $event The inbound event.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-every-write-of-a-working-calendar-is-validated-the-same-way
-	 */
-	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatingEvent) {
-			$this->validate(event: $event, object: $event->getObject());
-			return;
-		}
-
-		if ($event instanceof ObjectUpdatingEvent) {
-			$this->validate(event: $event, object: $event->getNewObject());
-		}
-
-	}//end handle()
-
-	/**
 	 * Validate one working-calendar write, and refuse it when the guard says so.
 	 *
-	 * The event type is a union rather than Event, because setErrors() is
-	 * declared on each write event separately instead of on a shared parent.
+	 * The guard is a guard, not a gate on unrelated saves. When it fails for a
+	 * reason of its own the save proceeds: the refusal in
+	 * WorkingCalendarService::bySlug() is still the backstop, which is exactly
+	 * the situation before this listener existed.
 	 *
 	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write event.
 	 * @param ObjectEntity $object The object the write carries.
@@ -108,31 +92,15 @@ class WorkingCalendarValidationListener implements IEventListener {
 	 *
 	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-every-write-of-a-working-calendar-is-validated-the-same-way
 	 */
-	private function validate(ObjectCreatingEvent | ObjectUpdatingEvent $event, ObjectEntity $object): void {
+	protected function validate(ObjectCreatingEvent | ObjectUpdatingEvent $event, ObjectEntity $object): void {
 		try {
-			if ($this->guard->isWorkingCalendar(object: $object) === false) {
-				return;
+			if ($this->guard->isWorkingCalendar(object: $object) === true) {
+				$this->guard->assertValid(definition: $this->writtenData(object: $object), fallbackSlug: $this->storedSlug(event: $event));
 			}
-
-			$data = $object->getObject();
-			if (is_array($data) === false) {
-				$data = [];
-			}
-
-			$this->guard->assertValid(definition: $data, fallbackSlug: $this->storedSlug(event: $event));
 		} catch (FlowTimerValidationException $refused) {
-			$event->setErrors(
-				[
-					'code' => self::ERROR_CODE,
-					'message' => $refused->getMessage(),
-				]
-			);
+			$event->setErrors(['code' => self::ERROR_CODE, 'message' => $refused->getMessage()]);
 			$event->stopPropagation();
 		} catch (Throwable $failure) {
-			// The guard is a guard, not a gate on unrelated saves. When it
-			// fails for a reason of its own the save proceeds: the refusal in
-			// WorkingCalendarService::bySlug() is still the backstop, which is
-			// exactly the situation before this listener existed.
 			$this->logger->warning(
 				message: '[WorkingCalendarValidationListener] The guard itself failed, allowing the save: ' . $failure->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => get_class($failure)]
@@ -149,21 +117,16 @@ class WorkingCalendarValidationListener implements IEventListener {
 	 * @return string|null The stored slug, or null on a create.
 	 */
 	private function storedSlug(Event $event): ?string {
-		if ($event instanceof ObjectUpdatingEvent === false) {
-			return null;
+		$old = null;
+		if ($event instanceof ObjectUpdatingEvent) {
+			$old = $event->getOldObject();
 		}
 
-		$old = $event->getOldObject();
 		if ($old === null) {
 			return null;
 		}
 
-		$data = $old->getObject();
-		if (is_array($data) === false) {
-			return null;
-		}
-
-		$slug = trim((string)($data['slug'] ?? ''));
+		$slug = trim((string)($this->writtenData(object: $old)['slug'] ?? ''));
 		if ($slug === '') {
 			return null;
 		}

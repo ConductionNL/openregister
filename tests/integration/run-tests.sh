@@ -26,7 +26,7 @@ NC='\033[0m' # No Color.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 POSTMAN_DIR="${SCRIPT_DIR}/../postman"
 COLLECTION_FILE="${SCRIPT_DIR}/openregister-crud.postman_collection.json"
-RELATIONS_COLLECTION_FILE="${POSTMAN_DIR}/openregister-relations-tests.postman_collection.json"
+RELATIONS_COLLECTION_FILE="${SCRIPT_DIR}/openregister-relations-tests.postman_collection.json"
 
 # Default configuration.
 # IMPORTANT: Never use http://localhost when running from host! 

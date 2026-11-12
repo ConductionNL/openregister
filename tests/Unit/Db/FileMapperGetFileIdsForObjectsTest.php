@@ -17,8 +17,8 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IURLGenerator;

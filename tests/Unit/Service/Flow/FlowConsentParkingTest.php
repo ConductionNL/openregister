@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
+use OCA\OpenRegister\Service\Flow\ConsentAsk;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -161,7 +162,7 @@ class FlowConsentParkingTest extends TestCase {
 		$run->setContext([]);
 
 		$parked = $this->parking(DelegationVerdict::granted($this->grant()))
-			->park($run, 'alice', 'mayor', DelegationVerdict::REASON_PENDING);
+			->parkFor(run: $run, ask: new ConsentAsk(declaredBy: 'alice', runAs: 'mayor', reason: DelegationVerdict::REASON_PENDING));
 
 		$this->assertSame(FlowRun::STATUS_AWAITING_CONSENT, $parked->getStatus());
 		$this->assertNull($parked->getResumeAt(), 'a consent does not arrive on a clock');

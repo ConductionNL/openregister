@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/code-list-lifecycle-and-hierarchy/specs/skos-concept-registers/spec.md
+ * @spec openspec/specs/skos-concept-registers/spec.md
  */
 
 declare(strict_types=1);
@@ -54,9 +54,7 @@ class ConceptDeleteGuardTest extends TestCase {
 
 		$this->guard = new ConceptDeleteGuard(
 			lifecycle: new ConceptLifecycle(),
-			schemas: $this->schemas,
-			objects: $this->objects,
-			declarationFactory: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory()
+			tables: new \OCA\OpenRegister\Service\Vocabulary\CodedSchemaTables(schemas: $this->schemas, declarations: new \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory(), objects: $this->objects)
 		);
 	}//end setUp()
 

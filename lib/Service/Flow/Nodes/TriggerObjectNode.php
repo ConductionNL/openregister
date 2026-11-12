@@ -54,18 +54,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
-use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
+use OCA\OpenRegister\Service\Rules\RuleScope;
 
 /**
  * Starts the flow when an object is created, updated or deleted.
  */
-class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy {
+class TriggerObjectNode extends TriggerNodeBase implements TriggerObjectNodeInterface {
 
 	/**
 	 * The object events a trigger may name.
@@ -82,21 +76,6 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 		'object.updated',
 		'object.deleted',
 	];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
 
 	/**
 	 * The node type.
@@ -147,27 +126,18 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 	}//end getIcon()
 
 	/**
-	 * Starting a flow grants no privilege of its own.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
-
-	/**
 	 * The config vocabulary of an object trigger.
+	 *
+	 * `scope` ({ property, value }) says which objects of the schema the flow
+	 * is about, for the rule inventory; it does not narrow what fires.
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function configKeys(): array {
-		return ['event', 'register', 'schema'];
+		return ['event', 'register', 'schema', 'scope'];
 	}//end configKeys()
 
 	/**
@@ -182,27 +152,13 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When the trigger does not name exactly one subject.
+	 * @throws InvalidArgumentException When the trigger does not name exactly one subject, or has a malformed scope.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function validateConfig(array $config): void {
-		$event = trim((string)($config['event'] ?? ''));
-		if ($event === '') {
-			throw new InvalidArgumentException(
-				'An object trigger must name an "event" — one of: ' . implode(', ', self::EVENTS)
-			);
-		}
-
-		if (in_array($event, self::EVENTS, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
-					'Unknown trigger event "%s". The engine fires: %s.',
-					$event,
-					implode(', ', self::EVENTS)
-				)
-			);
-		}
+		$this->assertEvent(event: trim((string)($config['event'] ?? '')));
 
 		foreach (['register', 'schema'] as $key) {
 			if (trim((string)($config[$key] ?? '')) === '') {
@@ -217,53 +173,53 @@ class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerN
 			}
 		}
 
+		$this->assertScope(config: $config);
 	}//end validateConfig()
 
 	/**
-	 * A trigger is an entry point, not work.
+	 * Refuse a missing event, or one the engine never fires.
 	 *
-	 * By the time a run exists the trigger has already fired, so there is
-	 * nothing left for this node to do: it passes its items straight through so
-	 * the run continues to whatever the author wired after it.
+	 * @param string $event The trimmed `event`.
 	 *
-	 * It deliberately does NOT re-check the subject. The resolver decided this
-	 * flow wanted this event before the run was queued; re-deciding here would
-	 * put the same rule in two places, and the copy that drifted would either
-	 * drop legitimate runs or admit ones the resolver rejected.
+	 * @return void
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The node configuration.
-	 * @param array $context Run-level metadata.
-	 *
-	 * @return array The items, unchanged.
+	 * @throws InvalidArgumentException When the event is empty or unknown.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		return $items;
-	}//end execute()
+	private function assertEvent(string $event): void {
+		if ($event === '') {
+			throw new InvalidArgumentException(
+				'An object trigger must name an "event" — one of: ' . implode(', ', self::EVENTS)
+			);
+		}
+
+		if (in_array($event, self::EVENTS, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf('Unknown trigger event "%s". The engine fires: %s.', $event, implode(', ', self::EVENTS))
+			);
+		}
+	}//end assertEvent()
 
 	/**
-	 * What kind of step this is. A start: an object changed.
+	 * Refuse a declared `scope` that is not one property and one scalar value.
 	 *
-	 * @return string The BPMN kind.
+	 * @param array $config The node configuration.
 	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the scope is malformed.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_EVENT;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_TRIGGERS;
-
-	}//end getCategory()
+	private function assertScope(array $config): void {
+		if (array_key_exists('scope', $config) === true
+			&& (new RuleScope())->fromDeclaration(declaration: $config) === null
+		) {
+			throw new InvalidArgumentException(
+				'An object trigger scope names one "property" and one scalar "value", for example '
+				. '{"property": "caseType", "value": "<uuid>"}.'
+			);
+		}
+	}//end assertScope()
 }//end class

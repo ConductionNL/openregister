@@ -31,12 +31,17 @@ namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
+use OCA\OpenRegister\Service\Credential\OAuth2CodeExchange;
 use OCA\OpenRegister\Service\Credential\OAuth2ConnectService;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectionWriter;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceClient;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
+use OCA\OpenRegister\Service\Credential\OAuth2UpstreamRevoker;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
@@ -45,12 +50,17 @@ use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectClients;
+use OCA\OpenRegister\Service\Credential\OAuth2ConnectSteps;
+use OCA\OpenRegister\Service\Credential\OAuth2CodeGrant;
+use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2ConnectService
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class OAuth2ReauthorisationTest extends TestCase {
 	/** @var integer How many brand-new credentials were minted. */
@@ -70,17 +80,12 @@ class OAuth2ReauthorisationTest extends TestCase {
 	public function testReauthorisingKeepsTheCredentialIdAndMintsNothingNew(): void {
 		$service = $this->makeService(existing: $this->existingCredential());
 
-		$credentialId = $service->complete(
-			claims: $this->claims(),
-			code: 'AUTH_CODE_HERE',
-			verifier: 'VERIFIER_HERE',
-			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		$credentialId = $service->complete(claims: $this->claims(), grant: new OAuth2CodeGrant(code: 'AUTH_CODE_HERE', verifier: 'VERIFIER_HERE', redirectUri: 'https://home.example/apps/openregister/oauth2/callback'));
 
 		$this->assertSame('existing-uuid', $credentialId);
 		$this->assertSame(0, $this->mints, 'a repair must not create a second credential for the same account');
 		$this->assertCount(1, $this->persists);
-		$this->assertSame('active', $this->persists[0]['extraMetadata']['status']);
+		$this->assertSame('existing-uuid', $this->persists[0]['credentialId']);
 	}
 
 	public function testReauthorisingCannotChangeTheProvider(): void {
@@ -89,12 +94,7 @@ class OAuth2ReauthorisationTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('provider');
 
-		$service->complete(
-			claims: $this->claims(),
-			code: 'AUTH_CODE_HERE',
-			verifier: 'VERIFIER_HERE',
-			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		$service->complete(claims: $this->claims(), grant: new OAuth2CodeGrant(code: 'AUTH_CODE_HERE', verifier: 'VERIFIER_HERE', redirectUri: 'https://home.example/apps/openregister/oauth2/callback'));
 	}
 
 	public function testReauthorisingCannotChangeThePinnedHost(): void {
@@ -103,12 +103,7 @@ class OAuth2ReauthorisationTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('pinned host');
 
-		$service->complete(
-			claims: array_merge($this->claims(), ['h' => 'https://another.example']),
-			code: 'AUTH_CODE_HERE',
-			verifier: 'VERIFIER_HERE',
-			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		$service->complete(claims: array_merge($this->claims(), ['h' => 'https://another.example']), grant: new OAuth2CodeGrant(code: 'AUTH_CODE_HERE', verifier: 'VERIFIER_HERE', redirectUri: 'https://home.example/apps/openregister/oauth2/callback'));
 	}
 
 	public function testReauthorisingACredentialThatIsGoneIsRefused(): void {
@@ -117,23 +112,13 @@ class OAuth2ReauthorisationTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('no longer exists');
 
-		$service->complete(
-			claims: $this->claims(),
-			code: 'AUTH_CODE_HERE',
-			verifier: 'VERIFIER_HERE',
-			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		$service->complete(claims: $this->claims(), grant: new OAuth2CodeGrant(code: 'AUTH_CODE_HERE', verifier: 'VERIFIER_HERE', redirectUri: 'https://home.example/apps/openregister/oauth2/callback'));
 	}
 
 	public function testAFirstConnectMintsANewCredential(): void {
 		$service = $this->makeService(existing: null);
 
-		$credentialId = $service->complete(
-			claims: array_merge($this->claims(), ['cid' => '']),
-			code: 'AUTH_CODE_HERE',
-			verifier: 'VERIFIER_HERE',
-			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		$credentialId = $service->complete(claims: array_merge($this->claims(), ['cid' => '']), grant: new OAuth2CodeGrant(code: 'AUTH_CODE_HERE', verifier: 'VERIFIER_HERE', redirectUri: 'https://home.example/apps/openregister/oauth2/callback'));
 
 		$this->assertSame('minted-uuid', $credentialId);
 		$this->assertSame(1, $this->mints);
@@ -151,12 +136,7 @@ class OAuth2ReauthorisationTest extends TestCase {
 
 		$this->expectException(\InvalidArgumentException::class);
 
-		$service->complete(
-			claims: array_merge($this->claims(), ['p' => 'github', 'cid' => '']),
-			code: 'AUTH_CODE_HERE',
-			verifier: 'VERIFIER_HERE',
-			redirectUri: 'https://home.example/apps/openregister/oauth2/callback'
-		);
+		$service->complete(claims: array_merge($this->claims(), ['p' => 'github', 'cid' => '']), grant: new OAuth2CodeGrant(code: 'AUTH_CODE_HERE', verifier: 'VERIFIER_HERE', redirectUri: 'https://home.example/apps/openregister/oauth2/callback'));
 	}
 
 	/**
@@ -230,10 +210,10 @@ class OAuth2ReauthorisationTest extends TestCase {
 		}
 
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('mint')->willReturnCallback(
-			function (string $name, string $provider, string $owner, array $allowedApps = []): ObjectEntity {
+		$broker->method('mintCredential')->willReturnCallback(
+			function (CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
 				$this->mints++;
-				$this->mintedApps = $allowedApps;
+				$this->mintedApps = $options->allowedApps;
 				$minted = new ObjectEntity();
 				$minted->setUuid('minted-uuid');
 				return $minted;
@@ -242,8 +222,8 @@ class OAuth2ReauthorisationTest extends TestCase {
 
 		$refresh = $this->createMock(OAuth2RefreshService::class);
 		$refresh->method('persist')->willReturnCallback(
-			function (string $credentialId, string $scope, OAuth2TokenSet $set, array $extraMetadata = []): void {
-				$this->persists[] = ['credentialId' => $credentialId, 'scope' => $scope, 'extraMetadata' => $extraMetadata];
+			function (\OCA\OpenRegister\Service\Credential\TokenSetAddress $address, OAuth2TokenSet $set): void {
+				$this->persists[] = ['credentialId' => $address->credentialId, 'scope' => $address->scope];
 			}
 		);
 
@@ -259,16 +239,24 @@ class OAuth2ReauthorisationTest extends TestCase {
 		$clientService = $this->createMock(IClientService::class);
 		$clientService->method('newClient')->willReturn($client);
 
+		$logger = $this->createMock(LoggerInterface::class);
+
 		return new OAuth2ConnectService(
-			catalogue: $catalogue,
-			broker: $broker,
-			clients: $clients,
-			refresh: $refresh,
-			instanceClients: $this->createMock(OAuth2InstanceClient::class),
-			identities: $this->createMock(OAuth2AccountIdentity::class),
-			objectService: $objectService,
-			clientService: $clientService,
-			logger: $this->createMock(LoggerInterface::class)
+			sources: new OAuth2ConnectClients(
+				catalogue: $catalogue,
+				clients: $clients,
+				instanceClients: $this->createMock(OAuth2InstanceClient::class),
+			),
+			steps: new OAuth2ConnectSteps(
+				exchange: new OAuth2CodeExchange(clientService: $clientService),
+				writer: new OAuth2ConnectionWriter(
+					broker: $broker,
+					refresh: $refresh,
+					identities: $this->createMock(OAuth2AccountIdentity::class),
+					objectService: $objectService
+				),
+				revoker: new OAuth2UpstreamRevoker(refresh: $refresh, clients: $clients, clientService: $clientService, logger: $logger),
+			),
 		);
 	}
 }

@@ -28,23 +28,25 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Controller\ChatController;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\Conversation;
-use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
-use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
-use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
-use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
-use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
-use OCA\OpenRegister\Service\ChatService;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
+use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
+use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
+use OCA\OpenRegister\Mcp\Service\ChatService;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCP\AppFramework\Controller;
@@ -58,13 +60,13 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * @covers \OCA\OpenRegister\Service\ChatService
+ * @covers \OCA\OpenRegister\Mcp\Service\ChatService
  * @covers \OCA\OpenRegister\Controller\ChatController
  * @uses   \OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights
  * @uses   \OCA\OpenRegister\Db\Organisation
- * @uses   \OCA\OpenRegister\Db\Conversation
- * @uses   \OCA\OpenRegister\Db\Agent
- * @uses   \OCA\OpenRegister\Db\Message
+ * @uses   \OCA\OpenRegister\Mcp\Db\Conversation
+ * @uses   \OCA\OpenRegister\Mcp\Db\Agent
+ * @uses   \OCA\OpenRegister\Notifications\Db\Message
  *
  * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
  */
@@ -117,7 +119,8 @@ class ChatSpecialRightsTest extends TestCase {
 		$this->history->method('buildMessageHistory')->willReturn([]);
 		$stored = new Message();
 		$stored->setId(9);
-		$this->history->method('storeMessage')->willReturn($stored);
+		$this->history->method('storeUserMessage')->willReturn($stored);
+		$this->history->method('storeAssistantMessage')->willReturn($stored);
 	}//end setUp()
 
 	/**
@@ -156,14 +159,8 @@ class ChatSpecialRightsTest extends TestCase {
 		$messages->method('countByConversation')->willReturn(5);
 
 		$service = new ChatService(
-			$this->conversations,
-			$messages,
-			$this->agents,
-			$context,
-			$this->model,
-			$this->createMock(ConversationManagementHandler::class),
-			$this->history,
-			$this->createMock(ToolManagementHandler::class),
+			new ChatServiceStores($this->conversations, $messages, $this->agents),
+			new ChatServiceHandlers($context, $this->model, $this->createMock(ConversationManagementHandler::class), $this->history),
 			new NullLogger(),
 			$rights
 		);
@@ -175,8 +172,7 @@ class ChatSpecialRightsTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$controller = new ChatController(
-			'openregister',
+		$controller = ChatControllerFactory::create(
 			$request,
 			$service,
 			$this->conversations,
@@ -227,7 +223,7 @@ class ChatSpecialRightsTest extends TestCase {
 	public function testANonHolderOfLlmUseIsRefusedWith403AndNoModelIsCalled(): void {
 		$this->blocks['org-chat'] = [OrganisationSpecialRights::LLM_USE => ['ai-users']];
 		$this->model->expects($this->never())->method('generateResponse');
-		$this->history->expects($this->never())->method('storeMessage');
+		$this->history->expects($this->never())->method('storeUserMessage');
 
 		[$status, $body] = $this->send('bob');
 

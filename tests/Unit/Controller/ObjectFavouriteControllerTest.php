@@ -13,7 +13,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -22,8 +22,9 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectFavouriteController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
@@ -35,7 +36,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectFavouriteController
- * @uses \OCA\OpenRegister\Db\Watcher
+ * @uses \OCA\OpenRegister\Notifications\Db\Watcher
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  */
 class ObjectFavouriteControllerTest extends TestCase {
@@ -87,11 +88,12 @@ class ObjectFavouriteControllerTest extends TestCase {
 		}
 
 		return new ObjectFavouriteController(
-			'openregister',
 			$this->createMock(IRequest::class),
-			$this->objects,
-			$this->favourites,
-			$this->logger
+			new \OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices(
+				$this->objects,
+				$this->favourites,
+				$this->logger,
+			)
 		);
 	}//end controller()
 
@@ -106,7 +108,7 @@ class ObjectFavouriteControllerTest extends TestCase {
 		$row->setObjectUuid('uuid-a');
 		$row->setNotify(false);
 		$this->favourites->expects($this->once())->method('star')
-			->with($this->isInstanceOf(ObjectEntity::class), 'my reg', 's')
+			->with($this->callback(static fn (AddressedObject $target): bool => $target->register === 'my reg' && $target->schema === 's'))
 			->willReturn($row);
 
 		$response = $this->controller()->star('my reg', 's', 'uuid-a');
@@ -148,7 +150,14 @@ class ObjectFavouriteControllerTest extends TestCase {
 
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('getObject')->willReturn(null);
-		$plain = new ObjectFavouriteController('openregister', $this->createMock(IRequest::class), $objects, $this->favourites, $this->logger);
+		$plain = new ObjectFavouriteController(
+			$this->createMock(IRequest::class),
+			new \OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices(
+				$objects,
+				$this->favourites,
+				$this->logger,
+			)
+		);
 		$this->assertSame(Http::STATUS_NOT_FOUND, $plain->star('r', 's', 'x')->getStatus());
 	}//end testAnUnknownObjectIsNotFound()
 

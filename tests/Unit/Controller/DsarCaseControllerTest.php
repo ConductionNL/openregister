@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DsarCaseControllerFactory;
 use OCA\OpenRegister\Controller\DsarCaseController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl;
@@ -33,6 +34,7 @@ use OCA\OpenRegister\Service\Gdpr\Export\SignedBundle;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry;
 use OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
+use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
@@ -104,7 +106,7 @@ class DsarCaseControllerTest extends TestCase {
 			$userSession->method('getUser')->willReturn($user);
 		}
 
-		return new DsarCaseController(
+		return DsarCaseControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
@@ -230,7 +232,7 @@ class DsarCaseControllerTest extends TestCase {
 		$harvest = $this->createMock(EvidenceHarvestService::class);
 		$harvest->expects($this->never())->method('harvest');
 
-		$controller = new DsarCaseController(
+		$controller = DsarCaseControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
@@ -373,7 +375,7 @@ class DsarCaseControllerTest extends TestCase {
 		IdentityVerifyRegistry $identityRegistry,
 		RegulatorEscalateRegistry $regulatorRegistry,
 	): DsarCaseController {
-		return new DsarCaseController(
+		return DsarCaseControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
@@ -434,7 +436,7 @@ class DsarCaseControllerTest extends TestCase {
 		$access = $this->createMock(CaseAccessControl::class);
 		$access->method('mayAct')->willReturn($mayAct);
 
-		return new DsarCaseController(
+		return DsarCaseControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(ObjectService::class),
@@ -478,7 +480,7 @@ class DsarCaseControllerTest extends TestCase {
 		$redaction = $this->createMock(RedactionWriteService::class);
 		$redaction->expects($this->once())
 			->method('applyRedaction')
-			->with('case-1', 'evidence.0.bsn', '[REDACTED]', 'art-15-4')
+			->with('case-1', $this->equalTo(new FieldRedaction('evidence.0.bsn', '[REDACTED]', 'art-15-4')))
 			->willReturn(['field' => 'evidence.0.bsn', 'ground' => 'art-15-4', 'applied' => true]);
 
 		$controller = $this->buildForBundleSurface(
@@ -580,7 +582,7 @@ class DsarCaseControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testDownloadBundleReturnsTheSignedBytes(): void {
-		$bundle = new SignedBundle('%PDF-1.7 bytes', 'sha256:abc', false, 'unsigned', 'application/pdf');
+		$bundle = new SignedBundle('%PDF-1.7 bytes', 'sha256:abc', false, 'unsigned');
 
 		$bundles = $this->createMock(ExportBundleService::class);
 		$bundles->expects($this->once())

@@ -31,8 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Object\DraftExpiry;
-use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
+use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
+use OCA\OpenRegister\Service\Object\DraftRemovalFrameInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -66,14 +66,16 @@ class DraftExpiryJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory    $time   The clock.
-	 * @param DraftExpiry     $expiry Removes the expired drafts.
-	 * @param LoggerInterface $logger Where the counts go.
+	 * @param ITimeFactory               $time   The clock.
+	 * @param DraftExpiryInterface       $expiry Removes the expired drafts.
+	 * @param LoggerInterface            $logger Where the counts go.
+	 * @param DraftRemovalFrameInterface $frame  Names the job in the audit entry of each removed draft.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly DraftExpiry $expiry,
+		private readonly DraftExpiryInterface $expiry,
 		private readonly LoggerInterface $logger,
+		private readonly DraftRemovalFrameInterface $frame,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
@@ -89,15 +91,41 @@ class DraftExpiryJob extends TimedJob {
 	 * @throws Throwable When the sweep fails, after logging it.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) TimedJob's signature.
-	 * @SuppressWarnings(PHPMD.StaticAccess)          DraftRemovalRecord::asJob() is the ambient frame that names the job.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
 	protected function run(mixed $argument): void {
+		$counts = $this->sweptCounts();
+
+		// One line per schema that held an expired draft, so an administrator
+		// reads from the log which schema lost how many (decision 228), and
+		// one line with the totals, a zero included.
+		//
+		// A sweep that removed or refused a draft is logged at WARNING: the
+		// default loglevel (2 = warning) would hide an INFO line, and the first
+		// run after the upgrade removes drafts that were kept until then, so an
+		// administrator would have no record of how many. A sweep that changed
+		// nothing keeps its counted zero at info.
+		foreach ($counts['perSchema'] as $row) {
+			$this->report(message: '[DraftExpiryJob] drafts past the lifetime of a schema', counts: $row);
+		}
+
+		unset($counts['perSchema']);
+		$this->report(message: '[DraftExpiryJob] swept drafts past their schema\'s lifetime', counts: $counts);
+	}//end run()
+
+	/**
+	 * Sweep the expired drafts, logging and re-raising a failure.
+	 *
+	 * @return array The sweep's counts, with `perSchema` rows.
+	 *
+	 * @throws Throwable When the sweep fails.
+	 */
+	private function sweptCounts(): array {
 		try {
 			// Under the job's own name, so the audit-trail entry of each removed
 			// draft says which job removed it (decision 226).
-			$counts = DraftRemovalRecord::asJob(
+			return $this->frame->asJob(
 				job: self::JOB_NAME,
 				operation: fn (): array => $this->expiry->sweep(now: DateTimeImmutable::createFromMutable($this->time->getDateTime()))
 			);
@@ -108,21 +136,23 @@ class DraftExpiryJob extends TimedJob {
 			);
 			throw $exception;
 		}
+	}//end sweptCounts()
 
-		// One line per schema that held an expired draft, so an administrator
-		// reads from the log which schema lost how many (decision 228), and
-		// one line with the totals, a zero included.
-		foreach ($counts['perSchema'] as $row) {
-			$this->logger->info(
-				message: '[DraftExpiryJob] drafts past the lifetime of a schema',
-				context: $row
-			);
+	/**
+	 * Log one line of counts: at warning when drafts were removed or refused, at info for a counted zero.
+	 *
+	 * @param string               $message The line.
+	 * @param array<string, mixed> $counts  The counts of one schema or of the whole sweep.
+	 *
+	 * @return void
+	 */
+	private function report(string $message, array $counts): void {
+		if (((int)($counts['removed'] ?? 0) + (int)($counts['refused'] ?? 0)) > 0) {
+			$this->logger->warning(message: $message, context: $counts);
+
+			return;
 		}
 
-		unset($counts['perSchema']);
-		$this->logger->info(
-			message: '[DraftExpiryJob] swept drafts past their schema\'s lifetime',
-			context: $counts
-		);
-	}//end run()
+		$this->logger->info(message: $message, context: $counts);
+	}//end report()
 }//end class

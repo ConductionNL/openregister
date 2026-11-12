@@ -22,3 +22,14 @@ internal reads write one entry per run with the process identity.
 ## D-4: kind
 
 Code, in OpenRegister. Consuming apps add one flag per property.
+
+## Open questions (Ruben)
+
+`RevealCollector::recordProcess()` (D-3, one entry per internal run) is built and tested but no run calls it. Trusted internal runs read with RBAC off, so they never pass `PropertyRbacHandler::recordReveal()`, which is where a reveal is noticed today.
+
+1. **Which runs count as trusted internal reads of audited properties.**
+   - Proposed: the export job, the retention and destruction sweeps, and the search-index rebuild; each names itself as the process and passes its run id.
+   - Options: (a) as proposed; (b) every system-context read (`WriteCause` frame other than person or lookup); (c) only exports, since they are the runs that carry data out.
+2. **How a run counts its reveals.**
+   - Proposed: the run asks `RevealCollector::isAudited()` per schema once, counts the objects it read from schemas with audited properties, and calls `recordProcess(process, runId, count)` at its end.
+   - Options: (a) as proposed; (b) a shared read wrapper for system reads that counts automatically; (c) record one entry per run without a count.

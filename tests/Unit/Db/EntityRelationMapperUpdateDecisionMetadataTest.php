@@ -21,10 +21,12 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -86,7 +88,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 					$this->db,
 					$this->auditTrailMapper,
 					$this->userSession,
-					$this->eventDispatcher,
+					new EntityEventPublisher(dispatcher: $this->eventDispatcher),
 					$this->logger,
 				]
 			)
@@ -107,7 +109,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$this->expectException(CustomValidationException::class);
 		$this->expectExceptionMessageMatches('/anonymized/');
 
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['anonymized' => true], actingUser: $this->user);
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['anonymized' => true], actingUser: $this->user));
 	}//end testRejectsUnknownField()
 
 	public function testRejectsBasesAsNonArray(): void {
@@ -119,7 +121,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$this->expectException(CustomValidationException::class);
 		$this->expectExceptionMessageMatches('/bases shape/');
 
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['bases' => 'uuid-a'], actingUser: $this->user);
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['bases' => 'uuid-a'], actingUser: $this->user));
 	}//end testRejectsBasesAsNonArray()
 
 	public function testRejectsBasesArrayWithNonStringElement(): void {
@@ -129,7 +131,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$this->expectException(CustomValidationException::class);
 		$this->expectExceptionMessageMatches('/bases shape/');
 
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['bases' => ['uuid-a', 42]], actingUser: $this->user);
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['bases' => ['uuid-a', 42]], actingUser: $this->user));
 	}//end testRejectsBasesArrayWithNonStringElement()
 
 	public function testRejectsSkipAnonymizationAsNonBool(): void {
@@ -139,7 +141,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$this->expectException(CustomValidationException::class);
 		$this->expectExceptionMessageMatches('/skipAnonymization shape/');
 
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['skipAnonymization' => 'yes'], actingUser: $this->user);
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['skipAnonymization' => 'yes'], actingUser: $this->user));
 	}//end testRejectsSkipAnonymizationAsNonBool()
 
 	public function testSemanticNoOpSkipsAuditEmission(): void {
@@ -151,11 +153,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$mapper->expects($this->never())->method('update');
 		$this->auditTrailMapper->expects($this->never())->method('insert');
 
-		$result = $mapper->updateDecisionMetadata(
+		$result = $mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['bases' => ['uuid-a'], 'skipAnonymization' => true],
 			actingUser: $this->user
-		);
+		));
 
 		$this->assertSame(['uuid-a'], $result->getBases());
 		$this->assertTrue($result->getSkipAnonymization());
@@ -168,7 +170,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$mapper->expects($this->never())->method('update');
 		$this->auditTrailMapper->expects($this->never())->method('insert');
 
-		$result = $mapper->updateDecisionMetadata(relation: $relation, fields: [], actingUser: $this->user);
+		$result = $mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: [], actingUser: $this->user));
 
 		$this->assertNull($result->getBases());
 		$this->assertFalse($result->getSkipAnonymization());
@@ -192,11 +194,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 
 		$mapper->expects($this->once())->method('update');
 
-		$result = $mapper->updateDecisionMetadata(
+		$result = $mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['bases' => ['uuid-a']],
 			actingUser: $this->user
-		);
+		));
 
 		$this->assertSame(['uuid-a'], $result->getBases());
 
@@ -211,6 +213,33 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$this->assertSame(['previous' => null, 'new' => ['uuid-a']], $changed['fields']['bases']);
 		$this->assertArrayNotHasKey('skipAnonymization', $changed['fields']);
 	}//end testSettingBasesForFirstTimeEmitsAuditEntry()
+
+	public function testReplacingBasesAuditsThePreviousBases(): void {
+		$relation = new EntityRelation();
+		$relation->setId(43);
+		$relation->setBases(['uuid-a']);
+		$mapper = $this->mapperWithMockedUpdate();
+
+		$captured = null;
+		$this->auditTrailMapper
+			->expects($this->once())
+			->method('insert')
+			->willReturnCallback(
+				function (AuditTrail $entry) use (&$captured) {
+					$captured = $entry;
+					return $entry;
+				}
+			);
+
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(
+			relation: $relation,
+			fields: ['bases' => ['uuid-b']],
+			actingUser: $this->user
+		));
+
+		$this->assertNotNull($captured);
+		$this->assertSame(['previous' => ['uuid-a'], 'new' => ['uuid-b']], $captured->getChanged()['fields']['bases']);
+	}//end testReplacingBasesAuditsThePreviousBases()
 
 	public function testFlippingSkipEmitsAuditEntry(): void {
 		$relation = new EntityRelation();
@@ -230,11 +259,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 				}
 			);
 
-		$result = $mapper->updateDecisionMetadata(
+		$result = $mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['skipAnonymization' => true],
 			actingUser: $this->user
-		);
+		));
 
 		$this->assertTrue($result->getSkipAnonymization());
 		$this->assertNotNull($captured);
@@ -262,11 +291,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 				}
 			);
 
-		$mapper->updateDecisionMetadata(
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['bases' => ['uuid-a'], 'skipAnonymization' => true],
 			actingUser: $this->user
-		);
+		));
 
 		$this->assertNotNull($captured);
 		$changed = $captured->getChanged();
@@ -291,11 +320,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())->method('error');
 
 		$this->expectException(\RuntimeException::class);
-		$mapper->updateDecisionMetadata(
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['skipAnonymization' => true],
 			actingUser: $this->user
-		);
+		));
 	}//end testAuditEmissionFailureRollsBackUpdateAndThrows()
 
 	public function testFallsBackToSessionUserWhenActingUserIsNull(): void {
@@ -316,7 +345,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 				}
 			);
 
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['skipAnonymization' => true]);
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['skipAnonymization' => true]));
 
 		$this->assertNotNull($captured);
 		$this->assertSame('alice', $captured->getUser());
@@ -340,7 +369,7 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 				}
 			);
 
-		$mapper->updateDecisionMetadata(relation: $relation, fields: ['skipAnonymization' => true]);
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(relation: $relation, fields: ['skipAnonymization' => true]));
 
 		$this->assertNotNull($captured);
 		$this->assertSame('system', $captured->getUser());
@@ -363,11 +392,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 				}
 			);
 
-		$mapper->updateDecisionMetadata(
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['skipAnonymization' => true],
 			actingUser: $this->user
-		);
+		));
 
 		$this->assertNotNull($captured);
 		$this->assertSame(99, $captured->getRelation()->getId());
@@ -395,11 +424,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 				}
 			);
 
-		$mapper->updateDecisionMetadata(
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['bases' => ['uuid-a']],
 			actingUser: $this->user
-		);
+		));
 
 		$this->assertNotNull($captured);
 		// bases change is NOT a skip-flip — the convenience helper must return false.
@@ -417,11 +446,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 
 		$this->eventDispatcher->expects($this->never())->method('dispatchTyped');
 
-		$mapper->updateDecisionMetadata(
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['skipAnonymization' => true],
 			actingUser: $this->user
-		);
+		));
 	}//end testNoEventDispatchedOnSemanticNoOp()
 
 	public function testReorderedBasesAreSemanticNoOpAndSkipAudit(): void {
@@ -436,11 +465,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$this->eventDispatcher->expects($this->never())->method('dispatchTyped');
 		$this->db->expects($this->never())->method('beginTransaction');
 
-		$result = $mapper->updateDecisionMetadata(
+		$result = $mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['bases' => ['uuid-b', 'uuid-a']],
 			actingUser: $this->user
-		);
+		));
 
 		// The stored bases order is preserved on no-op (no setBases call).
 		$this->assertSame(['uuid-a', 'uuid-b'], $result->getBases());
@@ -454,11 +483,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$mapper = $this->mapperWithMockedUpdate();
 		$this->auditTrailMapper->expects($this->never())->method('insert');
 
-		$result = $mapper->updateDecisionMetadata(
+		$result = $mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['bases' => ['uuid-a', 'uuid-b', 'uuid-a']],
 			actingUser: $this->user
-		);
+		));
 
 		$this->assertSame(['uuid-a', 'uuid-b'], $result->getBases());
 	}//end testDuplicateBasesAreSemanticNoOpAgainstUniqueSet()
@@ -471,11 +500,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 		$mapper = $this->mapperWithMockedUpdate();
 		$this->auditTrailMapper->expects($this->once())->method('insert');
 
-		$mapper->updateDecisionMetadata(
+		$mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['bases' => []],
 			actingUser: $this->user
-		);
+		));
 	}//end testNullVsEmptyArrayBasesAreNotEqual()
 
 	public function testDispatchFailureDoesNotMaskUpdate(): void {
@@ -492,11 +521,11 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 
 		// Even though the dispatcher throws, the row update must still
 		// succeed and the method must return the updated relation.
-		$result = $mapper->updateDecisionMetadata(
+		$result = $mapper->updateDecisionMetadata(new DecisionMetadataEdit(
 			relation: $relation,
 			fields: ['skipAnonymization' => true],
 			actingUser: $this->user
-		);
+		));
 
 		$this->assertTrue($result->getSkipAnonymization());
 	}//end testDispatchFailureDoesNotMaskUpdate()

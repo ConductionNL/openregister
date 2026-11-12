@@ -20,6 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
+use OCA\OpenRegister\AppHost\Observability\AppProviderResolver;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\ObservabilityValidationException;
@@ -169,7 +170,7 @@ class MetricSourceTest extends TestCase {
 	public function testProviderEscapeHatchDiscoveredByAlias(): void {
 		$provider = new class implements IMetricsProvider {
 			public function metrics(): array {
-				return [MetricSample::single('bridge_state', 'gauge', 'Bridge', 1)];
+				return [new MetricSample('bridge_state', 'gauge', 'Bridge', [['labels' => [], 'value' => 1]])];
 			}
 		};
 
@@ -181,8 +182,7 @@ class MetricSourceTest extends TestCase {
 		$appContainer->method('get')->willReturnMap([[$alias, $provider]]);
 
 		$source = new ProviderMetricSource(
-			$this->createMock(ContainerInterface::class),
-			$this->locatorReturning($appContainer),
+			new AppProviderResolver($this->createMock(ContainerInterface::class), $this->locatorReturning($appContainer)),
 			$this->createMock(LoggerInterface::class)
 		);
 		$samples = $source->collect('shillinq', $this->descriptor(['kind' => 'provider']));
@@ -201,7 +201,7 @@ class MetricSourceTest extends TestCase {
 	public function testProviderIsResolvedFromTheAppsOwnContainerNotOpenRegisters(): void {
 		$provider = new class implements IMetricsProvider {
 			public function metrics(): array {
-				return [MetricSample::single('wrong_container', 'gauge', 'Wrong', 1)];
+				return [new MetricSample('wrong_container', 'gauge', 'Wrong', [['labels' => [], 'value' => 1]])];
 			}
 		};
 
@@ -217,8 +217,7 @@ class MetricSourceTest extends TestCase {
 		$appContainer->method('has')->willReturn(false);
 
 		$source = new ProviderMetricSource(
-			$ownContainer,
-			$this->locatorReturning($appContainer),
+			new AppProviderResolver($ownContainer, $this->locatorReturning($appContainer)),
 			$this->createMock(LoggerInterface::class)
 		);
 		$samples = $source->collect('shillinq', $this->descriptor(['kind' => 'provider']));
@@ -241,8 +240,7 @@ class MetricSourceTest extends TestCase {
 		$container->method('has')->willReturn(false);
 
 		$source = new ProviderMetricSource(
-			$container,
-			$this->locatorReturning(null),
+			new AppProviderResolver($container, $this->locatorReturning(null)),
 			$this->createMock(LoggerInterface::class)
 		);
 		$samples = $source->collect('neverbootstrapped', $this->descriptor(['kind' => 'provider']));
@@ -255,8 +253,7 @@ class MetricSourceTest extends TestCase {
 		$container->method('has')->willReturn(false);
 
 		$source = new ProviderMetricSource(
-			$container,
-			$this->locatorReturning($container),
+			new AppProviderResolver($container, $this->locatorReturning($container)),
 			$this->createMock(LoggerInterface::class)
 		);
 		$samples = $source->collect('appwithoutprovider', $this->descriptor(['kind' => 'provider']));

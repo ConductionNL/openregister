@@ -173,6 +173,16 @@ class OpenProjectLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
+		$this->addKeyTypes();
+		$this->addDetailTypes();
+	}//end __construct()
+
+	/**
+	 * Register the types of the columns that say what links to which work package.
+	 *
+	 * @return void
+	 */
+	private function addKeyTypes(): void {
 		$this->addType(fieldName: 'objectUuid', type: 'string');
 		$this->addType(fieldName: 'registerId', type: 'integer');
 		$this->addType(fieldName: 'schemaId', type: 'integer');
@@ -180,6 +190,14 @@ class OpenProjectLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'subject', type: 'string');
 		$this->addType(fieldName: 'type', type: 'string');
 		$this->addType(fieldName: 'status', type: 'string');
+	}//end addKeyTypes()
+
+	/**
+	 * Register the types of the cached work-package details and link provenance.
+	 *
+	 * @return void
+	 */
+	private function addDetailTypes(): void {
 		$this->addType(fieldName: 'priority', type: 'string');
 		$this->addType(fieldName: 'assignee', type: 'string');
 		$this->addType(fieldName: 'project', type: 'string');
@@ -187,7 +205,7 @@ class OpenProjectLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'cachedAt', type: 'datetime');
 		$this->addType(fieldName: 'linkedBy', type: 'string');
 		$this->addType(fieldName: 'linkedAt', type: 'datetime');
-	}//end __construct()
+	}//end addDetailTypes()
 
 	/**
 	 * JSON serialization.
@@ -195,6 +213,23 @@ class OpenProjectLink extends Entity implements JsonSerializable {
 	 * @return array<string,mixed>
 	 */
 	public function jsonSerialize(): array {
+		return array_merge(
+			$this->workPackageJson(),
+			[
+				'url' => $this->url,
+				'cachedAt' => $this->cachedAt?->format(DateTime::ATOM),
+				'linkedBy' => $this->linkedBy,
+				'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
+			]
+		);
+	}//end jsonSerialize()
+
+	/**
+	 * The linked object and the cached work-package fields.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function workPackageJson(): array {
 		return [
 			'id' => $this->id,
 			'objectUuid' => $this->objectUuid,
@@ -207,10 +242,6 @@ class OpenProjectLink extends Entity implements JsonSerializable {
 			'priority' => $this->priority,
 			'assignee' => $this->assignee,
 			'project' => $this->project,
-			'url' => $this->url,
-			'cachedAt' => $this->cachedAt?->format(DateTime::ATOM),
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
 		];
-	}//end jsonSerialize()
+	}//end workPackageJson()
 }//end class

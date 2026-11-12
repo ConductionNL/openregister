@@ -1,0 +1,1857 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FileVectorizationModal.startVectorization answers empty, all types false 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":false,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [
+          "pdf",
+        ],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "File vectorization completed! {vectorized} chunks vectorized from {files} files. {failed} failed. {"vectorized":0,"files":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers empty, all types true 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":true,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": true,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "File vectorization completed! {vectorized} chunks vectorized from {files} files. {failed} failed. {"vectorized":0,"files":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers full, all types false 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":false,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [
+          "pdf",
+        ],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "executionMode": "serial",
+    "failed": 2,
+    "maxFiles": 10,
+    "processed": 7,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 5,
+  },
+  "success": [
+    [
+      "File vectorization completed! {vectorized} chunks vectorized from {files} files. {failed} failed. {"vectorized":5,"files":3,"failed":2}",
+    ],
+  ],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers full, all types true 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":true,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "executionMode": "serial",
+    "failed": 2,
+    "maxFiles": 10,
+    "processed": 7,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": true,
+    "vectorized": 5,
+  },
+  "success": [
+    [
+      "File vectorization completed! {vectorized} chunks vectorized from {files} files. {failed} failed. {"vectorized":5,"files":3,"failed":2}",
+    ],
+  ],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers notImplementedStatus, all types false 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":false,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [
+          "pdf",
+        ],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers notImplementedStatus, all types true 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":true,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers notImplementedText, all types false 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":false,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [
+          "pdf",
+        ],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers notImplementedText, all types true 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":true,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "File chunk vectorization is not yet implemented. The chunks are ready and stored, but the vectorization service is under development.",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers plainError, all types false 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":false,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"network"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [
+          "pdf",
+        ],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers plainError, all types true 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":true,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"network"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers refusedBare, all types false 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":false,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"Unknown error"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [
+          "pdf",
+        ],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers refusedBare, all types true 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":true,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"Unknown error"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers refusedWithError, all types false 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":false,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"No provider"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [
+          "pdf",
+        ],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers refusedWithError, all types true 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":true,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"No provider"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers serverError, all types false 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":false,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"boom"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [
+          "pdf",
+        ],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers serverError, all types true 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":true,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"boom"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers serverMessage, all types false 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":false,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"only message"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [
+          "pdf",
+        ],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization answers serverMessage, all types true 1`] = `
+{
+  "during": "{"stats":{"chunksToProcess":8},"executionMode":"serial","maxFiles":10,"batchSize":4,"vectorizeAllTypes":true,"selectedTypes":["pdf"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  "error": [
+    [
+      "Failed to vectorize files: {error} {"error":"only message"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/files/vectorize/batch",
+      {
+        "batch_size": 4,
+        "file_types": [],
+        "max_files": 10,
+        "mode": "serial",
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 0,
+    "maxFiles": 10,
+    "processed": 0,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 8,
+    },
+    "vectorizeAllTypes": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`FileVectorizationModal.startVectorization refuses when there are no chunks 1`] = `
+{
+  "error": [
+    [
+      "No chunks to vectorize",
+    ],
+  ],
+  "post": [],
+  "state": {
+    "batchSize": 4,
+    "emitted": [],
+    "executionMode": "serial",
+    "failed": 9,
+    "maxFiles": 10,
+    "processed": 9,
+    "processing": false,
+    "selectedTypes": [
+      "pdf",
+    ],
+    "stats": {
+      "chunksToProcess": 0,
+    },
+    "vectorizeAllTypes": false,
+    "vectorized": 9,
+  },
+  "success": [],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs allAtOnce with allViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":3,"vectorized":3,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":6,"vectorized":5,"failed":1,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 1,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 1,
+    "maxObjects": 0,
+    "processed": 7,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 6,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":6,"failed":1}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs allAtOnce with maxObjects 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":4,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":4,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":3,"vectorized":3,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 1,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 1,
+    "maxObjects": 4,
+    "processed": 6,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 5,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":5,"failed":1}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs allAtOnce with nothingToDo 1`] = `
+{
+  "during": [],
+  "error": [],
+  "post": [],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 0,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs allAtOnce with someViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":3,"vectorized":3,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":6,"vectorized":5,"failed":1,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 1,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 1,
+    "maxObjects": 0,
+    "processed": 7,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": false,
+    "vectorized": 6,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":6,"failed":1}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs failsPlain with allViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [
+    [
+      "Vectorization failed: {error} {"error":"network"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs failsPlain with maxObjects 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":4,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [
+    [
+      "Vectorization failed: {error} {"error":"network"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [],
+    "failed": 0,
+    "maxObjects": 4,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs failsPlain with nothingToDo 1`] = `
+{
+  "during": [],
+  "error": [],
+  "post": [],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 0,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs failsPlain with someViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [
+    [
+      "Vectorization failed: {error} {"error":"network"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": false,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs failsWithError with allViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":3,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [
+    [
+      "Vectorization failed: {error} {"error":"quota"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 3,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs failsWithError with maxObjects 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":4,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":4,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":3,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [
+    [
+      "Vectorization failed: {error} {"error":"quota"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 1,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [],
+    "failed": 0,
+    "maxObjects": 4,
+    "processed": 3,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs failsWithError with nothingToDo 1`] = `
+{
+  "during": [],
+  "error": [],
+  "post": [],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 0,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs failsWithError with someViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":3,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [
+    [
+      "Vectorization failed: {error} {"error":"quota"}",
+    ],
+  ],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 3,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": false,
+    "vectorized": 0,
+  },
+  "success": [],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs noData with allViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs noData with maxObjects 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":4,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 4,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs noData with nothingToDo 1`] = `
+{
+  "during": [],
+  "error": [],
+  "post": [],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 0,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs noData with someViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": false,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs overshoot with allViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 10,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 10,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":10,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs overshoot with maxObjects 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":4,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 4,
+    "processed": 10,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 10,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":10,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs overshoot with nothingToDo 1`] = `
+{
+  "during": [],
+  "error": [],
+  "post": [],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 0,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs overshoot with someViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 10,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": false,
+    "vectorized": 10,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":10,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs stopsOnEmpty with allViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":2,"vectorized":2,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 2,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 2,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":2,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs stopsOnEmpty with maxObjects 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":4,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":4,"batchSize":3,"vectorizeAllViews":true,"selectedViews":["v1"],"processing":true,"processed":2,"vectorized":2,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 2,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 4,
+    "processed": 2,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 2,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":2,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs stopsOnEmpty with nothingToDo 1`] = `
+{
+  "during": [],
+  "error": [],
+  "post": [],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 0,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 0,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 0,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":0,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization runs stopsOnEmpty with someViews 1`] = `
+{
+  "during": [
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":0,"vectorized":0,"failed":0,"emitted":[]}",
+    "{"stats":{"objectsToProcess":7},"maxObjects":0,"batchSize":3,"vectorizeAllViews":false,"selectedViews":["v1"],"processing":true,"processed":2,"vectorized":2,"failed":0,"emitted":[]}",
+  ],
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": [
+          "v1",
+        ],
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 2,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": false,
+    "vectorized": 2,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":2,"failed":0}",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectVectorizationModal.startVectorization stops when processing is switched off between batches 1`] = `
+{
+  "error": [],
+  "post": [
+    [
+      "/apps/openregister/api/objects/vectorize/batch",
+      {
+        "batchSize": 3,
+        "views": null,
+      },
+    ],
+  ],
+  "state": {
+    "batchSize": 3,
+    "emitted": [
+      "completed",
+      "closing",
+    ],
+    "failed": 0,
+    "maxObjects": 0,
+    "processed": 1,
+    "processing": false,
+    "selectedViews": [
+      "v1",
+    ],
+    "stats": {
+      "objectsToProcess": 7,
+    },
+    "vectorizeAllViews": true,
+    "vectorized": 1,
+  },
+  "success": [
+    [
+      "Vectorization completed: {vectorized} objects vectorized, {failed} failed {"vectorized":1,"failed":0}",
+    ],
+  ],
+}
+`;

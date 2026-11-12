@@ -1,5 +1,6 @@
 <script setup>
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { listDateTime } from '../../services/listDateTime.js'
 import {
 	configurationStore,
 	navigationStore,
@@ -25,13 +26,7 @@ import {
 			:viewMode="schemaStore.viewMode"
 			:selectable="true"
 			:selectedIds="selectedSchemas"
-			:showEditAction="false"
-			:showCopyAction="false"
-			:showDeleteAction="false"
-			:showMassImport="false"
-			:showMassExport="false"
-			:showMassCopy="false"
-			:showMassDelete="false"
+			v-bind="builtinActionsOff"
 			showViewToggle
 			:addLabel="t('openregister', 'Add Schema')"
 			rowKey="id"
@@ -74,24 +69,9 @@ import {
 							class="statusPill statusPill--success">
 							{{ t('openregister', 'In use') }}
 						</span>
-						<span
-							v-if="isManagedByExternalConfig(row)"
-							class="managedBadge managedBadge--external">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Managed') }}
-						</span>
-						<span
-							v-else-if="isManagedByLocalConfig(row)"
-							class="managedBadge managedBadge--local">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Local') }}
-						</span>
+						<ManagedBadge :config="getManagingConfiguration(row)" />
 					</div>
-					<span
-						v-if="row.description"
-						class="textDescription textEllipsis"
-						>{{ row.description }}</span
-					>
+					<IndexRowDescription :text="row.description" />
 				</div>
 			</template>
 
@@ -100,90 +80,16 @@ import {
 				{{ Object.keys(row.properties || {}).length }}
 			</template>
 
-			<!-- Custom column: created date -->
-			<template #column-created="{ row }">
-				{{
-					row.created
-						? new Date(row.created).toLocaleDateString({
-								day: '2-digit',
-								month: '2-digit',
-								year: 'numeric',
-							})
-							+ ', '
-							+ new Date(row.created).toLocaleTimeString({
-								hour: '2-digit',
-								minute: '2-digit',
-								second: '2-digit',
-							})
-						: '-'
-				}}
-			</template>
-
-			<!-- Custom column: updated date -->
-			<template #column-updated="{ row }">
-				{{
-					row.updated
-						? new Date(row.updated).toLocaleDateString({
-								day: '2-digit',
-								month: '2-digit',
-								year: 'numeric',
-							})
-							+ ', '
-							+ new Date(row.updated).toLocaleTimeString({
-								hour: '2-digit',
-								minute: '2-digit',
-								second: '2-digit',
-							})
-						: '-'
-				}}
+			<!-- Custom columns: created and updated dates -->
+			<template
+				v-for="key in ['created', 'updated']"
+				#[`column-${key}`]="{ row }">
+				{{ listDateTime(row[key]) }}
 			</template>
 
 			<!-- Custom row actions for table view -->
 			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton
-						:title="
-							isManagedByExternalConfig(row)
-								? 'Cannot edit: This schema is managed by external configuration '
-									+ (getManagingConfiguration(row)?.title || '')
-								: ''
-						"
-						closeAfterClick
-						:disabled="isManagedByExternalConfig(row)"
-						@click="
-							() => {
-								schemaStore.setSchemaItem(row)
-								navigationStore.setModal('editSchema')
-							}
-						">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						Edit
-					</NcActionButton>
-					<NcActionButton
-						:title="
-							row.stats?.objects?.total > 0
-								? 'Cannot delete: objects are still attached'
-								: ''
-						"
-						closeAfterClick
-						:disabled="row.stats?.objects?.total > 0"
-						@click="
-							() => {
-								schemaStore.setSchemaItem(row)
-								navigationStore.setDialog('deleteSchema')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						Delete
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="schemaActions(row)" />
 			</template>
 		</CnIndexPage>
 	</NcAppContent>
@@ -191,14 +97,24 @@ import {
 
 <script>
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import { NcAppContent } from '@nextcloud/vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
-import { applyFilterChange, filterRows } from '../../services/listFilter.js'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import IndexRowDescription from '../IndexRowDescription.vue'
+import {
+	headerListData,
+	headerListMethods,
+} from '../../composables/headerListControls.js'
+import {
+	isExternalConfiguration,
+	isLocalConfiguration,
+	managedRowClass,
+} from '../../composables/managedConfiguration.js'
+import { filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
+import { deleteAction, editAction } from '../../services/menuActions.js'
+import { timestampColumns } from '../indexPageOptions.js'
 
 /**
  * The value a schema row is filtered on: the properties column shows a count.
@@ -217,26 +133,18 @@ function schemaFilterValue(schema, field) {
 export default {
 	name: 'SchemasIndex',
 	components: {
+		IndexRowDescription,
+		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
-		CogOutline,
+		ManagedBadge,
 		RegisterSchemaCard,
 	},
 
 	data() {
 		return {
+			...headerListData(),
 			selectedSchemas: [],
-			isRefreshing: false,
-			// The header the list is sorted by; null keeps newest first.
-			sortKey: null,
-			sortOrder: 'asc',
-			// The header filters, as `{ paramKey: values[] }` (`title[like]`).
-			activeFilters: {},
 		}
 	},
 
@@ -257,18 +165,7 @@ export default {
 					label: t('openregister', 'Properties'),
 					type: 'integer',
 				},
-				{
-					key: 'created',
-					label: t('openregister', 'Created'),
-					sortable: true,
-					type: 'date-time',
-				},
-				{
-					key: 'updated',
-					label: t('openregister', 'Updated'),
-					sortable: true,
-					type: 'date-time',
-				},
+				...timestampColumns({ type: 'date-time' }),
 			]
 		},
 
@@ -370,33 +267,72 @@ export default {
 	},
 
 	methods: {
+		...headerListMethods(() => schemaStore),
+
 		/**
-		 * Sort by a clicked header. The list is loaded whole, so it is sorted
-		 * here, and paging goes back to page 1 so the top of the new order shows.
+		 * The row menu of a schema.
 		 *
-		 * @param {{key: string, order: string}} payload The header and direction.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The schema
+		 * @return {Array<object>} The ActionMenu entries
 		 */
-		onSort(payload) {
-			this.sortKey = payload && payload.key ? payload.key : null
-			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
-			schemaStore.setPagination(1, schemaStore.pagination.limit || 20)
+		schemaActions(row) {
+			return [this.schemaEditAction(row), this.schemaDeleteAction(row)]
 		},
 
 		/**
-		 * Apply a header filter. The list is loaded whole, so it is filtered
-		 * here, and paging goes back to page 1.
+		 * The edit entry, locked while an external configuration manages the schema.
 		 *
-		 * @param {{key: string, values: Array}} payload The filter change.
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The schema
+		 * @return {object} The ActionMenu entry
 		 */
-		onFilterChange(payload) {
-			this.activeFilters = applyFilterChange(this.activeFilters, payload)
-			schemaStore.setPagination(1, schemaStore.pagination.limit || 20)
+		schemaEditAction(row) {
+			const openEditor = () => {
+				schemaStore.setSchemaItem(row)
+				navigationStore.setModal('editSchema')
+			}
+			return editAction(openEditor, {
+				disabled: this.isManagedByExternalConfig(row),
+				title: this.editLockReason(row),
+			})
+		},
+
+		/**
+		 * Why the edit entry is locked: '' unless an external configuration
+		 * manages the schema.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The schema
+		 * @return {string} The reason
+		 */
+		editLockReason(row) {
+			if (!this.isManagedByExternalConfig(row)) {
+				return ''
+			}
+			return (
+				'Cannot edit: This schema is managed by external configuration '
+				+ (this.getManagingConfiguration(row)?.title || '')
+			)
+		},
+
+		/**
+		 * The delete entry, locked while objects are attached.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The schema
+		 * @return {object} The ActionMenu entry
+		 */
+		schemaDeleteAction(row) {
+			const attached = this.hasObjects(row)
+			const confirmDelete = () => {
+				schemaStore.setSchemaItem(row)
+				navigationStore.setDialog('deleteSchema')
+			}
+			return deleteAction(confirmDelete, {
+				disabled: attached,
+				title: attached ? 'Cannot delete: objects are still attached' : '',
+			})
 		},
 
 		/**
@@ -455,11 +391,10 @@ export default {
 		 * @return {string}
 		 */
 		getRowClass(schema) {
-			if (this.isManagedByExternalConfig(schema))
-				return 'viewTableRow--managed'
-			if (this.isManagedByLocalConfig(schema)) return 'viewTableRow--local'
-			if (this.hasObjects(schema)) return 'viewTableRow--in-use'
-			return ''
+			return (
+				managedRowClass(this.getManagingConfiguration(schema))
+				|| (this.hasObjects(schema) ? 'viewTableRow--in-use' : '')
+			)
 		},
 
 		/**
@@ -499,13 +434,7 @@ export default {
 		 * @return {boolean}
 		 */
 		isManagedByExternalConfig(schema) {
-			const config = this.getManagingConfiguration(schema)
-			if (!config) return false
-			return (
-				(config.sourceType
-					&& ['github', 'gitlab', 'url'].includes(config.sourceType))
-				|| config.isLocal === false
-			)
+			return isExternalConfiguration(this.getManagingConfiguration(schema))
 		},
 
 		/**
@@ -516,37 +445,18 @@ export default {
 		 * @return {boolean}
 		 */
 		isManagedByLocalConfig(schema) {
-			const config = this.getManagingConfiguration(schema)
-			if (!config) return false
-			return (
-				config.sourceType === 'local'
-				|| config.sourceType === 'manual'
-				|| config.isLocal === true
-			)
+			return isLocalConfiguration(this.getManagingConfiguration(schema))
 		},
 	},
 }
 </script>
 
 <style lang="scss" scoped>
-/* Table row accents. Drawn with an inset box-shadow, never border-left: a
-   border adds layout width and shifts the row's cell content sideways, while
-   box-shadow paints inside the box. Matches .cn-table-row--selected.
+@use '../../styles/common.scss' as *;
+@use '../../styles/views.scss' as *;
+@use '../managedRowAccents.scss' as *;
 
-   Skipped on a selected row so the library's .cn-table-row--selected accent
-   wins. Scoping adds a [data-v-*] attribute, which would otherwise outweigh
-   the library's single-class rule and leave a selected row showing its
-   managed/local colour instead of the selection colour. */
-
-/* Managed schemas (external - green) */
-:deep(.viewTableRow--managed:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-success);
-}
-
-/* Local configurations (orange) */
-:deep(.viewTableRow--local:not(.cn-table-row--selected)) {
-	box-shadow: inset 3px 0 0 0 var(--color-warning);
-}
+@include managed-row-accents;
 
 /* In-use schemas */
 :deep(.viewTableRow--in-use:not(.cn-table-row--selected)) {
@@ -554,35 +464,10 @@ export default {
 }
 
 /* Status Pills */
-.statusPill {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 0.75em;
-	font-weight: 600;
-	text-transform: uppercase;
-	margin-left: 8px;
-	white-space: nowrap;
-}
-
-.statusPill--alert {
-	background-color: var(--color-warning);
-	color: var(--color-main-background);
-}
-
-.statusPill--success {
-	background-color: var(--color-success);
-	color: white;
-}
+@include status-pill-rules;
 
 /* Title with badges layout */
-.titleWithBadges {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-	margin-bottom: 4px;
-}
+@include title-with-badges;
 
 .textDescription {
 	display: block;
@@ -592,30 +477,5 @@ export default {
 .textEllipsis {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.9em;
-}
-
-/* Managed by Configuration badge */
-.managedBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	margin-left: 8px;
-	vertical-align: middle;
-}
-
-/* External (managed) badge - green */
-.managedBadge--external {
-	background: var(--color-success);
-	color: white;
-}
-
-/* Local configuration badge - orange */
-.managedBadge--local {
-	background: var(--color-warning);
-	color: var(--color-main-text);
 }
 </style>

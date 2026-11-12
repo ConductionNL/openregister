@@ -17,240 +17,121 @@ import {
 		:subname="t('openregister', 'View search analytics and manage search logs')"
 		:open="navigationStore.sidebarState.searchTrail"
 		@update:open="(e) => navigationStore.setSidebarState('searchTrail', e)">
-		<NcAppSidebarTab
-			id="filters-tab"
-			:name="t('openregister', 'Filters')"
-			:order="1">
-			<template #icon>
-				<FilterOutline :size="20" />
-			</template>
-
-			<!-- Filter Section -->
-			<div class="filterSection">
-				<h3>{{ t('openregister', 'Filter Search Trails') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Register')
-					}}</label>
-					<NcSelect
-						id="registerSelect"
-						v-bind="registerOptions"
-						:modelValue="selectedRegisterValue"
-						:placeholder="t('openregister', 'All registers')"
-						:inputLabel="t('openregister', 'Register')"
-						:clearable="true"
-						@update:modelValue="handleRegisterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schema')
-					}}</label>
-					<NcSelect
-						id="schemaSelect"
-						v-bind="schemaOptions"
-						:modelValue="selectedSchemaValue"
-						:placeholder="t('openregister', 'All schemas')"
-						:inputLabel="t('openregister', 'Schema')"
-						:disabled="!registerStore.registerItem"
-						:clearable="true"
-						@update:modelValue="handleSchemaChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="successSelect">{{
-						t('openregister', 'Success Status')
-					}}</label>
-					<NcSelect
-						id="successSelect"
-						v-model="selectedSuccessStatus"
-						:options="successOptions"
-						:placeholder="t('openregister', 'All searches')"
-						:inputLabel="t('openregister', 'Success Status')"
-						:clearable="true"
-						@update:modelValue="applyFilters">
-						<template #option="{ label, value }">
-							<div class="statusOption" :class="value">
-								{{ label }}
-							</div>
-						</template>
-					</NcSelect>
-				</div>
-				<div class="filterGroup">
-					<label for="userSelect">{{ t('openregister', 'Users') }}</label>
-					<NcSelect
-						id="userSelect"
-						v-model="selectedUsers"
-						:options="userOptions"
-						:placeholder="t('openregister', 'All users')"
-						:inputLabel="t('openregister', 'Users')"
-						:multiple="true"
-						:clearable="true"
-						@update:modelValue="applyFilters">
-						<template #option="{ label }">
-							{{ label }}
-						</template>
-					</NcSelect>
-				</div>
-				<div class="filterGroup">
-					<label>{{ t('openregister', 'Date Range') }}</label>
-					<NcDateTimePickerNative
-						v-model="dateFrom"
-						:label="t('openregister', 'From date')"
-						type="datetime-local"
-						@update:modelValue="applyFilters" />
-					<NcDateTimePickerNative
-						v-model="dateTo"
-						:label="t('openregister', 'To date')"
-						type="datetime-local"
-						@update:modelValue="applyFilters" />
-				</div>
-				<div class="filterGroup">
-					<label for="searchTermFilter">{{
-						t('openregister', 'Search Term')
-					}}</label>
+		<ScopeFiltersTab
+			:title="t('openregister', 'Filter Search Trails')"
+			:hint="
+				t(
+					'openregister',
+					'Use filters to narrow down search trail entries by register, schema, success status, user, date range, search terms, or performance metrics.',
+				)
+			"
+			clearable
+			@registerChange="handleRegisterChange"
+			@schemaChange="handleSchemaChange"
+			@clear="clearFilters">
+			<SidebarFilterSelect
+				id="successSelect"
+				v-model="selectedSuccessStatus"
+				:options="successOptions"
+				:placeholder="t('openregister', 'All searches')"
+				:label="t('openregister', 'Success Status')"
+				@update:modelValue="applyFilters">
+				<template #option="{ label, value }">
+					<div class="statusOption" :class="value">
+						{{ label }}
+					</div>
+				</template>
+			</SidebarFilterSelect>
+			<TrailUserDateFields
+				v-model:users="selectedUsers"
+				v-model:dateFrom="dateFrom"
+				v-model:dateTo="dateTo"
+				:userOptions="userOptions"
+				@change="applyFilters" />
+			<div class="filterGroup">
+				<label for="searchTermFilter">{{
+					t('openregister', 'Search Term')
+				}}</label>
+				<NcTextField
+					id="searchTermFilter"
+					v-model="searchTermFilter"
+					:label="t('openregister', 'Filter by search term')"
+					:placeholder="t('openregister', 'Enter search term')"
+					@update:modelValue="handleSearchTermFilterChange" />
+			</div>
+			<div class="filterGroup">
+				<label for="executionTimeFilter">{{
+					t('openregister', 'Execution Time Range')
+				}}</label>
+				<div class="rangeFilter">
 					<NcTextField
-						id="searchTermFilter"
-						v-model="searchTermFilter"
-						:label="t('openregister', 'Filter by search term')"
-						:placeholder="t('openregister', 'Enter search term')"
-						@update:modelValue="handleSearchTermFilterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="executionTimeFilter">{{
-						t('openregister', 'Execution Time Range')
-					}}</label>
-					<div class="rangeFilter">
-						<NcTextField
-							id="executionTimeFrom"
-							v-model="executionTimeFrom"
-							:label="t('openregister', 'Min execution time (ms)')"
-							:placeholder="t('openregister', 'Min ms')"
-							type="number"
-							@update:modelValue="handleExecutionTimeChange" />
-						<NcTextField
-							id="executionTimeTo"
-							v-model="executionTimeTo"
-							:label="t('openregister', 'Max execution time (ms)')"
-							:placeholder="t('openregister', 'Max ms')"
-							type="number"
-							@update:modelValue="handleExecutionTimeChange" />
-					</div>
-				</div>
-				<div class="filterGroup">
-					<label for="resultCountFilter">{{
-						t('openregister', 'Result Count Range')
-					}}</label>
-					<div class="rangeFilter">
-						<NcTextField
-							id="resultCountFrom"
-							v-model="resultCountFrom"
-							:label="t('openregister', 'Min result count')"
-							:placeholder="t('openregister', 'Min results')"
-							type="number"
-							@update:modelValue="handleResultCountChange" />
-						<NcTextField
-							id="resultCountTo"
-							v-model="resultCountTo"
-							:label="t('openregister', 'Max result count')"
-							:placeholder="t('openregister', 'Max results')"
-							type="number"
-							@update:modelValue="handleResultCountChange" />
-					</div>
+						id="executionTimeFrom"
+						v-model="executionTimeFrom"
+						:label="t('openregister', 'Min execution time (ms)')"
+						:placeholder="t('openregister', 'Min ms')"
+						type="number"
+						@update:modelValue="handleExecutionTimeChange" />
+					<NcTextField
+						id="executionTimeTo"
+						v-model="executionTimeTo"
+						:label="t('openregister', 'Max execution time (ms)')"
+						:placeholder="t('openregister', 'Max ms')"
+						type="number"
+						@update:modelValue="handleExecutionTimeChange" />
 				</div>
 			</div>
-
-			<div class="actionGroup">
-				<NcButton @click="clearFilters">
-					<template #icon>
-						<FilterOffOutline :size="20" />
-					</template>
-					{{ t('openregister', 'Clear filters') }}
-				</NcButton>
+			<div class="filterGroup">
+				<label for="resultCountFilter">{{
+					t('openregister', 'Result Count Range')
+				}}</label>
+				<div class="rangeFilter">
+					<NcTextField
+						id="resultCountFrom"
+						v-model="resultCountFrom"
+						:label="t('openregister', 'Min result count')"
+						:placeholder="t('openregister', 'Min results')"
+						type="number"
+						@update:modelValue="handleResultCountChange" />
+					<NcTextField
+						id="resultCountTo"
+						v-model="resultCountTo"
+						:label="t('openregister', 'Max result count')"
+						:placeholder="t('openregister', 'Max results')"
+						type="number"
+						@update:modelValue="handleResultCountChange" />
+				</div>
 			</div>
+		</ScopeFiltersTab>
 
-			<NcNoteCard type="info" class="filter-hint">
-				{{
-					t(
-						'openregister',
-						'Use filters to narrow down search trail entries by register, schema, success status, user, date range, search terms, or performance metrics.',
-					)
-				}}
-			</NcNoteCard>
-		</NcAppSidebarTab>
-
-		<NcAppSidebarTab
-			id="stats-tab"
-			:name="t('openregister', 'Statistics')"
-			:order="2">
-			<template #icon>
-				<ChartLine :size="20" />
-			</template>
-
+		<StatisticsSidebarTab>
 			<!-- Statistics Section -->
 			<div class="statsSection">
 				<h3>{{ t('openregister', 'Search Trail Statistics') }}</h3>
 				<div class="statGrid">
-					<div class="statCard">
-						<div class="statNumber">
-							{{ totalSearchTrails }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Searches') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ totalResults }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Results') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ averageResultsPerSearch }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Results/Search') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">{{ averageExecutionTime }}ms</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Execution Time') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ (successRate * 100).toFixed(1) }}%
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Success Rate') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ uniqueSearchTerms }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Unique Search Terms') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ avgSearchesPerSession }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Searches/Session') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ avgObjectViewsPerSession }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Object Views/Session') }}
-						</div>
-					</div>
+					<SidebarStatCard
+						:value="totalSearchTrails"
+						:label="t('openregister', 'Total Searches')" />
+					<SidebarStatCard
+						:value="totalResults"
+						:label="t('openregister', 'Total Results')" />
+					<SidebarStatCard
+						:value="averageResultsPerSearch"
+						:label="t('openregister', 'Avg Results/Search')" />
+					<SidebarStatCard
+						:value="`${averageExecutionTime}ms`"
+						:label="t('openregister', 'Avg Execution Time')" />
+					<SidebarStatCard
+						:value="`${(successRate * 100).toFixed(1)}%`"
+						:label="t('openregister', 'Success Rate')" />
+					<SidebarStatCard
+						:value="uniqueSearchTerms"
+						:label="t('openregister', 'Unique Search Terms')" />
+					<SidebarStatCard
+						:value="avgSearchesPerSession"
+						:label="t('openregister', 'Avg Searches/Session')" />
+					<SidebarStatCard
+						:value="avgObjectViewsPerSession"
+						:label="t('openregister', 'Avg Object Views/Session')" />
 				</div>
 			</div>
 
@@ -258,69 +139,24 @@ import {
 			<div class="complexitySection">
 				<h4>{{ t('openregister', 'Query Complexity Distribution') }}</h4>
 				<div class="complexityBars">
-					<div class="complexityBar">
+					<div
+						v-for="level in complexityLevels"
+						:key="level.key"
+						class="complexityBar">
 						<div class="complexityLabel">
 							<span
-								:title="
-									t(
-										'openregister',
-										'Simple queries: basic text searches with minimal parameters (e.g., single search term, no advanced filters)',
-									)
-								"
+								:title="level.title"
 								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Simple') }}
+								{{ level.label }}
 							</span>
-							<span>{{ queryComplexity.simple }}</span>
+							<span>{{ queryComplexity[level.key] }}</span>
 						</div>
 						<div class="complexityProgress">
 							<div
-								class="complexityProgressBar simple"
+								class="complexityProgressBar"
+								:class="level.key"
 								:style="{
-									width: getComplexityPercentage('simple') + '%',
-								}" />
-						</div>
-					</div>
-					<div class="complexityBar">
-						<div class="complexityLabel">
-							<span
-								:title="
-									t(
-										'openregister',
-										'Medium queries: searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)',
-									)
-								"
-								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Medium') }}
-							</span>
-							<span>{{ queryComplexity.medium }}</span>
-						</div>
-						<div class="complexityProgress">
-							<div
-								class="complexityProgressBar medium"
-								:style="{
-									width: getComplexityPercentage('medium') + '%',
-								}" />
-						</div>
-					</div>
-					<div class="complexityBar">
-						<div class="complexityLabel">
-							<span
-								:title="
-									t(
-										'openregister',
-										'Complex queries: advanced searches with multiple filters, operators, and complex parameter combinations',
-									)
-								"
-								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Complex') }}
-							</span>
-							<span>{{ queryComplexity.complex }}</span>
-						</div>
-						<div class="complexityProgress">
-							<div
-								class="complexityProgressBar complex"
-								:style="{
-									width: getComplexityPercentage('complex') + '%',
+									width: getComplexityPercentage(level.key) + '%',
 								}" />
 						</div>
 					</div>
@@ -331,22 +167,15 @@ import {
 			<div class="popularTermsSection">
 				<h4>{{ t('openregister', 'Popular Search Terms') }}</h4>
 				<div class="popularTermsList">
-					<NcListItem
+					<CountListItem
 						v-for="(term, index) in popularTerms"
 						:key="index"
 						:name="term.term"
-						:bold="false">
+						:subname="searchesLabel(term.count)">
 						<template #icon>
 							<MagnifyPlus :size="32" />
 						</template>
-						<template #subname>
-							{{
-								t('openregister', '{count} searches', {
-									count: term.count,
-								})
-							}}
-						</template>
-					</NcListItem>
+					</CountListItem>
 				</div>
 			</div>
 
@@ -354,25 +183,18 @@ import {
 			<div class="registerSchemaSection">
 				<h4>{{ t('openregister', 'Register/Schema Usage') }}</h4>
 				<div class="registerSchemaList">
-					<NcListItem
+					<CountListItem
 						v-for="(stat, index) in registerSchemaStats"
 						:key="index"
 						:name="getRegisterSchemaName(stat)"
-						:bold="false">
+						:subname="searchesLabel(stat.count)">
 						<template #icon>
 							<DatabaseOutline :size="32" />
 						</template>
-						<template #subname>
-							{{
-								t('openregister', '{count} searches', {
-									count: stat.count,
-								})
-							}}
-						</template>
-					</NcListItem>
+					</CountListItem>
 				</div>
 			</div>
-		</NcAppSidebarTab>
+		</StatisticsSidebarTab>
 
 		<NcAppSidebarTab
 			id="analytics-tab"
@@ -436,22 +258,15 @@ import {
 				<div class="userAgentSection">
 					<h4>{{ t('openregister', 'User Agent Statistics') }}</h4>
 					<div class="userAgentList">
-						<NcListItem
+						<CountListItem
 							v-for="(agent, index) in userAgentStats"
 							:key="index"
 							:name="getBrowserName(agent)"
-							:bold="false">
+							:subname="searchesLabel(agent.count)">
 							<template #icon>
 								<Monitor :size="32" />
 							</template>
-							<template #subname>
-								{{
-									t('openregister', '{count} searches', {
-										count: agent.count,
-									})
-								}}
-							</template>
-						</NcListItem>
+						</CountListItem>
 					</div>
 				</div>
 			</div>
@@ -463,22 +278,126 @@ import {
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
-	NcButton,
-	NcDateTimePickerNative,
-	NcListItem,
 	NcLoadingIcon,
-	NcNoteCard,
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
-import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
+import { trailSidebar } from '../../composables/trailSidebar.js'
 import eventBus from '../../eventBus.js'
+import {
+	addDateRange,
+	addStrings,
+	csvValues,
+	routeDate,
+} from '../../services/routeQuery.js'
+import { applyRouteScope } from '../../services/routeScope.js'
+import {
+	addJoinedValues,
+	addPresent,
+	addScopeIds,
+} from '../../services/trailFilters.js'
+import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
+import {
+	activityPeriodOptions,
+	searchSuccessOptions,
+} from './trailOptions.js'
+
+/**
+ * Leave a statistic as the API reports it.
+ *
+ * @param {number} value The statistic
+ * @return {number} The same value
+ */
+const asIs = (value) => value
+
+// Shown statistics: field, statistics key, and how to show the value.
+const SEARCH_STATISTICS = [
+	['totalSearchTrails', 'total', asIs],
+	['totalResults', 'totalResults', asIs],
+	['averageResultsPerSearch', 'averageResultsPerSearch', Math.round],
+	['averageExecutionTime', 'averageExecutionTime', Math.round],
+	['successRate', 'successRate', asIs],
+	['uniqueSearchTerms', 'uniqueSearchTerms', asIs],
+	['uniqueUsers', 'uniqueUsers', asIs],
+	['uniqueOrganizations', 'uniqueOrganizations', asIs],
+	['avgSearchesPerSession', 'avgSearchesPerSession', asIs],
+	['avgObjectViewsPerSession', 'avgObjectViewsPerSession', asIs],
+]
+
+/**
+ * The search trail statistics to show, 0 where one is missing.
+ *
+ * @param {object} stats The statistics from the store
+ * @return {object} The shown statistics
+ */
+function searchStatisticsOf(stats) {
+	const shown = Object.fromEntries(
+		SEARCH_STATISTICS.map(([field, key, show]) => [
+			field,
+			show(stats[key] || 0),
+		]),
+	)
+	shown.queryComplexity = stats.queryComplexity || {
+		simple: 0,
+		medium: 0,
+		complex: 0,
+	}
+	return shown
+}
+
+/**
+ * The filter fields' state before anything is picked.
+ *
+ * @return {object} The filter fields
+ */
+function searchFilterState() {
+	return {
+		activeTab: 'filters-tab',
+		selectedSuccessStatus: null,
+		selectedActivityPeriod: { value: 'daily', label: 'Daily' },
+		searchTermFilter: '',
+		executionTimeFrom: '',
+		executionTimeTo: '',
+		resultCountFrom: '',
+		resultCountTo: '',
+		filteredCount: 0,
+	}
+}
+
+const ACTIVITY_PERIOD_FORMATS = {
+	hourly: (date) => date.toLocaleString(),
+	daily: (date) => date.toLocaleDateString(),
+	weekly: (date) => `Week of ${date.toLocaleDateString()}`,
+	monthly: (date) =>
+		date.toLocaleDateString(undefined, { year: 'numeric', month: 'long' }),
+}
+
+/**
+ * Add the picked success status and users to a route query.
+ *
+ * @param {object} query The query being built
+ * @param {object} picked The sidebar's selectedSuccessStatus and selectedUsers
+ */
+function addSelections(query, picked) {
+	if (picked.selectedSuccessStatus && picked.selectedSuccessStatus.value)
+		query.success = String(picked.selectedSuccessStatus.value)
+	if (Array.isArray(picked.selectedUsers) && picked.selectedUsers.length > 0)
+		query.user = picked.selectedUsers.map((u) => u.value || u).join(',')
+}
+
+const ROUTE_FIELDS = {
+	searchTerm: 'searchTermFilter',
+	executionTimeFrom: 'executionTimeFrom',
+	executionTimeTo: 'executionTimeTo',
+	resultCountFrom: 'resultCountFrom',
+	resultCountTo: 'resultCountTo',
+}
+
+const RANGE_FILTERS = Object.keys(ROUTE_FIELDS)
 
 export default {
 	name: 'SearchTrailSideBar',
@@ -486,244 +405,76 @@ export default {
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
-		NcNoteCard,
-		NcButton,
-		NcListItem,
-		NcDateTimePickerNative,
 		NcTextField,
 		NcLoadingIcon,
-		FilterOutline,
-		ChartLine,
 		TrendingUp,
 		MagnifyPlus,
 		DatabaseOutline,
 		Monitor,
-		FilterOffOutline,
 	},
+
+	mixins: [
+		routeBoundFilters('/search-trails'),
+		trailSidebar(() => searchTrailStore.searchTrailList),
+	],
 
 	data() {
 		return {
-			successOptions: [
-				{
-					label: t('openregister', 'Successful'),
-					value: 'true',
-				},
-				{
-					label: t('openregister', 'Failed'),
-					value: 'false',
-				},
-			],
-
-			activityPeriodOptions: [
-				{
-					label: t('openregister', 'Hourly'),
-					value: 'hourly',
-				},
-				{
-					label: t('openregister', 'Daily'),
-					value: 'daily',
-				},
-				{
-					label: t('openregister', 'Weekly'),
-					value: 'weekly',
-				},
-				{
-					label: t('openregister', 'Monthly'),
-					value: 'monthly',
-				},
-			],
-
-			activeTab: 'filters-tab',
-			selectedSuccessStatus: null,
-			selectedUsers: [],
-			selectedActivityPeriod: { value: 'daily', label: 'Daily' },
-			dateFrom: null,
-			dateTo: null,
-			searchTermFilter: '',
-			executionTimeFrom: '',
-			executionTimeTo: '',
-			resultCountFrom: '',
-			resultCountTo: '',
-			filteredCount: 0,
-
-			// Statistics
-			totalSearchTrails: 0,
-			totalResults: 0,
-			averageResultsPerSearch: 0,
-			averageExecutionTime: 0,
-			successRate: 0,
-			uniqueSearchTerms: 0,
-			uniqueUsers: 0,
-			uniqueOrganizations: 0,
-			avgSearchesPerSession: 0,
-			avgObjectViewsPerSession: 0,
-			queryComplexity: {
-				simple: 0,
-				medium: 0,
-				complex: 0,
-			},
-
+			successOptions: searchSuccessOptions(),
+			activityPeriodOptions: activityPeriodOptions(),
+			...searchFilterState(),
+			...searchStatisticsOf({}),
 			popularTerms: [],
 			registerSchemaStats: [],
 			userAgentStats: [],
 			currentActivityData: [],
-
 			filterTimeout: null,
 		}
 	},
 
 	computed: {
-		/**
-		 * Build the register dropdown options for the search-trail filter.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for registers
-		 */
-		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		searchTrailStore: () => searchTrailStore,
 
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
+		/**
+		 * The query complexity levels the distribution shows, in order.
+		 *
+		 * @spec exclude Presentational labels of the complexity bars.
+		 * @return {Array<{key: string, label: string, title: string}>} The levels
+		 */
+		complexityLevels() {
+			return [
+				{
+					key: 'simple',
+					label: t('openregister', 'Simple'),
+					title: t(
+						'openregister',
+						'Simple queries: basic text searches with minimal parameters (e.g., single search term, no advanced filters)',
+					),
 				},
-			}
-		},
-
-		/**
-		 * Build the schema dropdown options scoped to the selected register.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for schemas
-		 */
-		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) =>
-						registerStore.registerItem.schemas.some(
-							(registerSchema) => registerSchema.id === schema.id,
-						),
-					)
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
+				{
+					key: 'medium',
+					label: t('openregister', 'Medium'),
+					title: t(
+						'openregister',
+						'Medium queries: searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)',
+					),
 				},
-			}
-		},
-
-		/**
-		 * Resolve the currently-selected register into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected register option, or null
-		 */
-		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
-		},
-
-		/**
-		 * Resolve the currently-selected schema into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected schema option, or null
-		 */
-		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
-		},
-
-		/**
-		 * Derive the user filter options from the search-trail list.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array} User filter options
-		 */
-		userOptions() {
-			if (
-				!searchTrailStore.searchTrailList
-				|| !searchTrailStore.searchTrailList.length
-			) {
-				return []
-			}
-			// Get unique users from search trail list
-			const users = [
-				...new Set(
-					searchTrailStore.searchTrailList
-						.map((trail) => trail.userName || trail.user)
-						.filter(Boolean),
-				),
+				{
+					key: 'complex',
+					label: t('openregister', 'Complex'),
+					title: t(
+						'openregister',
+						'Complex queries: advanced searches with multiple filters, operators, and complex parameter combinations',
+					),
+				},
 			]
-			return users.map((user) => ({
-				label: user,
-				value: user,
-			}))
 		},
 	},
 
 	watch: {
-		// Keep component/store in sync with URL query params (single source of truth)
-		'$route.query': {
-			/**
-			 * @spec exclude Vue watch handler plumbing; re-syncs sidebar state from the route query on /search-trails.
-			 */
-			handler() {
-				if (this.$route.path !== '/search-trails') return
-				this.applyQueryParamsFromRoute()
-			},
-
-			deep: true,
-		},
-
 		'searchTrailStore.searchTrailList': function () {
 			this.updateFilteredCount()
-		},
-
-		// Watch for changes in the global stores
-		'registerStore.registerItem': function () {
-			this.applyFilters()
-		},
-
-		'schemaStore.schemaItem': function () {
-			this.applyFilters()
 		},
 	},
 
@@ -735,13 +486,7 @@ export default {
 	 */
 	mounted() {
 		// Load required data
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-		}
+		this.refreshEmptyScopeLists()
 
 		// Load initial search trail data
 		this.loadSearchTrailData()
@@ -752,9 +497,7 @@ export default {
 		this.loadActivityData()
 
 		// Listen for filtered count updates
-		eventBus.on('search-trail-filtered-count', (count) => {
-			this.filteredCount = count
-		})
+		this.listenFilteredCount('search-trail-filtered-count')
 
 		// Watch store changes and update count
 		this.updateFilteredCount()
@@ -769,6 +512,17 @@ export default {
 
 	methods: {
 		/**
+		 * "{count} searches", translated, for a row of a top list.
+		 *
+		 * @param {number} count How often the row occurs
+		 * @spec exclude Presentational count label.
+		 * @return {string} The label
+		 */
+		searchesLabel(count) {
+			return t('openregister', '{count} searches', { count })
+		},
+
+		/**
 		 * Load search trail data and update filtered count
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
@@ -778,7 +532,7 @@ export default {
 			try {
 				await searchTrailStore.refreshSearchTrailList()
 				this.updateFilteredCount()
-			} catch (error) {
+			} catch {
 				// Handle error silently
 			}
 		},
@@ -815,15 +569,6 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
-		/**
-		 * Clear filters (alias for clearAllFilters for template compatibility)
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @return {void}
-		 */
-		clearFilters() {
-			this.clearAllFilters()
-		},
 
 		/**
 		 * Handle search term filter change with debouncing
@@ -865,58 +610,20 @@ export default {
 		 */
 		applyFilters() {
 			const filters = {}
-
-			// Build success filter
 			if (this.selectedSuccessStatus) {
 				filters.success = this.selectedSuccessStatus.value
 			}
-
-			// Build register filter
-			if (registerStore.registerItem) {
-				filters.register = registerStore.registerItem.id.toString()
-			}
-
-			// Build schema filter
-			if (schemaStore.schemaItem) {
-				filters.schema = schemaStore.schemaItem.id.toString()
-			}
-
-			// Build user filter
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
-				const users = this.selectedUsers.slice()
-				if (users.length > 0) {
-					filters.user = users.map((u) => u.value).join(',')
-				}
-			}
-
-			// Date filters
-			if (this.dateFrom) {
-				filters.dateFrom = this.dateFrom
-			}
-			if (this.dateTo) {
-				filters.dateTo = this.dateTo
-			}
-
-			// Search term filter
-			if (this.searchTermFilter) {
-				filters.searchTerm = this.searchTermFilter
-			}
-
-			// Execution time filters
-			if (this.executionTimeFrom) {
-				filters.executionTimeFrom = this.executionTimeFrom
-			}
-			if (this.executionTimeTo) {
-				filters.executionTimeTo = this.executionTimeTo
-			}
-
-			// Result count filters
-			if (this.resultCountFrom) {
-				filters.resultCountFrom = this.resultCountFrom
-			}
-			if (this.resultCountTo) {
-				filters.resultCountTo = this.resultCountTo
-			}
+			addScopeIds(filters, selectedScope())
+			addJoinedValues(filters, ['user', this.selectedUsers])
+			addPresent(filters, [
+				['dateFrom', this.dateFrom],
+				['dateTo', this.dateTo],
+				['searchTerm', this.searchTermFilter],
+				['executionTimeFrom', this.executionTimeFrom],
+				['executionTimeTo', this.executionTimeTo],
+				['resultCountFrom', this.resultCountFrom],
+				['resultCountTo', this.resultCountTo],
+			])
 
 			// Set filters in store and refresh data
 			searchTrailStore.setSearchTrailFilters(filters)
@@ -929,18 +636,6 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
-		/**
-		 * Debounced version of applyFilters for text input
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @return {void}
-		 */
-		debouncedApplyFilters() {
-			clearTimeout(this.filterTimeout)
-			this.filterTimeout = setTimeout(() => {
-				this.applyFilters()
-			}, 500)
-		},
 
 		/**
 		 * Update filtered count from store
@@ -961,39 +656,11 @@ export default {
 		async loadStatistics() {
 			try {
 				const stats = await searchTrailStore.getStatistics()
-				this.totalSearchTrails = stats.total || 0
-				this.totalResults = stats.totalResults || 0
-				this.averageResultsPerSearch = Math.round(
-					stats.averageResultsPerSearch || 0,
-				)
-				this.averageExecutionTime = Math.round(
-					stats.averageExecutionTime || 0,
-				)
-				this.successRate = stats.successRate || 0
-				this.uniqueSearchTerms = stats.uniqueSearchTerms || 0
-				this.uniqueUsers = stats.uniqueUsers || 0
-				this.uniqueOrganizations = stats.uniqueOrganizations || 0
-				this.avgSearchesPerSession = stats.avgSearchesPerSession || 0
-				this.avgObjectViewsPerSession = stats.avgObjectViewsPerSession || 0
-				this.queryComplexity = stats.queryComplexity || {
-					simple: 0,
-					medium: 0,
-					complex: 0,
-				}
+				Object.assign(this, searchStatisticsOf(stats))
 			} catch (error) {
 				console.error('Error loading statistics:', error)
 				// Set default values on error
-				this.totalSearchTrails = 0
-				this.totalResults = 0
-				this.averageResultsPerSearch = 0
-				this.averageExecutionTime = 0
-				this.successRate = 0
-				this.uniqueSearchTerms = 0
-				this.uniqueUsers = 0
-				this.uniqueOrganizations = 0
-				this.avgSearchesPerSession = 0
-				this.avgObjectViewsPerSession = 0
-				this.queryComplexity = { simple: 0, medium: 0, complex: 0 }
+				Object.assign(this, searchStatisticsOf({}))
 			}
 		},
 
@@ -1088,49 +755,11 @@ export default {
 		 * @return {string} Formatted period
 		 */
 		formatActivityPeriod(period) {
-			// Format based on the selected period type
 			const periodType = this.selectedActivityPeriod.value
-
-			switch (periodType) {
-				case 'hourly':
-					return new Date(period).toLocaleString()
-				case 'daily':
-					return new Date(period).toLocaleDateString()
-				case 'weekly':
-					return `Week of ${new Date(period).toLocaleDateString()}`
-				case 'monthly':
-					return new Date(period).toLocaleDateString(undefined, {
-						year: 'numeric',
-						month: 'long',
-					})
-				default:
-					return period
+			if (!Object.hasOwn(ACTIVITY_PERIOD_FORMATS, periodType)) {
+				return period
 			}
-		},
-
-		/**
-		 * Handle register change (cascade: set register, clear schema, re-apply filters).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object} register - Selected register
-		 * @return {void}
-		 */
-		handleRegisterChange(register) {
-			registerStore.setRegisterItem(register)
-			schemaStore.setSchemaItem(null) // Clear schema when register changes
-			this.applyFilters()
-		},
-
-		/**
-		 * Handle schema change (set schema, re-apply filters).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object} schema - Selected schema
-		 * @return {void}
-		 */
-		handleSchemaChange(schema) {
-			schemaStore.setSchemaItem(schema)
-			this.applyFilters()
+			return ACTIVITY_PERIOD_FORMATS[periodType](new Date(period))
 		},
 
 		/**
@@ -1176,66 +805,20 @@ export default {
 		 */
 		buildQueryFromState() {
 			const query = {}
-			// Filters
 			if (registerStore.registerItem)
 				query.register = String(registerStore.registerItem.id)
 			if (schemaStore.schemaItem)
 				query.schema = String(schemaStore.schemaItem.id)
-			if (this.selectedSuccessStatus && this.selectedSuccessStatus.value)
-				query.success = String(this.selectedSuccessStatus.value)
-			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0)
-				query.user = this.selectedUsers.map((u) => u.value || u).join(',')
-			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
-			if (this.dateFrom)
-				query.dateFrom = new Date(this.dateFrom).getDate()
-					? new Date(this.dateFrom).toISOString()
-					: null
-			if (this.dateTo)
-				query.dateTo = new Date(this.dateTo).getDate()
-					? new Date(this.dateTo).toISOString()
-					: null
+			addSelections(query, this)
+			addDateRange(query, this)
 			if (this.searchTermFilter) query.searchTerm = this.searchTermFilter
-			if (this.executionTimeFrom)
-				query.executionTimeFrom = String(this.executionTimeFrom)
-			if (this.executionTimeTo)
-				query.executionTimeTo = String(this.executionTimeTo)
-			if (this.resultCountFrom)
-				query.resultCountFrom = String(this.resultCountFrom)
-			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
+			addStrings(query, [
+				['executionTimeFrom', this.executionTimeFrom],
+				['executionTimeTo', this.executionTimeTo],
+				['resultCountFrom', this.resultCountFrom],
+				['resultCountTo', this.resultCountTo],
+			])
 			return query
-		},
-
-		/**
-		 * Shallow-compare two query objects (keys and stringified values).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @param {object} a - First query object
-		 * @param {object} b - Second query object
-		 * @return {boolean} Whether the queries are equal
-		 */
-		queriesEqual(a, b) {
-			const ka = Object.keys(a).sort()
-			const kb = Object.keys(b || {}).sort()
-			if (ka.length !== kb.length) return false
-			for (let i = 0; i < ka.length; i++) {
-				const k = ka[i]
-				if (k !== kb[i]) return false
-				if (String(a[k]) !== String(b[k])) return false
-			}
-			return true
-		},
-
-		/**
-		 * Write current sidebar state into the URL query (only on /search-trails).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @return {void}
-		 */
-		updateRouteQueryFromState() {
-			if (this.$route.path !== '/search-trails') return
-			const nextQuery = this.buildQueryFromState()
-			if (this.queriesEqual(nextQuery, this.$route.query)) return
-			this.$router.replace({ path: this.$route.path, query: nextQuery })
 		},
 
 		/**
@@ -1247,105 +830,58 @@ export default {
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/search-trails') return
 			const q = this.$route.query || {}
-			// Success status
-			if (typeof q.success !== 'undefined') {
-				const val = String(q.success)
-				const opt = this.successOptions.find((o) => String(o.value) === val)
-				this.selectedSuccessStatus = opt || null
-			}
-			// Users
+			this.applySuccessFromRoute(q.success)
 			if (typeof q.user === 'string') {
-				const users = q.user
-					.split(',')
-					.map((s) => s.trim())
-					.filter(Boolean)
-				this.selectedUsers = users.map((u) => ({ label: u, value: u }))
+				this.selectedUsers = csvValues(q.user).map((u) => ({
+					label: u,
+					value: u,
+				}))
 			}
-			// Dates and fields
 			// JS dates are awful, so we first check if its a valid date and then create the date. (q.dateFrom is a ISO string)
-			this.dateFrom =
-				q.dateFrom && new Date(q.dateFrom).getDate()
-					? new Date(q.dateFrom)
-					: null
-			this.dateTo =
-				q.dateTo && new Date(q.dateTo).getDate() ? new Date(q.dateTo) : null
-			this.searchTermFilter = q.searchTerm || ''
-			this.executionTimeFrom = q.executionTimeFrom || ''
-			this.executionTimeTo = q.executionTimeTo || ''
-			this.resultCountFrom = q.resultCountFrom || ''
-			this.resultCountTo = q.resultCountTo || ''
-			// Registers & schemas depend on lists
-			const applyRegister = () => {
-				if (!q.register) return true
-				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(
-					(r) => String(r.id) === String(q.register),
-				)
-				if (reg) registerStore.setRegisterItem(reg)
-				return true
+			this.dateFrom = routeDate(q.dateFrom)
+			this.dateTo = routeDate(q.dateTo)
+			this.applyRangeFilters(q)
+			// Apply store filters once selection ready
+			applyRouteScope(q, () => {
+				this.applyFilters()
+				this.loadActivityData()
+			})
+		},
+
+		/**
+		 * Pick the success status a route names, when it names one.
+		 *
+		 * @param {string|undefined} success The status from the route
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 */
+		applySuccessFromRoute(success) {
+			if (typeof success === 'undefined') return
+			const val = String(success)
+			this.selectedSuccessStatus =
+				this.successOptions.find((o) => String(o.value) === val) || null
+		},
+
+		/**
+		 * Take the search term and the range filters from the route.
+		 *
+		 * @param {object} q The route query
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 */
+		applyRangeFilters(q) {
+			for (const key of RANGE_FILTERS) {
+				this[ROUTE_FIELDS[key]] = q[key] || ''
 			}
-			const applySchema = () => {
-				if (!q.schema) return true
-				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(
-					(s) => String(s.id) === String(q.schema),
-				)
-				if (sch) schemaStore.setSchemaItem(sch)
-				return true
-			}
-			const tryApply = (attempt = 0) => {
-				const rOk = applyRegister()
-				const sOk = applySchema()
-				// Apply store filters once selection ready
-				if (rOk && sOk) {
-					this.applyFilters()
-					this.loadActivityData()
-					return
-				}
-				if (attempt < 10) setTimeout(() => tryApply(attempt + 1), 200)
-			}
-			tryApply()
 		},
 	},
 }
 </script>
 
-<style scoped>
-.filterSection,
-.statsSection,
-.analyticsSection {
-	padding: 12px 0;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../styles/sidebars.scss' as *;
 
-.filterSection:last-child,
-.statsSection:last-child,
-.analyticsSection:last-child {
-	border-bottom: none;
-}
+@include divided-sections(filterSection, statsSection, analyticsSection);
 
-.filterSection h3,
-.statsSection h3,
-.analyticsSection h3 {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
-
-.filterGroup {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 0 16px;
-	margin-bottom: 16px;
-}
-
-.filterGroup label {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
+@include filter-group-rules;
 
 .rangeFilter {
 	display: flex;
@@ -1356,10 +892,7 @@ export default {
 	flex: 1;
 }
 
-.actionGroup {
-	padding: 0 16px;
-	margin-bottom: 12px;
-}
+@include action-group;
 
 .statusOption.true {
 	color: var(--color-success);
@@ -1369,13 +902,7 @@ export default {
 	color: var(--color-error);
 }
 
-.filter-hint {
-	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
+@include filter-hint-rules;
 
 .statGrid {
 	display: grid;
@@ -1391,16 +918,13 @@ export default {
 	text-align: center;
 }
 
-.statNumber {
+// Smaller than SidebarStatCard's own number and label, to fit two columns.
+.statGrid :deep(.statCard .statNumber) {
 	font-size: 1.5rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
 }
 
-.statLabel {
+.statGrid :deep(.statCard .statLabel) {
 	font-size: 0.8rem;
-	color: var(--color-text-maxcontrast);
 }
 
 .complexitySection,

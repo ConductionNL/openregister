@@ -14,7 +14,7 @@ import {
 		name="importConfiguration"
 		:title="t('openregister', 'Import Configuration')"
 		size="large"
-		:canClose="!loading"
+		:noClose="loading"
 		@update:open="closeModal">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ successMessage }}</p>
@@ -359,12 +359,7 @@ import {
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="loading" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="loading" @click="closeModal" />
 			<NcButton
 				:disabled="loading || !canImport"
 				variant="primary"
@@ -381,7 +376,6 @@ import {
 
 <script>
 import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
@@ -403,8 +397,84 @@ import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { checkConfigurationVersion } from '../../services/configurationDisplay.js'
+import {
+	discoverTabState,
+	importDialogState,
+	repositoryTabState,
+	syncSettings,
+	tokenAvailability,
+	urlAndUploadTabState,
+} from './importConfigurationState.js'
+
+/**
+ * Import a discovered configuration from GitHub (a result with a repository) or GitLab.
+ *
+ * @param {object} result The discovered configuration
+ * @return {Promise<void>}
+ */
+async function importDiscovered(result) {
+	if (result.repository) {
+		const [owner, repo] = result.repository.split('/')
+		await configurationStore.importFromGitHub({
+			owner,
+			repo,
+			path: result.path,
+			branch: result.ref || 'main',
+			syncEnabled: true,
+			syncInterval: 24,
+		})
+		return
+	}
+	await configurationStore.importFromGitLab({
+		namespace: result.namespace,
+		project: result.project,
+		path: result.path,
+		ref: result.ref || 'main',
+		syncEnabled: true,
+		syncInterval: 24,
+	})
+}
+
+/**
+ * Reload the configuration, register and schema lists after an import.
+ *
+ * @return {Promise<Array>}
+ */
+function refreshImportedLists() {
+	return Promise.all([
+		configurationStore.refreshConfigurationList(),
+		registerStore.refreshRegisterList(),
+		schemaStore.refreshSchemaList(),
+	])
+}
+
+/**
+ * Whether a text is a URL.
+ *
+ * @param {string} value The text
+ * @return {boolean} True for a valid URL
+ */
+function isValidUrl(value) {
+	try {
+		return Boolean(new URL(value).href)
+	} catch {
+		return false
+	}
+}
+
+/**
+ * A branch as a select option.
+ *
+ * @param {object} branch The branch
+ * @return {{id: string, label: string}} The option
+ */
+function branchOption(branch) {
+	return { id: branch.name, label: branch.name }
+}
 
 export default {
 	name: 'ImportConfiguration',
@@ -422,6 +492,7 @@ export default {
 		ConfigurationCard,
 		// Icons
 		Cancel,
+		CloseCancelButton,
 		Import,
 		Magnify,
 		Github,
@@ -434,46 +505,13 @@ export default {
 
 	data() {
 		return {
-			activeTab: 0,
-			loading: false,
-			success: false,
-			successMessage: '',
-			error: null,
-
-			// Token availability
-			hasGithubToken: false,
-			hasGitlabToken: false,
-
-			// Discover tab
-			searchQuery: '',
-			searchSource: 'github',
-			searchLoading: false,
-			searchResults: [],
-			searchError: null,
-			hasSearched: false,
-
-			// Repository tab
-			repoSource: 'GitHub',
-			repoOwner: '',
-			repoNamespace: '',
-			repoName: '',
-			branches: [],
-			selectedBranch: null,
-			configFiles: [],
-			selectedFile: null,
-
-			// URL tab
-			importUrl: '',
-			urlError: null,
-
-			// File upload tab
-			selectedUploadFile: null,
-			isDragging: false,
-			fileError: null,
-
+			...importDialogState(),
+			...tokenAvailability(),
+			...discoverTabState(),
+			...repositoryTabState(),
+			...urlAndUploadTabState(),
 			// Sync settings (shared)
-			syncEnabled: true,
-			syncInterval: 24,
+			...syncSettings(),
 		}
 	},
 
@@ -524,6 +562,8 @@ export default {
 	},
 
 	methods: {
+		handleCheckVersion: checkConfigurationVersion,
+
 		/**
 		 * Check if API tokens are configured
 		 *
@@ -536,17 +576,11 @@ export default {
 				)
 				// Check if tokens exist and are not empty strings
 				// The backend returns masked tokens, so we just check if they exist
-				this.hasGithubToken = !!(
-					response.data.github_token
-					&& response.data.github_token.length > 0
-				)
-				this.hasGitlabToken = !!(
-					response.data.gitlab_token
-					&& response.data.gitlab_token.length > 0
-				)
+				this.hasGithubToken = isSetToken(response.data.github_token)
+				this.hasGitlabToken = isSetToken(response.data.gitlab_token)
 
 				// Debug logging removed for production
-			} catch (error) {
+			} catch {
 				// Debug logging removed for production
 				// Assume no tokens if check fails
 				this.hasGithubToken = false
@@ -598,26 +632,10 @@ export default {
 		 * @spec exclude Resets all local form/search/upload state to defaults; UI plumbing.
 		 */
 		resetForm() {
-			this.loading = false
-			this.success = false
-			this.successMessage = ''
-			this.error = null
-			this.searchQuery = ''
-			this.searchResults = []
-			this.searchError = null
-			this.hasSearched = false
-			this.repoOwner = ''
-			this.repoNamespace = ''
-			this.repoName = ''
-			this.branches = []
-			this.selectedBranch = null
-			this.configFiles = []
-			this.selectedFile = null
-			this.importUrl = ''
-			this.urlError = null
-			this.selectedUploadFile = null
-			this.isDragging = false
-			this.fileError = null
+			clearOutcome(this)
+			clearSearch(this)
+			clearRepository(this)
+			clearUrlAndUpload(this)
 			this.syncEnabled = true
 			this.syncInterval = 24
 		},
@@ -638,18 +656,14 @@ export default {
 					this.searchQuery,
 				)
 			} catch (error) {
-				// Set search-specific error for contextual display in the Discover tab
-				this.searchError = error.message || 'Failed to search configurations'
-				// Also set general error for top-level display
-				this.error = error.message || 'Failed to search configurations'
-				console.error('Search error:', error)
+				showSearchFailure(this, error)
 			} finally {
 				this.searchLoading = false
 			}
 		},
 
 		/**
-		 * @param result
+		 * @param {object} result
 		 * @spec exclude Per-card import handler dispatching to configurationStore.importFromGitHub/GitLab and refreshing lists; UI orchestration plumbing.
 		 */
 		async importDiscoveredConfiguration(result) {
@@ -657,38 +671,12 @@ export default {
 			this.error = null
 
 			try {
-				// Determine import method based on source
-				if (result.repository) {
-					// GitHub result
-					const [owner, repo] = result.repository.split('/')
-					await configurationStore.importFromGitHub({
-						owner,
-						repo,
-						path: result.path,
-						branch: result.ref || 'main',
-						syncEnabled: true,
-						syncInterval: 24,
-					})
-				} else {
-					// GitLab result
-					await configurationStore.importFromGitLab({
-						namespace: result.namespace,
-						project: result.project,
-						path: result.path,
-						ref: result.ref || 'main',
-						syncEnabled: true,
-						syncInterval: 24,
-					})
-				}
+				await importDiscovered(result)
 
 				this.successMessage = 'Configuration imported successfully!'
 				this.success = true
 				// Refresh all lists to show newly imported entities
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				// Don't show error if configuration already exists (UI shows this visually)
@@ -698,11 +686,7 @@ export default {
 					this.error = errorMessage
 				}
 				// Always refresh all lists to update UI
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 			} finally {
 				this.loading = false
 			}
@@ -714,39 +698,81 @@ export default {
 		async fetchBranches() {
 			this.loading = true
 			this.error = null
-			this.branches = []
-			this.selectedBranch = null
-			this.configFiles = []
-			this.selectedFile = null
+			this.clearRepositoryChoice()
 
 			try {
-				const params =
-					this.repoSource === 'GitHub'
-						? { owner: this.repoOwner, repo: this.repoName }
-						: { namespace: this.repoNamespace, project: this.repoName }
-
-				const branches = await configurationStore.getBranches(
-					this.repoSource.toLowerCase(),
-					params,
-				)
-
-				this.branches = branches.map((b) => ({ id: b.name, label: b.name }))
-				// Pre-select default/main branch if available
-				const defaultBranch = branches.find(
-					(b) => b.default || b.name === 'main' || b.name === 'master',
-				)
-				if (defaultBranch) {
-					this.selectedBranch = {
-						id: defaultBranch.name,
-						label: defaultBranch.name,
-					}
-					await this.fetchConfigurationFiles()
-				}
+				const branches = await this.requestBranches()
+				this.branches = branches.map(branchOption)
+				await this.selectDefaultBranch(branches)
 			} catch (error) {
 				this.error = error.message || 'Failed to fetch branches'
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Ask the chosen source for the repository's branches.
+		 *
+		 * @return {Promise<Array<object>>} The branches
+		 */
+		requestBranches() {
+			return configurationStore.getBranches(
+				this.repoSource.toLowerCase(),
+				this.repositoryParams(),
+			)
+		},
+
+		/**
+		 * Forget the branches and files of the previous repository.
+		 *
+		 * @return {void}
+		 */
+		clearRepositoryChoice() {
+			this.branches = []
+			this.selectedBranch = null
+			this.configFiles = []
+			this.selectedFile = null
+		},
+
+		/**
+		 * Pre-select the default (or main/master) branch when there is one,
+		 * and list its configuration files.
+		 *
+		 * @param {Array<object>} branches The repository's branches
+		 * @return {Promise<void>}
+		 */
+		async selectDefaultBranch(branches) {
+			const defaultBranch = branches.find(
+				(b) => b.default || b.name === 'main' || b.name === 'master',
+			)
+			if (defaultBranch) {
+				this.selectedBranch = branchOption(defaultBranch)
+				await this.fetchConfigurationFiles()
+			}
+		},
+
+		/**
+		 * The repository as the chosen source names it.
+		 *
+		 * @return {object} GitHub owner and repo, or GitLab namespace and project
+		 */
+		repositoryParams() {
+			return this.repoSource === 'GitHub'
+				? { owner: this.repoOwner, repo: this.repoName }
+				: { namespace: this.repoNamespace, project: this.repoName }
+		},
+
+		/**
+		 * The repository and the selected branch, as the chosen source names them.
+		 *
+		 * @return {object} The repository with its GitHub branch or GitLab ref
+		 */
+		branchParams() {
+			const branch = this.selectedBranch.id
+			return this.repoSource === 'GitHub'
+				? { ...this.repositoryParams(), branch }
+				: { ...this.repositoryParams(), ref: branch }
 		},
 
 		/**
@@ -761,22 +787,9 @@ export default {
 			this.selectedFile = null
 
 			try {
-				const params =
-					this.repoSource === 'GitHub'
-						? {
-								owner: this.repoOwner,
-								repo: this.repoName,
-								branch: this.selectedBranch.id,
-							}
-						: {
-								namespace: this.repoNamespace,
-								project: this.repoName,
-								ref: this.selectedBranch.id,
-							}
-
 				this.configFiles = await configurationStore.getConfigurationFiles(
 					this.repoSource.toLowerCase(),
-					params,
+					this.branchParams(),
 				)
 			} catch (error) {
 				this.error = error.message || 'Failed to fetch configuration files'
@@ -793,66 +806,17 @@ export default {
 			this.error = null
 
 			try {
-				// Tab 1: GitHub/GitLab
-				if (this.activeTab === 1) {
-					const params = {
-						path: this.selectedFile.path,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					}
-
-					if (this.repoSource === 'GitHub') {
-						await configurationStore.importFromGitHub({
-							owner: this.repoOwner,
-							repo: this.repoName,
-							branch: this.selectedBranch.id,
-							...params,
-						})
-					} else {
-						await configurationStore.importFromGitLab({
-							namespace: this.repoNamespace,
-							project: this.repoName,
-							ref: this.selectedBranch.id,
-							...params,
-						})
-					}
-
-					this.successMessage = `Configuration imported from ${this.repoSource}!`
-				} else if (this.activeTab === 2) {
-					// Tab 2: URL
-					// Validate URL
-					try {
-						const validUrl = new URL(this.importUrl) // URL validation successful
-						// Use validUrl.href to avoid no-new and no-void rule violations
-						if (!validUrl.href) {
-							throw new Error('Invalid URL')
-						}
-					} catch {
-						this.urlError = 'Please enter a valid URL'
-						this.loading = false
-						return
-					}
-
-					await configurationStore.importFromUrl({
-						url: this.importUrl,
-						syncEnabled: this.syncEnabled,
-						syncInterval: parseInt(this.syncInterval),
-					})
-
-					this.successMessage = 'Configuration imported from URL!'
-				} else if (this.activeTab === 3) {
-					// Tab 3: File Upload
-					await this.importFromFile()
-					this.successMessage = 'Configuration imported from file!'
+				const message = await this.importFromTab()
+				if (message === false) {
+					return
+				}
+				if (message) {
+					this.successMessage = message
 				}
 
 				this.success = true
 				// Refresh all lists to show newly imported entities
-				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
-				])
+				await refreshImportedLists()
 				setTimeout(() => this.closeModal(), 1500)
 			} catch (error) {
 				this.error = error.message || 'Failed to import configuration'
@@ -862,7 +826,76 @@ export default {
 		},
 
 		/**
-		 * @param event
+		 * Import from the active tab: 1 a repository, 2 a URL, 3 a file.
+		 *
+		 * @spec exclude Per-tab import dispatch for the import button; UI orchestration plumbing.
+		 * @return {Promise<string|false|undefined>} The success message, false when the URL is not valid, undefined for another tab
+		 */
+		async importFromTab() {
+			if (this.activeTab === 1) {
+				await this.importFromRepository()
+				return `Configuration imported from ${this.repoSource}!`
+			}
+			if (this.activeTab === 2) {
+				return this.importFromUrlTab()
+			}
+			if (this.activeTab === 3) {
+				await this.importFromFile()
+				return 'Configuration imported from file!'
+			}
+			return undefined
+		},
+
+		/**
+		 * Import the selected file from the chosen GitHub or GitLab repository.
+		 *
+		 * @spec exclude Repository-tab import delegating to configurationStore.importFromGitHub/GitLab; UI orchestration plumbing.
+		 * @return {Promise<void>}
+		 */
+		async importFromRepository() {
+			const params = {
+				path: this.selectedFile.path,
+				syncEnabled: this.syncEnabled,
+				syncInterval: parseInt(this.syncInterval),
+			}
+
+			if (this.repoSource === 'GitHub') {
+				await configurationStore.importFromGitHub({
+					...this.branchParams(),
+					...params,
+				})
+			} else {
+				await configurationStore.importFromGitLab({
+					...this.branchParams(),
+					...params,
+				})
+			}
+		},
+
+		/**
+		 * Import from the entered URL, or mark the URL as not valid.
+		 *
+		 * @spec exclude URL-tab import delegating to configurationStore.importFromUrl; UI orchestration plumbing.
+		 * @return {Promise<string|false>} The success message, or false when the URL is not valid
+		 */
+		async importFromUrlTab() {
+			if (!isValidUrl(this.importUrl)) {
+				this.urlError = 'Please enter a valid URL'
+				this.loading = false
+				return false
+			}
+
+			await configurationStore.importFromUrl({
+				url: this.importUrl,
+				syncEnabled: this.syncEnabled,
+				syncInterval: parseInt(this.syncInterval),
+			})
+
+			return 'Configuration imported from URL!'
+		},
+
+		/**
+		 * @param {Event} event
 		 * @spec exclude File-input change handler passing the picked file to validateAndSetFile; UI file-picker plumbing.
 		 */
 		handleFileSelect(event) {
@@ -873,7 +906,7 @@ export default {
 		},
 
 		/**
-		 * @param event
+		 * @param {DragEvent} event
 		 * @spec exclude Drag-drop handler passing the dropped file to validateAndSetFile; UI file-picker plumbing.
 		 */
 		handleFileDrop(event) {
@@ -885,7 +918,7 @@ export default {
 		},
 
 		/**
-		 * @param file
+		 * @param {File} file
 		 * @spec exclude Client-side JSON-type/size validation before accepting an upload file; UI validation helper.
 		 */
 		validateAndSetFile(file) {
@@ -918,7 +951,7 @@ export default {
 		},
 
 		/**
-		 * @param bytes
+		 * @param {number} bytes
 		 * @spec exclude Human-readable byte-size formatter for the file display; UI presentation helper.
 		 */
 		formatFileSize(bytes) {
@@ -931,19 +964,8 @@ export default {
 		 * @spec exclude Uploads the selected JSON file to the configurations/import endpoint; modal-local import call, list refresh handled by performImport.
 		 */
 		async importFromFile() {
-			const formData = new FormData()
-			formData.append('file', this.selectedUploadFile)
-			formData.append('force', 'true')
-			formData.append('appId', 'uploaded-config')
-
-			const response = await axios.post(
-				generateUrl('/apps/openregister/api/configurations/import'),
-				formData,
-				{
-					headers: {
-						'Content-Type': 'multipart/form-data',
-					},
-				},
+			const response = await postUploadedConfiguration(
+				uploadFormData(this.selectedUploadFile),
 			)
 
 			if (response.data.error) {
@@ -952,43 +974,122 @@ export default {
 
 			return response.data
 		},
-
-		/**
-		 * @param configuration
-		 * @spec exclude Triggers the configurations check-version endpoint and surfaces update toasts; UI orchestration plumbing.
-		 */
-		async handleCheckVersion(configuration) {
-			// Handle check version for already imported configurations
-			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/configurations/${configuration.id}/check-version`,
-					),
-				)
-
-				if (response.data.hasUpdate) {
-					showSuccess(
-						t('openregister', 'Update available: {local} → {remote}', {
-							local: response.data.localVersion,
-							remote: response.data.remoteVersion,
-						}),
-					)
-				} else {
-					showSuccess(t('openregister', 'Configuration is up to date'))
-				}
-
-				// Refresh the list to show updated version info
-				await configurationStore.refreshConfigurationList()
-			} catch (error) {
-				console.error('Failed to check version:', error)
-				showError(
-					t('openregister', 'Failed to check version: {error}', {
-						error: error.response?.data?.error || error.message,
-					}),
-				)
-			}
-		},
 	},
+}
+
+/**
+ * Whether the settings hold a token: the backend returns masked tokens, so
+ * only their presence is checked.
+ *
+ * @param {string|undefined} token The masked token
+ * @return {boolean} True when set
+ */
+function isSetToken(token) {
+	return !!(token && token.length > 0)
+}
+
+/**
+ * Clear the modal's outcome: not loading, no success or error.
+ *
+ * @param {object} modal The modal
+ * @return {void}
+ */
+function clearOutcome(modal) {
+	modal.loading = false
+	modal.success = false
+	modal.successMessage = ''
+	modal.error = null
+}
+
+/**
+ * Clear the discovery search.
+ *
+ * @param {object} modal The modal
+ * @return {void}
+ */
+function clearSearch(modal) {
+	modal.searchQuery = ''
+	modal.searchResults = []
+	modal.searchError = null
+	modal.hasSearched = false
+}
+
+/**
+ * Clear the chosen repository, branch and file.
+ *
+ * @param {object} modal The modal
+ * @return {void}
+ */
+function clearRepository(modal) {
+	modal.repoOwner = ''
+	modal.repoNamespace = ''
+	modal.repoName = ''
+	modal.branches = []
+	modal.selectedBranch = null
+	modal.configFiles = []
+	modal.selectedFile = null
+}
+
+/**
+ * Clear the import URL and the uploaded file.
+ *
+ * @param {object} modal The modal
+ * @return {void}
+ */
+function clearUrlAndUpload(modal) {
+	modal.importUrl = ''
+	modal.urlError = null
+	modal.selectedUploadFile = null
+	modal.isDragging = false
+	modal.fileError = null
+}
+
+/**
+ * Show why the discovery search failed, in the Discover tab and at the top.
+ *
+ * @param {object} modal The modal
+ * @param {Error} error What went wrong
+ * @return {void}
+ */
+function showSearchFailure(modal, error) {
+	// Set search-specific error for contextual display in the Discover tab
+	modal.searchError = error.message || 'Failed to search configurations'
+	// Also set general error for top-level display
+	modal.error = error.message || 'Failed to search configurations'
+	console.error('Search error:', error)
+}
+
+/**
+ * The form an uploaded configuration file is imported with: forced, under
+ * the uploaded-config app id.
+ *
+ * @param {File} file The file
+ * @return {FormData} The form
+ */
+function uploadFormData(file) {
+	const formData = new FormData()
+	formData.append('file', file)
+	formData.append('force', 'true')
+	formData.append('appId', 'uploaded-config')
+	return formData
+}
+
+/**
+ * Import an uploaded configuration file.
+ *
+ * @param {FormData} formData The upload form
+ * @return {Promise<object>} The axios response
+ */
+function postUploadedConfiguration(formData) {
+	return axios.post(
+		generateUrl('/apps/openregister/api/configurations/import'),
+		formData,
+		{
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		},
+	)
 }
 </script>
 

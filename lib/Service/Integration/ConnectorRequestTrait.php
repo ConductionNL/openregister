@@ -51,24 +51,47 @@ trait ConnectorRequestTrait {
 			return $path;
 		}
 
-		$data = $source;
-		if (is_object($source) === true && method_exists($source, 'getObject') === true) {
-			$data = $source->getObject();
-		} elseif (is_object($source) === true && method_exists($source, 'getLocation') === true) {
-			$data = ['location' => $source->getLocation()];
-		}
-
-		$location = '';
-		if (is_array($data) === true) {
-			$location = (string)($data['location'] ?? '');
-		}
-
-		if (str_ends_with($location, '/') === true) {
+		if (str_ends_with(self::connectorLocation(source: $source), '/') === true) {
 			return $relative;
 		}
 
 		return '/' . $relative;
 	}//end connectorEndpoint()
+
+	/**
+	 * The base location a source declares, or '' when it declares none.
+	 *
+	 * @param mixed $source Resolved source entity, or its data array.
+	 *
+	 * @return string The location.
+	 */
+	private static function connectorLocation(mixed $source): string {
+		$data = self::connectorSourceData(source: $source);
+		if (is_array($data) === false) {
+			return '';
+		}
+
+		return (string)($data['location'] ?? '');
+	}//end connectorLocation()
+
+	/**
+	 * A source's data: its object, or just its location, or the source itself.
+	 *
+	 * @param mixed $source Resolved source entity, or its data array.
+	 *
+	 * @return mixed The data.
+	 */
+	private static function connectorSourceData(mixed $source): mixed {
+		if (is_object($source) === true && method_exists($source, 'getObject') === true) {
+			return $source->getObject();
+		}
+
+		if (is_object($source) === true && method_exists($source, 'getLocation') === true) {
+			return ['location' => $source->getLocation()];
+		}
+
+		return $source;
+	}//end connectorSourceData()
 
 	/**
 	 * Turn the router's call options into request options the connector's
@@ -97,13 +120,7 @@ trait ConnectorRequestTrait {
 		$body = $options['body'];
 		unset($options['body']);
 
-		$contentType = '';
-		foreach (($options['headers'] ?? []) as $name => $value) {
-			if (strtolower((string)$name) === 'content-type') {
-				$contentType = strtolower((string)$value);
-			}
-		}
-
+		$contentType = self::connectorContentType(headers: ($options['headers'] ?? []));
 		if (str_starts_with($contentType, 'application/x-www-form-urlencoded') === true) {
 			$options['form_params'] = $body;
 			return $options;
@@ -112,4 +129,22 @@ trait ConnectorRequestTrait {
 		$options['json'] = $body;
 		return $options;
 	}//end connectorOptions()
+
+	/**
+	 * The lower-cased Content-Type the caller set; the last spelling wins.
+	 *
+	 * @param mixed $headers The call's headers.
+	 *
+	 * @return string The content type, or ''.
+	 */
+	private static function connectorContentType(mixed $headers): string {
+		$contentType = '';
+		foreach ($headers as $name => $value) {
+			if (strtolower((string)$name) === 'content-type') {
+				$contentType = strtolower((string)$value);
+			}
+		}
+
+		return $contentType;
+	}//end connectorContentType()
 }//end trait

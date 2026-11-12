@@ -114,6 +114,8 @@ DELETE /api/registers/{id}
 
 You can delete all objects for a specific register and schema combination using the bulk delete endpoint. This is useful when you want to clear all objects from a particular schema within a register without removing the schema itself or affecting other schemas.
 
+This endpoint is for administrators, as are `delete-schema`, `delete-register` and `DELETE /api/schemas/{id}?deleteObjects=true`. They empty a whole table, including the rows of every organisation in it, so a `manage` rule does not open them. Other callers get a 403.
+
 **API Endpoint:**
 
 ```

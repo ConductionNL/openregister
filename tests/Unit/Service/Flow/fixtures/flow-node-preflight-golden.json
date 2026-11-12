@@ -1,0 +1,737 @@
+{
+    "looksLikeFlow: empty": false,
+    "looksLikeFlow: nodes not array": false,
+    "looksLikeFlow: edges not array": false,
+    "looksLikeFlow: nodes empty": false,
+    "looksLikeFlow: edges empty": false,
+    "looksLikeFlow: node without id": false,
+    "looksLikeFlow: node not array": false,
+    "looksLikeFlow: edge not array": false,
+    "looksLikeFlow: edge missing to": false,
+    "looksLikeFlow: edge missing from": false,
+    "looksLikeFlow: edge source/target": true,
+    "looksLikeFlow: edge mixed spelling": true,
+    "looksLikeFlow: valid": true,
+    "inspect: empty document": {
+        "report": {
+            "blocking": [],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: empty document": {
+        "outcome": "runnable",
+        "logged": []
+    },
+    "inspect: nodes only plain": {
+        "report": {
+            "blocking": [],
+            "warnings": [
+                {
+                    "type": "openregister.plain",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-dead-end",
+                    "detail": "Node \"n\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+                },
+                {
+                    "type": "",
+                    "app": "",
+                    "step": "",
+                    "reason": "flow-has-no-trigger",
+                    "detail": "This flow has no trigger node, so nothing can ever start it. Add a trigger — an object change, a schedule, or someone running it by hand."
+                },
+                {
+                    "type": "",
+                    "app": "",
+                    "step": "",
+                    "reason": "flow-has-no-end",
+                    "detail": "This flow has no end node, so no path finishes deliberately. Add an End node — it may end in success or in error, but the flow must say where it stops."
+                }
+            ]
+        },
+        "logged": []
+    },
+    "assertRunnable: nodes only plain": {
+        "outcome": "runnable",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"openregister.plain\", which app \"openregister\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "openregister.plain",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-dead-end"
+                }
+            },
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"\", which app \"\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "",
+                    "app": "",
+                    "step": "",
+                    "reason": "flow-has-no-trigger"
+                }
+            },
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"\", which app \"\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "",
+                    "app": "",
+                    "step": "",
+                    "reason": "flow-has-no-end"
+                }
+            }
+        ]
+    },
+    "inspect: pre-inversion edges": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "openregister.plain",
+                    "app": "openregister",
+                    "step": "e1",
+                    "reason": "flow-pre-inversion-shape",
+                    "detail": "the step is on an edge; a node is the action that runs"
+                },
+                {
+                    "type": "x.y",
+                    "app": "x",
+                    "step": "named",
+                    "reason": "flow-pre-inversion-shape",
+                    "detail": "the step is on an edge; a node is the action that runs"
+                },
+                {
+                    "type": "nodot",
+                    "app": "",
+                    "step": "2",
+                    "reason": "flow-pre-inversion-shape",
+                    "detail": "the step is on an edge; a node is the action that runs"
+                }
+            ],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: pre-inversion edges": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 3 step(s) this instance cannot run as written: \"openregister.plain\" (step e1) — the step is on an EDGE. A node is the action that runs and an edge is sequence, so nothing reads this step. The flow has not been migrated; run or-flow-migrate-definitions; \"x.y\" (step named) — the step is on an EDGE. A node is the action that runs and an edge is sequence, so nothing reads this step. The flow has not been migrated; run or-flow-migrate-definitions; \"nodot\" (step 2) — the step is on an EDGE. A node is the action that runs and an edge is sequence, so nothing reads this step. The flow has not been migrated; run or-flow-migrate-definitions. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": []
+    },
+    "inspect: healthy": {
+        "report": {
+            "blocking": [],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: healthy": {
+        "outcome": "runnable",
+        "logged": []
+    },
+    "inspect: untyped and junk nodes": {
+        "report": {
+            "blocking": [],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: untyped and junk nodes": {
+        "outcome": "runnable",
+        "logged": []
+    },
+    "inspect: index as step id": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "nodot",
+                    "app": "",
+                    "step": "nm",
+                    "reason": "node-type-not-namespaced"
+                }
+            ],
+            "warnings": [
+                {
+                    "type": "missing.thing",
+                    "app": "missing",
+                    "step": "1",
+                    "reason": "node-type-owner-app-not-enabled"
+                }
+            ]
+        },
+        "logged": []
+    },
+    "assertRunnable: index as step id": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 1 step(s) this instance cannot run as written: \"nodot\" (step nm) — not namespaced, so no app can provide it; step types are \"<app>.<node>\", e.g. \"openregister.route\". Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"missing.thing\", which app \"missing\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "missing.thing",
+                    "app": "missing",
+                    "step": "1",
+                    "reason": "node-type-owner-app-not-enabled"
+                }
+            }
+        ]
+    },
+    "inspect: unknown keys": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "openregister.keyed",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-config-unknown-key",
+                    "detail": "c, d",
+                    "reads": "a, b, 7"
+                }
+            ],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: unknown keys": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 1 step(s) this instance cannot run as written: \"openregister.keyed\" (step n) — config key(s) c, d, which that node never reads; it reads a, b, 7. Ignored keys make the step a pass-through that reports success. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": []
+    },
+    "inspect: empty vocabulary": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "openregister.end",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-config-unknown-key",
+                    "detail": "q",
+                    "reads": ""
+                }
+            ],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: empty vocabulary": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 1 step(s) this instance cannot run as written: \"openregister.end\" (step n) — config key(s) q, which that node never reads; it reads no config at all. Ignored keys make the step a pass-through that reports success. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": []
+    },
+    "inspect: onError default": {
+        "report": {
+            "blocking": [],
+            "warnings": [
+                {
+                    "type": "openregister.keyed",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-config-onerror-misplaced",
+                    "detail": "stop"
+                }
+            ]
+        },
+        "logged": []
+    },
+    "assertRunnable: onError default": {
+        "outcome": "runnable",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\", step \"n\" (openregister.keyed) sets config.onError=\"stop\". Nothing reads that: the engine takes the policy from the NODE, beside \"type\". It happens to match the default, so the run behaves the same — move it up one level.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "openregister.keyed",
+                    "step": "n",
+                    "reason": "node-config-onerror-misplaced"
+                }
+            }
+        ]
+    },
+    "inspect: onError other": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "openregister.keyed",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-config-onerror-misplaced",
+                    "detail": "continue"
+                },
+                {
+                    "type": "openregister.keyed",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-config-unknown-key",
+                    "detail": "zz",
+                    "reads": "a, b, 7"
+                }
+            ],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: onError other": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 2 step(s) this instance cannot run as written: \"openregister.keyed\" (step n) — config.onError=\"continue\" is read by nothing; the engine takes the policy from the EDGE, beside \"type\". As written this step gets \"stop\"; \"openregister.keyed\" (step n) — config key(s) zz, which that node never reads; it reads a, b, 7. Ignored keys make the step a pass-through that reports success. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": []
+    },
+    "inspect: onError on plain node": {
+        "report": {
+            "blocking": [],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: onError on plain node": {
+        "outcome": "runnable",
+        "logged": []
+    },
+    "inspect: config not array": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "openregister.keyed",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-config-rejected",
+                    "detail": "Step config must be an object."
+                }
+            ],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: config not array": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 1 step(s) this instance cannot run as written: \"openregister.keyed\" (step n) — the node exists but refuses this step's config: Step config must be an object.. A config it cannot read makes the step a pass-through that reports success. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": []
+    },
+    "inspect: config empty": {
+        "report": {
+            "blocking": [],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: config empty": {
+        "outcome": "runnable",
+        "logged": []
+    },
+    "inspect: rejects invalid argument": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "openregister.rejects-ia",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-config-rejected",
+                    "detail": "ia refusal"
+                },
+                {
+                    "type": "openregister.rejects-ia",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-config-unknown-key",
+                    "detail": "y",
+                    "reads": "x"
+                }
+            ],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: rejects invalid argument": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 2 step(s) this instance cannot run as written: \"openregister.rejects-ia\" (step n) — the node exists but refuses this step's config: ia refusal. A config it cannot read makes the step a pass-through that reports success; \"openregister.rejects-ia\" (step n) — config key(s) y, which that node never reads; it reads x. Ignored keys make the step a pass-through that reports success. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": []
+    },
+    "inspect: rejects unexpected value": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "openregister.rejects-uv",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-config-rejected",
+                    "detail": "uv refusal"
+                }
+            ],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: rejects unexpected value": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 1 step(s) this instance cannot run as written: \"openregister.rejects-uv\" (step n) — the node exists but refuses this step's config: uv refusal. A config it cannot read makes the step a pass-through that reports success. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": []
+    },
+    "inspect: node breaks": {
+        "report": {
+            "blocking": [],
+            "warnings": []
+        },
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] A node's validateConfig() failed for its own reasons, not blocking: node broke",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "node": "MockObject_Intersection_IFlowNode_IFlowNodeConfigKeys"
+                }
+            }
+        ]
+    },
+    "assertRunnable: node breaks": {
+        "outcome": "runnable",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] A node's validateConfig() failed for its own reasons, not blocking: node broke",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "node": "MockObject_Intersection_IFlowNode_IFlowNodeConfigKeys"
+                }
+            }
+        ]
+    },
+    "inspect: config keys throw": {
+        "report": {
+            "blocking": [],
+            "warnings": []
+        },
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] A node's configKeys() failed, skipping the dialect check: keys broke",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "node": "MockObject_Intersection_IFlowNode_IFlowNodeConfigKeys"
+                }
+            }
+        ]
+    },
+    "assertRunnable: config keys throw": {
+        "outcome": "runnable",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] A node's configKeys() failed, skipping the dialect check: keys broke",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "node": "MockObject_Intersection_IFlowNode_IFlowNodeConfigKeys"
+                }
+            }
+        ]
+    },
+    "inspect: missing from enabled app": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "stale.step",
+                    "app": "stale",
+                    "step": "n",
+                    "reason": "node-type-missing-from-enabled-app"
+                }
+            ],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: missing from enabled app": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 1 step(s) this instance cannot run as written: \"stale.step\" (step n) — app \"stale\" would own it and IS enabled here, but does not provide it; that app is behind the flow. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": []
+    },
+    "inspect: owner not enabled": {
+        "report": {
+            "blocking": [],
+            "warnings": [
+                {
+                    "type": "absent.step",
+                    "app": "absent",
+                    "step": "n",
+                    "reason": "node-type-owner-app-not-enabled"
+                }
+            ]
+        },
+        "logged": []
+    },
+    "assertRunnable: owner not enabled": {
+        "outcome": "runnable",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"absent.step\", which app \"absent\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "absent.step",
+                    "app": "absent",
+                    "step": "n",
+                    "reason": "node-type-owner-app-not-enabled"
+                }
+            }
+        ]
+    },
+    "inspect: app manager throws": {
+        "report": {
+            "blocking": [],
+            "warnings": [
+                {
+                    "type": "flaky.step",
+                    "app": "flaky",
+                    "step": "n",
+                    "reason": "node-type-owner-app-not-enabled"
+                }
+            ]
+        },
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Could not determine whether app \"flaky\" is enabled: app manager down",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "app": "flaky"
+                }
+            }
+        ]
+    },
+    "assertRunnable: app manager throws": {
+        "outcome": "runnable",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Could not determine whether app \"flaky\" is enabled: app manager down",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "app": "flaky"
+                }
+            },
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"flaky.step\", which app \"flaky\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "flaky.step",
+                    "app": "flaky",
+                    "step": "n",
+                    "reason": "node-type-owner-app-not-enabled"
+                }
+            }
+        ]
+    },
+    "inspect: leading dot type": {
+        "report": {
+            "blocking": [
+                {
+                    "type": ".step",
+                    "app": "",
+                    "step": "n",
+                    "reason": "node-type-not-namespaced"
+                }
+            ],
+            "warnings": []
+        },
+        "logged": []
+    },
+    "assertRunnable: leading dot type": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 1 step(s) this instance cannot run as written: \".step\" (step n) — not namespaced, so no app can provide it; step types are \"<app>.<node>\", e.g. \"openregister.route\". Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": []
+    },
+    "inspect: dead end and exit flag": {
+        "report": {
+            "blocking": [],
+            "warnings": [
+                {
+                    "type": "openregister.plain",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-dead-end",
+                    "detail": "Node \"n\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+                }
+            ]
+        },
+        "logged": []
+    },
+    "assertRunnable: dead end and exit flag": {
+        "outcome": "runnable",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"openregister.plain\", which app \"openregister\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "openregister.plain",
+                    "app": "openregister",
+                    "step": "n",
+                    "reason": "node-dead-end"
+                }
+            }
+        ]
+    },
+    "inspect: no trigger no end": {
+        "report": {
+            "blocking": [],
+            "warnings": [
+                {
+                    "type": "",
+                    "app": "",
+                    "step": "",
+                    "reason": "flow-has-no-trigger",
+                    "detail": "This flow has no trigger node, so nothing can ever start it. Add a trigger — an object change, a schedule, or someone running it by hand."
+                },
+                {
+                    "type": "",
+                    "app": "",
+                    "step": "",
+                    "reason": "flow-has-no-end",
+                    "detail": "This flow has no end node, so no path finishes deliberately. Add an End node — it may end in success or in error, but the flow must say where it stops."
+                }
+            ]
+        },
+        "logged": []
+    },
+    "assertRunnable: no trigger no end": {
+        "outcome": "runnable",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"\", which app \"\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "",
+                    "app": "",
+                    "step": "",
+                    "reason": "flow-has-no-trigger"
+                }
+            },
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"\", which app \"\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "",
+                    "app": "",
+                    "step": "",
+                    "reason": "flow-has-no-end"
+                }
+            }
+        ]
+    },
+    "inspect: mixed blocking and warnings": {
+        "report": {
+            "blocking": [
+                {
+                    "type": "stale.step",
+                    "app": "stale",
+                    "step": "n2",
+                    "reason": "node-type-missing-from-enabled-app"
+                },
+                {
+                    "type": "openregister.keyed",
+                    "app": "openregister",
+                    "step": "n3",
+                    "reason": "node-config-unknown-key",
+                    "detail": "bad",
+                    "reads": "a, b, 7"
+                },
+                {
+                    "type": "openregister.rejects-ia",
+                    "app": "openregister",
+                    "step": "n4",
+                    "reason": "node-config-rejected",
+                    "detail": "ia refusal"
+                }
+            ],
+            "warnings": [
+                {
+                    "type": "absent.step",
+                    "app": "absent",
+                    "step": "n1",
+                    "reason": "node-type-owner-app-not-enabled"
+                },
+                {
+                    "type": "openregister.keyed",
+                    "app": "openregister",
+                    "step": "n3",
+                    "reason": "node-config-onerror-misplaced",
+                    "detail": "stop"
+                }
+            ]
+        },
+        "logged": []
+    },
+    "assertRunnable: mixed blocking and warnings": {
+        "outcome": "UnexpectedValueException: Flow \"golden\" has 3 step(s) this instance cannot run as written: \"stale.step\" (step n2) — app \"stale\" would own it and IS enabled here, but does not provide it; that app is behind the flow; \"openregister.keyed\" (step n3) — config key(s) bad, which that node never reads; it reads a, b, 7. Ignored keys make the step a pass-through that reports success; \"openregister.rejects-ia\" (step n4) — the node exists but refuses this step's config: ia refusal. A config it cannot read makes the step a pass-through that reports success. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\" uses step type \"absent.step\", which app \"absent\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "absent.step",
+                    "app": "absent",
+                    "step": "n1",
+                    "reason": "node-type-owner-app-not-enabled"
+                }
+            },
+            {
+                "message": "[FlowNodePreflight] Flow \"golden\", step \"n3\" (openregister.keyed) sets config.onError=\"stop\". Nothing reads that: the engine takes the policy from the NODE, beside \"type\". It happens to match the default, so the run behaves the same — move it up one level.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "golden",
+                    "type": "openregister.keyed",
+                    "step": "n3",
+                    "reason": "node-config-onerror-misplaced"
+                }
+            }
+        ]
+    },
+    "assertRunnable: labelled": {
+        "outcome": "UnexpectedValueException: Flow \"Label\" has 3 step(s) this instance cannot run as written: \"stale.step\" (step n2) — app \"stale\" would own it and IS enabled here, but does not provide it; that app is behind the flow; \"openregister.keyed\" (step n3) — config key(s) bad, which that node never reads; it reads a, b, 7. Ignored keys make the step a pass-through that reports success; \"openregister.rejects-ia\" (step n4) — the node exists but refuses this step's config: ia refusal. A config it cannot read makes the step a pass-through that reports success. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Flow \"Label\" uses step type \"absent.step\", which app \"absent\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "Label",
+                    "type": "absent.step",
+                    "app": "absent",
+                    "step": "n1",
+                    "reason": "node-type-owner-app-not-enabled"
+                }
+            },
+            {
+                "message": "[FlowNodePreflight] Flow \"Label\", step \"n3\" (openregister.keyed) sets config.onError=\"stop\". Nothing reads that: the engine takes the policy from the NODE, beside \"type\". It happens to match the default, so the run behaves the same — move it up one level.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "Label",
+                    "type": "openregister.keyed",
+                    "step": "n3",
+                    "reason": "node-config-onerror-misplaced"
+                }
+            }
+        ]
+    },
+    "assertRunnable: unnamed": {
+        "outcome": "UnexpectedValueException: Flow \"flow\" has 3 step(s) this instance cannot run as written: \"stale.step\" (step n2) — app \"stale\" would own it and IS enabled here, but does not provide it; that app is behind the flow; \"openregister.keyed\" (step n3) — config key(s) bad, which that node never reads; it reads a, b, 7. Ignored keys make the step a pass-through that reports success; \"openregister.rejects-ia\" (step n4) — the node exists but refuses this step's config: ia refusal. A config it cannot read makes the step a pass-through that reports success. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+        "logged": [
+            {
+                "message": "[FlowNodePreflight] Flow \"flow\" uses step type \"absent.step\", which app \"absent\" owns. That app is not enabled here, so this flow cannot run until it is.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "flow",
+                    "type": "absent.step",
+                    "app": "absent",
+                    "step": "n1",
+                    "reason": "node-type-owner-app-not-enabled"
+                }
+            },
+            {
+                "message": "[FlowNodePreflight] Flow \"flow\", step \"n3\" (openregister.keyed) sets config.onError=\"stop\". Nothing reads that: the engine takes the policy from the NODE, beside \"type\". It happens to match the default, so the run behaves the same — move it up one level.",
+                "context": {
+                    "file": "FlowNodePreflight.php",
+                    "flow": "flow",
+                    "type": "openregister.keyed",
+                    "step": "n3",
+                    "reason": "node-config-onerror-misplaced"
+                }
+            }
+        ]
+    },
+    "describe: none": "Flow \"Golden flow\" has 0 step(s) this instance cannot run as written: . Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing.",
+    "describe: every reason": "Flow \"Golden flow\" has 8 step(s) this instance cannot run as written: \"t.a\" (step s1) — config key(s) k, which that node never reads; it reads no config at all. Ignored keys make the step a pass-through that reports success; \"t.a\" (step s2) — config key(s) k, which that node never reads; it reads a, b. Ignored keys make the step a pass-through that reports success; \"t.a\" (step s3) — config.onError=\"continue\" is read by nothing; the engine takes the policy from the EDGE, beside \"type\". As written this step gets \"stop\"; \"t.a\" (step s4) — the node exists but refuses this step's config: no detail. A config it cannot read makes the step a pass-through that reports success; \"t.a\" (step s5) — the step is on an EDGE. A node is the action that runs and an edge is sequence, so nothing reads this step. The flow has not been migrated; run or-flow-migrate-definitions; \"nodot\" (step s6) — not namespaced, so no app can provide it; step types are \"<app>.<node>\", e.g. \"openregister.route\"; \"t.a\" (step s7) — app \"t\" would own it and IS enabled here, but does not provide it; that app is behind the flow; \"t.a\" (step s8) — app \"\" would own it and IS enabled here, but does not provide it; that app is behind the flow. Refusing the save: a step that cannot run only fails once the flow is already halfway through, after earlier steps have made changes that do not roll back — and a step whose config is ignored does not fail at all, it reports success having done nothing."
+}

@@ -25,9 +25,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionReporting;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
 use OCA\OpenRegister\Service\Rules\ExpressionValueSources;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IUserSession;
@@ -132,13 +136,7 @@ class ExpressionValueSourcesTest extends TestCase {
 	 * @return LifecycleConditionEvaluator
 	 */
 	private function lifecycle(ConditionDialect $dialect): LifecycleConditionEvaluator {
-		return new LifecycleConditionEvaluator(
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IL10N::class),
-			$this->createMock(LoggerInterface::class),
-			$dialect
-		);
+		return new LifecycleConditionEvaluator(new LifecycleConditionReporting($this->createMock(IL10N::class), $this->createMock(LoggerInterface::class)), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($dialect, new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class))));
 	}//end lifecycle()
 
 	/**
@@ -153,13 +151,7 @@ class ExpressionValueSourcesTest extends TestCase {
 	private function transitionHolds(ConditionDialect $dialect, mixed $condition, string $region): bool {
 		return $this->lifecycle(dialect: $dialect)->holds(
 			rule: $condition,
-			newData: ['region' => $region],
-			oldData: ['region' => $region],
-			action: 'accept',
-			from: 'new',
-			to: 'accepted',
-			schemaSlug: 'intake',
-			field: 'status'
+			attempt: new TransitionAttempt(write: new LifecycleWrite(newData: ['region' => $region], oldData: ['region' => $region], schemaSlug: 'intake', field: 'status'), move: new TransitionMove(action: 'accept', from: 'new', to: 'accepted'))
 		);
 	}//end transitionHolds()
 

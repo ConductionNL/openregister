@@ -1,0 +1,146 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`push notifications section renders active, check failed 1`] = `
+"<x-settingssection id="push-notifications" name="t:Push Notifications" description="t:Real-time push notification status via notify_push">
+<slot-default>
+<div class="push-status-section">
+<div class="push-status push-status--success">
+<div class="push-status__badge">
+<x-checkcircle size="20">
+</x-checkcircle>
+<span>t:Realtime push active</span>
+</div>
+<p class="push-status__hint">t:Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted.</p>
+</div>
+<div class="push-vapid-section">
+<h4 class="push-vapid-section__title">t:Browser Web Push (VAPID)</h4>
+<div class="push-status push-status--warning">
+<div class="push-status__badge">
+<x-alertoutline size="20">
+</x-alertoutline>
+<span>t:Browser web push is not configured</span>
+</div>
+<p class="push-status__hint">t:No VAPID keypair is configured yet. Generate one with the following occ command to enable browser notifications:</p>
+<p class="push-status__hint">
+<code class="push-vapid-section__command">occ openregister:web-push:generate-vapid</code>
+</p>
+</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>"
+`;
+
+exports[`push notifications section renders active, configured without a key 1`] = `
+"<x-settingssection id="push-notifications" name="t:Push Notifications" description="t:Real-time push notification status via notify_push">
+<slot-default>
+<div class="push-status-section">
+<div class="push-status push-status--success">
+<div class="push-status__badge">
+<x-checkcircle size="20">
+</x-checkcircle>
+<span>t:Realtime push active</span>
+</div>
+<p class="push-status__hint">t:Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted.</p>
+</div>
+<div class="push-vapid-section">
+<h4 class="push-vapid-section__title">t:Browser Web Push (VAPID)</h4>
+<div class="push-status push-status--success">
+<div class="push-status__badge">
+<x-checkcircle size="20">
+</x-checkcircle>
+<span>t:Browser web push is configured</span>
+</div>
+<p class="push-status__hint">t:A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.</p>
+</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>"
+`;
+
+exports[`push notifications section renders active, still checking 1`] = `
+"<x-settingssection id="push-notifications" name="t:Push Notifications" description="t:Real-time push notification status via notify_push">
+<slot-default>
+<div class="push-status-section">
+<div class="push-status push-status--success">
+<div class="push-status__badge">
+<x-checkcircle size="20">
+</x-checkcircle>
+<span>t:Realtime push active</span>
+</div>
+<p class="push-status__hint">t:Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted.</p>
+</div>
+<div class="push-vapid-section">
+<h4 class="push-vapid-section__title">t:Browser Web Push (VAPID)</h4>
+<div class="push-status__hint">t:Checking browser web push configuration …</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>"
+`;
+
+exports[`push notifications section renders not installed, configured 1`] = `
+"<x-settingssection id="push-notifications" name="t:Push Notifications" description="t:Real-time push notification status via notify_push">
+<slot-default>
+<div class="push-status-section">
+<div class="push-status push-status--error">
+<div class="push-status__badge">
+<x-alertcircle size="20">
+</x-alertcircle>
+<span>t:Realtime push not available — the notify_push app is not installed</span>
+</div>
+<p class="push-status__hint">t:Install the notify_push app from the Nextcloud App Store to enable real-time updates.<a href="https://apps.nextcloud.com/apps/notify_push" target="_blank" rel="noopener noreferrer" class="push-status__link">t:Open Nextcloud App Store</a>
+</p>
+</div>
+<div class="push-vapid-section">
+<h4 class="push-vapid-section__title">t:Browser Web Push (VAPID)</h4>
+<div class="push-status push-status--success">
+<div class="push-status__badge">
+<x-checkcircle size="20">
+</x-checkcircle>
+<span>t:Browser web push is configured</span>
+</div>
+<p class="push-status__hint">t:A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.</p>
+<p class="push-status__hint push-vapid-section__key">
+<span class="push-vapid-section__key-label">t:VAPID public key</span>
+<code class="push-vapid-section__key-value">BPubKey</code>
+</p>
+</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>"
+`;
+
+exports[`push notifications section renders unreachable, not configured 1`] = `
+"<x-settingssection id="push-notifications" name="t:Push Notifications" description="t:Real-time push notification status via notify_push">
+<slot-default>
+<div class="push-status-section">
+<div class="push-status push-status--warning">
+<div class="push-status__badge">
+<x-alertoutline size="20">
+</x-alertoutline>
+<span>t:notify_push is installed but not yet active</span>
+</div>
+<p class="push-status__hint">t:notify_push is installed but OpenRegister has not yet confirmed a successful push. Trigger an object save to activate, or check your notify_push configuration.<a href="https://github.com/nextcloud/notify_push#configuration" target="_blank" rel="noopener noreferrer" class="push-status__link">t:notify_push configuration guide</a>
+</p>
+</div>
+<div class="push-vapid-section">
+<h4 class="push-vapid-section__title">t:Browser Web Push (VAPID)</h4>
+<div class="push-status push-status--warning">
+<div class="push-status__badge">
+<x-alertoutline size="20">
+</x-alertoutline>
+<span>t:Browser web push is not configured</span>
+</div>
+<p class="push-status__hint">t:No VAPID keypair is configured yet. Generate one with the following occ command to enable browser notifications:</p>
+<p class="push-status__hint">
+<code class="push-vapid-section__command">occ openregister:web-push:generate-vapid</code>
+</p>
+</div>
+</div>
+</div>
+</slot-default>
+</x-settingssection>"
+`;

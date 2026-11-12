@@ -10,14 +10,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load linked emails')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Mail app not installed (HTTP 501 graceful degradation) -->
 		<NcEmptyContent
@@ -75,14 +71,9 @@ SPDX-License-Identifier: EUPL-1.2
 						</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Unlink email')"
-					@click="unlinkEmail(email)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Unlink email')"
+					@unlink="unlinkEmail(email)" />
 			</li>
 		</ul>
 	</div>
@@ -90,13 +81,12 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import axios from '@nextcloud/axios'
-import { translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
+import { relationTab } from './relationTab.js'
 
 /**
  * EmailsTab — display + manage emails linked to an OpenRegister object.
@@ -113,195 +103,82 @@ export default {
 	name: 'EmailsTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcButton,
-		AlertCircleOutline,
 		EmailOutline,
 		EmailOffOutline,
-		CloseCircleOutline,
+		UnlinkButton,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
+	mixins: [relationTab],
 
 	data() {
 		return {
 			loading: false,
-			error: false,
-			errorMessage: '',
 			mailUnavailable: false,
 			emails: [],
 		}
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param newId
-			 * @spec exclude watcher refetching emails on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchEmails()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
 		 * @spec exclude API passthrough loading linked emails; email-relations contract owned by integration-email capability
 		 */
-		async fetchEmails() {
+		async load() {
 			this.loading = true
 			this.error = false
 			this.mailUnavailable = false
 			this.errorMessage = ''
 
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/emails',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-				},
-			)
+			const url = this.objectApiUrl('/emails')
 
 			try {
 				const response = await axios.get(url)
 				this.emails = response.data?.results || response.data || []
 			} catch (err) {
-				if (err.response && err.response.status === 501) {
-					this.mailUnavailable = true
-				} else {
-					this.error = true
-					this.errorMessage =
-						err.response?.data?.error || err.message || ''
-				}
+				this.showLoadFailure(err)
 			} finally {
 				this.loading = false
 			}
 		},
 
 		/**
-		 * @param email
+		 * Show why the emails did not load: Mail not being installed (501),
+		 * or the failure itself.
+		 *
+		 * @param {Error} err What went wrong
+		 * @return {void}
+		 */
+		showLoadFailure(err) {
+			if (err.response && err.response.status === 501) {
+				this.mailUnavailable = true
+			} else {
+				this.showFailure(err)
+			}
+		},
+
+		/**
+		 * @param {object} email
 		 * @spec exclude API passthrough unlinking email + change emit; email-relations contract owned by integration-email capability
 		 */
 		async unlinkEmail(email) {
-			const url = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/emails/{emailId}',
-				{
-					register: this.register,
-					schema: this.schema,
-					id: this.objectId,
-					emailId: email.id,
-				},
-			)
+			const url = this.objectApiUrl('/emails/{emailId}', { emailId: email.id })
 
 			try {
 				await axios.delete(url)
 				this.emails = this.emails.filter((e) => e.id !== email.id)
 				this.$emit('emails-changed', this.emails.length)
 			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
-		},
-
-		/**
-		 * @param value
-		 * @spec exclude computed date-format display helper, UI plumbing
-		 */
-		formatDate(value) {
-			if (!value) {
-				return ''
-			}
-
-			try {
-				const d = new Date(value)
-				if (Number.isNaN(d.getTime())) {
-					return value
-				}
-
-				return d.toLocaleString()
-			} catch (e) {
-				return value
+				this.showFailure(err)
 			}
 		},
 	},
 }
 </script>
 
-<style scoped>
-.emails-tab__loading {
-	display: flex;
-	justify-content: center;
-	padding: 2em 0;
-}
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
 
-.emails-tab__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.emails-tab__item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.emails-tab__item:last-child {
-	border-bottom: none;
-}
-
-.emails-tab__icon {
-	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
-}
-
-.emails-tab__content {
-	flex-grow: 1;
-	min-width: 0;
-}
-
-.emails-tab__subject {
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.emails-tab__meta {
-	display: flex;
-	gap: 6px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.85em;
-}
-
-.emails-tab__from {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+@include relation-tab-list('emails-tab', 'subject', 'from', $toolbar: false);
 </style>

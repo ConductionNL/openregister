@@ -91,35 +91,56 @@ class FlowTriggerDerivation {
 	 */
 	public function objectTriggersOf(Flow $flow): array {
 		$derived = [];
-
 		foreach ($this->triggerNodesOf(flow: $flow) as $node) {
-			if ((string)($node['type'] ?? '') !== self::OBJECT_TRIGGER) {
-				continue;
+			$trigger = $this->objectTriggerOf(node: $node);
+			if ($trigger !== null) {
+				$derived[implode('|', $trigger)] = $trigger;
 			}
-
-			$config = (array)($node['config'] ?? []);
-			$event = trim((string)($config['event'] ?? ''));
-			$register = trim((string)($config['register'] ?? ''));
-			$schema = trim((string)($config['schema'] ?? ''));
-
-			// An incompletely configured trigger is skipped rather than
-			// widened. Treating a missing register as "any register" would
-			// subscribe a half-authored flow to every object event in the
-			// instance — the loudest possible failure mode for the quietest
-			// possible mistake.
-			if ($event === '' || $register === '' || $schema === '') {
-				continue;
-			}
-
-			$derived[$event . '|' . $register . '|' . $schema] = [
-				'event' => $event,
-				'register' => $register,
-				'schema' => $schema,
-			];
-		}//end foreach
+		}
 
 		return array_values($derived);
 	}//end objectTriggersOf()
+
+	/**
+	 * One trigger node as a fully qualified object trigger, or null.
+	 *
+	 * An incompletely configured trigger is skipped rather than widened.
+	 * Treating a missing register as "any register" would subscribe a
+	 * half-authored flow to every object event in the instance — the loudest
+	 * possible failure mode for the quietest possible mistake.
+	 *
+	 * @param array<string, mixed> $node A trigger node.
+	 *
+	 * @return array{event: string, register: string, schema: string}|null The trigger, or null.
+	 */
+	private function objectTriggerOf(array $node): ?array {
+		if ((string)($node['type'] ?? '') !== self::OBJECT_TRIGGER) {
+			return null;
+		}
+
+		$trigger = $this->subjectOf(config: (array)($node['config'] ?? []));
+		if (in_array('', $trigger, true) === true) {
+			return null;
+		}
+
+		return $trigger;
+	}//end objectTriggerOf()
+
+	/**
+	 * The trimmed event, register and schema a trigger config names.
+	 *
+	 * @param array<mixed> $config The trigger config.
+	 *
+	 * @return array{event: string, register: string, schema: string} The subject.
+	 */
+	private function subjectOf(array $config): array {
+		$subject = [];
+		foreach (['event', 'register', 'schema'] as $key) {
+			$subject[$key] = trim((string)($config[$key] ?? ''));
+		}
+
+		return $subject;
+	}//end subjectOf()
 
 	/**
 	 * The flow's trigger nodes, whatever their kind.
@@ -136,21 +157,20 @@ class FlowTriggerDerivation {
 			return [];
 		}
 
-		$found = [];
-		foreach ($nodes as $node) {
-			if (is_array($node) === false) {
-				continue;
-			}
-
-			if (in_array(needle: (string)($node['type'] ?? ''), haystack: self::TRIGGER_TYPES, strict: true) === false) {
-				continue;
-			}
-
-			$found[] = $node;
-		}
-
-		return $found;
+		return array_values(array_filter($nodes, fn ($node): bool => $this->isTriggerNode(node: $node)));
 	}//end triggerNodesOf()
+
+	/**
+	 * Whether one node list entry is a trigger node.
+	 *
+	 * @param mixed $node One entry from the node list.
+	 *
+	 * @return bool True for a trigger node.
+	 */
+	private function isTriggerNode(mixed $node): bool {
+		return is_array($node) === true
+			&& in_array(needle: (string)($node['type'] ?? ''), haystack: self::TRIGGER_TYPES, strict: true) === true;
+	}//end isTriggerNode()
 
 	/**
 	 * The trigger the four legacy columns describe, in the derived shape.
@@ -173,24 +193,28 @@ class FlowTriggerDerivation {
 			return null;
 		}
 
-		$register = trim((string)($flow->getTriggerRegister() ?? ''));
-		$schema = trim((string)($flow->getTriggerSchema() ?? ''));
-
-		if ($register === '') {
-			$register = '*';
-		}
-
-		if ($schema === '') {
-			$schema = '*';
-		}
-
 		return [
 			'event' => $event,
-			'register' => $register,
-			'schema' => $schema,
+			'register' => $this->scopeOf(value: $flow->getTriggerRegister()),
+			'schema' => $this->scopeOf(value: $flow->getTriggerSchema()),
 		];
-
 	}//end columnTriggerOf()
+
+	/**
+	 * One legacy scope column, with blank meaning ANY written as `*`.
+	 *
+	 * @param mixed $value The column value.
+	 *
+	 * @return string The scope.
+	 */
+	private function scopeOf(mixed $value): string {
+		$scope = trim((string)($value ?? ''));
+		if ($scope === '') {
+			return '*';
+		}
+
+		return $scope;
+	}//end scopeOf()
 
 	/**
 	 * Whether the nodes and the columns would fire on the same events.
@@ -211,39 +235,18 @@ class FlowTriggerDerivation {
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-trigger-is-a-node-and-a-flow-may-carry-several
 	 */
 	public function compare(Flow $flow): array {
-		$columns = $this->columnTriggerOf(flow: $flow);
-		$nodes = $this->objectTriggersOf(flow: $flow);
+		$sides = ['columns' => $this->columnTriggerOf(flow: $flow), 'nodes' => $this->objectTriggersOf(flow: $flow)];
 
-		$decided = $this->verdictWithoutComparing(columns: $columns, nodes: $nodes);
+		$decided = $this->verdictWithoutComparing(sides: $sides);
 		if ($decided !== null) {
 			return $decided;
 		}
 
-		foreach ($nodes as $node) {
-			if ($node !== $columns) {
-				continue;
-			}
-
-			$reason = 'exact match';
-			if (count($nodes) > 1) {
-				$reason = 'the column trigger is among the node triggers; the extra node triggers are NEW';
-			}
-
-			return [
-				'equivalent' => true,
-				'reason' => $reason,
-				'columns' => $columns,
-				'nodes' => $nodes,
-			];
+		if (in_array($sides['columns'], $sides['nodes'], true) === false) {
+			return ['equivalent' => false, 'reason' => 'no node trigger matches the column trigger'] + $sides;
 		}
 
-		return [
-			'equivalent' => false,
-			'reason' => 'no node trigger matches the column trigger',
-			'columns' => $columns,
-			'nodes' => $nodes,
-		];
-
+		return ['equivalent' => true, 'reason' => $this->matchReason(nodes: $sides['nodes'])] + $sides;
 	}//end compare()
 
 	/**
@@ -263,48 +266,83 @@ class FlowTriggerDerivation {
 	 *
 	 * Returns the verdict, or null when the two sides must actually be compared.
 	 *
-	 * @param array{event: string, register: string, schema: string}|null $columns The column trigger.
-	 * @param array<int, array{event: string, register: string, schema: string}> $nodes The node triggers.
+	 * @param array{columns: array<string, string>|null, nodes: array<int, array<string, string>>} $sides The column and node triggers.
 	 *
 	 * @return array{equivalent: bool, reason: string, columns: array|null, nodes: array}|null
 	 */
-	private function verdictWithoutComparing(?array $columns, array $nodes): ?array {
-		if ($columns === null && $nodes === []) {
-			return [
-				'equivalent' => true,
-				'reason' => 'no object trigger either way',
-				'columns' => null,
-				'nodes' => [],
-			];
+	private function verdictWithoutComparing(array $sides): ?array {
+		$reason = $this->reasonWithoutComparing(columns: $sides['columns'], nodes: $sides['nodes']);
+		if ($reason === null) {
+			return null;
 		}
 
+		return ['equivalent' => ($sides['columns'] === null && $sides['nodes'] === []), 'reason' => $reason] + $sides;
+	}//end verdictWithoutComparing()
+
+	/**
+	 * Why the two sides differ, or agree, without comparing them; null when they must be compared.
+	 *
+	 * Checked in the load-bearing order `verdictWithoutComparing()` documents.
+	 *
+	 * @param array{event: string, register: string, schema: string}|null       $columns The column trigger.
+	 * @param array<int, array{event: string, register: string, schema: string}> $nodes   The node triggers.
+	 *
+	 * @return string|null The reason, or null.
+	 */
+	private function reasonWithoutComparing(?array $columns, array $nodes): ?string {
 		if ($columns === null) {
-			return [
-				'equivalent' => false,
-				'reason' => 'nodes declare a trigger the columns do not: the flow does NOT fire today',
-				'columns' => null,
-				'nodes' => $nodes,
-			];
+			return $this->reasonWithoutColumns(nodes: $nodes);
 		}
 
 		if ($nodes === []) {
-			return [
-				'equivalent' => false,
-				'reason' => 'columns declare a trigger no node does: the flow WOULD STOP firing',
-				'columns' => $columns,
-				'nodes' => [],
-			];
+			return 'columns declare a trigger no node does: the flow WOULD STOP firing';
 		}
 
+		return $this->unscopedReason(columns: $columns);
+	}//end reasonWithoutComparing()
+
+	/**
+	 * The reason when the columns declare no trigger.
+	 *
+	 * @param array<int, array{event: string, register: string, schema: string}> $nodes The node triggers.
+	 *
+	 * @return string The reason.
+	 */
+	private function reasonWithoutColumns(array $nodes): string {
+		if ($nodes === []) {
+			return 'no object trigger either way';
+		}
+
+		return 'nodes declare a trigger the columns do not: the flow does NOT fire today';
+	}//end reasonWithoutColumns()
+
+	/**
+	 * The reason when the column trigger is unscoped, or null when it is scoped.
+	 *
+	 * @param array{event: string, register: string, schema: string} $columns The column trigger.
+	 *
+	 * @return string|null The reason, or null.
+	 */
+	private function unscopedReason(array $columns): ?string {
 		if ($columns['register'] === '*' || $columns['schema'] === '*') {
-			return [
-				'equivalent' => false,
-				'reason' => 'the column trigger is unscoped (any register/schema), which no node can express',
-				'columns' => $columns,
-				'nodes' => $nodes,
-			];
+			return 'the column trigger is unscoped (any register/schema), which no node can express';
 		}
 
 		return null;
-	}//end verdictWithoutComparing()
+	}//end unscopedReason()
+
+	/**
+	 * The reason when a node trigger equals the column trigger.
+	 *
+	 * @param array<int, array{event: string, register: string, schema: string}> $nodes The node triggers.
+	 *
+	 * @return string The reason.
+	 */
+	private function matchReason(array $nodes): string {
+		if (count($nodes) > 1) {
+			return 'the column trigger is among the node triggers; the extra node triggers are NEW';
+		}
+
+		return 'exact match';
+	}//end matchReason()
 }//end class

@@ -1,5 +1,4 @@
 <script setup>
-import { getCurrentUser as getNextcloudUser } from '@nextcloud/auth'
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { navigationStore, organisationStore } from '../../store/store.js'
 </script>
@@ -12,7 +11,6 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 				: t('openregister', 'Create Organisation')
 		"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -68,53 +66,27 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 								"
 								:rows="4" />
 
-							<div class="groups-select-container">
-								<label class="groups-label">{{
-									t('openregister', 'Nextcloud Groups')
-								}}</label>
-								<NcSelect
-									v-model="selectedGroups"
-									inputLabel="Selected Groups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									trackBy="id"
-									:multiple="true"
-									:labelOutside="true"
-									:filterable="false"
-									:placeholder="
-										t('openregister', 'Search groups...')
-									"
-									@searchChange="searchGroups"
-									@update:modelValue="updateGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{
-												name
-											}}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">{{
-											t('openregister', 'Loading groups...')
-										}}</span>
-										<span v-else>{{
-											t(
-												'openregister',
-												'No groups found. Try a different search.',
-											)
-										}}</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									{{
-										t(
-											'openregister',
-											'Only members of selected groups can access this organisation',
-										)
-									}}
-								</p>
-							</div>
+							<GroupSelect
+								v-model="selectedGroups"
+								:label="t('openregister', 'Nextcloud Groups')"
+								:options="availableGroups"
+								:disabled="loading"
+								:loading="loadingGroups"
+								:placeholder="t('openregister', 'Search groups...')"
+								:emptyText="
+									t(
+										'openregister',
+										'No groups found. Try a different search.',
+									)
+								"
+								:hint="
+									t(
+										'openregister',
+										'Only members of selected groups can access this organisation',
+									)
+								"
+								@searchChange="searchGroups"
+								@update:modelValue="updateGroups" />
 
 							<NcCheckboxRadioSwitch
 								v-model="organisationItem.active"
@@ -197,98 +169,12 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 							<AccountMultiple :size="16" />
 							<span>{{ t('openregister', 'Users') }}</span>
 						</template>
-						<div class="users-section">
-							<div class="users-header">
-								<NcButton
-									v-if="organisationItem.uuid"
-									variant="primary"
-									:disabled="loading"
-									@click="showAddUserDialog = true">
-									<template #icon>
-										<AccountPlus :size="20" />
-									</template>
-									{{ t('openregister', 'Add User') }}
-								</NcButton>
-							</div>
-
-							<div v-if="loadingUsers" class="loading-users">
-								<NcLoadingIcon :size="20" />
-								<span>{{
-									t('openregister', 'Loading users...')
-								}}</span>
-							</div>
-
-							<div
-								v-else-if="organisationUsers.length > 0"
-								class="users-list">
-								<h3>
-									{{
-										t('openregister', 'Members ({count})', {
-											count: organisationUsers.length,
-										})
-									}}
-								</h3>
-								<div class="user-items">
-									<div
-										v-for="userId in organisationUsers"
-										:key="userId"
-										class="user-item">
-										<div class="user-info">
-											<AccountCircle
-												:size="20"
-												class="user-icon" />
-											<span class="user-id">{{ userId }}</span>
-											<span
-												v-if="
-													userId === organisationItem.owner
-												"
-												class="owner-badge"
-												>{{
-													t('openregister', 'Owner')
-												}}</span
-											>
-										</div>
-										<NcButton
-											v-if="userId !== organisationItem.owner"
-											variant="tertiary"
-											:disabled="
-												loading || removingUser === userId
-											"
-											@click="removeUser(userId)">
-											<template #icon>
-												<NcLoadingIcon
-													v-if="removingUser === userId"
-													:size="16" />
-												<AccountMinus v-else :size="16" />
-											</template>
-											{{ t('openregister', 'Remove') }}
-										</NcButton>
-									</div>
-								</div>
-							</div>
-
-							<div v-else class="no-users">
-								<p>
-									{{
-										t(
-											'openregister',
-											'No users in this organisation.',
-										)
-									}}
-								</p>
-							</div>
-
-							<NcNoteCard v-if="!organisationItem.uuid" type="warning">
-								<p>
-									{{
-										t(
-											'openregister',
-											'Save the organisation first to manage users.',
-										)
-									}}
-								</p>
-							</NcNoteCard>
-						</div>
+						<OrganisationMembers
+							:organisation="organisationItem"
+							:members="organisationUsers"
+							:state="memberState"
+							@add="showAddUserDialog = true"
+							@remove="removeUser" />
 					</AppTab>
 
 					<AppTab>
@@ -306,96 +192,12 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 
 							<div v-else class="rbac-container">
 								<AppTabs contentClass="mt-3" pills>
-									<!-- Registers -->
-									<AppTab :title="t('openregister', 'Registers')">
-										<RbacTable
-											entityType="register"
-											:authorization="
-												organisationItem.authorization || {}
-											"
-											:availableGroups="availableGroups"
-											:organisationGroups="
-												organisationItem.groups || []
-											"
-											@update="updateEntityPermission" />
-									</AppTab>
-
-									<!-- Schemas -->
-									<AppTab :title="t('openregister', 'Schemas')">
-										<RbacTable
-											entityType="schema"
-											:authorization="
-												organisationItem.authorization || {}
-											"
-											:availableGroups="availableGroups"
-											:organisationGroups="
-												organisationItem.groups || []
-											"
-											@update="updateEntityPermission" />
-									</AppTab>
-
-									<!-- Objects -->
-									<AppTab :title="t('openregister', 'Objects')">
-										<RbacTable
-											entityType="object"
-											:authorization="
-												organisationItem.authorization || {}
-											"
-											:availableGroups="availableGroups"
-											:organisationGroups="
-												organisationItem.groups || []
-											"
-											@update="updateEntityPermission" />
-									</AppTab>
-
-									<!-- Views -->
-									<AppTab :title="t('openregister', 'Views')">
-										<RbacTable
-											entityType="view"
-											:authorization="
-												organisationItem.authorization || {}
-											"
-											:availableGroups="availableGroups"
-											:organisationGroups="
-												organisationItem.groups || []
-											"
-											@update="updateEntityPermission" />
-									</AppTab>
-
-									<!-- Agents -->
-									<AppTab :title="t('openregister', 'Agents')">
-										<RbacTable
-											entityType="agent"
-											:authorization="
-												organisationItem.authorization || {}
-											"
-											:availableGroups="availableGroups"
-											:organisationGroups="
-												organisationItem.groups || []
-											"
-											@update="updateEntityPermission" />
-									</AppTab>
-
-									<!-- Configurations -->
 									<AppTab
-										:title="t('openregister', 'Configurations')">
+										v-for="tab in permissionTabs"
+										:key="tab.entityType"
+										:title="tab.title">
 										<RbacTable
-											entityType="configuration"
-											:authorization="
-												organisationItem.authorization || {}
-											"
-											:availableGroups="availableGroups"
-											:organisationGroups="
-												organisationItem.groups || []
-											"
-											@update="updateEntityPermission" />
-									</AppTab>
-
-									<!-- Applications -->
-									<AppTab
-										:title="t('openregister', 'Applications')">
-										<RbacTable
-											entityType="application"
+											:entityType="tab.entityType"
 											:authorization="
 												organisationItem.authorization || {}
 											"
@@ -409,148 +211,10 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 									<!-- Special Rights -->
 									<AppTab
 										:title="t('openregister', 'Special Rights')">
-										<div class="special-rights-container">
-											<p class="rbac-description">
-												{{
-													t(
-														'openregister',
-														'Grant additional permissions beyond standard CRUD operations',
-													)
-												}}
-											</p>
-											<p
-												v-if="!canEditSpecialRights"
-												class="rbac-description special-rights-locked">
-												{{
-													t(
-														'openregister',
-														'Only an administrator or the owner of this organisation can change its special rights.',
-													)
-												}}
-											</p>
-
-											<table
-												class="rbac-table special-rights-table">
-												<thead>
-													<tr>
-														<th scope="col">
-															{{
-																t(
-																	'openregister',
-																	'Right',
-																)
-															}}
-														</th>
-														<th scope="col">
-															{{
-																t(
-																	'openregister',
-																	'Description',
-																)
-															}}
-														</th>
-														<th scope="col">
-															{{
-																t(
-																	'openregister',
-																	'Groups',
-																)
-															}}
-														</th>
-													</tr>
-												</thead>
-												<tbody>
-													<tr>
-														<td class="right-name">
-															<span class="right-badge"
-																>agent_use</span
-															>
-														</td>
-														<td
-															class="right-description">
-															{{
-																t(
-																	'openregister',
-																	'Use AI agents for processing and analysis',
-																)
-															}}
-														</td>
-														<td class="right-groups">
-															<NcSelect
-																v-model="
-																	selectedSpecialRights.agent_use
-																"
-																inputLabel="Selected Special Rights Agent Use"
-																:options="
-																	specialRightOptions
-																"
-																label="name"
-																trackBy="id"
-																:disabled="
-																	!canEditSpecialRights
-																"
-																:multiple="true"
-																:placeholder="
-																	t(
-																		'openregister',
-																		'Select groups...',
-																	)
-																"
-																@update:modelValue="
-																	updateSpecialRight(
-																		'agent_use',
-																		$event,
-																	)
-																" />
-														</td>
-													</tr>
-													<tr>
-														<td class="right-name">
-															<span class="right-badge"
-																>llm_use</span
-															>
-														</td>
-														<td
-															class="right-description">
-															{{
-																t(
-																	'openregister',
-																	'Use Large Language Model features',
-																)
-															}}
-														</td>
-														<td class="right-groups">
-															<NcSelect
-																v-model="
-																	selectedSpecialRights.llm_use
-																"
-																inputLabel="Selected Special Rights Llm Use"
-																:options="
-																	specialRightOptions
-																"
-																label="name"
-																trackBy="id"
-																:disabled="
-																	!canEditSpecialRights
-																"
-																:multiple="true"
-																:placeholder="
-																	t(
-																		'openregister',
-																		'Select groups...',
-																	)
-																"
-																@update:modelValue="
-																	updateSpecialRight(
-																		'llm_use',
-																		$event,
-																	)
-																" />
-														</td>
-													</tr>
-												</tbody>
-											</table>
-										</div>
+										<SpecialRightsTable
+											:selected="selectedSpecialRights"
+											:groups="filteredAvailableGroups"
+											@update="updateSpecialRight" />
 									</AppTab>
 								</AppTabs>
 							</div>
@@ -568,16 +232,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 				:disabled="loading">
 				{{ t('openregister', 'Create another') }}
 			</NcCheckboxRadioSwitch>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success
-						? t('openregister', 'Close')
-						: t('openregister', 'Cancel')
-				}}
-			</NcButton>
+			<CloseCancelButton :success="success" @click="closeModal" />
 			<NcButton
 				v-if="createAnother || !success"
 				:disabled="loading || !organisationItem.name.trim()"
@@ -616,32 +271,103 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
-import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
-import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import AccountMultiple from 'vue-material-design-icons/AccountMultiple.vue'
-import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import RbacTable from '../../components/RbacTable.vue'
+import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import OrganisationMembers from './OrganisationMembers.vue'
 import RemoveUserDialog from './RemoveUserDialog.vue'
+import SpecialRightsTable from './SpecialRightsTable.vue'
+import {
+	entityTabs,
+	EVERYONE,
+	everyoneOption,
+	SPECIAL_RIGHTS,
+} from './organisationRights.js'
+import { searchGroupsDebounced } from '../../services/groupSearch.js'
+import { freshState } from '../../services/initialState.js'
+import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
+
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	activeTab: 0,
+	organisationItem: {
+		name: '',
+		slug: '',
+		description: '',
+		active: true,
+		quota: unlimitedQuota(),
+		groups: [],
+	},
+
+	selectedGroups: [],
+	availableGroups: [],
+	loadingGroups: false,
+	groupSearchDebounce: null,
+	selectedSpecialRights: {
+		agent_use: [],
+		llm_use: [],
+	},
+
+	organisationUsers: [],
+	loadingUsers: false,
+	removingUser: null,
+	showRemoveUserDialog: false,
+	showAddUserDialog: false,
+	userToRemove: null,
+	createAnother: false,
+	success: false,
+	loading: false,
+	error: false,
+	closeModalTimeout: null,
+}
+
+/**
+ * The form after a save with "create another".
+ */
+const NEXT_FORM = {
+	name: '',
+	slug: '',
+	description: '',
+	active: true,
+	quota: { storage: null, bandwidth: null, requests: null },
+	groups: [],
+}
+
+/**
+ * Take a user out of an organisation.
+ *
+ * @param {string} uuid The organisation
+ * @param {string} userId The user
+ * @return {Promise<Response>} The response
+ */
+function postLeave(uuid, userId) {
+	return fetch(`/index.php/apps/openregister/api/organisations/${uuid}/leave`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ userId }),
+	})
+}
 
 export default {
 	name: 'EditOrganisation',
 	components: {
+		GroupSelect,
 		NcDialog,
 		NcTextField,
 		NcTextArea,
-		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
@@ -650,107 +376,51 @@ export default {
 		AppTab,
 		RemoveUserDialog,
 		RbacTable,
+		CloseCancelButton,
+		OrganisationMembers,
+		SpecialRightsTable,
 		// Icons
 		ContentSaveOutline,
-		Cancel,
 		Plus,
-		AccountCircle,
-		AccountMinus,
-		AccountPlus,
 		Cog,
 		Database,
 		AccountMultiple,
 		Shield,
 	},
 
+	mixins: [quotaFields],
+
 	data() {
-		return {
-			activeTab: 0,
-			organisationItem: {
-				name: '',
-				slug: '',
-				description: '',
-				active: true,
-				quota: {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				},
-
-				groups: [],
-			},
-
-			selectedGroups: [],
-			availableGroups: [],
-			loadingGroups: false,
-			groupSearchDebounce: null,
-			selectedSpecialRights: {
-				agent_use: [],
-				llm_use: [],
-			},
-
-			organisationUsers: [],
-			loadingUsers: false,
-			removingUser: null,
-			showRemoveUserDialog: false,
-			showAddUserDialog: false,
-			userToRemove: null,
-			createAnother: false,
-			success: false,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		organisationStore: () => organisationStore,
+
 		/**
-		 * Whether the signed-in user may change this organisation's special rights.
-		 *
-		 * An administrator or the organisation's owner may; so may whoever creates
-		 * a new organisation, who becomes its owner. The server refuses anybody
-		 * else with a 403, so this only spares them a save that cannot succeed.
-		 *
-		 * @return {boolean}
-		 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+		 * @spec exclude Names the form item for the quota fields; UI plumbing.
 		 */
-		canEditSpecialRights() {
-			if (!this.organisationItem.uuid) {
-				return true
+		quotaItem() {
+			return this.organisationItem
+		},
+
+		/**
+		 * @spec exclude Static tab list for the template; UI presentation helper.
+		 */
+		permissionTabs() {
+			return entityTabs()
+		},
+
+		/**
+		 * @spec exclude Progress flags for the members tab; UI presentation helper.
+		 */
+		memberState() {
+			return {
+				loading: this.loading,
+				loadingUsers: this.loadingUsers,
+				removingUser: this.removingUser,
 			}
-			const user = getNextcloudUser()
-			if (!user) {
-				return false
-			}
-			return user.isAdmin === true || user.uid === this.organisationItem.owner
-		},
-
-		/**
-		 * The choices under a special right: every signed-in user, then the groups.
-		 *
-		 * @return {Array}
-		 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
-		 */
-		specialRightOptions() {
-			return [this.everyoneOption(), ...this.filteredAvailableGroups]
-		},
-
-		/**
-		 * @spec exclude Computed byte-to-MB conversion of the storage quota for display; UI presentation helper.
-		 */
-		storageQuotaMB() {
-			if (!this.organisationItem.quota?.storage) return 0
-			return Math.round(this.organisationItem.quota.storage / (1024 * 1024))
-		},
-
-		/**
-		 * @spec exclude Computed byte-to-MB conversion of the bandwidth quota for display; UI presentation helper.
-		 */
-		bandwidthQuotaMB() {
-			if (!this.organisationItem.quota?.bandwidth) return 0
-			return Math.round(this.organisationItem.quota.bandwidth / (1024 * 1024))
 		},
 
 		/**
@@ -818,32 +488,42 @@ export default {
 		 */
 		loadNextcloudGroupsFromStore() {
 			// If groups are already cached in store, use them immediately
-			if (
-				organisationStore.nextcloudGroups
-				&& organisationStore.nextcloudGroups.length > 0
-			) {
+			if (organisationStore.nextcloudGroups?.length > 0) {
 				this.availableGroups = organisationStore.nextcloudGroups
 				this.loadingGroups = false
-			} else {
-				// Groups not cached yet - load them (fallback for direct navigation)
-				this.loadingGroups = true
-				organisationStore
-					.loadNextcloudGroups()
-					.then(() => {
-						this.availableGroups = organisationStore.nextcloudGroups
-						this.loadingGroups = false
-						// Re-initialize to map groups now that they're loaded
-						this.initializeOrganisationItem()
-					})
-					.catch((error) => {
-						console.error('Error loading Nextcloud groups:', error)
-						this.error = t(
-							'openregister',
-							'Failed to load Nextcloud groups',
-						)
-						this.loadingGroups = false
-					})
+				return
 			}
+			// Groups not cached yet - load them (fallback for direct navigation)
+			this.loadingGroups = true
+			organisationStore
+				.loadNextcloudGroups()
+				.then(this.groupsLoaded)
+				.catch(this.groupsFailed)
+		},
+
+		/**
+		 * Offer the fetched groups and map the form's groups to them.
+		 *
+		 * @return {void}
+		 * @spec exclude Applies a group fetch to the form; modal init plumbing.
+		 */
+		groupsLoaded() {
+			this.availableGroups = organisationStore.nextcloudGroups
+			this.loadingGroups = false
+			this.initializeOrganisationItem()
+		},
+
+		/**
+		 * Show that the groups could not be fetched.
+		 *
+		 * @param {Error} error The failure
+		 * @return {void}
+		 * @spec exclude Error display for a failed group fetch; UI plumbing.
+		 */
+		groupsFailed(error) {
+			console.error('Error loading Nextcloud groups:', error)
+			this.error = t('openregister', 'Failed to load Nextcloud groups')
+			this.loadingGroups = false
 		},
 
 		/**
@@ -854,63 +534,12 @@ export default {
 		 * @spec exclude Debounced group-autocomplete search; UI search plumbing.
 		 */
 		searchGroups(searchQuery) {
-			// Clear existing debounce timer
-			if (this.groupSearchDebounce) {
-				clearTimeout(this.groupSearchDebounce)
-			}
-
-			// If search is empty, load all cached groups
-			if (!searchQuery || searchQuery.trim() === '') {
-				this.loadNextcloudGroupsFromStore()
-				return
-			}
-
-			// Debounce the search by 300ms
-			this.groupSearchDebounce = setTimeout(async () => {
-				this.loadingGroups = true
-				try {
-					// Query Nextcloud OCS API with search parameter
-					const response = await fetch(
-						`/ocs/v1.php/cloud/groups?format=json&search=${encodeURIComponent(searchQuery)}`,
-						{
-							headers: {
-								'OCS-APIRequest': 'true',
-							},
-						},
-					)
-
-					if (response.ok) {
-						const data = await response.json()
-						if (data.ocs?.data?.groups) {
-							// Transform group IDs into objects
-							const searchResults = data.ocs.data.groups.map(
-								(groupId) => ({
-									id: groupId,
-									name: groupId,
-									userCount: 0,
-								}),
-							)
-
-							// Merge with already selected groups to ensure they remain visible
-							const selectedGroupIds = this.selectedGroups.map(
-								(g) => g.id,
-							)
-							const mergedGroups = [
-								...this.selectedGroups,
-								...searchResults.filter(
-									(g) => !selectedGroupIds.includes(g.id),
-								),
-							]
-
-							this.availableGroups = mergedGroups
-						}
-					}
-				} catch (error) {
-					console.error('Error searching Nextcloud groups:', error)
-				} finally {
-					this.loadingGroups = false
-				}
-			}, 300)
+			searchGroupsDebounced(this, {
+				query: searchQuery,
+				onEmpty: () => this.loadNextcloudGroupsFromStore(),
+				toGroup: (groupId) => ({ id: groupId, name: groupId, userCount: 0 }),
+				warnOnRefusal: false,
+			})
 		},
 
 		/**
@@ -920,53 +549,50 @@ export default {
 		 * @spec exclude Hydrates the local form model and selected groups/users from the store; modal init plumbing.
 		 */
 		initializeOrganisationItem() {
-			if (organisationStore.organisationItem?.uuid) {
-				this.organisationItem = {
-					...this.organisationItem, // Keep default structure
-					...organisationStore.organisationItem,
-					active: organisationStore.organisationItem.active ?? true,
-				}
-
-				// Load existing groups selection
-				// Groups can be stored as either an array of IDs or array of objects (for backwards compatibility)
-				if (
-					Array.isArray(this.organisationItem.groups)
-					&& this.organisationItem.groups.length > 0
-				) {
-					this.selectedGroups = this.organisationItem.groups
-						.map((role) => {
-							// Handle both formats: string IDs or objects
-							const roleId =
-								typeof role === 'string'
-									? role
-									: role.id || role.name
-
-							// Find the group in availableGroups
-							const group = this.availableGroups.find(
-								(g) => g.id === roleId,
-							)
-							if (group) {
-								return group
-							}
-							// If not found in availableGroups, create a temporary object
-							// This ensures we show the group even if the groups API failed
-							return {
-								id: roleId,
-								name: roleId,
-								userCount: 0,
-							}
-						})
-						.filter((g) => g !== null)
-				}
-
-				// Load users array
-				if (Array.isArray(this.organisationItem.users)) {
-					this.organisationUsers = [...this.organisationItem.users]
-				}
-
-				// Initialize special rights from authorization
-				this.initializeSpecialRights()
+			if (!organisationStore.organisationItem?.uuid) {
+				return
 			}
+			this.organisationItem = {
+				...this.organisationItem, // Keep default structure
+				...organisationStore.organisationItem,
+				active: organisationStore.organisationItem.active ?? true,
+			}
+			this.loadGroupsSelection()
+			if (Array.isArray(this.organisationItem.users)) {
+				this.organisationUsers = [...this.organisationItem.users]
+			}
+			// Initialize special rights from authorization
+			this.initializeSpecialRights()
+		},
+
+		/**
+		 * Select the organisation's stored groups. Groups can be stored as either
+		 * an array of IDs or an array of objects (for backwards compatibility).
+		 *
+		 * @return {void}
+		 * @spec exclude Hydrates the selected groups from the form model; modal init plumbing.
+		 */
+		loadGroupsSelection() {
+			const groups = this.organisationItem.groups
+			if (Array.isArray(groups) && groups.length > 0) {
+				this.selectedGroups = groups
+					.map((role) => this.groupForRole(role))
+					.filter((g) => g !== null)
+			}
+		},
+
+		/**
+		 * The group a stored role refers to. A group the groups API did not
+		 * return is still shown, as a placeholder.
+		 *
+		 * @param {string|object} role A group id, or an object with an id or name
+		 * @return {object} The group
+		 * @spec exclude Resolves a stored group reference for display; UI plumbing.
+		 */
+		groupForRole(role) {
+			const roleId = typeof role === 'string' ? role : role.id || role.name
+			const group = this.availableGroups.find((g) => g.id === roleId)
+			return group || { id: roleId, name: roleId, userCount: 0 }
 		},
 
 		/**
@@ -1002,73 +628,79 @@ export default {
 		 */
 		async confirmRemoveUser() {
 			if (!this.organisationItem.uuid || !this.userToRemove) return
-
 			this.removingUser = this.userToRemove
 			this.error = null
-
 			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/organisations/${this.organisationItem.uuid}/leave`,
-					{
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({ userId: this.userToRemove }),
-					},
-				)
-
-				if (response.ok) {
-					// Remove user from local list
-					this.organisationUsers = this.organisationUsers.filter(
-						(u) => u !== this.userToRemove,
-					)
-					// Also update the organisation item
-					if (this.organisationItem.users) {
-						this.organisationItem.users =
-							this.organisationItem.users.filter(
-								(u) => u !== this.userToRemove,
-							)
-					}
-					// Refresh organisation store
-					await organisationStore.refreshOrganisations()
-
-					// Close dialog
-					this.showRemoveUserDialog = false
-					this.userToRemove = null
-
-					showSuccess(t('openregister', 'User removed successfully'))
-				} else {
-					const errorData = await response.json()
-					this.error =
-						errorData.error
-						|| t(
-							'openregister',
-							'Failed to remove user from organisation',
-						)
-					showError(this.error)
-				}
+				await this.sendRemoval()
 			} catch (error) {
-				console.error('Error removing user:', error)
-				this.error = t(
-					'openregister',
-					'Failed to remove user from organisation',
-				)
-				showError(this.error)
+				this.removalFailed(error)
 			} finally {
 				this.removingUser = null
 			}
 		},
 
 		/**
-		 * Get current user
+		 * Send the leave request and follow up on its answer.
 		 *
-		 * @return {string}
-		 * @spec exclude Placeholder current-user accessor; UI helper.
+		 * @return {Promise<void>}
+		 * @spec exclude Posts the organisation leave request; UI orchestration plumbing.
 		 */
-		getCurrentUser() {
-			// Implementation would depend on how you get current user
-			return 'current-user' // Placeholder
+		async sendRemoval() {
+			const response = await postLeave(
+				this.organisationItem.uuid,
+				this.userToRemove,
+			)
+			await (response.ok ? this.userRemoved() : this.removalRefused(response))
+		},
+
+		/**
+		 * Show that the leave request failed.
+		 *
+		 * @param {Error} error The failure
+		 * @return {void}
+		 * @spec exclude Error display for a failed leave request; UI plumbing.
+		 */
+		removalFailed(error) {
+			console.error('Error removing user:', error)
+			this.error = t('openregister', 'Failed to remove user from organisation')
+			showError(this.error)
+		},
+
+		/**
+		 * Drop the removed user from the form, refresh the store and close the dialog.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude Updates the local member list after a leave request; UI plumbing.
+		 */
+		async userRemoved() {
+			const removed = this.userToRemove
+			this.organisationUsers = this.organisationUsers.filter(
+				(u) => u !== removed,
+			)
+			if (this.organisationItem.users) {
+				this.organisationItem.users = this.organisationItem.users.filter(
+					(u) => u !== removed,
+				)
+			}
+			await organisationStore.refreshOrganisations()
+			this.showRemoveUserDialog = false
+			this.userToRemove = null
+			showSuccess(t('openregister', 'User removed successfully'))
+		},
+
+		/**
+		 * Show why the server refused to remove the user.
+		 *
+		 * @param {Response} response The refused response
+		 * @return {Promise<void>}
+		 * @spec exclude Error display for a refused leave request; UI plumbing.
+		 */
+		async removalRefused(response) {
+			const errorData = await response.json()
+			this.error =
+				errorData.error
+				|| t('openregister', 'Failed to remove user from organisation')
+			showError(this.error)
 		},
 
 		/**
@@ -1084,130 +716,6 @@ export default {
 			this.organisationItem.groups = this.selectedGroups.map(
 				(group) => group.id,
 			)
-		},
-
-		/**
-		 * Remove a group from selection
-		 *
-		 * @param {object} groupToRemove - Group to remove
-		 * @return {void}
-		 * @spec exclude Removes one group from the selection and re-syncs IDs; UI selection plumbing.
-		 */
-		removeGroup(groupToRemove) {
-			this.selectedGroups = this.selectedGroups.filter(
-				(g) => g.id !== groupToRemove.id,
-			)
-			// Store only the group IDs, not the full objects
-			this.organisationItem.groups = this.selectedGroups.map(
-				(group) => group.id,
-			)
-		},
-
-		/**
-		 * Update storage quota (converts MB to bytes)
-		 *
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 * @spec exclude Reactive form-field setter converting MB to bytes on the quota model; UI plumbing.
-		 */
-		updateStorageQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.organisationItem.quota) {
-				this.organisationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.organisationItem.quota.storage = mbValue * 1024 * 1024
-		},
-
-		/**
-		 * Update bandwidth quota (converts MB to bytes)
-		 *
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 * @spec exclude Reactive form-field setter converting MB to bytes on the quota model; UI plumbing.
-		 */
-		updateBandwidthQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.organisationItem.quota) {
-				this.organisationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.organisationItem.quota.bandwidth = mbValue * 1024 * 1024
-		},
-
-		/**
-		 * Update request quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 * @spec exclude Reactive form-field setter for the request quota; UI plumbing.
-		 */
-		updateRequestQuota(value) {
-			// 0 = unlimited
-			if (!this.organisationItem.quota) {
-				this.organisationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.organisationItem.quota.requests = value ? parseInt(value) : 0
-		},
-
-		/**
-		 * Update user quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 * @spec exclude Reactive form-field setter for the user quota; UI plumbing.
-		 */
-		updateUserQuota(value) {
-			// 0 = unlimited
-			if (!this.organisationItem.quota) {
-				this.organisationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.organisationItem.quota.users = value ? parseInt(value) : 0
-		},
-
-		/**
-		 * Update group quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 * @spec exclude Reactive form-field setter for the group quota; UI plumbing.
-		 */
-		updateGroupQuota(value) {
-			// 0 = unlimited
-			if (!this.organisationItem.quota) {
-				this.organisationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.organisationItem.quota.groups = value ? parseInt(value) : 0
 		},
 
 		/**
@@ -1234,75 +742,100 @@ export default {
 		 * @spec exclude Save handler delegating to organisationStore.saveOrganisation and refreshing lists; entity persistence lives in the store, this is modal orchestration plumbing.
 		 */
 		async saveOrganisation() {
-			this.loading = true
 			this.error = null
-
-			// Validate required fields
 			if (!this.organisationItem.name.trim()) {
 				this.error = t('openregister', 'Organisation name is required')
-				this.loading = false
 				return
 			}
-
+			this.loading = true
 			try {
-				const { response } = await organisationStore.saveOrganisation({
-					...this.organisationItem,
-				})
-
-				if (response.ok) {
-					// Explicitly refresh the organisation list to ensure UI is updated
-					await organisationStore.refreshOrganisationList()
-
-					// Also refresh active organisation in case it was just created
-					if (!this.organisationItem.uuid) {
-						await organisationStore.getActiveOrganisation()
-					}
-
-					if (this.createAnother) {
-						// Clear the form after successful creation
-						setTimeout(() => {
-							this.organisationItem = {
-								name: '',
-								slug: '',
-								description: '',
-								active: true,
-								quota: {
-									storage: null,
-									bandwidth: null,
-									requests: null,
-								},
-								groups: [],
-							}
-							this.selectedGroups = []
-							this.activeTab = 0
-						}, 500)
-
-						this.success = true
-						this.error = false
-
-						// Clear success message after 2s
-						setTimeout(() => {
-							this.success = null
-						}, 2000)
-					} else {
-						this.success = true
-						this.error = false
-
-						this.closeModalTimeout = setTimeout(this.closeModal, 2000)
-					}
-				}
+				await this.storeOrganisation()
 			} catch (error) {
-				console.error('Error saving organisation:', error)
-				this.success = false
-				this.error =
-					error.message
-					|| t(
-						'openregister',
-						'An error occurred while saving the organisation',
-					)
+				this.saveFailed(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Send the form to the store and follow up on a saved organisation.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude Delegates to organisationStore.saveOrganisation; modal orchestration plumbing.
+		 */
+		async storeOrganisation() {
+			const { response } = await organisationStore.saveOrganisation({
+				...this.organisationItem,
+			})
+			if (response.ok) {
+				await this.organisationSaved()
+			}
+		},
+
+		/**
+		 * Show that the save failed.
+		 *
+		 * @param {Error} error The failure
+		 * @return {void}
+		 * @spec exclude Error display for a failed save; UI plumbing.
+		 */
+		saveFailed(error) {
+			console.error('Error saving organisation:', error)
+			this.success = false
+			this.error =
+				error.message
+				|| t(
+					'openregister',
+					'An error occurred while saving the organisation',
+				)
+		},
+
+		/**
+		 * Refresh the lists after a save, then either clear the form for another
+		 * organisation or close the modal.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude Post-save refresh and modal follow-up; UI orchestration plumbing.
+		 */
+		async organisationSaved() {
+			// Explicitly refresh the organisation list to ensure UI is updated
+			await organisationStore.refreshOrganisationList()
+			// Also refresh active organisation in case it was just created
+			if (!this.organisationItem.uuid) {
+				await organisationStore.getActiveOrganisation()
+			}
+			this.success = true
+			this.error = false
+			if (this.createAnother) {
+				this.prepareForAnother()
+			} else {
+				this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+			}
+		},
+
+		/**
+		 * Clear the form shortly after a save, and the success message after 2s.
+		 *
+		 * @return {void}
+		 * @spec exclude Form reset timers for creating another organisation; UI plumbing.
+		 */
+		prepareForAnother() {
+			setTimeout(this.clearForm, 500)
+			setTimeout(() => {
+				this.success = null
+			}, 2000)
+		},
+
+		/**
+		 * Empty the form for the next organisation.
+		 *
+		 * @return {void}
+		 * @spec exclude Form reset for creating another organisation; UI plumbing.
+		 */
+		clearForm() {
+			this.organisationItem = freshState(NEXT_FORM)
+			this.selectedGroups = []
+			this.activeTab = 0
 		},
 
 		/**
@@ -1331,53 +864,48 @@ export default {
 		 * @spec exclude Reactive setter toggling a group's entity-permission entry on the local authorization model; UI form plumbing.
 		 */
 		updateEntityPermission({ entityType, groupId, action, hasPermission }) {
-			// Initialize authorization object if it doesn't exist
-			if (!this.organisationItem.authorization) {
-				this.organisationItem.authorization = {}
-			}
-
-			// Initialize entity type if it doesn't exist
-			if (!this.organisationItem.authorization[entityType]) {
-				this.organisationItem.authorization[entityType] = {}
-			}
-
-			// Initialize action array if it doesn't exist
-			if (!this.organisationItem.authorization[entityType][action]) {
-				this.organisationItem.authorization[entityType][action] = []
-			}
-
-			const currentPermissions =
-				this.organisationItem.authorization[entityType][action]
+			const currentPermissions = this.permissionList(entityType, action)
 			const groupIndex = currentPermissions.indexOf(groupId)
-
 			if (hasPermission && groupIndex === -1) {
-				// Add permission
 				currentPermissions.push(groupId)
 			} else if (!hasPermission && groupIndex !== -1) {
-				// Remove permission
 				currentPermissions.splice(groupIndex, 1)
 			}
 		},
 
 		/**
-		 * The entry `*`, which gives a special right to every signed-in user.
+		 * The groups allowed an action on an entity type, created empty when the
+		 * authorization model has no entry for it yet.
 		 *
-		 * @return {{id: string, name: string}}
-		 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+		 * @param {string} entityType The entity type (register, schema, object, view, agent)
+		 * @param {string} action The action (create, read, update, delete)
+		 * @return {Array<string>} The group ids; changes to it change the model
+		 * @spec exclude Accessor on the local authorization model; UI form plumbing.
 		 */
-		everyoneOption() {
-			return { id: '*', name: t('openregister', 'Everyone') }
+		permissionList(entityType, action) {
+			if (!this.organisationItem.authorization) {
+				this.organisationItem.authorization = {}
+			}
+			const authorization = this.organisationItem.authorization
+			if (!authorization[entityType]) {
+				authorization[entityType] = {}
+			}
+			if (!authorization[entityType][action]) {
+				authorization[entityType][action] = []
+			}
+			return authorization[entityType][action]
 		},
 
 		/**
 		 * Update special right
 		 *
-		 * @param {string} right - The special right (agent_use, llm_use)
-		 * @param {Array} groups - Array of group objects with {id, name}
+		 * @param {object} update The change
+		 * @param {string} update.right The special right (agent_use, llm_use)
+		 * @param {Array} update.groups Array of group objects with {id, name}
 		 * @return {void}
 		 * @spec exclude Reactive setter writing a special-right's group IDs to the local authorization model; UI form plumbing.
 		 */
-		updateSpecialRight(right, groups) {
+		updateSpecialRight({ right, groups }) {
 			// Initialize authorization if it doesn't exist
 			if (!this.organisationItem.authorization) {
 				this.organisationItem.authorization = {}
@@ -1401,236 +929,50 @@ export default {
 		 */
 		initializeSpecialRights() {
 			const auth = this.organisationItem.authorization || {}
-			const specialRightKeys = ['agent_use', 'llm_use']
-
-			specialRightKeys.forEach((right) => {
-				if (auth[right] && Array.isArray(auth[right])) {
-					// Map group IDs to group objects
-					this.selectedSpecialRights[right] = auth[right]
-						.map((groupId) => {
-							if (groupId === '*') {
-								return this.everyoneOption()
-							}
-							const group = this.availableGroups.find(
-								(g) => g.id === groupId,
-							)
-							return group || { id: groupId, name: groupId }
-						})
-						.filter((g) => g !== null)
-				} else {
-					this.selectedSpecialRights[right] = []
-				}
+			SPECIAL_RIGHTS.forEach(({ right }) => {
+				this.selectedSpecialRights[right] = Array.isArray(auth[right])
+					? auth[right].map(this.specialRightGroup)
+					: []
 			})
+		},
+
+		/**
+		 * The group a special right names, or everyone for `*`. A group the
+		 * groups API did not return is still shown, as a placeholder.
+		 *
+		 * @param {string} groupId The group id
+		 * @return {object} The group
+		 * @spec exclude Resolves a stored group id for display; UI plumbing.
+		 */
+		specialRightGroup(groupId) {
+			if (groupId === EVERYONE) {
+				return everyoneOption()
+			}
+			const group = this.availableGroups.find((g) => g.id === groupId)
+			return group || { id: groupId, name: groupId }
 		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 /* EditOrganisation-specific styles */
 .tabContainer {
 	margin-top: 20px;
 }
 
 /* Tab title styling with icons */
-.tabContainer :deep(.nav-link) {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	justify-content: center;
-}
-
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
+@include tab-container-deep-nav-link-rules;
 
 .create-another-checkbox {
 	margin-right: auto;
 }
 
-.groups-select-container {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
+@include security-section;
 
-.groups-label {
-	font-weight: 500;
-	color: var(--color-main-text);
-	font-size: 14px;
-}
-
-.field-hint {
-	font-size: 12px;
-	color: var(--color-text-lighter);
-	margin: 0;
-}
-
-.group-option {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.group-name {
-	font-weight: 500;
-}
-
-.security-section {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
-
-.loading-groups {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	color: var(--color-text-lighter);
-	padding: 16px;
-}
-
-.groups-list {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.groups-list h3 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.group-items {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.group-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 12px;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.group-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 4px 12px;
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	border-radius: 16px;
-	font-size: 13px;
-	font-weight: 500;
-}
-
-.no-groups {
-	padding: 16px;
-	text-align: center;
-	color: var(--color-text-lighter);
-	font-style: italic;
-}
-
-.no-groups p {
-	margin: 0;
-}
-
-/* Users section styles */
-.users-section {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
-
-.users-header {
-	display: flex;
-	justify-content: flex-end;
-	margin-bottom: 16px;
-}
-
-.loading-users {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	color: var(--color-text-lighter);
-	padding: 16px;
-}
-
-.users-list {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.users-list h3 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.user-items {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.user-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 12px;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.user-info {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.user-icon {
-	color: var(--color-text-lighter);
-}
-
-.user-id {
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.owner-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 2px 8px;
-	background-color: var(--color-warning);
-	color: var(--color-main-background);
-	border-radius: 12px;
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.no-users {
-	padding: 16px;
-	text-align: center;
-	color: var(--color-text-lighter);
-	font-style: italic;
-}
-
-.no-users p {
-	margin: 0;
-}
+@include loading-groups-rules;
 
 /* RBAC Security Tab Styling */
 .rbac-container {
@@ -1638,86 +980,5 @@ export default {
 	flex-direction: column;
 	gap: 16px;
 	padding: 16px 0;
-}
-
-.rbac-section {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.rbac-section h3 {
-	margin: 0;
-	font-size: 18px;
-	font-weight: 600;
-	color: var(--color-main-text);
-}
-
-.rbac-description {
-	font-size: 14px;
-	color: var(--color-text-lighter);
-	margin: 0 0 16px 0;
-}
-
-.special-rights-container {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	padding: 8px 0;
-}
-
-.special-rights-table {
-	width: 100%;
-	border-collapse: collapse;
-	border: 1px solid var(--color-border-dark);
-	border-radius: 8px;
-	overflow: hidden;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.special-rights-table thead tr {
-	background: var(--color-background-dark);
-}
-
-.special-rights-table th {
-	color: var(--color-text-dark);
-	font-weight: 600;
-	padding: 12px 16px;
-	text-align: left;
-	border-bottom: 2px solid var(--color-border-dark);
-}
-
-.special-rights-table td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-	vertical-align: middle;
-}
-
-.special-rights-table tbody tr:hover {
-	background: var(--color-background-hover);
-}
-
-.right-name {
-	width: 20%;
-}
-
-.right-badge {
-	display: inline-block;
-	padding: 4px 12px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	background: var(--color-primary-element);
-	color: var(--color-primary-text);
-}
-
-.right-description {
-	width: 40%;
-	font-size: 13px;
-	color: var(--color-text-lighter);
-}
-
-.right-groups {
-	width: 40%;
 }
 </style>

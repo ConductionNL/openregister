@@ -53,20 +53,81 @@ use OCA\OpenRegister\Service\SecurityService;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningReportService {
+class HardeningReportService implements HardeningReportServiceInterface {
+
+	/**
+	 * What every control reports beside its value: id => [title, category, source, unit, note].
+	 *
+	 * @var array<string, array{0: string, 1: string, 2: string, 3: string, 4: string}>
+	 */
+	private const CONTROLS = [
+		'password.minimumLength' => [
+			'A password is at least this many characters',
+			'password',
+			'platform',
+			'characters',
+			'Nextcloud owns this control. It reads as unknown when the policy app '
+				. 'is not running, and an unknown control fails its floor.',
+		],
+		'password.blocksCommonPasswords' => ['A password from the common list is refused', 'password', 'platform', 'switch', ''],
+		'password.checksBreachDatabase' => ['A password found in a known breach is refused', 'password', 'platform', 'switch', ''],
+		'session.lifetimeSeconds' => ['A session lasts no longer than this', 'session', 'platform', 'seconds', ''],
+		'session.rememberLoginSeconds' => ['A remembered login lasts no longer than this', 'session', 'platform', 'seconds', ''],
+		'session.secondFactorEnforced' => [
+			'Everybody signs in with a second factor',
+			'session',
+			'platform',
+			'switch',
+			'Nextcloud enforces the factor instance-wide. Declaring it per register is REQ-IHC-003 and is not built yet.',
+		],
+		'auth.rateLimit.attemptsPerIdentity' => [
+			'One identity may fail this many times before it is locked out',
+			'rateLimit',
+			'administered',
+			'attempts',
+			'',
+		],
+		'auth.rateLimit.attemptsPerAddress' => [
+			'One address may fail this many times before it is locked out',
+			'rateLimit',
+			'administered',
+			'attempts',
+			'',
+		],
+		'auth.rateLimit.windowSeconds' => ['Failures are counted over this window', 'rateLimit', 'administered', 'seconds', ''],
+		'auth.rateLimit.lockoutSeconds' => ['A lockout lasts this long', 'rateLimit', 'administered', 'seconds', ''],
+		'login.rateLimit.attempts' => ['A sign-in may fail this many times before it is locked out', 'rateLimit', 'code', 'attempts', ''],
+		'login.rateLimit.windowSeconds' => ['Sign-in failures are counted over this window', 'rateLimit', 'code', 'seconds', ''],
+		'login.lockoutSeconds' => ['A sign-in lockout lasts this long', 'rateLimit', 'code', 'seconds', ''],
+		'bruteForce.platformThrottlerEnabled' => ['Nextcloud delays a client that keeps guessing', 'bruteForce', 'platform', 'switch', ''],
+		'bruteForce.throttledSurfaces' => ['Anonymous surfaces that register a failed attempt', 'bruteForce', 'code', 'surfaces', ''],
+		'origins.allowlistEntries' => [
+			'Websites that may read a public answer from a browser',
+			'origins',
+			'administered',
+			'entries',
+			'An empty allowlist reflects whichever origin asks, which is how this instance '
+				. 'behaved before the control existed. Declare a floor of 1 to require a list.',
+		],
+		'upload.ceilingBytes' => [
+			'The largest file somebody may push in',
+			'upload',
+			'platform',
+			'bytes',
+			'The smaller of upload_max_filesize and post_max_size, read from the running PHP configuration. Raise the floor, or lower the directive.',
+		],
+	];
 
 	/**
 	 * Constructor.
 	 *
-	 * @param HardeningPolicy $policy The administered controls and the declared floors.
-	 * @param PlatformSecurityReader $platform Nextcloud's own password, session and brute-force posture.
+	 * @param HardeningPosture       $posture      The declared policy and floors, and the platform's own posture.
 	 * @param ApiCapabilitiesService $capabilities Reads the upload ceiling the upload actually runs under.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly HardeningPolicy $policy,
-		private readonly PlatformSecurityReader $platform,
+		private readonly HardeningPosture $posture,
 		private readonly ApiCapabilitiesService $capabilities,
 	) {
 
@@ -81,15 +142,7 @@ class HardeningReportService {
 	 */
 	public function report(): array {
 		$controls = $this->controls();
-
-		$failing = [];
-		foreach ($controls as $control) {
-			if ($control->meetsFloor() === false) {
-				$failing[] = $control->id;
-			}
-		}
-
-		$origins = $this->policy->allowedOrigins();
+		$failing = $this->failingIds(controls: $controls);
 
 		return [
 			'generated' => (new DateTimeImmutable())->format(DATE_ATOM),
@@ -99,16 +152,45 @@ class HardeningReportService {
 				static fn (HardeningControl $control): array => $control->jsonSerialize(),
 				$controls
 			),
-			'observed' => [
-				'bruteForce' => $this->platform->bruteForceState(),
-				'throttledSurfaces' => ThrottledSurfaces::ALL,
-				'allowedOrigins' => $origins,
-				'reflectsAnyOrigin' => ($origins === []),
-				'passwordPolicyRuns' => $this->platform->passwordPolicyRuns(),
-			],
+			'observed' => $this->observed(),
 		];
 
 	}//end report()
+
+	/**
+	 * The ids of the controls that do not meet their floor.
+	 *
+	 * @param array<int, HardeningControl> $controls The controls.
+	 *
+	 * @return array<int, string> The failing ids, in control order.
+	 */
+	private function failingIds(array $controls): array {
+		$failing = [];
+		foreach ($controls as $control) {
+			if ($control->meetsFloor() === false) {
+				$failing[] = $control->label->id;
+			}
+		}
+
+		return $failing;
+	}//end failingIds()
+
+	/**
+	 * What the platform is observed to do: brute-force state, throttled surfaces, origins and password policy.
+	 *
+	 * @return array<string, mixed> The observations.
+	 */
+	private function observed(): array {
+		$origins = $this->posture->policy->allowedOrigins();
+
+		return [
+			'bruteForce' => $this->posture->platform->bruteForceState(),
+			'throttledSurfaces' => ThrottledSurfaces::ALL,
+			'allowedOrigins' => $origins,
+			'reflectsAnyOrigin' => ($origins === []),
+			'passwordPolicyRuns' => $this->posture->platform->passwordPolicyRuns(),
+		];
+	}//end observed()
 
 	/**
 	 * Every control, with the value in force and the floor beside it.
@@ -137,37 +219,15 @@ class HardeningReportService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	private function passwordRows(): array {
-		$password = $this->platform->passwordPolicy();
-		$unreadable = 'Nextcloud owns this control. It reads as unknown when the policy app '
-			. 'is not running, and an unknown control fails its floor.';
+		$password = $this->posture->platform->passwordPolicy();
 
-		return [
-			$this->row(
-				id: 'password.minimumLength',
-				title: 'A password is at least this many characters',
-				category: 'password',
-				source: 'platform',
-				value: $password['minimumLength'],
-				unit: 'characters',
-				note: $unreadable,
-			),
-			$this->row(
-				id: 'password.blocksCommonPasswords',
-				title: 'A password from the common list is refused',
-				category: 'password',
-				source: 'platform',
-				value: $password['blocksCommonPasswords'],
-				unit: 'switch',
-			),
-			$this->row(
-				id: 'password.checksBreachDatabase',
-				title: 'A password found in a known breach is refused',
-				category: 'password',
-				source: 'platform',
-				value: $password['checksBreachDatabase'],
-				unit: 'switch',
-			),
-		];
+		return $this->rows(
+			values: [
+				'password.minimumLength' => $password['minimumLength'],
+				'password.blocksCommonPasswords' => $password['blocksCommonPasswords'],
+				'password.checksBreachDatabase' => $password['checksBreachDatabase'],
+			]
+		);
 
 	}//end passwordRows()
 
@@ -179,35 +239,15 @@ class HardeningReportService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	private function sessionRows(): array {
-		$session = $this->platform->sessionPolicy();
+		$session = $this->posture->platform->sessionPolicy();
 
-		return [
-			$this->row(
-				id: 'session.lifetimeSeconds',
-				title: 'A session lasts no longer than this',
-				category: 'session',
-				source: 'platform',
-				value: $session['lifetimeSeconds'],
-				unit: 'seconds',
-			),
-			$this->row(
-				id: 'session.rememberLoginSeconds',
-				title: 'A remembered login lasts no longer than this',
-				category: 'session',
-				source: 'platform',
-				value: $session['rememberLoginSeconds'],
-				unit: 'seconds',
-			),
-			$this->row(
-				id: 'session.secondFactorEnforced',
-				title: 'Everybody signs in with a second factor',
-				category: 'session',
-				source: 'platform',
-				value: $session['secondFactorEnforced'],
-				unit: 'switch',
-				note: 'Nextcloud enforces the factor instance-wide. Declaring it per register is REQ-IHC-003 and is not built yet.',
-			),
-		];
+		return $this->rows(
+			values: [
+				'session.lifetimeSeconds' => $session['lifetimeSeconds'],
+				'session.rememberLoginSeconds' => $session['rememberLoginSeconds'],
+				'session.secondFactorEnforced' => $session['secondFactorEnforced'],
+			]
+		);
 
 	}//end sessionRows()
 
@@ -219,66 +259,19 @@ class HardeningReportService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	private function rateLimitRows(): array {
-		$authLimit = $this->policy->authRateLimit();
+		$authLimit = $this->posture->policy->authRateLimit();
 
-		return [
-			$this->row(
-				id: 'auth.rateLimit.attemptsPerIdentity',
-				title: 'One identity may fail this many times before it is locked out',
-				category: 'rateLimit',
-				source: 'administered',
-				value: $authLimit['attemptsPerIdentity'],
-				unit: 'attempts',
-			),
-			$this->row(
-				id: 'auth.rateLimit.attemptsPerAddress',
-				title: 'One address may fail this many times before it is locked out',
-				category: 'rateLimit',
-				source: 'administered',
-				value: $authLimit['attemptsPerAddress'],
-				unit: 'attempts',
-			),
-			$this->row(
-				id: 'auth.rateLimit.windowSeconds',
-				title: 'Failures are counted over this window',
-				category: 'rateLimit',
-				source: 'administered',
-				value: $authLimit['windowSeconds'],
-				unit: 'seconds',
-			),
-			$this->row(
-				id: 'auth.rateLimit.lockoutSeconds',
-				title: 'A lockout lasts this long',
-				category: 'rateLimit',
-				source: 'administered',
-				value: $authLimit['lockoutSeconds'],
-				unit: 'seconds',
-			),
-			$this->row(
-				id: 'login.rateLimit.attempts',
-				title: 'A sign-in may fail this many times before it is locked out',
-				category: 'rateLimit',
-				source: 'code',
-				value: SecurityService::LOGIN_RATE_LIMIT_ATTEMPTS,
-				unit: 'attempts',
-			),
-			$this->row(
-				id: 'login.rateLimit.windowSeconds',
-				title: 'Sign-in failures are counted over this window',
-				category: 'rateLimit',
-				source: 'code',
-				value: SecurityService::LOGIN_RATE_LIMIT_WINDOW,
-				unit: 'seconds',
-			),
-			$this->row(
-				id: 'login.lockoutSeconds',
-				title: 'A sign-in lockout lasts this long',
-				category: 'rateLimit',
-				source: 'code',
-				value: SecurityService::LOGIN_LOCKOUT_DURATION,
-				unit: 'seconds',
-			),
-		];
+		return $this->rows(
+			values: [
+				'auth.rateLimit.attemptsPerIdentity' => $authLimit['attemptsPerIdentity'],
+				'auth.rateLimit.attemptsPerAddress' => $authLimit['attemptsPerAddress'],
+				'auth.rateLimit.windowSeconds' => $authLimit['windowSeconds'],
+				'auth.rateLimit.lockoutSeconds' => $authLimit['lockoutSeconds'],
+				'login.rateLimit.attempts' => SecurityService::LOGIN_RATE_LIMIT_ATTEMPTS,
+				'login.rateLimit.windowSeconds' => SecurityService::LOGIN_RATE_LIMIT_WINDOW,
+				'login.lockoutSeconds' => SecurityService::LOGIN_LOCKOUT_DURATION,
+			]
+		);
 
 	}//end rateLimitRows()
 
@@ -294,26 +287,14 @@ class HardeningReportService {
 	 * to every caller and change nothing about what the lookup can answer.
 	 */
 	private function bruteForceRows(): array {
-		$bruteForce = $this->platform->bruteForceState();
+		$bruteForce = $this->posture->platform->bruteForceState();
 
-		return [
-			$this->row(
-				id: 'bruteForce.platformThrottlerEnabled',
-				title: 'Nextcloud delays a client that keeps guessing',
-				category: 'bruteForce',
-				source: 'platform',
-				value: $bruteForce['throttlerEnabled'],
-				unit: 'switch',
-			),
-			$this->row(
-				id: 'bruteForce.throttledSurfaces',
-				title: 'Anonymous surfaces that register a failed attempt',
-				category: 'bruteForce',
-				source: 'code',
-				value: ThrottledSurfaces::count(),
-				unit: 'surfaces',
-			),
-		];
+		return $this->rows(
+			values: [
+				'bruteForce.platformThrottlerEnabled' => $bruteForce['throttlerEnabled'],
+				'bruteForce.throttledSurfaces' => ThrottledSurfaces::count(),
+			]
+		);
 
 	}//end bruteForceRows()
 
@@ -325,18 +306,7 @@ class HardeningReportService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	private function originRows(): array {
-		return [
-			$this->row(
-				id: 'origins.allowlistEntries',
-				title: 'Websites that may read a public answer from a browser',
-				category: 'origins',
-				source: 'administered',
-				value: count($this->policy->allowedOrigins()),
-				unit: 'entries',
-				note: 'An empty allowlist reflects whichever origin asks, which is how this instance '
-					. 'behaved before the control existed. Declare a floor of 1 to require a list.',
-			),
-		];
+		return $this->rows(values: ['origins.allowlistEntries' => count($this->posture->policy->allowedOrigins())]);
 
 	}//end originRows()
 
@@ -348,30 +318,32 @@ class HardeningReportService {
 	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-the-instance-reports-every-control-against-a-declared-floor-and-refuses-a-change-that-weakens-one-req-ihc-006
 	 */
 	private function uploadRows(): array {
-		return [
-			$this->row(
-				id: 'upload.ceilingBytes',
-				title: 'The largest file somebody may push in',
-				category: 'upload',
-				source: 'platform',
-				value: $this->capabilities->uploadCeilingBytes(),
-				unit: 'bytes',
-				note: 'The smaller of upload_max_filesize and post_max_size, read from the running PHP configuration. Raise the floor, or lower the directive.',
-			),
-		];
+		return $this->rows(values: ['upload.ceilingBytes' => $this->capabilities->uploadCeilingBytes()]);
 
 	}//end uploadRows()
 
 	/**
-	 * Build one row, taking the floor and the comparator from the policy.
+	 * Build the rows for the given values, in their order.
 	 *
-	 * @param string $id The control identifier.
-	 * @param string $title What the control does.
-	 * @param string $category The group it is reported under.
-	 * @param string $source Who enforces it.
+	 * @param array<string, int|null> $values The value in force per control id in CONTROLS.
+	 *
+	 * @return array<int, HardeningControl> The rows.
+	 */
+	private function rows(array $values): array {
+		$rows = [];
+		foreach ($values as $id => $value) {
+			$rows[] = $this->control(id: $id, value: $value);
+		}
+
+		return $rows;
+
+	}//end rows()
+
+	/**
+	 * Build one row from CONTROLS, taking the floor and the comparator from the policy.
+	 *
+	 * @param string   $id    The control identifier.
 	 * @param int|null $value The value in force.
-	 * @param string $unit What the value counts.
-	 * @param string $note Why the value reads as it does.
 	 *
 	 * @return HardeningControl The row.
 	 *
@@ -379,26 +351,18 @@ class HardeningReportService {
 	 * pure functions over it. Injecting a stateless lookup would add a constructor argument
 	 * to every caller and change nothing about what the lookup can answer.
 	 */
-	private function row(
-		string $id,
-		string $title,
-		string $category,
-		string $source,
-		?int $value,
-		string $unit,
-		string $note = '',
-	): HardeningControl {
+	private function control(string $id, ?int $value): HardeningControl {
+		[$title, $category, $source, $unit, $note] = self::CONTROLS[$id];
 		return new HardeningControl(
-			id: $id,
-			title: $title,
-			category: $category,
-			source: $source,
-			value: $value,
-			floor: $this->policy->floor(control: $id),
-			comparator: HardeningPolicy::comparator(control: $id),
-			unit: $unit,
+			label: new HardeningControlLabel(id: $id, title: $title, category: $category, source: $source),
+			reading: new HardeningReading(
+				value: $value,
+				floor: $this->posture->policy->floor(control: $id),
+				comparator: HardeningPolicy::comparator(control: $id),
+				unit: $unit,
+			),
 			note: $note,
 		);
 
-	}//end row()
+	}//end control()
 }//end class

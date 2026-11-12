@@ -1,0 +1,273 @@
+{
+    "denyPreview": {
+        "status": 200,
+        "data": {
+            "denyEnforcement": "staging",
+            "enforcing": false,
+            "ruleCount": 10,
+            "rules": [
+                {
+                    "level": "register",
+                    "subject": "zaken",
+                    "action": "read",
+                    "principal": "waarnemers",
+                    "conditional": false,
+                    "match": null,
+                    "declared": true
+                },
+                {
+                    "level": "register",
+                    "subject": "zaken",
+                    "action": "read",
+                    "principal": "stagiairs",
+                    "conditional": false,
+                    "match": null,
+                    "declared": true
+                },
+                {
+                    "level": "register",
+                    "subject": "zaken",
+                    "action": "read",
+                    "principal": null,
+                    "conditional": false,
+                    "match": null,
+                    "declared": true
+                },
+                {
+                    "level": "register",
+                    "subject": "zaken",
+                    "action": "read",
+                    "principal": "piet",
+                    "conditional": true,
+                    "match": {
+                        "status": "geheim"
+                    },
+                    "declared": true
+                },
+                {
+                    "level": "register",
+                    "subject": "zaken",
+                    "action": "read",
+                    "principal": null,
+                    "conditional": false,
+                    "match": null,
+                    "declared": true
+                },
+                {
+                    "level": "register",
+                    "subject": "zaken",
+                    "action": "delete",
+                    "principal": "iedereen",
+                    "conditional": false,
+                    "match": null,
+                    "declared": true
+                },
+                {
+                    "level": "register",
+                    "subject": "zaken",
+                    "action": "delete",
+                    "principal": null,
+                    "conditional": false,
+                    "match": null,
+                    "declared": true
+                },
+                {
+                    "level": "register",
+                    "subject": "zaken",
+                    "action": "not-a-verb",
+                    "principal": "x",
+                    "conditional": false,
+                    "match": null,
+                    "declared": false
+                },
+                {
+                    "level": "register",
+                    "subject": "Zonder slug",
+                    "action": "read",
+                    "principal": "extern",
+                    "conditional": false,
+                    "match": null,
+                    "declared": true
+                },
+                {
+                    "level": "schema",
+                    "subject": "zaak",
+                    "action": "create",
+                    "principal": "extern",
+                    "conditional": true,
+                    "match": {
+                        "a": 1
+                    },
+                    "declared": true
+                }
+            ]
+        }
+    },
+    "scopeAudit": {
+        "status": 200,
+        "data": {
+            "denyEnforcement": "staging",
+            "schemaCount": 0,
+            "scopes": []
+        }
+    },
+    "compareAll": {
+        "status": 200,
+        "data": {
+            "register": "1",
+            "roles": {
+                "behandelaar": {
+                    "actions": [
+                        "read",
+                        "update",
+                        "not-a-verb"
+                    ],
+                    "undeclared": [
+                        "not-a-verb"
+                    ]
+                },
+                "senior": {
+                    "actions": [
+                        "read",
+                        "update",
+                        "delete"
+                    ],
+                    "undeclared": []
+                },
+                "leeg": {
+                    "actions": [],
+                    "undeclared": []
+                }
+            },
+            "unknownRoles": [],
+            "shared": [],
+            "onlyIn": {
+                "behandelaar": [
+                    "not-a-verb"
+                ],
+                "senior": [
+                    "delete"
+                ],
+                "leeg": []
+            }
+        }
+    },
+    "compareTwo": {
+        "status": 200,
+        "data": {
+            "register": "1",
+            "roles": {
+                "senior": {
+                    "actions": [
+                        "read",
+                        "update",
+                        "delete"
+                    ],
+                    "undeclared": []
+                },
+                "behandelaar": {
+                    "actions": [
+                        "read",
+                        "update",
+                        "not-a-verb"
+                    ],
+                    "undeclared": [
+                        "not-a-verb"
+                    ]
+                }
+            },
+            "unknownRoles": [
+                "ghost"
+            ],
+            "shared": [
+                "read",
+                "update"
+            ],
+            "onlyIn": {
+                "senior": [
+                    "delete"
+                ],
+                "behandelaar": [
+                    "not-a-verb"
+                ]
+            }
+        }
+    },
+    "compareBlank": {
+        "status": 200,
+        "data": {
+            "register": "1",
+            "roles": {
+                "behandelaar": {
+                    "actions": [
+                        "read",
+                        "update",
+                        "not-a-verb"
+                    ],
+                    "undeclared": [
+                        "not-a-verb"
+                    ]
+                },
+                "senior": {
+                    "actions": [
+                        "read",
+                        "update",
+                        "delete"
+                    ],
+                    "undeclared": []
+                },
+                "leeg": {
+                    "actions": [],
+                    "undeclared": []
+                }
+            },
+            "unknownRoles": [],
+            "shared": [],
+            "onlyIn": {
+                "behandelaar": [
+                    "not-a-verb"
+                ],
+                "senior": [
+                    "delete"
+                ],
+                "leeg": []
+            }
+        }
+    },
+    "compareBare": {
+        "status": 200,
+        "data": {
+            "register": "2",
+            "roles": [],
+            "unknownRoles": [
+                "x"
+            ],
+            "shared": [],
+            "onlyIn": []
+        }
+    },
+    "compareMissing": {
+        "status": 404,
+        "data": {
+            "error": "No register named \"geen\"."
+        }
+    },
+    "refusedPreview": {
+        "status": 403,
+        "data": {
+            "error": "Administrator privileges are required to read the authorization model"
+        }
+    },
+    "refusedAudit": {
+        "status": 403,
+        "data": {
+            "error": "Administrator privileges are required to read the authorization model"
+        }
+    },
+    "refusedCompare": {
+        "status": 403,
+        "data": {
+            "error": "Administrator privileges are required to read the authorization model"
+        }
+    }
+}

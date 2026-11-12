@@ -4,7 +4,7 @@
  * The upgrade that starts enforcing agent_use and llm_use refuses nobody.
  *
  * Driven from the registration: the step is found by the class name that
- * appinfo/info.xml lists under post-migration, built the way Nextcloud builds
+ * appinfo/info.xml lists under post-migration and install, built the way Nextcloud builds
  * it, and run against organisations shaped like the ones on a live instance
  * (`[]` from a new organisation, `["admin"]` from the admin-group backfill, a
  * narrowed list somebody saved through the editor). After it runs, a user in
@@ -115,7 +115,7 @@ class OpenSpecialRightsToEveryoneTest extends TestCase {
 		$registered = array_map('strval', $info->xpath('//repair-steps/post-migration/step'));
 		$name = OpenSpecialRightsToEveryone::class;
 		$this->assertContains($name, $registered, 'info.xml must run the step on upgrade');
-		$this->assertNotContains($name, array_map('strval', $info->xpath('//repair-steps/install/step')), 'a fresh install already defaults to *');
+		$this->assertContains($name, array_map('strval', $info->xpath('//repair-steps/install/step')), 'info.xml must record the step on a fresh install');
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturnCallback(
@@ -172,6 +172,32 @@ class OpenSpecialRightsToEveryoneTest extends TestCase {
 
 		$this->assertFalse($this->rights->mayUse(OrganisationSpecialRights::LLM_USE, 'bob', 'narrowed'));
 	}//end testALaterUpgradeDoesNotReopenARightAnAdministratorNarrowed()
+
+	public function testTheFirstUpgradeAfterAFreshInstallDoesNotWidenANarrowedList(): void {
+		// The install run: organisations made on a fresh install already hold `*`.
+		foreach ($this->stored as $organisation) {
+			$block = $organisation->getAuthorization();
+			$block['agent_use'] = ['*'];
+			$block['llm_use'] = ['*'];
+			$organisation->setAuthorization($block);
+		}
+
+		$step = $this->registeredStep();
+		$step->run($this->createMock(IOutput::class));
+		$this->assertTrue($this->config[OpenSpecialRightsToEveryone::DONE_KEY], 'the install run sets the flag');
+
+		$block = $this->stored['narrowed']->getAuthorization();
+		$block['agent_use'] = ['ai-users'];
+		$block['llm_use'] = ['ai-users'];
+		$this->stored['narrowed']->setAuthorization($block);
+
+		$this->organisations->expects($this->never())->method('update');
+		$step->run($this->createMock(IOutput::class));
+
+		$this->assertSame(['ai-users'], $this->stored['narrowed']->getAuthorization()['agent_use']);
+		$this->assertSame(['ai-users'], $this->stored['narrowed']->getAuthorization()['llm_use']);
+		$this->assertFalse($this->rights->mayUse(OrganisationSpecialRights::AGENT_USE, 'bob', 'narrowed'));
+	}//end testTheFirstUpgradeAfterAFreshInstallDoesNotWidenANarrowedList()
 
 	public function testAFailureDoesNotAbortTheUpgradeAndIsFinishedNextTime(): void {
 		$organisations = $this->createMock(OrganisationMapper::class);

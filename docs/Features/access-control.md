@@ -691,10 +691,53 @@ Schema-level, object-level, and property-level `authorization` blocks all accept
 
 All three enforcement points route conditional match evaluation through the shared `ConditionMatcher` service. The operator set and dynamic-variable set listed below therefore apply uniformly:
 
-- **Operators**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`.
+- **Operators**: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$contains`, `$exists`, `$memberOf`.
 - **Dynamic variables** resolved at evaluation time: `$organisation` / `$activeOrganisation`, `$userId` / `$user`, `$now`.
 
 A schema authored with `{ "read": [{ "group": "public", "match": { "publishDate": { "$lte": "$now" } } }] }` returns the same object set from `GET /api/objects/{register}/{schema}` (list) and `GET /api/objects/{register}/{schema}/{id}` (find). List-vs-find drift caused by differing grammar is no longer possible.
+
+#### Access that follows membership records (`$memberOf`)
+
+Some apps scope their data by something that is not a Nextcloud organisation: an administration, a case team, a school, a project. Who belongs to it is a record in another schema. `$memberOf` admits an object when the value of one of its fields is in the set of values that the caller's rows in that membership schema hold.
+
+```json
+"authorization": {
+  "read": [
+    {
+      "group": "shillinq_bookkeeper",
+      "match": {
+        "administrationId": {
+          "$memberOf": {
+            "schema": "administration-membership",
+            "register": "shillinq",
+            "property": "administrationId",
+            "match": "userId",
+            "where": { "role": { "$in": ["boekhouder", "controller"] } },
+            "current": { "from": "validFrom", "until": "validUntil" }
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+| key | required | meaning |
+|---|---|---|
+| `schema` | yes | slug or id of the membership schema |
+| `register` | no | slug or id of its register; default: the first register that holds the schema |
+| `property` | yes | membership field whose values form the set; a list contributes each value |
+| `match` | no, default `userId` | membership field that holds the caller's Nextcloud uid |
+| `where` | no | literal filters on membership fields: a value (strict equality) or an operator object. No dynamic variables |
+| `current` | no | `{ "from": <field>, "until": <field> }`; a row counts when `from` is empty or on or before today and `until` is empty or on or after today |
+
+How it behaves:
+
+- The set is resolved by `ConditionMatcher` into `$in`, so the list, its count and pages, the single-object check, property-level rules and deny rules all use the same set. The list predicate is in the SQL `WHERE`, so counts are exact.
+- The membership rows are read without the membership schema's own RBAC and multitenancy, once per request for each caller and operand, capped at 500 rows.
+- Everything that goes wrong denies: nobody signed in, a malformed operand (logged as a warning), a membership schema that cannot be found or read, a caller with no rows.
+- Like every conditional rule on a field other than `_organisation`, a caller it admits is no longer held to the organisation filter on that schema. To keep both, add `"_organisation": "$organisation"` to the same `match`.
+- Admins bypass RBAC and see every row, as with every other rule.
 
 ### Disabling public-group inheritance for authenticated users (`inheritFromPublic`)
 

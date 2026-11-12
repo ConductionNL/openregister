@@ -13,7 +13,10 @@ declare(strict_types=1);
 
 namespace Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
+use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -27,6 +30,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * The raw-SQL emitter carries the draft clause beside the owner admit; an admin and an opted-in schema do not.
@@ -39,6 +45,9 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  */
 class MagicRbacDraftVisibilityTest extends TestCase {
 
@@ -47,7 +56,7 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 	 *
 	 * @param array<string> $groups The caller's groups.
 	 */
-	private function handlerFor(string $userId, array $groups = []): MagicRbacHandler {
+	private function handlerFor(string $userId, array $groups = [], ?MagicMetadataColumnHealer $healer = null): MagicRbacHandler {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($userId);
 		$userSession = $this->createMock(IUserSession::class);
@@ -56,14 +65,22 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		return new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher()))
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class),
+				denyEnforcementMode: null,
+				metadataColumns: $healer
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->createMock(ConditionMatcher::class),
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher()))
 		);
 	}//end handlerFor()
 
@@ -86,9 +103,7 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 	 * Others' drafts are hidden; the owner admit stays beside the clause, so the owner keeps their own.
 	 */
 	public function testOthersDraftsAreHiddenAndTheOwnerKeepsTheirs(): void {
-		$predicate = (string)$this->handlerFor('alice', ['behandelaars'])->buildRbacRowPredicateSql(
-			schema: $this->schema(['read' => ['behandelaars']])
-		);
+		$predicate = (string)$this->handlerFor('alice', ['behandelaars'])->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schema(['read' => ['behandelaars']]))));
 
 		$this->assertStringContainsString("(_status IS NULL OR _status <> 'draft')", $predicate);
 		$this->assertStringContainsString("_owner = 'alice'", $predicate);
@@ -98,20 +113,46 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 	 * An open schema (no authorization) still hides other people's drafts.
 	 */
 	public function testAnOpenSchemaStillHidesOthersDrafts(): void {
-		$predicate = (string)$this->handlerFor('bob')->buildRbacRowPredicateSql(schema: $this->schema([]));
+		$predicate = (string)$this->handlerFor('bob')->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schema([]))));
 
 		$this->assertStringContainsString("_status <> 'draft'", $predicate);
 	}//end testAnOpenSchemaStillHidesOthersDrafts()
 
 	/**
+	 * A table that could not be given its `_status` column cannot hold a draft: the predicate leaves it out, and keeps it for a healthy table.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 */
+	public function testADegradedTableGetsNoDraftPredicate(): void {
+		$healer = $this->createMock(MagicMetadataColumnHealer::class);
+		$healer->method('missingFor')->willReturnCallback(
+			static fn (string $table): array => ($table === 'openregister_table_1_2' ? ['_status'] : [])
+		);
+		$handler = $this->handlerFor('alice', ['behandelaars'], $healer);
+		$schema = $this->schema(['read' => ['behandelaars']]);
+
+		$degraded = (string)$handler->buildRbacRowPredicateSql((new RbacAccessCall(schema: $schema))->onTable('openregister_table_1_2'));
+		$this->assertStringNotContainsString('_status', $degraded);
+		$this->assertStringContainsString("_owner = 'alice'", $degraded);
+
+		$healthy = (string)$handler->buildRbacRowPredicateSql((new RbacAccessCall(schema: $schema))->onTable('openregister_table_1_3'));
+		$this->assertStringContainsString("(_status IS NULL OR _status <> 'draft')", $healthy);
+
+		// A caller that names no table keeps the predicate: narrower, so safe.
+		$unnamed = (string)$handler->buildRbacRowPredicateSql((new RbacAccessCall(schema: $schema)));
+		$this->assertStringContainsString('_status', $unnamed);
+
+		$aliased = $handler->buildRbacPredicateForAlias(schema: $schema, rows: new AliasedRows(alias: 'rel0', tableName: 'openregister_table_1_2'));
+		$this->assertStringNotContainsString('_status', $aliased);
+	}//end testADegradedTableGetsNoDraftPredicate()
+
+	/**
 	 * A schema with draftsVisible shows drafts to everyone who may read; an admin is never restricted.
 	 */
 	public function testOptInAndAdminSeeDrafts(): void {
-		$optedIn = (string)$this->handlerFor('bob', ['behandelaars'])->buildRbacRowPredicateSql(
-			schema: $this->schema(['read' => ['behandelaars']], ['draftsVisible' => true])
-		);
+		$optedIn = (string)$this->handlerFor('bob', ['behandelaars'])->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schema(['read' => ['behandelaars']], ['draftsVisible' => true]))));
 		$this->assertStringNotContainsString('_status', $optedIn);
 
-		$this->assertNull($this->handlerFor('root', ['admin'])->buildRbacRowPredicateSql(schema: $this->schema(['read' => ['behandelaars']])));
+		$this->assertNull($this->handlerFor('root', ['admin'])->buildRbacRowPredicateSql((new RbacAccessCall(schema: $this->schema(['read' => ['behandelaars']])))));
 	}//end testOptInAndAdminSeeDrafts()
 }//end class

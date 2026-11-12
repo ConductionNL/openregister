@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Holds the registered shareable configuration types.
  */
-class ShareableConfigTypeRegistry {
+class ShareableConfigTypeRegistry implements ShareableConfigTypeRegistryInterface {
 
 	/**
 	 * Registered types, keyed by id.

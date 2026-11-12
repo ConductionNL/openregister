@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCP\IGroupManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Case\CasePlanAct;
 
 /**
  * Coverage of CasePlanAuthorizationService.
@@ -82,21 +83,21 @@ class CasePlanAuthorizationServiceTest extends TestCase {
 		[$tree, $root, $child, $grandchild] = $this->tree();
 		$service = new CasePlanAuthorizationService(groupManager: $this->groupBackend());
 
-		$service->assertMayAct(verb: 'enable', item: $root, tree: $tree, uid: 'alice');
-		$service->assertMayAct(verb: 'enable', item: $child, tree: $tree, uid: 'alice');
-		$service->assertMayAct(verb: 'enable', item: $grandchild, tree: $tree, uid: 'carol');
+		$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $root, tree: $tree);
+		$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $child, tree: $tree);
+		$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'carol'), item: $grandchild, tree: $tree);
 		$this->assertSame(['behandelaars'], $service->effectiveRules(item: $child, tree: $tree));
 		$this->assertSame(['role:beslissers'], $service->effectiveRules(item: null, tree: $tree), 'The root derives from the plan settings.');
 
 		try {
-			$service->assertMayAct(verb: 'enable', item: $grandchild, tree: $tree, uid: 'alice');
+			$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $grandchild, tree: $tree);
 			$this->fail('alice is not carol');
 		} catch (CaseAccessDeniedException $denial) {
 			$this->assertStringContainsString("Verb 'enable' denied", $denial->getMessage());
 		}
 
 		$this->expectException(CaseAccessDeniedException::class);
-		$service->assertMayAct(verb: 'attach', item: $root, tree: $tree, uid: 'stranger');
+		$service->assertMayAct(act: new CasePlanAct(verb: 'attach', actor: 'stranger'), item: $root, tree: $tree);
 	}//end testMembershipDecidesAndRulesDeriveFromTheNearestAncestor()
 
 	/**
@@ -108,15 +109,15 @@ class CasePlanAuthorizationServiceTest extends TestCase {
 		[$tree, , , $grandchild] = $this->tree();
 		$service = new CasePlanAuthorizationService(groupManager: $this->groupBackend());
 
-		$service->assertMayAct(verb: 'enable', item: $grandchild, tree: $tree, uid: 'boss');
-		$service->assertMayAdminister(verb: 'delete-plan', settings: [], uid: 'boss');
+		$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'boss'), item: $grandchild, tree: $tree);
+		$service->assertMayAdminister(act: new CasePlanAct(verb: 'delete-plan', actor: 'boss'), settings: []);
 		$this->assertTrue($service->isAdministrator(uid: 'boss'));
 		$this->assertFalse($service->isAdministrator(uid: null));
 		$this->assertSame('alice', $service->assertIdentified(uid: ' alice ', verb: 'x'));
 
 		foreach ([null, '', '  '] as $anonymous) {
 			try {
-				$service->assertMayAct(verb: 'enable', item: $grandchild, tree: $tree, uid: $anonymous);
+				$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: $anonymous), item: $grandchild, tree: $tree);
 				$this->fail('anonymous must be denied');
 			} catch (CaseAccessDeniedException $denial) {
 				$this->assertStringContainsString('no acting identity', $denial->getMessage());
@@ -136,14 +137,14 @@ class CasePlanAuthorizationServiceTest extends TestCase {
 		$tree = new CasePlanTree(items: [$item]);
 
 		try {
-			$service->assertMayAct(verb: 'enable', item: $item, tree: $tree, uid: 'alice');
+			$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $item, tree: $tree);
 			$this->fail('ghost does not resolve');
 		} catch (CaseAccessDeniedException $denial) {
 			$this->assertStringContainsString("role 'ghost' does not resolve", $denial->getMessage());
 		}
 
 		$item->setAuthorizationRules(['role:behandelaars']);
-		$service->assertMayAct(verb: 'enable', item: $item, tree: $tree, uid: 'alice');
+		$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $item, tree: $tree);
 		$this->addToAssertionCount(1);
 	}//end testAnUnresolvableRoleDeniesNamingIt()
 
@@ -160,7 +161,7 @@ class CasePlanAuthorizationServiceTest extends TestCase {
 
 		$this->assertFalse($service->isAdministrator(uid: 'boss'));
 		try {
-			$service->assertMayAct(verb: 'enable', item: $item, tree: $tree, uid: 'alice');
+			$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $item, tree: $tree);
 			$this->fail('no backend, no membership');
 		} catch (CaseAccessDeniedException) {
 			$this->addToAssertionCount(1);
@@ -168,7 +169,7 @@ class CasePlanAuthorizationServiceTest extends TestCase {
 
 		$item->setAuthorizationRules(['role:behandelaars']);
 		try {
-			$service->assertMayAct(verb: 'enable', item: $item, tree: $tree, uid: 'alice');
+			$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $item, tree: $tree);
 			$this->fail('no backend, no role');
 		} catch (CaseAccessDeniedException $denial) {
 			$this->assertStringContainsString('no group backend', $denial->getMessage());
@@ -176,7 +177,7 @@ class CasePlanAuthorizationServiceTest extends TestCase {
 
 		// user: rules need no backend.
 		$item->setAuthorizationRules(['user:alice']);
-		$service->assertMayAct(verb: 'enable', item: $item, tree: $tree, uid: 'alice');
+		$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $item, tree: $tree);
 	}//end testWithoutABackendEverythingDenies()
 
 	/**
@@ -197,7 +198,7 @@ class CasePlanAuthorizationServiceTest extends TestCase {
 		$item->setPlanSettings([]);
 		$tree = new CasePlanTree(items: [$item]);
 		try {
-			$service->assertMayAct(verb: 'enable', item: $item, tree: $tree, uid: 'alice');
+			$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $item, tree: $tree);
 			$this->fail('no rules anywhere');
 		} catch (CaseAccessDeniedException $denial) {
 			$this->assertStringContainsString('no authorization is declared', $denial->getMessage());
@@ -205,13 +206,13 @@ class CasePlanAuthorizationServiceTest extends TestCase {
 
 		$item->setAuthorizationRules(['behandelaars', 42, '', 'role:ghost']);
 		try {
-			$service->assertMayAct(verb: 'enable', item: $item, tree: $tree, uid: 'alice');
+			$service->assertMayAct(act: new CasePlanAct(verb: 'enable', actor: 'alice'), item: $item, tree: $tree);
 			$this->fail('throwing backend');
 		} catch (CaseAccessDeniedException) {
 			$this->addToAssertionCount(1);
 		}
 
 		$this->expectException(CaseAccessDeniedException::class);
-		$service->assertMayAdminister(verb: 'create-plan', settings: ['authorization' => 'not-a-list'], uid: 'alice');
+		$service->assertMayAdminister(act: new CasePlanAct(verb: 'create-plan', actor: 'alice'), settings: ['authorization' => 'not-a-list']);
 	}//end testAThrowingBackendAndMissingOrMalformedRulesDeny()
 }//end class

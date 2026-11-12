@@ -1,0 +1,143 @@
+{
+    "not a list": [
+        {
+            "code": "aggregation-metrics-malformed",
+            "message": "Aggregation \"totals\" metrics must be a non-empty list of {metric, field?} objects."
+        }
+    ],
+    "empty": [
+        {
+            "code": "aggregation-metrics-malformed",
+            "message": "Aggregation \"totals\" metrics must be a non-empty list of {metric, field?} objects."
+        }
+    ],
+    "scalar": [
+        {
+            "code": "aggregation-metrics-malformed",
+            "message": "Aggregation \"totals\" metrics must be a non-empty list of {metric, field?} objects."
+        }
+    ],
+    "entry not an object": [
+        {
+            "code": "aggregation-metrics-entry-malformed",
+            "message": "Aggregation \"totals\" metrics[0] must be an object."
+        }
+    ],
+    "unknown metric": [
+        {
+            "code": "aggregation-metrics-bad-metric",
+            "message": "Aggregation \"totals\" metrics[0] metric \"median\" is not in [count, sum, avg, min, max, count_distinct, expression]."
+        }
+    ],
+    "metric not a string": [
+        {
+            "code": "aggregation-metrics-bad-metric",
+            "message": "Aggregation \"totals\" metrics[0] metric \"\" is not in [count, sum, avg, min, max, count_distinct, expression]."
+        }
+    ],
+    "count": [],
+    "count with alias": [],
+    "empty alias": [
+        {
+            "code": "aggregation-metrics-alias-malformed",
+            "message": "Aggregation \"totals\" metrics[0] \"as\" must be a non-empty string."
+        }
+    ],
+    "alias not a string": [
+        {
+            "code": "aggregation-metrics-alias-malformed",
+            "message": "Aggregation \"totals\" metrics[0] \"as\" must be a non-empty string."
+        }
+    ],
+    "condition string": [
+        {
+            "code": "aggregation-metrics-condition-malformed",
+            "message": "Aggregation \"totals\" metrics[0] \"condition\" must be a non-empty filter object, the same shape as the aggregation's own filter — not a string expression."
+        }
+    ],
+    "condition empty": [
+        {
+            "code": "aggregation-metrics-condition-malformed",
+            "message": "Aggregation \"totals\" metrics[0] \"condition\" must be a non-empty filter object, the same shape as the aggregation's own filter — not a string expression."
+        }
+    ],
+    "condition unknown prop": [
+        {
+            "code": "aggregation-metrics-condition-not-in-schema",
+            "message": "Aggregation \"totals\" metrics[0] condition property \"ghost\" is not declared in the schema properties. A filter on an undeclared property matches nothing and returns an empty result rather than an error."
+        }
+    ],
+    "condition known prop": [],
+    "sum no field": [
+        {
+            "code": "aggregation-metrics-field-missing",
+            "message": "Aggregation \"totals\" metrics[0] with metric \"sum\" requires a field."
+        }
+    ],
+    "sum unknown field": [
+        {
+            "code": "aggregation-metrics-field-not-in-schema",
+            "message": "Aggregation \"totals\" metrics[0] field \"ghost\" is not declared in the schema properties."
+        }
+    ],
+    "sum known field": [],
+    "avg field not scalar": [
+        {
+            "code": "aggregation-metrics-field-missing",
+            "message": "Aggregation \"totals\" metrics[0] with metric \"avg\" requires a field."
+        }
+    ],
+    "bad alias and bad condition": [
+        {
+            "code": "aggregation-metrics-alias-malformed",
+            "message": "Aggregation \"totals\" metrics[0] \"as\" must be a non-empty string."
+        }
+    ],
+    "bad condition and no field": [
+        {
+            "code": "aggregation-metrics-condition-not-in-schema",
+            "message": "Aggregation \"totals\" metrics[0] condition property \"ghost\" is not declared in the schema properties. A filter on an undeclared property matches nothing and returns an empty result rather than an error."
+        }
+    ],
+    "min with bad alias and no field": [
+        {
+            "code": "aggregation-metrics-alias-malformed",
+            "message": "Aggregation \"totals\" metrics[0] \"as\" must be a non-empty string."
+        }
+    ],
+    "expression empty": [
+        {
+            "code": "aggregation-metrics-expression-empty",
+            "message": "Aggregation \"totals\" metrics[0] declares metric \"expression\" with no `expression` to evaluate."
+        }
+    ],
+    "expression unnamed": [
+        {
+            "code": "aggregation-metrics-expression-unnamed",
+            "message": "Aggregation \"totals\" metrics[0] is a derived metric and must declare `as`: it has no field or metric name to derive a response key from."
+        }
+    ],
+    "expression with field": [
+        {
+            "code": "aggregation-metrics-expression-has-field",
+            "message": "Aggregation \"totals\" metrics[0] is a derived metric and takes no `field`: it reads the aliases of the metrics beside it, not the rows."
+        }
+    ],
+    "expression good": [],
+    "several": [
+        {
+            "code": "aggregation-metrics-field-missing",
+            "message": "Aggregation \"totals\" metrics[1] with metric \"sum\" requires a field."
+        },
+        {
+            "code": "aggregation-metrics-entry-malformed",
+            "message": "Aggregation \"totals\" metrics[2] must be an object."
+        }
+    ],
+    "string keys": [
+        {
+            "code": "aggregation-metrics-malformed",
+            "message": "Aggregation \"totals\" metrics must be a non-empty list of {metric, field?} objects."
+        }
+    ]
+}

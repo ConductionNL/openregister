@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\GitHubIssuesControllerFactory;
 use OCA\OpenRegister\Controller\GitHubIssuesController;
 use OCA\OpenRegister\Service\Configuration\GitHubGuards;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
@@ -44,6 +45,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -57,6 +59,9 @@ use ReflectionMethod;
  * @package OCA\OpenRegister\Tests\Unit\Controller
  *
  * @covers \OCA\OpenRegister\Controller\GitHubIssuesController
+ * @uses \OCA\OpenRegister\Controller\Support\GitHubIssuesDomain
+ * @uses \OCA\OpenRegister\Controller\Support\GitHubIssuesPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\GitHubIssuesControllerServices
  * @uses \OCA\OpenRegister\Service\Configuration\GitHubGuards
  * @uses \OCA\OpenRegister\Service\Configuration\GitHubRequestValidator
  * @uses \OCA\OpenRegister\Service\Configuration\RateLimiterService
@@ -369,7 +374,7 @@ class GitHubIssuesControllerTest extends TestCase {
 		$validator = new GitHubRequestValidator();
 		$logger = $this->createMock(LoggerInterface::class);
 
-		return new GitHubIssuesController(
+		return GitHubIssuesControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			githubHandler: $handler ?? $this->createMock(GitHubHandler::class),
@@ -378,7 +383,8 @@ class GitHubIssuesControllerTest extends TestCase {
 			rateLimiter: $rateLimiter,
 			userSession: $userSession,
 			cacheFactory: $cacheFactory,
-			logger: $logger
+			logger: $logger,
+			groupManager: $this->createMock(IGroupManager::class)
 		);
 	}//end buildController()
 

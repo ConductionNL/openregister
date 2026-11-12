@@ -6,7 +6,7 @@
 	<NcDialog
 		:name="t('openregister', 'Merge objects')"
 		size="large"
-		:canClose="!executing"
+		:noClose="executing"
 		@closing="$emit('close')">
 		<div class="mergeWizard">
 			<template v-if="loading">
@@ -87,16 +87,14 @@
 			<NcButton :disabled="executing" @click="$emit('close')">
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
-			<NcButton
+			<BusyButton
+				:busy="executing"
 				variant="primary"
 				data-testid="mdm-merge-confirm"
 				:disabled="!canConfirm"
 				@click="confirm">
-				<template #icon>
-					<NcLoadingIcon v-if="executing" :size="20" />
-				</template>
 				{{ t('openregister', 'Confirm merge') }}
-			</NcButton>
+			</BusyButton>
 		</template>
 	</NcDialog>
 </template>
@@ -110,7 +108,63 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
+import BusyButton from '../../components/shared/BusyButton.vue'
 import { qualityStore } from '../../store/store.js'
+
+/**
+ * The reasons a steward can give for a merge: a review, then a cleanup.
+ *
+ * @return {Array<{id: string, label: string}>} The reasons
+ */
+function mergeReasons() {
+	return [...reviewReasons(), ...cleanupReasons()]
+}
+
+/**
+ * The merge reasons that come out of a review.
+ *
+ * @return {Array<{id: string, label: string}>} The reasons
+ */
+function reviewReasons() {
+	return [
+		{
+			id: 'duplicate-confirmed',
+			label: t('openregister', 'Confirmed duplicate'),
+		},
+		{
+			id: 'data-stewardship-review',
+			label: t('openregister', 'Data stewardship review'),
+		},
+	]
+}
+
+/**
+ * The merge reasons that come out of a cleanup.
+ *
+ * @return {Array<{id: string, label: string}>} The reasons
+ */
+function cleanupReasons() {
+	return [
+		{
+			id: 'manual-bulk',
+			label: t('openregister', 'Manual bulk cleanup'),
+		},
+		{ id: 'migration', label: t('openregister', 'Migration cleanup') },
+	]
+}
+
+/**
+ * Why a merge failed: the server's error, else a general message.
+ *
+ * @param {Error} e What went wrong
+ * @return {string} The message
+ */
+function mergeFailedText(e) {
+	return (
+		e.response?.data?.error
+		|| t('openregister', 'The merge could not be completed.')
+	)
+}
 
 /**
  * Pair-agnostic merge wizard: preview the projected post-merge golden
@@ -128,6 +182,7 @@ export default {
 	name: 'MdmMergeWizardModal',
 
 	components: {
+		BusyButton,
 		NcButton,
 		NcDialog,
 		NcLoadingIcon,
@@ -162,21 +217,7 @@ export default {
 			error: '',
 			preview: null,
 			reasonModel: null,
-			reasonOptions: [
-				{
-					id: 'duplicate-confirmed',
-					label: t('openregister', 'Confirmed duplicate'),
-				},
-				{
-					id: 'data-stewardship-review',
-					label: t('openregister', 'Data stewardship review'),
-				},
-				{
-					id: 'manual-bulk',
-					label: t('openregister', 'Manual bulk cleanup'),
-				},
-				{ id: 'migration', label: t('openregister', 'Migration cleanup') },
-			],
+			reasonOptions: mergeReasons(),
 		}
 	},
 
@@ -266,20 +307,27 @@ export default {
 			this.executing = true
 			this.error = ''
 			try {
-				const result = await qualityStore.executeMerge(
-					this.from,
-					this.into,
-					this.reasonModel?.id,
-				)
-				this.$emit('merged', result)
-				this.$emit('close')
+				await this.executeMerge()
 			} catch (e) {
-				this.error =
-					e.response?.data?.error
-					|| t('openregister', 'The merge could not be completed.')
+				this.error = mergeFailedText(e)
 			} finally {
 				this.executing = false
 			}
+		},
+
+		/**
+		 * Merge the two objects for the chosen reason, then say so and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async executeMerge() {
+			const result = await qualityStore.executeMerge(
+				this.from,
+				this.into,
+				this.reasonModel?.id,
+			)
+			this.$emit('merged', result)
+			this.$emit('close')
 		},
 	},
 }

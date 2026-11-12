@@ -12,32 +12,27 @@
 			</p>
 			<p><strong>This operation may take some time to complete.</strong></p>
 
-			<div class="dialog-actions">
-				<NcButton @click="$emit('closing')">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton
-					variant="error"
-					:disabled="rebasing"
-					@click="$emit('confirm')">
-					<template #icon>
-						<NcLoadingIcon v-if="rebasing" :size="20" />
-						<Refresh v-else :size="20" />
-					</template>
-					{{ rebasing ? 'Rebasing...' : 'Confirm Rebase' }}
-				</NcButton>
-			</div>
+			<SettingsDialogActions
+				:busy="rebasing"
+				:label="rebasing ? 'Rebasing...' : 'Confirm Rebase'"
+				@cancel="$emit('closing')"
+				@confirm="$emit('confirm')">
+				<template #icon>
+					<Refresh :size="20" />
+				</template>
+			</SettingsDialogActions>
 		</div>
 	</NcDialog>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
+import { NcDialog } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import SettingsDialogActions from './SettingsDialogActions.vue'
 
 export default {
 	name: 'RebaseConfirmationDialog',
-	components: { NcButton, NcDialog, NcLoadingIcon, Refresh },
+	components: { NcDialog, Refresh, SettingsDialogActions },
 	props: {
 		open: { type: Boolean, required: true },
 		rebasing: { type: Boolean, default: false },
@@ -47,7 +42,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/dialogs.scss' as *;
+
 .rebase-dialog-content {
 	padding: 20px;
 }
@@ -63,10 +60,5 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.dialog-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 24px;
-}
+@include dialog-actions;
 </style>

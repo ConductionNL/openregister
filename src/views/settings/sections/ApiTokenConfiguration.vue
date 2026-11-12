@@ -118,27 +118,28 @@ import { translate as t } from '@nextcloud/l10n'
 			</div>
 		</SettingsCard>
 
-		<!-- GitHub Token Configuration -->
 		<SettingsCard
-			:title="t('openregister', 'GitHub Personal Access Token')"
+			v-for="token in tokenCards"
+			:key="token.key"
+			:title="token.title"
 			icon="🔐"
 			:collapsible="false">
 			<template #icon>
-				<Github :size="20" />
+				<component :is="token.icon" :size="20" />
 			</template>
 
 			<div class="token-config">
 				<div class="token-field-group">
-					<label for="github-token">GitHub Token</label>
+					<label :for="token.id">{{ token.label }}</label>
 					<div class="token-input-row">
 						<NcPasswordField
-							id="github-token"
-							v-model="githubToken"
-							placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+							:id="token.id"
+							:modelValue="token.value"
+							:placeholder="token.placeholder"
 							autocomplete="off"
-							@update:modelValue="updateGitHubToken">
+							@update:modelValue="token.update">
 							<template #trailing-button-icon>
-								<Github :size="20" />
+								<component :is="token.icon" :size="20" />
 							</template>
 						</NcPasswordField>
 
@@ -147,10 +148,10 @@ import { translate as t } from '@nextcloud/l10n'
 								variant="primary"
 								:disabled="
 									saving
-									|| !githubToken
-									|| githubToken === originalGithubToken
+									|| !token.value
+									|| token.value === token.original
 								"
-								@click="saveGitHubToken">
+								@click="token.save">
 								<template #icon>
 									<NcLoadingIcon v-if="saving" :size="20" />
 									<ContentSave v-else :size="20" />
@@ -159,18 +160,18 @@ import { translate as t } from '@nextcloud/l10n'
 							</NcButton>
 							<NcButton
 								variant="secondary"
-								:disabled="testingGithub || !githubToken"
-								@click="testGitHubToken">
+								:disabled="token.testing || !token.value"
+								@click="token.test">
 								<template #icon>
-									<NcLoadingIcon v-if="testingGithub" :size="20" />
+									<NcLoadingIcon v-if="token.testing" :size="20" />
 									<TestTube v-else :size="20" />
 								</template>
 								Test Token
 							</NcButton>
 							<NcButton
 								variant="error"
-								:disabled="saving || !githubToken"
-								@click="clearGitHubToken">
+								:disabled="saving || !token.value"
+								@click="token.clear">
 								<template #icon>
 									<Delete :size="20" />
 								</template>
@@ -178,119 +179,33 @@ import { translate as t } from '@nextcloud/l10n'
 							</NcButton>
 							<span
 								v-if="
-									githubToken
-									&& githubToken === originalGithubToken
-									&& !githubTestResult
+									token.value
+									&& token.value === token.original
+									&& !token.result
 								"
 								class="saved-indicator">
 								<CheckCircle :size="20" /> Token saved
 							</span>
 							<span
-								v-if="githubTestResult && githubTestResult.success"
+								v-if="token.result && token.result.success"
 								class="test-result-success">
 								<CheckCircle :size="20" />
-								{{ githubTestResult.message }}
+								{{ token.result.message }}
 							</span>
 							<span
-								v-if="githubTestResult && !githubTestResult.success"
+								v-if="token.result && !token.result.success"
 								class="test-result-error">
 								<AlertCircle :size="20" />
-								{{ githubTestResult.message }}
+								{{ token.result.message }}
 							</span>
 						</div>
 					</div>
 
-					<p class="field-hint">
+					<p v-if="token.key === 'github'" class="field-hint">
 						<LockOutline :size="16" /> Optional: Required for discovering
 						and publishing configurations to/from GitHub
 					</p>
-				</div>
-			</div>
-		</SettingsCard>
-
-		<!-- GitLab Token Configuration -->
-		<SettingsCard
-			:title="t('openregister', 'GitLab Personal Access Token')"
-			icon="🔐"
-			:collapsible="false">
-			<template #icon>
-				<Gitlab :size="20" />
-			</template>
-
-			<div class="token-config">
-				<div class="token-field-group">
-					<label for="gitlab-token">GitLab Token</label>
-					<div class="token-input-row">
-						<NcPasswordField
-							id="gitlab-token"
-							v-model="gitlabToken"
-							placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
-							autocomplete="off"
-							@update:modelValue="updateGitLabToken">
-							<template #trailing-button-icon>
-								<Gitlab :size="20" />
-							</template>
-						</NcPasswordField>
-
-						<div class="token-actions">
-							<NcButton
-								variant="primary"
-								:disabled="
-									saving
-									|| !gitlabToken
-									|| gitlabToken === originalGitlabToken
-								"
-								@click="saveGitLabToken">
-								<template #icon>
-									<NcLoadingIcon v-if="saving" :size="20" />
-									<ContentSave v-else :size="20" />
-								</template>
-								Save Token
-							</NcButton>
-							<NcButton
-								variant="secondary"
-								:disabled="testingGitlab || !gitlabToken"
-								@click="testGitLabToken">
-								<template #icon>
-									<NcLoadingIcon v-if="testingGitlab" :size="20" />
-									<TestTube v-else :size="20" />
-								</template>
-								Test Token
-							</NcButton>
-							<NcButton
-								variant="error"
-								:disabled="saving || !gitlabToken"
-								@click="clearGitLabToken">
-								<template #icon>
-									<Delete :size="20" />
-								</template>
-								Clear Token
-							</NcButton>
-							<span
-								v-if="
-									gitlabToken
-									&& gitlabToken === originalGitlabToken
-									&& !gitlabTestResult
-								"
-								class="saved-indicator">
-								<CheckCircle :size="20" /> Token saved
-							</span>
-							<span
-								v-if="gitlabTestResult && gitlabTestResult.success"
-								class="test-result-success">
-								<CheckCircle :size="20" />
-								{{ gitlabTestResult.message }}
-							</span>
-							<span
-								v-if="gitlabTestResult && !gitlabTestResult.success"
-								class="test-result-error">
-								<AlertCircle :size="20" />
-								{{ gitlabTestResult.message }}
-							</span>
-						</div>
-					</div>
-
-					<p class="field-hint">
+					<p v-else class="field-hint">
 						<LockOutline :size="16" /> Optional: Use
 						<code>read_api</code> for discovery, or <code>api</code> for
 						discovery + publishing
@@ -298,7 +213,7 @@ import { translate as t } from '@nextcloud/l10n'
 				</div>
 
 				<!-- GitLab Instance URL -->
-				<div class="gitlab-url-section">
+				<div v-if="token.key === 'gitlab'" class="gitlab-url-section">
 					<h5>🌐 Custom GitLab Instance (Optional)</h5>
 					<div class="token-field-group">
 						<label for="gitlab-url">GitLab API Base URL</label>
@@ -369,6 +284,51 @@ import TestTube from 'vue-material-design-icons/TestTube.vue'
 import Web from 'vue-material-design-icons/Web.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import { saveMessageMethods } from './saveMessage.js'
+
+/**
+ * The API token settings endpoint.
+ *
+ * @return {string} The URL
+ */
+function tokenSettingsUrl() {
+	return generateUrl('/apps/openregister/api/settings/api-tokens')
+}
+
+/**
+ * Save part of the API token settings.
+ *
+ * @param {object} body The settings to change
+ * @return {Promise<object>} The axios response
+ */
+function postTokenSettings(body) {
+	return axios.post(tokenSettingsUrl(), body)
+}
+
+/**
+ * Ask the backend whether a provider's token works.
+ *
+ * @param {string} provider 'github' or 'gitlab'
+ * @param {object} body The token, and for GitLab its instance URL
+ * @return {Promise<object>} The test endpoint's answer
+ */
+async function postTokenTest(provider, body) {
+	const response = await axios.post(
+		generateUrl(`/apps/openregister/api/settings/api-tokens/test/${provider}`),
+		body,
+	)
+	return response.data
+}
+
+/**
+ * The reason a token test failed: the server's message, else the error's own.
+ *
+ * @param {object} error The axios error
+ * @return {string} The reason
+ */
+function failureMessage(error) {
+	return error.response?.data?.message || error.message || 'Unknown error'
+}
 
 /**
  * API Token Configuration Component
@@ -420,11 +380,71 @@ export default {
 		}
 	},
 
+	computed: {
+		/**
+		 * The GitHub and GitLab token cards: their texts, current and stored
+		 * token, test state and handlers, for display.
+		 *
+		 * @spec exclude UI plumbing — token card layout over local fields.
+		 * @return {Array<object>}
+		 */
+		tokenCards() {
+			return [
+				{
+					key: 'github',
+					id: 'github-token',
+					label: 'GitHub Token',
+					title: this.t('openregister', 'GitHub Personal Access Token'),
+					icon: Github,
+					placeholder: 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+					...this.tokenState('github', 'GitHub'),
+				},
+				{
+					key: 'gitlab',
+					id: 'gitlab-token',
+					label: 'GitLab Token',
+					title: this.t('openregister', 'GitLab Personal Access Token'),
+					icon: Gitlab,
+					placeholder: 'glpat-xxxxxxxxxxxxxxxxxxxx',
+					...this.tokenState('gitlab', 'GitLab'),
+				},
+			]
+		},
+	},
+
 	async mounted() {
 		await this.loadTokens()
 	},
 
 	methods: {
+		...saveMessageMethods,
+
+		/**
+		 * The current and stored token, test state and handlers of a provider.
+		 *
+		 * @spec exclude UI plumbing — binds a token card to its local fields.
+		 * @param {string} field The prefix of its fields, such as `github`
+		 * @param {string} name The suffix of its handlers, such as `GitHub`
+		 * @return {object} The token state
+		 */
+		tokenState(field, name) {
+			const suffix = field.charAt(0).toUpperCase() + field.slice(1)
+			return {
+				value: this[`${field}Token`],
+				original: this[`original${suffix}Token`],
+				testing: this[`testing${suffix}`],
+				result: this[`${field}TestResult`],
+				update: (value) => {
+					this[`${field}Token`] = value
+					this[`update${name}Token`](value)
+				},
+
+				save: () => this[`save${name}Token`](),
+				test: () => this[`test${name}Token`](),
+				clear: () => this[`clear${name}Token`](),
+			}
+		},
+
 		/**
 		 * Load existing API tokens from the backend
 		 *
@@ -434,21 +454,30 @@ export default {
 		async loadTokens() {
 			this.loading = true
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/api-tokens'),
-				)
-				this.githubToken = response.data.github_token || ''
-				this.gitlabToken = response.data.gitlab_token || ''
-				this.gitlabUrl = response.data.gitlab_url || ''
-				this.originalGithubToken = this.githubToken
-				this.originalGitlabToken = this.gitlabToken
-				this.originalGitlabUrl = this.gitlabUrl
+				const response = await axios.get(tokenSettingsUrl())
+				this.applyLoadedTokens(response.data)
 			} catch (error) {
 				console.error('Failed to load API tokens:', error)
 				// Don't show error on initial load as tokens might not be set
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Show the loaded token settings and remember them as saved.
+		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local fields.
+		 * @param {object} data The token settings
+		 * @return {void}
+		 */
+		applyLoadedTokens(data) {
+			this.githubToken = data.github_token || ''
+			this.gitlabToken = data.gitlab_token || ''
+			this.gitlabUrl = data.gitlab_url || ''
+			this.originalGithubToken = this.githubToken
+			this.originalGitlabToken = this.gitlabToken
+			this.originalGitlabUrl = this.gitlabUrl
 		},
 
 		/**
@@ -493,12 +522,7 @@ export default {
 		async saveGitHubToken() {
 			this.saving = true
 			try {
-				await axios.post(
-					generateUrl('/apps/openregister/api/settings/api-tokens'),
-					{
-						github_token: this.githubToken,
-					},
-				)
+				await postTokenSettings({ github_token: this.githubToken })
 				this.originalGithubToken = this.githubToken
 				showSuccess(
 					this.t('openregister', 'GitHub token saved successfully'),
@@ -520,12 +544,7 @@ export default {
 		async saveGitLabToken() {
 			this.saving = true
 			try {
-				await axios.post(
-					generateUrl('/apps/openregister/api/settings/api-tokens'),
-					{
-						gitlab_token: this.gitlabToken,
-					},
-				)
+				await postTokenSettings({ gitlab_token: this.gitlabToken })
 				this.originalGitlabToken = this.gitlabToken
 				showSuccess(
 					this.t('openregister', 'GitLab token saved successfully'),
@@ -547,12 +566,7 @@ export default {
 		async saveGitLabUrl() {
 			this.saving = true
 			try {
-				await axios.post(
-					generateUrl('/apps/openregister/api/settings/api-tokens'),
-					{
-						gitlab_url: this.gitlabUrl,
-					},
-				)
+				await postTokenSettings({ gitlab_url: this.gitlabUrl })
 				this.originalGitlabUrl = this.gitlabUrl
 				showSuccess(this.t('openregister', 'GitLab URL saved successfully'))
 			} catch (error) {
@@ -586,22 +600,6 @@ export default {
 		},
 
 		/**
-		 * Show save message
-		 *
-		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
-		 * @param {string} message - The message to show
-		 * @param {string} type - The type of message ('success' or 'error')
-		 * @return {void}
-		 */
-		showSaveMessage(message, type = 'success') {
-			this.saveMessage = message
-			this.saveMessageType = type
-			setTimeout(() => {
-				this.saveMessage = ''
-			}, 3000)
-		},
-
-		/**
 		 * Test GitHub token validity
 		 *
 		 * @spec exclude UI plumbing — thin POST + result display; token validation contract owned by backend.
@@ -612,42 +610,53 @@ export default {
 			this.githubTestResult = null
 			try {
 				// Send the current token value for testing
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/settings/api-tokens/test/github',
-					),
-					{ token: this.githubToken },
-				)
-				this.githubTestResult = {
-					success: true,
-					message: response.data.message,
-					username: response.data.username,
-					scopes: response.data.scopes,
-				}
-				showSuccess(
-					this.t(
-						'openregister',
-						'GitHub token is valid! Username: {username}',
-						{
-							username: response.data.username,
-						},
-					),
-				)
+				const data = await postTokenTest('github', { token: this.githubToken })
+				this.githubTokenPassed(data)
 			} catch (error) {
-				const message =
-					error.response?.data?.message || error.message || 'Unknown error'
-				this.githubTestResult = {
-					success: false,
-					message,
-				}
-				showError(
-					this.t('openregister', 'GitHub token test failed: {message}', {
-						message,
-					}),
-				)
+				this.githubTokenFailed(failureMessage(error))
 			} finally {
 				this.testingGithub = false
 			}
+		},
+
+		/**
+		 * Show a passed GitHub token test.
+		 *
+		 * @spec exclude UI plumbing — token test result display.
+		 * @param {object} data The test endpoint's answer
+		 * @return {void}
+		 */
+		githubTokenPassed(data) {
+			this.githubTestResult = {
+				success: true,
+				message: data.message,
+				username: data.username,
+				scopes: data.scopes,
+			}
+			showSuccess(
+				this.t('openregister', 'GitHub token is valid! Username: {username}', {
+					username: data.username,
+				}),
+			)
+		},
+
+		/**
+		 * Show a failed GitHub token test.
+		 *
+		 * @spec exclude UI plumbing — token test result display.
+		 * @param {string} message Why it failed
+		 * @return {void}
+		 */
+		githubTokenFailed(message) {
+			this.githubTestResult = {
+				success: false,
+				message,
+			}
+			showError(
+				this.t('openregister', 'GitHub token test failed: {message}', {
+					message,
+				}),
+			)
 		},
 
 		/**
@@ -661,63 +670,66 @@ export default {
 			this.gitlabTestResult = null
 			try {
 				// Send the current token value for testing
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/settings/api-tokens/test/gitlab',
-					),
-					{ token: this.gitlabToken, url: this.gitlabUrl },
-				)
-				this.gitlabTestResult = {
-					success: true,
-					message: response.data.message,
-					username: response.data.username,
-					instance: response.data.instance,
-				}
-				showSuccess(
-					this.t(
-						'openregister',
-						'GitLab token is valid! Username: {username}',
-						{
-							username: response.data.username,
-						},
-					),
-				)
+				const data = await postTokenTest('gitlab', {
+					token: this.gitlabToken,
+					url: this.gitlabUrl,
+				})
+				this.gitlabTokenPassed(data)
 			} catch (error) {
-				const message =
-					error.response?.data?.message || error.message || 'Unknown error'
-				this.gitlabTestResult = {
-					success: false,
-					message,
-				}
-				showError(
-					this.t('openregister', 'GitLab token test failed: {message}', {
-						message,
-					}),
-				)
+				this.gitlabTokenFailed(failureMessage(error))
 			} finally {
 				this.testingGitlab = false
 			}
+		},
+
+		/**
+		 * Show a passed GitLab token test.
+		 *
+		 * @spec exclude UI plumbing — token test result display.
+		 * @param {object} data The test endpoint's answer
+		 * @return {void}
+		 */
+		gitlabTokenPassed(data) {
+			this.gitlabTestResult = {
+				success: true,
+				message: data.message,
+				username: data.username,
+				instance: data.instance,
+			}
+			showSuccess(
+				this.t('openregister', 'GitLab token is valid! Username: {username}', {
+					username: data.username,
+				}),
+			)
+		},
+
+		/**
+		 * Show a failed GitLab token test.
+		 *
+		 * @spec exclude UI plumbing — token test result display.
+		 * @param {string} message Why it failed
+		 * @return {void}
+		 */
+		gitlabTokenFailed(message) {
+			this.gitlabTestResult = {
+				success: false,
+				message,
+			}
+			showError(
+				this.t('openregister', 'GitLab token test failed: {message}', {
+					message,
+				}),
+			)
 		},
 	},
 }
 </script>
 
-<style scoped>
-/* Section Description */
-.section-description-full {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 20px;
-	margin-bottom: 20px;
-}
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
 
-.main-description {
-	color: var(--color-text-light);
-	font-size: 14px;
-	line-height: 1.6;
-	margin: 0 0 16px 0;
-}
+/* Section Description */
+@include section-description-full-rules;
 
 .main-description:last-child {
 	margin-bottom: 0;
@@ -768,7 +780,8 @@ export default {
 	line-height: 1.5;
 }
 
-.scope-item code {
+.scope-item code,
+.scope-list code {
 	background: var(--color-background-dark);
 	padding: 2px 6px;
 	border-radius: 3px;
@@ -793,15 +806,6 @@ export default {
 	margin: 6px 0;
 	font-size: 14px;
 	line-height: 1.5;
-}
-
-.scope-list code {
-	background: var(--color-background-dark);
-	padding: 2px 6px;
-	border-radius: 3px;
-	font-family: monospace;
-	color: var(--color-primary-element);
-	font-weight: 600;
 }
 
 .scope-note {
@@ -907,7 +911,8 @@ export default {
 	flex: 1;
 }
 
-.saved-indicator {
+.saved-indicator,
+.test-result-success {
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -917,12 +922,6 @@ export default {
 }
 
 .test-result-success {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	color: var(--color-success);
-	font-weight: 500;
-	font-size: 14px;
 	padding: 8px 12px;
 	background-color: var(--color-success-light);
 	border-radius: var(--border-radius);
@@ -955,23 +954,7 @@ export default {
 }
 
 /* Save Message */
-.save-message {
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-	text-align: center;
-	font-weight: 500;
-}
-
-.save-message.success {
-	background: var(--color-success);
-	color: white;
-}
-
-.save-message.error {
-	background: var(--color-error);
-	color: white;
-}
+@include save-message-rules;
 
 @media (max-width: 768px) {
 	.scopes-info {

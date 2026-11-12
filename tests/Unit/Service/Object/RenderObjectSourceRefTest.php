@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -136,10 +138,10 @@ class RenderObjectSourceRefTest extends TestCase {
 		$provider = $this->createMock(ObjectSourceProvider::class);
 		$provider->expects($this->once())
 			->method('find')
-			->with($register, $target, 'org-uuid', [])
+			->with(new SourcedTable(new RegisterSchema($register, $target), []), 'org-uuid')
 			->willReturn(null);
 
-		$this->assertNull($provider->find($register, $target, 'org-uuid', []));
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $target), []), 'org-uuid'));
 
 	}//end testAProviderIsAskedWithinARegister()
 }//end class

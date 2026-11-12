@@ -1,0 +1,1014 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`configuration source actions golden discoverConfigurations(["github"]): network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error discovering configurations:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=github",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["github"]): ok 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      {
+        "id": "c1",
+      },
+    ],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=github",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["github"]): ok empty 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=github",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["github"]): refused with error 1`] = `
+{
+  "logged": [
+    [
+      "Error discovering configurations:",
+      "Error(Source says no)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Source says no",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=github",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["github"]): refused without error 1`] = `
+{
+  "logged": [
+    [
+      "Error discovering configurations:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=github",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["github"]): unreadable 1`] = `
+{
+  "logged": [
+    [
+      "Error discovering configurations:",
+      "Error(Unexpected token)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Unexpected token",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=github",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["gitlab","needle"]): network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error discovering configurations:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=gitlab&_search=needle",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["gitlab","needle"]): ok 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      {
+        "id": "c1",
+      },
+    ],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=gitlab&_search=needle",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["gitlab","needle"]): ok empty 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=gitlab&_search=needle",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["gitlab","needle"]): refused with error 1`] = `
+{
+  "logged": [
+    [
+      "Error discovering configurations:",
+      "Error(Source says no)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Source says no",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=gitlab&_search=needle",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["gitlab","needle"]): refused without error 1`] = `
+{
+  "logged": [
+    [
+      "Error discovering configurations:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=gitlab&_search=needle",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden discoverConfigurations(["gitlab","needle"]): unreadable 1`] = `
+{
+  "logged": [
+    [
+      "Error discovering configurations:",
+      "Error(Unexpected token)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Unexpected token",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/discover?source=gitlab&_search=needle",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getBranches(["github",{"owner":"o","repo":"r"}]): network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching branches:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getBranches(["github",{"owner":"o","repo":"r"}]): ok 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      "main",
+    ],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getBranches(["github",{"owner":"o","repo":"r"}]): ok empty 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getBranches(["github",{"owner":"o","repo":"r"}]): refused with error 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching branches:",
+      "Error(HTTP error! status: 422)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 422",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getBranches(["github",{"owner":"o","repo":"r"}]): refused without error 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching branches:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getBranches(["github",{"owner":"o","repo":"r"}]): unreadable 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching branches:",
+      "Error(HTTP error! status: 502)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 502",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/github/branches?owner=o&repo=r",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getConfigurationFiles(["gitlab",{"project":"p","branch":"main"}]): network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching configuration files:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?project=p&branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getConfigurationFiles(["gitlab",{"project":"p","branch":"main"}]): ok 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [
+      "a.json",
+    ],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?project=p&branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getConfigurationFiles(["gitlab",{"project":"p","branch":"main"}]): ok empty 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": [],
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?project=p&branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getConfigurationFiles(["gitlab",{"project":"p","branch":"main"}]): refused with error 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching configuration files:",
+      "Error(HTTP error! status: 422)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 422",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?project=p&branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getConfigurationFiles(["gitlab",{"project":"p","branch":"main"}]): refused without error 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching configuration files:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?project=p&branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden getConfigurationFiles(["gitlab",{"project":"p","branch":"main"}]): unreadable 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching configuration files:",
+      "Error(HTTP error! status: 502)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 502",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/gitlab/files?project=p&branch=main",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitHub([{"owner":"o","repo":"r","path":"x.json"}]): network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitHub:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitHub([{"owner":"o","repo":"r","path":"x.json"}]): ok 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "branches": [
+        "main",
+      ],
+      "files": [
+        "a.json",
+      ],
+      "imported": 2,
+      "results": [
+        {
+          "id": "c1",
+        },
+      ],
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitHub([{"owner":"o","repo":"r","path":"x.json"}]): ok empty 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {},
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitHub([{"owner":"o","repo":"r","path":"x.json"}]): refused with error 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitHub:",
+      "Error(Source says no)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Source says no",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitHub([{"owner":"o","repo":"r","path":"x.json"}]): refused without error 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitHub:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitHub([{"owner":"o","repo":"r","path":"x.json"}]): unreadable 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitHub:",
+      "Error(Unexpected token)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Unexpected token",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/github",
+      {
+        "body": "{"owner":"o","repo":"r","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitLab([{"project":"p","path":"x.json"}]): network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitLab:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitLab([{"project":"p","path":"x.json"}]): ok 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "branches": [
+        "main",
+      ],
+      "files": [
+        "a.json",
+      ],
+      "imported": 2,
+      "results": [
+        {
+          "id": "c1",
+        },
+      ],
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitLab([{"project":"p","path":"x.json"}]): ok empty 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {},
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitLab([{"project":"p","path":"x.json"}]): refused with error 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitLab:",
+      "Error(Source says no)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Source says no",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitLab([{"project":"p","path":"x.json"}]): refused without error 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitLab:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromGitLab([{"project":"p","path":"x.json"}]): unreadable 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from GitLab:",
+      "Error(Unexpected token)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Unexpected token",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/gitlab",
+      {
+        "body": "{"project":"p","path":"x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromUrl([{"url":"https://example.org/x.json"}]): network failure 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from URL:",
+      "Error(Network down)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Network down",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.org/x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromUrl([{"url":"https://example.org/x.json"}]): ok 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {
+      "branches": [
+        "main",
+      ],
+      "files": [
+        "a.json",
+      ],
+      "imported": 2,
+      "results": [
+        {
+          "id": "c1",
+        },
+      ],
+    },
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.org/x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromUrl([{"url":"https://example.org/x.json"}]): ok empty 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": {},
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.org/x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/configurations",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromUrl([{"url":"https://example.org/x.json"}]): refused with error 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from URL:",
+      "Error(Source says no)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Source says no",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.org/x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromUrl([{"url":"https://example.org/x.json"}]): refused without error 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from URL:",
+      "Error(HTTP error! status: 500)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "HTTP error! status: 500",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.org/x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`configuration source actions golden importFromUrl([{"url":"https://example.org/x.json"}]): unreadable 1`] = `
+{
+  "logged": [
+    [
+      "Error importing from URL:",
+      "Error(Unexpected token)",
+    ],
+  ],
+  "outcome": {
+    "thrown": "Unexpected token",
+  },
+  "requests": [
+    [
+      "/index.php/apps/openregister/api/configurations/import/url",
+      {
+        "body": "{"url":"https://example.org/x.json"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+}
+`;

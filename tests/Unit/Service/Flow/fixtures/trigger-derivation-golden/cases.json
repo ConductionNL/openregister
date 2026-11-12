@@ -1,0 +1,614 @@
+{
+    "nothing": {
+        "input": {
+            "nodes": [],
+            "trigger": null,
+            "register": null,
+            "schema": null
+        },
+        "triggerNodes": [],
+        "objectTriggers": [],
+        "columnTrigger": null,
+        "compare": {
+            "equivalent": true,
+            "reason": "no object trigger either way",
+            "columns": null,
+            "nodes": []
+        }
+    },
+    "null nodes": {
+        "input": {
+            "nodes": null,
+            "trigger": null,
+            "register": null,
+            "schema": null
+        },
+        "triggerNodes": [],
+        "objectTriggers": [],
+        "columnTrigger": null,
+        "compare": {
+            "equivalent": true,
+            "reason": "no object trigger either way",
+            "columns": null,
+            "nodes": []
+        }
+    },
+    "nodes only": {
+        "input": {
+            "nodes": [
+                {
+                    "id": "tcreated57",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "created",
+                        "register": "5",
+                        "schema": "7"
+                    }
+                }
+            ],
+            "trigger": null,
+            "register": null,
+            "schema": null
+        },
+        "triggerNodes": [
+            {
+                "id": "tcreated57",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            }
+        ],
+        "objectTriggers": [
+            {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            }
+        ],
+        "columnTrigger": null,
+        "compare": {
+            "equivalent": false,
+            "reason": "nodes declare a trigger the columns do not: the flow does NOT fire today",
+            "columns": null,
+            "nodes": [
+                {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            ]
+        }
+    },
+    "columns only": {
+        "input": {
+            "nodes": [],
+            "trigger": "created",
+            "register": "5",
+            "schema": "7"
+        },
+        "triggerNodes": [],
+        "objectTriggers": [],
+        "columnTrigger": {
+            "event": "created",
+            "register": "5",
+            "schema": "7"
+        },
+        "compare": {
+            "equivalent": false,
+            "reason": "columns declare a trigger no node does: the flow WOULD STOP firing",
+            "columns": {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            },
+            "nodes": []
+        }
+    },
+    "blank column event": {
+        "input": {
+            "nodes": [
+                {
+                    "id": "tcreated57",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "created",
+                        "register": "5",
+                        "schema": "7"
+                    }
+                }
+            ],
+            "trigger": "  ",
+            "register": "5",
+            "schema": "7"
+        },
+        "triggerNodes": [
+            {
+                "id": "tcreated57",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            }
+        ],
+        "objectTriggers": [
+            {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            }
+        ],
+        "columnTrigger": null,
+        "compare": {
+            "equivalent": false,
+            "reason": "nodes declare a trigger the columns do not: the flow does NOT fire today",
+            "columns": null,
+            "nodes": [
+                {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            ]
+        }
+    },
+    "unscoped register": {
+        "input": {
+            "nodes": [
+                {
+                    "id": "tcreated57",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "created",
+                        "register": "5",
+                        "schema": "7"
+                    }
+                }
+            ],
+            "trigger": "created",
+            "register": "",
+            "schema": "7"
+        },
+        "triggerNodes": [
+            {
+                "id": "tcreated57",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            }
+        ],
+        "objectTriggers": [
+            {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            }
+        ],
+        "columnTrigger": {
+            "event": "created",
+            "register": "*",
+            "schema": "7"
+        },
+        "compare": {
+            "equivalent": false,
+            "reason": "the column trigger is unscoped (any register/schema), which no node can express",
+            "columns": {
+                "event": "created",
+                "register": "*",
+                "schema": "7"
+            },
+            "nodes": [
+                {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            ]
+        }
+    },
+    "unscoped schema": {
+        "input": {
+            "nodes": [
+                {
+                    "id": "tcreated57",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "created",
+                        "register": "5",
+                        "schema": "7"
+                    }
+                }
+            ],
+            "trigger": " created ",
+            "register": " 5 ",
+            "schema": null
+        },
+        "triggerNodes": [
+            {
+                "id": "tcreated57",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            }
+        ],
+        "objectTriggers": [
+            {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            }
+        ],
+        "columnTrigger": {
+            "event": "created",
+            "register": "5",
+            "schema": "*"
+        },
+        "compare": {
+            "equivalent": false,
+            "reason": "the column trigger is unscoped (any register/schema), which no node can express",
+            "columns": {
+                "event": "created",
+                "register": "5",
+                "schema": "*"
+            },
+            "nodes": [
+                {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            ]
+        }
+    },
+    "exact match": {
+        "input": {
+            "nodes": [
+                {
+                    "id": "t created  57 ",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": " created ",
+                        "register": " 5",
+                        "schema": "7 "
+                    }
+                }
+            ],
+            "trigger": "created",
+            "register": "5",
+            "schema": "7"
+        },
+        "triggerNodes": [
+            {
+                "id": "t created  57 ",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": " created ",
+                    "register": " 5",
+                    "schema": "7 "
+                }
+            }
+        ],
+        "objectTriggers": [
+            {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            }
+        ],
+        "columnTrigger": {
+            "event": "created",
+            "register": "5",
+            "schema": "7"
+        },
+        "compare": {
+            "equivalent": true,
+            "reason": "exact match",
+            "columns": {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            },
+            "nodes": [
+                {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            ]
+        }
+    },
+    "among several": {
+        "input": {
+            "nodes": [
+                {
+                    "id": "tupdated57",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "updated",
+                        "register": "5",
+                        "schema": "7"
+                    }
+                },
+                {
+                    "id": "tcreated57",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "created",
+                        "register": "5",
+                        "schema": "7"
+                    }
+                },
+                {
+                    "id": "tcreated57",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "created",
+                        "register": "5",
+                        "schema": "7"
+                    }
+                }
+            ],
+            "trigger": "created",
+            "register": "5",
+            "schema": "7"
+        },
+        "triggerNodes": [
+            {
+                "id": "tupdated57",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "updated",
+                    "register": "5",
+                    "schema": "7"
+                }
+            },
+            {
+                "id": "tcreated57",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            },
+            {
+                "id": "tcreated57",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            }
+        ],
+        "objectTriggers": [
+            {
+                "event": "updated",
+                "register": "5",
+                "schema": "7"
+            },
+            {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            }
+        ],
+        "columnTrigger": {
+            "event": "created",
+            "register": "5",
+            "schema": "7"
+        },
+        "compare": {
+            "equivalent": true,
+            "reason": "the column trigger is among the node triggers; the extra node triggers are NEW",
+            "columns": {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            },
+            "nodes": [
+                {
+                    "event": "updated",
+                    "register": "5",
+                    "schema": "7"
+                },
+                {
+                    "event": "created",
+                    "register": "5",
+                    "schema": "7"
+                }
+            ]
+        }
+    },
+    "no match": {
+        "input": {
+            "nodes": [
+                {
+                    "id": "tupdated57",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "updated",
+                        "register": "5",
+                        "schema": "7"
+                    }
+                }
+            ],
+            "trigger": "created",
+            "register": "5",
+            "schema": "7"
+        },
+        "triggerNodes": [
+            {
+                "id": "tupdated57",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "updated",
+                    "register": "5",
+                    "schema": "7"
+                }
+            }
+        ],
+        "objectTriggers": [
+            {
+                "event": "updated",
+                "register": "5",
+                "schema": "7"
+            }
+        ],
+        "columnTrigger": {
+            "event": "created",
+            "register": "5",
+            "schema": "7"
+        },
+        "compare": {
+            "equivalent": false,
+            "reason": "no node trigger matches the column trigger",
+            "columns": {
+                "event": "created",
+                "register": "5",
+                "schema": "7"
+            },
+            "nodes": [
+                {
+                    "event": "updated",
+                    "register": "5",
+                    "schema": "7"
+                }
+            ]
+        }
+    },
+    "messy nodes": {
+        "input": {
+            "nodes": [
+                "junk",
+                null,
+                {
+                    "id": "s",
+                    "type": "openregister.trigger-schedule",
+                    "config": {
+                        "cron": "* * * * *"
+                    }
+                },
+                {
+                    "id": "m",
+                    "type": "openregister.trigger-manual"
+                },
+                {
+                    "id": "x",
+                    "type": "openregister.send-email",
+                    "config": {
+                        "event": "created",
+                        "register": "5",
+                        "schema": "7"
+                    }
+                },
+                {
+                    "id": "bad",
+                    "type": "openregister.trigger-object",
+                    "config": "oops"
+                },
+                {
+                    "id": "half",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "created",
+                        "register": "5"
+                    }
+                },
+                {
+                    "id": "nocfg",
+                    "type": "openregister.trigger-object"
+                },
+                {
+                    "id": "tdeleted12",
+                    "type": "openregister.trigger-object",
+                    "config": {
+                        "event": "deleted",
+                        "register": "1",
+                        "schema": "2"
+                    }
+                }
+            ],
+            "trigger": "deleted",
+            "register": "1",
+            "schema": "2"
+        },
+        "triggerNodes": [
+            {
+                "id": "s",
+                "type": "openregister.trigger-schedule",
+                "config": {
+                    "cron": "* * * * *"
+                }
+            },
+            {
+                "id": "m",
+                "type": "openregister.trigger-manual"
+            },
+            {
+                "id": "bad",
+                "type": "openregister.trigger-object",
+                "config": "oops"
+            },
+            {
+                "id": "half",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "created",
+                    "register": "5"
+                }
+            },
+            {
+                "id": "nocfg",
+                "type": "openregister.trigger-object"
+            },
+            {
+                "id": "tdeleted12",
+                "type": "openregister.trigger-object",
+                "config": {
+                    "event": "deleted",
+                    "register": "1",
+                    "schema": "2"
+                }
+            }
+        ],
+        "objectTriggers": [
+            {
+                "event": "deleted",
+                "register": "1",
+                "schema": "2"
+            }
+        ],
+        "columnTrigger": {
+            "event": "deleted",
+            "register": "1",
+            "schema": "2"
+        },
+        "compare": {
+            "equivalent": true,
+            "reason": "exact match",
+            "columns": {
+                "event": "deleted",
+                "register": "1",
+                "schema": "2"
+            },
+            "nodes": [
+                {
+                    "event": "deleted",
+                    "register": "1",
+                    "schema": "2"
+                }
+            ]
+        }
+    }
+}

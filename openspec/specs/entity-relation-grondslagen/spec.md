@@ -300,7 +300,7 @@ A retry that omits a field does not touch the persisted value — supports retry
 
 The system MUST filter out relations where `skip_anonymization = true` from both anonymise paths:
 
-1. **HTTP path** (`POST /api/files/:fileId/anonymize` → `FileTextController::anonymizeFile`): the relations returned for text-replacement MUST exclude rows where `skip_anonymization = true`. `EntityRelationMapper::markAsAnonymized($fileId, ...)` MUST update only rows where `skip_anonymization = false` — skipped rows MUST retain `anonymized = false`.
+1. **HTTP path** (`POST /api/files/:fileId/anonymize` → `FileTextController::anonymizeFile`): the relations returned for text-replacement MUST exclude rows where `skip_anonymization = true`. `EntityRelationMapper::markAsAnonymizedWithPlaceholders($fileId, ...)` MUST update only rows where `skip_anonymization = false` — skipped rows MUST retain `anonymized = false`.
 
 2. **DI path** (`FileService::anonymizeDocument(Node, entities[])`): regardless of what entities the caller passes, the OR-side service MUST consult the persisted `skip_anonymization` state per entity-relation and filter out skipped rows before calling `DocumentProcessingHandler::anonymizeDocument`. Defensive filtering inside OR — the contract is "skipped relations are never redacted, full stop", regardless of caller behaviour.
 
@@ -322,10 +322,10 @@ The system MUST filter out relations where `skip_anonymization = true` from both
 - **AND** the resulting file MUST NOT include R2's placeholder
 - **AND** R2's row MUST have `anonymized = false`
 
-#### Scenario: `markAsAnonymized` does not flip anonymized on skipped rows
+#### Scenario: `markAsAnonymizedWithPlaceholders` does not flip anonymized on skipped rows
 
 - **GIVEN** a file `F` with relations R1 (`skip=false`) and R2 (`skip=true`)
-- **WHEN** `EntityRelationMapper::markAsAnonymized($F, ...)` runs
+- **WHEN** `EntityRelationMapper::markAsAnonymizedWithPlaceholders($F, ...)` runs
 - **THEN** R1 MUST have `anonymized = true`
 - **AND** R2 MUST have `anonymized = false`
 
@@ -382,9 +382,9 @@ Fallback: when an entity in the substitution map has no matching row in `openreg
 - **THEN** the placeholder MUST follow the shape `[PERSON: <8-char-hex>]` where the hex is a UUID v4 fragment
 - **AND** a warning MUST be logged identifying the fallback (without including the entity text per ADR-005)
 
-### Requirement: Sole canonical caller of `markAsAnonymized` for the redaction flow MUST be `DocumentProcessingHandler::anonymizeDocument`
+### Requirement: Sole canonical caller of `markAsAnonymizedWithPlaceholders` for the redaction flow MUST be `DocumentProcessingHandler::anonymizeDocument`
 
-To prevent double-write conflicts where two callers both invoke `EntityRelationMapper::markAsAnonymized($fileId, ...)` on the same file (the second UPDATE overwrites the first's `anonymizedValue`), the call MUST be made by exactly ONE component in the redaction code path: `DocumentProcessingHandler::anonymizeDocument`. The HTTP controller (`FileTextController::anonymizeFile`) and any event listeners or DI orchestrators MUST NOT call `markAsAnonymized` independently — they invoke `anonymizeDocument`, and `anonymizeDocument` handles the marking.
+To prevent double-write conflicts where two callers both invoke `EntityRelationMapper::markAsAnonymizedWithPlaceholders($fileId, ...)` on the same file (the second UPDATE overwrites the first's `anonymizedValue`), the call MUST be made by exactly ONE component in the redaction code path: `DocumentProcessingHandler::anonymizeDocument`. The HTTP controller (`FileTextController::anonymizeFile`) and any event listeners or DI orchestrators MUST NOT call `markAsAnonymizedWithPlaceholders` independently — they invoke `anonymizeDocument`, and `anonymizeDocument` handles the marking.
 
 The value written to `anonymizedValue` is a generic per-file marker (`'[REDACTED]'`), not the per-entity placeholder. Per-entity placeholders are recorded by the per-row substitution that happens inside the file content; the column's purpose is binary "this file's relations have been redacted at least once" plus a generic marker for audit log readability.
 
@@ -392,18 +392,18 @@ The value written to `anonymizedValue` is a generic per-file marker (`'[REDACTED
 
 - **GIVEN** a `POST /api/files/:fileId/anonymize` call against a file with non-skipped entities
 - **WHEN** the controller invokes `FileService::anonymizeDocument` which delegates to `DocumentProcessingHandler::anonymizeDocument`
-- **THEN** `EntityRelationMapper::markAsAnonymized` MUST be called exactly once for this fileId
-- **AND** the controller MUST NOT issue its own `markAsAnonymized` call
+- **THEN** `EntityRelationMapper::markAsAnonymizedWithPlaceholders` MUST be called exactly once for this fileId
+- **AND** the controller MUST NOT issue its own `markAsAnonymizedWithPlaceholders` call
 
 #### Scenario: DI/event anonymise call writes exactly one mark
 
 - **GIVEN** an event listener or DI orchestrator invokes `DocumentProcessingHandler::anonymizeDocument`
 - **WHEN** the anonymise path runs to completion
-- **THEN** `markAsAnonymized` MUST be called exactly once for this fileId, by `anonymizeDocument` itself
+- **THEN** `markAsAnonymizedWithPlaceholders` MUST be called exactly once for this fileId, by `anonymizeDocument` itself
 
 ### Requirement: The change MUST be additive in API shape; only anonymise behaviour gains a skip filter
 
-The existing API endpoints — `FileService::anonymizeDocument(Node, entities[])` (DI) and `POST /api/files/:fileId/anonymize` (HTTP) — MUST keep their existing parameters and response shape. They MUST NOT consume any new field on entity-payload entries (e.g. erroneous `bases` on payload entries MUST be silently ignored). `EntityRelationMapper::markAsAnonymized`'s signature MUST be unchanged; only its WHERE clause gains the `AND skip_anonymization = 0` predicate.
+The existing API endpoints — `FileService::anonymizeDocument(Node, entities[])` (DI) and `POST /api/files/:fileId/anonymize` (HTTP) — MUST keep their existing parameters and response shape. They MUST NOT consume any new field on entity-payload entries (e.g. erroneous `bases` on payload entries MUST be silently ignored). `EntityRelationMapper::markAsAnonymizedWithPlaceholders` carries the `AND skip_anonymization = 0` predicate in its WHERE clause.
 
 Existing rows (pre-migration) MUST continue to read with `bases = null` and `skipAnonymization = false`. OpenAnonymiser integration (`EntityRecognitionHandler::detectWithOpenAnonymiser`) MUST be unchanged.
 

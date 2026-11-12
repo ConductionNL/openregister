@@ -28,12 +28,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability\Source;
 
-use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\IMetricsProvider;
+use OCA\OpenRegister\AppHost\Observability\AppProviderResolver;
 use OCA\OpenRegister\AppHost\Observability\MetricDescriptor;
 use OCA\OpenRegister\AppHost\Observability\MetricSample;
 use OCA\OpenRegister\AppHost\Observability\MetricSourceInterface;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -46,13 +45,11 @@ class ProviderMetricSource implements MetricSourceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container DI container (fallback alias lookup).
-	 * @param AppContainerLocator $locator Reaches the calling app's own container.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param AppProviderResolver $providers Resolves the calling app's IMetricsProvider.
+	 * @param LoggerInterface     $logger    PSR logger.
 	 */
 	public function __construct(
-		private readonly ContainerInterface $container,
-		private readonly AppContainerLocator $locator,
+		private readonly AppProviderResolver $providers,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -79,34 +76,8 @@ class ProviderMetricSource implements MetricSourceInterface {
 	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.5
 	 */
 	public function collect(string $appId, MetricDescriptor $descriptor): array {
-		$alias = IMetricsProvider::class . '::' . $appId;
-
 		try {
-			// Resolve the provider from the CALLING APP's own container — where
-			// the app registered its `IMetricsProvider::<appId>` alias — not from
-			// OpenRegister's container, which never sees another app's DI
-			// registrations (Nextcloud app containers are isolated). Resolving
-			// against `$this->container` here silently returned [] for every
-			// consuming app (same root cause as the MCP-provider fix, #390).
-			$container = $this->locator->findOr(appId: $appId, fallback: $this->container);
-
-			if ($container->has($alias) === false) {
-				return [];
-			}
-
-			$provider = $container->get($alias);
-			if (($provider instanceof IMetricsProvider) === false) {
-				return [];
-			}
-
-			$samples = [];
-			foreach ($provider->metrics() as $sample) {
-				if ($sample instanceof MetricSample) {
-					$samples[] = $sample;
-				}
-			}
-
-			return $samples;
+			return $this->providerSamples(appId: $appId);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: sprintf('[AppHost\\Metrics] provider for app "%s" threw: %s', $appId, $e->getMessage()),
@@ -115,4 +86,27 @@ class ProviderMetricSource implements MetricSourceInterface {
 			return [];
 		}//end try
 	}//end collect()
+
+	/**
+	 * The samples the app's own IMetricsProvider reports; none when it has no provider.
+	 *
+	 * @param string $appId Calling app id.
+	 *
+	 * @return MetricSample[]
+	 */
+	private function providerSamples(string $appId): array {
+		$provider = $this->providers->resolve(appId: $appId, interface: IMetricsProvider::class);
+		if ($provider === null) {
+			return [];
+		}
+
+		$samples = [];
+		foreach ($provider->metrics() as $sample) {
+			if ($sample instanceof MetricSample) {
+				$samples[] = $sample;
+			}
+		}
+
+		return $samples;
+	}//end providerSamples()
 }//end class

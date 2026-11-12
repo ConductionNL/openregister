@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
@@ -50,7 +51,8 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * Regression guard for the 2026-09-08 memory blow-up.
@@ -92,29 +94,47 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 	 */
 	private function buildHandler(?ContainerInterface $container): SaveObject {
 		return new SaveObject(
-			$this->createMock(MagicMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(MetadataHydrationHandler::class),
-			$this->createMock(FilePropertyHandler::class),
-			$this->createMock(LinkedEntityPropertyHandler::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->urlGenerator,
-			$this->createMock(OrganisationService::class),
-			$this->createMock(CacheHandler::class),
-			$this->createMock(SettingsService::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(ComputedFieldHandler::class),
-			$this->createMock(TranslationHandler::class),
-			$this->createMock(TranslationProjectionService::class),
-			$this->createMock(TranslationStatusService::class),
-			$this->logger,
-			$this->createMock(TmloService::class),
-			$this->createMock(FolderManagementHandler::class),
-			new ArrayLoader(),
-			container: $container,
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+						settingsService: $this->createMock(SettingsService::class),
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class),
+						container: $container
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(MetadataHydrationHandler::class),
+						filePropertyHandler: $this->createMock(FilePropertyHandler::class),
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(TranslationHandler::class),
+						translationProjectionService: $this->createMock(TranslationProjectionService::class),
+						translationStatusService: $this->createMock(TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->createMock(IUserSession::class),
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->createMock(OrganisationService::class)
+				)
+			),
+			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+			permissionHandler: $this->createMock(PermissionHandler::class),
+			folderManagementHandler: $this->createMock(FolderManagementHandler::class)
 		);
 	}//end buildHandler()
 
@@ -170,7 +190,7 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->expects($this->once())
 			->method('get')
-			->with(RetentionService::class)
+			->with(RetentionServiceInterface::class)
 			->willReturn($retention);
 
 		$this->assertSame($retention, $this->resolve($this->buildHandler($container)));
@@ -226,24 +246,29 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 			});
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(RetentionService::class)->willReturn($retention);
+		$container->method('get')->with(RetentionServiceInterface::class)->willReturn($retention);
 
 		$handler = $this->buildHandler($container);
 
-		$cache = new ReflectionClass(SaveObject::class);
-		$property = $cache->getProperty('schemaCache');
-		$property->setAccessible(true);
-		$property->setValue($handler, ['1' => $schema]);
+		SaveLookupsAccess::set($handler, 'schemaCache', ['1' => $schema]);
 
 		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://localhost/test');
 		$this->urlGenerator->method('linkToRoute')->willReturn('/test');
 
 		$method = new ReflectionMethod(SaveObject::class, 'handleObjectCreation');
 		$method->setAccessible(true);
-		$result = $method->invokeArgs(
-			$handler,
-			[1, 1, $register, $schema, ['name' => 'Test'], [], 'test-uuid-123', null, false, false, false]
-		);
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->flags = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->registerId = 1;
+		$call->schemaId = 1;
+		$call->register = $register;
+		$call->schema = $schema;
+		$call->data = ['name' => 'Test'];
+		$call->uuid = 'test-uuid-123';
+		$call->flags->persist = false;
+		$call->flags->silent = false;
+		$call->flags->multitenancy = false;
+		$result = $method->invokeArgs($handler, [$call]);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 		$this->assertSame('archived-by-test', $result->getDescription());

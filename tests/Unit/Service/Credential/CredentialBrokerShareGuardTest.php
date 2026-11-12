@@ -37,6 +37,9 @@ namespace Unit\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -310,15 +313,21 @@ class CredentialBrokerShareGuardTest extends TestCase {
 		$clientService->method('newClient')->willReturn($client);
 
 		$broker = new CredentialBrokerService(
-			$objectService,
-			$store,
-			$catalogue,
-			$userSession,
-			$clientService,
-			$this->createMock(LoggerInterface::class),
-			$organisationService,
-			$groupManager,
-			$userManager
+			sources: new CredentialSources(
+				objectService: $objectService,
+				credentialStore: $store,
+				catalogue: $catalogue
+			),
+			principals: new CredentialPrincipals(
+				userSession: $userSession,
+				organisationService: $organisationService,
+				groupManager: $groupManager,
+				userManager: $userManager
+			),
+			outbound: new CredentialOutbound(
+				clientService: $clientService,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		return $broker->request(

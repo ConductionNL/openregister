@@ -1,0 +1,80 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AvgIndex table headers draws the accountability tab table headers (case null) 1`] = `
+[
+  "<thead>
+  <tr>
+    <th scope="col">t:Activity</th>
+    <th scope="col">t:Legal basis</th>
+    <th scope="col">t:Retention period</th>
+    <th scope="col">t:Total events</th>
+    <th scope="col">t:Create</th>
+    <th scope="col">t:Update</th>
+    <th scope="col">t:Delete</th>
+    <th scope="col">t:Read</th>
+  </tr>
+</thead>",
+]
+`;
+
+exports[`AvgIndex table headers draws the activities tab table headers (case null) 1`] = `
+[
+  "<thead>
+  <tr>
+    <th scope="col">t:Name</th>
+    <th scope="col">t:Code</th>
+    <th scope="col">t:Legal basis</th>
+    <th scope="col">t:Retention period</th>
+    <th scope="col">t:Status</th>
+    <th scope="col">t:Actions</th>
+  </tr>
+</thead>",
+]
+`;
+
+exports[`AvgIndex table headers draws the cases tab table headers (case c1) 1`] = `
+[
+  "<thead>
+  <tr>
+    <th scope="col">t:Source</th>
+    <th scope="col">t:Status</th>
+  </tr>
+</thead>",
+  "<thead>
+  <tr>
+    <th scope="col">t:Field</th>
+    <th scope="col">t:Ground</th>
+  </tr>
+</thead>",
+]
+`;
+
+exports[`AvgIndex table headers draws the cases tab table headers (case null) 1`] = `
+[
+  "<thead>
+  <tr>
+    <th scope="col">t:Subject</th>
+    <th scope="col">t:Type</th>
+    <th scope="col">t:Status</th>
+    <th scope="col">t:Handler</th>
+    <th scope="col">t:Deadline</th>
+    <th scope="col">t:Escalation</th>
+    <th scope="col">t:Actions</th>
+  </tr>
+</thead>",
+]
+`;
+
+exports[`AvgIndex table headers draws the compliance tab table headers (case null) 1`] = `
+[
+  "<thead>
+  <tr>
+    <th scope="col">t:Schema</th>
+    <th scope="col">t:Register</th>
+    <th scope="col">t:PII rows</th>
+    <th scope="col">t:Schema annotation</th>
+    <th scope="col">t:Register annotation</th>
+  </tr>
+</thead>",
+]
+`;

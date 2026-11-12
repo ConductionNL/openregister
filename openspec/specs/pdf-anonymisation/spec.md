@@ -188,6 +188,15 @@ The validation pass remains the key safety surface — it catches every silent-f
 - **THEN** the output is returned as the anonymisation result with `complete: true` and an empty residual list
 - **AND** a sanitisation report is persisted (counter of bytes replaced, fonts touched, filters decoded)
 
+#### Scenario: A strict run refuses an output that cannot be re-read
+
+- **GIVEN** a strict run (entity anonymisation) whose rewritten PDF `smalot/pdfparser` cannot re-read
+- **WHEN** the validation pass runs
+- **THEN** the run is refused with `PdfAnonymisationException` reason `validation_failed`, because the residual check could not run
+- **AND** no output file is written and an existing `_anonymized` output is left alone
+- **AND** the refusal and the log line carry counts and structural counters only, never document text
+- **AND** a lenient run (ad-hoc replace) still returns the unchecked output with a PII-free warning
+
 ### Requirement: NO new HTTP endpoints
 
 This capability extends `anonymizeDocument`. It MUST be invoked via the existing `POST /api/files/{fileId}/anonymize` endpoint. No new public endpoints. PDF inputs that today produce a corrupt file now produce a clean anonymised PDF.

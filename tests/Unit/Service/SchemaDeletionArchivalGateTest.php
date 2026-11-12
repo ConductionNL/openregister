@@ -40,6 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\TableDeletionOptions;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -49,6 +51,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaDeletionStores;
+use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -116,6 +120,8 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		parent::setUp();
 
 		$this->db = $this->createMock(IDBConnection::class);
+
+		$this->db->method('getDatabaseProvider')->willReturn(IDBConnection::PLATFORM_SQLITE);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -124,10 +130,7 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 
 		$this->service = new SchemaDeletionService(
 			$this->db,
-			$this->magicMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->auditTrailMapper,
+			new SchemaDeletionStores(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper), $this->auditTrailMapper),
 			$this->logger
 		);
 
@@ -211,15 +214,11 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		$this->stubOnePopulatedTable($this->makeSchema(archival: true));
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->expectException(ArchivalImmutableException::class);
 
-		$this->service->deleteObjectsBySchema(
-			registerId: self::REGISTER_ID,
-			schemaId: self::SCHEMA_ID,
-			hardDelete: true
-		);
+		$this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: self::SCHEMA_ID), options: new TableDeletionOptions(hardDelete: true));
 
 	}//end testBulkSchemaDeleteRefusesAnArchivalSchema()
 
@@ -232,11 +231,7 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		$this->stubOnePopulatedTable($this->makeSchema(archival: true));
 
 		try {
-			$this->service->deleteObjectsBySchema(
-				registerId: self::REGISTER_ID,
-				schemaId: self::SCHEMA_ID,
-				hardDelete: true
-			);
+			$this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: self::SCHEMA_ID), options: new TableDeletionOptions(hardDelete: true));
 			$this->fail('Expected ArchivalImmutableException');
 		} catch (ArchivalImmutableException $e) {
 			$body = $e->toResponseBody();
@@ -261,11 +256,7 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 
 		$this->expectException(ArchivalImmutableException::class);
 
-		$this->service->deleteObjectsBySchema(
-			registerId: self::REGISTER_ID,
-			schemaId: self::SCHEMA_ID,
-			hardDelete: false
-		);
+		$this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: self::SCHEMA_ID), options: new TableDeletionOptions(hardDelete: false));
 
 	}//end testBulkSoftDeleteIsRefusedAsWell()
 
@@ -277,11 +268,7 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 	public function testBulkDeleteStillWorksForANonArchivalSchema(): void {
 		$this->stubOnePopulatedTable($this->makeSchema(archival: false));
 
-		$result = $this->service->deleteObjectsBySchema(
-			registerId: self::REGISTER_ID,
-			schemaId: self::SCHEMA_ID,
-			hardDelete: true
-		);
+		$result = $this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: self::SCHEMA_ID), options: new TableDeletionOptions(hardDelete: true));
 
 		$this->assertSame(1, $result['deleted_count']);
 		$this->assertSame(['90f1e160-c2fc-4829-9833-13c07769734b'], $result['deleted_uuids']);
@@ -326,7 +313,10 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		$this->magicMapper->expects($this->once())->method('dropTable');
 		$this->schemaMapper->expects($this->once())->method('delete');
 
-		$result = $this->service->cascadeDeleteSchema(schema: $schema, archivalOverride: true);
+		$result = $this->service->cascadeDeleteSchema(
+			schema: $schema,
+			override: new SchemaTeardownOverride(archivalSchema: true)
+		);
 
 		$this->assertSame(1, $result['deletedCount']);
 		$this->assertTrue($result['tableDropped']);
@@ -345,9 +335,10 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		$reflection = new ReflectionClass(SchemaDeletionService::class);
 		$parameters = $reflection->getMethod('cascadeDeleteSchema')->getParameters();
 
-		$this->assertSame('archivalOverride', $parameters[1]->getName());
+		$this->assertSame('override', $parameters[1]->getName());
 		$this->assertTrue($parameters[1]->isDefaultValueAvailable());
-		$this->assertFalse($parameters[1]->getDefaultValue());
+		$this->assertFalse($parameters[1]->getDefaultValue()->archivalSchema);
+		$this->assertFalse($parameters[1]->getDefaultValue()->keptRows);
 
 	}//end testTheArchivalOverrideIsOffByDefault()
 
@@ -366,7 +357,7 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 			$reflection->getMethod('deleteObjectsBySchema')->getParameters()
 		);
 
-		$this->assertNotContains('archivalOverride', $names);
+		$this->assertNotContains('override', $names);
 
 	}//end testTheBulkPathExposesNoArchivalOverride()
 
@@ -401,11 +392,7 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		$schema->setConfiguration(['x-openregister-archival' => true]);
 		$this->stubOnePopulatedTable($schema);
 
-		$result = $this->service->deleteObjectsBySchema(
-			registerId: self::REGISTER_ID,
-			schemaId: self::SCHEMA_ID,
-			hardDelete: true
-		);
+		$result = $this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: self::SCHEMA_ID), options: new TableDeletionOptions(hardDelete: true));
 
 		$this->assertSame(1, $result['deleted_count']);
 

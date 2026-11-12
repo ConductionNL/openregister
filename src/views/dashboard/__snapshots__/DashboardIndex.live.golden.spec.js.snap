@@ -1,0 +1,257 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DashboardIndex live subscription golden drops a subscription released while it was awaited 1`] = `
+{
+  "after": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "during": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "1-2",
+    "liveType": "1-2",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+    ],
+    [
+      "unsubscribe",
+      "late",
+    ],
+  ],
+}
+`;
+
+exports[`DashboardIndex live subscription golden keeps the pending type of a newer subscribe 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "late",
+    "livePendingType": "newer",
+    "liveType": "1-2",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+    ],
+  ],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: alreadyLive 1`] = `
+{
+  "after": {
+    "liveEpoch": 0,
+    "liveHandle": "h0",
+    "livePendingType": "",
+    "liveType": "1-2",
+  },
+  "log": [],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: fails 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+    ],
+    [
+      "warn",
+      "[DashboardIndex] live subscription failed:",
+      "offline",
+    ],
+  ],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: failsWithoutMessage 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+    ],
+    [
+      "warn",
+      "[DashboardIndex] live subscription failed:",
+      "plain reason",
+    ],
+  ],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: knownType 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "h1",
+    "livePendingType": "",
+    "liveType": "1-2",
+  },
+  "log": [
+    [
+      "subscribe",
+      "1-2",
+    ],
+  ],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: newType 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "h1",
+    "livePendingType": "",
+    "liveType": "1-2",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+    ],
+  ],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: noRegister 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: noSchema 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: noSubscribe 1`] = `
+{
+  "after": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: otherLive 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": "h1",
+    "livePendingType": "",
+    "liveType": "1-2",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h0",
+    ],
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "1-2",
+    ],
+  ],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: pending 1`] = `
+{
+  "after": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "1-2",
+    "liveType": "",
+  },
+  "log": [],
+}
+`;
+
+exports[`DashboardIndex live subscription golden subscribes: unscoped 1`] = `
+{
+  "after": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h0",
+    ],
+  ],
+}
+`;

@@ -1,0 +1,656 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`vectorization modals DOM golden file: closed 1`] = `""`;
+
+exports[`vectorization modals DOM golden file: failing 1`] = `
+"<x-ncdialog name="Vectorize All Files" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Processing...</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for file vectorization. This process will generate vector embeddings for all extracted file chunks.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes file chunks sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes chunks in batches with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 File Chunk Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Files with Completed Extraction:</span><span class="value">12</span></div>
+          <div class="stat highlight"><span class="label">Total Chunks Available:</span><span class="value">345,678</span></div>
+          <div class="stat highlight primary"><span class="label">Chunks to Vectorize:</span><span class="value">345,633</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">13826</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~15 hours</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$25.9225</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-files">Max Files (0 = all)</label><input id="max-files" type="number" min="0" placeholder="Maximum number of files to process. Set to 0 to process all files."><small>Maximum number of files to process. Set to 0 to process all files.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" placeholder="Number of chunks to vectorize in one API call (1-100)."><small>Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+      <h3>File Type Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which file types to include in the vectorization process. Only files with extracted text and chunks will be processed.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all file types</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="progress-section">
+        <x-ncprogressbar error="true" value="0">
+          <slot-default>40 / 345633 chunks processed</slot-default>
+        </x-ncprogressbar>
+        <div class="progress-stats"><span class="success">✓ 31 vectorized</span><span class="error">✗ 9 failed</span></div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization modals DOM golden file: narrowed 1`] = `
+"<x-ncdialog name="Vectorize All Files" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-playcircle size="20"></x-playcircle>
+      </slot-icon>
+      <slot-default> Start Vectorization</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for file vectorization. This process will generate vector embeddings for all extracted file chunks.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes file chunks sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes chunks in batches with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 File Chunk Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Files with Completed Extraction:</span><span class="value">12</span></div>
+          <div class="stat highlight"><span class="label">Total Chunks Available:</span><span class="value">345,678</span></div>
+          <div class="stat highlight primary"><span class="label">Chunks to Vectorize:</span><span class="value">345,633</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">13826</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~15 hours</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$25.9225</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-files">Max Files (0 = all)</label><input id="max-files" type="number" min="0" placeholder="Maximum number of files to process. Set to 0 to process all files."><small>Maximum number of files to process. Set to 0 to process all files.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" placeholder="Number of chunks to vectorize in one API call (1-100)."><small>Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+      <h3>File Type Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which file types to include in the vectorization process. Only files with extracted text and chunks will be processed.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all file types</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="file-type-selection"><label>Select File Types to Vectorize:</label>
+        <div class="type-list">
+          <x-nccheckboxradioswitch modelvalue="text/plain" type="checkbox" data-on="onUpdate:modelValue" value="application/pdf">
+            <slot-default>PDF (1 file, 4 chunks) </slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="text/plain" type="checkbox" data-on="onUpdate:modelValue" value="text/plain">
+            <slot-default>Text (3 files, 1 chunk) </slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization modals DOM golden file: nothing to process 1`] = `
+"<x-ncdialog name="Vectorize All Files" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-playcircle size="20"></x-playcircle>
+      </slot-icon>
+      <slot-default> Start Vectorization</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for file vectorization. This process will generate vector embeddings for all extracted file chunks.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes file chunks sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes chunks in batches with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 File Chunk Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Files with Completed Extraction:</span><span class="value">0</span></div>
+          <div class="stat highlight"><span class="label">Total Chunks Available:</span><span class="value">0</span></div>
+          <div class="stat highlight primary"><span class="label">Chunks to Vectorize:</span><span class="value">0</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">0</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~0 seconds</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$0.0000</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-files">Max Files (0 = all)</label><input id="max-files" type="number" min="0" placeholder="Maximum number of files to process. Set to 0 to process all files."><small>Maximum number of files to process. Set to 0 to process all files.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" placeholder="Number of chunks to vectorize in one API call (1-100)."><small>Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+      <h3>File Type Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which file types to include in the vectorization process. Only files with extracted text and chunks will be processed.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all file types</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization modals DOM golden file: open 1`] = `
+"<x-ncdialog name="Vectorize All Files" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-playcircle size="20"></x-playcircle>
+      </slot-icon>
+      <slot-default> Start Vectorization</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for file vectorization. This process will generate vector embeddings for all extracted file chunks.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes file chunks sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes chunks in batches with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 File Chunk Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Files with Completed Extraction:</span><span class="value">12</span></div>
+          <div class="stat highlight"><span class="label">Total Chunks Available:</span><span class="value">345,678</span></div>
+          <div class="stat highlight primary"><span class="label">Chunks to Vectorize:</span><span class="value">345,633</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">13826</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~15 hours</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$25.9225</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-files">Max Files (0 = all)</label><input id="max-files" type="number" min="0" placeholder="Maximum number of files to process. Set to 0 to process all files."><small>Maximum number of files to process. Set to 0 to process all files.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" placeholder="Number of chunks to vectorize in one API call (1-100)."><small>Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+      <h3>File Type Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which file types to include in the vectorization process. Only files with extracted text and chunks will be processed.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all file types</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization modals DOM golden file: processing 1`] = `
+"<x-ncdialog name="Vectorize All Files" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Processing...</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for file vectorization. This process will generate vector embeddings for all extracted file chunks.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes file chunks sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes chunks in batches with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 File Chunk Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Files with Completed Extraction:</span><span class="value">12</span></div>
+          <div class="stat highlight"><span class="label">Total Chunks Available:</span><span class="value">345,678</span></div>
+          <div class="stat highlight primary"><span class="label">Chunks to Vectorize:</span><span class="value">345,633</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">13826</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~15 hours</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$25.9225</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-files">Max Files (0 = all)</label><input id="max-files" type="number" min="0" placeholder="Maximum number of files to process. Set to 0 to process all files."><small>Maximum number of files to process. Set to 0 to process all files.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" placeholder="Number of chunks to vectorize in one API call (1-100)."><small>Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+      <h3>File Type Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which file types to include in the vectorization process. Only files with extracted text and chunks will be processed.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all file types</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="progress-section">
+        <x-ncprogressbar error="false" value="0">
+          <slot-default>30 / 345633 chunks processed</slot-default>
+        </x-ncprogressbar>
+        <div class="progress-stats"><span class="success">✓ 30 vectorized</span>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization modals DOM golden object: closed 1`] = `""`;
+
+exports[`vectorization modals DOM golden object: failing 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Processing...</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for object vectorization. This process will generate vector embeddings for all objects matching your view filters.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes objects sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes objects in chunks with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 Object Count Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Total Objects in Database:</span><span class="value">4,321</span></div>
+          <div class="stat"><span class="label">Objects to Process:</span><span class="value">4,321</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">87</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~3 hours</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$0.0173</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-objects">Max Objects (0 = all)</label><input id="max-objects" type="number" min="0" placeholder="Maximum number of objects to process. Set to 0 to process all objects."><small>Maximum number of objects to process. Set to 0 to process all objects.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="5000" placeholder="Number of objects to process in each batch (1-5000)."><small>Number of objects to process in each batch (1-5000).</small></div>
+      <h3>View Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which views to include in the vectorization process. Leave empty to process all views based on your configuration.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all views</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="view-selection"><label>Select Views to Vectorize:</label>
+        <div class="view-list">
+          <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="1">
+            <slot-default>First view</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="2">
+            <slot-default>Second view</slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+      <div class="progress-section">
+        <x-ncprogressbar error="true" value="1">
+          <slot-default>40 / 4321 objects processed</slot-default>
+        </x-ncprogressbar>
+        <div class="progress-stats"><span class="success">✓ 31 vectorized</span><span class="error">✗ 9 failed</span></div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization modals DOM golden object: narrowed 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-playcircle size="20"></x-playcircle>
+      </slot-icon>
+      <slot-default> Start Vectorization</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for object vectorization. This process will generate vector embeddings for all objects matching your view filters.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes objects sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes objects in chunks with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 Object Count Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Total Objects in Database:</span><span class="value">4,321</span></div>
+          <div class="stat"><span class="label">Objects to Process:</span><span class="value">4,321</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">2</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~3 hours</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$0.0173</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-objects">Max Objects (0 = all)</label><input id="max-objects" type="number" min="0" placeholder="Maximum number of objects to process. Set to 0 to process all objects."><small>Maximum number of objects to process. Set to 0 to process all objects.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="5000" placeholder="Number of objects to process in each batch (1-5000)."><small>Number of objects to process in each batch (1-5000).</small></div>
+      <h3>View Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which views to include in the vectorization process. Leave empty to process all views based on your configuration.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all views</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="view-selection"><label>Select Views to Vectorize:</label>
+        <div class="view-list">
+          <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="1">
+            <slot-default>First view</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="2">
+            <slot-default>Second view</slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization modals DOM golden object: nothing to process 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-playcircle size="20"></x-playcircle>
+      </slot-icon>
+      <slot-default> Start Vectorization</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for object vectorization. This process will generate vector embeddings for all objects matching your view filters.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes objects sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes objects in chunks with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 Object Count Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Total Objects in Database:</span><span class="value">0</span></div>
+          <div class="stat"><span class="label">Objects to Process:</span><span class="value">0</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">0</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~0 seconds</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$0.0000</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-objects">Max Objects (0 = all)</label><input id="max-objects" type="number" min="0" placeholder="Maximum number of objects to process. Set to 0 to process all objects."><small>Maximum number of objects to process. Set to 0 to process all objects.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="5000" placeholder="Number of objects to process in each batch (1-5000)."><small>Number of objects to process in each batch (1-5000).</small></div>
+      <h3>View Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which views to include in the vectorization process. Leave empty to process all views based on your configuration.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all views</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization modals DOM golden object: open 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-playcircle size="20"></x-playcircle>
+      </slot-icon>
+      <slot-default> Start Vectorization</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for object vectorization. This process will generate vector embeddings for all objects matching your view filters.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes objects sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes objects in chunks with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 Object Count Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Total Objects in Database:</span><span class="value">4,321</span></div>
+          <div class="stat"><span class="label">Objects to Process:</span><span class="value">4,321</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">87</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~3 hours</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$0.0173</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-objects">Max Objects (0 = all)</label><input id="max-objects" type="number" min="0" placeholder="Maximum number of objects to process. Set to 0 to process all objects."><small>Maximum number of objects to process. Set to 0 to process all objects.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="5000" placeholder="Number of objects to process in each batch (1-5000)."><small>Number of objects to process in each batch (1-5000).</small></div>
+      <h3>View Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which views to include in the vectorization process. Leave empty to process all views based on your configuration.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all views</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="view-selection"><label>Select Views to Vectorize:</label>
+        <div class="view-list">
+          <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="1">
+            <slot-default>First view</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="2">
+            <slot-default>Second view</slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization modals DOM golden object: processing 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Processing...</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="vectorization-config-content">
+      <p class="description">Configure parameters for object vectorization. This process will generate vector embeddings for all objects matching your view filters.</p>
+      <h3>Execution Mode</h3>
+      <div class="execution-modes">
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="serial">
+          <slot-default>Serial Mode (Safer, slower)</slot-default>
+        </x-nccheckboxradioswitch>
+        <x-nccheckboxradioswitch modelvalue="serial" name="execution_mode" type="radio" data-on="onUpdate:modelValue" value="parallel">
+          <slot-default>Parallel Mode (Faster, more resource intensive)</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="mode-descriptions">
+        <p><strong>Serial:</strong> Processes objects sequentially (safest).</p>
+        <p><strong>Parallel:</strong> Processes objects in chunks with simulated parallelism.</p>
+      </div>
+      <div class="prediction-box">
+        <h4>📊 Object Count Prediction</h4>
+        <div class="prediction-stats">
+          <div class="stat"><span class="label">Total Objects in Database:</span><span class="value">4,321</span></div>
+          <div class="stat"><span class="label">Objects to Process:</span><span class="value">4,321</span></div>
+          <div class="stat"><span class="label">Estimated Batches:</span><span class="value">87</span></div>
+          <div class="stat"><span class="label">Estimated Duration:</span><span class="value">~3 hours</span></div>
+          <div class="stat"><span class="label">Estimated Cost:</span><span class="value">$0.0173</span></div>
+        </div>
+      </div>
+      <h3>Processing Limits</h3>
+      <div class="form-group"><label for="max-objects">Max Objects (0 = all)</label><input id="max-objects" type="number" min="0" placeholder="Maximum number of objects to process. Set to 0 to process all objects."><small>Maximum number of objects to process. Set to 0 to process all objects.</small></div>
+      <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="5000" placeholder="Number of objects to process in each batch (1-5000)."><small>Number of objects to process in each batch (1-5000).</small></div>
+      <h3>View Selection</h3>
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Choose which views to include in the vectorization process. Leave empty to process all views based on your configuration.</p>
+      </div>
+      <div class="form-group">
+        <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+          <slot-default>Vectorize all views</slot-default>
+        </x-nccheckboxradioswitch>
+      </div>
+      <div class="view-selection"><label>Select Views to Vectorize:</label>
+        <div class="view-list">
+          <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="1">
+            <slot-default>First view</slot-default>
+          </x-nccheckboxradioswitch>
+          <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="2">
+            <slot-default>Second view</slot-default>
+          </x-nccheckboxradioswitch>
+        </div>
+      </div>
+      <div class="progress-section">
+        <x-ncprogressbar error="false" value="1">
+          <slot-default>30 / 4321 objects processed</slot-default>
+        </x-ncprogressbar>
+        <div class="progress-stats"><span class="success">✓ 30 vectorized</span>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;

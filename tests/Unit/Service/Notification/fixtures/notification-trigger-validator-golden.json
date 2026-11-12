@@ -1,0 +1,340 @@
+{
+    "null": [
+        {
+            "code": "notification-bad-trigger",
+            "message": "Notification \"rule-null\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+        }
+    ],
+    "int": [
+        {
+            "code": "notification-bad-trigger",
+            "message": "Notification \"rule-int\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+        }
+    ],
+    "empty-array": [
+        {
+            "code": "notification-bad-trigger",
+            "message": "Notification \"rule-empty-array\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+        }
+    ],
+    "created": [],
+    "updated": [],
+    "transition": [],
+    "bad-type": [
+        {
+            "code": "notification-bad-trigger",
+            "message": "Notification \"rule-bad-type\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+        }
+    ],
+    "int-type": [
+        {
+            "code": "notification-bad-trigger",
+            "message": "Notification \"rule-int-type\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+        }
+    ],
+    "event-string-ok": [],
+    "event-camel-ok": [],
+    "event-deep-ok": [],
+    "event-empty-string": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "rule-event-empty-string",
+            "field": "trigger",
+            "value": "",
+            "message": "Notification \"rule-event-empty-string\" declares an app event that is not a non-empty string."
+        }
+    ],
+    "event-reserved": [
+        {
+            "code": "notification-app-event-reserved",
+            "ruleKey": "rule-event-reserved",
+            "field": "trigger",
+            "value": "created",
+            "message": "Notification \"rule-event-reserved\" names \"created\" as an app event, but that is a reserved trigger type; use the object form {\"type\": \"created\"} instead."
+        }
+    ],
+    "event-no-dot": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "rule-event-no-dot",
+            "field": "trigger",
+            "value": "Booking",
+            "message": "Notification \"rule-event-no-dot\" app event \"Booking\" must be namespaced with a dot and start lowercase (e.g. \"booking.confirmed\", \"lifecycle.optIn\"), so it can never collide with a reserved trigger type."
+        }
+    ],
+    "event-upper-start": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "rule-event-upper-start",
+            "field": "trigger",
+            "value": "Booking.confirmed",
+            "message": "Notification \"rule-event-upper-start\" app event \"Booking.confirmed\" must be namespaced with a dot and start lowercase (e.g. \"booking.confirmed\", \"lifecycle.optIn\"), so it can never collide with a reserved trigger type."
+        }
+    ],
+    "event-trailing-dot": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "rule-event-trailing-dot",
+            "field": "trigger",
+            "value": "booking.",
+            "message": "Notification \"rule-event-trailing-dot\" app event \"booking.\" must be namespaced with a dot and start lowercase (e.g. \"booking.confirmed\", \"lifecycle.optIn\"), so it can never collide with a reserved trigger type."
+        }
+    ],
+    "event-underscore": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "rule-event-underscore",
+            "field": "trigger",
+            "value": "booking.con_firmed",
+            "message": "Notification \"rule-event-underscore\" app event \"booking.con_firmed\" must be namespaced with a dot and start lowercase (e.g. \"booking.confirmed\", \"lifecycle.optIn\"), so it can never collide with a reserved trigger type."
+        }
+    ],
+    "event-object-ok": [],
+    "event-object-empty": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "rule-event-object-empty",
+            "field": "trigger",
+            "value": "",
+            "message": "Notification \"rule-event-object-empty\" declares an app event that is not a non-empty string."
+        }
+    ],
+    "event-object-int": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "rule-event-object-int",
+            "field": "trigger",
+            "value": 12,
+            "message": "Notification \"rule-event-object-int\" declares an app event that is not a non-empty string."
+        }
+    ],
+    "event-object-array": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "rule-event-object-array",
+            "field": "trigger",
+            "value": [
+                "x"
+            ],
+            "message": "Notification \"rule-event-object-array\" declares an app event that is not a non-empty string."
+        }
+    ],
+    "event-object-false": [
+        {
+            "code": "notification-bad-app-event",
+            "ruleKey": "rule-event-object-false",
+            "field": "trigger",
+            "value": false,
+            "message": "Notification \"rule-event-object-false\" declares an app event that is not a non-empty string."
+        }
+    ],
+    "event-object-reserved": [
+        {
+            "code": "notification-app-event-reserved",
+            "ruleKey": "rule-event-object-reserved",
+            "field": "trigger",
+            "value": "threshold",
+            "message": "Notification \"rule-event-object-reserved\" names \"threshold\" as an app event, but that is a reserved trigger type; use the object form {\"type\": \"threshold\"} instead."
+        },
+        {
+            "code": "notification-threshold-no-aggregation",
+            "message": "Notification \"rule-event-object-reserved\" trigger.type=threshold requires trigger.aggregation referencing a declared aggregation."
+        },
+        {
+            "code": "notification-threshold-bad-op",
+            "message": "Notification \"rule-event-object-reserved\" trigger.type=threshold trigger.op must be one of [gt, gte, lt, lte, eq, ne]; got \"\"."
+        },
+        {
+            "code": "notification-threshold-no-value",
+            "message": "Notification \"rule-event-object-reserved\" trigger.type=threshold requires trigger.value."
+        }
+    ],
+    "event-and-bad-type": [],
+    "event-and-scheduled": [
+        {
+            "code": "notification-scheduled-bad-interval",
+            "message": "Notification \"rule-event-and-scheduled\" trigger.type=scheduled requires trigger.intervalSec (integer >= 60)."
+        }
+    ],
+    "sched-none": [
+        {
+            "code": "notification-scheduled-bad-interval",
+            "message": "Notification \"rule-sched-none\" trigger.type=scheduled requires trigger.intervalSec (integer >= 60)."
+        }
+    ],
+    "sched-low": [
+        {
+            "code": "notification-scheduled-bad-interval",
+            "message": "Notification \"rule-sched-low\" trigger.type=scheduled requires trigger.intervalSec (integer >= 60)."
+        }
+    ],
+    "sched-string": [
+        {
+            "code": "notification-scheduled-bad-interval",
+            "message": "Notification \"rule-sched-string\" trigger.type=scheduled requires trigger.intervalSec (integer >= 60)."
+        }
+    ],
+    "sched-ok": [],
+    "sched-filter-string": [
+        {
+            "code": "notification-scheduled-bad-filter",
+            "ruleKey": "rule-sched-filter-string",
+            "field": "trigger.filter",
+            "value": "x",
+            "message": "Notification \"rule-sched-filter-string\" trigger.filter must be an object/map."
+        }
+    ],
+    "sched-filter-null": [],
+    "sched-filter-ok": [],
+    "sched-filter-bad": [
+        {
+            "code": "notification-scheduled-bad-filter-shape",
+            "ruleKey": "rule-sched-filter-bad",
+            "field": "trigger.filter.status",
+            "value": {
+                "bogus": 1
+            },
+            "message": "Notification \"rule-sched-filter-bad\" trigger.filter.status is a map without an \"operator\" key; it is neither a scalar, a list, nor an operator object."
+        }
+    ],
+    "sched-dedupe-string": [
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "rule-sched-dedupe-string",
+            "field": "trigger.dedupeFields",
+            "value": "x",
+            "message": "Notification \"rule-sched-dedupe-string\" trigger.dedupeFields must be a non-empty array of strings."
+        }
+    ],
+    "sched-dedupe-empty": [
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "rule-sched-dedupe-empty",
+            "field": "trigger.dedupeFields",
+            "value": [],
+            "message": "Notification \"rule-sched-dedupe-empty\" trigger.dedupeFields must be a non-empty array of strings."
+        }
+    ],
+    "sched-dedupe-blank": [
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "rule-sched-dedupe-blank",
+            "field": "trigger.dedupeFields[1]",
+            "value": "",
+            "message": "Notification \"rule-sched-dedupe-blank\" trigger.dedupeFields entries must be non-empty strings."
+        }
+    ],
+    "sched-dedupe-int": [
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "rule-sched-dedupe-int",
+            "field": "trigger.dedupeFields[0]",
+            "value": 3,
+            "message": "Notification \"rule-sched-dedupe-int\" trigger.dedupeFields entries must be non-empty strings."
+        }
+    ],
+    "sched-dedupe-keys": [
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "rule-sched-dedupe-keys",
+            "field": "trigger.dedupeFields[0]",
+            "value": null,
+            "message": "Notification \"rule-sched-dedupe-keys\" trigger.dedupeFields entries must be non-empty strings."
+        }
+    ],
+    "sched-dedupe-ok": [],
+    "sched-all-bad": [
+        {
+            "code": "notification-scheduled-bad-interval",
+            "message": "Notification \"rule-sched-all-bad\" trigger.type=scheduled requires trigger.intervalSec (integer >= 60)."
+        },
+        {
+            "code": "notification-scheduled-bad-filter",
+            "ruleKey": "rule-sched-all-bad",
+            "field": "trigger.filter",
+            "value": 3,
+            "message": "Notification \"rule-sched-all-bad\" trigger.filter must be an object/map."
+        },
+        {
+            "code": "notification-scheduled-bad-dedupe-fields",
+            "ruleKey": "rule-sched-all-bad",
+            "field": "trigger.dedupeFields",
+            "value": false,
+            "message": "Notification \"rule-sched-all-bad\" trigger.dedupeFields must be a non-empty array of strings."
+        }
+    ],
+    "thr-empty": [
+        {
+            "code": "notification-threshold-no-aggregation",
+            "message": "Notification \"rule-thr-empty\" trigger.type=threshold requires trigger.aggregation referencing a declared aggregation."
+        },
+        {
+            "code": "notification-threshold-bad-op",
+            "message": "Notification \"rule-thr-empty\" trigger.type=threshold trigger.op must be one of [gt, gte, lt, lte, eq, ne]; got \"\"."
+        },
+        {
+            "code": "notification-threshold-no-value",
+            "message": "Notification \"rule-thr-empty\" trigger.type=threshold requires trigger.value."
+        }
+    ],
+    "thr-bad-op": [
+        {
+            "code": "notification-threshold-bad-op",
+            "message": "Notification \"rule-thr-bad-op\" trigger.type=threshold trigger.op must be one of [gt, gte, lt, lte, eq, ne]; got \"between\"."
+        }
+    ],
+    "thr-null-value": [],
+    "thr-int-agg": [],
+    "calc-empty": [
+        {
+            "code": "notification-calculated-change-no-field",
+            "message": "Notification \"rule-calc-empty\" trigger.type=calculatedChange requires trigger.field (non-empty string)."
+        }
+    ],
+    "calc-int-field": [
+        {
+            "code": "notification-calculated-change-no-field",
+            "message": "Notification \"rule-calc-int-field\" trigger.type=calculatedChange requires trigger.field (non-empty string)."
+        }
+    ],
+    "calc-ok": [],
+    "calc-null-clauses": [],
+    "calc-bad-clauses": [
+        {
+            "code": "notification-calculated-change-bad-clause",
+            "message": "Notification \"rule-calc-bad-clauses\" trigger.condition must be a non-empty operator map."
+        },
+        {
+            "code": "notification-calculated-change-bad-clause",
+            "message": "Notification \"rule-calc-bad-clauses\" trigger.previously must be a non-empty operator map."
+        }
+    ],
+    "calc-bad-ops": [
+        {
+            "code": "notification-calculated-change-bad-op",
+            "message": "Notification \"rule-calc-bad-ops\" trigger.condition operator \"foo\" must be one of [lt, lte, gt, gte, eq, ne]."
+        },
+        {
+            "code": "notification-calculated-change-bad-op",
+            "message": "Notification \"rule-calc-bad-ops\" trigger.condition operator \"0\" must be one of [lt, lte, gt, gte, eq, ne]."
+        },
+        {
+            "code": "notification-calculated-change-bad-op",
+            "message": "Notification \"rule-calc-bad-ops\" trigger.previously operator \"bar\" must be one of [lt, lte, gt, gte, eq, ne]."
+        }
+    ],
+    "calc-all-bad": [
+        {
+            "code": "notification-calculated-change-no-field",
+            "message": "Notification \"rule-calc-all-bad\" trigger.type=calculatedChange requires trigger.field (non-empty string)."
+        },
+        {
+            "code": "notification-calculated-change-bad-clause",
+            "message": "Notification \"rule-calc-all-bad\" trigger.condition must be a non-empty operator map."
+        },
+        {
+            "code": "notification-calculated-change-bad-op",
+            "message": "Notification \"rule-calc-all-bad\" trigger.previously operator \"x\" must be one of [lt, lte, gt, gte, eq, ne]."
+        }
+    ]
+}

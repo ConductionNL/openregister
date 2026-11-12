@@ -1,0 +1,842 @@
+{
+    "filter date-gt": {
+        "result": [
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            },
+            {
+                "status": "done",
+                "amount": "x",
+                "team": null,
+                "tags": "z",
+                "at": "later",
+                "n": ""
+            }
+        ]
+    },
+    "filter date-lte": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "done",
+                "amount": 5.5,
+                "team": "a",
+                "tags": [],
+                "at": "2026-04-01T00:00:00Z",
+                "n": 0
+            }
+        ]
+    },
+    "filter eq": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "done",
+                "amount": 5.5,
+                "team": "a",
+                "tags": [],
+                "at": "2026-04-01T00:00:00Z",
+                "n": 0
+            }
+        ]
+    },
+    "filter gt": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            },
+            {
+                "status": "done",
+                "amount": "x",
+                "team": null,
+                "tags": "z",
+                "at": "later",
+                "n": ""
+            }
+        ]
+    },
+    "filter gte": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            },
+            {
+                "status": "done",
+                "amount": "x",
+                "team": null,
+                "tags": "z",
+                "at": "later",
+                "n": ""
+            }
+        ]
+    },
+    "filter in": {
+        "result": [
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            },
+            {
+                "status": 1,
+                "team": "c"
+            }
+        ]
+    },
+    "filter in-not-array": {
+        "result": []
+    },
+    "filter int-operator-key": {
+        "error": "RuntimeException",
+        "message": "Unsupported aggregation filter operator \"0\". Supported: eq, ne, gt, gte, lt, lte, in, notIn, isnull. An unknown operator used to match every row, which silently widened the filter instead of narrowing it."
+    },
+    "filter is-not-null-scalar": {
+        "result": [
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            },
+            {
+                "status": "done",
+                "amount": 5.5,
+                "team": "a",
+                "tags": [],
+                "at": "2026-04-01T00:00:00Z",
+                "n": 0
+            },
+            {
+                "status": "done",
+                "amount": "x",
+                "team": null,
+                "tags": "z",
+                "at": "later",
+                "n": ""
+            }
+        ]
+    },
+    "filter is-null-scalar": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": 1,
+                "team": "c"
+            }
+        ]
+    },
+    "filter isnull-false": {
+        "result": [
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            },
+            {
+                "status": "done",
+                "amount": 5.5,
+                "team": "a",
+                "tags": [],
+                "at": "2026-04-01T00:00:00Z",
+                "n": 0
+            },
+            {
+                "status": "done",
+                "amount": "x",
+                "team": null,
+                "tags": "z",
+                "at": "later",
+                "n": ""
+            }
+        ]
+    },
+    "filter isnull-string": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": 1,
+                "team": "c"
+            }
+        ]
+    },
+    "filter isnull-true": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": 1,
+                "team": "c"
+            }
+        ]
+    },
+    "filter list": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "done",
+                "amount": 5.5,
+                "team": "a",
+                "tags": [],
+                "at": "2026-04-01T00:00:00Z",
+                "n": 0
+            },
+            {
+                "status": 1,
+                "team": "c"
+            }
+        ]
+    },
+    "filter lt": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "done",
+                "amount": 5.5,
+                "team": "a",
+                "tags": [],
+                "at": "2026-04-01T00:00:00Z",
+                "n": 0
+            }
+        ]
+    },
+    "filter lte": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "done",
+                "amount": 5.5,
+                "team": "a",
+                "tags": [],
+                "at": "2026-04-01T00:00:00Z",
+                "n": 0
+            }
+        ]
+    },
+    "filter multi-value-row": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            }
+        ]
+    },
+    "filter ne": {
+        "result": [
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            },
+            {
+                "status": "done",
+                "amount": "x",
+                "team": null,
+                "tags": "z",
+                "at": "later",
+                "n": ""
+            },
+            {
+                "status": 1,
+                "team": "c"
+            }
+        ]
+    },
+    "filter notIn": {
+        "result": [
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            },
+            {
+                "status": "done",
+                "amount": "x",
+                "team": null,
+                "tags": "z",
+                "at": "later",
+                "n": ""
+            },
+            {
+                "status": 1,
+                "team": "c"
+            }
+        ]
+    },
+    "filter notIn-not-array": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            },
+            {
+                "status": "done",
+                "amount": 5.5,
+                "team": "a",
+                "tags": [],
+                "at": "2026-04-01T00:00:00Z",
+                "n": 0
+            },
+            {
+                "status": "done",
+                "amount": "x",
+                "team": null,
+                "tags": "z",
+                "at": "later",
+                "n": ""
+            },
+            {
+                "status": 1,
+                "team": "c"
+            }
+        ]
+    },
+    "filter null-operand": {
+        "result": []
+    },
+    "filter range-pair": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "done",
+                "amount": 5.5,
+                "team": "a",
+                "tags": [],
+                "at": "2026-04-01T00:00:00Z",
+                "n": 0
+            }
+        ]
+    },
+    "filter scalar": {
+        "result": [
+            {
+                "status": "open",
+                "amount": "10",
+                "team": "a",
+                "tags": [
+                    "x",
+                    "y"
+                ],
+                "at": "2026-05-01T10:00:00Z",
+                "n": null
+            },
+            {
+                "status": "open",
+                "amount": 20,
+                "team": "b",
+                "tags": [
+                    "y"
+                ],
+                "at": "2026-05-03T10:00:00Z",
+                "n": 1
+            }
+        ]
+    },
+    "filter scalar-int-vs-string": {
+        "result": [
+            {
+                "status": 1,
+                "team": "c"
+            }
+        ]
+    },
+    "filter unknown-after-known": {
+        "error": "RuntimeException",
+        "message": "Unsupported aggregation filter operator \"between\". Supported: eq, ne, gt, gte, lt, lte, in, notIn, isnull. An unknown operator used to match every row, which silently widened the filter instead of narrowing it."
+    },
+    "filter unknown-on-missing-row": {
+        "error": "RuntimeException",
+        "message": "Unsupported aggregation filter operator \"equals\". Supported: eq, ne, gt, gte, lt, lte, in, notIn, isnull. An unknown operator used to match every row, which silently widened the filter instead of narrowing it."
+    },
+    "filter unknown-operator": {
+        "error": "RuntimeException",
+        "message": "Unsupported aggregation filter operator \"not-in\". Supported: eq, ne, gt, gte, lt, lte, in, notIn, isnull. An unknown operator used to match every row, which silently widened the filter instead of narrowing it."
+    },
+    "grouped array-group-value": {
+        "result": [
+            {
+                "key": [
+                    "x",
+                    "y"
+                ],
+                "value": 1
+            },
+            {
+                "key": [
+                    "y"
+                ],
+                "value": 1
+            },
+            {
+                "key": [],
+                "value": 1
+            },
+            {
+                "key": "z",
+                "value": 1
+            },
+            {
+                "key": null,
+                "value": 1
+            }
+        ]
+    },
+    "grouped missing-field": {
+        "result": [
+            {
+                "key": null,
+                "value": 20.0
+            }
+        ]
+    },
+    "grouped multi": {
+        "result": [
+            {
+                "keys": {
+                    "status": "open",
+                    "team": "a"
+                },
+                "value": 1
+            },
+            {
+                "keys": {
+                    "status": "open",
+                    "team": "b"
+                },
+                "value": 1
+            },
+            {
+                "keys": {
+                    "status": "done",
+                    "team": "a"
+                },
+                "value": 1
+            },
+            {
+                "keys": {
+                    "status": "done",
+                    "team": null
+                },
+                "value": 1
+            },
+            {
+                "keys": {
+                    "status": 1,
+                    "team": "c"
+                },
+                "value": 1
+            }
+        ]
+    },
+    "grouped multi-metric": {
+        "result": [
+            {
+                "key": "open",
+                "values": {
+                    "count": 2,
+                    "s": 30.0
+                }
+            },
+            {
+                "key": "done",
+                "values": {
+                    "count": 2,
+                    "s": 5.5
+                }
+            },
+            {
+                "key": 1,
+                "values": {
+                    "count": 1,
+                    "s": 0.0
+                }
+            }
+        ]
+    },
+    "grouped multi-metric-multi-field": {
+        "result": [
+            {
+                "keys": {
+                    "status": "open",
+                    "team": "a"
+                },
+                "values": {
+                    "count": 1,
+                    "min_amount": 10.0
+                }
+            },
+            {
+                "keys": {
+                    "status": "open",
+                    "team": "b"
+                },
+                "values": {
+                    "count": 1,
+                    "min_amount": 20.0
+                }
+            },
+            {
+                "keys": {
+                    "status": "done",
+                    "team": "a"
+                },
+                "values": {
+                    "count": 1,
+                    "min_amount": 5.5
+                }
+            },
+            {
+                "keys": {
+                    "status": "done",
+                    "team": null
+                },
+                "values": {
+                    "count": 1,
+                    "min_amount": null
+                }
+            },
+            {
+                "keys": {
+                    "status": 1,
+                    "team": "c"
+                },
+                "values": {
+                    "count": 1,
+                    "min_amount": null
+                }
+            }
+        ]
+    },
+    "grouped no rows": {
+        "result": []
+    },
+    "grouped one-metric-list": {
+        "result": [
+            {
+                "key": "open",
+                "value": 15.0
+            },
+            {
+                "key": "done",
+                "value": 5.5
+            },
+            {
+                "key": 1,
+                "value": null
+            }
+        ]
+    },
+    "grouped single": {
+        "result": [
+            {
+                "key": "open",
+                "value": 30.0
+            },
+            {
+                "key": "done",
+                "value": 5.5
+            },
+            {
+                "key": 1,
+                "value": 0.0
+            }
+        ]
+    },
+    "grouped single-count": {
+        "result": [
+            {
+                "key": "a",
+                "value": 2
+            },
+            {
+                "key": "b",
+                "value": 1
+            },
+            {
+                "key": null,
+                "value": 1
+            },
+            {
+                "key": "c",
+                "value": 1
+            }
+        ]
+    },
+    "grouped unknown-metric": {
+        "result": [
+            {
+                "key": "open",
+                "value": null
+            },
+            {
+                "key": "done",
+                "value": null
+            },
+            {
+                "key": 1,
+                "value": null
+            }
+        ]
+    },
+    "metrics alias": {
+        "result": {
+            "total": 35.5,
+            "max_amount": 20.0
+        }
+    },
+    "metrics condition": {
+        "result": {
+            "open": 2,
+            "all": 5
+        }
+    },
+    "metrics condition-not-array": {
+        "result": {
+            "count": 5
+        }
+    },
+    "metrics condition-unknown-operator": {
+        "error": "RuntimeException",
+        "message": "Unsupported aggregation filter operator \"nope\". Supported: eq, ne, gt, gte, lt, lte, in, notIn, isnull. An unknown operator used to match every row, which silently widened the filter instead of narrowing it."
+    },
+    "metrics duplicate-key": {
+        "result": {
+            "count": 5,
+            "sum_amount": 35.5
+        }
+    },
+    "metrics expression": {
+        "result": {
+            "a": 35.5,
+            "c": 5,
+            "mean": 7.1
+        }
+    },
+    "metrics expression-empty-alias": {
+        "error": "RuntimeException",
+        "message": "A derived metric must declare `as`: it has no field or metric name to derive a response key from."
+    },
+    "metrics expression-later-alias": {
+        "error": "RuntimeException",
+        "message": "Metric expression references \"b\", which is not a metric in this aggregation. Available: (none). A derived metric can only read figures computed BEFORE it, so order the `metrics` list accordingly."
+    },
+    "metrics expression-no-alias": {
+        "error": "RuntimeException",
+        "message": "A derived metric must declare `as`: it has no field or metric name to derive a response key from."
+    },
+    "metrics min-max": {
+        "result": {
+            "min_amount": 5.5,
+            "max_missing": null
+        }
+    },
+    "metrics no rows": {
+        "result": {
+            "count": 0,
+            "sum_amount": 0.0,
+            "avg_amount": null
+        }
+    },
+    "metrics plain": {
+        "result": {
+            "count": 5,
+            "sum_amount": 35.5,
+            "avg_amount": 11.833333333333334
+        }
+    },
+    "metrics unknown-metric": {
+        "result": {
+            "median_amount": null,
+            "count_distinct_team": 3
+        }
+    }
+}

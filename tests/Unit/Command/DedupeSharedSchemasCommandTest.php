@@ -188,7 +188,7 @@ class DedupeSharedSchemasCommandTest extends TestCase {
 		$this->dedupe->method('inspect')->willReturn($this->attributedPlan());
 		$this->dedupe->expects($this->once())
 			->method('applySplit')
-			->with($this->anything(), 16, false)
+			->with($this->anything(), 16)
 			->willReturn([
 				'newSchemaId' => 9465,
 				'rows'        => 42,
@@ -251,8 +251,8 @@ class DedupeSharedSchemasCommandTest extends TestCase {
 	public function testStrictIsPassedThroughToTheSplit(): void {
 		$this->dedupe->method('inspect')->willReturn($this->attributedPlan());
 		$this->dedupe->expects($this->once())
-			->method('applySplit')
-			->with($this->anything(), 16, true)
+			->method('applySplitStrictly')
+			->with($this->anything(), 16)
 			->willReturn(['newSchemaId' => 9465, 'rows' => 0, 'unmapped' => [], 'backup' => null]);
 
 		[$code] = $this->execute(['--write' => true, '--strict' => true]);
@@ -271,7 +271,7 @@ class DedupeSharedSchemasCommandTest extends TestCase {
 	 */
 	public function testFailedSplitIsReportedAndFailsTheRun(): void {
 		$this->dedupe->method('inspect')->willReturn($this->attributedPlan());
-		$this->dedupe->method('applySplit')->willThrowException(
+		$this->dedupe->method('applySplitStrictly')->willThrowException(
 			new \RuntimeException('Strict mode: 1 source column(s) have no destination (employee).')
 		);
 
@@ -300,4 +300,17 @@ class DedupeSharedSchemasCommandTest extends TestCase {
 		$this->assertSame(Command::SUCCESS, $code);
 
 	}//end testRegisterFilterIsPassedThrough()
+
+	/**
+	 * The command is declared in appinfo/info.xml; without the line occ does not offer it.
+	 *
+	 * @return void
+	 */
+	public function testTheCommandIsDeclared(): void {
+		$info = simplexml_load_string((string)file_get_contents(dirname(__DIR__, 3).'/appinfo/info.xml'));
+		$this->assertNotFalse($info);
+		$declared = array_map(static fn ($command): string => trim((string)$command), iterator_to_array($info->commands->command, false));
+
+		$this->assertContains(DedupeSharedSchemasCommand::class, $declared);
+	}//end testTheCommandIsDeclared()
 }//end class

@@ -104,3 +104,22 @@ that they were excluded so the absence is not read as their absence.
 - **GIVEN** an instance holding configured credentials
 - **WHEN** it is serialised
 - **THEN** no credential value is present and the set records that secrets were excluded
+
+### Requirement: A whole base from another product is imported as one job (REQ-IPC-006)
+
+The system SHALL accept a base from another product (such as Airtable, Baserow or NocoDB) as one set of tables, either uploaded as that product's export archive or handed over by a source adapter, and SHALL import it in one job. From the set the system SHALL propose one register, one schema per table with a property per column and its type, and a relation for every link column between tables. The administrator SHALL confirm or change the proposal before anything is written. The objects SHALL then be imported through the preview and conflict policy of REQ-IPC-002 and REQ-IPC-003, with links resolved after every table is written, and the job SHALL report a per-table and per-row outcome.
+
+#### Scenario: an exported base becomes a register
+
+- **GIVEN** an Airtable base export with the tables `Projecten` and `Taken`, where `Taken.Project` links to `Projecten`
+- **WHEN** a functional administrator uploads it, confirms the proposed schemas and runs the import
+- **THEN** a register holds the schemas `projecten` and `taken`, and `taken.project` is a relation to `projecten`
+- **AND** every imported task points at its imported project
+- @e2e exclude {specified only; task 8.4 adds tests/e2e/ci/import-base.spec.ts}
+
+#### Scenario: a link to a row that was not exported
+
+- **GIVEN** a base export where one task links to a project missing from the export
+- **WHEN** the import runs
+- **THEN** that task is imported without the link and the outcome names the task and the missing project
+- @e2e exclude {specified only; covered by the unit test in task 8.2}

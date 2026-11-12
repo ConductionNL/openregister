@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\EntityRelationsControllerFactory;
 use DateTime;
 use OCA\OpenRegister\Controller\EntityRelationsController;
 use OCA\OpenRegister\Db\Decision;
@@ -22,11 +24,14 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
+use OCA\OpenRegister\Service\Decision\DecisionVisibilityPlatform;
+use OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
+use OCA\OpenRegister\Service\Decision\RelationDecisionStores;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
-use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\AppFramework\Http;
@@ -50,18 +55,28 @@ use Psr\Log\LoggerInterface;
  * DecisionService and ReviewPolicyResolver; the stores are in-memory.
  *
  * @covers \OCA\OpenRegister\Controller\EntityRelationsController
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsLinks
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsDomain
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\EntityRelationsControllerServices
  * @covers \OCA\OpenRegister\Service\Decision\RelationDecisionService
  * @covers \OCA\OpenRegister\Service\Decision\DecisionOwnedException
  * @uses   \OCA\OpenRegister\Service\Decision\DecisionOwnership
  * @uses   \OCA\OpenRegister\Service\Decision\DecisionService
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicy
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicyResolver
+ * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @uses   \OCA\OpenRegister\Event\DecisionChangeRequestedEvent
  * @uses   \OCA\OpenRegister\Service\Settings\FileSettingsHandler
  * @uses   \OCA\OpenRegister\Db\Decision
  * @uses   \OCA\OpenRegister\Db\EntityRelation
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Exception\CustomValidationException
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibility
  */
 class DecisionOwnershipTest extends TestCase {
 
@@ -96,6 +111,13 @@ class DecisionOwnershipTest extends TestCase {
 	private array $groups = ['coord' => ['woo-coordinator'], 'root' => ['admin']];
 
 	/**
+	 * Whether the guarded link finds the link already taken, as a concurrent first decision would.
+	 *
+	 * @var bool
+	 */
+	private bool $linkConflict = false;
+
+	/**
 	 * Set up a relation every reviewer may write.
 	 *
 	 * @return void
@@ -128,7 +150,8 @@ class DecisionOwnershipTest extends TestCase {
 		$relations = $this->createMock(EntityRelationMapper::class);
 		$relations->method('find')->willReturnCallback(fn (): EntityRelation => $this->relation);
 		$relations->method('updateDecisionMetadata')->willReturnCallback(
-			static function (EntityRelation $relation, array $fields): EntityRelation {
+			static function (DecisionMetadataEdit $edit): EntityRelation {
+				[$relation, $fields] = [$edit->relation, $edit->fields];
 				if (array_key_exists('bases', $fields) === true) {
 					$relation->setBases($fields['bases']);
 				}
@@ -141,7 +164,11 @@ class DecisionOwnershipTest extends TestCase {
 			}
 		);
 		$relations->method('linkDecision')->willReturnCallback(
-			static function (EntityRelation $relation, string $decisionUuid): EntityRelation {
+			function (EntityRelation $relation, string $decisionUuid, ?string $expectedUuid = null, bool $guarded = false): EntityRelation {
+				if ($guarded === true && $this->linkConflict === true) {
+					throw new \OCA\OpenRegister\Exception\DecisionConflictException('taken');
+				}
+
 				$relation->setDecisionUuid($decisionUuid);
 				return $relation;
 			}
@@ -162,7 +189,7 @@ class DecisionOwnershipTest extends TestCase {
 		$groups->method('isInGroup')->willReturnCallback(fn (string $id, string $gid): bool => in_array($gid, ($this->groups[$id] ?? []), true));
 
 		$decisionMapper = $this->createMock(DecisionMapper::class);
-		$decisionMapper->method('findByUuid')->willReturnCallback(fn (string $uuid): Decision => $this->decisions[$uuid]);
+		$decisionMapper->method('findByUuid')->willReturnCallback(fn (string $uuid): Decision => ($this->decisions[$uuid] ?? throw new \OCP\AppFramework\Db\DoesNotExistException('gone')));
 		$decisionMapper->method('insert')->willReturnCallback(
 			function (Decision $decision): Decision {
 				$decision->setUuid('d-'.(count($this->decisions) + 1));
@@ -174,20 +201,17 @@ class DecisionOwnershipTest extends TestCase {
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$decide = new RelationDecisionService(
-			relationMapper: $relations,
-			decisions: new DecisionService(decisionMapper: $decisionMapper),
-			ownership: new DecisionOwnership(groupManager: $groups, eventDispatcher: $this->createMock(IEventDispatcher::class), logger: $logger),
+			stores: new RelationDecisionStores(relationMapper: $relations, decisions: new DecisionService(decisionMapper: $decisionMapper), db: $this->createMock(IDBConnection::class)),
+			ownership: new DecisionOwnership(groupManager: $groups, platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)),
 			policies: new ReviewPolicyResolver(
 				schemaMapper: $schemas,
 				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
-				rootFolder: $this->createMock(IRootFolder::class),
-				folders: $this->createMock(FolderManagementHandler::class),
+				fileOwners: new ReviewPolicyFileOwners($this->createMock(IRootFolder::class), $this->createMock(ManagedFileOwnerLookup::class)),
 				logger: $logger
-			),
-			db: $this->createMock(IDBConnection::class)
+			)
 		);
 
-		return new EntityRelationsController(
+		return EntityRelationsControllerFactory::create(
 			'openregister',
 			$request,
 			$relations,
@@ -204,15 +228,14 @@ class DecisionOwnershipTest extends TestCase {
 				resolver: new ReviewPolicyResolver(
 					schemaMapper: $schemas,
 					fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
-					rootFolder: $this->createMock(IRootFolder::class),
-					folders: $this->createMock(FolderManagementHandler::class),
+					fileOwners: new ReviewPolicyFileOwners($this->createMock(IRootFolder::class), $this->createMock(ManagedFileOwnerLookup::class)),
 					logger: $logger
 				),
 				decisions: new DecisionService(decisionMapper: $decisionMapper),
 				groupManager: $groups,
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
-				logger: $logger
-			)
+				platform: new DecisionVisibilityPlatform($this->createMock(IEventDispatcher::class), $logger)
+			),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end controllerAs()
 
@@ -304,6 +327,34 @@ class DecisionOwnershipTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testADanglingDecisionLinkIsRefusedForAReviewer(): void {
+		$this->schemaConfiguration = ['x-openregister-review' => ['ownership' => 'decider', 'supervisors' => ['woo-coordinator']]];
+		// The relation names a decision whose record is gone.
+		$this->relation->setDecisionUuid('d-gone');
+
+		$response = $this->controllerAs('alice', ['bases' => ['A']])->update(7);
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('decision-owned', $response->getData()['error']);
+		$this->assertEmpty($this->decisions);
+
+		// A supervisor may take it over.
+		$this->assertSame(200, $this->controllerAs('coord', ['bases' => ['A']])->update(7)->getStatus());
+	}//end testADanglingDecisionLinkIsRefusedForAReviewer()
+
+	/**
+	 * The link is guarded: when somebody else linked a decision first, the second is refused and nothing is recorded as linked.
+	 */
+	public function testASecondConcurrentFirstDecisionIsRefused(): void {
+		$this->schemaConfiguration = ['x-openregister-review' => ['ownership' => 'decider']];
+		$this->linkConflict = true;
+
+		$response = $this->controllerAs('alice', ['bases' => ['A']])->update(7);
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('decision-owned', $response->getData()['error']);
+		$this->assertNull($this->relation->getDecisionUuid());
+	}//end testASecondConcurrentFirstDecisionIsRefused()
+
 	public function testAnUndecidedRelationIsOpen(): void {
 		$response = $this->controllerAs(uid: 'p.bakker', body: ['skipAnonymization' => false])->update(7);
 

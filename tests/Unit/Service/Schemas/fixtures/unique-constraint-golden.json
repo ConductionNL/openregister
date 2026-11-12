@@ -1,0 +1,166 @@
+{
+    "constraints blank name": {
+        "result": [
+            {
+                "name": "a+b",
+                "properties": [
+                    "a",
+                    "b"
+                ],
+                "action": "refuse"
+            }
+        ]
+    },
+    "constraints declared scalar": {
+        "result": []
+    },
+    "constraints empty": {
+        "result": []
+    },
+    "constraints legacy and declared": {
+        "result": [
+            {
+                "name": "code",
+                "properties": [
+                    "code"
+                ],
+                "action": "refuse"
+            },
+            {
+                "name": "email",
+                "properties": [
+                    "email"
+                ],
+                "action": "refuse"
+            }
+        ]
+    },
+    "constraints legacy blank": {
+        "result": []
+    },
+    "constraints legacy ignored": {
+        "result": []
+    },
+    "constraints legacy list": {
+        "result": [
+            {
+                "name": "a+b",
+                "properties": [
+                    "a",
+                    "b"
+                ],
+                "action": "refuse"
+            }
+        ]
+    },
+    "constraints legacy number": {
+        "result": []
+    },
+    "constraints legacy string": {
+        "result": [
+            {
+                "name": "code",
+                "properties": [
+                    "code"
+                ],
+                "action": "refuse"
+            }
+        ]
+    },
+    "constraints malformed dropped": {
+        "result": [
+            {
+                "name": "a+b",
+                "properties": [
+                    "a",
+                    "b"
+                ],
+                "action": "refuse"
+            }
+        ]
+    },
+    "constraints named keys": {
+        "result": [
+            {
+                "name": "byMail",
+                "properties": [
+                    "email"
+                ],
+                "action": "refuse"
+            },
+            {
+                "name": "Own",
+                "properties": [
+                    "x"
+                ],
+                "action": "report"
+            }
+        ]
+    },
+    "constraints null": {
+        "result": []
+    },
+    "constraints null action": {
+        "result": [
+            {
+                "name": "a",
+                "properties": [
+                    "a"
+                ],
+                "action": "refuse"
+            }
+        ]
+    },
+    "constraints null legacy": {
+        "result": []
+    },
+    "describe empty id": {
+        "result": "The combination a and b (a=1.5, b=null) is already in use."
+    },
+    "describe null id": {
+        "result": "The combination a and b (a=1, b=) is already in use."
+    },
+    "describe single": {
+        "result": "The combination code (code=ABC) is already in use. It is held by object z."
+    },
+    "describe structures": {
+        "result": "The combination a and b (a={\"x\":1}, b=[1,2]) is already in use. It is held by object u."
+    },
+    "describe with id": {
+        "result": "The combination a and b (a=1, b=x) is already in use. It is held by object uuid-1."
+    },
+    "filters array value": {
+        "result": {
+            "a": [
+                1
+            ],
+            "b": {
+                "k": "v"
+            }
+        }
+    },
+    "filters complete": {
+        "result": {
+            "a": 1,
+            "b": "x"
+        }
+    },
+    "filters empty string": {
+        "result": null
+    },
+    "filters missing": {
+        "result": null
+    },
+    "filters no properties": {
+        "result": null
+    },
+    "filters null value": {
+        "result": null
+    },
+    "filters zero and false": {
+        "result": {
+            "a": 0,
+            "b": false
+        }
+    }
+}

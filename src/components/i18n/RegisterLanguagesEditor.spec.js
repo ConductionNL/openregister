@@ -187,6 +187,8 @@ describe('RegisterLanguagesEditor', () => {
 			callMethod('move', ctx, 0, -1)
 			callMethod('move', ctx, 0, 5)
 			callMethod('move', ctx, -1, 0)
+			callMethod('move', ctx, 2, 0)
+			callMethod('move', ctx, 0, 2)
 			expect(ctx._emitted).toEqual([])
 		})
 

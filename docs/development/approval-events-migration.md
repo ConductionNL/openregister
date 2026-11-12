@@ -29,7 +29,23 @@ decision, before that request returns.
 
 Replacement: a sequence task completing with an approving outcome
 (`TaskTerminalEvent` with `isCommitted() === true`, state `completed`,
-outcome not in the rejecting vocabulary).
+outcome in the sequence's approving set).
+
+The approving set is the chain's declared `approvingOutcomes`, frozen onto the
+sequence, or `approved` and `done` when the chain declares none. Outcomes are
+compared trimmed and case-insensitive. A rejecting outcome never approves. A
+chain that must not advance on a plain `done`, such as a signing chain,
+declares its own set:
+
+```json
+"x-openregister-approval-chains": {
+  "sign": {
+    "transition": "sign",
+    "approvingOutcomes": ["approved"],
+    "approvers": [{"role": "signers"}]
+  }
+}
+```
 
 | Retired field | Replacement |
 |---|---|
@@ -64,6 +80,15 @@ moment: the final position completing with an approving outcome.
 | `userId` | `event.getDecider()`. |
 | `statusOnApprove` | `event.getStatusOnApprove()`. |
 
+### A completion that neither approves nor rejects
+
+A position completed with any other outcome, an empty one included, does not
+advance. The sequence closes with status `undecided`, every remaining task is
+terminated with a reason naming the position and the outcome, and
+`TaskSequenceUndecidedEvent` is dispatched with the sequence and the task.
+`TaskSequenceCompletedEvent` is not dispatched. The next attempt at a gated
+transition opens a new sequence, as after a rejection.
+
 ## The reply path
 
 The retired listener contract was a loop: filinq consumed the events and
@@ -74,8 +99,9 @@ a reason naming its terminal state.
 
 ## What to do
 
-Register a listener for `TaskTerminalEvent` and `TaskSequenceCompletedEvent`,
-filter on your own sequences, and reply through the task verbs. The
+Register a listener for `TaskTerminalEvent`, `TaskSequenceCompletedEvent` and,
+when you report a stalled approval to your user, `TaskSequenceUndecidedEvent`.
+Filter on your own sequences, and reply through the task verbs. The
 retirement inventory in
 `tests/fixtures/approval-consolidation/retired-approval-surface.json` lists
 every removed route and class your app must no longer touch.

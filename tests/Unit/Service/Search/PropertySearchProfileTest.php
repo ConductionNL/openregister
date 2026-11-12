@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Search;
 
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -295,4 +295,23 @@ class PropertySearchProfileTest extends TestCase {
 			PropertySearchProfile::matchTypeFor(property: ['type' => 'string', 'matchType' => 'telepathy'])
 		);
 	}//end testAnUnknownMatchTypeFallsBackToTheAutoDetectedOne()
+
+	/**
+	 * One call answers what the three separate questions answer.
+	 *
+	 * @return void
+	 */
+	public function testDeclaredByGathersTheThreeAnswers(): void {
+		$property = ['type' => 'string', 'matchType' => 'prefix', 'inputControl' => 'select'];
+
+		$this->assertSame(
+			[
+				'matchType' => PropertySearchProfile::matchTypeFor(property: $property),
+				'inputControl' => PropertySearchProfile::inputControlFor(property: $property),
+				'declared' => true,
+			],
+			(new PropertySearchProfile())->declaredBy(property: $property)
+		);
+		$this->assertFalse((new PropertySearchProfile())->declaredBy(property: ['type' => 'string'])['declared']);
+	}//end testDeclaredByGathersTheThreeAnswers()
 }//end class

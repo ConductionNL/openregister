@@ -101,8 +101,7 @@ An API endpoint MUST allow auditors to verify the integrity of the hash chain.
 ### Requirement: Hash chain writes MUST be serialized to prevent race conditions
 
 Concurrent audit trail inserts MUST NOT produce broken hash chains. All seal
-passes — per-row (`sealRow()`) and batched (`sealRows()`) — MUST serialize
-their critical section (predecessor-hash read through hash UPDATE) under one
+passes MUST serialize their critical section (predecessor-hash read through hash UPDATE) under one
 exclusive advisory lock with the well-known key `openregister/audit-seal`
 (`OCP\Lock\ILockingProvider`), so no two passes can interleave a predecessor
 read with another pass's write. Lock acquisition MUST be bounded (short
@@ -120,7 +119,7 @@ lock MUST always be released, including when the seal pass throws.
 
 #### Scenario: Seal passes run under the shared exclusive advisory lock
 
-- **WHEN** `sealRow()` or `sealRows()` seals audit rows
+- **WHEN** a seal pass seals audit rows
 - **THEN** the exclusive lock `openregister/audit-seal` is acquired before the predecessor hash is read
 - **AND** the lock is released after the hash UPDATE completes
 
@@ -146,21 +145,29 @@ The migration MUST add `hash` and `previous_hash` columns to the audit trails ta
 - **AND** existing entries MUST retain null values for both columns
 - **AND** an index MUST be created on the `hash` column for verification queries
 
-### Requirement: Audit rows are hash-chained at insert time
+### Requirement: Audit rows are hash-chained by the seal sweep
 
-Every audit-trail row SHALL be sealed into the SHA-256 hash chain at the moment
-it is inserted. The insert paths `AuditTrailMapper::createAuditTrail()` and
-`createAuditTrailEntry()` SHALL set `previousHash` from the current chain head
-(`AuditHashService::getLastHash()`) and set `hash` (`computeHash()`) before
-persisting the row. The hashed payload SHALL exclude the `hash` and
-`previousHash` fields themselves.
+Every audit-trail row SHALL be sealed into the SHA-256 hash chain by
+`AuditSealJob` through `AuditHashService::sealUnsealed()`, the only sealer. The
+insert paths SHALL NOT seal: with one sealer, unsealed rows are always a
+contiguous tail, which is what rules out two rows chaining onto one predecessor.
+The sweep SHALL walk the tail in id order, set each row's `previousHash` to the
+`hash` of the row before it and compute `hash` (`computeHash()`). The hashed
+payload SHALL exclude the `hash` and `previousHash` fields themselves. Fields
+inside the hash SHALL be set before the row is inserted.
 
-#### Scenario: A newly created audit row carries a hash
+#### Scenario: A sealed audit row carries a hash
 
-- **WHEN** an object write produces an audit-trail row
+- **WHEN** an object write produces an audit-trail row and the next sweep has run
 - **THEN** the persisted row has a non-null `hash`
 - **AND** its `previousHash` equals the `hash` of the immediately preceding row
   (or the genesis seed for the first hashed row)
+
+#### Scenario: An insert does not seal
+
+- **WHEN** an audit-trail row has just been inserted
+- **THEN** its `hash` is null until the next sweep
+- **AND** `verifyChain()` treats the unsealed tail as not yet vouched for, not as tampering
 
 #### Scenario: Tampering is detected
 
