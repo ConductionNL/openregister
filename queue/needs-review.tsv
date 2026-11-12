@@ -1,1 +1,2 @@
 # pr	head	last_approved	reason
+9995	306e8697ebdd9fb76bf32aac0283736111370912	-	ready: /api/v1 aliases + Deprecation header; stacked on #9985 (merge fix/openapi-api-design-rules, then #9985, then this)
