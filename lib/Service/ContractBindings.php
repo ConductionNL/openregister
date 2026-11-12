@@ -483,6 +483,8 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAudit;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
 use OCA\OpenRegister\Service\Rbac\RevealFlusher;
 use OCA\OpenRegister\Service\Rbac\RevealFlusherInterface;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGate;
@@ -1137,6 +1139,7 @@ final class ContractBindings {
 		OrganisationHaltCheckInterface::class => OrganisationHaltCheck::class,
 		ProblemDetailsBuilderInterface::class => ProblemDetailsBuilder::class,
 		RegisterSchemaShareableConfigTypeInterface::class => RegisterSchemaShareableConfigType::class,
+		ProcessRevealAuditInterface::class => ProcessRevealAudit::class,
 		RevealFlusherInterface::class => RevealFlusher::class,
 		UserPrincipalResolverInterface::class => UserPrincipalResolver::class,
 		WorkingCalendarWriteGuardInterface::class => WorkingCalendarWriteGuard::class,

@@ -34,6 +34,8 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
+use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use Psr\Log\LoggerInterface;
 use stdClass;
 use Throwable;
@@ -70,10 +72,12 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 	 *
 	 * @param FlowRunMapperInterface $mapper    Persists a run that cannot proceed.
 	 * @param FlowExecution          $execution Resolves the flow and its subject, executes the run and logs.
+	 * @param ProcessRevealAuditInterface|null $processAudit Records, once per pass, that the run revealed audited values.
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $mapper,
 		FlowExecution $execution,
+		private readonly ?ProcessRevealAuditInterface $processAudit = null,
 	) {
 		$this->runner    = $execution->runner;
 		$this->resolvers = $execution->resolvers;
@@ -138,7 +142,10 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 				$seed = [FlowItems::item(json: $payload)];
 			}
 
-			return $this->runner->executePass(pass: $pass, origin: new FlowRunOrigin(items: $seed));
+			return $this->asRevealingProcess(
+				run: $run,
+				operation: fn (): FlowRun => $this->runner->executePass(pass: $pass, origin: new FlowRunOrigin(items: $seed))
+			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowRunAdvancer] Failed to advance a run',
@@ -194,11 +201,32 @@ class FlowRunAdvancer implements FlowRunAdvancerInterface {
 		}
 
 		// A resumed walk reads its items from the run, never from a seed.
-		return $this->runner->advanceBranch(
-			pass: $pass,
-			advance: new FlowStreamAdvance(streamId: $streamId, budget: $budget)
+		return $this->asRevealingProcess(
+			run: $run,
+			operation: fn (): FlowRun => $this->runner->advanceBranch(
+				pass: $pass,
+				advance: new FlowStreamAdvance(streamId: $streamId, budget: $budget)
+			)
 		);
 	}//end advanceStream()
+
+	/**
+	 * Run one pass of a flow run as a revealing process named after the run.
+	 *
+	 * @param FlowRun  $run       The run.
+	 * @param callable $operation The pass.
+	 *
+	 * @return FlowRun The run after the pass.
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	private function asRevealingProcess(FlowRun $run, callable $operation): FlowRun {
+		if ($this->processAudit === null) {
+			return $operation();
+		}
+
+		return $this->processAudit->run(run: new RevealingProcess(process: 'flow', runId: (string)$run->getUuid()), operation: $operation);
+	}//end asRevealingProcess()
 
 	/**
 	 * Whether the run names a subject object.
