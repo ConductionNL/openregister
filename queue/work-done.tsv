@@ -406,3 +406,4 @@ cover:stackiq:8cfacb29:js3f3bfe56	PR #1764: 17 tests (router, App, main/settings
 cover:stackiq:8cfacb29:js0671a85c	PR #1765: 25 vitest tests for Settings.vue, StackiqSettings.vue, autoConfigFeedback.js; vitest 1593->1618, all green	session-20261112T202912-56c18a61	2026-11-12T21:16:24Z
 cover:buildiq:8ca317f6:js678e2c14	opened buildiq#1468 (7 vitest tests, manifestSchemas lookup; suite 2962->2969 all pass)	session-20261112T184441-77ab05a6	2026-11-12T21:16:42Z
 merge:portaliq:2363:0d1a48e0	2363 SKIP 2365 SKIP 	session-20261112T184502-4ecd6072	2026-11-12T21:16:58Z
+verify:portaliq:2366:e35d0a8a	1/1 GREEN: lockfile+sbom bump, unit 4501 green, npm build passes	session-20261112T202914-c73e3765	2026-11-12T21:17:11Z
