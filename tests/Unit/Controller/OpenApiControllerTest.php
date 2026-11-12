@@ -102,8 +102,9 @@ class OpenApiControllerTest extends TestCase {
 		$this->assertSame(expected: 'https://{host}/index.php/apps/openregister/api/v1', actual: $document['servers'][0]['url']);
 		$this->assertArrayHasKey(key: '/objects/{register}/{schema}/{id}/files/multipart', array: $document['paths']);
 		$this->assertArrayNotHasKey(key: '/objects/{register}/{schema}/{id}/filesMultipart', array: $document['paths']);
+		$this->assertArrayNotHasKey(key: '/api/objects/{register}/{schema}/{id}/filesMultipart', array: $document['paths']);
 
-		$twins = ['/api/objects/{register}/{schema}/{id}/filesMultipart' => '/objects/{register}/{schema}/{id}/files/multipart'];
+		$twins = [];
 		foreach (array_keys($document['paths']) as $path) {
 			if (str_starts_with($path, '/api/') === false) {
 				$twins['/api'.$path] = $path;
@@ -111,9 +112,9 @@ class OpenApiControllerTest extends TestCase {
 		}
 
 		$this->assertCount(
-			expectedCount: 2 * count($twins) - 1,
+			expectedCount: 2 * count($twins),
 			haystack: $document['paths'],
-			message: 'one deprecated twin per path, plus filesMultipart'
+			message: 'one deprecated twin per path'
 		);
 		foreach ($twins as $twin => $current) {
 			$this->assertArrayHasKey(key: $twin, array: $document['paths']);
