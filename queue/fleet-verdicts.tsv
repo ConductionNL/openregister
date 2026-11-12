@@ -3489,3 +3489,4 @@ decidiq	2038	86bd2ced4683e2ee5bdbae9f9f5eec4f11242718	GREEN	vm2:d1	unit 2993 OK 
 decidiq	2039	bf57a80d4070c5c0dbffe1993dfac23cbfdbccc2	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
 decidiq	2040	e19ded4e2411000f7582b8eea56d8afc7fc847b6	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
 decidiq	2041	fe108f18cdda3fa46214d319cb8b77479a83a7aa	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
+stackiq	1704	a7c43c8237aae2f91257d6bd193842f3a3813c58	CONFLICT	fv11-17:s1	conflicts with development in src/modals/object/ViewObject.vue
