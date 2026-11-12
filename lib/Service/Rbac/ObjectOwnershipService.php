@@ -88,6 +88,11 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	public const AUDIT_ACTION = 'ownership_handover';
 
 	/**
+	 * The audit action of a record handed to the system identity.
+	 */
+	public const RELEASE_AUDIT_ACTION = 'ownership_release';
+
+	/**
 	 * The notification subject the previous owner receives.
 	 *
 	 * @var string
@@ -265,6 +270,60 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		return $this->transfer(record: $record, handover: $handover);
 	}//end assign()
+
+	/**
+	 * Hand a stored record to the system identity.
+	 *
+	 * For repair steps that move records an editor came to own, although the
+	 * system should, back to the system. Only a system operation may call it:
+	 * a request has no business giving a record away to nobody. One audit entry
+	 * per record; a record the system already owns is reported, not written, so
+	 * a repeated run records nothing. The previous owner is not notified and
+	 * children are not carried.
+	 *
+	 * @param OwnedRecord $record The record, its register and schema.
+	 *
+	 * @throws NotAuthorizedException When no system operation is running.
+	 * @throws InvalidArgumentException When the record carries no uuid.
+	 *
+	 * @return array{uuid: string, previousOwner: string|null, newOwner: string, changed: bool}
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	public function releaseToSystem(OwnedRecord $record): array {
+		if (SystemOperationContext::isActive() === false) {
+			throw new NotAuthorizedException(message: 'Only a system operation can hand a record to the system');
+		}
+
+		$object = $record->object;
+		$uuid = $object->getUuid();
+		if ($uuid === null || $uuid === '') {
+			throw new InvalidArgumentException('A record with no uuid cannot change hands');
+		}
+
+		$system = $this->sources->systemOwner();
+		$outcome = ['uuid' => $uuid, 'previousOwner' => $record->previousOwner, 'newOwner' => $system, 'changed' => false];
+		if ($record->previousOwner === $system) {
+			return $outcome;
+		}
+
+		$before = clone $object;
+		$this->writers->ownerWriter->writeOwner(
+			table: new RegisterSchema(register: $record->register, schema: $record->schema),
+			assignment: new OwnerAssignment(objectUuid: $uuid, owner: $system)
+		);
+		$object->setOwner($system);
+		$this->writers->auditTrailMapper->createAuditTrail(old: $before, new: $object, action: self::RELEASE_AUDIT_ACTION);
+
+		$this->log->logger->info(
+			message: '[ObjectOwnershipService] A record was handed to the system',
+			context: ['uuid' => $uuid, 'previousOwner' => $record->previousOwner]
+		);
+
+		$outcome['changed'] = true;
+
+		return $outcome;
+	}//end releaseToSystem()
 
 	/**
 	 * Reassign many records to one owner, in one action.
