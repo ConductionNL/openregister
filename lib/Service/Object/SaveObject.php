@@ -105,6 +105,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\SharedWriteAttempt;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSourceChange;
 use OCA\OpenRegister\Service\Object\SaveObject\FolderBind;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
+use OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanner;
@@ -334,6 +335,18 @@ class SaveObject implements SaveObjectInterface {
 	 * @var OrphanDeletionGuard|null
 	 */
 	private ?OrphanDeletionGuard $orphanGuard = null;
+
+	/**
+	 * Runs a save that writes nested objects as one database transaction.
+	 *
+	 * @var NestedSaveTransaction
+	 */
+	private readonly NestedSaveTransaction $nestedSave;
+
+	/**
+	 * How deep the schema graph is followed when tables are healed before a nested save.
+	 */
+	private const NESTED_HEAL_DEPTH = 8;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -575,6 +588,7 @@ class SaveObject implements SaveObjectInterface {
 		$this->urlGenerator = $platform->urlGenerator;
 		$this->logger = $platform->logger;
 		$this->eventDispatcher = $platform->eventDispatcher;
+		$this->nestedSave = new NestedSaveTransaction(db: $platform->db);
 		$this->organisationService = $tenancy->organisationService;
 		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $tenancy->appConfig;
@@ -2189,8 +2203,154 @@ class SaveObject implements SaveObjectInterface {
 			register: $options->target->register
 		);
 
-		return $this->saveResolvedObject(call: $call);
+		return $this->saveInNestedTransaction(call: $call);
 	}//end saveObject()
+
+	/**
+	 * Save an object; a save that writes nested objects runs as one transaction.
+	 *
+	 * A refused or failing nested object then undoes the parent, the nested
+	 * objects saved before it and any orphan cleanup of the same save.
+	 *
+	 * @param ObjectSaveCall $call The resolved save call.
+	 *
+	 * @return ObjectEntity The saved object entity.
+	 *
+	 * @throws \Throwable Whatever the save throws, after its writes are rolled back.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function saveInNestedTransaction(ObjectSaveCall $call): ObjectEntity {
+		try {
+			return $this->nestedSave->run(
+				opens: $this->writesNestedObjects(call: $call),
+				heal: function () use ($call): void {
+					$this->healNestedSaveTables(call: $call);
+				},
+				save: fn (): ObjectEntity => $this->saveResolvedObject(call: $call)
+			);
+		} catch (\Throwable $e) {
+			if ($this->nestedSave->isOpen() === false) {
+				$this->createdSubObjects = [];
+				$this->pendingOrphans = [];
+			}
+
+			throw $e;
+		}
+	}//end saveInNestedTransaction()
+
+	/**
+	 * Whether a save carries a property whose objects cascade into rows of their own.
+	 *
+	 * @param ObjectSaveCall $call The resolved save call.
+	 *
+	 * @return bool True when the save persists and its data holds a cascading property.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function writesNestedObjects(ObjectSaveCall $call): bool {
+		if ($call->flags->persist === false || $call->schema === null || $call->schema->getObjectSource() !== null) {
+			return false;
+		}
+
+		foreach (($call->schema->getProperties() ?? []) as $name => $definition) {
+			if (array_key_exists((string)$name, $call->data) === true && self::isCascadingDefinition(definition: $definition) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end writesNestedObjects()
+
+	/**
+	 * Whether a property definition cascades its objects, as a single object or a list.
+	 *
+	 * @param mixed $definition The property definition.
+	 *
+	 * @return bool True for a cascading property.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isCascadingDefinition(mixed $definition): bool {
+		if (is_array($definition) === false || isset($definition['type']) === false) {
+			return false;
+		}
+
+		return CascadeRules::isObjectProperty(property: $definition) === true
+			|| CascadeRules::isArrayProperty(property: $definition) === true;
+	}//end isCascadingDefinition()
+
+	/**
+	 * Create or sync the tables a nested save writes to, before its transaction opens.
+	 *
+	 * @param ObjectSaveCall $call The resolved save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function healNestedSaveTables(ObjectSaveCall $call): void {
+		if ($call->register === null || $call->schema === null) {
+			return;
+		}
+
+		$healed = [];
+		$this->healNestedSaveTable(register: $call->register, schema: $call->schema, healed: $healed, depth: 0);
+	}//end healNestedSaveTables()
+
+	/**
+	 * Create or sync one register+schema table, then the tables its cascading properties write to.
+	 *
+	 * A reference that does not resolve is skipped here; the save itself reports it.
+	 *
+	 * @param Register             $register The register.
+	 * @param Schema               $schema   The schema.
+	 * @param array<string, true>  $healed   The tables healed so far, by register and schema id.
+	 * @param int                  $depth    How far from the saved object's schema this one is.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function healNestedSaveTable(Register $register, Schema $schema, array &$healed, int $depth): void {
+		$key = $register->getId() . '_' . $schema->getId();
+		if (isset($healed[$key]) === true || $depth > self::NESTED_HEAL_DEPTH) {
+			return;
+		}
+
+		$healed[$key] = true;
+		$this->objectEntityMapper->ensureTableForRegisterSchema(register: $register, schema: $schema);
+
+		foreach (($schema->getProperties() ?? []) as $definition) {
+			if (self::isCascadingDefinition(definition: $definition) === false) {
+				continue;
+			}
+
+			$target = $definition;
+			if ($definition['type'] === 'array') {
+				$target = CascadeRules::itemsDefinition(property: $definition);
+			}
+
+			if ($target === null || is_string($target['$ref'] ?? null) === false) {
+				continue;
+			}
+
+			try {
+				$schemaId = $this->resolveSchemaReference(reference: $target['$ref']);
+				$registerRef = CascadeItem::register(definition: $target, parentRegister: $register->getId());
+				if ($schemaId === null || (is_int($registerRef) === false && is_string($registerRef) === false)) {
+					continue;
+				}
+
+				$nestedRegister = $this->getCachedRegister(registerId: $registerRef);
+				$nestedSchema = $this->getCachedSchema(schemaId: $schemaId);
+			} catch (\Throwable $e) {
+				continue;
+			}
+
+			$this->healNestedSaveTable(register: $nestedRegister, schema: $nestedSchema, healed: $healed, depth: $depth + 1);
+		}//end foreach
+	}//end healNestedSaveTable()
 
 	/**
 	 * Take the duplicate-override flag off the body before anything reads it as data.
