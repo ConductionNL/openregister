@@ -628,3 +628,4 @@ cover:launchpad:755175ff:d8ac3ddd	PR #1134: 24 tests for 4 cleanup categories (3
 cover:hermiq:755cdfe7:jsea7197ec	PR #1604: 11 vitest specs for 4 utils, 944->955 passing	session-20261112T221235-39b35722	2026-11-12T22:28:39Z
 cover:decidiq:13261b1b:7505aeb4	PR #2090: Activity filter/setting/provider 19 tests, suite 3116->3135 green	session-20261112T221237-c40cb74c	2026-11-12T22:28:45Z
 cover:pipelinq:f67520ec:e78626a8	PR #3567: 52 tests for 6 Marketing classes (ListObjectStore 100%); suite 5773->5825, same 1 inherited failure	session-20261112T221520-70f29253	2026-11-12T22:29:12Z
+cover:openregister:7350e3ef:js0b5eefce	PR #10050: 17 jest tests, src/modals/object lines 69.29->73.97%	session-20261112T221531-958a2fbc	2026-11-12T22:29:29Z
