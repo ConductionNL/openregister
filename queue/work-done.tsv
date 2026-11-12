@@ -410,3 +410,4 @@ merge:portaliq:2363:0d1a48e0	2363 SKIP 2365 SKIP 	session-20261112T184502-4ecd60
 cover:stackiq:8cfacb29:jsf1ce0969	PR #1767: 8 vitest tests, organisations dir 69.2% -> 81.5% statements	session-20261112T200014-a0c0c232	2026-11-12T21:17:06Z
 verify:portaliq:2366:e35d0a8a	1/1 GREEN: lockfile+sbom bump, unit 4501 green, npm build passes	session-20261112T202914-c73e3765	2026-11-12T21:17:11Z
 cover:stackiq:8cfacb29:js37c784b6	already done: src/composables/* at 85.71% lines / 91.48% branches (target 80); no PR	session-20261112T202437-4020bd95	2026-11-12T21:17:21Z
+cover:pipelinq:f67520ec:js00fe026a	PR #3546: 58 vitest tests over 9 src/services modules, services lines 96.45%->98.44%, suite 3158->3216 green	session-20261112T205847-2f6d1ca4	2026-11-12T21:17:35Z
