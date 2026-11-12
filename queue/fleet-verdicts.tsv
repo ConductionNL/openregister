@@ -3894,3 +3894,4 @@ integriq	3387	0e3254c7622ace9044ea9c164ae6e53d32063d8e	GREEN	worker-14	unit 7043
 integriq	3388	56e6116812ded0f697945aacbda3c285d1d98de7	GREEN	worker-14	unit 7043 tests on tree, baseline 3 fails (CallServiceTest x2, SyncEntryGolden), 0 new
 integriq	3387	0e3254c7622ace9044ea9c164ae6e53d32063d8e	RED	worker-14:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
 integriq	3388	56e6116812ded0f697945aacbda3c285d1d98de7	RED	worker-14:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
+larpinq	988	aa3c5d0232adf287d62d730cf392095e12af58d5	GREEN	worker-08	merges clean on development; deploy files only, identical to the filinq #1954 render with the app id, no PHP/JS touched so unit suite unaffected (not run); diff review: no app behaviour change
