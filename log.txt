@@ -3149,3 +3149,4 @@
 2026-11-12T05:57:44Z session-20261112T054920-0ed23f09 fleet-verify10-07: no verdicts; this cloud session may not run composer/phpunit/npm on app code (permission denied); released fv-portaliq-2316..2332
 2026-11-12T05:59:43Z session-20261112T055330-d0ae28e1 fleet-verify10-06 learniq tree: 2377 2378 2379 2381 2382 2383 2384 2385
 2026-11-12T06:01:26Z session-20261112T055330-d0ae28e1 fleet-verify10-06 stopped: cannot run app test suites in this session (permission denied); released learniq 2377-2385 leases, no verdicts recorded
+2026-11-12T06:09:59Z precheck-20261112T060149-ef2163a3 GREEN tree 9c4377d003 on dev 0f8e856049 prs 1 front=ok: Tests: 56776, Assertions: 188042, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 24.
