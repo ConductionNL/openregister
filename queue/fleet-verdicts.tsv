@@ -4122,3 +4122,4 @@ dossiq	6158	4e273aedd348031477d9fd22d6b31a451cf303d1	GREEN	worker-01	phpunit 125
 dossiq	6159	08b6400bb2fe0eca9dbf51f185372c96bb04c7f6	GREEN	worker-01	phpunit 12564 on 9-PR tree, baseline 12467/19, 0 new failures; tests-only diff
 learniq	2414	61204dabdd99de0e5ab657634eb96fabd3b438ea	RED	merge-local:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
 buildiq	1463	1a6a3c2f51aa5714eecdd272d850db71ed54f687	GREEN	worker-44	vitest 3170/3170 pass on 5-PR tree; PHP unit baseline 2234 (1269 inherited errors/failures), no PHP changed; JS tests only
+buildiq	1464	30083df854e0ec41682a9b0a921f70e590a31bed	GREEN	worker-44	vitest 3170/3170 pass on 5-PR tree; PHP unit baseline 2234 (1269 inherited errors/failures), no PHP changed; JS tests only
