@@ -1,472 +1,472 @@
 {
  "app": "integriq",
  "commit": "22489fd5bb10dc6b822291a00bc6b974d47b540a",
- "measured_at": "2026-11-12T22:25:42Z",
+ "measured_at": "2026-11-12T22:27:33Z",
  "php": {
   "tool": "pcov",
-  "pct": 0.0,
-  "statements": 64340,
-  "covered": 0,
+  "pct": 88.01,
+  "statements": 64241,
+  "covered": 56538,
   "dirs": {
    "lib/Adapters/": [
-    152,
-    0
+    151,
+    129
    ],
    "lib/Adapters/Berichtenbox/": [
-    401,
-    0
+    393,
+    355
    ],
    "lib/Adapters/Digikoppeling/": [
     315,
-    0
+    294
    ],
    "lib/Adapters/LearningMaterial/": [
     418,
-    0
+    413
    ],
    "lib/Adapters/Lvs/": [
-    30,
-    0
+    28,
+    28
    ],
    "lib/Adapters/Oso/": [
     26,
-    0
+    26
    ],
    "lib/Adapters/Pdok/": [
-    355,
-    0
+    343,
+    336
    ],
    "lib/Adapters/Rod/": [
     2,
-    0
+    2
    ],
    "lib/Adapters/Roster/": [
-    4,
-    0
+    2,
+    2
    ],
    "lib/Adapters/Slo/": [
-    745,
-    0
+    743,
+    736
    ],
    "lib/Adapters/Swv/": [
-    10,
-    0
+    8,
+    8
    ],
    "lib/Adapters/UwlrEduV/": [
     28,
-    0
+    28
    ],
    "lib/Adapters/Verzuimloket/": [
     2,
-    0
+    2
    ],
    "lib/AppInfo/": [
-    205,
-    0
+    203,
+    143
    ],
    "lib/Auth/": [
     11,
-    0
+    10
    ],
    "lib/Auth/Idp/": [
     591,
-    0
+    530
    ],
    "lib/BackgroundJob/": [
     907,
-    0
+    767
    ],
    "lib/BackgroundJob/ExchangeRate/": [
     144,
-    0
+    134
    ],
    "lib/Bridge/": [
     66,
-    0
+    64
    ],
    "lib/Broker/": [
     112,
-    0
+    97
    ],
    "lib/Broker/Transport/": [
     244,
-    0
+    243
    ],
    "lib/Command/": [
     901,
-    0
+    795
    ],
    "lib/Connectors/": [
     276,
-    0
+    239
    ],
    "lib/Controller/": [
-    6409,
-    0
+    6408,
+    4995
    ],
    "lib/Db/": [
     187,
-    0
+    91
    ],
    "lib/Directory/": [
     600,
-    0
+    499
    ],
    "lib/Event/": [
     424,
-    0
+    385
    ],
    "lib/EventListener/": [
     1377,
-    0
+    1154
    ],
    "lib/Exception/": [
     55,
-    0
+    54
    ],
    "lib/Expression/": [
     115,
-    0
+    110
    ],
    "lib/Expression/Source/": [
     37,
-    0
+    36
    ],
    "lib/Flow/": [
     2514,
-    0
+    2428
    ],
    "lib/Gateway/": [
     333,
-    0
+    323
    ],
    "lib/Gateway/Adapter/": [
-    80,
-    0
+    78,
+    73
    ],
    "lib/Intake/": [
-    438,
-    0
+    436,
+    359
    ],
    "lib/Intake/Adapter/": [
     372,
-    0
+    360
    ],
    "lib/Kernel/": [
     17,
-    0
+    17
    ],
    "lib/Mcp/": [
-    205,
-    0
+    152,
+    142
    ],
    "lib/Middleware/": [
     47,
-    0
+    47
    ],
    "lib/Notification/": [
     125,
-    0
+    72
    ],
    "lib/Observability/": [
     224,
-    0
+    207
    ],
    "lib/Observability/Otel/": [
     276,
-    0
+    268
    ],
    "lib/Outbound/": [
     580,
-    0
+    505
    ],
    "lib/Outbound/Call/": [
     698,
-    0
+    643
    ],
    "lib/Outbound/Identity/": [
     1250,
-    0
+    1094
    ],
    "lib/PropertySource/": [
     257,
-    0
+    240
    ],
    "lib/PropertySource/Exception/": [
     23,
-    0
+    23
    ],
    "lib/PropertySource/Provider/": [
     229,
-    0
+    208
    ],
    "lib/Repair/": [
     1271,
-    0
+    1049
    ],
    "lib/Rule/": [
     121,
-    0
+    116
    ],
    "lib/Rule/Plugin/": [
     38,
-    0
+    36
    ],
    "lib/Sections/": [
     16,
-    0
+    7
    ],
    "lib/Service/": [
-    22704,
-    0
+    22701,
+    19853
    ],
    "lib/Service/Adapter/": [
-    49,
-    0
+    48,
+    48
    ],
    "lib/Service/Adapter/DataInfra/": [
     84,
-    0
+    75
    ],
    "lib/Service/Adapter/DocumentCms/": [
     57,
-    0
+    51
    ],
    "lib/Service/Adapter/EndpointWorkspace/": [
     73,
-    0
+    69
    ],
    "lib/Service/Adapter/Saas/": [
     165,
-    0
+    135
    ],
    "lib/Service/AgentTools/": [
     166,
-    0
+    141
    ],
    "lib/Service/Broker/": [
     12,
-    0
+    12
    ],
    "lib/Service/Call/": [
     1,
-    0
+    1
    ],
    "lib/Service/Cardfeed/": [
     70,
-    0
+    70
    ],
    "lib/Service/CaseSystem/": [
     437,
-    0
+    421
    ],
    "lib/Service/Catalog/": [
     44,
-    0
+    43
    ],
    "lib/Service/ConfigurationHandlers/": [
     364,
-    0
+    327
    ],
    "lib/Service/Consumer/": [
     158,
-    0
+    137
    ],
    "lib/Service/Datasource/": [
     107,
-    0
+    107
    ],
    "lib/Service/DigitalPost/": [
     753,
-    0
+    672
    ],
    "lib/Service/DocumentGeneration/": [
-    449,
-    0
+    444,
+    354
    ],
    "lib/Service/Dso/": [
     762,
-    0
+    737
    ],
    "lib/Service/Event/": [
     32,
-    0
+    32
    ],
    "lib/Service/Exchange/": [
     968,
-    0
+    939
    ],
    "lib/Service/Forms/": [
     162,
-    0
+    155
    ],
    "lib/Service/Fsc/": [
     189,
-    0
+    175
    ],
    "lib/Service/Helper/": [
     291,
-    0
+    249
    ],
    "lib/Service/Intake/": [
     332,
-    0
+    309
    ],
    "lib/Service/Integration/": [
     136,
-    0
+    130
    ],
    "lib/Service/IwmoIjw/": [
     228,
-    0
+    221
    ],
    "lib/Service/Job/": [
     166,
-    0
+    142
    ],
    "lib/Service/Kiss/": [
     551,
-    0
+    400
    ],
    "lib/Service/Lti/": [
     1344,
-    0
+    1229
    ],
    "lib/Service/Mail/": [
     692,
-    0
+    638
    ],
    "lib/Service/Mail/Transport/": [
     185,
-    0
+    117
    ],
    "lib/Service/MessageValidation/": [
     364,
-    0
+    339
    ],
    "lib/Service/Migration/": [
     370,
-    0
+    320
    ],
    "lib/Service/Mtls/": [
     166,
-    0
+    148
    ],
    "lib/Service/Objecten/": [
     700,
-    0
+    651
    ],
    "lib/Service/OpenFormulieren/": [
     93,
-    0
+    92
    ],
    "lib/Service/Oso/": [
     150,
-    0
+    150
    ],
    "lib/Service/Otel/": [
     25,
-    0
+    19
    ],
    "lib/Service/Ownership/": [
     192,
-    0
+    189
    ],
    "lib/Service/Payment/": [
     118,
-    0
+    117
    ],
    "lib/Service/Peppol/": [
     78,
-    0
+    77
    ],
    "lib/Service/Portal/": [
     50,
-    0
+    50
    ],
    "lib/Service/Psd2/": [
     138,
-    0
+    129
    ],
    "lib/Service/RateLimit/": [
     100,
-    0
+    100
    ],
    "lib/Service/Recipients/": [
     116,
-    0
+    116
    ],
    "lib/Service/Registry/": [
-    290,
-    0
+    289,
+    264
    ],
    "lib/Service/Rod/": [
     182,
-    0
+    182
    ],
    "lib/Service/Scope/": [
     71,
-    0
+    50
    ],
    "lib/Service/Security/": [
     1045,
-    0
+    963
    ],
    "lib/Service/Sms/": [
     214,
-    0
+    164
    ],
    "lib/Service/Stuf/": [
     116,
-    0
+    112
    ],
    "lib/Service/StufZkn/": [
     1950,
-    0
+    1904
    ],
    "lib/Service/Subscriptions/": [
     82,
-    0
+    75
    ],
    "lib/Service/Synchronization/": [
     173,
-    0
+    165
    ],
    "lib/Service/Tables/": [
     283,
-    0
+    265
    ],
    "lib/Service/UwlrEduV/": [
     112,
-    0
+    112
    ],
    "lib/Service/Verzuimloket/": [
     92,
-    0
+    92
    ],
    "lib/Service/Zgw/": [
     218,
-    0
+    214
    ],
    "lib/Service/ZgwVersion/": [
     68,
-    0
+    66
    ],
    "lib/Settings/": [
     15,
-    0
+    7
    ],
    "lib/SetupCheck/": [
     98,
-    0
+    83
    ],
    "lib/Sources/": [
     36,
-    0
+    21
    ],
    "lib/Sources/Lvs/": [
     27,
-    0
+    27
    ],
    "lib/Sources/Pdok/": [
     151,
@@ -474,23 +474,23 @@
    ],
    "lib/Sources/Roster/": [
     166,
-    0
+    164
    ],
    "lib/Sources/Swv/": [
     17,
-    0
+    17
    ],
    "lib/Twig/": [
     141,
-    0
+    45
    ],
    "lib/Util/": [
     8,
-    0
+    8
    ],
    "lib/WorkflowEngine/": [
     131,
-    0
+    130
    ]
   }
  },
