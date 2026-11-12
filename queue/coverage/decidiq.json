@@ -1,0 +1,102 @@
+{
+ "app": "decidiq",
+ "commit": "71731da7aa1c2eff620046202511aa7167897510",
+ "measured_at": "2026-11-12T22:34:41Z",
+ "php": {
+  "tool": "pcov",
+  "pct": 0.0,
+  "statements": 25603,
+  "covered": 0,
+  "dirs": {
+   "lib/Activity/": [
+    79,
+    0
+   ],
+   "lib/AppInfo/": [
+    27,
+    0
+   ],
+   "lib/AppInfo/Registrar/": [
+    191,
+    0
+   ],
+   "lib/BackgroundJob/": [
+    479,
+    0
+   ],
+   "lib/Controller/": [
+    3163,
+    0
+   ],
+   "lib/Dashboard/": [
+    65,
+    0
+   ],
+   "lib/Event/": [
+    145,
+    0
+   ],
+   "lib/Exception/": [
+    16,
+    0
+   ],
+   "lib/Flow/": [
+    182,
+    0
+   ],
+   "lib/Lifecycle/": [
+    256,
+    0
+   ],
+   "lib/Listener/": [
+    1209,
+    0
+   ],
+   "lib/Mcp/": [
+    538,
+    0
+   ],
+   "lib/Notification/": [
+    53,
+    0
+   ],
+   "lib/Portal/": [
+    235,
+    0
+   ],
+   "lib/Repair/": [
+    803,
+    0
+   ],
+   "lib/Search/": [
+    58,
+    0
+   ],
+   "lib/Sections/": [
+    5,
+    0
+   ],
+   "lib/Service/": [
+    17588,
+    0
+   ],
+   "lib/Service/Records/": [
+    379,
+    0
+   ],
+   "lib/Service/Settings/": [
+    34,
+    0
+   ],
+   "lib/Settings/": [
+    36,
+    0
+   ],
+   "lib/Support/": [
+    62,
+    0
+   ]
+  }
+ },
+ "js": null
+}
