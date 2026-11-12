@@ -3173,3 +3173,4 @@
 2026-11-12T11:55:49Z integrator-20261111T115842-a749432d GREEN tree f618284098 on dev 00039cbcdf prs 3 front=skip: Tests: 56796, Assertions: 188111, Errors: 3, Failures: 3, Warnings: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-12T11:56:44Z integrator-20261111T115842-a749432d MERGED-TREE f618284098: 3 PRs in one push, main now f618284098 = tested tree
 2026-11-12T14:35:23Z integrator-20261111T115842-a749432d GREEN tree e711886bca on dev 332104db60 prs 6 front=ok: Tests: 56811, Assertions: 188728, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-12T14:38:01Z integrator-20261111T115842-a749432d PUSH-UNMARKED main has the commits but GitHub has not marked merged: 9955 9965 9966 9968 9975 9977
