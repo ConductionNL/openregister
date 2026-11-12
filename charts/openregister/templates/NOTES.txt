@@ -1,0 +1,10 @@
+{{- /* Rendered from ConductionNL/.github templates/app-deploy. */ -}}
+openregister is starting on Nextcloud (image {{ .Values.nextcloud.image.registry }}/{{ .Values.nextcloud.image.repository }}:{{ .Values.nextcloud.image.tag }}).
+
+The first start installs Nextcloud and enables OpenRegister and openregister,
+which takes a few minutes. Follow it with:
+
+  kubectl logs -f -n {{ .Release.Namespace }} deploy/{{ .Release.Name }}-nextcloud
+
+Then open https://{{ .Values.nextcloud.nextcloud.host }}/apps/openregister/ and sign in as
+{{ .Values.nextcloud.nextcloud.username }}.
