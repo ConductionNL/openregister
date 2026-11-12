@@ -4359,3 +4359,4 @@ filinq	1972	836eb87dc1c2503cf0bc8a2c57dbfa1471063a0c	BLOCK	worker-56	5333 tests 
 pipelinq	3582	3ffb8e8580d857c46baf1b5098667507024819b4	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; tests only
 pipelinq	3583	98ea5e5c89a82cb9118ccaa90442335fedb979e5	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; tests only
 pipelinq	3584	185394bc0a3a81e5705ba9dbf31ef4375e5d8b93	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; tests only
+pipelinq	3585	de26147b53aed3d02ecf95c5916a5ef537853f6d	GREEN	worker-16	php 5865 tests, 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3233 pass; axe-core moved to devDependencies (only e2e uses it), sbom updated
