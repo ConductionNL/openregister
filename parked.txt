@@ -185,3 +185,4 @@ openregister#9935 6fa734c9d2df238e4f080df3f87cbd7a538e0e43 fails on main alone: 
 openregister#9939 7bdaccc73b7c6d64ff7c17ad59f0fb1b6f02b11f fails on main alone: ComponentDefinitionTest, a new lib file has no scripts/component-map.csv row (add the rows, run scripts/component-patterns.py)
 openregister#9943 add72608fbf4af0621e986696f08e3b5a59c2a88 fails on main alone: ComponentDefinitionTest, a new lib file has no scripts/component-map.csv row (add the rows, run scripts/component-patterns.py)
 openregister#8948 3dadedc407ccec1b0eab79a181a723f5afff6b8f fails on main alone: ComponentDefinitionTest, a new lib file has no scripts/component-map.csv row (add the rows, run scripts/component-patterns.py)
+openregister#9982 d6cad235cac10698d54c28db96651da752b81379 auto-park: sbom: package-lock.json changed without sbom.cdx.json
