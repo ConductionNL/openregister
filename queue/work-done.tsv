@@ -813,3 +813,4 @@ cover:integriq:9b0f5894m2367:js6f346b68	failed: payload mismatch, lang=js but di
 cover:integriq:9b0f5894m2367:jse372e6ff	failed: lang=js but dirs=lib/Event/*.php is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T23:03:28Z
 cover:keepiq:d76c2121:f91e7417	failed: permission (running the PHP unit suite is refused in this session)	session-20261112T221239-5f377795	2026-11-12T23:03:42Z
 cover:openregister:7350e3ef:js6236636d	PR #10059: 19 PHPUnit tests (lang=js but dir is PHP), 5 Timer classes to 100% lines; Timer suite 355->374 OK; full baseline 11E/11F inherited	session-20261112T220138-0741264a	2026-11-12T23:04:35Z
+cover:stackiq:8cfacb29m2f4b:2861e5ef	already done: lib/Examples/ContactpersoonServiceExample.php 93/93 statements covered by existing ContactpersoonServiceExampleTest on development; no PR	session-20261112T221537-97382091	2026-11-12T23:05:37Z
