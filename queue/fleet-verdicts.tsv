@@ -3769,3 +3769,4 @@ filinq	1922	80a1168ab0ff8cb833454c6c4eaa8db399dd7d9c	GREEN	fv11-20:filinq-t14295
 filinq	1927	c4be589ff42c49da9c1225ad189a4dace5dfd78a	GREEN	fv11-20:filinq-t142953	unit 5168 run, 0 failures (baseline 5160, 0); no JS; diff review: helper extraction, log messages, attempts and refusals kept verbatim
 filinq	1862	8b11820cc23e56a9bc8537719529020e274a4ad2	CONFLICT	fv11-20:filinq-t142953	merge conflict against origin/development
 filinq	1917	73fcdc55be55a199b8653352905304ef3cf0e62e	CONFLICT	fv11-20:filinq-t142953	merge conflict against origin/development
+portaliq	2281	dd1912a93a69d729cabf98c1cb7d3f31871a754b	GREEN	fv11-31:portaliq-t1	unit 4465 tests 0 failing (baseline 4459 clean, dev 73065798; composer via --prefer-source); php -l clean; no JS; diff review: refactor-only (bearer resolution extracted to Session/*, PortalSessionService API kept)
