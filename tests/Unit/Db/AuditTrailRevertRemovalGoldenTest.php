@@ -28,6 +28,8 @@ use PHPUnit\Framework\TestCase;
  * Golden revert of an added field.
  *
  * @covers \OCA\OpenRegister\Db\AuditTrailPayloadHelper
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 final class AuditTrailRevertRemovalGoldenTest extends TestCase {
 

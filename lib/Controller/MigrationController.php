@@ -75,8 +75,6 @@ class MigrationController extends Controller {
 	/**
 	 * Trigger a migration between blob storage and magic tables.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * Expected body: {register, schema, direction, batchSize?, dryRun?}
 	 *
 	 * @return JSONResponse Migration report.

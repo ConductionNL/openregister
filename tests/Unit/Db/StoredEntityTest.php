@@ -24,6 +24,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(StoredEntity::class)]
 #[UsesClass(Register::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions::class)]
 class StoredEntityTest extends TestCase {
 
 	/**

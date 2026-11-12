@@ -43,6 +43,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\FlowTimerFireMapper
  * @covers \OCA\OpenRegister\Db\FlowTimerEventMapper
  * @covers \OCA\OpenRegister\Event\FlowTimerFiredEvent
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationNotice
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\TimerFiring
  */
 class FlowTimerEntitiesTest extends TestCase {
 

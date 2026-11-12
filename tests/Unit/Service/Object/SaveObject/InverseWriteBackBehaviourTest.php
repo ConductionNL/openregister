@@ -22,14 +22,17 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
+use OCA\OpenRegister\Service\Object\SaveObjectRelatedUpdateGuardInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * A complete write-back appends the source to each target's inverse list; an incomplete declaration,
@@ -57,6 +60,13 @@ class InverseWriteBackBehaviourTest extends TestCase {
 	private SaveObjectWriterInterface&MockObject $saver;
 
 	/**
+	 * The related-update check, mocked.
+	 *
+	 * @var SaveObjectRelatedUpdateGuardInterface&MockObject
+	 */
+	private SaveObjectRelatedUpdateGuardInterface&MockObject $guard;
+
+	/**
 	 * Build the shared mocks.
 	 *
 	 * @return void
@@ -64,6 +74,7 @@ class InverseWriteBackBehaviourTest extends TestCase {
 	protected function setUp(): void {
 		$this->objects = $this->createMock(MagicObjectFinderInterface::class);
 		$this->saver   = $this->createMock(SaveObjectWriterInterface::class);
+		$this->guard   = $this->createMock(SaveObjectRelatedUpdateGuardInterface::class);
 
 	}//end setUp()
 
@@ -105,7 +116,8 @@ class InverseWriteBackBehaviourTest extends TestCase {
 			$this->objects,
 			$this->saver,
 			new SaveLookups($schemas, $this->createMock(RegisterMapperInterface::class)),
-			$this->createMock(IURLGenerator::class)
+			$this->createMock(IURLGenerator::class),
+			$this->guard
 		))->write($run, $source);
 
 	}//end writeBack()
@@ -136,7 +148,7 @@ class InverseWriteBackBehaviourTest extends TestCase {
 		$this->objects->method('find')->willReturn($this->target(self::TARGET_1, ['cases' => ['case-0']]));
 		$this->saver->expects($this->once())
 			->method('saveObject')
-			->with('4', '5', $this->callback(static fn (array $d): bool => $d['cases'] === ['case-0', 'case-1']), self::TARGET_1);
+			->with($this->callback(static fn (array $d): bool => $d['cases'] === ['case-0', 'case-1']), $this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register === '4' && $options->target->schema === '5' && $options->uuid === self::TARGET_1));
 
 		$data = $this->writeBack(
 			['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'cases', 'writeBack' => true, 'removeAfterWriteBack' => true]],
@@ -184,6 +196,27 @@ class InverseWriteBackBehaviourTest extends TestCase {
 	}//end testAnUnknownTargetSchemaWritesNothing()
 
 	/**
+	 * A target the caller may not update is left as it is; the source data still loses the property.
+	 *
+	 * @return void
+	 */
+	public function testATargetTheCallerMayNotUpdateIsNotWritten(): void {
+		$target = $this->target(self::TARGET_1, ['cases' => []]);
+		$this->objects->method('find')->willReturn($target);
+		$this->guard->expects($this->once())
+			->method('assertMayUpdateRelated')
+			->with($this->identicalTo($target))
+			->willThrowException(new NotAuthorizedException('no update right'));
+		$this->saver->expects($this->never())->method('saveObject');
+
+		$this->writeBack(
+			['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'cases', 'writeBack' => true, 'removeAfterWriteBack' => true]],
+			['notes' => [self::TARGET_1]]
+		);
+
+	}//end testATargetTheCallerMayNotUpdateIsNotWritten()
+
+	/**
 	 * A target that cannot be read is skipped; the next target is still written.
 	 *
 	 * @return void
@@ -200,7 +233,7 @@ class InverseWriteBackBehaviourTest extends TestCase {
 		);
 		$this->saver->expects($this->once())
 			->method('saveObject')
-			->with('4', '5', $this->callback(static fn (array $d): bool => $d['cases'] === ['case-1']), self::TARGET_2);
+			->with($this->callback(static fn (array $d): bool => $d['cases'] === ['case-1']), $this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register === '4' && $options->target->schema === '5' && $options->uuid === self::TARGET_2));
 
 		$this->writeBack(
 			['type' => 'array', 'items' => ['$ref' => 'note', 'inversedBy' => 'cases', 'writeBack' => true]],
