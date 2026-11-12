@@ -3673,3 +3673,7 @@ stackiq	1589	e9d19e0d874e8cca4a2e94d0795a788010a5cd80	CONFLICT	fv11-20:stackiq-t
 buildiq	1299	01e275422675ef4a14e780ac04dae792f174928b	BLOCK	fv11-12:buildiq-a	PR is closed: listed by git ls-remote fallback in error; supersedes the GREEN above, do not merge
 buildiq	1321	4c5687eb9ad21509152eb6c0b814be5dcd0bdb6b	BLOCK	fv11-12:buildiq-a	PR is closed: listed by git ls-remote fallback in error; supersedes the GREEN above, do not merge
 pipelinq	3227	157563fc3a74987e4f5601d80016d9e936ceb0f8	BLOCK	fv11-12:pipelinq-a	PR is closed: listed by git ls-remote fallback in error
+learniq	2189	ae11c40d875d215a8caacd0cbda65e1f9bb224c6	GREEN	fv11-20:learniq-t115135	unit 5778 run, 1 failure baseline (HigherEducationExampleSetTest), no new; no JS; diff review: helper extraction, log messages kept verbatim
+learniq	2229	ec572f7022f7031ffbf771e41f35fba80676e320	GREEN	fv11-20:learniq-t115135	unit 5778 run, 1 failure baseline (HigherEducationExampleSetTest), no new; no JS; diff review: helper extraction, log messages kept verbatim
+learniq	2366	8e9856a5219a69e9bdb85b4cf60051fb925ade15	GREEN	fv11-20:learniq-t115135	unit 5778 run, 1 failure baseline (HigherEducationExampleSetTest), no new; no JS; diff review: helper extraction, log messages kept verbatim
+learniq	2362	365f686825cdbc90f77857b6a31150d4ed2e2395	CONFLICT	fv11-20:learniq-t115135	merge conflict against origin/development
