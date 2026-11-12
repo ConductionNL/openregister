@@ -2665,6 +2665,35 @@ class SaveObjects {
 	 * @return void
 	 */
 	private function persistChunkRows(BulkChunkRun $chunk, array $rows): void {
+		$db = $this->reporting->db;
+		if ($db === null || SystemOperationContext::isActive() === false) {
+			$this->persistChunkRowsNow(chunk: $chunk, rows: $rows);
+			return;
+		}
+
+		// A system operation withholds the lifecycle events, so its audit rows
+		// are its only record: they commit or roll back with the rows.
+		$db->beginTransaction();
+		try {
+			$this->persistChunkRowsNow(chunk: $chunk, rows: $rows);
+			$db->commit();
+		} catch (\Throwable $e) {
+			$db->rollBack();
+			throw $e;
+		}
+	}//end persistChunkRows()
+
+	/**
+	 * Persist a chunk's rows, then write their audit rows and events.
+	 *
+	 * @param BulkChunkRun $chunk The chunk pass.
+	 * @param array        $rows  The rows to write.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function persistChunkRowsNow(BulkChunkRun $chunk, array $rows): void {
 		$run = $chunk->run;
 		$chunk->eventTargets = $this->bulkEventTargets(
 			transformedObjects: $rows,
@@ -2681,7 +2710,7 @@ class SaveObjects {
 		$this->timedSideEffects(chunk: $chunk, sideEffects: $sideEffects);
 		// Processing time in the result for transparency and performance monitoring.
 		$chunk->result['statistics']['processingTimeMs'] = round((microtime(true) - $chunk->startTime) * 1000, 2);
-	}//end persistChunkRows()
+	}//end persistChunkRowsNow()
 
 	/**
 	 * STEP 2: persist the rows to the database, timed.
@@ -3224,13 +3253,14 @@ class SaveObjects {
 	 *
 	 * `$audit === false` is the bulk mirror of the single-object path's `silent` flag: a caller
 	 * that opts out of auditing per object keeps that choice when it moves to the bulk path.
+	 * Inside a system operation the rows are written regardless, as on the single-object path.
 	 *
 	 * @param bool $audit Whether the caller asked for audit trail rows.
 	 *
 	 * @return bool
 	 */
 	private function writesChunkAudit(bool $audit): bool {
-		return $this->reporting->auditTrailMapper !== null && $audit === true;
+		return $this->reporting->auditTrailMapper !== null && ($audit === true || SystemOperationContext::isActive() === true);
 	}//end writesChunkAudit()
 
 	/**
@@ -3278,7 +3308,8 @@ class SaveObjects {
 	 *
 	 * Every AuditTrail entity embeds an old+new payload diff, so the entries
 	 * are consumed slice by slice and each slice is released once persisted.
-	 * A failed slice is logged and the next slice is still written.
+	 * A failed slice is logged and the next slice is still written, except inside a
+	 * system operation, where the failure is rethrown so the chunk rolls back.
 	 *
 	 * @param array $auditEntries The entries from chunkAuditEntries()
 	 *
@@ -3294,6 +3325,10 @@ class SaveObjects {
 					message: '[SaveObjects] Failed to write batched audit trail for bulk chunk',
 					context: ['error' => $e->getMessage(), 'entries' => count($slice)]
 				);
+				// Inside a system operation the rows roll back with their audit rows.
+				if (SystemOperationContext::isActive() === true) {
+					throw $e;
+				}
 			}
 		}
 	}//end insertAuditEntries()

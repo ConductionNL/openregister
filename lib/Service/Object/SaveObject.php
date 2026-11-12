@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
 use DateTime;
@@ -2223,7 +2224,7 @@ class SaveObject implements SaveObjectInterface {
 	private function saveInNestedTransaction(ObjectSaveCall $call): ObjectEntity {
 		try {
 			return $this->nestedSave->run(
-				opens: $this->writesNestedObjects(call: $call),
+				opens: $this->writesNestedObjects(call: $call) || $this->isSystemWrite(call: $call),
 				heal: function () use ($call): void {
 					$this->healNestedSaveTables(call: $call);
 				},
@@ -2238,6 +2239,41 @@ class SaveObject implements SaveObjectInterface {
 			throw $e;
 		}
 	}//end saveInNestedTransaction()
+
+	/**
+	 * Whether a save persists inside a system operation, whose audit row is written in the same transaction.
+	 *
+	 * @param ObjectSaveCall $call The resolved save call.
+	 *
+	 * @return bool True for a persisting save while a system operation runs.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function isSystemWrite(ObjectSaveCall $call): bool {
+		return $call->flags->persist === true && SystemOperationContext::isActive() === true;
+	}//end isSystemWrite()
+
+	/**
+	 * Whether a save writes its audit row: never when audit trails are off, always inside a system operation, else unless silent.
+	 *
+	 * A system operation withholds the lifecycle events, so its audit row is
+	 * the only record of the write; `silent` does not skip it there.
+	 *
+	 * @param bool $silent Whether the save asked to skip its audit row.
+	 *
+	 * @return bool True when the audit row is written.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The silent flag follows the save API
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function writesAuditRow(bool $silent): bool {
+		if ($this->isAuditTrailsEnabled() === false) {
+			return false;
+		}
+
+		return $silent === false || SystemOperationContext::isActive() === true;
+	}//end writesAuditRow()
 
 	/**
 	 * Whether a save carries a property whose objects cascade into rows of their own.
@@ -3547,7 +3583,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function auditCreation(ObjectSaveCall $call, ObjectEntity $savedEntity): void {
-		if ($call->flags->silent === true || $this->isAuditTrailsEnabled() === false) {
+		if ($this->writesAuditRow(silent: $call->flags->silent) === false) {
 			return;
 		}
 
@@ -5043,7 +5079,7 @@ class SaveObject implements SaveObjectInterface {
 			]
 		);
 
-		if ($run->silent === false && $this->isAuditTrailsEnabled() === true) {
+		if ($this->writesAuditRow(silent: $run->silent) === true) {
 			$log = $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
 			$updatedEntity->setLastLog($log->jsonSerialize());
 		}
