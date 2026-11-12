@@ -4158,3 +4158,12 @@ dossiq	6165	7bf088116f5a65a389bcaa49ea88c95a32f3ab89	GREEN	worker-01	phpunit 125
 dossiq	6166	b9d9ab52aa9729c08dfe313164eef30a5f3337b1	GREEN	worker-01	phpunit 12517 on 9-PR tree (baseline 12467/19, 0 new); vitest 6249, only the inherited capabilityComparison failure; tests-only diff
 dossiq	6172	c77b2a4f0775b3d2d8b1fe5c6aff30728e621a28	GREEN	worker-01	phpunit 12517 on 9-PR tree (baseline 12467/19, 0 new); vitest 6249, only the inherited capabilityComparison failure; tests-only diff
 dossiq	6173	9f1a659deccad1392acf4386c04bf5896fd05fbd	GREEN	worker-01	phpunit 12517 on 9-PR tree (baseline 12467/19, 0 new); vitest 6249, only the inherited capabilityComparison failure; tests-only diff
+stackiq	1764	04eb335e3bea33c32f037343e72fd3b7329f675f	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
+stackiq	1765	79401e3a706b26d1d5a3738f6d4884ffc694100a	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
+stackiq	1766	2593aeec6aea98e10c2bbf62f1c6a3a77091f8db	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
+stackiq	1767	1c82d67f36fc16ba6e0fd3e2b0f685806ef8b367	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
+stackiq	1768	bbf02e6dc47430d768db402792e4e16c4fbfde09	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
+stackiq	1769	d6eec6435bc4c5d5cb9e937aae30933adfe13dbc	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
+stackiq	1770	69b3cf52c0c4ef04f0bf1aca113f64e0126fabf6	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
+stackiq	1771	e8fe52b8674a18ce469b7c8224a34dc62f02d20a	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
+stackiq	1772	5b0413991f169e9f1f72a9b1159ab64799f7ac8c	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
