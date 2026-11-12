@@ -2855,7 +2855,8 @@
     "requirement": [
      "openspec/specs/referential-integrity :: Relation graph MUST support bidirectional traversal (uses/usedBy)",
      "openspec/specs/referential-integrity :: Bidirectional reference consistency via inversedBy and writeBack"
-    ]
+    ],
+    "plan": "relations-that-travel-and-what-they-expose"
    },
    "reachedOn": "/objects/:register/:schema/:id",
    "provider": "openregister",
@@ -3160,7 +3161,11 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Object/ValidateObject.php:2167 formatValidationError builds message with property path; returned 400 by ObjectsController.php:3376-3378 on create/update (Schemas/objects routes)",
     "spec": "openspec/specs/format-validators",
-    "requirement": "openspec/changes/modelling-stated-requirements/specs/objects-crud/spec.md :: A refused save names the field that broke the rule (REQ-MSR-001)"
+    "requirement": "openspec/changes/modelling-stated-requirements/specs/objects-crud/spec.md :: A refused save names the field that broke the rule (REQ-MSR-001)",
+    "plan": [
+     "modelling-required-when-enforced",
+     "records-validate-without-saving"
+    ]
    },
    "reachedOn": "/objects (edit dialog save)",
    "provider": "openregister",
@@ -3197,7 +3202,8 @@
     "requirement": [
      "openspec/changes/modelling-stated-requirements/specs/skos-concept-registers/spec.md :: A coded property takes its allowed values from a concept scheme (REQ-MSR-003)",
      "openspec/specs/skos-concept-registers :: A property uses the hierarchy, the context and the weights (REQ-CLH-002)"
-    ]
+    ],
+    "plan": "property-code-list-from-concept-scheme"
    },
    "reachedOn": "/schemas/:id (property editor); enforced on /objects save",
    "provider": "openregister",
@@ -3374,7 +3380,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Source type 'Database (virtual register)' in src/modals/source/EditSource.vue:229, introspect action :423 -> sources#introspect routes.php:227; lib/Service/ObjectSource/DbalObjectSourceProvider.php serves rows live, registered Application.php:5125, dispatched ObjectService.php:3812",
     "spec": "openspec/specs/dbal-virtual-registers",
-    "requirement": "openspec/specs/dbal-virtual-registers :: Serve external rows as live objects with opt-in writes"
+    "requirement": "openspec/specs/dbal-virtual-registers :: Serve external rows as live objects with opt-in writes",
+    "plan": "dbal-virtual-registers"
    },
    "reachedOn": "/sources",
    "provider": "openregister",
@@ -3478,7 +3485,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/object/ViewObject.vue:1369 objectProperties built from currentSchema.properties, save :1161 -> PUT objects#update appinfo/routes.php:1177; opened from /tables row click src/views/search/SearchIndex.vue:384",
     "spec": "openspec/specs/entity-management-modals",
-    "requirement": "openspec/specs/objects-crud :: REQ-RFCE-001 The record form gives each declared field its own editor"
+    "requirement": "openspec/specs/objects-crud :: REQ-RFCE-001 The record form gives each declared field its own editor",
+    "plan": "a-conflicting-save-shows-the-other-value"
    },
    "reachedOn": "/tables and /objects (ViewObject modal)",
    "provider": "openregister",
@@ -3694,6 +3702,10 @@
      "openspec/specs/deletion-audit-trail :: Soft-deleted objects MUST be restorable through the trash API",
      "openspec/specs/deletion-audit-trail :: The system MUST support configurable retention periods before purge",
      "openspec/specs/deletion-audit-trail :: The trash/recycle bin API MUST support listing, filtering, and statistics for deleted objects"
+    ],
+    "plan": [
+     "object-deleted-lens",
+     "records-restore-with-cascade"
     ]
    },
    "reachedOn": "/deleted",
@@ -3734,7 +3746,8 @@
     "requirement": [
      "openspec/changes/capability-rows-closing-round/specs/object-lifecycle :: Someone who opens a locked record sees who holds the lock",
      "openspec/specs/object-lifecycle :: The object lock and unlock endpoints MUST manage optimistic locks with a status flag"
-    ]
+    ],
+    "plan": "run-scoped-object-locking"
    },
    "reachedOn": "/objects/:register/:schema/:id",
    "provider": "openregister",
@@ -3876,7 +3889,11 @@
     "owner": "ConductionNL/openregister",
     "evidence": "NotesProvider registered lib/AppInfo/Application.php:2117; lib/Files/Service/NoteService.php wraps ICommentsManager; routes appinfo/routes.php:1493-1494 -> lib/Notifications/Controller/NotesController.php:172; rendered via CnIntegrationWidget src/views/object/ObjectDetails.vue:413",
     "spec": "openspec/specs/object-interactions",
-    "requirement": "openspec/specs/object-interactions :: Notes on Objects via ICommentsManager"
+    "requirement": "openspec/specs/object-interactions :: Notes on Objects via ICommentsManager",
+    "plan": [
+     "notes-replies-by-parent",
+     "platform-comments-entity"
+    ]
    },
    "reachedOn": "/objects/:register/:schema/:id (Integrations tab)",
    "provider": "openregister",
@@ -3912,7 +3929,8 @@
     "evidence": "Change archived 2026-10-05-flow-task-entity: openregister_tasks carries assignee, due_at and an object anchor (object_uuid, register_id, schema_id) lib/Migration/Version1Date20260831120000.php:196,211,224; lifecycle verbs /api/flow-tasks appinfo/routes.php:2139-2153 -> lib/Controller/TaskController.php:373; inbox page /flow-tasks src/manifest.json:229 and detail src/views/task/FlowTaskDetail.vue. The record's Integrations tab (src/views/object/ObjectDetails.vue:413 CnIntegrationWidget) still uses the VTODO TasksController (appinfo/routes.php:1507-1510) without a real assignee, and no page creates a flow task on a record (no POST to /api/flow-tasks in src).",
     "change": "record-tasks-tab",
     "readOn": "2026-10-07",
-    "requirement": "openspec/changes/record-tasks-tab/specs/flow-tasks :: A record's page lists and creates the flow tasks anchored on it"
+    "requirement": "openspec/changes/record-tasks-tab/specs/flow-tasks :: A record's page lists and creates the flow tasks anchored on it",
+    "plan": "task-inbox-open-first"
    },
    "reachedOn": "/objects/:register/:schema/:id (Integrations tab)",
    "provider": "openregister",
@@ -4395,6 +4413,10 @@
      "openspec/specs/zoeken-filteren :: Field-level filtering with comparison operators",
      "openspec/specs/zoeken-filteren :: A like filter matches a substring ignoring case",
      "openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md :: A property declares its match type and its input control (REQ-SQF-003)"
+    ],
+    "plan": [
+     "list-query-condition-groups",
+     "search-value-or-empty-filter"
     ]
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}?field[gte]=...",
@@ -4430,7 +4452,8 @@
     "evidence": "lib/Service/Query/RelatedRowFilterParser.php (_related[schema][fk][field]=v) applied via lib/Db/MagicMapper/MagicSearchHandler.php:548/563; plus _relations.<field>=id at :2915. Only reverse direction (rows pointing AT the record); no filter on a field of a forward-referenced record",
     "change": "query-filter-through-a-reference",
     "readOn": "2026-10-07",
-    "requirement": "openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren :: The object query filters on a field of a referenced object"
+    "requirement": "openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren :: The object query filters on a field of a referenced object",
+    "plan": "query-referenced-schema-rows"
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}?_related[...]",
    "provider": "openregister",
@@ -4536,7 +4559,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Search/Controller/AggregationController.php:383 grouped (metric count/sum/avg, groupBy, metrics[] list :297); routes appinfo/routes.php:618-623",
     "spec": "openspec/specs/aggregation-api",
-    "requirement": "openspec/specs/aggregation-api :: Multi-metric responses (REQ-AGG-102)"
+    "requirement": "openspec/specs/aggregation-api :: Multi-metric responses (REQ-AGG-102)",
+    "plan": "adhoc-aggregation-suite"
    },
    "reachedOn": "API only: GET /api/objects/aggregations/{register}/{schema}/grouped",
    "provider": "openregister",
@@ -4981,7 +5005,8 @@
     "evidence": "Nextcloud top-bar search finds the owning record by file text: lib/Search/ObjectsProvider.php:519 passes _content_search; lib/Service/Object/QueryHandler.php:556 widens to chunk hits mapped to the owning object; lib/Service/Object/ContentSearchHandler.php caps candidates at 50 and carries no chunk text (unified-search-file-content). The Tables page search (src/views/search/SearchIndex.vue) never passes _content_search. Needs extraction configured.",
     "change": "tables-bulk-jobs-and-file-search",
     "readOn": "2026-10-07",
-    "requirement": "openspec/specs/zoeken-filteren :: Chunk hits are mapped back to their owning object (ZKN-CONTENT-002)"
+    "requirement": "openspec/specs/zoeken-filteren :: Chunk hits are mapped back to their owning object (ZKN-CONTENT-002)",
+    "plan": "search-file-text-and-vector-facade"
    },
    "reachedOn": "API only: POST /api/search/files/hybrid",
    "provider": "openregister",
@@ -5052,7 +5077,12 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Search/ObjectsProvider.php:326 search, registered lib/AppInfo/Application.php:1313",
     "spec": "openspec/specs/unified-search-provider",
-    "requirement": "openspec/specs/unified-search-provider :: OpenRegister MUST be the single fleet-wide unified search provider for register objects"
+    "requirement": "openspec/specs/unified-search-provider :: OpenRegister MUST be the single fleet-wide unified search provider for register objects",
+    "plan": [
+     "flow-task-search-provider",
+     "platform-search-provider",
+     "unified-search-magic-table-storage"
+    ]
    },
    "reachedOn": "Nextcloud unified search",
    "provider": "openregister",
@@ -5380,7 +5410,8 @@
     "requirement": [
      "openspec/specs/rbac-scopes :: Permission Types (read, create, update, delete, list)",
      "openspec/specs/rbac-scopes :: Nextcloud Group Mapping"
-    ]
+    ],
+    "plan": "rbac-disable-public-inheritance"
    },
    "reachedOn": "OpenRegister admin settings, Permission Matrix section (src/settings.js); schema edit dialog /schemas",
    "provider": "openregister",
@@ -5613,7 +5644,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/settings/sections/PermissionMatrix.vue:543 saves schema authorization via schemaStore.saveSchema; RbacConfiguration.vue; mounted src/views/settings/Settings.vue:36-39",
     "spec": "openspec/specs/rbac-scopes",
-    "requirement": "openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md :: Rights are managed in a permission matrix screen (REQ-RSS-001)"
+    "requirement": "openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md :: Rights are managed in a permission matrix screen (REQ-RSS-001)",
+    "plan": "rights-administration-hardening"
    },
    "reachedOn": "Nextcloud admin settings > OpenRegister (Permission Matrix, RBAC configuration)",
    "provider": "openregister",
@@ -5884,7 +5916,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Db/AuditTrailMapper.php:582 createAuditTrail stores user, time and changed old/new; object tab src/views/object/ObjectDetails.vue (Audit Trails); routes.php:1341-1342; page src/manifest.json:173",
     "spec": "openspec/specs/audit-trail-immutable",
-    "requirement": "openspec/specs/audit-trail-immutable :: Every mutation MUST produce an immutable audit trail entry"
+    "requirement": "openspec/specs/audit-trail-immutable :: Every mutation MUST produce an immutable audit trail entry",
+    "plan": "audit-trail-purge-by-age"
    },
    "reachedOn": "/audit-trails and the object detail Audit Trails tab",
    "provider": "openregister",
@@ -5925,7 +5958,11 @@
     "evidence": "lib/Service/Object/GetObject.php:197 writes createAuditTrail(action: 'read') on every user-facing find while auditTrailsEnabled is on (:451), opt-out per call via $_audit (:157, used by lib/Controller/FlowNodeRunController.php:402); read entries carry no diff lib/Db/AuditTrailMapper.php:861 and are counted beside create, update and delete :1834",
     "spec": "openspec/specs/audit-trail-immutable",
     "readOn": "2026-10-07",
-    "requirement": "openspec/specs/audit-trail-immutable :: Every user-facing read of an object is logged as a read"
+    "requirement": "openspec/specs/audit-trail-immutable :: Every user-facing read of an object is logged as a read",
+    "plan": [
+     "audit-read-events-visible-to",
+     "sensitive-field-reveal-audit"
+    ]
    },
    "reachedOn": "/audit-trails (action read)",
    "provider": "openregister",
@@ -5962,7 +5999,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "SHA-256 chain lib/Service/AuditHashService.php:249 computeHash, write path AuditTrailMapper.php:117; AuditSealJob appinfo/info.xml:154; verify lib/Controller/AuditTrailController.php:771 routes.php:1351; src/views/settings/sections/LogIntegrity.vue:323",
     "spec": "openspec/specs/audit-hash-chain",
-    "requirement": "openspec/specs/audit-hash-chain :: The system MUST provide a hash chain verification endpoint"
+    "requirement": "openspec/specs/audit-hash-chain :: The system MUST provide a hash chain verification endpoint",
+    "plan": "audit-seal-backlog-repair"
    },
    "reachedOn": "admin settings Log integrity section; API GET /api/audit-trails/verify",
    "provider": "openregister",
@@ -6006,6 +6044,10 @@
     "requirement": [
      "openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md :: The audit trail page browses, filters and exports entries (REQ-ADS-001)",
      "openspec/specs/audit-trail-immutable :: Audit-Trail Access, Export, and Administrative Deletion Surface"
+    ],
+    "plan": [
+     "audit-log-page",
+     "audit-trail-not-in-filter"
     ]
    },
    "reachedOn": "/audit-trails",
@@ -6274,7 +6316,8 @@
     "requirement": [
      "openspec/specs/retention-management :: The system MUST support legal holds (bevriezing)",
      "openspec/specs/archival-destruction-workflow :: Each matter holds an object with its own legal hold"
-    ]
+    ],
+    "plan": "archival-frozen-refuses-delete-and-dates-follow"
    },
    "reachedOn": "API only: POST /api/archival/legal-holds",
    "provider": "openregister",
@@ -6419,7 +6462,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "verwerkingsactiviteiten CRUD routes.php:452-457; UI src/store/modules/avg.js:311 used by src/views/avg/AvgIndex.vue; page src/manifest.json:301",
     "spec": "openspec/specs/avg-verwerkingsregister",
-    "requirement": "openspec/specs/avg-verwerkingsregister :: The system MUST maintain a verwerkingsactiviteiten register as an OpenRegister schema"
+    "requirement": "openspec/specs/avg-verwerkingsregister :: The system MUST maintain a verwerkingsactiviteiten register as an OpenRegister schema",
+    "plan": "processing-activity-register"
    },
    "reachedOn": "/avg",
    "provider": "openregister",
@@ -6457,7 +6501,8 @@
      "openspec/specs/gdpr-data-subject-rights :: Data-subject-request object model with status lifecycle",
      "openspec/specs/gdpr-data-subject-rights :: EU art-12 legal-deadline computation",
      "openspec/specs/gdpr-data-subject-rights :: Erasure honours legal hold and is mode-parameterised"
-    ]
+    ],
+    "plan": "dsar-finds-records-by-declared-subject-id"
    },
    "reachedOn": "/avg Cases tab",
    "provider": "openregister",
@@ -6574,6 +6619,11 @@
     "requirement": [
      "openspec/specs/object-interactions :: File Attachments on Objects",
      "openspec/specs/file-actions :: File creation and upsert run a fixed validate-write-own-tag pipeline"
+    ],
+    "plan": [
+     "files-create-from-url",
+     "large-file-handling",
+     "object-files-follow-object-access"
     ]
    },
    "reachedOn": "/objects/:register/:schema/:id (Files tab)",
@@ -6848,7 +6898,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "OpenRegister writes attachments through Nextcloud IRootFolder lib/Service/File/FolderManagementHandler.php:103, so S3 primary storage or external mounts configured in Nextcloud apply; no OpenRegister-specific S3 setting (searched lib/Settings/connections.json, lib/Service/File for s3/objectstore).",
     "change": "platform-provided-capabilities",
-    "requirement": "openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md :: Files are written through Nextcloud's storage layer (REQ-PPC-006)"
+    "requirement": "openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md :: Files are written through Nextcloud's storage layer (REQ-PPC-006)",
+    "plan": "register-document-store"
    },
    "reachedOn": "Nextcloud admin storage configuration",
    "provider": "nextcloud",
@@ -6885,7 +6936,8 @@
     "requirement": [
      "openspec/specs/event-driven-architecture :: Webhook entities MUST support event subscription configuration with wildcard matching",
      "openspec/specs/event-driven-architecture :: Webhook delivery MUST support CloudEvents v1.0 format with configurable payload strategies"
-    ]
+    ],
+    "plan": "webhooks-for-owners"
    },
    "reachedOn": "/webhooks",
    "provider": "openregister",
@@ -6991,7 +7043,14 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/FlowTriggerListener registered for object created/updated/deleted lib/AppInfo/Application.php:3039-3041, runs lib/Service/Flow/FlowEngine.php; canvas page src/manifest.json:226 (flowDetail, type flow, CnFlowDetail from nextcloud-vue); flow routes appinfo/routes.php:788-826",
     "spec": "openspec/specs/flow-engine",
-    "requirement": "openspec/specs/flow-engine :: A TRIGGER is a node, and a flow may carry several"
+    "requirement": "openspec/specs/flow-engine :: A TRIGGER is a node, and a flow may carry several",
+    "plan": [
+     "flow-powerful-steps-need-a-right",
+     "flow-trigger-transitions-and-changed-fields",
+     "or-flow-action-nodes",
+     "flow-node-config-forms",
+     "flow-error-branch-and-step-retry"
+    ]
    },
    "reachedOn": "/flows/:id",
    "provider": "openregister",
@@ -7026,7 +7085,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/BackgroundJob/FlowScheduleWorker registered appinfo/info.xml:182 drives lib/Service/Flow/FlowScheduleService.php (cron per flow); entry node lib/Service/Flow/Nodes/TriggerScheduleNode.php",
     "spec": "openspec/specs/flow-scheduled-trigger",
-    "requirement": "openspec/specs/flow-scheduled-trigger :: The scheduler finds scheduled flows in every app's store (REQ-SCH-003)"
+    "requirement": "openspec/specs/flow-scheduled-trigger :: The scheduler finds scheduled flows in every app's store (REQ-SCH-003)",
+    "plan": "or-flow-scheduled-trigger"
    },
    "reachedOn": "/flows/:id (On a schedule trigger)",
    "provider": "openregister",
@@ -7335,7 +7395,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Notifications/BackgroundJob/ScheduledReportJob.php:91 registered appinfo/info.xml:189 runs lib/Service/ScheduledReportService.php, mail sent :1128 (deliveryMode email|both :101); routes appinfo/routes.php:1950-1952; no screen in src",
     "spec": "openspec/specs/scheduled-report-jobs",
-    "requirement": "openspec/specs/scheduled-report-jobs :: Scheduled report execution MUST support email delivery of the export, isolated from Files delivery"
+    "requirement": "openspec/specs/scheduled-report-jobs :: Scheduled report execution MUST support email delivery of the export, isolated from Files delivery",
+    "plan": "connections-daily-report-mail"
    },
    "reachedOn": "API only: /api/scheduled-reports",
    "provider": "openregister",
@@ -7404,7 +7465,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "src/modals/register/ExportRegister.vue:90 Excel/CSV -> objects#export routes.php:1172 (ObjectsController.php:5464); JSON via registers#export default configuration branch RegistersController.php:1093 (routes.php:1655) and ExportConfiguration.vue",
     "spec": "openspec/specs/data-import-export",
-    "requirement": "openspec/specs/data-import-export :: The system MUST support structured export to CSV, Excel (XLSX), JSON, XML, and ODS formats @e2e exclude REST API export — covered by Newman"
+    "requirement": "openspec/specs/data-import-export :: The system MUST support structured export to CSV, Excel (XLSX), JSON, XML, and ODS formats @e2e exclude REST API export — covered by Newman",
+    "plan": "export-open-formats-and-public-download"
    },
    "reachedOn": "/registers (Export), /configurations",
    "provider": "openregister",
@@ -7975,7 +8037,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "DuplicateController.php:103 findDuplicates (routes.php:631, dismiss :643) listed in src/views/quality/DuplicatesIndex.vue:229 via store quality.js:237",
     "spec": "openspec/specs/duplicate-detection",
-    "requirement": "openspec/specs/duplicate-detection :: Declarative duplicate detection over a register/schema"
+    "requirement": "openspec/specs/duplicate-detection :: Declarative duplicate detection over a register/schema",
+    "plan": "near-duplicate-documents-by-text"
    },
    "reachedOn": "/duplicates",
    "provider": "openregister",
@@ -8295,7 +8358,8 @@
     "requirement": [
      "openspec/specs/tenant-quotas :: Request quota MUST be enforced via middleware before controller execution",
      "openspec/specs/auth-system :: Multi-tenancy isolation MUST restrict data access to the user's active organisation"
-    ]
+    ],
+    "plan": "object-quota-per-organisation"
    },
    "reachedOn": "/organisation",
    "provider": "openregister",
@@ -8329,7 +8393,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "GET /api/metrics appinfo/routes.php:421 served by lib/AppHost GenericMetrics controller from the observability.metrics block of src/manifest.json",
     "spec": "openspec/specs/production-observability",
-    "requirement": "openspec/specs/production-observability :: Prometheus Metrics Endpoint"
+    "requirement": "openspec/specs/production-observability :: Prometheus Metrics Endpoint",
+    "plan": "production-observability"
    },
    "reachedOn": "API only: GET /api/metrics (Prometheus)",
    "provider": "openregister",
@@ -8750,7 +8815,8 @@
     "evidence": "Not built: nothing stores a checksum when a file is uploaded; lib/Service/FileService.php and lib/Service/File/CreateFileHandler.php compute none, checksums exist only at e-Depot transfer and for chunked uploads. lib/Service/Edepot/EdepotTransferService.php:478 -> lib/Service/Edepot/PackagedFileChecksum.php:67 hash_file sha256 computed at e-Depot transfer time, with a fixity check only when the record already carries a checksum; lib/Service/Edepot/SipPackageBuilder.php:346 checksum in the SIP manifest; no checksum is stored when a file is uploaded (lib/Service/FileService.php: no checksum/sha256 match)",
     "spec": "openspec/specs/edepot-transfer",
     "requirement": "openspec/changes/capability-rows-stated-requirements/specs/file-actions :: A stored file keeps a checksum from the moment it is uploaded",
-    "change": "openspec/changes/capability-rows-stated-requirements"
+    "change": "openspec/changes/capability-rows-stated-requirements",
+    "plan": "published-file-digest"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -9043,7 +9109,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "every upload refuses executables: lib/Service/File/CreateFileHandler.php:200 blockExecutableFile on the file routes (appinfo/routes.php:1453 files#create, :1458 files#createMultipart) and lib/Service/Object/SaveObject/FilePropertyHandler.php:1101 on file properties; a per-property allow list and size limit are enforced at FilePropertyHandler.php:1105-1124 through resolveAllowedTypes and resolveMaxSizeBytes, which read allowedTypes and maxSize (bytes) from schema JSON or the API and, when those are absent, the property editor's fileConfiguration.allowedMimeTypes and fileConfiguration.maxSize (MB, converted to bytes) written at src/modals/schema/EditSchemaProperty.vue:171,181 (#4058)",
     "spec": "openspec/specs/file-actions",
-    "requirement": "openspec/specs/file-actions :: Uploaded files screened for executable content and ownership repaired safely"
+    "requirement": "openspec/specs/file-actions :: Uploaded files screened for executable content and ownership repaired safely",
+    "plan": "upload-malware-scan"
    },
    "reachedOn": "schema property editor (Allowed MIME Types, Maximum File Size) and schema JSON or API (allowedTypes, maxSize); executables refused on every upload",
    "provider": "openregister",
@@ -9652,7 +9719,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/integration-message-dispatch: lib/Controller/MessageDispatchController.php.",
     "spec": "openspec/specs/integration-message-dispatch",
-    "requirement": "openspec/specs/integration-message-dispatch :: Outbound-messaging send endpoints"
+    "requirement": "openspec/specs/integration-message-dispatch :: Outbound-messaging send endpoints",
+    "plan": "send-at-on-the-messaging-leaf"
    },
    "reachedOn": "API only",
    "provider": "openregister",
@@ -9680,7 +9748,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-user-task-node: lib/Event/TaskTerminalEvent.php, lib/Listener/UserTaskTerminalListener.php, lib/Service/Flow/FlowAdvanceBudget.php, lib/Service/Flow/FlowEngine.php.",
     "spec": "openspec/specs/flow-user-task-node",
-    "requirement": "openspec/specs/flow-user-task-node :: The run continues on task TERMINALITY, never on a nudge"
+    "requirement": "openspec/specs/flow-user-task-node :: The run continues on task TERMINALITY, never on a nudge",
+    "plan": "tasks-delegation-and-substitution"
    },
    "reachedOn": "task inbox and flow editor",
    "provider": "openregister",
@@ -9711,7 +9780,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-decision-tables: lib/Service/Dmn/DecisionTableEvaluator.php, lib/Service/Dmn/DecisionTableValidator.php, lib/Service/Flow/FlowFieldPath.php, lib/Service/Flow/Nodes/DecisionTableNode.php.",
     "spec": "openspec/specs/flow-decision-tables",
-    "requirement": "openspec/specs/flow-decision-tables :: A decision-table step evaluates its table against every item"
+    "requirement": "openspec/specs/flow-decision-tables :: A decision-table step evaluates its table against every item",
+    "plan": "stored-decision-tables"
    },
    "reachedOn": "flow editor",
    "provider": "openregister",
@@ -9768,7 +9838,8 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-definition-versioning: lib/Controller/FlowController.php, lib/Db/FlowDefinition.php, lib/Db/FlowDefinitionMapper.php, lib/Db/FlowRunMapper.php.",
     "spec": "openspec/specs/flow-definition-versioning",
-    "requirement": "openspec/specs/flow-definition-versioning :: A published version is immutable, and editing produces a new draft"
+    "requirement": "openspec/specs/flow-definition-versioning :: A published version is immutable, and editing produces a new draft",
+    "plan": "migrate-run-between-versions"
    },
    "reachedOn": "flow editor",
    "provider": "openregister",
@@ -9796,7 +9867,12 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Code carrying @spec openspec/specs/flow-business-timers: lib/Service/Flow/Timer/SlaCalculator.php, lib/Service/Flow/Timer/WorkingCalendar.php.",
     "spec": "openspec/specs/flow-business-timers",
-    "requirement": "openspec/specs/flow-business-timers :: The calendar knows when the working day opens, and the calculator can measure elapsed working time"
+    "requirement": "openspec/specs/flow-business-timers :: The calendar knows when the working day opens, and the calculator can measure elapsed working time",
+    "plan": [
+     "calendar-time-zone",
+     "end-date-roll-on-the-calendar",
+     "working-calendar-admin"
+    ]
    },
    "reachedOn": "API only",
    "provider": "openregister",
@@ -9893,6 +9969,12 @@
      "openspec/specs/credential-broker :: A token set is never resolved app-side",
      "openspec/specs/credential-broker :: Broker capability tokens are bound to the specific request",
      "openspec/specs/credential-oauth2-connect :: The callback exchanges the code and mints a token-set credential"
+    ],
+    "plan": [
+     "shared-credentials-and-flows",
+     "credential-broker-organisation-scope",
+     "credential-outside-vault-reference",
+     "app-declared-credential-providers"
     ]
    },
    "reachedOn": "/credentials",
