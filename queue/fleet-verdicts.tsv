@@ -4063,3 +4063,4 @@ dossiq	6112	445aab807d04ced88a400816293530ee6eb0627e	GREEN	worker-33	tree 12119 
 dossiq	6113	2743b838568fc3de690aefcfa2938791c361f960	GREEN	worker-33	tree 12119 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 dossiq	6115	07c6ae580a3ceeeca91a42b4b63d2400783e67fd	GREEN	worker-33	tree 12119 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
 dossiq	6116	90f729169bdc6f45e64e5fd42345051d143be06c	GREEN	worker-33	tree 12119 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
+buildiq	1444	fbabc84d705a66d75e6254698269a7d9cce7d673	REVERIFY	worker-49	gate RED (dockerimage pass->fail, score 84->80) not reproducible: checker_floor compare on this head reports docker and dockerimage pass, score 84 = floor; the PR adds one test file only; no change pushed; new head fbabc84d705a66d75e6254698269a7d9cce7d673 (unchanged), verify it
