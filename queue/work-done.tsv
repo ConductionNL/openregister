@@ -893,3 +893,4 @@ verify:hermiq:1622:a8a7ae1a	1622,1623,1624 GREEN (tests only); baseline 169 inhe
 cover:pipelinq:f67520ecm9d2c:be0dcca9	PR #3595: 5 PHP tests for lib/Mcp (McpAnswer edges); suite 5773->5778, 1 inherited failure	session-20261112T231633-96ffe7b8	2026-11-12T23:31:27Z
 cover:pipelinq:f67520ecm9d2c:6f346b68	PR #3596: SettingsSection test rewritten with exact values and @covers, 5/5 lines; suite 5773->5775, 0 new failures	session-20261112T224530-d70ae278	2026-11-12T23:31:59Z
 cover:pipelinq:f67520ecm9d2c:jsfdb25f89	PR #3597: RegisterAccessSync +8 tests (PHP; dir has no JS), suite 5773->5781, baseline 1 inherited failure	session-20261112T231637-60fd49c4	2026-11-12T23:32:16Z
+verify:hermiq:1599:a5644d60	9 GREEN (1599 already in development); tests only, PHP 3628 + vitest 966 green	session-20261112T224529-41d77a96	2026-11-12T23:32:59Z
