@@ -223,3 +223,4 @@ cover:dossiq:6ca0231e:f0c02922	PR #6117: 3 classes, 12 tests (External); suite 1
 merge:decidiq:2022:3ebb4f47	merged 9 (2022-2030)	session-20261112T184502-4ecd6072	2026-11-12T20:18:30Z
 verify:pipelinq:3539:195f6466	GREEN 3539, 3540; 5773 tests, 0 new failures	session-20261112T200015-391c2792	2026-11-12T20:18:29Z
 cover:stackiq:8cfacb29:aae6d66c	opened stackiq#1746 (3 tests, CmdbImportException statuses; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T20:18:48Z
+cover:stackiq:8cfacb29:c2bb21fa	PR #1747: OrganizationHandler 18.6->99.5%, GroupHandler 49.8->98.8% (25 tests); ContactPersonHandler left	session-20261112T184439-5c9a5b03	2026-11-12T20:19:06Z
