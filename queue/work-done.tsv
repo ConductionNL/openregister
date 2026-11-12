@@ -111,3 +111,4 @@ cover:buildiq:8ca317f6:568ec52a	opened buildiq PR (7 tests, ApplicationVersionOw
 fix:humaniq:1093:3ac478ed	not reproducible: dockerimage pass->pass, score 93->93; REVERIFY recorded, no push	session-20261112T182617-a12dc411	2026-11-12T19:32:33Z
 cover:dossiq:6ca0231e:6fbba20d	PR #6095: ShippedFingerprint + ShippedSets, 20 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:33:31Z
 review:openregister:10026:e02b75f1	APPROVE: route alias, legacy path kept, suites match main	session-20261112T184508-711de18c	2026-11-12T19:35:10Z
+merge:launchpad:1068:20edb7ab	merged=9 red=0 fail=0 skip=0 (row payload truncated at 1078 sha; resolved full sha by ls-remote)	session-20261112T192858-53ba298b	2026-11-12T19:35:26Z
