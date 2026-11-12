@@ -46,3 +46,4 @@ cover:buildiq:8ca317f6:a215617b	PR #1440: AppLocalLeafProvider, 5 tests, no new 
 gap:openregister:8:3eba129d	PR #10026 to main: kebab-case files-multipart alias, legacy path kept	session-20261112T184439-5c9a5b03	2026-11-12T19:03:22Z
 review:openregister:10021:429ebf91	APPROVE: config-only scanner allowlist	session-20261112T184439-5c9a5b03	2026-11-12T19:04:57Z
 gap:decidiq:13:302052c1	PR #2061 (quality/gap-13-audit @1c7a84fe): lockfile-only audit updates, 40->32 advisories, high 2->1; vitest/eslint same as development; needs verify+merge	session-20261112T182617-a12dc411	2026-11-12T19:05:19Z
+review:openregister:10025:feb52cfe	APPROVE: 4 jest specs, 78 tests green, eslint clean	session-20261112T175557-37d60f4f	2026-11-12T19:05:16Z
