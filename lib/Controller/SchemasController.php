@@ -2103,6 +2103,15 @@ class SchemasController extends Controller {
 			);
 		}
 
+		// Orphaning the rows of every organisation in the table is not what a
+		// `manage` rule answers for, so it is for administrators, like the cascade.
+		if ($objectCount > 0 && $this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(
+				data: ['error' => 'Deleting a schema and keeping its objects is for administrators.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
 		if ($objectCount > 0) {
 			// Force-delete with audit trail at WARNING level: a misused force flag
 			// orphans every object referencing this schema, so log who did it.
