@@ -327,5 +327,6 @@ verify:dossiq:6133:25d3cf83	9 GREEN (6133-6141), tests-only, tree 12068 tests, 0
 verify:dossiq:6108:28a2bded	GREEN: 6108-6116 (8 test-only PRs; 12119 tests, 0 new failures)	session-20261112T200018-e68ecbf8	2026-11-12T20:51:35Z
 cover:buildiq:8ca317f6:js39373934	opened buildiq#1462 (14 vitest tests: PropertyKeyField, RegisterSchemaFields, ActionBuilder; suite 2962->2976 all pass)	session-20261112T184441-77ab05a6	2026-11-12T20:51:59Z
 fix:buildiq:1444:fbabc84d	not reproducible: dockerimage passes locally, score 84 = floor; tests-only PR; REVERIFY recorded, nothing pushed	session-20261112T184441-77ab05a6	2026-11-12T20:52:54Z
+cover:dossiq:6ca0231e:ceb285b8	PR #6163: 1 class, 5 tests (Publication thin); suite 11976->11981, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:53:18Z
 cover:dossiq:6ca0231e:dfaef732	PR #6162: Notifier 97.9%->100% (4 tests: name, withdrawal wordings, each portal act); NotificationText is properties only; suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:53:06Z
 cover:dossiq:6ca0231e:js5794e9fc	PR #6164: 31 vitest tests (workflowConfigParsing + 4 settings cards); suite 6204->6235, 1 inherited failure unchanged	session-20261112T202909-d1558483	2026-11-12T20:53:28Z
