@@ -85,6 +85,19 @@ class SchemaManageGate {
 	}//end mayManageRegister()
 
 	/**
+	 * Whether the caller is an administrator.
+	 *
+	 * @return bool True for a signed-in administrator.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
+	 */
+	public function isAdministrator(): bool {
+		$user = $this->userSession->getUser();
+
+		return $user !== null && $this->groupManager->isAdmin($user->getUID()) === true;
+	}//end isAdministrator()
+
+	/**
 	 * Whether an authorization block's `manage` rule admits the caller; administrators always pass.
 	 *
 	 * @param array<string, mixed>|null $authorization The block.

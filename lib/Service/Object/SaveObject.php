@@ -2988,6 +2988,7 @@ class SaveObject {
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
 	 * @param bool $_dedupOverride Save through a blocking duplicate match, when the caller is entitled to.
 	 * @param string|null $_owner An explicit owner for a new object, such as a draft's scope value (decision 195).
+	 * @param string|null $_organisation The organisation of a new object, from trusted server code only.
 	 *
 	 * @return ObjectEntity The saved object entity.
 	 *
@@ -3018,6 +3019,7 @@ class SaveObject {
 		bool $_unowned = false,
 		bool $_dedupOverride = false,
 		?string $_owner = null,
+		?string $_organisation = null,
 	): ObjectEntity {
 		// Extract UUID and @self metadata from data.
 		[$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -3344,7 +3346,8 @@ class SaveObject {
 				currentUser: $currentUser,
 				failIfExists: $failIfExists,
 				_unowned: $_unowned,
-				_owner: $_owner
+				_owner: $_owner,
+				_organisation: $_organisation
 			);
 
 			// An override is only on record once the object it overrode for
@@ -3820,6 +3823,7 @@ class SaveObject {
 	 * @param bool $failIfExists Insert-only: refuse instead of updating when the identifier is taken.
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
 	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
+	 * @param string|null $_organisation The organisation of the new object, from trusted server code only.
 	 *
 	 * @return ObjectEntity Created object
 	 *
@@ -3845,6 +3849,7 @@ class SaveObject {
 		bool $failIfExists = false,
 		bool $_unowned = false,
 		?string $_owner = null,
+		?string $_organisation = null,
 	): ObjectEntity {
 		// Create a new object entity.
 		$objectEntity = new ObjectEntity();
@@ -3872,7 +3877,8 @@ class SaveObject {
 			_multitenancy: $_multitenancy,
 			currentUser: $currentUser,
 			_unowned: $_unowned,
-			_owner: $_owner
+			_owner: $_owner,
+			_organisation: $_organisation
 		);
 
 		// Apply archival metadata from schema archive configuration.
@@ -4171,6 +4177,7 @@ class SaveObject {
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
 	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
+	 * @param string|null $_organisation The organisation of the new object, from trusted server code only.
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -4191,6 +4198,7 @@ class SaveObject {
 		?IUser $currentUser = null,
 		bool $_unowned = false,
 		?string $_owner = null,
+		?string $_organisation = null,
 	): ObjectEntity {
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
@@ -4261,10 +4269,7 @@ class SaveObject {
 		// value when the caller was admin or a verified member of that organisation (SB1 fix).
 		// If setOrganisation() was NOT called there (non-member caller, or no @self.organisation
 		// provided at all), stamp the caller's active organisation here as the authoritative value.
-		if ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') {
-			$organisationUuid = $this->organisationService->getOrganisationForNewEntity();
-			$objectEntity->setOrganisation($organisationUuid);
-		}
+		$this->applyNewObjectOrganisation(objectEntity: $objectEntity, _organisation: $_organisation);
 
 		// Update object relations.
 		try {
@@ -4793,6 +4798,33 @@ class SaveObject {
 			return false;
 		}
 	}//end callerIsAdmin()
+
+	/**
+	 * Stamp the organisation of a new object.
+	 *
+	 * A `$_organisation` from trusted server code wins: a federation share
+	 * pins the share's organisation, and its token request has no user, so
+	 * setSelfMetadata() rightly drops a `@self.organisation` it cannot verify.
+	 * Otherwise an organisation setSelfMetadata() accepted stays, and an
+	 * object with none gets the caller's active (or the default) organisation.
+	 *
+	 * @param ObjectEntity $objectEntity  The new object.
+	 * @param string|null  $_organisation The organisation from trusted server code, or null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 */
+	private function applyNewObjectOrganisation(ObjectEntity $objectEntity, ?string $_organisation = null): void {
+		if ($_organisation !== null && $_organisation !== '') {
+			$objectEntity->setOrganisation($_organisation);
+			return;
+		}
+
+		if ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') {
+			$objectEntity->setOrganisation($this->organisationService->getOrganisationForNewEntity());
+		}
+	}//end applyNewObjectOrganisation()
 
 	/**
 	 * Populate TMLO defaults on a new object if the register has TMLO enabled.

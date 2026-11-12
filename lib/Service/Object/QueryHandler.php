@@ -449,7 +449,16 @@ class QueryHandler {
 		$paginatedResults['@self'] += self::searchReports(query: $query, historyPredicate: $historyPredicate, expansion: $expansion);
 		$paginatedResults['@self'] += self::requestedRegistersAndSchemas(query: $query, searchResult: $searchResult);
 		$paginatedResults['@self'] += self::ignoredFilterReport(ignoredFilters: $searchResult['ignoredFilters'] ?? []);
-		$paginatedResults           = $this->withFacets(query: $query, countQuery: $queries['count'], response: $paginatedResults, metrics: $metrics);
+		// The access posture is this method's arguments, never a query key: the
+		// facet path reads `_rbac`/`_multitenancy` from the queries it is handed,
+		// so a value that arrived in the query must not reach it.
+		$posture          = ['_rbac' => $_rbac, '_multitenancy' => $_multitenancy];
+		$paginatedResults = $this->withFacets(
+			query: array_merge($query, $posture),
+			countQuery: array_merge($queries['count'], $posture),
+			response: $paginatedResults,
+			metrics: $metrics
+		);
 
 		// Always add performance metrics to @self for debugging.
 		$metrics['total'] = round((microtime(true) - $startTime) * 1000, 2);

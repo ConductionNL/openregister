@@ -28,16 +28,18 @@ class FederatedConfigServiceTest extends TestCase {
 
 	private array $allowlist = [''];
 
+	private string $allowUnverified = 'true';
+
 	protected function setUp(): void {
 		$this->registry = $this->createMock(ShareableConfigTypeRegistry::class);
 		$this->config = $this->createMock(IAppConfig::class);
 		$this->config->method('getValueString')->willReturnCallback(
-			fn (string $app, string $key, string $default = '') => $this->allowlist[0]
+			fn (string $app, string $key, string $default = '') => ($key === 'federated_config_allow_unverified_bundles' ? $this->allowUnverified : $this->allowlist[0])
 		);
 
 		$signer = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
-		// Default: unsigned bundles pass (allowlist not enforced) so the existing
-		// install/allowlist assertions are unaffected by signing.
+		// Default: an administrator allows unverified bundles, so the source
+		// allowlist assertions are unaffected by signing.
 		$signer->method('verify')->willReturn(['signed' => false, 'valid' => false, 'trusted' => true, 'publicKey' => null]);
 		$signer->method('sign')->willReturnArgument(0);
 
@@ -131,12 +133,14 @@ class FederatedConfigServiceTest extends TestCase {
 	 * Build a service whose signer returns a fixed verify() verdict.
 	 *
 	 * @param array $verdict The verdict verify() should return.
+	 * @param bool $enforced Whether the trusted-keys list is in force.
 	 *
 	 * @return FederatedConfigService The service.
 	 */
-	private function serviceWithVerdict(array $verdict): FederatedConfigService {
+	private function serviceWithVerdict(array $verdict, bool $enforced = false): FederatedConfigService {
 		$signer = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
 		$signer->method('verify')->willReturn($verdict);
+		$signer->method('enforced')->willReturn($enforced);
 		$signer->method('sign')->willReturnArgument(0);
 
 		return new FederatedConfigService(
@@ -147,6 +151,62 @@ class FederatedConfigServiceTest extends TestCase {
 			$this->config,
 			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: string}>
+	 */
+	public static function unverifiedVerdicts(): array {
+		return [
+			'unsigned, no allowance'           => [['signed' => false, 'valid' => false, 'trusted' => true, 'publicKey' => null], ''],
+			'signed by any key, no allowance'  => [['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k'], ''],
+			'a value that is not exactly true' => [['signed' => false, 'valid' => false, 'trusted' => true, 'publicKey' => null], '1'],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('unverifiedVerdicts')]
+	public function testInstallRefusesABundleNothingVouchesFor(array $verdict, string $allowance): void {
+		$this->allowlist = [''];
+		$this->allowUnverified = $allowance;
+		$this->registry->expects($this->never())->method('get');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessageMatches('/trusted/');
+		$this->serviceWithVerdict($verdict)->install('demo.type', [], 'ConductionNL/pack');
+	}
+
+	public function testAnAdministratorMayAllowUnverifiedBundles(): void {
+		$this->allowlist = [''];
+		$this->allowUnverified = 'true';
+		$this->registry->method('get')->willReturn($this->type());
+		$service = $this->serviceWithVerdict(['signed' => false, 'valid' => false, 'trusted' => true, 'publicKey' => null]);
+
+		$this->assertSame(['x'], $service->install('demo.type', [], 'ConductionNL/pack')['installed']);
+	}
+
+	public function testATrustedKeyVerifiesWithoutTheAllowance(): void {
+		$this->allowlist = [''];
+		$this->allowUnverified = '';
+		$this->registry->method('get')->willReturn($this->type());
+		$service = $this->serviceWithVerdict(['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k'], enforced: true);
+
+		$this->assertSame(['x'], $service->install('demo.type', [], 'ConductionNL/pack')['installed']);
+	}
+
+	public function testTheAllowanceDoesNotOverruleATrustedKeysList(): void {
+		$this->allowlist = [''];
+		$this->allowUnverified = 'true';
+		$this->registry->expects($this->never())->method('get');
+		$service = $this->serviceWithVerdict(['signed' => false, 'valid' => false, 'trusted' => false, 'publicKey' => null], enforced: true);
+
+		$this->expectException(RuntimeException::class);
+		$service->install('demo.type', [], 'ConductionNL/pack');
+	}
+
+	public function testTheAllowanceIsATrustSetting(): void {
+		$this->config->expects($this->once())->method('setValueString')->with('openregister', 'federated_config_allow_unverified_bundles', 'true');
+
+		$this->service->setTrustValue('allowUnverifiedBundles', 'true');
 	}
 
 	public function testInstallRefusesATamperedSignature(): void {
@@ -291,5 +351,56 @@ class FederatedConfigServiceTest extends TestCase {
 
 		$this->expectException(UnexpectedValueException::class);
 		$service->setTrustValue('nope', 'x');
+	}
+
+	/**
+	 * aud-f1: an install and a refused install are logged with actor, type and source.
+	 */
+	public function testInstallsAndRefusalsAreLogged(): void {
+		$lines = [];
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		foreach (['info', 'warning'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				static function (string|\Stringable $message, array $context = []) use (&$lines, $level): void {
+					$lines[] = [$level, $context];
+				}
+			);
+		}
+
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('installer');
+		$session = $this->createMock(\OCP\IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$signer = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
+		$signer->method('verify')->willReturn(['signed' => false, 'valid' => false, 'trusted' => true, 'publicKey' => null]);
+		$this->allowlist = ['ConductionNL'];
+		$this->registry->method('get')->willReturn($this->type());
+		$service = new FederatedConfigService(
+			$this->registry,
+			$this->createMock(CredentialBrokerService::class),
+			$signer,
+			$this->createMock(\OCP\Http\Client\IClientService::class),
+			$this->config,
+			$logger,
+			$session
+		);
+
+		try {
+			$service->install('demo.type', ['flows' => []], 'evil/repo');
+			$this->fail('refused');
+		} catch (RuntimeException $e) {
+			// Expected: not on the allowlist.
+		}
+
+		$this->allowlist = [''];
+		$service->install('demo.type', ['flows' => []], 'anyone/repo');
+
+		$this->assertSame(
+			[
+				['warning', ['actor' => 'installer', 'type' => 'demo.type', 'source' => 'evil/repo']],
+				['info', ['actor' => 'installer', 'type' => 'demo.type', 'source' => 'anyone/repo']],
+			],
+			$lines
+		);
 	}
 }

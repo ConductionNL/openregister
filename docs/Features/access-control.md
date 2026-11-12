@@ -311,6 +311,45 @@ nothing. Do not wait for it. A schema that names its groups today keeps the
 same behaviour after the flip; one that says nothing gets whatever the flip
 decides.
 
+#### Closing writes on unmarked schemas today: `enforce_default_closed`
+
+An operator does not have to wait for the flip to close the write half. The
+app setting `enforce_default_closed` makes `create`, `update` and `delete` on a
+schema with no `authorization` block deny every caller except an administrator
+and the object's owner. It is off by default, so nothing changes until you
+turn it on:
+
+```bash
+occ config:app:set openregister enforce_default_closed --value=true --type=boolean
+```
+
+What it changes, and what it leaves alone:
+
+| Schema declares | Flag off (default) | Flag on |
+|---|---|---|
+| No `authorization` block, write | Any signed-in account may create, update, delete | Administrators and the object's owner only |
+| No `authorization` block, read | Every non-private row, to anyone authenticated | Unchanged: reads stay open |
+| `"public": true` | Open, as declared | Unchanged: the opt-in keeps the schema open |
+| A non-empty block | Its own rules | Unchanged: its own rules |
+
+Reads stay open on purpose. The flag closes the case where any account could
+write into a schema nobody secured (an integration's configuration, a leaf
+app's settings register). It does not decide who may read; give those schemas
+a `read` rule.
+
+While the flag is off, OpenRegister logs a deprecation warning the first time a
+write of each kind is let through on an unmarked schema
+in a request, so the log shows that such writes are happening before you switch
+it on. The warning does not name the schema; `rbac-unmarked-schema-audit.md`
+tracks which schemas are unmarked. `GET /api/capabilities` reports the
+current value as `enforceDefaultClosed`.
+
+To turn it off again:
+
+```bash
+occ config:app:set openregister enforce_default_closed --value=false --type=boolean
+```
+
 Next: pick the groups your schema should answer to, then write the block using
 the samples under [Code Examples](#code-examples) below.
 

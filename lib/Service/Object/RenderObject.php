@@ -565,11 +565,13 @@ class RenderObject {
 	 * This method returns all objects that were loaded during rendering (via _extend).
 	 * Objects are indexed by their UUID for easy lookup by the frontend.
 	 *
+	 * @param bool $_rbac Whether this is a user-facing read (strips unreadable properties).
+	 *
 	 * @return array<string, array> Objects indexed by UUID, serialized as arrays
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	public function getObjectsCache(): array {
+	public function getObjectsCache(bool $_rbac=true): array {
 		$result = [];
 		foreach ($this->objectsCache as $key => $object) {
 			// Only include entries keyed by UUID (skip numeric IDs).
@@ -582,6 +584,10 @@ class RenderObject {
 				}
 			}
 		}
+
+		// The cache holds stored records; the response gets them as any read does,
+		// with unreadable and writeOnly properties stripped.
+		$this->redactWriteOnlyFromRows(rows: $result, _rbac: $_rbac);
 
 		return $result;
 	}//end getObjectsCache()
@@ -1990,6 +1996,73 @@ class RenderObject {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): ObjectEntity {
+		// Related objects loaded for this render are cut to what the caller may
+		// read under the posture the render was asked for (CacheHandler::readableOnly()),
+		// so a deliberate `_multitenancy: false` search keeps its cross-organisation relations.
+		$this->objectCacheService->pushReadPosture(_rbac: $_rbac, _multitenancy: $_multitenancy);
+		try {
+			return $this->renderEntityInPosture(
+				entity: $entity,
+				_extend: $_extend,
+				depth: $depth,
+				filter: $filter,
+				fields: $fields,
+				unset: $unset,
+				registers: $registers,
+				schemas: $schemas,
+				objects: $objects,
+				visitedIds: $visitedIds,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy
+			);
+		} finally {
+			$this->objectCacheService->popReadPosture();
+		}
+	}//end renderEntity()
+
+	/**
+	 * renderEntity() once the read posture is in place.
+	 *
+	 * This method takes an ObjectEntity and applies extensions and filters to it.
+	 * It maintains the object's structure while allowing for property extension
+	 * and filtering based on the provided parameters. Additionally, it accepts
+	 * preloaded registers, schemas, and objects to enhance rendering performance.
+	 *
+	 * @param ObjectEntity $entity The entity to render
+	 * @param array|string|null $_extend Properties to extend the entity with
+	 * @param int $depth The depth level for nested rendering
+	 * @param array|null $filter Filters to apply to the rendered entity
+	 * @param array|null $fields Specific fields to include in the output
+	 * @param array|null $unset Properties to remove from the rendered entity
+	 * @param array|null $registers Preloaded registers to use
+	 * @param array|null $schemas Preloaded schemas to use
+	 * @param array|null $objects Preloaded objects to use
+	 * @param array|null $visitedIds All ids we already handled
+	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
+	 * @param bool $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 *
+	 * @return ObjectEntity The rendered entity with applied extensions and filters
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible rendering options
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    RBAC and multitenancy flags control security behavior
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function renderEntityInPosture(
+		ObjectEntity $entity,
+		array|string|null $_extend = [],
+		int $depth = 0,
+		?array $filter = [],
+		?array $fields = [],
+		?array $unset = [],
+		?array $registers = [],
+		?array $schemas = [],
+		?array $objects = [],
+		?array $visitedIds = [],
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+	): ObjectEntity {
 		if (self::isVisited(entity: $entity, visitedIds: $visitedIds) === true) {
 			// @psalm-suppress NullableReturnStatement - setObject() returns $this (ObjectEntity) despite void annotation
 			$entity->setObject(['@circular' => true, 'id' => $entity->getUuid()]);
@@ -2004,7 +2077,7 @@ class RenderObject {
 		);
 
 		return $this->renderWithContext(entity: $entity, context: $context);
-	}//end renderEntity()
+	}//end renderEntityInPosture()
 
 	/**
 	 * Render an entity once its options are gathered in a RenderContext.
@@ -4577,12 +4650,15 @@ class RenderObject {
 			$additionalFields = array_slice($inversedByFields, 1);
 		}
 
-		return $this->objectEntityMapper->findByRelationBatchInSchema(
-			uuids: $entityUuids,
-			schemaId: $schemaIdInt,
-			registerId: $registerId,
-			fieldName: $inversedByFields[0],
-			additionalFieldNames: $additionalFields
+		// The relation lookup applies no access rule: keep only what the caller may read.
+		return $this->objectCacheService->readableOnly(
+			objects: $this->objectEntityMapper->findByRelationBatchInSchema(
+				uuids: $entityUuids,
+				schemaId: $schemaIdInt,
+				registerId: $registerId,
+				fieldName: $inversedByFields[0],
+				additionalFieldNames: $additionalFields
+			)
 		);
 	}//end batchLoadReferencingObjects()
 
@@ -4852,6 +4928,9 @@ class RenderObject {
 				}
 			}//end if
 		}//end foreach
+
+		// The relation lookups apply no access rule: keep only what the caller may read.
+		$referencingObjects = $this->objectCacheService->readableOnly(objects: $referencingObjects);
 
 		// Set all found objects to the objectsCache.
 		$ids = array_map(
@@ -5208,6 +5287,56 @@ class RenderObject {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
+		// Related objects loaded for this render are cut to what the caller may
+		// read under the posture the render was asked for (CacheHandler::readableOnly()),
+		// so a deliberate `_multitenancy: false` search keeps its cross-organisation relations.
+		$this->objectCacheService->pushReadPosture(_rbac: $_rbac, _multitenancy: $_multitenancy);
+		try {
+			return $this->renderEntitiesInPosture(
+				entities: $entities,
+				_extend: $_extend,
+				_filter: $_filter,
+				_fields: $_fields,
+				_unset: $_unset,
+				_rbac: $_rbac,
+				_multitenancy: $_multitenancy
+			);
+		} finally {
+			$this->objectCacheService->popReadPosture();
+		}
+	}//end renderEntities()
+
+	/**
+	 * renderEntities() once the read posture is in place.
+	 *
+	 * This method renders an array of ObjectEntities by calling renderEntity() for each one.
+	 * It's used for batch rendering of search results and collections.
+	 *
+	 * @param array $entities Array of ObjectEntity instances to render.
+	 * @param array|string|null $_extend Properties to extend/embed in the response.
+	 * @param array|null $_filter Filters to apply to the rendered entities.
+	 * @param array|null $_fields Specific fields to include in the response.
+	 * @param array|null $_unset Fields to exclude from the response.
+	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
+	 * @param bool $_multitenancy Whether to apply multitenancy filtering (default: true).
+	 *
+	 * @return ObjectEntity[]
+	 *
+	 * @psalm-return list<ObjectEntity>
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC and multitenancy flags control security behavior
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function renderEntitiesInPosture(
+		array $entities,
+		array|string|null $_extend = [],
+		array|string|null $_filter = null,
+		array|string|null $_fields = null,
+		array|string|null $_unset = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+	): array {
 		// Convert extend to array if it's a string.
 		if (is_string($_extend) === true) {
 			$_extend = explode(',', $_extend);
@@ -5367,7 +5496,7 @@ class RenderObject {
 		}//end try
 
 		return $renderedEntities;
-	}//end renderEntities()
+	}//end renderEntitiesInPosture()
 
 	/**
 	 * Batch-preload formatted file objects + tags for an entire page of entities (PERF-1).

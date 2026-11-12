@@ -47,6 +47,9 @@ use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Service\Flow\ExternalMailAuthorGate;
+use OCP\IGroupManager;
+use OCP\IUserSession;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -194,6 +197,7 @@ class SchemaFlowImportListener implements IEventListener {
 		}
 
 		$flow = ($existing ?? new Flow());
+		$graphBefore = $this->graphOf(nodes: $flow->getNodes(), edges: $flow->getEdges());
 
 		if ($existing === null) {
 			$flow->setUuid($this->newUuid());
@@ -228,6 +232,16 @@ class SchemaFlowImportListener implements IEventListener {
 		$flow->setLimits((array)($declaration['limits'] ?? []));
 		$flow->setUpdated(new DateTime());
 
+		// A send-email step that mails any address is for administrators only,
+		// as in FlowService::save(). A schema's `manage` groups may save its
+		// configuration, so without this a delegated schema manager could ship
+		// that graph here. A refusal skips this declaration (importFor() logs it).
+		if (($existing === null || $this->graphOf(nodes: $flow->getNodes(), edges: $flow->getEdges()) !== $graphBefore)
+			&& ExternalMailAuthorGate::mailsAnyAddress(graph: [$flow->getNodes(), $flow->getEdges()]) === true
+		) {
+			$this->mailAuthorGate()->assertAdministratorAuthor();
+		}
+
 		if ($existing === null) {
 			$stored = $this->flows->insert($flow);
 			$this->publishVersionOne(flow: $stored);
@@ -242,6 +256,43 @@ class SchemaFlowImportListener implements IEventListener {
 		$this->publishShippedUpdate(flow: $flow);
 
 	}//end upsert()
+
+	/**
+	 * A comparable form of a flow's nodes and edges.
+	 *
+	 * @param mixed $nodes The nodes.
+	 * @param mixed $edges The edges.
+	 *
+	 * @return string The signature.
+	 */
+	private function graphOf(mixed $nodes, mixed $edges): string {
+		return (string)json_encode([($nodes ?? []), ($edges ?? [])]);
+	}//end graphOf()
+
+	/**
+	 * The gate that judges a graph mailing any address.
+	 *
+	 * Install and `occ` imports run without a user and count as the app itself;
+	 * a web request without an administrator does not. Without a container the
+	 * gate has no user to judge and refuses outside the CLI.
+	 *
+	 * @return ExternalMailAuthorGate The gate.
+	 */
+	private function mailAuthorGate(): ExternalMailAuthorGate {
+		$session = null;
+		$groups = null;
+		if ($this->container !== null) {
+			try {
+				$session = $this->container->get(IUserSession::class);
+				$groups = $this->container->get(IGroupManager::class);
+			} catch (Throwable $e) {
+				$session = null;
+				$groups = null;
+			}
+		}
+
+		return new ExternalMailAuthorGate(userSession: $session, groupManager: $groups, trustCli: true);
+	}//end mailAuthorGate()
 
 	/**
 	 * Publish a changed declaration as the flow's next version.

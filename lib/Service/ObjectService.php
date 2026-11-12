@@ -1695,6 +1695,10 @@ class ObjectService implements ObjectServiceInterface
      * @param string|null              $_owner        An explicit owner for a NEW object (a draft's scope value such as
      *                                                `portal:<subjectRef>`, decision 195). Service-level only: no
      *                                                controller forwards it. An update keeps the stored owner.
+     * @param string|null              $_organisation The organisation of a NEW object, set by trusted server code
+     *                                                (a federation share's organisation). Never read from a
+     *                                                request. Wins over `@self.organisation` and the active
+     *                                                organisation. An update keeps the stored organisation.
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -1724,7 +1728,8 @@ class ObjectService implements ObjectServiceInterface
         bool $failIfExists=false,
         bool $_unowned=false,
         bool $_dedupOverride=false,
-        ?string $_owner=null
+        ?string $_owner=null,
+        ?string $_organisation=null
     ): ObjectEntity {
         // A SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         //
@@ -1762,6 +1767,7 @@ class ObjectService implements ObjectServiceInterface
                     '_unowned'       => $_unowned,
                     '_dedupOverride' => $_dedupOverride,
                     '_owner'         => $_owner,
+                    '_organisation'  => $_organisation,
                 ]
             );
         } finally {
@@ -2034,7 +2040,8 @@ class ObjectService implements ObjectServiceInterface
             failIfExists: $options['failIfExists'],
             _unowned: $options['_unowned'],
             _dedupOverride: $options['_dedupOverride'],
-            _owner: $options['_owner']
+            _owner: $options['_owner'],
+            _organisation: ($options['_organisation'] ?? null)
         );
     }//end persistObject()
 
@@ -4222,7 +4229,7 @@ class ObjectService implements ObjectServiceInterface
         }
 
         if (empty($extend) === false) {
-            $result['@self']['objects'] = $this->getExtendedObjects();
+            $result['@self']['objects'] = $this->getExtendedObjects(_rbac: $_rbac);
         }
 
         // Add names mapping if _names is in _extend.
@@ -4712,11 +4719,13 @@ class ObjectService implements ObjectServiceInterface
      * Objects are indexed by their UUID for easy lookup by the frontend.
      * Should be called after renderEntity() to get the extended objects.
      *
+     * @param bool $_rbac Whether this is a user-facing read (strips unreadable properties).
+     *
      * @return array<string, array> Objects indexed by UUID
      */
-    public function getExtendedObjects(): array
+    public function getExtendedObjects(bool $_rbac=true): array
     {
-        return $this->renderHandler->getObjectsCache();
+        return $this->renderHandler->getObjectsCache(_rbac: $_rbac);
     }//end getExtendedObjects()
 
     /**

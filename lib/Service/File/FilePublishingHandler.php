@@ -527,8 +527,12 @@ class FilePublishingHandler {
 	 * This method collects all files associated with an object and creates a ZIP
 	 * archive containing them. The archive is stored in the system temporary directory.
 	 *
-	 * @param ObjectEntity|string $object The object entity or ID.
-	 * @param string|null $zipName Optional custom name for the ZIP file.
+	 * @param ObjectEntity|string $object        The object entity or ID.
+	 * @param string|null         $zipName       Optional custom name for the ZIP file.
+	 * @param bool                $publishedOnly Only the object's published (shared) files. Defaults to
+	 *                                           true; a caller that may see the object's unpublished
+	 *                                           files (a signed-in reader of the object, as in the file
+	 *                                           listing) passes false.
 	 *
 	 * @return (int|string)[]
 	 *
@@ -544,7 +548,7 @@ class FilePublishingHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null): array {
+	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null, bool $publishedOnly = true): array {
 		// If string ID provided, try to find the object entity.
 		if (is_string($object) === true) {
 			try {
@@ -565,7 +569,10 @@ class FilePublishingHandler {
 		}
 
 		// Get all files for the object, without the restricted ones the caller is not admitted to.
-		$files = $this->container->get(FileRestrictionGuard::class)->readableNodes(nodes: $this->fileService->getFiles($object));
+		// Unpublished or withdrawn attachments stay out unless the caller may see them.
+		$files = $this->container->get(FileRestrictionGuard::class)->readableNodes(
+			nodes: $this->fileService->getFiles($object, sharedFilesOnly: $publishedOnly)
+		);
 
 		if (empty($files) === true) {
 			throw new Exception('No files found for this object');

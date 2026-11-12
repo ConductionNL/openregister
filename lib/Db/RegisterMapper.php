@@ -29,6 +29,8 @@ use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\Flow\ExternalMailAuthorGate;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -436,6 +438,51 @@ class RegisterMapper extends QBMapper {
 	}//end clearFindCache()
 
 	/**
+	 * Every register an identifier could resolve to, across all organisations.
+	 *
+	 * A superset of what ImportHandler's register lookups match
+	 * (`find()` with the slug as written or lower-cased: uuid, `LOWER(slug)`,
+	 * numeric id). The uuid is compared case-insensitively too, so an
+	 * upper-cased uuid cannot miss here and hit in the importer. No RBAC and no
+	 * organisation filter: the caller judges each row.
+	 *
+	 * @param string $identifier A uuid, slug (any case) or numeric id.
+	 * @param int    $limit      Maximum number of rows.
+	 *
+	 * @return list<Register> The matching registers.
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function findAllByIdentifier(string $identifier, int $limit = 100): array {
+		$lower = strtolower($identifier);
+		$qb = $this->db->getQueryBuilder();
+		$conditions = $qb->expr()->orX(
+			$qb->expr()->eq($qb->func()->lower('uuid'), $qb->createNamedParameter(value: $lower, type: IQueryBuilder::PARAM_STR)),
+			$qb->expr()->eq($qb->func()->lower('slug'), $qb->createNamedParameter(value: $lower, type: IQueryBuilder::PARAM_STR))
+		);
+		if (is_numeric($identifier) === true) {
+			$conditions->add(
+				$qb->expr()->eq('id', $qb->createNamedParameter(value: (int)$identifier, type: IQueryBuilder::PARAM_INT))
+			);
+		}
+
+		$qb->select('*')
+			->from('openregister_registers')
+			->where($conditions)
+			->setMaxResults($limit);
+
+		$result = $qb->executeQuery();
+		$registers = [];
+		while (($row = $result->fetch()) !== false) {
+			$registers[] = $this->mapRowToEntity(row: $row);
+		}
+
+		$result->closeCursor();
+
+		return $registers;
+	}//end findAllByIdentifier()
+
+	/**
 	 * Finds multiple registers by id
 	 *
 	 * @param array $ids The ids of the registers
@@ -597,6 +644,7 @@ class RegisterMapper extends QBMapper {
 	public function insert(Entity $entity): Entity {
 		// Verify RBAC permission to create registers.
 		$this->verifyRbacPermission(action: 'create', entityType: 'register');
+		$this->assertActionStepsMailAuthor(oldRegister: null, newRegister: $entity);
 		// Auto-set organisation from active session.
 		$this->setOrganisationOnCreate(entity: $entity);
 
@@ -748,6 +796,7 @@ class RegisterMapper extends QBMapper {
 			->from('openregister_registers')
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId(), IQueryBuilder::PARAM_INT)));
 		$oldSchema = $this->findEntity(query: $qb);
+		$this->assertActionStepsMailAuthor(oldRegister: $oldSchema, newRegister: $entity);
 
 		// Clean the register object to ensure UUID, slug, and version are set.
 		$this->cleanObject(register: $entity);
@@ -763,6 +812,66 @@ class RegisterMapper extends QBMapper {
 
 		return $entity;
 	}//end update()
+
+	/**
+	 * Refuse a new or changed register action step that mails any address unless an administrator saves it.
+	 *
+	 * A register's declared actions are merged into every schema of the register
+	 * (ObjectActionDefinitions::resolve()), and ObjectActionStepsFlow::flowFor()
+	 * later stores and publishes their inline steps as a flow for whoever runs
+	 * the action. So the author is judged here, when the step is written, exactly
+	 * as SchemaMapper::assertActionStepsMailAuthor() does for schema actions. Only
+	 * new or changed steps count, so an unchanged admin-authored step does not
+	 * block a register manager's later save.
+	 *
+	 * @param Entity|null $oldRegister The stored register, or null on create.
+	 * @param Entity      $newRegister The register being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When a non-administrator adds or changes such a step.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function assertActionStepsMailAuthor(?Entity $oldRegister, Entity $newRegister): void {
+		$before = $this->actionSteps(register: $oldRegister);
+		foreach ($this->actionSteps(register: $newRegister) as $key => $steps) {
+			if (json_encode($before[$key] ?? null) === json_encode($steps)) {
+				continue;
+			}
+
+			if (ExternalMailAuthorGate::mailsAnyAddress(graph: $steps) === true) {
+				(new ExternalMailAuthorGate(
+					userSession: $this->userSession,
+					groupManager: $this->groupManager,
+					trustCli: true
+				))->assertAdministratorAuthor();
+			}
+		}
+	}//end assertActionStepsMailAuthor()
+
+	/**
+	 * The inline steps of a register's declared actions, by action key.
+	 *
+	 * @param Entity|null $register The register.
+	 *
+	 * @return array<string, array<mixed>> The steps per action key.
+	 */
+	private function actionSteps(?Entity $register): array {
+		if ($register instanceof Register === false) {
+			return [];
+		}
+
+		$steps = [];
+		foreach (ObjectActionDefinition::declarations(configuration: ($register->getConfiguration() ?? [])) as $key => $definition) {
+			$declared = ($definition[ObjectActionDefinition::KIND_STEPS] ?? null);
+			if (is_array($declared) === true) {
+				$steps[(string)$key] = $declared;
+			}
+		}
+
+		return $steps;
+	}//end actionSteps()
 
 	/**
 	 * Update an existing register from an array of data

@@ -162,7 +162,7 @@ class FileExtractionController extends Controller {
 			$order = $this->request->getParam('order', 'DESC');
 
 			// All chunked files are "completed" — if filtering for another status, return empty.
-			if ($status !== null && $status !== '' && $status !== 'completed') {
+			if (in_array($status, [null, '', 'completed'], true) === false) {
 				return new JSONResponse(
 					data: [
 						'success' => true,
@@ -178,18 +178,29 @@ class FileExtractionController extends Controller {
 			}
 
 			// For riskLevel/entityCount sorting, fetch all then sort in PHP.
+			// A non-admin sees only the files they can open, so the page is cut in PHP too.
 			$phpSort = in_array($sort, ['riskLevel', 'entityCount'], true);
+			$restricted = ($this->isCurrentUserAdmin() === false);
+			$cutInPhp = ($phpSort === true || $restricted === true);
 			$dbLimit = $limit;
 			$dbOffset = $offset;
 			$dbSort = $sort;
 			if ($phpSort === true) {
+				$dbSort = 'extractedAt';
+			}
+
+			if ($cutInPhp === true) {
 				$dbLimit = null;
 				$dbOffset = null;
-				$dbSort = 'extractedAt';
 			}
 
 			$summaries = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $searchTerm, $dbSort, $order);
 			$totalCount = $this->chunkMapper->countFileSourceSummaries($searchTerm);
+			if ($restricted === true) {
+				$summaries = array_values(
+					array_filter($summaries, fn ($summary) => $this->hasFileAccess(fileId: (int)$summary['sourceId']))
+				);
+			}
 
 			$data = [];
 			foreach ($summaries as $summary) {
@@ -211,7 +222,7 @@ class FileExtractionController extends Controller {
 			}
 
 			// Filter by risk level if requested.
-			if ($riskLevel !== null && $riskLevel !== '') {
+			if (in_array($riskLevel, [null, ''], true) === false) {
 				$data = array_values(array_filter($data, fn ($f) => $f['riskLevel'] === $riskLevel));
 				$totalCount = count($data);
 			}
@@ -234,9 +245,12 @@ class FileExtractionController extends Controller {
 						return -$cmp;
 					}
 				);
+			}//end if
+
+			if ($cutInPhp === true) {
 				$totalCount = count($data);
 				$data = array_slice($data, $offset, $limit);
-			}//end if
+			}
 
 			return new JSONResponse(
 				data: [
@@ -282,6 +296,17 @@ class FileExtractionController extends Controller {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function show(int $id): JSONResponse {
+		if ($this->hasFileAccess(fileId: $id) === false) {
+			return new JSONResponse(
+				data: [
+					'success' => false,
+					'error' => 'File not found in extraction system',
+					'message' => 'File not found or access denied',
+				],
+				statusCode: 404
+			);
+		}
+
 		try {
 			// Get chunks for this file.
 			$chunks = $this->chunkMapper->findBySource(sourceType: 'file', sourceId: $id);
@@ -565,12 +590,9 @@ class FileExtractionController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @no-admin-idor-exempt No per-object resource: returns aggregate extraction
-	 *   counters (TextExtractionService::getStats); takes no caller-supplied file id.
-	 *
 	 * @psalm-return JSONResponse<
-	 *     200|500,
-	 *     array{
+	 *     200|403|500,
+	 *     array{success: false, error: string}|array{
 	 *         success: bool,
 	 *         error?: 'Failed to retrieve statistics',
 	 *         message?: string,
@@ -588,6 +610,10 @@ class FileExtractionController extends Controller {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function stats(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['success' => false, 'error' => 'Admin privileges required'], 403);
+		}
+
 		try {
 			$stats = $this->textExtractor->getStats();
 

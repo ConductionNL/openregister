@@ -171,14 +171,46 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	}
 
 	public function testPreloadObjectsSuccess(): void {
-		$obj1 = $this->createObjectMock(1, 'uuid-1');
-		$obj2 = $this->createObjectMock(2, 'uuid-2');
+		$obj1 = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$obj2 = $this->createObjectMock(2, 'uuid-2', '3', '4');
 
 		$this->objectMapper->method('findMultiple')
 			->willReturn([$obj1, $obj2]);
+		$this->objectMapper->method('filterReadableUuids')
+			->with(3, 4, ['uuid-1', 'uuid-2'])
+			->willReturn(['uuid-1', 'uuid-2']);
 
 		$result = $this->handler->preloadObjects([1, 2]);
 		$this->assertCount(2, $result);
+	}
+
+	/**
+	 * The bulk loader applies no access rule, so a preload keeps, and caches,
+	 * only what the caller may read (or-a-f1).
+	 */
+	public function testPreloadObjectsDropsAndDoesNotCacheUnreadableObjects(): void {
+		$readable = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$hidden   = $this->createObjectMock(2, 'uuid-2', '3', '4');
+		$homeless = $this->createObjectMock(5, 'uuid-5');
+
+		$this->objectMapper->method('findMultiple')
+			->willReturn([$readable, $hidden, $homeless]);
+		$this->objectMapper->method('filterReadableUuids')->willReturn(['uuid-1']);
+		$this->objectMapper->method('find')->willThrowException(new \Exception('Not found'));
+
+		$result = $this->handler->preloadObjects(['uuid-1', 'uuid-2', 'uuid-5']);
+
+		$this->assertSame([$readable], $result);
+		$this->assertNull($this->handler->getObject('uuid-2'));
+		$this->assertSame($readable, $this->handler->getObject('uuid-1'));
+	}
+
+	public function testPreloadObjectsDisclosesNoneWhenTheCheckFails(): void {
+		$this->objectMapper->method('findMultiple')
+			->willReturn([$this->createObjectMock(1, 'uuid-1', '3', '4')]);
+		$this->objectMapper->method('filterReadableUuids')->willThrowException(new \RuntimeException('db down'));
+
+		$this->assertSame([], $this->handler->preloadObjects(['uuid-1']));
 	}
 
 	// =========================================================================
@@ -330,5 +362,53 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 		);
 
 		$this->assertInstanceOf(CacheHandler::class, $handler);
+	}
+
+	/**
+	 * obj-f5: a render asked for with `_multitenancy: false` cuts related objects by RBAC only.
+	 */
+	public function testReadableOnlyHonoursTheRenderPostureForMultitenancy(): void {
+		$crossOrg = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$this->objectMapper->expects($this->once())->method('filterReadableUuids')
+			->with(3, 4, ['uuid-1'], true, false)
+			->willReturn(['uuid-1']);
+
+		$this->handler->pushReadPosture(_rbac: true, _multitenancy: false);
+		try {
+			$this->assertSame([$crossOrg], $this->handler->readableOnly([$crossOrg]));
+		} finally {
+			$this->handler->popReadPosture();
+		}
+	}
+
+	/**
+	 * obj-f5: a render with RBAC and multitenancy off keeps every related object.
+	 */
+	public function testReadableOnlySkipsTheFilterForAnUnrestrictedRender(): void {
+		$related = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$this->objectMapper->expects($this->never())->method('filterReadableUuids');
+
+		$this->handler->pushReadPosture(_rbac: false, _multitenancy: false);
+		try {
+			$this->assertSame([$related], $this->handler->readableOnly([$related]));
+		} finally {
+			$this->handler->popReadPosture();
+		}
+	}
+
+	/**
+	 * obj-f5: outside a render, and after one ends, RBAC and multitenancy both apply.
+	 */
+	public function testReadableOnlyDefaultsToTheFullFilter(): void {
+		$related = $this->createObjectMock(1, 'uuid-1', '3', '4');
+		$this->objectMapper->expects($this->exactly(2))->method('filterReadableUuids')
+			->with(3, 4, ['uuid-1'], true, true)
+			->willReturn([]);
+
+		$this->assertSame([], $this->handler->readableOnly([$related]));
+
+		$this->handler->pushReadPosture(_rbac: false, _multitenancy: false);
+		$this->handler->popReadPosture();
+		$this->assertSame([], $this->handler->readableOnly([$related]));
 	}
 }

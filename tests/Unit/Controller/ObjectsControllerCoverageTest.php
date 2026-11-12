@@ -591,6 +591,8 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertArrayHasKey('facet_error', $data['@self']);
+		// The driver text never reaches the client (ADR-050).
+		$this->assertSame('facets-unavailable', $data['@self']['facet_error']);
 	}
 
 	/**

@@ -28,8 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
+use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use RuntimeException;
 
 /**
  * SchemasToolProvider
@@ -52,10 +56,12 @@ class SchemasToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param SchemaMapper $schemaMapper Schema database mapper
+	 * @param SchemaMapper          $schemaMapper Schema database mapper
+	 * @param DefinitionWriteRights $rights       The rights of the signed-in user
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
+		private readonly DefinitionWriteRights $rights,
 	) {
 	}//end __construct()
 
@@ -184,7 +190,11 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 */
 	private function createSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'data');
-		$schema = $this->schemaMapper->createFromArray(object: $arguments['data']);
+		if ($this->rights->isAdmin() === false) {
+			throw new RuntimeException('Only administrators may create schemas');
+		}
+
+		$schema = $this->schemaMapper->createFromArray(object: $this->checkedBody(data: $arguments['data']));
 		return $schema->jsonSerialize();
 	}//end createSchema()
 
@@ -198,9 +208,12 @@ class SchemasToolProvider implements IMcpToolProvider {
 	private function updateSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
+		$this->manageableSchema(id: $arguments['id']);
+		$data = $this->checkedBody(data: $arguments['data']);
+		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
 		$schema = $this->schemaMapper->updateFromArray(
 			id: $arguments['id'],
-			object: $arguments['data']
+			object: $data
 		);
 		return $schema->jsonSerialize();
 	}//end updateSchema()
@@ -224,10 +237,49 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 */
 	private function deleteSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$schema = $this->schemaMapper->find($arguments['id']);
+		$schema = $this->manageableSchema(id: $arguments['id']);
 		$this->schemaMapper->delete($schema);
 		return ['deleted' => true, 'id' => $arguments['id']];
 	}//end deleteSchema()
+
+	/**
+	 * The schema with this id, when the signed-in user may manage it.
+	 *
+	 * @param mixed $id The schema id
+	 *
+	 * @return Schema The schema
+	 *
+	 * @throws RuntimeException When the user may not manage it
+	 */
+	private function manageableSchema(mixed $id): Schema {
+		$schema = $this->schemaMapper->find($id);
+		if ($this->rights->mayManage(authorization: $schema->getAuthorization()) === false) {
+			throw new RuntimeException('User does not have permission to manage this schema');
+		}
+
+		return $schema;
+	}//end manageableSchema()
+
+	/**
+	 * The body to write, after the check the REST routes make on an authorization.
+	 *
+	 * @param array<string, mixed> $data The schema body
+	 *
+	 * @return array<string, mixed> The body, unchanged
+	 *
+	 * @throws RuntimeException When the block adds an external grant without an end
+	 */
+	private function checkedBody(array $data): array {
+		if (isset($data['authorization']) === false || is_array($data['authorization']) === false) {
+			return $data;
+		}
+
+		if ((new ExternalGrantGuard())->refusalFor($data['authorization']) !== null) {
+			throw new RuntimeException('An external grant needs an end date');
+		}
+
+		return $data;
+	}//end checkedBody()
 
 	/**
 	 * Assert a parameter is present in arguments.

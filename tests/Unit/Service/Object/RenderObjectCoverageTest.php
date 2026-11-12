@@ -98,6 +98,9 @@ class RenderObjectCoverageTest extends TestCase {
 		$this->systemTagMapper = $this->createMock(ISystemTagObjectMapper::class);
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->objectCacheService = $this->createMock(CacheHandler::class);
+		// Every object these tests hand the renderer is readable; the readability
+		// filter itself is covered in CacheHandlerBranchCoverageTest.
+		$this->objectCacheService->method('readableOnly')->willReturnArgument(0);
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->fileService = $this->createMock(FileService::class);
@@ -1438,5 +1441,33 @@ class RenderObjectCoverageTest extends TestCase {
 			$singleRendered['memberships'][0]['name'] ?? null,
 			'the non-extended inverse property must carry the fully rendered referencing object'
 		);
+	}
+
+	/**
+	 * obj-f5: a render hands its own posture to the related-object filter, and releases it.
+	 *
+	 * @return void
+	 */
+	public function testRenderEntitiesScopesTheReadPostureToTheRender(): void {
+		$this->setupBasicMocks();
+		$calls = [];
+		$this->objectCacheService->method('pushReadPosture')->willReturnCallback(
+			static function (bool $_rbac, bool $_multitenancy) use (&$calls): void {
+				$calls[] = ['push', $_rbac, $_multitenancy];
+			}
+		);
+		$this->objectCacheService->method('popReadPosture')->willReturnCallback(
+			static function () use (&$calls): void {
+				$calls[] = ['pop'];
+			}
+		);
+
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+		$this->handler->renderEntities([$entity], _rbac: true, _multitenancy: false);
+
+		$this->assertSame(['push', true, false], $calls[0] ?? null);
+		$this->assertSame(['pop'], $calls[array_key_last($calls)]);
+		$pushes = count(array_filter($calls, static fn (array $call): bool => $call[0] === 'push'));
+		$this->assertSame($pushes, count($calls) - $pushes, 'every push is popped');
 	}
 }

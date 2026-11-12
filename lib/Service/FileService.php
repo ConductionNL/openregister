@@ -1655,8 +1655,16 @@ class FileService {
 				return $managed;
 			}
 
-			// Use root folder to search for file by ID.
-			$nodes = $this->rootFolder->getById($fileId);
+			// Any other file is looked up in the caller's own tree only. The root
+			// folder resolves an id across every user's mounts, which would hand
+			// out other users' private files; without a signed-in user there is
+			// no tree to look in.
+			$user = $this->userSession->getUser();
+			if ($user === null) {
+				return null;
+			}
+
+			$nodes = $this->rootFolder->getUserFolder($user->getUID())->getById($fileId);
 
 			if (empty($nodes) === true) {
 				return null;
@@ -1835,6 +1843,7 @@ class FileService {
 	 *
 	 * @param ObjectEntity|string $object The object entity or object UUID/ID
 	 * @param string|null $zipName Optional custom name for the ZIP file
+	 * @param bool $publishedOnly Only the object's published files (default); false for a signed-in reader of the object
 	 *
 	 * @throws Exception If ZIP creation fails or object not found
 	 * @throws NotFoundException If the object folder is not found
@@ -1847,10 +1856,11 @@ class FileService {
 	 *
 	 * @spec exclude Object-files ZIP build; deferred to the file-actions FilePublishingHandler follow-up pass (see file-actions tasks.md DROP list).
 	 */
-	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null): array {
+	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null, bool $publishedOnly = true): array {
 		return $this->filePublishingHandler->createObjectFilesZip(
 			object: $object,
-			zipName: $zipName
+			zipName: $zipName,
+			publishedOnly: $publishedOnly
 		);
 	}//end createObjectFilesZip()
 

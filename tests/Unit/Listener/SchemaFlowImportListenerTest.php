@@ -444,4 +444,88 @@ class SchemaFlowImportListenerTest extends TestCase {
 		$this->assertCount(1, $this->inserted);
 		$this->assertFalse((bool)$this->inserted[0]->getEnabled(), 'published, but inert until adopted');
 	}//end testAFirstImportPublishesVersionOneAsNobody()
+
+	/**
+	 * A container answering a signed-in user (admin or not) and an organisation.
+	 *
+	 * @param bool $isAdmin Whether the user is an administrator.
+	 *
+	 * @return ContainerInterface The container.
+	 */
+	private function userContainer(bool $isAdmin): ContainerInterface {
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('manager');
+		$session = $this->createMock(\OCP\IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groups = $this->createMock(\OCP\IGroupManager::class);
+		$groups->method('isAdmin')->willReturn($isAdmin);
+		$orgs = $this->container(uuid: 'org-1')->get('x');
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static fn (string $id) => match ($id) {
+				\OCP\IUserSession::class => $session,
+				\OCP\IGroupManager::class => $groups,
+				default => $orgs,
+			}
+		);
+
+		return $container;
+	}
+
+	/**
+	 * A declaration whose send-email step mails any address.
+	 *
+	 * @return array<string, mixed> The declaration.
+	 */
+	private function mailAnyDeclaration(): array {
+		return [
+			'name' => 'Relay',
+			'trigger' => 'object.created',
+			'nodes' => [['id' => 'm', 'type' => 'openregister.send-email', 'config' => ['externalRecipients' => 'any']]],
+			'edges' => [],
+		];
+	}
+
+	/**
+	 * obj-f1: a schema manager who is no administrator cannot ship a mail-any graph.
+	 */
+	public function testANonAdminCannotImportAFlowThatMailsAnyAddress(): void {
+		$listener = $this->listener(container: $this->userContainer(isAdmin: false));
+		$this->fire($listener, $this->schema([$this->mailAnyDeclaration()]));
+
+		$this->assertCount(0, $this->inserted);
+	}
+
+	/**
+	 * obj-f1: nor overwrite an existing flow's graph with one.
+	 */
+	public function testANonAdminCannotRewriteAFlowIntoOneThatMailsAnyAddress(): void {
+		$existing = new Flow();
+		$existing->setName('Relay');
+		$existing->setTriggerSchema('case');
+		$existing->setNodes([['id' => 'm', 'type' => 'openregister.send-email', 'config' => []]]);
+		$existing->setEdges([]);
+
+		$listener = $this->listener(existing: [$existing], container: $this->userContainer(isAdmin: false));
+		$this->fire($listener, $this->schema([$this->mailAnyDeclaration()]));
+
+		$this->assertCount(0, $this->updated);
+	}
+
+	public function testAnAdministratorMayImportAFlowThatMailsAnyAddress(): void {
+		$listener = $this->listener(container: $this->userContainer(isAdmin: true));
+		$this->fire($listener, $this->schema([$this->mailAnyDeclaration()]));
+
+		$this->assertCount(1, $this->inserted);
+	}
+
+	public function testANonAdminMayStillImportAnOrdinaryFlow(): void {
+		$listener = $this->listener(container: $this->userContainer(isAdmin: false));
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'trigger' => 'object.created', 'nodes' => [['id' => 'a']], 'edges' => []],
+		]));
+
+		$this->assertCount(1, $this->inserted);
+	}
 }//end class

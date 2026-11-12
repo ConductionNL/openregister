@@ -31,6 +31,8 @@ namespace OCA\OpenRegister\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Federation\ShareGrantor;
 use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
 
@@ -54,16 +56,23 @@ class FederationShareService {
 	private const PERMISSIONS = ['read', 'read-write'];
 
 	/**
+	 * Query filter keys that would move the search to another register or schema.
+	 *
+	 * @var string[]
+	 */
+	private const RETARGETING_FILTER_KEYS = ['register', 'schema'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FederatedShareMapper $shareMapper Federated-share persistence.
-	 * @param OrganisationService $organisationService Active-organisation resolver.
+	 * @param ShareGrantor $grantor The signed-in user granting or managing a share.
 	 * @param ISecureRandom $secureRandom Secure token generator.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		private readonly FederatedShareMapper $shareMapper,
-		private readonly OrganisationService $organisationService,
+		private readonly ShareGrantor $grantor,
 		private readonly ISecureRandom $secureRandom,
 		private readonly LoggerInterface $logger,
 	) {
@@ -79,7 +88,8 @@ class FederationShareService {
 	 *
 	 * @return FederatedShare The persisted share (carrying the minted token).
 	 *
-	 * @throws \InvalidArgumentException When scope/permissions are invalid.
+	 * @throws \InvalidArgumentException When scope, permissions or query filter are invalid.
+	 * @throws NotAuthorizedException When the caller does not hold the rights the share grants.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 */
@@ -94,7 +104,7 @@ class FederationShareService {
 			throw new InvalidArgumentException('Invalid permissions: ' . $permissions);
 		}
 
-		$organisation = $this->activeOrganisationUuid();
+		$this->assertQueryFilterKeepsItsTarget(queryFilter: ($params['queryFilter'] ?? null));
 
 		$data = [
 			'direction' => 'outgoing',
@@ -105,7 +115,7 @@ class FederationShareService {
 			'objectUri' => ($params['objectUri'] ?? null),
 			'queryFilter' => ($params['queryFilter'] ?? null),
 			'permissions' => $permissions,
-			'organisation' => $organisation,
+			'organisation' => $this->activeOrganisationUuid(),
 			'sharedWith' => ($params['sharedWith'] ?? null),
 			'remoteInstanceUrl' => ($params['remoteInstanceUrl'] ?? null),
 			// Outgoing token shares are immediately usable; an OCM share moves to
@@ -113,8 +123,52 @@ class FederationShareService {
 			'status' => 'accepted',
 		];
 
-		return $this->shareMapper->createFromArray(data: $data);
+		// Who minted which grant is logged; the token itself never is.
+		$context = [
+			'actor' => $this->actor(),
+			'scope' => $scope,
+			'register' => $data['register'],
+			'schema' => $data['schema'],
+			'permissions' => $permissions,
+			'organisation' => $data['organisation'],
+			'sharedWith' => $data['sharedWith'],
+		];
+
+		$refusal = $this->grantor->refusal(share: (new FederatedShare())->hydrate(object: $data));
+		if ($refusal !== null) {
+			$this->logger->warning('[Federation] Refused to create a share: ' . $refusal, $context);
+			throw new NotAuthorizedException(message: $refusal);
+		}
+
+		$share = $this->shareMapper->createFromArray(data: $data);
+		$this->logger->info('[Federation] Created an outgoing share', $context + ['share' => $share->getId()]);
+
+		return $share;
 	}//end createOutgoingShare()
+
+	/**
+	 * Refuse a query filter that is not a list of conditions, or that names its own register or schema.
+	 *
+	 * @param mixed $queryFilter The requested filter.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When the filter is malformed or re-targets the search.
+	 */
+	private function assertQueryFilterKeepsItsTarget(mixed $queryFilter): void {
+		if ($queryFilter === null) {
+			return;
+		}
+
+		if (is_array($queryFilter) === false) {
+			throw new InvalidArgumentException('The query filter must be a set of conditions');
+		}
+
+		$retargeting = array_intersect(array_map('strval', array_keys($queryFilter)), self::RETARGETING_FILTER_KEYS);
+		if ($retargeting !== []) {
+			throw new InvalidArgumentException('The query filter cannot name a register or schema; the share names them');
+		}
+	}//end assertQueryFilterKeepsItsTarget()
 
 	/**
 	 * Record an incoming federated share (a remote shared with an org here).
@@ -188,7 +242,12 @@ class FederationShareService {
 	 *
 	 * @param string|null $direction 'outgoing' | 'incoming' | null for all.
 	 *
-	 * @return FederatedShare[] The shares for the active organisation.
+	 * The token of a share is a credential that is served without access control,
+	 * so it is listed only to a caller who holds every right that share grants.
+	 *
+	 * @return list<array<string, mixed>> The shares for the active organisation, serialised.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 */
 	public function listShares(?string $direction = null): array {
 		$filters = [];
@@ -196,7 +255,17 @@ class FederationShareService {
 			$filters['direction'] = $direction;
 		}
 
-		return $this->shareMapper->findAll(limit: null, offset: null, filters: $filters);
+		$listed = [];
+		foreach ($this->shareMapper->findAll(limit: null, offset: null, filters: $filters) as $share) {
+			$row = $share->jsonSerialize();
+			if ($this->grantor->refusal(share: $share) !== null) {
+				$row['shareToken'] = null;
+			}
+
+			$listed[] = $row;
+		}
+
+		return $listed;
 	}//end listShares()
 
 	/**
@@ -206,10 +275,38 @@ class FederationShareService {
 	 * @param string $status The new status.
 	 *
 	 * @return FederatedShare The updated share.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When the share is not one of the active organisation's.
+	 * @throws NotAuthorizedException When the caller does not hold the rights the share grants.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-serves-exactly-what-its-scope-grants-req-fse-001
 	 */
 	public function setStatus(int $id, string $status): FederatedShare {
-		return $this->shareMapper->updateFromArray(id: $id, data: ['status' => $status]);
+		$context = ['actor' => $this->actor(), 'share' => $id, 'status' => $status];
+		$refusal = $this->grantor->changeRefusal(share: $this->shareMapper->find(id: $id));
+		if ($refusal !== null) {
+			$this->logger->warning('[Federation] Refused to change a share: ' . $refusal, $context);
+			throw new NotAuthorizedException(message: $refusal);
+		}
+
+		$share = $this->shareMapper->updateFromArray(id: $id, data: ['status' => $status]);
+		$this->logger->info('[Federation] Changed a share status', $context);
+
+		return $share;
 	}//end setStatus()
+
+	/**
+	 * The signed-in user's id for a log line.
+	 *
+	 * @return string The uid, or "(no user)".
+	 */
+	private function actor(): string {
+		try {
+			return ($this->grantor->userId() ?? '(no user)');
+		} catch (\Throwable $e) {
+			return '(unknown)';
+		}
+	}//end actor()
 
 	/**
 	 * Resolve the active organisation UUID (null when none).
@@ -218,10 +315,7 @@ class FederationShareService {
 	 */
 	private function activeOrganisationUuid(): ?string {
 		try {
-			$organisation = $this->organisationService->getActiveOrganisation();
-			if ($organisation !== null) {
-				return $organisation->getUuid();
-			}
+			return $this->grantor->organisation();
 		} catch (\Throwable $e) {
 			$this->logger->warning('[Federation] could not resolve active organisation: ' . $e->getMessage());
 		}

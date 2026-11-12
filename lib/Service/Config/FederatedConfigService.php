@@ -42,6 +42,7 @@ use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use OCP\IUserSession;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
@@ -62,6 +63,12 @@ class FederatedConfigService {
 	private const ALLOWLIST_KEY = 'federated_config_source_allowlist';
 
 	/**
+	 * App-config key: `true` lets a bundle in that no trusted key vouches for,
+	 * while the trusted-keys list is empty. Only an administrator can set it.
+	 */
+	private const ALLOW_UNVERIFIED_KEY = 'federated_config_allow_unverified_bundles';
+
+	/**
 	 * Trust-configuration fields → their app-config keys (for the governance API).
 	 *
 	 * @var array<string, string>
@@ -71,6 +78,7 @@ class FederatedConfigService {
 		'trustedKeys' => 'federated_config_trusted_keys',
 		'publishGroups' => 'federated_config_publish_groups',
 		'installGroups' => 'federated_config_install_groups',
+		'allowUnverifiedBundles' => self::ALLOW_UNVERIFIED_KEY,
 	];
 
 	/**
@@ -87,6 +95,7 @@ class FederatedConfigService {
 	 * @param IClientService $clientService NC HTTP client factory (anonymous discovery).
 	 * @param IAppConfig $appConfig Reads the org source allowlist.
 	 * @param LoggerInterface $logger The logger.
+	 * @param IUserSession|null $userSession Names who installed a bundle in the log.
 	 */
 	public function __construct(
 		private readonly ShareableConfigTypeRegistry $registry,
@@ -95,6 +104,7 @@ class FederatedConfigService {
 		private readonly IClientService $clientService,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		private readonly ?IUserSession $userSession = null,
 	) {
 
 	}//end __construct()
@@ -150,13 +160,48 @@ class FederatedConfigService {
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
 	public function install(string $typeId, array $bundle, string $source = ''): array {
+		// An install writes registers, schemas, objects or flows as the system,
+		// so who installed what, from where, is logged whether it lands or not.
+		$context = [
+			'actor' => ($this->userSession?->getUser()?->getUID() ?? '(no user)'),
+			'type' => $typeId,
+			'source' => $source,
+		];
+		try {
+			$result = $this->verifiedInstall(typeId: $typeId, bundle: $bundle, source: $source);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[FederatedConfig] Refused a bundle install: ' . $e->getMessage(),
+				context: $context
+			);
+			throw $e;
+		}
+
+		$this->logger->info(message: '[FederatedConfig] Installed a shared bundle', context: $context);
+
+		return $result;
+	}//end install()
+
+	/**
+	 * The install itself, once the caller may install at all.
+	 *
+	 * @param string $typeId The shareable type id.
+	 * @param array  $bundle The bundle.
+	 * @param string $source Where the bundle came from.
+	 *
+	 * @return array The type's install result.
+	 *
+	 * @throws RuntimeException When the source, signature or trust refuses the bundle.
+	 */
+	private function verifiedInstall(string $typeId, array $bundle, string $source): array {
 		if ($this->isSourceAllowed(source: $source) === false) {
 			throw new RuntimeException(sprintf('Source "%s" is not on this organisation\'s allowlist.', $source));
 		}
 
-		// Provenance: a tampered signature is always refused; an unsigned or
-		// untrusted-key bundle is refused only once the org enforces signing (a
-		// non-empty trusted-keys allowlist).
+		// Provenance: a tampered signature is always refused. Anyone can sign with
+		// a key of their own, so a bundle counts as verified only against a
+		// non-empty trusted-keys allowlist; without one, an administrator has to
+		// allow unverified bundles explicitly.
 		$verdict = $this->signer->verify(bundle: $bundle);
 		if ($verdict['signed'] === true && $verdict['valid'] === false) {
 			throw new RuntimeException('Bundle signature is invalid — refusing to install a tampered bundle.');
@@ -166,8 +211,17 @@ class FederatedConfigService {
 			throw new RuntimeException('Bundle publisher key is not trusted by this organisation.');
 		}
 
+		if ($this->signer->enforced() === false
+			&& $this->appConfig->getValueString(self::APP_ID, self::ALLOW_UNVERIFIED_KEY, '') !== 'true'
+		) {
+			throw new RuntimeException(
+				'This organisation has no trusted publisher keys, so this bundle cannot be verified. '
+				.'An administrator can add a trusted key or allow unverified bundles.'
+			);
+		}
+
 		return $this->typeOrFail(typeId: $typeId)->deserialise(bundle: $bundle);
-	}//end install()
+	}//end verifiedInstall()
 
 	/**
 	 * Publish a bundle to a GitHub repository, with the token supplied by the
@@ -505,7 +559,7 @@ class FederatedConfigService {
 	/**
 	 * Set one trust-configuration value (the allowlist, trusted keys, or a group list).
 	 *
-	 * @param string $field One of `sourceAllowlist|trustedKeys|publishGroups|installGroups`.
+	 * @param string $field One of `sourceAllowlist|trustedKeys|publishGroups|installGroups|allowUnverifiedBundles`.
 	 * @param string $value The new value (comma-separated).
 	 *
 	 * @return void

@@ -237,4 +237,30 @@ class SaveObjectSystemOwnerTest extends TestCase {
 
 		$this->assertSame('portal:subject-1', $entity->getOwner());
 	}//end testAnExplicitOwnerWinsOverTheSession()
+	/**
+	 * A trusted organisation wins on a userless write; the active/default organisation is not consulted (fed-f3).
+	 */
+	public function testATrustedOrganisationIsStampedOnAUserlessCreate(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->organisationService->expects($this->never())->method('getOrganisationForNewEntity');
+
+		$entity = new ObjectEntity();
+		$method = new ReflectionMethod(SaveObject::class, 'applyNewObjectOrganisation');
+		$method->invoke($this->handler, $entity, 'org-share');
+
+		$this->assertSame('org-share', $entity->getOrganisation());
+	}//end testATrustedOrganisationIsStampedOnAUserlessCreate()
+
+	/**
+	 * Without a trusted organisation a new object gets the active/default organisation.
+	 */
+	public function testWithoutATrustedOrganisationTheActiveOneIsStamped(): void {
+		$this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-default');
+
+		$entity = new ObjectEntity();
+		$method = new ReflectionMethod(SaveObject::class, 'applyNewObjectOrganisation');
+		$method->invoke($this->handler, $entity, null);
+
+		$this->assertSame('org-default', $entity->getOrganisation());
+	}//end testWithoutATrustedOrganisationTheActiveOneIsStamped()
 }//end class

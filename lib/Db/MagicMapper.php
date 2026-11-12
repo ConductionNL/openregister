@@ -11181,13 +11181,27 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param int           $registerId The register the table belongs to.
 	 * @param int           $schemaId   The schema the table belongs to.
 	 * @param array<string> $uuids      UUIDs to test, all expected in that table.
+	 * @param bool          $_rbac         Apply row RBAC (a render's own posture; default on).
+	 * @param bool          $_multitenancy Apply the organisation filter (a render's own posture; default on).
 	 *
 	 * @return array<int, string> The subset of $uuids the caller may read.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	public function filterReadableUuids(int $registerId, int $schemaId, array $uuids): array {
-		return ($this->readableUuidsOrNull(registerId: $registerId, schemaId: $schemaId, uuids: $uuids) ?? []);
+	public function filterReadableUuids(
+		int $registerId,
+		int $schemaId,
+		array $uuids,
+		bool $_rbac = true,
+		bool $_multitenancy = true
+	): array {
+		return ($this->readableUuidsOrNull(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			uuids: $uuids,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy
+		) ?? []);
 	}//end filterReadableUuids()
 
 	/**
@@ -11202,12 +11216,20 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param int           $registerId The register the table belongs to.
 	 * @param int           $schemaId   The schema the table belongs to.
 	 * @param array<string> $uuids      UUIDs to test, all expected in that table.
+	 * @param bool          $_rbac         Apply row RBAC (default on).
+	 * @param bool          $_multitenancy Apply the organisation filter (default on).
 	 *
 	 * @return array<int, string>|null The readable subset, or null when read access could not be established.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	public function readableUuidsOrNull(int $registerId, int $schemaId, array $uuids): ?array {
+	public function readableUuidsOrNull(
+		int $registerId,
+		int $schemaId,
+		array $uuids,
+		bool $_rbac = true,
+		bool $_multitenancy = true
+	): ?array {
 		$uuids = array_values(array_unique(array_filter($uuids, fn ($uuid): bool => is_string($uuid) && $uuid !== '')));
 		if (empty($uuids) === true) {
 			return [];
@@ -11237,8 +11259,8 @@ class MagicMapper extends AbstractObjectMapper {
 				$this->searchHandler->applyAccessControlToQuery(
 					qb: $qb,
 					schema: $schema,
-					_rbac: true,
-					_multitenancy: true,
+					_rbac: $_rbac,
+					_multitenancy: $_multitenancy,
 					registerId: $registerId,
 					tableName: $tableName
 				);

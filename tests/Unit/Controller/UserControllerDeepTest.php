@@ -45,7 +45,9 @@ class UserControllerDeepTest extends TestCase {
 			$this->userManager,
 			$this->userSession,
 			$this->logger,
-			$this->createMock(IL10N::class)
+			$this->createMock(IL10N::class),
+			$this->createMock(\OCA\OpenRegister\Service\Auth\LoginSecondFactorGate::class),
+			$this->createMock(\OCP\ISession::class)
 		);
 	}
 

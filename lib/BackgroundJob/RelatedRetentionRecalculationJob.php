@@ -175,11 +175,20 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 			}
 
 			try {
-				if ($this->retention->followSourceDate(object: $object, schema: $schema) === false) {
+				// The relation lookup fills only name and data; an update writes the whole row.
+				$stored = $this->objectMapper->find(
+					identifier: (string)$object->getUuid(),
+					register: $register,
+					schema: $schema,
+					// phpcs:ignore Squiz.Commenting.InlineComment.NotCapital -- ADR-055 marker.
+					_rbac: false, // rbac-bypass: a background job re-reads the row it already selected for a system write.
+					_multitenancy: false
+				);
+				if ($this->retention->followSourceDate(object: $stored, schema: $schema) === false) {
 					continue;
 				}
 
-				$this->objectMapper->update(entity: $object, register: $register, schema: $schema);
+				$this->objectMapper->update(entity: $stored, register: $register, schema: $schema);
 				$changed++;
 			} catch (Throwable $failure) {
 				$this->logger->warning(

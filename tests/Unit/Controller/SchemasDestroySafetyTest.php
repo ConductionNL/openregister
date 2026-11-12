@@ -112,6 +112,13 @@ class SchemasDestroySafetyTest extends TestCase {
 	private bool $isAdmin = true;
 
 	/**
+	 * The caller's groups.
+	 *
+	 * @var list<string>
+	 */
+	private array $userGroups = [];
+
+	/**
 	 * Wire up SchemasController with every dependency mocked.
 	 * Default user is an authenticated admin so all permission checks pass.
 	 */
@@ -137,6 +144,7 @@ class SchemasDestroySafetyTest extends TestCase {
 
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturnCallback(fn (): bool => $this->isAdmin);
+		$groupManager->method('getUserGroupIds')->willReturnCallback(fn (): array => $this->userGroups);
 		$groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
 		// The cascade + table-reclaim work is resolved lazily from the container.
@@ -533,4 +541,40 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->assertSame(403, $response->getStatus());
 
 	}//end testCascadeWithoutManagePermissionIsRefusedWith403()
+
+	/**
+	 * A manager of the schema who is no administrator may not run the cascade.
+	 */
+	public function testCascadeByAManagerWhoIsNoAdministratorIsRefusedWith403(): void {
+		$schema = $this->makeSchema(42, 'cow');
+		$schema->setAuthorization(['manage' => ['planners']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->isAdmin = false;
+		$this->userGroups = ['planners'];
+		$this->stubFlags(deleteObjects: 'true');
+
+		$this->schemaDeletionService->expects($this->never())->method('cascadeDeleteSchema');
+		$this->schemaMapper->expects($this->never())->method('delete');
+
+		$this->assertSame(403, $this->controller->destroy(42)->getStatus());
+
+	}//end testCascadeByAManagerWhoIsNoAdministratorIsRefusedWith403()
+
+	/**
+	 * Deleting the schema and keeping its objects stays with the manage rule.
+	 */
+	public function testAManagerMayStillDeleteASchemaWithoutObjects(): void {
+		$schema = $this->makeSchema(42, 'cow');
+		$schema->setAuthorization(['manage' => ['planners']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
+		$this->isAdmin = false;
+		$this->userGroups = ['planners'];
+		$this->stubFlags();
+
+		$this->schemaMapper->expects($this->once())->method('delete');
+
+		$this->assertNotSame(403, $this->controller->destroy(42)->getStatus());
+
+	}//end testAManagerMayStillDeleteASchemaWithoutObjects()
 }//end class

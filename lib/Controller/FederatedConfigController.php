@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCP\AppFramework\Controller;
@@ -35,7 +36,9 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
+use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
 use OCP\IGroupManager;
+use Psr\Log\LoggerInterface;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
@@ -67,6 +70,8 @@ class FederatedConfigController extends Controller {
 	 * @param IUserSession $userSession The current user.
 	 * @param IConfig $config Reads the user's chosen store credential.
 	 * @param IGroupManager $groupManager Gates the trust-governance endpoints to admins.
+	 * @param SettingsChangeAuditor|null $settingsAuditor Records trust-configuration changes on the audit trail.
+	 * @param LoggerInterface|null       $logger          Logs install refusals and trust changes.
 	 */
 	public function __construct(
 		string $appName,
@@ -76,6 +81,8 @@ class FederatedConfigController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IConfig $config,
 		private readonly IGroupManager $groupManager,
+		private readonly ?SettingsChangeAuditor $settingsAuditor = null,
+		private readonly ?LoggerInterface $logger = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -138,14 +145,20 @@ class FederatedConfigController extends Controller {
 	 * @return JSONResponse The install result, 404 unknown type, or 403 when the
 	 *                      source is not allowlisted.
 	 *
+	 * CSRF is required: an install writes registers, schemas, objects or flows
+	 * as the system. No frontend calls this route; an API client sends the
+	 * `OCS-APIRequest: true` header (or a request token) to pass the check.
+	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function install(): JSONResponse {
 		if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
+			$this->logger?->warning(
+				'[FederatedConfig] Refused a bundle install: caller is not in the install groups',
+				['actor' => $this->actor(), 'type' => (string)$this->request->getParam('type', '')]
+			);
 			return new JSONResponse(['error' => 'You are not allowed to install shared configuration.'], Http::STATUS_FORBIDDEN);
 		}
 
@@ -162,6 +175,8 @@ class FederatedConfigController extends Controller {
 			);
 		} catch (UnexpectedValueException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => 'This bundle would change a register or schema you may not manage.'], Http::STATUS_FORBIDDEN);
 		} catch (Throwable $e) {
 			// A blocked source, an untrusted key, or a bad signature is a 403;
 			// anything else a 500.
@@ -281,21 +296,25 @@ class FederatedConfigController extends Controller {
 	 *       trusted-keys list, which decides whose published configuration this instance will
 	 *       accept. The body rejects non-admins, and #2342 removed the #[NoAdminRequired] that used
 	 *       to contradict it; this states the posture rather than leaving it to a default.
-	 *
-	 * @NoCSRFRequired
+	 *       CSRF is required: a trusted key or `allowUnverifiedBundles` outlives any credential
+	 *       rotation, so a forged browser request must not set one. No frontend calls this route;
+	 *       an API client (Basic auth or an app password included) must send the
+	 *       `OCS-APIRequest: true` header, or Nextcloud refuses the request with 412.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function setTrust(): JSONResponse {
 		if ($this->isAdmin() === false) {
+			$this->logger?->warning('[FederatedConfig] Refused a trust-configuration change: not an administrator', ['actor' => $this->actor()]);
 			return new JSONResponse(['error' => 'Only an administrator may change the trust configuration.'], Http::STATUS_FORBIDDEN);
 		}
+
+		$before = $this->service->getTrustConfig();
 
 		$trustKey = trim((string)$this->request->getParam('trustKey', ''));
 		if ($trustKey !== '') {
 			$this->service->trustPublisherKey(publicKey: $trustKey);
-			return new JSONResponse($this->service->getTrustConfig());
+			return new JSONResponse($this->recordTrustChange(before: $before));
 		}
 
 		$field = trim((string)$this->request->getParam('field', ''));
@@ -309,8 +328,50 @@ class FederatedConfigController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
 		}
 
-		return new JSONResponse($this->service->getTrustConfig());
+		return new JSONResponse($this->recordTrustChange(before: $before));
 	}//end setTrust()
+
+	/**
+	 * Put a trust-configuration change on the audit trail and in the log.
+	 *
+	 * Trusted keys and `allowUnverifiedBundles` decide whose bundles this
+	 * instance installs, and outlive any credential rotation, so who changed
+	 * them has to be on record. Public keys only; no secret is stored here.
+	 *
+	 * @param array<string, string> $before The trust configuration before the write.
+	 *
+	 * @return array<string, string> The trust configuration after it.
+	 */
+	private function recordTrustChange(array $before): array {
+		$after = $this->service->getTrustConfig();
+		$changed = [];
+		foreach (array_keys($before + $after) as $field) {
+			if (($before[$field] ?? null) !== ($after[$field] ?? null)) {
+				$changed[] = $field;
+			}
+		}
+
+		$this->logger?->info(
+			'[FederatedConfig] Trust configuration changed',
+			['actor' => $this->actor(), 'fields' => $changed]
+		);
+		try {
+			$this->settingsAuditor?->recordUpdate(app: 'openregister.federated-config', before: $before, after: $after);
+		} catch (Throwable $e) {
+			$this->logger?->error('[FederatedConfig] Could not record a trust change on the audit trail: ' . $e->getMessage());
+		}
+
+		return $after;
+	}//end recordTrustChange()
+
+	/**
+	 * The signed-in user's id for a log line.
+	 *
+	 * @return string The uid, or "(no user)".
+	 */
+	private function actor(): string {
+		return ($this->userSession->getUser()?->getUID() ?? '(no user)');
+	}//end actor()
 
 	/**
 	 * Whether the current user is a Nextcloud administrator.

@@ -27,7 +27,7 @@ class RegisterSchemaShareableConfigTypeTest extends TestCase {
 	protected function setUp(): void {
 		$this->registers = $this->createMock(RegisterService::class);
 		$this->config = $this->createMock(ConfigurationService::class);
-		$this->type = new RegisterSchemaShareableConfigType($this->registers, $this->config);
+		$this->type = new RegisterSchemaShareableConfigType($this->registers, $this->config, $this->createMock(\OCA\OpenRegister\Service\Config\BundleManageGuard::class));
 	}
 
 	public function testIdentity(): void {

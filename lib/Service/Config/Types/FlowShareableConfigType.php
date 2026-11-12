@@ -180,6 +180,10 @@ class FlowShareableConfigType implements IShareableConfigType {
 			$flow->setEdges((array)($portable['edges'] ?? []));
 			$flow->setLimits((array)($portable['limits'] ?? []));
 
+			// A step that mails any address is for administrators only, as in
+			// FlowService::save(); an install group member may not ship one.
+			$this->flows->assertMayStoreGraph(nodes: $flow->getNodes(), edges: $flow->getEdges());
+
 			// An imported flow lands DISABLED, whatever the bundle said, so a
 			// bundle can never arrive and start executing against the receiving
 			// tenant's data before a local person switches it on. `enabled`

@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,6 +77,13 @@ class WebhookService {
 	 * @var GuzzleClient
 	 */
 	private GuzzleClient $client;
+
+	/**
+	 * Resolves and classifies webhook target addresses.
+	 *
+	 * @var OutboundAddressGuard|null
+	 */
+	private ?OutboundAddressGuard $addressGuard = null;
 
 	/**
 	 * Logger
@@ -217,33 +225,16 @@ class WebhookService {
 	 */
 	private function initializeHttpClient(): void {
 		// Prepare Guzzle client configuration with TLS verification ON.
-		// Redirects are followed but every Location must pass the same
-		// SSRF guard that gates the initial URL — see assertSafeWebhookUri()
-		// and the on_redirect callback below.
 		// http_errors stays off because we handle 4xx/5xx manually downstream.
 		$clientConfig = [
 			'timeout' => 30,
 			'connect_timeout' => 10,
 			'verify' => true,
 			'http_errors' => false,
-			'allow_redirects' => [
-				'max' => 5,
-				'strict' => true,
-				'referer' => false,
-				'protocols' => ['http', 'https'],
-				'track_redirects' => true,
-				'on_redirect' => function (
-					RequestInterface $request,
-					ResponseInterface $response,
-					\Psr\Http\Message\UriInterface $uri,
-				): void {
-					// Re-validate every redirect target through the same SSRF
-					// allowlist used for the initial URL. Throwing here aborts
-					// the redirect chain and propagates a RequestException to
-					// deliverWebhook(), which logs it as a delivery failure.
-					$this->assertSafeWebhookUri(uri: (string)$uri);
-				},
-			],
+			// Redirects are not followed by default: a redirect to a second host
+			// would be resolved again by curl, past the address pin. sendRequest()
+			// follows them only for a hook opted into private targets.
+			'allow_redirects' => false,
 		];
 
 		$this->client = new GuzzleClient($clientConfig);
@@ -281,7 +272,7 @@ class WebhookService {
 	 * @param string $uri Full request URI to validate.
 	 * @param boolean $allowPrivate When true, skip the private/loopback IP-range checks.
 	 *
-	 * @return void
+	 * @return list<string> The checked addresses the host resolved to; empty when $allowPrivate skipped the check.
 	 *
 	 * @throws \RuntimeException When the URI is blocked.
 	 *
@@ -291,7 +282,7 @@ class WebhookService {
 	 * allowPrivateTargets opt-in; a boolean toggle is the clearest API for a
 	 * binary "bypass the IP-range checks" decision threaded from the caller.
 	 */
-	private function assertSafeWebhookUri(string $uri, bool $allowPrivate = false): void {
+	private function assertSafeWebhookUri(string $uri, bool $allowPrivate = false): array {
 		$parsed = parse_url($uri);
 		if ($parsed === false) {
 			throw new RuntimeException('Webhook target URL is not parseable');
@@ -313,107 +304,70 @@ class WebhookService {
 		// targets for this webhook. Scheme + host/parse checks above stay
 		// enforced; only the IP-range checks below are bypassed.
 		if ($allowPrivate === true) {
-			return;
+			return [];
 		}
 
-		// ── IPv6 literal detection ──────────────────────────────────────
-		// parse_url() keeps the surrounding brackets when the host is an IPv6
-		// literal (e.g. "http://[::1]/" yields $host = "[::1]"). Strip them
-		// before validation. A colon anywhere in $host (brackets or not) is
-		// the reliable heuristic that we have an IPv6 address rather than a
-		// plain hostname.
-		$bareHost = trim($host, '[]');
-		$isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
-			|| strpos($host, ':') !== false;
+		// Every A and AAAA record is checked, and a host that does not resolve is
+		// refused: the client resolves again when it connects.
+		$addresses = $this->addressGuard()->addressesOf(host: $host);
+		if (empty($addresses) === true) {
+			throw new RuntimeException('Webhook target URL host could not be resolved');
+		}
 
-		if ($isIpv6Literal === true) {
-			$reason = $this->blockedIpv6Reason(ip: $bareHost);
+		foreach ($addresses as $address) {
+			$reason = $this->blockedAddressReason(address: $address);
 			if ($reason !== null) {
 				throw new RuntimeException(
 					'Webhook target URL resolves to a blocked IP range (' . $reason . ')'
 				);
 			}
-
-			// Valid, non-blocked IPv6 literal — nothing more to check.
-			return;
 		}
 
-		// ── IPv6 DNS (AAAA) resolution ──────────────────────────────────
-		// gethostbyname() / gethostbynamel() only return A records.  Use
-		// dns_get_record() to pick up AAAA answers as well.
-		$aaaaRecords = @dns_get_record($host, DNS_AAAA);
-		if (is_array($aaaaRecords) === true) {
-			foreach ($aaaaRecords as $record) {
-				$ipv6 = $record['ipv6'] ?? '';
-				if ($ipv6 === '') {
-					continue;
-				}
+		return array_values($addresses);
+	}//end assertSafeWebhookUri()
 
-				$reason = $this->blockedIpv6Reason(ip: $ipv6);
-				if ($reason !== null) {
-					throw new RuntimeException(
-						'Webhook target URL resolves to a blocked IP range (' . $reason . ')'
-					);
-				}
+	/**
+	 * CURLOPT_RESOLVE entries that pin a URL's host to the addresses just checked.
+	 *
+	 * Guzzle resolves the host again when it connects, so a short-TTL name
+	 * could pass assertSafeWebhookUri() and then connect to an internal
+	 * address (DNS rebinding). Pinning makes curl use the checked addresses.
+	 * An IP-literal host needs no pin.
+	 *
+	 * @param string       $uri       The request URI.
+	 * @param list<string> $addresses The checked addresses.
+	 *
+	 * @return list<string> `host:port:addr[,addr]` entries, or none.
+	 */
+	private function pinnedResolve(string $uri, array $addresses): array {
+		$parsed = parse_url($uri);
+		$host = strtolower((string)($parsed['host'] ?? ''));
+		if ($host === '' || $addresses === []
+			|| filter_var(trim($host, '[]'), FILTER_VALIDATE_IP) !== false
+		) {
+			return [];
+		}
+
+		$port = (int)($parsed['port'] ?? 0);
+		if ($port === 0) {
+			$port = 80;
+			if (strtolower((string)($parsed['scheme'] ?? '')) === 'https') {
+				$port = 443;
 			}
 		}
 
-		// ── IPv4 resolution and range checks ───────────────────────────
-		// Resolve to IPv4 for range checks. gethostbyname() returns the input
-		// host unchanged on failure or when given an IP literal. To handle
-		// raw IP literals (the classic SSRF case), fall back to validating
-		// the host string directly when it looks like an IPv4 address.
-		$resolvedIp = gethostbyname($host);
-		$longIp = ip2long($resolvedIp);
-		if ($longIp === false) {
-			// The gethostbyname() call returned a non-IP (real DNS failure);
-			// try the host string directly so http://127.0.0.1/ still
-			// resolves to a long-IP we can range-check.
-			$longIp = ip2long($host);
+		$pinned = [];
+		foreach ($addresses as $address) {
+			// An IPv6 address goes in brackets, as curl expects.
+			if (str_contains($address, ':') === true) {
+				$address = '[' . $address . ']';
+			}
+
+			$pinned[] = $address;
 		}
 
-		if ($longIp === false) {
-			// Couldn't resolve at all — let the request through so a real
-			// DNS error surfaces as a delivery failure rather than a guard
-			// rejection.
-			return;
-		}
-
-		// Loopback 127.0.0.0/8.
-		if (($longIp & 0xFF000000) === 0x7F000000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (loopback)'
-			);
-		}
-
-		// RFC-1918 10.0.0.0/8.
-		if (($longIp & 0xFF000000) === 0x0A000000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (RFC-1918)'
-			);
-		}
-
-		// RFC-1918 172.16.0.0/12.
-		if (($longIp & 0xFFF00000) === 0xAC100000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (RFC-1918)'
-			);
-		}
-
-		// RFC-1918 192.168.0.0/16.
-		if (($longIp & 0xFFFF0000) === 0xC0A80000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (RFC-1918)'
-			);
-		}
-
-		// Link-local 169.254.0.0/16 — includes cloud metadata 169.254.169.254.
-		if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
-			throw new RuntimeException(
-				'Webhook target URL resolves to a blocked IP range (link-local/metadata)'
-			);
-		}
-	}//end assertSafeWebhookUri()
+		return [$host . ':' . $port . ':' . implode(',', $pinned)];
+	}//end pinnedResolve()
 
 	/**
 	 * Return the block-list reason for a given IPv6 address, or null if safe.
@@ -522,54 +476,81 @@ class WebhookService {
 	 * @return bool True if the host resolves to a private/loopback/link-local IP.
 	 */
 	private function isPrivateHost(string $host): bool {
-		$host = strtolower($host);
 		if ($host === '') {
 			return false;
 		}
 
-		// ── IPv6 literal ────────────────────────────────────────────────
-		// Strip brackets that parse_url() may leave around IPv6 literals.
-		$bareHost = trim($host, '[]');
-		$isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
-			|| strpos($host, ':') !== false;
-
-		if ($isIpv6Literal === true) {
-			return $this->blockedIpv6Reason(ip: $bareHost) !== null;
-		}
-
-		// ── IPv6 DNS (AAAA) ─────────────────────────────────────────────
-		$aaaaRecords = @dns_get_record($host, DNS_AAAA);
-		if (is_array($aaaaRecords) === true) {
-			foreach ($aaaaRecords as $record) {
-				$ipv6 = $record['ipv6'] ?? '';
-				if ($ipv6 !== '' && $this->blockedIpv6Reason(ip: $ipv6) !== null) {
-					return true;
-				}
+		foreach ($this->addressGuard()->addressesOf(host: $host) as $address) {
+			if ($this->blockedAddressReason(address: $address) !== null) {
+				return true;
 			}
 		}
 
-		// ── IPv4 resolution ─────────────────────────────────────────────
-		// Same dual-path as assertSafeWebhookUri(): resolve via DNS first,
-		// then fall back to validating the host string directly so IP
-		// literals (127.0.0.1, 192.168.x.y …) are matched too.
-		$resolvedIp = gethostbyname($host);
-		$longIp = ip2long($resolvedIp);
-		if ($longIp === false) {
-			$longIp = ip2long($host);
-		}
-
-		if ($longIp === false) {
-			return false;
-		}
-
-		// Match each blocked CIDR range against the resolved IP.
-		// 127/8 loopback, 10/8, 172.16/12, 192.168/16, 169.254/16 link-local.
-		return (($longIp & 0xFF000000) === 0x7F000000)
-			|| (($longIp & 0xFF000000) === 0x0A000000)
-			|| (($longIp & 0xFFF00000) === 0xAC100000)
-			|| (($longIp & 0xFFFF0000) === 0xC0A80000)
-			|| (($longIp & 0xFFFF0000) === 0xA9FE0000);
+		return false;
 	}//end isPrivateHost()
+
+	/**
+	 * Return the block-list reason for one resolved address, or null if safe.
+	 *
+	 * IPv6 addresses keep their own labels from {@see blockedIpv6Reason()}, IPv4
+	 * addresses from {@see blockedIpv4Reason()}. Anything else that is not
+	 * routable on the open internet, in any notation, is reported as `reserved`.
+	 *
+	 * @param string $address An IPv4 or IPv6 address.
+	 *
+	 * @return string|null Human-readable range label, or null when the address is safe.
+	 */
+	private function blockedAddressReason(string $address): ?string {
+		$reason = $this->blockedIpv4Reason(ip: $address);
+		if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+			$reason = $this->blockedIpv6Reason(ip: $address);
+		}
+
+		if ($reason === null && $this->addressGuard()->isInternal(ipAddress: $address) === true) {
+			$reason = 'reserved';
+		}
+
+		return $reason;
+	}//end blockedAddressReason()
+
+	/**
+	 * Return the block-list reason for an IPv4 address, or null when it is not listed.
+	 *
+	 * @param string $ip IPv4 address string.
+	 *
+	 * @return string|null `loopback`, `RFC-1918` or `link-local/metadata`, or null.
+	 */
+	private function blockedIpv4Reason(string $ip): ?string {
+		$longIp = ip2long($ip);
+		if ($longIp === false) {
+			return null;
+		}
+
+		$ranges = [
+			['loopback', 0xFF000000, 0x7F000000],
+			['RFC-1918', 0xFF000000, 0x0A000000],
+			['RFC-1918', 0xFFF00000, 0xAC100000],
+			['RFC-1918', 0xFFFF0000, 0xC0A80000],
+			['link-local/metadata', 0xFFFF0000, 0xA9FE0000],
+		];
+		foreach ($ranges as [$label, $mask, $network]) {
+			if (($longIp & $mask) === $network) {
+				return $label;
+			}
+		}
+
+		return null;
+	}//end blockedIpv4Reason()
+
+	/**
+	 * The shared outbound address guard, created on first use.
+	 *
+	 * @return OutboundAddressGuard The guard.
+	 */
+	private function addressGuard(): OutboundAddressGuard {
+		$this->addressGuard ??= new OutboundAddressGuard();
+		return $this->addressGuard;
+	}//end addressGuard()
 
 	/**
 	 * Truncate a response body for log-context use.
@@ -1242,7 +1223,7 @@ class WebhookService {
 		// SSRF guard: validate the webhook target before issuing the request.
 		// Redirects are re-validated by the per-request on_redirect callback set
 		// in $options below, which honours the same per-hook flag.
-		$this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
+		$checkedAddresses = $this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
 
 		$headers = array_merge(
 			[
@@ -1282,20 +1263,36 @@ class WebhookService {
 		// the client default (max/strict/protocols) from initializeHttpClient();
 		// the only difference is the flag-aware re-validation. The shared client
 		// default keeps allowPrivate = false as the safe fallback.
-		$options['allow_redirects'] = [
-			'max' => 5,
-			'strict' => true,
-			'referer' => false,
-			'protocols' => ['http', 'https'],
-			'track_redirects' => true,
-			'on_redirect' => function (
-				RequestInterface $request,
-				ResponseInterface $response,
-				\Psr\Http\Message\UriInterface $uri,
-			) use ($allowPrivate): void {
-				$this->assertSafeWebhookUri(uri: (string)$uri, allowPrivate: $allowPrivate);
-			},
-		];
+		// A redirect is followed only for a hook an administrator opted into
+		// private targets (notificatie-engine spec: such a hook follows private
+		// redirects); nothing is pinned there anyway. For every other hook a
+		// redirect would reach a second host resolved again by curl, past the
+		// address pin, so it is not followed: the 3xx is a failed delivery.
+		$options['allow_redirects'] = false;
+		if ($allowPrivate === true) {
+			$options['allow_redirects'] = [
+				'max' => 5,
+				'strict' => true,
+				'referer' => false,
+				'protocols' => ['http', 'https'],
+				'track_redirects' => true,
+				'on_redirect' => function (
+					RequestInterface $request,
+					ResponseInterface $response,
+					\Psr\Http\Message\UriInterface $uri,
+				) use ($allowPrivate): void {
+					$this->assertSafeWebhookUri(uri: (string)$uri, allowPrivate: $allowPrivate);
+				},
+			];
+		}
+
+		// Connect to the addresses the guard checked, not a second DNS answer.
+		// A redirect to another host is re-checked by on_redirect but resolved
+		// again by curl: the pin covers the first host only.
+		$resolve = $this->pinnedResolve(uri: $webhook->getUrl(), addresses: $checkedAddresses);
+		if ($resolve !== [] && defined('CURLOPT_RESOLVE') === true) {
+			$options['curl'] = [CURLOPT_RESOLVE => $resolve];
+		}
 
 		// For GET requests, use query parameters; for others, send JSON body.
 		$payloadKey = 'json';

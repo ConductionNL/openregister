@@ -312,6 +312,7 @@ class AuthorizationServiceTest extends TestCase {
 
 	public function testAuthorizeBasicSucceeds(): void {
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 
 		$this->userManager
 			->expects($this->once())
@@ -344,6 +345,7 @@ class AuthorizationServiceTest extends TestCase {
 	public function testAuthorizeBasicWithUsersAndGroupsParams(): void {
 		// The allow-list is enforced now; testuser is on it.
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 		$user->method('getUID')->willReturn('testuser');
 
 		$this->userManager
@@ -363,6 +365,7 @@ class AuthorizationServiceTest extends TestCase {
 
 	public function testAuthorizeBasicWithPasswordContainingColon(): void {
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 
 		// The full password after the first colon is preserved (explode limit 2),
 		// not truncated at the second colon.
@@ -504,6 +507,7 @@ class AuthorizationServiceTest extends TestCase {
 
 	public function testAuthorizeApiKeySucceeds(): void {
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 		$keys = ['valid-key-123' => 'admin'];
 
 		$this->userManager
@@ -544,6 +548,7 @@ class AuthorizationServiceTest extends TestCase {
 
 	public function testAuthorizeApiKeyWithMultipleKeys(): void {
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 		$keys = [
 			'key-one' => 'user1',
 			'key-two' => 'user2',
@@ -742,6 +747,7 @@ class AuthorizationServiceTest extends TestCase {
 		$token = $this->buildHmacJwt($payload, $secret, 'HS256');
 		$consumer = $this->createHmacConsumer('test-app', $secret, 'HS256', 'admin');
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 
 		$this->consumerMapper
 			->expects($this->once())
@@ -774,6 +780,7 @@ class AuthorizationServiceTest extends TestCase {
 		$token = $this->buildHmacJwt($payload, $secret, 'HS384');
 		$consumer = $this->createHmacConsumer('test-384', $secret, 'HS384', 'admin');
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 
 		$this->consumerMapper
 			->expects($this->once())
@@ -806,6 +813,7 @@ class AuthorizationServiceTest extends TestCase {
 		$token = $this->buildHmacJwt($payload, $secret, 'HS512');
 		$consumer = $this->createHmacConsumer('test-512', $secret, 'HS512', 'admin');
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 
 		$this->consumerMapper
 			->expects($this->once())
@@ -931,6 +939,7 @@ class AuthorizationServiceTest extends TestCase {
 		$token = $this->buildHmacJwt($payload, $secret, 'HS256');
 		$consumer = $this->createHmacConsumer('test-default-exp', $secret, 'HS256', 'admin');
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 
 		$this->consumerMapper
 			->expects($this->once())
@@ -1112,6 +1121,7 @@ class AuthorizationServiceTest extends TestCase {
 		$consumer1 = $this->createHmacConsumer('multi-consumer', $secret, 'HS256', 'user1');
 		$consumer2 = $this->createHmacConsumer('multi-consumer', $secret, 'HS256', 'user2');
 		$user = $this->createMock(IUser::class);
+		$user->method('isEnabled')->willReturn(true);
 
 		$this->consumerMapper
 			->expects($this->once())

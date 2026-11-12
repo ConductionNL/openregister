@@ -22,7 +22,13 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
+use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\IUserSession;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
+use RuntimeException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -38,7 +44,7 @@ class SchemasToolProviderTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->provider = new SchemasToolProvider($this->schemaMapper);
+		$this->provider = new SchemasToolProvider($this->schemaMapper, $this->rightsFor(uid: 'root'));
 
 	}//end setUp()
 
@@ -54,6 +60,116 @@ class SchemasToolProviderTest extends TestCase {
 		$schema->method('jsonSerialize')->willReturn($data);
 		return $schema;
 	}//end mockSchema()
+
+	/**
+	 * A provider acting for a plain user in the given groups.
+	 *
+	 * @param array<int, string> $groups The groups of the user.
+	 *
+	 * @return SchemasToolProvider
+	 */
+	private function providerFor(array $groups = []): SchemasToolProvider {
+		return new SchemasToolProvider($this->schemaMapper, $this->rightsFor(uid: 'mallory', groups: $groups));
+	}//end providerFor()
+
+	/**
+	 * A stored schema whose `manage` rule names the group `beheer`.
+	 *
+	 * @return Schema
+	 */
+	private function storedSchema(): Schema {
+		$schema = new Schema();
+		$schema->setId(5);
+		$schema->setAuthorization(['manage' => ['beheer'], 'read' => ['hr']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		return $schema;
+	}//end storedSchema()
+
+	/**
+	 * Rights for a signed-in user: only `root` is an administrator and only the
+	 * acting uid is asked about.
+	 *
+	 * @param string             $uid    The acting user.
+	 * @param array<int, string> $groups The groups of the acting user.
+	 *
+	 * @return DefinitionWriteRights
+	 */
+	private function rightsFor(string $uid, array $groups = []): DefinitionWriteRights {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturnCallback(static fn (string $asked): bool => $asked === 'root' && $uid === 'root');
+		$groupManager->method('getUserGroupIds')->willReturnCallback(static fn (IUser $asked): array => $asked === $user ? $groups : []);
+
+		return new DefinitionWriteRights($session, $groupManager);
+	}//end rightsFor()
+
+	// ── rights ─────────────────────────────────────────────────────
+
+	public function testASignedInUserCannotCreateASchema(): void {
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
+		$this->expectException(RuntimeException::class);
+		$this->providerFor(groups: ['beheer'])->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'create', 'data' => ['title' => 'S']]);
+	}//end testASignedInUserCannotCreateASchema()
+
+	public function testAUserOutsideTheManageRuleCannotUpdateASchema(): void {
+		$this->storedSchema();
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+		$this->expectException(RuntimeException::class);
+		$this->providerFor(groups: ['andere-groep'])->invokeTool(
+			SchemasToolProvider::TOOL_ID,
+			['action' => 'update', 'id' => 5, 'data' => ['authorization' => ['read' => ['public']]]]
+		);
+	}//end testAUserOutsideTheManageRuleCannotUpdateASchema()
+
+	public function testAUserOutsideTheManageRuleCannotDeleteASchema(): void {
+		$this->storedSchema();
+		$this->schemaMapper->expects($this->never())->method('delete');
+		$this->expectException(RuntimeException::class);
+		$this->providerFor()->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'delete', 'id' => 5]);
+	}//end testAUserOutsideTheManageRuleCannotDeleteASchema()
+
+	public function testAManagerMayDeleteASchema(): void {
+		$schema = $this->storedSchema();
+		$this->schemaMapper->expects($this->once())->method('delete')->with($schema);
+		$this->providerFor(groups: ['beheer'])->invokeTool(SchemasToolProvider::TOOL_ID, ['action' => 'delete', 'id' => 5]);
+	}//end testAManagerMayDeleteASchema()
+
+	public function testAManagerMayUpdateButNotMoveASchema(): void {
+		$schema = $this->storedSchema();
+		$this->schemaMapper->expects($this->once())
+			->method('updateFromArray')
+			->with(id: 5, object: ['title' => 'Edited'])
+			->willReturn($schema);
+
+		$this->providerFor(groups: ['beheer'])->invokeTool(
+			SchemasToolProvider::TOOL_ID,
+			['action' => 'update', 'id' => 5, 'data' => ['title' => 'Edited', 'id' => 9, 'organisation' => 'other', 'owner' => 'mallory', 'created' => '2000-01-01']]
+		);
+	}//end testAManagerMayUpdateButNotMoveASchema()
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function writes(): array {
+		return ['create' => ['create'], 'update' => ['update']];
+	}//end writes()
+
+	#[DataProvider('writes')]
+	public function testAnExternalGrantWithoutAnEndIsRefused(string $action): void {
+		$this->storedSchema();
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('external grant');
+		$this->provider->invokeTool(
+			SchemasToolProvider::TOOL_ID,
+			['action' => $action, 'id' => 5, 'data' => ['authorization' => ['read' => [['group' => 'ghost', 'external' => true]]]]]
+		);
+	}//end testAnExternalGrantWithoutAnEndIsRefused()
 
 	// ── descriptor surface ─────────────────────────────────────────
 

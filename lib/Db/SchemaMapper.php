@@ -972,6 +972,61 @@ class SchemaMapper extends QBMapper {
 	}//end findMultipleOptimized()
 
 	/**
+	 * Every schema an identifier could resolve to, across all organisations.
+	 *
+	 * The union of what the importer's lookups match: `find()` (uuid, `LOWER(slug)`
+	 * or numeric id), `findBySlugInIds()` and `findByApplicationAndSlug()`
+	 * (`LOWER(slug)`) and `findBySlug()` (exact slug). A guard that judges what
+	 * an import would overwrite must see every row any of those could pick.
+	 * No RBAC and no organisation filter: the caller judges each row.
+	 *
+	 * @param string $identifier A uuid, slug (any case) or numeric id.
+	 * @param int    $limit      Maximum number of rows.
+	 *
+	 * @return list<Schema> The matching schemas.
+	 *
+	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 */
+	public function findAllByIdentifier(string $identifier, int $limit = 100): array {
+		$this->traceRead(method: 'findAllByIdentifier');
+
+		$qb = $this->db->getQueryBuilder();
+		$conditions = $qb->expr()->orX(
+			// The uuid case-insensitively too: an importer that lower-cases the
+			// identifier first must not hit a row this lookup misses.
+			$qb->expr()->eq(
+				$qb->func()->lower('uuid'),
+				$qb->createNamedParameter(value: strtolower($identifier), type: IQueryBuilder::PARAM_STR)
+			),
+			$qb->expr()->eq(
+				$qb->func()->lower('slug'),
+				$qb->createNamedParameter(value: strtolower($identifier), type: IQueryBuilder::PARAM_STR)
+			)
+		);
+		// Same numeric test and cast as find(), so the id arm matches what it matches.
+		if (is_numeric($identifier) === true) {
+			$conditions->add(
+				$qb->expr()->eq('id', $qb->createNamedParameter(value: (int)$identifier, type: IQueryBuilder::PARAM_INT))
+			);
+		}
+
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where($conditions)
+			->setMaxResults($limit);
+
+		$result = $qb->executeQuery();
+		$schemas = [];
+		while (($row = $result->fetch()) !== false) {
+			$schemas[] = Schema::fromRow($row);
+		}
+
+		$result->closeCursor();
+
+		return $schemas;
+	}//end findAllByIdentifier()
+
+	/**
 	 * Finds schemas by slug
 	 *
 	 * Searches for schemas matching the given slug with optional
@@ -1123,6 +1178,7 @@ class SchemaMapper extends QBMapper {
 		// Verify RBAC permission to create.
 		$this->verifyRbacPermission(action: 'create', entityType: 'schema');
 		$this->assertScopedPropertiesAreGoverned(entity: $entity);
+		$this->assertActionStepsMailAuthor(oldSchema: null, newSchema: $entity);
 		// Auto-set organisation from active session.
 		$this->setOrganisationOnCreate(entity: $entity);
 
@@ -1363,6 +1419,69 @@ class SchemaMapper extends QBMapper {
 		$message .= ' Typo? See Schema::ANNOTATION_VOCABULARY for the declared keys.';
 		$this->logger->warning($message);
 	}//end logDroppedAnnotationKeys()
+
+	/**
+	 * Refuse a new or changed action step that mails any address unless an administrator saves it.
+	 *
+	 * ObjectActionStepsFlow::flowFor() later stores and publishes an action's
+	 * inline steps as a flow, for whoever runs the action, so the author is
+	 * judged here, when the step is written. Only steps that are new or
+	 * changed against the stored schema count: an unchanged admin-authored
+	 * step does not block a delegated manager's later save. Same rule and
+	 * gate as FlowService::save() and SchemaFlowImportListener.
+	 *
+	 * @param Entity|null $oldSchema The stored schema, or null on create.
+	 * @param Entity      $newSchema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When a non-administrator adds or changes such a step.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function assertActionStepsMailAuthor(?Entity $oldSchema, Entity $newSchema): void {
+		$before = $this->actionSteps(schema: $oldSchema);
+		foreach ($this->actionSteps(schema: $newSchema) as $key => $steps) {
+			if (json_encode($before[$key] ?? null) === json_encode($steps)) {
+				continue;
+			}
+
+			if (\OCA\OpenRegister\Service\Flow\ExternalMailAuthorGate::mailsAnyAddress(graph: $steps) === true) {
+				(new \OCA\OpenRegister\Service\Flow\ExternalMailAuthorGate(
+					userSession: $this->userSession,
+					groupManager: $this->groupManager,
+					trustCli: true
+				))->assertAdministratorAuthor();
+			}
+		}
+	}//end assertActionStepsMailAuthor()
+
+	/**
+	 * The inline steps of a schema's declared actions, by action key.
+	 *
+	 * @param Entity|null $schema The schema.
+	 *
+	 * @return array<string, array<mixed>> The steps per action key.
+	 */
+	private function actionSteps(?Entity $schema): array {
+		if ($schema instanceof Schema === false) {
+			return [];
+		}
+
+		$steps = [];
+		foreach (ObjectActionDefinition::declarations(configuration: ($schema->getConfiguration() ?? [])) as $key => $definition) {
+			if (is_array($definition) === false) {
+				continue;
+			}
+
+			$declared = ($definition[ObjectActionDefinition::KIND_STEPS] ?? null);
+			if (is_array($declared) === true) {
+				$steps[(string)$key] = $declared;
+			}
+		}
+
+		return $steps;
+	}//end actionSteps()
 
 	/**
 	 * Refuse a declared action bound to a flow nobody can run.
@@ -3176,6 +3295,7 @@ class SchemaMapper extends QBMapper {
 			->from('openregister_schemas')
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId(), IQueryBuilder::PARAM_INT)));
 		$oldSchema = $this->findEntity(query: $qb);
+		$this->assertActionStepsMailAuthor(oldSchema: $oldSchema, newSchema: $entity);
 
 		// Clean the schema object to ensure UUID, slug, and version are set.
 		$this->cleanObject(schema: $entity);

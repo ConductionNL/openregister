@@ -21,9 +21,14 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\RegisterService;
+use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * Unit tests for RegistersToolProvider.
@@ -38,7 +43,7 @@ class RegistersToolProviderTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->registerService = $this->createMock(RegisterService::class);
-		$this->provider = new RegistersToolProvider($this->registerService);
+		$this->provider = new RegistersToolProvider($this->registerService, $this->rightsFor(uid: 'root'));
 
 	}//end setUp()
 
@@ -54,6 +59,93 @@ class RegistersToolProviderTest extends TestCase {
 		$register->method('jsonSerialize')->willReturn($data);
 		return $register;
 	}//end mockRegister()
+
+	/**
+	 * A provider acting for a plain user in the given groups.
+	 *
+	 * @param array<int, string> $groups The groups of the user.
+	 *
+	 * @return RegistersToolProvider
+	 */
+	private function providerFor(array $groups = []): RegistersToolProvider {
+		return new RegistersToolProvider($this->registerService, $this->rightsFor(uid: 'mallory', groups: $groups));
+	}//end providerFor()
+
+	/**
+	 * A stored register whose `manage` rule names the group `beheer`.
+	 *
+	 * @return Register
+	 */
+	private function storedRegister(): Register {
+		$register = new Register();
+		$register->setId(5);
+		$register->setAuthorization(['manage' => ['beheer']]);
+		$this->registerService->method('find')->willReturn($register);
+
+		return $register;
+	}//end storedRegister()
+
+	/**
+	 * Rights for a signed-in user: only `root` is an administrator and only the
+	 * acting uid is asked about.
+	 *
+	 * @param string             $uid    The acting user.
+	 * @param array<int, string> $groups The groups of the acting user.
+	 *
+	 * @return DefinitionWriteRights
+	 */
+	private function rightsFor(string $uid, array $groups = []): DefinitionWriteRights {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturnCallback(static fn (string $asked): bool => $asked === 'root' && $uid === 'root');
+		$groupManager->method('getUserGroupIds')->willReturnCallback(static fn (IUser $asked): array => $asked === $user ? $groups : []);
+
+		return new DefinitionWriteRights($session, $groupManager);
+	}//end rightsFor()
+
+	// ── rights ─────────────────────────────────────────────────────
+
+	public function testASignedInUserCannotCreateARegister(): void {
+		$this->registerService->expects($this->never())->method('createFromArray');
+		$this->expectException(RuntimeException::class);
+		$this->providerFor(groups: ['beheer'])->invokeTool(RegistersToolProvider::TOOL_ID, ['action' => 'create', 'data' => ['title' => 'R']]);
+	}//end testASignedInUserCannotCreateARegister()
+
+	public function testAUserOutsideTheManageRuleCannotUpdateARegister(): void {
+		$this->storedRegister();
+		$this->registerService->expects($this->never())->method('updateFromArray');
+		$this->expectException(RuntimeException::class);
+		$this->providerFor()->invokeTool(RegistersToolProvider::TOOL_ID, ['action' => 'update', 'id' => 5, 'data' => ['title' => 'R']]);
+	}//end testAUserOutsideTheManageRuleCannotUpdateARegister()
+
+	public function testAUserOutsideTheManageRuleCannotDeleteARegister(): void {
+		$this->storedRegister();
+		$this->registerService->expects($this->never())->method('delete');
+		$this->expectException(RuntimeException::class);
+		$this->providerFor()->invokeTool(RegistersToolProvider::TOOL_ID, ['action' => 'delete', 'id' => 5]);
+	}//end testAUserOutsideTheManageRuleCannotDeleteARegister()
+
+	public function testAManagerMayUpdateButNotMoveARegister(): void {
+		$register = $this->storedRegister();
+		$this->registerService->expects($this->once())
+			->method('updateFromArray')
+			->with(id: 5, data: ['title' => 'Edited'])
+			->willReturn($register);
+
+		$this->providerFor(groups: ['beheer'])->invokeTool(
+			RegistersToolProvider::TOOL_ID,
+			['action' => 'update', 'id' => 5, 'data' => ['title' => 'Edited', 'id' => 9, 'organisation' => 'other', 'owner' => 'mallory', 'created' => '2000-01-01']]
+		);
+	}//end testAManagerMayUpdateButNotMoveARegister()
+
+	public function testAManagerMayDeleteARegister(): void {
+		$register = $this->storedRegister();
+		$this->registerService->expects($this->once())->method('delete')->with(register: $register);
+		$this->providerFor(groups: ['beheer'])->invokeTool(RegistersToolProvider::TOOL_ID, ['action' => 'delete', 'id' => 5]);
+	}//end testAManagerMayDeleteARegister()
 
 	// ── descriptor surface ─────────────────────────────────────────
 

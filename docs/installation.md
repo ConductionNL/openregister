@@ -457,6 +457,38 @@ After installation:
 
 ## Upgrading
 
+### Security changes to check before you upgrade
+
+- **A consumer or JWT issuer whose `userId` names a missing or disabled account
+  is refused with 401.** It used to run without a user under the consumer's grant.
+  Point such a consumer at an existing, enabled service account, or clear its
+  `userId`, before upgrading. A static API key whose account is missing or
+  disabled is refused too.
+- **Federated-config writes need the `OCS-APIRequest: true` header** when called
+  from a script (`PUT /api/federated-config/trust`, `POST /api/federated-config/install`);
+  see [Federated configuration](federated-configuration.md).
+- **Installing a federated configuration is for administrators by default.** An
+  empty `installGroups` used to let any signed-in user install; it now means
+  administrators only. Members of a configured install group can no longer
+  install a bundle that seeds objects (403); an administrator installs those.
+- **Review the federation shares that exist before the upgrade.** Creating a share
+  now needs the right to manage its schema, but shares created before this release
+  keep working: any signed-in user could create one, read-write included, and the
+  table does not record who did. After upgrading, list them and revoke every share
+  you do not recognise:
+
+  ```sql
+  SELECT id, register, `schema`, permissions, organisation, remote_instance_url, created
+  FROM oc_openregister_federated_shares
+  WHERE direction = 'outgoing' AND status <> 'revoked'
+  ORDER BY permissions DESC, created;
+  ```
+
+  (`oc_` is the default table prefix; on PostgreSQL write `"schema"` instead of
+  `` `schema` ``.) Revoke a share as an administrator with
+  `DELETE /index.php/apps/openregister/api/federation/shares/{id}` and the header
+  `OCS-APIRequest: true`. Start with the `read-write` rows.
+
 ### From Nextcloud App Store
 
 Updates are automatic via the Nextcloud update mechanism:

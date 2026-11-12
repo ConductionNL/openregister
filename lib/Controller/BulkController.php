@@ -194,47 +194,24 @@ class BulkController extends Controller {
 	}//end manageGate()
 
 	/**
-	 * Check if the current user has 'manage' permission on a register.
+	 * The refusal of a delete that empties whole tables, or null for an administrator.
 	 *
-	 * Default-SECURE: a register with no `manage` authorization rule can only
-	 * be managed by administrators. When manage rules are present, membership
-	 * of one of the listed groups grants permission (admins always pass).
-	 * Mirrors `RegistersController::checkRegisterManagePermission()`.
+	 * These deletes filter on register and schema only, so they reach the rows of every
+	 * organisation in the table. A `manage` rule answers for the schema's definition, not
+	 * for those rows.
 	 *
-	 * @param Register $register The register to check manage permission for.
-	 *
-	 * @return bool True if the current user may manage this register.
+	 * @return JSONResponse|null The refusal, or null when the caller is an administrator.
 	 */
-	private function checkRegisterManagePermission(Register $register): bool {
-		return $this->manageGate()->mayManageRegister(register: $register);
-	}//end checkRegisterManagePermission()
-
-	/**
-	 * Find the first schema of a register the current user may not manage.
-	 *
-	 * Walks the register's own `schemas` list, the set a register-wide delete
-	 * empties. A listed id that does not resolve is skipped: it has no table the
-	 * delete could reach, and the service skips it the same way.
-	 *
-	 * @param Register $register The register about to be emptied.
-	 *
-	 * @return string|null The id of the first unmanageable schema, or null when all pass.
-	 */
-	private function firstUnmanageableSchemaOf(Register $register): ?string {
-		foreach ($register->getSchemas() as $schemaId) {
-			try {
-				$schema = $this->schemaMapper->find((int)$schemaId);
-			} catch (\Throwable $e) {
-				continue;
-			}
-
-			if ($this->checkSchemaManagePermission(schema: $schema) === false) {
-				return (string)$schemaId;
-			}
+	private function wholeTableDeleteRefusal(): ?JSONResponse {
+		if ($this->manageGate()->isAdministrator() === true) {
+			return null;
 		}
 
-		return null;
-	}//end firstUnmanageableSchemaOf()
+		return new JSONResponse(
+			data: ['error' => 'Deleting every object of a schema or register is for administrators.'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end wholeTableDeleteRefusal()
 
 
 	/**
@@ -498,6 +475,15 @@ class BulkController extends Controller {
 		$requestedCount = count($objects);
 
 		if ($stream === true) {
+			// Each streamed row goes straight to the save handler, past the per-row
+			// create, update, draft and organisation checks of the default path.
+			if ($this->manageGate()->isAdministrator() === false) {
+				return new JSONResponse(
+					data: ['error' => 'Streaming bulk saves are for administrators. Send the batch without "stream".'],
+					statusCode: Http::STATUS_FORBIDDEN
+				);
+			}
+
 			$status = $this->objectService->saveObjectsStreaming(
 				objects: $objects,
 				register: $register,
@@ -633,7 +619,7 @@ class BulkController extends Controller {
 	 *
 	 * Request body:
 	 *  - `objects`  (required) the rows to write.
-	 *  - `stream`   (optional) row-at-a-time write path — see writeBatch().
+	 *  - `stream`   (optional) row-at-a-time write path, for administrators only — see writeBatch().
 	 *  - `partial`  (optional) opt into best-effort semantics: a batch with
 	 *               rejected rows still answers 200 instead of 422. It does NOT
 	 *               make `success` true — see bulkSaveResponse() for why.
@@ -759,6 +745,11 @@ class BulkController extends Controller {
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
 	public function deleteSchema(string $register, string $schema): JSONResponse {
+		$refusal = $this->wholeTableDeleteRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		try {
 			// Validate input.
 			if (is_numeric($schema) === false) {
@@ -768,23 +759,12 @@ class BulkController extends Controller {
 				);
 			}
 
-			// Authorization: bulk-deleting every object in a schema is a
-			// destructive data-model write. Gate on manage-permission for the
-			// target schema (default-SECURE: admin-only when no manage rule
-			// exists). Mirrors the wave-1 #1949 controller gate pattern.
 			try {
-				$schemaEntity = $this->schemaMapper->find((int)$schema);
+				$this->schemaMapper->find((int)$schema);
 			} catch (\Throwable $e) {
 				return new JSONResponse(
 					data: ['error' => 'Schema not found'],
 					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			if ($this->checkSchemaManagePermission(schema: $schemaEntity) === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage this schema'],
-					statusCode: Http::STATUS_FORBIDDEN
 				);
 			}
 
@@ -845,6 +825,11 @@ class BulkController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
 	 */
 	public function deleteSchemaObjects(string $register, string $schema): JSONResponse {
+		$refusal = $this->wholeTableDeleteRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		try {
 			// Resolve register and schema slugs/IDs to numeric IDs.
 			try {
@@ -857,24 +842,12 @@ class BulkController extends Controller {
 				return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 			}
 
-			// Authorization: bulk-deleting every object for a register/schema
-			// combination is a destructive data-model write. Gate on
-			// manage-permission for the target schema (default-SECURE:
-			// admin-only when no manage rule exists). Mirrors the wave-1
-			// #1949 controller gate pattern.
 			try {
-				$schemaEntity = $this->schemaMapper->find($resolved['schema']);
+				$this->schemaMapper->find($resolved['schema']);
 			} catch (\Throwable $e) {
 				return new JSONResponse(
 					data: ['error' => 'Schema not found'],
 					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			if ($this->checkSchemaManagePermission(schema: $schemaEntity) === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage this schema'],
-					statusCode: Http::STATUS_FORBIDDEN
 				);
 			}
 
@@ -931,6 +904,11 @@ class BulkController extends Controller {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
 	 */
 	public function deleteRegister(string $register): JSONResponse {
+		$refusal = $this->wholeTableDeleteRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		try {
 			// Validate input.
 			if (is_numeric($register) === false) {
@@ -940,36 +918,12 @@ class BulkController extends Controller {
 				);
 			}
 
-			// Authorization: bulk-deleting every object in a register is a
-			// destructive data-model write. Gate on manage-permission for the
-			// target register (default-SECURE: admin-only when no manage rule
-			// exists). Mirrors the wave-1 #1949 controller gate pattern.
 			try {
-				$registerEntity = $this->registerMapper->find((int)$register);
+				$this->registerMapper->find((int)$register);
 			} catch (\Throwable $e) {
 				return new JSONResponse(
 					data: ['error' => 'Register not found'],
 					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			if ($this->checkRegisterManagePermission(register: $registerEntity) === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage this register'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
-			}
-
-			// Managing the register is not enough: this empties every schema the
-			// register lists, so each must pass the same manage gate that
-			// delete-objects applies to one schema. Resolved exactly as
-			// SchemaDeletionService::resolveSchemasOfRegister() resolves the set it
-			// deletes (the register's list; an id nothing answers to is skipped).
-			$unmanageable = $this->firstUnmanageableSchemaOf(register: $registerEntity);
-			if ($unmanageable !== null) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage schema ' . $unmanageable . ' of this register'],
-					statusCode: Http::STATUS_FORBIDDEN
 				);
 			}
 

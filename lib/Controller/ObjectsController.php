@@ -2013,7 +2013,12 @@ class ObjectsController extends Controller {
 				$responseData['facets'] = $facets;
 			}
 		} catch (\Exception $e) {
-			$responseData['@self']['facet_error'] = $e->getMessage();
+			// The driver text can carry SQL and table names: log it, answer a fixed code.
+			$this->logger?->warning(
+				message: '[ObjectsController] Facets could not be computed',
+				context: ['exception' => $e]
+			);
+			$responseData['@self']['facet_error'] = 'facets-unavailable';
 		}
 
 		return $responseData;
@@ -6600,7 +6605,12 @@ class ObjectsController extends Controller {
 			$customFilename = $this->request->getParam(key: 'filename');
 
 			// Create the ZIP archive.
-			$zipInfo = $fileService->createObjectFilesZip(object: $object, zipName: $customFilename);
+			// The same file set as GET .../files (FilesController: sharedFilesOnly
+			// for anonymous callers): published files only without a user. A
+			// signed-in caller already passed the object read check above and
+			// may list and download each file one by one, so the ZIP holds them too.
+			$publishedOnly = ($this->userSession->getUser() === null);
+			$zipInfo       = $fileService->createObjectFilesZip(object: $object, zipName: $customFilename, publishedOnly: $publishedOnly);
 
 			// Read the ZIP file content.
 			$zipContent = file_get_contents($zipInfo['path']);

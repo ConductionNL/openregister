@@ -37,13 +37,16 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Exception\FlowRunRefused;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Db\FlowVersionMapper;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -348,6 +351,7 @@ class FlowService {
 	 *                               or creating one with no owner / organisation.
 	 * @throws \InvalidArgumentException When a trigger node rejects its own config.
 	 * @throws FlowLifecycleRefused When the definition changes and the head is not a draft.
+	 * @throws NotAuthorizedException When a non-administrator authors a step that mails any address.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
@@ -362,6 +366,15 @@ class FlowService {
 
 		$this->applyEditableFields(flow: $flow, data: $data);
 		(new FlowTriggerValidator($this->container, $this->logger))->validate(flow: $flow);
+
+		// A send-email step with `externalRecipients: any` mails author-chosen text
+		// to any address from this instance's mail account. Only an administrator
+		// may author or change such a graph; a metadata edit (name, enabled) passes.
+		if ((($uuid ?? '') === '' || $this->graphSignature(flow: $flow) !== $graphBefore)
+			&& $this->mailsAnyAddress(graph: [$flow->getNodes(), $flow->getEdges()]) === true
+		) {
+			$this->assertAdministratorAuthor();
+		}
 
 		// A published version is immutable. Only a DEFINITION change is
 		// refused, deliberately: renaming a flow, editing its description or
@@ -393,6 +406,60 @@ class FlowService {
 
 		return $stored;
 	}//end save()
+
+	/**
+	 * Refuse a new graph that mails any address unless an administrator or the app stores it.
+	 *
+	 * For write paths that insert a flow without save(), such as a federated
+	 * flow bundle install.
+	 *
+	 * @param mixed $nodes The graph's nodes.
+	 * @param mixed $edges The graph's edges.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When a non-administrator stores a step that mails any address.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	public function assertMayStoreGraph(mixed $nodes, mixed $edges): void {
+		if ($this->mailsAnyAddress(graph: [$nodes, $edges]) === true) {
+			$this->assertAdministratorAuthor();
+		}
+	}//end assertMayStoreGraph()
+
+	/**
+	 * Whether any step in the graph lets mail go to any address.
+	 *
+	 * The whole graph is walked, nodes and edges alike, so the check does not
+	 * depend on which of the two carries a step's config.
+	 *
+	 * @param mixed $graph The nodes and edges.
+	 *
+	 * @return bool True when a config holds `externalRecipients: any`.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function mailsAnyAddress(mixed $graph): bool {
+		return ExternalMailAuthorGate::mailsAnyAddress(graph: $graph);
+	}//end mailsAnyAddress()
+
+	/**
+	 * Refuse unless the caller is an administrator or the app itself.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When a signed-in non-administrator, or nobody, is saving.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	private function assertAdministratorAuthor(): void {
+		// The same gate SchemaFlowImportListener asks, so both write paths agree.
+		(new ExternalMailAuthorGate(
+			userSession: $this->userSession,
+			groupManager: $this->container->get(IGroupManager::class)
+		))->assertAdministratorAuthor();
+	}//end assertAdministratorAuthor()
 
 	/**
 	 * A value that changes exactly when the flow's definition changes.

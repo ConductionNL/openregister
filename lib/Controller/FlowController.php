@@ -37,6 +37,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
@@ -852,6 +853,8 @@ class FlowController extends Controller {
 			return $this->flows->save(data: $data, uuid: $uuid);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => 'Only an administrator may let a flow send email to any address'], Http::STATUS_FORBIDDEN);
 		} catch (FlowLifecycleRefused $e) {
 			// 409, not 400. The request is well-formed; the flow's STATE is
 			// what refuses it, and that state can change — the author creates

@@ -156,6 +156,50 @@ class AuthorizationService {
 	}//end actAs()
 
 	/**
+	 * The account a credential acts as, refused when it is gone or disabled.
+	 *
+	 * An API key, consumer or token outlives the account it names. Disabling
+	 * that account is how an administrator stops a person, so it must stop
+	 * every credential that acts as them too.
+	 *
+	 * @param string $userId  The account the credential names.
+	 * @param string $refusal The refusal message, the same one an unknown credential gets.
+	 *
+	 * @return IUser The enabled account.
+	 *
+	 * @throws AuthenticationException When the account does not exist or is disabled.
+	 */
+	private function enabledAccount(string $userId, string $refusal): IUser {
+		$user = $this->userManager->get($userId);
+		if ($user === null || $user->isEnabled() === false) {
+			throw new AuthenticationException(message: $refusal, details: []);
+		}
+
+		return $user;
+	}//end enabledAccount()
+
+	/**
+	 * Bind the consumer's stored grant as the ceiling on this request.
+	 *
+	 * Call before acting as the consumer's user, so the request never runs as
+	 * that user without the ceiling. A consumer without a grant binds null,
+	 * which narrows nothing.
+	 *
+	 * @param ResolvedConsumer $consumer   The consumer whose credential was accepted.
+	 * @param string           $fallbackId Grant id when the consumer has no uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
+	 */
+	private function bindConsumerGrant(ResolvedConsumer $consumer, string $fallbackId): void {
+		$this->tokenGrantSource?->bindFromConsumer(
+			storedAuthorization: $consumer->configuration,
+			tokenId: (string)($consumer->uuid ?? $fallbackId)
+		);
+	}//end bindConsumerGrant()
+
+	/**
 	 * Tell the audit writer which consumer's token opened this request.
 	 *
 	 * The authorisation layer is the ONLY place that knows this. A JWT presents
@@ -276,13 +320,15 @@ class AuthorizationService {
 		//
 		// Bound BEFORE the user is set, so there is no window in which the
 		// request is the user with no ceiling on it.
-		$this->tokenGrantSource?->bindFromConsumer(
-			storedAuthorization: $authConf,
-			tokenId: (string)($issuer->uuid ?? $payload['iss'])
-		);
+		$this->bindConsumerGrant(consumer: $issuer, fallbackId: (string)$payload['iss']);
 
 		$this->resolvedConsumer = $issuer;
-		$this->actAs(user: $this->userManager->get((string)$issuer->userId));
+		$issuerUser = null;
+		if ((string)$issuer->userId !== '') {
+			$issuerUser = $this->enabledAccount(userId: (string)$issuer->userId, refusal: 'Invalid token');
+		}
+
+		$this->actAs(user: $issuerUser);
 
 		// The JWT's own id when it carries one, so a single credential can be
 		// revoked by name. The token itself is never passed on: the audit trail
@@ -328,7 +374,9 @@ class AuthorizationService {
 
 		$user = $this->userManager->checkPassword($username, $password);
 
-		if ($user === false) {
+		// The password check answers for a disabled account too; a disabled
+		// account gets the same refusal as a wrong password.
+		if ($user === false || $user->isEnabled() === false) {
 			throw new AuthenticationException(message: 'Invalid username or password', details: []);
 		}
 
@@ -491,12 +539,7 @@ class AuthorizationService {
 
 		foreach ($keys as $key => $userId) {
 			if (hash_equals((string)$key, $header) === true) {
-				$user = $this->userManager->get((string)$userId);
-				if ($user === null) {
-					throw new AuthenticationException(message: 'Invalid API key', details: []);
-				}
-
-				$this->actAs(user: $user);
+				$this->actAs(user: $this->enabledAccount(userId: (string)$userId, refusal: 'Invalid API key'));
 				return;
 			}
 		}
@@ -506,9 +549,11 @@ class AuthorizationService {
 			throw new AuthenticationException(message: 'Invalid API key', details: []);
 		}
 
+		$this->bindConsumerGrant(consumer: $consumer, fallbackId: $consumer->name);
+
 		$this->resolvedConsumer = $consumer;
 		if ((string)$consumer->userId !== '') {
-			$this->actAs(user: $this->userManager->get((string)$consumer->userId));
+			$this->actAs(user: $this->enabledAccount(userId: (string)$consumer->userId, refusal: 'Invalid API key'));
 		}
 
 		$this->claimConsumerToken(consumer: $consumer, mechanism: 'apiKey', reference: $consumer->uuid);
