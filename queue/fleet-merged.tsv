@@ -275,3 +275,4 @@ portaliq	2312	e056c2f77fc4c58f02ab1b00a452b62ff26f8662	SKIP	worker-19	GATE UNMEA
 portaliq	2313	67dcfdbb9a169a7b0f94a1aaacbdd40716be5179	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2284	b2a0155204176795c00218d83ecbed38e0434b82	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
 portaliq	2287	acc890bc8e1c639fb657566a13410f3bae3c9585	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+portaliq	2288	d01b991cb7650abb3b8e5fef8402c7b836eae48d	FAIL	worker-19	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
