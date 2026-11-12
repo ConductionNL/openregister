@@ -576,3 +576,4 @@ cover:openregister:7350e3ef:jsf545d745	failed: task says lang=js but dirs=lib/Re
 cover:openregister:7350e3ef:jsd0d72987	PR #10046: 18 jest tests, src/modals/settings lines 89.4->96.7%	session-20261112T220141-9622e2a0	2026-11-12T22:15:34Z
 verify:stackiq:1773:9799430f	failed: permission (running the unit suite was refused in this session)	session-20261112T221239-5f377795	2026-11-12T22:15:20Z
 verify:hermiq:1595:5b8f665d	failed: permission	session-20261112T221235-39b35722	2026-11-12T22:15:56Z
+verify:opencatalogi:2578:44d28445	BLOCK 2578 (tests green; existing endpoints lose API-Version/problem-details)	session-20261112T221234-13fcfd6a	2026-11-12T22:16:22Z
