@@ -4323,3 +4323,4 @@ keepiq	1689	7e41a57e9966540605061a109b09279b52bf3505	GREEN	worker-18	tree of 7: 
 keepiq	1690	f5feabc390d7e92ed8113c85039b1000e83ad400	GREEN	worker-18	tree of 7: phpunit 3841 run vs baseline 3722 (OK, 241 skipped), 0 new failures; vitest 5481 passed; new spec + quoted object key in favicon.js (no behaviour change)
 pipelinq	3565	da5d42be9f8314b58abb4da30aae4033cc120355	GREEN	worker-16	already contained in development; nothing to merge
 pipelinq	3576	c7fa75b3515130ab33fd99f2604856db739dd7c9	GREEN	worker-16	php 5794 tests, baseline 5773 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3227 pass; tests only
+pipelinq	3577	fb6a8b438da82b6b2fca02d580f733ff47d14eb6	GREEN	worker-16	php 5794 tests, baseline 5773 with 1 inherited failure (CrmPrivilegeRefusalGoldenTest TicketWooRequestController), 0 new; vitest 3227 pass; tests only
