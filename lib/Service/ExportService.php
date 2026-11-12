@@ -50,7 +50,6 @@ use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserManager;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -147,7 +146,6 @@ class ExportService implements ObjectExporterInterface {
 	 * Constructor for the ExportService.
 	 *
 	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param IUserManager $_userManager The user manager (unused).
 	 * @param IGroupManager $groupManager The group manager.
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
@@ -158,7 +156,6 @@ class ExportService implements ObjectExporterInterface {
 	 */
 	public function __construct(
 		RegisterMapperInterface $registerMapper,
-		IUserManager $_userManager,
 		IGroupManager $groupManager,
 		ObjectOperationsInterface $objectService,
 		CacheHandlerInterface $cacheHandler,

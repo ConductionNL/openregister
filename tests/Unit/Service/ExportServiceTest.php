@@ -72,7 +72,6 @@ class ExportServiceTest extends TestCase {
 
 		$this->service = new ExportService(
 			$this->registerMapper,
-			$this->userManager,
 			$this->groupManager,
 			$this->objectService,
 			$this->cacheHandler,

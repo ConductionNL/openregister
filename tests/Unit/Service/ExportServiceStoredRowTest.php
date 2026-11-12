@@ -49,7 +49,6 @@ class ExportServiceStoredRowTest extends TestCase {
 	protected function setUp(): void {
 		$this->service = new ExportService(
 			registerMapper: $this->createMock(originalClassName: RegisterMapper::class),
-			_userManager: $this->createMock(originalClassName: IUserManager::class),
 			groupManager: $this->createMock(originalClassName: IGroupManager::class),
 			objectService: $this->createMock(originalClassName: ObjectService::class),
 			cacheHandler: $this->createMock(originalClassName: CacheHandler::class),

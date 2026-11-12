@@ -133,7 +133,6 @@ class ExportServicePdfTest extends TestCase {
 	private function makeService(?NcOfficeConverterInterface $converter): ExportService {
 		return new ExportService(
 			$this->registerMapper,
-			$this->userManager,
 			$this->groupManager,
 			$this->objectService,
 			$this->cacheHandler,

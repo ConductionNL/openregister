@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ConfigurationDraft;
 use OCA\OpenRegister\Db\ConfigurationDraftMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\IAppConfig;
@@ -61,6 +62,13 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	public const FOUR_EYES_KEY = 'configuration_four_eyes';
 
 	/**
+	 * The app the instance keys live under.
+	 *
+	 * @var string
+	 */
+	private string $appName = AppIdentity::APP_ID;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ConfigurationDraftSetMapperInterface $sets      The draft sets.
@@ -69,7 +77,6 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 	 * @param ConfigurationKeyRegistry    $registry  The declared vocabulary.
 	 * @param IUserSession                $session   The current session.
 	 * @param IAppConfig                  $appConfig Nextcloud's app configuration.
-	 * @param string                      $appName   The app the instance keys live under.
 	 */
 	public function __construct(
 		private readonly ConfigurationDraftSetMapperInterface $sets,
@@ -78,7 +85,6 @@ class ConfigurationDraftService implements ConfigurationDraftsInterface {
 		private readonly ConfigurationKeyRegistry $registry,
 		private readonly IUserSession $session,
 		private readonly IAppConfig $appConfig,
-		private readonly string $appName = 'openregister'
 	) {
 
 	}//end __construct()
