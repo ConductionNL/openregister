@@ -961,7 +961,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return mixed Whatever the callable returns.
      *
-     * @throws InvalidArgumentException When the organisation does not exist.
+     * @throws InvalidArgumentException When the organisation does not exist or is not active.
      *
      * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
      */
@@ -969,7 +969,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         if ($this->organisationService->findContextOrganisation(uuid: $organisationUuid) === null) {
             throw new InvalidArgumentException(
-                message: 'Cannot act for organisation "'.$organisationUuid.'": it does not exist.'
+                message: 'Cannot act for organisation "'.$organisationUuid.'": it does not exist or is not active.'
             );
         }
 
