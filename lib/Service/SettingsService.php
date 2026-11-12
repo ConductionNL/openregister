@@ -24,14 +24,10 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
@@ -40,12 +36,10 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
 use OCP\AppFramework\IAppContainer;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
-use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IDBConnection;
-use OCP\IGroupManager;
-use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -114,7 +108,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class SettingsService {
+class SettingsService implements SettingsServiceInterface, AppSettingsInterface {
 
 	/**
 	 * Configuration service
@@ -124,39 +118,11 @@ class SettingsService {
 	private IConfig $config;
 
 	/**
-	 * Audit trail mapper
-	 *
-	 * @var AuditTrailMapper
-	 */
-	private AuditTrailMapper $auditTrailMapper;
-
-	/**
-	 * Cache factory
-	 *
-	 * @var ICacheFactory
-	 */
-	private ICacheFactory $cacheFactory;
-
-	/**
 	 * Database connection (lazy-loaded when needed)
 	 *
 	 * @var IDBConnection|null
 	 */
 	private ?IDBConnection $db = null;
-
-	/**
-	 * Object cache service (lazy-loaded when needed)
-	 *
-	 * @var CacheHandler|null
-	 */
-	private ?CacheHandler $objectCacheService = null;
-
-	/**
-	 * Group manager
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
 
 	/**
 	 * Validation operations handler
@@ -217,44 +183,9 @@ class SettingsService {
 	/**
 	 * REMOVED: Object mapper (unused, caused circular dependency)
 	 *
-	 * @var MagicMapper|null
+	 * @var MagicMapperInterface|null
 	 */
 	// Private ?MagicMapper $objectMapper;.
-
-	/**
-	 * Organisation mapper
-	 *
-	 * @var OrganisationMapper
-	 */
-	private OrganisationMapper $organisationMapper;
-
-	/**
-	 * Schema cache handler
-	 *
-	 * @var SchemaCacheHandler
-	 */
-	private SchemaCacheHandler $schemaCacheService;
-
-	/**
-	 * Schema facet cache service
-	 *
-	 * @var FacetCacheHandler|null
-	 */
-	private ?FacetCacheHandler $schemaFacetCacheService = null;
-
-	/**
-	 * Search trail mapper
-	 *
-	 * @var SearchTrailMapper
-	 */
-	private SearchTrailMapper $searchTrailMapper;
-
-	/**
-	 * User manager
-	 *
-	 * @var IUserManager
-	 */
-	private IUserManager $userManager;
 
 	/**
 	 * This property holds the name of the application, which is used for identification and configuration purposes.
@@ -282,6 +213,48 @@ class SettingsService {
 	private const MIN_OPENREGISTER_VERSION = '0.1.7';
 
 	/**
+	 * Tables counted in the database statistics, by result column.
+	 *
+	 * @var array<string, string>
+	 */
+	private const DATABASE_STATS_COUNTED_TABLES = [
+		'total_audit_trails' => 'openregister_audit_trails',
+		'total_search_trails' => 'openregister_search_trails',
+		'total_configurations' => 'openregister_configurations',
+		'total_organisations' => 'openregister_organisations',
+		'total_registers' => 'openregister_registers',
+		'total_schemas' => 'openregister_schemas',
+	];
+
+	/**
+	 * Warning keys in the database statistics and the result column each reads.
+	 *
+	 * @var array<string, string>
+	 */
+	private const DATABASE_STATS_WARNINGS = [
+		'auditTrailsWithoutExpiry' => 'audit_trails_without_expiry',
+		'searchTrailsWithoutExpiry' => 'search_trails_without_expiry',
+		'expiredAuditTrails' => 'expired_audit_trails',
+		'expiredSearchTrails' => 'expired_search_trails',
+	];
+
+	/**
+	 * Total keys in the database statistics (after the object totals) and the result column each reads.
+	 *
+	 * @var array<string, string>
+	 */
+	private const DATABASE_STATS_TOTALS = [
+		'totalAuditTrails' => 'total_audit_trails',
+		'totalSearchTrails' => 'total_search_trails',
+		'totalConfigurations' => 'total_configurations',
+		'totalOrganisations' => 'total_organisations',
+		'totalRegisters' => 'total_registers',
+		'totalSchemas' => 'total_schemas',
+		'totalSources' => 'total_sources',
+		'totalWebhookLogs' => 'total_webhook_logs',
+	];
+
+	/**
 	 * Container for lazy loading services to break circular dependencies
 	 *
 	 * @var IAppContainer|null
@@ -292,17 +265,8 @@ class SettingsService {
 	 * Constructor for SettingsService
 	 *
 	 * @param IConfig $config Configuration service
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
-	 * @param ICacheFactory $cacheFactory Cache factory
-	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
-	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler
-	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service
-	 * @param SearchTrailMapper $searchTrailMapper Search trail mapper
-	 * @param IUserManager $userManager User manager
 	 * @param IDBConnection $db Database connection
-	 * @param CacheHandler|null $objectCacheService Object cache service (optional)
 	 * @param IAppContainer|null $container Container for lazy loading (optional)
 	 * @param string $appName Application name
 	 * @param ValidationOperationsHandler|null $validOpsHandler Validation operations handler
@@ -319,18 +283,8 @@ class SettingsService {
 	 */
 	public function __construct(
 		IConfig $config,
-		AuditTrailMapper $auditTrailMapper,
-		ICacheFactory $cacheFactory,
-		IGroupManager $groupManager,
 		LoggerInterface $logger,
-		// REMOVED: ObjectEntityMapper $objectEntityMapper (unused, caused circular dependency).
-		OrganisationMapper $organisationMapper,
-		SchemaCacheHandler $schemaCacheService,
-		FacetCacheHandler $facetCacheSvc,
-		SearchTrailMapper $searchTrailMapper,
-		IUserManager $userManager,
 		IDBConnection $db,
-		?CacheHandler $objectCacheService = null,
 		?IAppContainer $container = null,
 		string $appName = 'openregister',
 		?ValidationOperationsHandler $validOpsHandler = null,
@@ -342,18 +296,9 @@ class SettingsService {
 		?ConfigurationSettingsHandler $cfgSettingsHandler = null,
 	) {
 		$this->config = $config;
-		$this->auditTrailMapper = $auditTrailMapper;
-		$this->cacheFactory = $cacheFactory;
-		$this->groupManager = $groupManager;
 		$this->logger = $logger;
 		// REMOVED: objectEntityMapper assignment (unused, caused circular dependency).
-		$this->organisationMapper = $organisationMapper;
-		$this->schemaCacheService = $schemaCacheService;
-		$this->schemaFacetCacheService = $facetCacheSvc;
-		$this->searchTrailMapper = $searchTrailMapper;
-		$this->userManager = $userManager;
 		$this->db = $db;
-		$this->objectCacheService = $objectCacheService;
 		$this->container = $container;
 		$this->appName = $appName;
 
@@ -370,7 +315,7 @@ class SettingsService {
 	// ============================================
 	// DELEGATION METHODS TO HANDLERS
 	// ============================================
-	// SearchBackendHandler methods (2)
+	// SearchBackendHandler methods (1)
 
 	/**
 	 * Get search backend configuration
@@ -381,28 +326,8 @@ class SettingsService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
 	 */
 	public function getSearchBackendConfig(): array {
-		// The external Solr/Elasticsearch backends were removed; the built-in
-		// database (Magic-Tables) search is the only backend.
-		return [
-			'active' => 'database',
-			'available' => ['database'],
-		];
+		return $this->searchBackendHandler->getSearchBackendConfig();
 	}//end getSearchBackendConfig()
-
-	/**
-	 * Update search backend configuration
-	 *
-	 * @param array $data Search backend configuration data
-	 *
-	 * @return array Updated configuration
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-1
-	 */
-	public function updateSearchBackendConfig(array $data): array {
-		// Extract backend string from data array (database is the only valid backend).
-		$backend = $data['backend'] ?? $data['active'] ?? 'database';
-		return $this->searchBackendHandler->updateSearchBackendConfig($backend);
-	}//end updateSearchBackendConfig()
 
 	// LlmSettingsHandler methods (2).
 
@@ -823,7 +748,7 @@ class SettingsService {
 	 * Validate all objects in the system
 	 *
 	 * Triggers validation logic for all objects without re-saving them.
-	 * This is a lighter-weight operation compared to massValidateObjects.
+	 * This is a lighter-weight operation compared to massValidate.
 	 *
 	 * @return array Validation results
 	 *
@@ -841,33 +766,17 @@ class SettingsService {
 	 * Re-saves all objects in the system to ensure all business logic
 	 * is triggered and objects are properly processed according to current rules.
 	 *
-	 * @param int $maxObjects Maximum number of objects to process (0 = all).
-	 * @param int $batchSize Batch size for processing (default: 1000).
-	 * @param string $mode Processing mode: 'serial' or 'parallel'.
-	 * @param bool $collectErrors Whether to collect all errors or stop on first.
+	 * @param MassValidationRequest $request How many objects, the batch size, the mode and whether errors are collected.
 	 *
 	 * @return array Mass validation results
 	 *
 	 * @throws Exception If mass validation operation fails.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex batch validation requires comprehensive logic
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple validation paths and error handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation paths and error handling
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
-	public function massValidateObjects(
-		int $maxObjects = 0,
-		int $batchSize = 1000,
-		string $mode = 'serial',
-		bool $collectErrors = false,
-	): array {
-		$startTime = microtime(true);
-		$startMemory = memory_get_usage(true);
-		$peakMemory = memory_get_peak_usage(true);
-
-		// Validate parameters.
+	public function massValidate(MassValidationRequest $request): array {
+		$mode      = $request->mode;
+		$batchSize = $request->batchSize;
 		if (in_array($mode, ['serial', 'parallel'], true) === false) {
 			throw new InvalidArgumentException('Invalid mode parameter. Must be "serial" or "parallel"');
 		}
@@ -876,518 +785,21 @@ class SettingsService {
 			throw new InvalidArgumentException('Invalid batch size. Must be between 1 and 5000');
 		}
 
-		// Get services from container.
-		// CIRCULAR DEPENDENCY FIX: Cannot lazy-load ObjectService from SettingsService.
-		$objectService = null;
-		// $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-		$objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
-
-		// Get total object count.
-		$totalObjects = $objectMapper->countSearchObjects(
-			query: [],
-			_activeOrgUuid: null,
-			_rbac: false,
-			_multitenancy: false
+		$run = new MassValidationRun(
+			objectMapper: $this->container->get(MagicMapperInterface::class),
+			settings: $this,
+			logger: $this->logger,
+			container: $this->container
 		);
-
-		// Apply maxObjects limit if specified.
-		if ($maxObjects > 0 && $maxObjects < $totalObjects) {
-			$totalObjects = $maxObjects;
-		}
-
-		$this->logger->info(
-			message: '[SettingsService] 🚀 STARTING MASS VALIDATION',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'totalObjects' => $totalObjects,
-				'batchSize' => $batchSize,
+		return $run->run(
+			config: [
 				'mode' => $mode,
-				'collectErrors' => $collectErrors,
-			]
-		);
-
-		// Initialize results array.
-		$results = [
-			'success' => true,
-			'message' => 'Mass validation completed successfully',
-			'stats' => [
-				'total_objects' => $totalObjects,
-				'processed_objects' => 0,
-				'successful_saves' => 0,
-				'failed_saves' => 0,
-				'duration_seconds' => 0,
-				'batches_processed' => 0,
-				'objects_per_second' => 0,
-			],
-			'errors' => [],
-			'batches_processed' => 0,
-			'timestamp' => date('c'),
-			'config_used' => [
-				'mode' => $mode,
-				'max_objects' => $maxObjects,
+				'max_objects' => $request->maxObjects,
 				'batch_size' => $batchSize,
-				'collect_errors' => $collectErrors,
-			],
-		];
-
-		// Create batch jobs.
-		$batchJobs = $this->createBatchJobs(totalObjects: $totalObjects, batchSize: $batchSize);
-		$results['stats']['batches_processed'] = count($batchJobs);
-
-		$this->logger->info(
-			message: '[SettingsService] 📋 BATCH JOBS CREATED',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'totalBatches' => count($batchJobs),
-				'estimatedDuration' => round((count($batchJobs) * 2)) . 's',
+				'collect_errors' => $request->collectErrors,
 			]
 		);
-
-		// Process batches based on mode.
-		if ($mode === 'parallel') {
-			$this->processJobsParallel(
-				batchJobs: $batchJobs,
-				objectMapper: $objectMapper,
-				objectService: $objectService,
-				results: $results,
-				collectErrors: $collectErrors,
-				parallelBatches: 4
-			);
-		}
-
-		if ($mode !== 'parallel') {
-			$this->processJobsSerial(
-				batchJobs: $batchJobs,
-				objectMapper: $objectMapper,
-				objectService: $objectService,
-				results: $results,
-				collectErrors: $collectErrors
-			);
-		}
-
-		// Calculate final metrics.
-		$endTime = microtime(true);
-		$endMemory = memory_get_usage(true);
-		$finalPeakMemory = memory_get_peak_usage(true);
-
-		$results['stats']['duration_seconds'] = round($endTime - $startTime, 2);
-
-		// Calculate objects per second.
-		if ($results['stats']['duration_seconds'] > 0) {
-			$results['stats']['objects_per_second'] = round(
-				$results['stats']['processed_objects'] / $results['stats']['duration_seconds'],
-				2
-			);
-		}
-
-		// Add memory usage information.
-		$results['memory_usage'] = [
-			'start_memory' => $startMemory,
-			'end_memory' => $endMemory,
-			'peak_memory' => max($peakMemory, $finalPeakMemory),
-			'memory_used' => $endMemory - $startMemory,
-			'peak_percentage' => round((max($peakMemory, $finalPeakMemory) / (1024 * 1024 * 1024)) * 100, 1),
-			'formatted' => [
-				'actual_used' => $this->formatBytes(bytes: $endMemory - $startMemory),
-				'peak_usage' => $this->formatBytes(bytes: max($peakMemory, $finalPeakMemory)),
-				'peak_percentage' => round(
-					(max($peakMemory, $finalPeakMemory) / (1024 * 1024 * 1024)) * 100,
-					1
-				) . '%',
-			],
-		];
-
-		/*
-		 * Determine overall success.
-		 * Note: failed_saves can be incremented in processJobsParallel/processJobsSerial.
-		 *
-		 * @psalm-suppress TypeDoesNotContainType
-		 */
-
-		if ($results['stats']['failed_saves'] > 0) {
-			if ($collectErrors === true) {
-				$results['success'] = $results['stats']['successful_saves'] > 0;
-
-				/*
-				 * @psalm-suppress NoValue
-				 */
-
-				$results['message'] = sprintf(
-					'Mass validation completed with %d errors out of %d objects (%d successful)',
-					$results['stats']['failed_saves'],
-					$results['stats']['total_objects'],
-					$results['stats']['successful_saves']
-				);
-			}
-
-			if ($collectErrors !== true) {
-				$results['success'] = false;
-
-				/*
-				 * @psalm-suppress NoValue
-				 */
-
-				$results['message'] = sprintf(
-					'Mass validation stopped after %d errors (processed %d out of %d objects)',
-					$results['stats']['failed_saves'],
-					$results['stats']['processed_objects'],
-					$results['stats']['total_objects']
-				);
-			}//end if
-		}//end if
-
-		$this->logger->info(
-			message: '[SettingsService] ✅ MASS VALIDATION COMPLETED',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'successful' => $results['stats']['successful_saves'],
-				'failed' => $results['stats']['failed_saves'],
-				'total' => $results['stats']['processed_objects'],
-				'duration' => $results['stats']['duration_seconds'] . 's',
-				'objectsPerSecond' => $results['stats']['objects_per_second'],
-				'mode' => $mode,
-			]
-		);
-
-		return $results;
-	}//end massValidateObjects()
-
-	/**
-	 * Create batch jobs for mass validation
-	 *
-	 * @param int $totalObjects Total number of objects to process.
-	 * @param int $batchSize Batch size for processing.
-	 *
-	 * @return int[][] Array of batch job definitions.
-	 *
-	 * @psalm-return list<array{batchNumber: int<1, max>, limit: int, offset: int}>
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
-	 */
-	private function createBatchJobs(int $totalObjects, int $batchSize): array {
-		$batchJobs = [];
-		$offset = 0;
-		$batchNumber = 0;
-
-		while ($offset < $totalObjects) {
-			$currentBatchSize = min($batchSize, $totalObjects - $offset);
-			$batchJobs[] = [
-				'batchNumber' => ++$batchNumber,
-				'offset' => $offset,
-				'limit' => $currentBatchSize,
-			];
-			$offset += $currentBatchSize;
-		}
-
-		return $batchJobs;
-	}//end createBatchJobs()
-
-	/**
-	 * Process batch jobs in serial mode
-	 *
-	 * @param array $batchJobs Array of batch job definitions.
-	 * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper The object entity mapper.
-	 * @param ObjectService|null $objectService The object service instance.
-	 * @param array $results Results array to update.
-	 * @param bool $collectErrors Whether to collect all errors.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing requires comprehensive logic
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
-	 */
-	private function processJobsSerial(
-		array $batchJobs,
-		\OCA\OpenRegister\Db\MagicMapper $objectMapper,
-		?\OCA\OpenRegister\Service\ObjectService $objectService,
-		array &$results,
-		bool $collectErrors,
-	): void {
-		foreach ($batchJobs as $job) {
-			$batchStartTime = microtime(true);
-
-			// Get objects for this batch.
-			$objects = $objectMapper->findAll(
-				limit: $job['limit'],
-				offset: $job['offset']
-			);
-
-			$batchProcessed = 0;
-			$batchSuccesses = 0;
-			$batchErrors = [];
-
-			foreach ($objects as $object) {
-				try {
-					$batchProcessed++;
-					$results['stats']['processed_objects']++;
-
-					// Re-save the object to trigger all business logic.
-					// ObjectService::saveObject signature:
-					// (array|ObjectEntity $object, ?array $extend,
-					// Register|string|int|null $register,
-					// Schema|string|int|null $schema, ?string $uuid, ...).
-					$objectData = $object->getObject();
-					// Get the object business data.
-					$objectService->saveObject(
-						object: $objectData,
-						extend: [],
-						register: $object->getRegister(),
-						// Get the register ID.
-						schema: $object->getSchema(),
-						// Get the schema ID.
-						uuid: $object->getUuid()
-					);
-
-					// The saveObject() call is declared non-nullable and signals failure by
-					// throwing, so reaching this line IS the success case. The
-					// "Save operation returned null" branch that used to sit here
-					// could never run; the catch below is the real failure path
-					// and already counts it.
-					$batchSuccesses++;
-					$results['stats']['successful_saves']++;
-				} catch (Exception $e) {
-					$results['stats']['failed_saves']++;
-					$batchErrors[] = [
-						'object_id' => $object->getUuid(),
-						'object_name' => $object->getName() ?? $object->getUuid(),
-						'register' => $object->getRegister(),
-						'schema' => $object->getSchema(),
-						'error' => $e->getMessage(),
-						'batch_mode' => 'serial_optimized',
-					];
-
-					$objUuid = $object->getUuid();
-					$errMsg = $e->getMessage();
-					$this->logger->error(
-						message: "[SettingsService] Mass validation failed for object {$objUuid}: {$errMsg}",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-
-					if ($collectErrors === false) {
-						break;
-					}
-				}//end try
-			}//end foreach
-
-			$batchDuration = microtime(true) - $batchStartTime;
-
-			// Calculate objects per second.
-			$objectsPerSecond = 0;
-			if ($batchDuration > 0) {
-				$objectsPerSecond = round($batchProcessed / $batchDuration, 2);
-			}
-
-			// Log progress.
-			$this->logger->info(
-				message: '[SettingsService] 📈 MASS VALIDATION PROGRESS',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'batchNumber' => $job['batchNumber'],
-					'totalBatches' => count($batchJobs),
-					'processed' => $batchProcessed,
-					'successful' => $batchSuccesses,
-					'failed' => count($batchErrors),
-					'batchDuration' => round($batchDuration * 1000) . 'ms',
-					'objectsPerSecond' => $objectsPerSecond,
-					'totalProcessed' => $results['stats']['processed_objects'],
-				]
-			);
-
-			// Add batch errors to results.
-			$results['errors'] = array_merge($results['errors'], $batchErrors);
-
-			// Memory management every 10 batches.
-			if ($job['batchNumber'] % 10 === 0) {
-				$this->logger->debug(
-					message: '[SettingsService] 🧹 MEMORY CLEANUP',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'memoryUsage' => round(memory_get_usage() / 1024 / 1024, 2) . 'MB',
-						'peakMemory' => round(memory_get_peak_usage() / 1024 / 1024, 2) . 'MB',
-					]
-				);
-				gc_collect_cycles();
-			}
-
-			// Clear objects from memory.
-			unset($objects);
-		}//end foreach
-	}//end processJobsSerial()
-
-	/**
-	 * Process batch jobs in parallel mode
-	 *
-	 * @param array $batchJobs Array of batch job definitions.
-	 * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper The object entity mapper.
-	 * @param ObjectService|null $objectService The object service instance.
-	 * @param array $results Results array to update.
-	 * @param bool $collectErrors Whether to collect all errors.
-	 * @param int $parallelBatches Number of parallel batches.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
-	 */
-	private function processJobsParallel(
-		array $batchJobs,
-		\OCA\OpenRegister\Db\MagicMapper $objectMapper,
-		?\OCA\OpenRegister\Service\ObjectService $objectService,
-		array &$results,
-		bool $collectErrors,
-		int $parallelBatches,
-	): void {
-		// Process batches in parallel chunks.
-		$batchChunks = array_chunk($batchJobs, $parallelBatches);
-
-		foreach ($batchChunks as $chunkIndex => $chunk) {
-			$this->logger->info(
-				message: '[SettingsService] 🔄 PROCESSING PARALLEL CHUNK',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'chunkIndex' => $chunkIndex + 1,
-					'totalChunks' => count($batchChunks),
-					'batchesInChunk' => count($chunk),
-				]
-			);
-
-			$chunkStartTime = microtime(true);
-
-			// Process batches in this chunk (simulated parallel processing).
-			$chunkResults = [];
-			foreach ($chunk as $job) {
-				$result = $this->processBatchDirectly(
-					objectMapper: $objectMapper,
-					objectService: $objectService,
-					job: $job,
-					collectErrors: $collectErrors
-				);
-				$chunkResults[] = $result;
-			}
-
-			// Aggregate results from this chunk.
-			foreach ($chunkResults as $result) {
-				$results['stats']['processed_objects'] += $result['processed'];
-				$results['stats']['successful_saves'] += $result['successful'];
-				$results['stats']['failed_saves'] += $result['failed'];
-				$results['errors'] = array_merge($results['errors'], $result['errors']);
-			}
-
-			$chunkTime = round((microtime(true) - $chunkStartTime) * 1000, 2);
-			$chunkProcessed = array_sum(array_column($chunkResults, 'processed'));
-
-			$this->logger->info(
-				message: '[SettingsService] ✅ COMPLETED PARALLEL CHUNK',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'chunkIndex' => $chunkIndex + 1,
-					'chunkTime' => $chunkTime . 'ms',
-					'objectsProcessed' => $chunkProcessed,
-					'totalProcessed' => $results['stats']['processed_objects'],
-				]
-			);
-
-			// Memory cleanup after each chunk.
-			gc_collect_cycles();
-		}//end foreach
-	}//end processJobsParallel()
-
-	/**
-	 * Process a single batch directly
-	 *
-	 * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper The object entity mapper.
-	 * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service instance.
-	 * @param array $job Batch job definition.
-	 * @param bool $collectErrors Whether to collect all errors.
-	 *
-	 * @return ((null|string)[][]|float|int)[] Batch processing results.
-	 *
-	 * @psalm-return array{processed: int<0, max>, successful: int<0, max>,
-	 *     failed: int<0, max>, errors: list<array{batch_mode: 'parallel_optimized',
-	 *     error: string, object_id: null|string, object_name: null|string,
-	 *     register: null|string, schema: null|string}>, duration: float}
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
-	 */
-	private function processBatchDirectly(
-		\OCA\OpenRegister\Db\MagicMapper $objectMapper,
-		\OCA\OpenRegister\Service\ObjectService $objectService,
-		array $job,
-		bool $collectErrors,
-	): array {
-		$batchStartTime = microtime(true);
-
-		// Get objects for this batch.
-		$objects = $objectMapper->findAll(
-			limit: $job['limit'],
-			offset: $job['offset']
-		);
-
-		$batchProcessed = 0;
-		$batchSuccesses = 0;
-		$batchErrors = [];
-
-		foreach ($objects as $object) {
-			try {
-				$batchProcessed++;
-
-				// Re-save the object to trigger all business logic.
-				// ObjectService::saveObject signature:
-				// (array|ObjectEntity $object, ?array $extend,
-				// Register|string|int|null $register,
-				// Schema|string|int|null $schema, ?string $uuid, ...).
-				$objectData = $object->getObject();
-				// Get the object business data.
-				$objectService->saveObject(
-					object: $objectData,
-					extend: [],
-					register: $object->getRegister(),
-					// Get the register ID.
-					schema: $object->getSchema(),
-					// Get the schema ID.
-					uuid: $object->getUuid()
-				);
-
-				// See the serial path above: saveObject() cannot return null, so
-				// reaching this line IS the success case and the "returned null"
-				// branch was dead. The catch below is the real failure path.
-				$batchSuccesses++;
-			} catch (Exception $e) {
-				$batchErrors[] = [
-					'object_id' => $object->getUuid(),
-					'object_name' => $object->getName() ?? $object->getUuid(),
-					'register' => $object->getRegister(),
-					'schema' => $object->getSchema(),
-					'error' => $e->getMessage(),
-					'batch_mode' => 'parallel_optimized',
-				];
-
-				if ($collectErrors === false) {
-					break;
-				}
-			}//end try
-		}//end foreach
-
-		$batchDuration = microtime(true) - $batchStartTime;
-
-		// Clear objects from memory.
-		unset($objects);
-
-		return [
-			'processed' => $batchProcessed,
-			'successful' => $batchSuccesses,
-			'failed' => count($batchErrors),
-			'errors' => $batchErrors,
-			'duration' => $batchDuration,
-		];
-	}//end processBatchDirectly()
+	}//end massValidate()
 
 	/**
 	 * Format bytes into human readable format
@@ -1613,140 +1025,158 @@ class SettingsService {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		// Get the count and size of objects by summing from all magic tables (openregister_table_*).
-		$magicCount = 0;
-		$magicSize = 0;
+		$magicTotals = $this->sumMagicTables();
+		$row = $this->db->executeQuery($this->databaseCountsQuery(qb: $qb))->fetch();
+		if ($row === false) {
+			throw new RuntimeException('Failed to fetch database statistics');
+		}
+
+		$warnings = [];
+		foreach (self::DATABASE_STATS_WARNINGS as $key => $column) {
+			$warnings[$key] = (int)($row[$column] ?? 0);
+		}
+
+		$totals = ['totalObjects' => $magicTotals['count'], 'totalSize' => $magicTotals['size']];
+		foreach (self::DATABASE_STATS_TOTALS as $key => $column) {
+			$totals[$key] = (int)($row[$column] ?? 0);
+		}
+
+		return ['warnings' => $warnings, 'totals' => $totals];
+	}//end getDatabaseStats()
+
+	/**
+	 * Count the live objects and sum their sizes over all magic tables (openregister_table_*).
+	 *
+	 * A table that cannot be queried is skipped; when the tables cannot be listed the totals stay 0.
+	 *
+	 * @return array{count: int, size: int} Object count and total size.
+	 */
+	private function sumMagicTables(): array {
+		$totals = ['count' => 0, 'size' => 0];
 		try {
-			// Get database platform to use correct query for listing tables.
-			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-			$tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
-                   WHERE table_schema = DATABASE()
-                   AND table_name LIKE 'oc_openregister_table_%'";
-			if ($isPostgres === true) {
-				$tablesQuery = "SELECT tablename FROM pg_tables
-                   WHERE schemaname = 'public'
-                   AND tablename LIKE 'oc_openregister_table_%'";
+			foreach ($this->listMagicTables() as $fullTableName) {
+				$tableTotals = $this->sumMagicTable(fullTableName: $fullTableName);
+				$totals['count'] += $tableTotals['count'];
+				$totals['size'] += $tableTotals['size'];
 			}
-
-			$tablesResult = $this->db->executeQuery($tablesQuery);
-			$tables = $tablesResult->fetchAll(\PDO::FETCH_COLUMN);
-
-			// Sum up objects and sizes from all magic mapper tables.
-			foreach ($tables as $fullTableName) {
-				try {
-					// _size is VARCHAR, so cast it to BIGINT for aggregation (PostgreSQL compatible).
-					$result = $this->db->executeQuery(
-						"SELECT COUNT(*) as cnt, 
-                                COALESCE(SUM(
-                                    CASE 
-                                        WHEN _size IS NOT NULL AND _size != '' 
-                                        THEN CAST(_size AS BIGINT) 
-                                        ELSE 0 
-                                    END
-                                ), 0) as total_size 
-                         FROM {$fullTableName} 
-                         WHERE _deleted IS NULL"
-					)->fetch();
-
-					$magicCount += (int)$result['cnt'];
-					$magicSize += (int)$result['total_size'];
-				} catch (\Exception $e) {
-					// Table query failed, skip it.
-					$this->logger->debug(
-						message: '[SettingsService] Failed to query magic mapper table',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'table' => $fullTableName,
-							'error' => $e->getMessage(),
-						]
-					);
-					continue;
-				}//end try
-			}//end foreach
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[SettingsService] Failed to count magic mapper objects',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-		}//end try
+		}
 
-		// Check if openconnector_sources table exists (openconnector app might not be installed).
-		$sourcesTableExists = false;
+		return $totals;
+	}//end sumMagicTables()
+
+	/**
+	 * The names of all magic tables, read from the platform's catalogue.
+	 *
+	 * @return array<string> Full table names.
+	 */
+	private function listMagicTables(): array {
+		$platform = $this->db->getDatabasePlatform();
+		$tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
+                   WHERE table_schema = DATABASE()
+                   AND table_name LIKE '*PREFIX*openregister_table_%'";
+		if (stripos($platform::class, 'PostgreSQL') !== false) {
+			$tablesQuery = "SELECT tablename FROM pg_tables
+                   WHERE schemaname = 'public'
+                   AND tablename LIKE '*PREFIX*openregister_table_%'";
+		}
+
+		return $this->db->executeQuery($tablesQuery)->fetchAll(\PDO::FETCH_COLUMN);
+	}//end listMagicTables()
+
+	/**
+	 * Count the live objects in one magic table and sum their sizes; 0 when the table fails.
+	 *
+	 * @param string $fullTableName The table name, prefix included.
+	 *
+	 * @return array{count: int, size: int} Object count and total size.
+	 */
+	private function sumMagicTable(string $fullTableName): array {
+		try {
+			// _size is VARCHAR, so cast it to BIGINT for aggregation (PostgreSQL compatible).
+			$result = $this->db->executeQuery(
+				"SELECT COUNT(*) as cnt, 
+                        COALESCE(SUM(
+                            CASE 
+                                WHEN _size IS NOT NULL AND _size != '' 
+                                THEN CAST(_size AS BIGINT) 
+                                ELSE 0 
+                            END
+                        ), 0) as total_size 
+                 FROM {$fullTableName} 
+                 WHERE _deleted IS NULL"
+			)->fetch();
+
+			return ['count' => (int)$result['cnt'], 'size' => (int)$result['total_size']];
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[SettingsService] Failed to query magic mapper table',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $fullTableName, 'error' => $e->getMessage()]
+			);
+			return ['count' => 0, 'size' => 0];
+		}
+	}//end sumMagicTable()
+
+	/**
+	 * One query with a subquery per count and warning in the database statistics.
+	 *
+	 * The sources count is 0 when the openconnector_sources table does not exist.
+	 *
+	 * @param IQueryBuilder $qb Query builder used for table names.
+	 *
+	 * @return string The SQL.
+	 */
+	private function databaseCountsQuery(IQueryBuilder $qb): string {
+		$auditTable = $qb->getTableName('openregister_audit_trails');
+		$searchTable = $qb->getTableName('openregister_search_trails');
+
+		$counts = [];
+		foreach (self::DATABASE_STATS_COUNTED_TABLES as $alias => $table) {
+			$counts[$alias] = "(SELECT COUNT(*) FROM {$qb->getTableName($table)})";
+		}
+
+		$counts['total_sources'] = '0';
+		if ($this->sourcesTableExists(qb: $qb) === true) {
+			$counts['total_sources'] = "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})";
+		}
+
+		$counts['total_webhook_logs'] = "(SELECT COUNT(*) FROM {$qb->getTableName('openregister_webhook_logs')})";
+		$counts['audit_trails_without_expiry'] = "(SELECT COUNT(*) FROM {$auditTable} WHERE expires IS NULL)";
+		$counts['search_trails_without_expiry'] = "(SELECT COUNT(*) FROM {$searchTable} WHERE expires IS NULL)";
+		$counts['expired_audit_trails'] = "(SELECT COUNT(*) FROM {$auditTable} WHERE expires IS NOT NULL AND expires < NOW())";
+		$counts['expired_search_trails'] = "(SELECT COUNT(*) FROM {$searchTable} WHERE expires IS NOT NULL AND expires < NOW())";
+
+		$columns = [];
+		foreach ($counts as $alias => $subquery) {
+			$columns[] = "{$subquery} as {$alias}";
+		}
+
+		return "SELECT\n            " . implode(",\n            ", $columns);
+	}//end databaseCountsQuery()
+
+	/**
+	 * Whether the openconnector_sources table exists; it does only with OpenConnector installed.
+	 *
+	 * @param IQueryBuilder $qb Query builder used for the table name.
+	 *
+	 * @return bool True when the table answers a query.
+	 */
+	private function sourcesTableExists(IQueryBuilder $qb): bool {
 		try {
 			$this->db->executeQuery("SELECT 1 FROM {$qb->getTableName('openconnector_sources')} LIMIT 1");
-			$sourcesTableExists = true;
+			return true;
 		} catch (\Exception $e) {
-			// OpenConnector app is not installed, which is fine.
 			$this->logger->debug(
 				message: '[SettingsService] openconnector_sources table does not exist - OpenConnector app not installed',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
+			return false;
 		}
-
-		// Build query for sources count based on table existence.
-		$sourcesCountQuery = '0';
-		if ($sourcesTableExists === true) {
-			$sourcesCountQuery = "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})";
-		}
-
-		// Build a single query that gets all other counts at once using subqueries.
-		$auditTable = $qb->getTableName('openregister_audit_trails');
-		$searchTable = $qb->getTableName('openregister_search_trails');
-
-		$query = "SELECT
-            (SELECT COUNT(*) FROM {$auditTable}) as total_audit_trails,
-            (SELECT COUNT(*) FROM {$searchTable}) as total_search_trails,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_configurations')})
-                as total_configurations,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_organisations')})
-                as total_organisations,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_registers')})
-                as total_registers,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_schemas')})
-                as total_schemas,
-            {$sourcesCountQuery} as total_sources,
-            (SELECT COUNT(*) FROM {$qb->getTableName('openregister_webhook_logs')})
-                as total_webhook_logs,
-
-            -- Warning counts for audit/search trails.
-            (SELECT COUNT(*) FROM {$auditTable} WHERE expires IS NULL) as audit_trails_without_expiry,
-            (SELECT COUNT(*) FROM {$searchTable} WHERE expires IS NULL) as search_trails_without_expiry,
-            (SELECT COUNT(*) FROM {$auditTable}
-                WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails,
-            (SELECT COUNT(*) FROM {$searchTable}
-                WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails";
-
-		$result = $this->db->executeQuery($query);
-		$row = $result->fetch();
-
-		if ($row === false) {
-			throw new RuntimeException('Failed to fetch database statistics');
-		}
-
-		return [
-			'warnings' => [
-				'auditTrailsWithoutExpiry' => (int)($row['audit_trails_without_expiry'] ?? 0),
-				'searchTrailsWithoutExpiry' => (int)($row['search_trails_without_expiry'] ?? 0),
-				'expiredAuditTrails' => (int)($row['expired_audit_trails'] ?? 0),
-				'expiredSearchTrails' => (int)($row['expired_search_trails'] ?? 0),
-			],
-			'totals' => [
-				'totalObjects' => $magicCount,
-				'totalSize' => $magicSize,
-				'totalAuditTrails' => (int)($row['total_audit_trails'] ?? 0),
-				'totalSearchTrails' => (int)($row['total_search_trails'] ?? 0),
-				'totalConfigurations' => (int)($row['total_configurations'] ?? 0),
-				'totalOrganisations' => (int)($row['total_organisations'] ?? 0),
-				'totalRegisters' => (int)($row['total_registers'] ?? 0),
-				'totalSchemas' => (int)($row['total_schemas'] ?? 0),
-				'totalSources' => (int)($row['total_sources'] ?? 0),
-				'totalWebhookLogs' => (int)($row['total_webhook_logs'] ?? 0),
-			],
-		];
-	}//end getDatabaseStats()
+	}//end sourcesTableExists()
 
 	/**
 	 * Rebase configuration from source.
@@ -1859,21 +1289,15 @@ class SettingsService {
 	/**
 	 * Persist the Deck default board+stack for a schema. Overwrites any prior value.
 	 *
-	 * @param string $schemaSlug Schema slug or numeric id used to scope the default.
-	 * @param int $boardId NC Deck board id.
-	 * @param int $stackId NC Deck stack id on that board.
+	 * @param string        $schemaSlug Schema slug or numeric id used to scope the default.
+	 * @param DeckPlacement $placement  The NC Deck board id and the stack id on that board.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/integration-deck/spec.md
 	 */
-	public function setDeckDefault(string $schemaSlug, int $boardId, int $stackId): void {
-		$payload = json_encode(
-			[
-				'boardId' => $boardId,
-				'stackId' => $stackId,
-			]
-		);
+	public function setDeckDefault(string $schemaSlug, DeckPlacement $placement): void {
+		$payload = json_encode(['boardId' => $placement->boardId, 'stackId' => $placement->stackId]);
 		if ($payload === false) {
 			return;
 		}

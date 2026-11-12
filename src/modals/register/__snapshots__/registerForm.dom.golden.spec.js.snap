@@ -1,0 +1,322 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`register form at card renders the form and loads the schemas once 1`] = `
+"<x-cnformdialog schema="{&quot;title&quot;:&quot;t:Register&quot;,&quot;properties&quot;:{&quot;title&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Title&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:1},&quot;slug&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Slug&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:2},&quot;description&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Description&quot;,&quot;order&quot;:3},&quot;schemas&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;title&quot;:&quot;t:Schemas&quot;,&quot;order&quot;:4}},&quot;required&quot;:[&quot;title&quot;,&quot;slug&quot;]}" item="{&quot;id&quot;:1,&quot;title&quot;:&quot;Reg&quot;,&quot;slug&quot;:&quot;reg&quot;,&quot;schemas&quot;:[8,99]}" dialogtitle="t:Edit Register">
+  <div class="formContainer">
+    <x-nctextfield label="t:Title *" modelvalue="Reg" error="true" helpertext="bad title">
+    </x-nctextfield>
+    <x-nctextfield label="t:Slug *" modelvalue="reg" error="false">
+    </x-nctextfield>
+    <x-nctextarea label="t:Description" modelvalue="D">
+    </x-nctextarea>
+    <x-ncselect inputlabel="Schemas" options="[{&quot;id&quot;:7,&quot;label&quot;:&quot;S7&quot;},{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;}]" modelvalue="[{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;},{&quot;id&quot;:99,&quot;label&quot;:&quot;99&quot;}]" multiple="true" keepopen="true" loading="false">
+    </x-ncselect>
+  </div>
+</x-cnformdialog>"
+`;
+
+exports[`register form at card reports a refused save on the dialog 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+  ],
+  "refreshed": null,
+  "results": [
+    {
+      "error": "refused",
+    },
+  ],
+}
+`;
+
+exports[`register form at card saves schema ids and refreshes what the place shows 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+  ],
+  "refreshed": [
+    [],
+  ],
+  "results": [
+    {
+      "success": true,
+    },
+  ],
+}
+`;
+
+exports[`register form at detail renders the form and loads the schemas once 1`] = `
+"<x-cnformdialog schema="{&quot;title&quot;:&quot;t:Register&quot;,&quot;properties&quot;:{&quot;title&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Title&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:1},&quot;slug&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Slug&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:2},&quot;description&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Description&quot;,&quot;order&quot;:3},&quot;schemas&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;title&quot;:&quot;t:Schemas&quot;,&quot;order&quot;:4}},&quot;required&quot;:[&quot;title&quot;,&quot;slug&quot;]}" dialogtitle="t:Edit Register">
+  <div class="formContainer">
+    <x-nctextfield label="t:Title *" modelvalue="Reg" error="true" helpertext="bad title">
+    </x-nctextfield>
+    <x-nctextfield label="t:Slug *" modelvalue="reg" error="false">
+    </x-nctextfield>
+    <x-nctextarea label="t:Description" modelvalue="D">
+    </x-nctextarea>
+    <x-ncselect inputlabel="t:Schemas" options="[{&quot;id&quot;:7,&quot;label&quot;:&quot;S7&quot;},{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;}]" modelvalue="[{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;},{&quot;id&quot;:99,&quot;label&quot;:&quot;99&quot;}]" multiple="true" keepopen="true" loading="false">
+    </x-ncselect>
+  </div>
+</x-cnformdialog>"
+`;
+
+exports[`register form at detail reports a refused save on the dialog 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+  ],
+  "refreshed": null,
+  "results": [
+    {
+      "error": "refused",
+    },
+  ],
+}
+`;
+
+exports[`register form at detail saves schema ids and refreshes what the place shows 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+    [
+      "fetchRegisters",
+    ],
+  ],
+  "refreshed": null,
+  "results": [
+    {
+      "success": true,
+    },
+  ],
+}
+`;
+
+exports[`register form at index renders the form and loads the schemas once 1`] = `
+"<x-cnindexpage title="t:Registers" description="t:Manage your data registers and their configurations" showtitle="true" objects="[]" columns="[{&quot;key&quot;:&quot;title&quot;,&quot;label&quot;:&quot;t:Title&quot;,&quot;sortable&quot;:true},{&quot;key&quot;:&quot;schemas&quot;,&quot;label&quot;:&quot;t:Schemas&quot;},{&quot;key&quot;:&quot;created&quot;,&quot;label&quot;:&quot;t:Created&quot;,&quot;sortable&quot;:true},{&quot;key&quot;:&quot;updated&quot;,&quot;label&quot;:&quot;t:Updated&quot;,&quot;sortable&quot;:true}]" sortkey="null" sortorder="asc" activefilters="{}" pagination="{&quot;pages&quot;:null,&quot;total&quot;:0}" selectable="true" selectedids="[]" schema="{&quot;title&quot;:&quot;t:Register&quot;,&quot;properties&quot;:{&quot;title&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Title&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:1},&quot;slug&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Slug&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:2},&quot;description&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Description&quot;,&quot;order&quot;:3},&quot;schemas&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;title&quot;:&quot;t:Schemas&quot;,&quot;order&quot;:4},&quot;created&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;format&quot;:&quot;date-time&quot;,&quot;title&quot;:&quot;t:Created&quot;,&quot;readOnly&quot;:true},&quot;updated&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;format&quot;:&quot;date-time&quot;,&quot;title&quot;:&quot;t:Updated&quot;,&quot;readOnly&quot;:true}},&quot;required&quot;:[&quot;title&quot;,&quot;slug&quot;]}" showeditaction="false" showcopyaction="false" showdeleteaction="false" showmassimport="false" showmassexport="false" showmasscopy="false" showmassdelete="false" showviewtoggle="" addlabel="t:Add Register" rowkey="id" refreshing="false">
+  <div class="formContainer">
+    <x-nctextfield label="t:Title *" modelvalue="Reg" error="true" helpertext="bad title">
+    </x-nctextfield>
+    <x-nctextfield label="t:Slug *" modelvalue="reg" error="false">
+    </x-nctextfield>
+    <x-nctextarea label="t:Description" modelvalue="D">
+    </x-nctextarea>
+    <x-ncselect inputlabel="t:Schemas" options="[{&quot;id&quot;:7,&quot;label&quot;:&quot;S7&quot;},{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;}]" modelvalue="[{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;},{&quot;id&quot;:99,&quot;label&quot;:&quot;99&quot;}]" multiple="true" keepopen="true" loading="false">
+    </x-ncselect>
+  </div>
+</x-cnindexpage>"
+`;
+
+exports[`register form at index reports a refused save on the dialog 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+  ],
+  "refreshed": null,
+  "results": [
+    {
+      "error": "refused",
+    },
+  ],
+}
+`;
+
+exports[`register form at index saves schema ids and refreshes what the place shows 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+  ],
+  "refreshed": null,
+  "results": [
+    {
+      "success": true,
+    },
+  ],
+}
+`;
+
+exports[`register form at sidebar renders the form and loads the schemas once 1`] = `
+"<x-cnformdialog schema="{&quot;title&quot;:&quot;t:Register&quot;,&quot;properties&quot;:{&quot;title&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Title&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:1},&quot;slug&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Slug&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:2},&quot;description&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Description&quot;,&quot;order&quot;:3},&quot;schemas&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;title&quot;:&quot;t:Schemas&quot;,&quot;order&quot;:4},&quot;languages&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;title&quot;:&quot;t:Languages&quot;,&quot;order&quot;:5}},&quot;required&quot;:[&quot;title&quot;,&quot;slug&quot;]}" dialogtitle="t:Edit Register">
+  <div class="formContainer">
+    <x-nctextfield label="t:Title *" modelvalue="Reg" error="true" helpertext="bad title">
+    </x-nctextfield>
+    <x-nctextfield label="t:Slug *" modelvalue="reg" error="false">
+    </x-nctextfield>
+    <x-nctextarea label="t:Description" modelvalue="D">
+    </x-nctextarea>
+    <x-ncselect inputlabel="t:Schemas" options="[{&quot;id&quot;:7,&quot;label&quot;:&quot;S7&quot;},{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;}]" modelvalue="[{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;},{&quot;id&quot;:99,&quot;label&quot;:&quot;99&quot;}]" multiple="true" keepopen="true" loading="false">
+    </x-ncselect>
+    <div class="register-languages-editor"><label class="register-languages-editor__label">t:Languages</label>
+      <p class="register-languages-editor__help">t:Ordered BCP 47 language tags. The first language is the register default and drives Accept-Language fallback for translatable properties.</p>
+      <p class="register-languages-editor__empty">No languages configured</p>
+      <form class="register-languages-editor__add"><input type="text" aria-label="BCP 47 tag (e.g. nl, en, ar-SA)" placeholder="BCP 47 tag (e.g. nl, en, ar-SA)" maxlength="35" class="register-languages-editor__input"><button type="submit" class="register-languages-editor__btn" disabled="">Add</button></form>
+    </div>
+  </div>
+</x-cnformdialog>"
+`;
+
+exports[`register form at sidebar reports a refused save on the dialog 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+  ],
+  "refreshed": null,
+  "results": [
+    {
+      "error": "refused",
+    },
+  ],
+}
+`;
+
+exports[`register form at sidebar saves schema ids and refreshes what the place shows 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+    [
+      "fetchRegisters",
+    ],
+  ],
+  "refreshed": null,
+  "results": [
+    {
+      "success": true,
+    },
+  ],
+}
+`;
+
+exports[`register form at source renders the form and loads the schemas once 1`] = `
+"<x-cnformdialog schema="{&quot;title&quot;:&quot;t:Register&quot;,&quot;properties&quot;:{&quot;title&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Title&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:1},&quot;slug&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Slug&quot;,&quot;required&quot;:true,&quot;minLength&quot;:1,&quot;order&quot;:2},&quot;description&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;title&quot;:&quot;t:Description&quot;,&quot;order&quot;:3},&quot;schemas&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;title&quot;:&quot;t:Schemas&quot;,&quot;order&quot;:4}},&quot;required&quot;:[&quot;title&quot;,&quot;slug&quot;]}" item="{&quot;id&quot;:1,&quot;title&quot;:&quot;Reg&quot;,&quot;slug&quot;:&quot;reg&quot;,&quot;schemas&quot;:[8,99]}" dialogtitle="t:Edit Register">
+  <div class="formContainer">
+    <x-nctextfield label="t:Title *" modelvalue="Reg" error="true" helpertext="bad title">
+    </x-nctextfield>
+    <x-nctextfield label="t:Slug *" modelvalue="reg" error="false">
+    </x-nctextfield>
+    <x-nctextarea label="t:Description" modelvalue="D">
+    </x-nctextarea>
+    <x-ncselect inputlabel="t:Schemas" options="[{&quot;id&quot;:7,&quot;label&quot;:&quot;S7&quot;},{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;}]" modelvalue="[{&quot;id&quot;:8,&quot;label&quot;:&quot;S8&quot;},{&quot;id&quot;:99,&quot;label&quot;:&quot;99&quot;}]" multiple="true" keepopen="true" loading="false">
+    </x-ncselect>
+  </div>
+</x-cnformdialog>"
+`;
+
+exports[`register form at source reports a refused save on the dialog 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+  ],
+  "refreshed": null,
+  "results": [
+    {
+      "error": "refused",
+    },
+  ],
+}
+`;
+
+exports[`register form at source saves schema ids and refreshes what the place shows 1`] = `
+{
+  "log": [
+    [
+      "saveRegister",
+      {
+        "schemas": [
+          7,
+          8,
+        ],
+        "title": "T",
+      },
+    ],
+    [
+      "refreshRegisterList",
+    ],
+  ],
+  "refreshed": null,
+  "results": [
+    {
+      "success": true,
+    },
+  ],
+}
+`;

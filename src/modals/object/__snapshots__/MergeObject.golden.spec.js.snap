@@ -1,0 +1,1615 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MergeObject merge choices (golden) offers the options for absent 1`] = `"[{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for city 1`] = `"[{"label":"From Source: Ede","value":"Ede"},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for empty 1`] = `"[{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for name 1`] = `"[{"label":"From Source: Source","value":"Source"},{"label":"From Target: Target","value":"Target"},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for nested 1`] = `"[{"label":"From Source: {\\n  \\"a\\": 1\\n}","value":{"a":1}},{"label":"From Target: {\\n  \\"b\\": 2\\n}","value":{"b":2}},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for onlySource 1`] = `"[{"label":"From Source: x","value":"x"},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for onlyTarget 1`] = `"[{"label":"From Target: false","value":false},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) offers the options for zero 1`] = `"[{"label":"From Source: 0","value":0},{"label":"From Target: 0","value":0},{"label":"Other/Custom","value":"custom"}]"`;
+
+exports[`MergeObject merge choices (golden) searches merge targets fails 1`] = `
+{
+  "availableObjects": [],
+  "fetched": [
+    [
+      "/index.php/apps/openregister/api/objects/1/2?_search=a b",
+    ],
+  ],
+  "loading": false,
+}
+`;
+
+exports[`MergeObject merge choices (golden) searches merge targets finds candidates 1`] = `
+{
+  "availableObjects": [
+    {
+      "@self": {
+        "id": "other",
+      },
+    },
+  ],
+  "fetched": [
+    [
+      "/index.php/apps/openregister/api/objects/1/2?_search=a b",
+    ],
+  ],
+  "loading": false,
+}
+`;
+
+exports[`MergeObject merge choices (golden) searches merge targets without a register 1`] = `
+{
+  "availableObjects": [
+    "stale",
+  ],
+  "fetched": [],
+  "loading": false,
+}
+`;
+
+exports[`MergeObject merge choices (golden) seeds the merge data, custom values and dropdown selections 1`] = `"{"mergedData":{"id":"t","name":"Target","city":"Ede","empty":"custom","zero":0,"nested":{"b":2},"onlySource":"x","onlyTarget":false},"customValues":{"empty":""},"propertySelections":{"name":{"label":"From Target: Target","value":"Target"},"city":{"label":"From Source: Ede","value":"Ede"},"empty":{"label":"Other/Custom","value":"custom"},"zero":{"label":"From Source: 0","value":0},"nested":{"label":"From Target: {\\n  \\"b\\": 2\\n}","value":{"b":2}},"onlySource":{"label":"From Source: x","value":"x"},"onlyTarget":{"label":"From Target: false","value":false}}}"`;
+
+exports[`MergeObject.loadSourceData loads bare, noRegister, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, noRegister, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, noRegister, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, noRegister, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, noSchema, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, noSchema, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, noSchema, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, noSchema, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, scoped, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, scoped, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, scoped, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads bare, scoped, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, noRegister, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, noRegister, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, noRegister, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, noRegister, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, noSchema, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, noSchema, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, noSchema, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, noSchema, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, scoped, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+    [
+      "console.error",
+      "Error loading incoming references:",
+      "Error: Unexpected token",
+    ],
+  ],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, scoped, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+    [
+      "console.error",
+      "Error loading incoming references:",
+      "Error: Network",
+    ],
+  ],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, scoped, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+  ],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads emptySelfRelations, scoped, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    {
+      "id": "u1",
+      "register": 2,
+      "relationType": "Schema 4",
+      "schema": 4,
+      "title": "Named",
+    },
+    {
+      "id": "u2",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "Titled",
+    },
+    {
+      "id": "u3",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "u3",
+    },
+    {
+      "id": "u4",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "u4",
+    },
+    {
+      "id": "u5",
+      "register": "N/A",
+      "relationType": "Schema sch",
+      "schema": "sch",
+      "title": "u5",
+    },
+    {
+      "id": undefined,
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": undefined,
+    },
+  ],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+  ],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, noRegister, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, noRegister, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, noRegister, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, noRegister, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, noSchema, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, noSchema, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, noSchema, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, noSchema, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, scoped, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+    [
+      "console.error",
+      "Error loading incoming references:",
+      "Error: Unexpected token",
+    ],
+  ],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, scoped, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+    [
+      "console.error",
+      "Error loading incoming references:",
+      "Error: Network",
+    ],
+  ],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, scoped, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+  ],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads legacyRelations, scoped, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    {
+      "id": "u1",
+      "register": 2,
+      "relationType": "Schema 4",
+      "schema": 4,
+      "title": "Named",
+    },
+    {
+      "id": "u2",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "Titled",
+    },
+    {
+      "id": "u3",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "u3",
+    },
+    {
+      "id": "u4",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "u4",
+    },
+    {
+      "id": "u5",
+      "register": "N/A",
+      "relationType": "Schema sch",
+      "schema": "sch",
+      "title": "u5",
+    },
+    {
+      "id": undefined,
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": undefined,
+    },
+  ],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+  ],
+  "relations": [
+    {
+      "id": "r3",
+      "relationType": "Outgoing",
+      "title": "r3",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, noRegister, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, noRegister, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, noRegister, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, noRegister, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, noSchema, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, noSchema, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, noSchema, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, noSchema, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, scoped, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, scoped, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, scoped, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads noSelfId, scoped, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r6",
+      "relationType": "Outgoing",
+      "title": "r6",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, noRegister, answering brokenJson 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, noRegister, answering networkDown 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, noRegister, answering noResults 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, noRegister, answering referrers 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, noSchema, answering brokenJson 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, noSchema, answering networkDown 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, noSchema, answering noResults 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, noSchema, answering referrers 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, scoped, answering brokenJson 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, scoped, answering networkDown 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, scoped, answering noResults 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads none, scoped, answering referrers 1`] = `
+{
+  "files": [
+    "stale",
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    "stale",
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, noRegister, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, noRegister, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, noRegister, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, noRegister, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, noSchema, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, noSchema, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, noSchema, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, noSchema, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, scoped, answering brokenJson 1`] = `
+{
+  "files": [],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+    [
+      "console.error",
+      "Error loading incoming references:",
+      "Error: Unexpected token",
+    ],
+  ],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, scoped, answering networkDown 1`] = `
+{
+  "files": [],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+    [
+      "console.error",
+      "Error loading incoming references:",
+      "Error: Network",
+    ],
+  ],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, scoped, answering noResults 1`] = `
+{
+  "files": [],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+  ],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads relationsNotList, scoped, answering referrers 1`] = `
+{
+  "files": [],
+  "incoming": [
+    {
+      "id": "u1",
+      "register": 2,
+      "relationType": "Schema 4",
+      "schema": 4,
+      "title": "Named",
+    },
+    {
+      "id": "u2",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "Titled",
+    },
+    {
+      "id": "u3",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "u3",
+    },
+    {
+      "id": "u4",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "u4",
+    },
+    {
+      "id": "u5",
+      "register": "N/A",
+      "relationType": "Schema sch",
+      "schema": "sch",
+      "title": "u5",
+    },
+    {
+      "id": undefined,
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": undefined,
+    },
+  ],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+  ],
+  "relations": [],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, noRegister, answering brokenJson 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, noRegister, answering networkDown 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, noRegister, answering noResults 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, noRegister, answering referrers 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, noSchema, answering brokenJson 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, noSchema, answering networkDown 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, noSchema, answering noResults 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, noSchema, answering referrers 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [
+    "stale",
+  ],
+  "log": [],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, scoped, answering brokenJson 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+    [
+      "console.error",
+      "Error loading incoming references:",
+      "Error: Unexpected token",
+    ],
+  ],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, scoped, answering networkDown 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+    [
+      "console.error",
+      "Error loading incoming references:",
+      "Error: Network",
+    ],
+  ],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, scoped, answering noResults 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+  ],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;
+
+exports[`MergeObject.loadSourceData loads selfRelations, scoped, answering referrers 1`] = `
+{
+  "files": [
+    {
+      "name": "a.pdf",
+    },
+  ],
+  "incoming": [
+    {
+      "id": "u1",
+      "register": 2,
+      "relationType": "Schema 4",
+      "schema": 4,
+      "title": "Named",
+    },
+    {
+      "id": "u2",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "Titled",
+    },
+    {
+      "id": "u3",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "u3",
+    },
+    {
+      "id": "u4",
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": "u4",
+    },
+    {
+      "id": "u5",
+      "register": "N/A",
+      "relationType": "Schema sch",
+      "schema": "sch",
+      "title": "u5",
+    },
+    {
+      "id": undefined,
+      "register": "N/A",
+      "relationType": "Related",
+      "schema": "N/A",
+      "title": undefined,
+    },
+  ],
+  "log": [
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/objects/1/2/src/used",
+    ],
+  ],
+  "relations": [
+    {
+      "id": "r1",
+      "relationType": "Outgoing",
+      "title": "r1",
+    },
+    {
+      "id": "r2",
+      "relationType": "Outgoing",
+      "title": "r2",
+    },
+  ],
+}
+`;

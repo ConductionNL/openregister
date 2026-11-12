@@ -386,11 +386,11 @@ All hook executions MUST be logged via `HookExecutor::logHookExecution()` for de
 - **THEN** `$this->logger->debug()` MUST log the skip with the hook ID and object UUID
 
 ### Requirement: HookListener Registration and Event Delegation
-`HookListener` MUST be registered as a PSR-14 event listener for all six object lifecycle events in `Application::registerEventListeners()`. It MUST resolve the schema from the object, check for hook configurations, and delegate to `HookExecutor::executeHooks()`.
+`HookListener` MUST be registered as a PSR-14 event listener for all six object lifecycle events in `ListenerRegistrar::register()`. It MUST resolve the schema from the object, check for hook configurations, and delegate to `HookExecutor::executeHooks()`.
 
 #### Scenario: HookListener registered for all lifecycle events
 - **GIVEN** the OpenRegister app boots via `Application::register()`
-- **WHEN** `registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `HookListener::class` MUST be registered for: `ObjectCreatingEvent`, `ObjectUpdatingEvent`, `ObjectDeletingEvent`, `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`
 - **AND** all registrations MUST use `$context->registerEventListener()` for Nextcloud's lazy-loading mechanism
 
@@ -516,7 +516,7 @@ When `MagicMapper::insertObjectEntity()` or `deleteObjectEntity()` is called wit
   - `evaluateFilterCondition()` supports simple key-value equality matching on object data
   - `determineFailureMode()` maps exception messages to onTimeout/onEngineDown/onFailure
   - `logHookExecution()` provides structured logging with duration tracking via `hrtime(true)`
-- `lib/Listener/HookListener.php` -- PSR-14 event listener that resolves schema from object and delegates to HookExecutor; registered for all 6 object lifecycle events in `Application::registerEventListeners()`
+- `lib/Listener/HookListener.php` -- PSR-14 event listener that resolves schema from object and delegates to HookExecutor; registered for all 6 object lifecycle events in `ListenerRegistrar::register()`
 - `lib/Event/ObjectCreatingEvent.php`, `ObjectUpdatingEvent.php`, `ObjectDeletingEvent.php` -- All implement `StoppableEventInterface` with `stopPropagation()`, `isPropagationStopped()`, `setErrors()`, `getErrors()`, `setModifiedData()`, `getModifiedData()`
 - `lib/Exception/HookStoppedException.php` -- Exception with `$errors` array for rejected saves (controller returns HTTP 422)
 - `lib/Service/Webhook/CloudEventFormatter.php` -- CloudEvents 1.0 structured content mode formatting with UUID v4 IDs via `Symfony\Component\Uid\Uuid`
@@ -568,5 +568,5 @@ When `MagicMapper::insertObjectEntity()` or `deleteObjectEntity()` is called wit
 
 - **Status**: Implemented
 - **Existing Implementation**: `HookExecutor` processes sync/async hooks with CloudEvents 1.0 payloads. `HookListener` is a PSR-14 event listener registered for all 6 object lifecycle events via `IRegistrationContext::registerEventListener()` with lazy loading. Stoppable events (`ObjectCreatingEvent`, `ObjectUpdatingEvent`, `ObjectDeletingEvent`) implement `StoppableEventInterface`. `HookRetryJob` extends `QueuedJob` for background retry with `IJobList`. `CloudEventFormatter` formats payloads with UUID v4 via `Symfony\Component\Uid\Uuid`. `WorkflowEngineRegistry` resolves engine adapters (`N8nAdapter`, `WindmillAdapter`) from the DI container.
-- **Nextcloud Core Integration**: Uses `IEventDispatcher::dispatchTyped()` for typed event dispatch. `HookListener` registered via `IBootstrap::register()` in `Application::registerEventListeners()`. Background retry jobs use Nextcloud's `QueuedJob` (via `HookRetryJob`). The stoppable event pattern follows PSR-14 which aligns with Nextcloud's event dispatcher. Engine adapters use `IClientService` for HTTP communication. All services are registered in the DI container via constructor injection.
+- **Nextcloud Core Integration**: Uses `IEventDispatcher::dispatchTyped()` for typed event dispatch. `HookListener` registered via `IBootstrap::register()` in `ListenerRegistrar::register()`. Background retry jobs use Nextcloud's `QueuedJob` (via `HookRetryJob`). The stoppable event pattern follows PSR-14 which aligns with Nextcloud's event dispatcher. Engine adapters use `IClientService` for HTTP communication. All services are registered in the DI container via constructor injection.
 - **Recommendation**: The hook system is production-ready and deeply integrated with Nextcloud's core infrastructure. Future enhancements: (1) Add `locked`/`unlocked`/`reverted` event mapping to `HookExecutor::resolveEventType()`. (2) Implement richer `filterCondition` evaluation with dot-notation paths and comparison operators. (3) Add hook execution log storage in the database for queryable metrics dashboard. (4) Consider hook dry-run mode for testing without side effects.

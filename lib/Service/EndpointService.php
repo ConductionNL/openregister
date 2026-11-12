@@ -25,10 +25,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
-use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Db\EndpointLogMapperInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -53,16 +53,25 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class EndpointService {
+class EndpointService implements EndpointServiceInterface {
+	/**
+	 * Target types that run no logic yet, with the name their placeholder response uses.
+	 */
+	private const PLACEHOLDER_TARGETS = [
+		'view' => 'View',
+		'webhook' => 'Webhook',
+		'register' => 'Register',
+		'schema' => 'Schema',
+	];
 
 	/**
 	 * Endpoint log mapper
 	 *
 	 * Handles database operations for endpoint execution logs.
 	 *
-	 * @var EndpointLogMapper Endpoint log mapper instance
+	 * @var EndpointLogMapperInterface Endpoint log mapper instance
 	 */
-	private readonly EndpointLogMapper $endpointLogMapper;
+	private readonly EndpointLogMapperInterface $endpointLogMapper;
 
 	/**
 	 * Logger
@@ -92,6 +101,13 @@ class EndpointService {
 	private readonly IGroupManager $groupManager;
 
 	/**
+	 * Agent lookups for agent-type endpoints.
+	 *
+	 * @var AgentMapperInterface
+	 */
+	private readonly AgentMapperInterface $agentMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * WHY THIS EXISTS. All four properties above were declared `readonly` and
@@ -105,23 +121,20 @@ class EndpointService {
 	 * at lines 402/410/457 and the audit-log write at 487. Same defect as
 	 * NotificationService and UploadService in this repo.
 	 *
-	 * @param EndpointLogMapper $endpointLogMapper Endpoint execution log mapper.
-	 * @param LoggerInterface   $logger            Logger.
-	 * @param IUserSession      $userSession       Current user context.
-	 * @param IGroupManager     $groupManager      Group membership lookups.
-	 * @param AgentMapper       $agentMapper       Agent lookups for agent-type endpoints.
+	 * @param EndpointMappers $mappers   Endpoint execution log and agent mappers.
+	 * @param LoggerInterface $logger    Logger.
+	 * @param UserDirectory   $directory Current user context and group membership lookups.
 	 */
 	public function __construct(
-		EndpointLogMapper $endpointLogMapper,
+		EndpointMappers $mappers,
 		LoggerInterface $logger,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		private readonly AgentMapper $agentMapper,
+		UserDirectory $directory,
 	) {
-		$this->endpointLogMapper = $endpointLogMapper;
+		$this->agentMapper = $mappers->agentMapper;
+		$this->endpointLogMapper = $mappers->endpointLogMapper;
 		$this->logger = $logger;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->userSession = $directory->session;
+		$this->groupManager = $directory->groups;
 	}//end __construct()
 
 	/**
@@ -142,56 +155,40 @@ class EndpointService {
 	 */
 	public function testEndpoint(Endpoint $endpoint, array $testData = []): array {
 		try {
-			// Step 1: Check if user has permission to execute this endpoint.
-			// Validates user group membership and endpoint access permissions.
 			if ($this->canExecuteEndpoint(endpoint: $endpoint) === false) {
-				return [
-					'success' => false,
-					'statusCode' => 403,
-					'response' => null,
-					'error' => 'Access denied: You do not have permission to execute this endpoint.',
-				];
+				return $this->failure(statusCode: 403, error: 'Access denied: You do not have permission to execute this endpoint.');
 			}
 
-			// Step 2: Prepare test request data from endpoint configuration.
-			// Combines endpoint method and path with provided test data.
-			$request = [
-				'method' => $endpoint->getMethod() ?? 'GET',
-				'path' => $endpoint->getEndpoint(),
-				'data' => $testData,
-				'headers' => [],
-			];
-
-			// Step 3: Execute the endpoint based on target type.
-			// Different target types (view, agent, webhook, etc.) have different execution logic.
-			$result = $this->executeEndpoint(endpoint: $endpoint, request: $request);
-
-			// Step 4: Log the test execution for audit trail and debugging.
-			$this->logEndpointCall(endpoint: $endpoint, request: $request, result: $result);
-
-			// Step 5: Return execution result.
-			return $result;
+			return $this->runEndpointTest(endpoint: $endpoint, testData: $testData);
 		} catch (\Exception $e) {
-			// Log error for debugging and monitoring.
 			$this->logger->error(
 				message: '[EndpointService] Error testing endpoint: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'endpoint_id' => $endpoint->getId(),
-					'trace' => $e->getTraceAsString(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'endpoint_id' => $endpoint->getId(), 'trace' => $e->getTraceAsString()]
 			);
-
-			// Return error result.
-			return [
-				'success' => false,
-				'statusCode' => 500,
-				'response' => null,
-				'error' => $e->getMessage(),
-			];
-		}//end try
+			return $this->failure(statusCode: 500, error: $e->getMessage());
+		}
 	}//end testEndpoint()
+
+	/**
+	 * Run an endpoint once with test data and log the call.
+	 *
+	 * @param Endpoint             $endpoint The endpoint to run
+	 * @param array<string, mixed> $testData The test data to send
+	 *
+	 * @return array<string, mixed> The execution result
+	 */
+	private function runEndpointTest(Endpoint $endpoint, array $testData): array {
+		$request = [
+			'method' => $endpoint->getMethod() ?? 'GET',
+			'path' => $endpoint->getEndpoint(),
+			'data' => $testData,
+			'headers' => [],
+		];
+		$result = $this->executeEndpoint(endpoint: $endpoint, request: $request);
+		$this->logEndpointCall(endpoint: $endpoint, exchange: new EndpointExchange(request: $request, result: $result));
+
+		return $result;
+	}//end runEndpointTest()
 
 	/**
 	 * Execute an endpoint with given request data
@@ -210,57 +207,21 @@ class EndpointService {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	private function executeEndpoint(Endpoint $endpoint, array $request): array {
-		// Route execution to appropriate handler based on endpoint target type.
-		// Each target type has specific execution logic.
-		switch ($endpoint->getTargetType()) {
-			case 'view':
-				// Execute view-based endpoint (queries view data).
-				return $this->executeViewEndpoint(_endpoint: $endpoint, _request: $request);
-			case 'agent':
-				// Execute agent-based endpoint (uses AI agent).
-				return $this->executeAgentEndpoint(endpoint: $endpoint, request: $request);
-			case 'webhook':
-				// Execute webhook-based endpoint (HTTP webhook call).
-				return $this->executeWebhookEndpoint(_endpoint: $endpoint, _request: $request);
-			case 'register':
-				// Execute register-based endpoint (queries register data).
-				return $this->executeRegisterEndpoint(_endpoint: $endpoint, _request: $request);
-			case 'schema':
-				// Execute schema-based endpoint (queries schema data).
-				return $this->executeSchemaEndpoint(_endpoint: $endpoint, _request: $request);
-			default:
-				return [
-					'success' => false,
-					'statusCode' => 400,
-					'response' => null,
-					'error' => 'Unknown target type: ' . $endpoint->getTargetType(),
-				];
-		}//end switch
-	}//end executeEndpoint()
+		$type = $endpoint->getTargetType();
+		if ($type === 'agent') {
+			return $this->executeAgentEndpoint(endpoint: $endpoint, request: $request);
+		}
 
-	/**
-	 * Execute a view endpoint
-	 *
-	 * @param Endpoint $_endpoint The endpoint to execute
-	 * @param array $_request Request data
-	 *
-	 * @return (int|string[]|true)[]
-	 *
-	 * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
-	 *
-	 * @psalm-return array{success: true, statusCode: 200, response: array{message: 'View endpoint executed (placeholder)'}}
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 */
-	private function executeViewEndpoint(Endpoint $_endpoint, array $_request): array {
-		// Placeholder for view execution logic.
-		// This would integrate with the view service to execute the view.
-		return [
-			'success' => true,
-			'statusCode' => 200,
-			'response' => ['message' => 'View endpoint executed (placeholder)'],
-		];
-	}//end executeViewEndpoint()
+		if (isset(self::PLACEHOLDER_TARGETS[$type]) === true) {
+			return [
+				'success' => true,
+				'statusCode' => 200,
+				'response' => ['message' => self::PLACEHOLDER_TARGETS[$type] . ' endpoint executed (placeholder)'],
+			];
+		}
+
+		return $this->failure(statusCode: 400, error: 'Unknown target type: ' . $type);
+	}//end executeEndpoint()
 
 	/**
 	 * Execute an agent endpoint
@@ -284,130 +245,67 @@ class EndpointService {
 	 */
 	private function executeAgentEndpoint(Endpoint $endpoint, array $request): array {
 		try {
-			$agentId = $endpoint->getTargetId();
-			$this->logger->info(
-				message: '[EndpointService] Executing agent endpoint',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'agentId' => $agentId]
-			);
-
-			// Find agent by UUID; the mapper throws when there is none, and the
-			// catch below turns that into the 500 envelope.
-			$this->agentMapper->findByUuid($agentId);
-
-			// Extract message from request.
-			$message = $request['data']['message'] ?? $request['message'] ?? '';
-
-			if (empty($message) === true) {
-				return [
-					'success' => false,
-					'statusCode' => 400,
-					'response' => null,
-					'error' => 'Message is required',
-				];
-			}
-
-			// Agent endpoint LLM execution (tool loading + chat calls) is
-			// deprecated pending the agent-core migration to hermiq; return
-			// a clean not-implemented response instead of calling an LLM.
-			return [
-				'success' => false,
-				'statusCode' => 501,
-				'response' => null,
-				'error' => 'Agent endpoint type is not implemented',
-			];
+			return $this->agentEndpointResult(endpoint: $endpoint, request: $request);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[EndpointService] Error executing agent endpoint: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'trace' => $e->getTraceAsString(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTraceAsString()]
 			);
 
-			return [
-				'success' => false,
-				'statusCode' => 500,
-				'response' => null,
-				'error' => $e->getMessage(),
-			];
+			return $this->failure(statusCode: 500, error: $e->getMessage());
 		}//end try
 	}//end executeAgentEndpoint()
 
 	/**
-	 * Execute a webhook endpoint
+	 * The result of an agent endpoint: the agent must exist and a message is required.
 	 *
-	 * @param Endpoint $_endpoint The endpoint to execute
-	 * @param array $_request Request data
+	 * @param Endpoint             $endpoint The agent endpoint
+	 * @param array<string, mixed> $request  The request data
 	 *
-	 * @return (int|string[]|true)[]
+	 * @return array{success: bool, statusCode: int, response: mixed, error?: string}
 	 *
-	 * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
-	 *
-	 * @psalm-return array{success: true, statusCode: 200,
-	 *     response: array{message: 'Webhook endpoint executed (placeholder)'}}
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @throws \Exception When the agent cannot be found.
 	 */
-	private function executeWebhookEndpoint(Endpoint $_endpoint, array $_request): array {
-		// Placeholder for webhook execution logic.
-		// This would integrate with the webhook service to trigger the webhook.
-		return [
-			'success' => true,
-			'statusCode' => 200,
-			'response' => ['message' => 'Webhook endpoint executed (placeholder)'],
-		];
-	}//end executeWebhookEndpoint()
+	private function agentEndpointResult(Endpoint $endpoint, array $request): array {
+		$agentId = $endpoint->getTargetId();
+		$this->logger->info(
+			message: '[EndpointService] Executing agent endpoint',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'agentId' => $agentId]
+		);
+
+		// Find agent by UUID; the mapper throws when there is none, and the
+		// catch in executeAgentEndpoint() turns that into the 500 envelope.
+		$this->agentMapper->findByUuid($agentId);
+
+		// Extract message from request.
+		$message = $request['data']['message'] ?? $request['message'] ?? '';
+
+		if (empty($message) === true) {
+			return $this->failure(statusCode: 400, error: 'Message is required');
+		}
+
+		// Agent endpoint LLM execution (tool loading + chat calls) is
+		// deprecated pending the agent-core migration to hermiq; return
+		// a clean not-implemented response instead of calling an LLM.
+		return $this->failure(statusCode: 501, error: 'Agent endpoint type is not implemented');
+	}//end agentEndpointResult()
 
 	/**
-	 * Execute a register endpoint
+	 * The result of an endpoint run that failed.
 	 *
-	 * @param Endpoint $_endpoint The endpoint to execute
-	 * @param array $_request Request data
+	 * @param int    $statusCode The HTTP status to report.
+	 * @param string $error      The error message.
 	 *
-	 * @return (int|string[]|true)[]
-	 *
-	 * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
-	 *
-	 * @psalm-return array{success: true, statusCode: 200,
-	 *     response: array{message: 'Register endpoint executed (placeholder)'}}
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @return array{success: false, statusCode: int, response: null, error: string}
 	 */
-	private function executeRegisterEndpoint(Endpoint $_endpoint, array $_request): array {
-		// Placeholder for register execution logic.
-		// This would integrate with the register/object service to handle CRUD operations.
+	private function failure(int $statusCode, string $error): array {
 		return [
-			'success' => true,
-			'statusCode' => 200,
-			'response' => ['message' => 'Register endpoint executed (placeholder)'],
+			'success' => false,
+			'statusCode' => $statusCode,
+			'response' => null,
+			'error' => $error,
 		];
-	}//end executeRegisterEndpoint()
-
-	/**
-	 * Execute a schema endpoint
-	 *
-	 * @param Endpoint $_endpoint The endpoint to execute
-	 * @param array $_request Request data
-	 *
-	 * @return (int|string[]|true)[]
-	 *
-	 * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
-	 *
-	 * @psalm-return array{success: true, statusCode: 200,
-	 *     response: array{message: 'Schema endpoint executed (placeholder)'}}
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 */
-	private function executeSchemaEndpoint(Endpoint $_endpoint, array $_request): array {
-		// Placeholder for schema execution logic.
-		// This would integrate with the schema/object service to handle schema-specific operations.
-		return [
-			'success' => true,
-			'statusCode' => 200,
-			'response' => ['message' => 'Schema endpoint executed (placeholder)'],
-		];
-	}//end executeSchemaEndpoint()
+	}//end failure()
 
 	/**
 	 * Check if the current user can execute an endpoint
@@ -421,31 +319,34 @@ class EndpointService {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission check has multiple user and group conditions
 	 */
 	private function canExecuteEndpoint(Endpoint $endpoint): bool {
-		// Get current user.
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			// No user logged in - check if endpoint allows public access.
-			$groups = $endpoint->getGroups();
-			return empty($groups);
+			// Without a user only an endpoint open to everyone may run.
+			return empty($endpoint->getGroups());
 		}
 
-		// Get user's groups.
 		$userGroups = $this->groupManager->getUserGroupIds($user);
-
-		// Check if user is admin.
 		if (in_array('admin', $userGroups) === true) {
 			return true;
 		}
 
-		// Check endpoint groups configuration.
-		$endpointGroups = $endpoint->getGroups();
+		return $this->inAllowedGroup(userGroups: $userGroups, endpointGroups: $endpoint->getGroups());
+	}//end canExecuteEndpoint()
 
-		// If no groups defined, allow all authenticated users.
+	/**
+	 * Whether a user in these groups may run an endpoint limited to those groups;
+	 * an endpoint without groups is open to every authenticated user.
+	 *
+	 * @param array<int, string> $userGroups     The user's group ids.
+	 * @param array|null         $endpointGroups The endpoint's allowed groups.
+	 *
+	 * @return bool
+	 */
+	private function inAllowedGroup(array $userGroups, ?array $endpointGroups): bool {
 		if (empty($endpointGroups) === true) {
 			return true;
 		}
 
-		// Check if user is in any of the allowed groups.
 		foreach ($userGroups as $groupId) {
 			if (in_array($groupId, $endpointGroups) === true) {
 				return true;
@@ -453,86 +354,71 @@ class EndpointService {
 		}
 
 		return false;
-	}//end canExecuteEndpoint()
+	}//end inAllowedGroup()
 
 	/**
 	 * Log an endpoint call
 	 *
-	 * @param Endpoint $endpoint The endpoint that was called
-	 * @param array $request Request data
-	 * @param array $result Result data
+	 * @param Endpoint         $endpoint The endpoint that was called
+	 * @param EndpointExchange $exchange The request and its result
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	private function logEndpointCall(Endpoint $endpoint, array $request, array $result): void {
+	private function logEndpointCall(Endpoint $endpoint, EndpointExchange $exchange): void {
 		try {
-			$log = new EndpointLog();
-
-			// Generate UUID.
-			$log->setUuid(Uuid::v4()->toRfc4122());
-
-			// Set endpoint ID.
-			$log->setEndpointId($endpoint->getId());
-
-			// Set user info.
-			$user = $this->userSession->getUser();
-			if ($user !== null) {
-				$log->setUserId($user->getUID());
-			}
-
-			// Set request/response data.
-			$log->setRequest($request);
-			// POSITIONAL, deliberately. setResponse() is magic — EndpointLog
-			// declares the property, not the method — so it goes through
-			// Entity::__call(array $args), where a NAMED argument lands under
-			// its name and $args[0] is never set. Every endpoint log was
-			// storing a null response.
-			$log->setResponse(
-				[
-					'statusCode' => $result['statusCode'],
-					'body' => $result['response'],
-				]
-			);
-
-			// Set status.
-			$log->setStatusCode($result['statusCode']);
-			$log->setStatusMessage($result['error'] ?? 'Success');
-
-			// Set timestamps.
-			$log->setCreated(new DateTime());
-
-			// Set expiry (1 week from now).
-			$expires = new DateTime();
-			$expires->modify('+1 week');
-			$log->setExpires($expires);
-
-			// Calculate size.
-			$log->calculateSize();
-
-			// Insert log.
-			$this->endpointLogMapper->insert($log);
-
+			$this->endpointLogMapper->insert($this->endpointLog(endpoint: $endpoint, exchange: $exchange));
 			$this->logger->debug(
 				message: '[EndpointService] Endpoint call logged',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'endpoint_id' => $endpoint->getId(),
-					'status_code' => $result['statusCode'],
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'endpoint_id' => $endpoint->getId(), 'status_code' => $exchange->result['statusCode']]
 			);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[EndpointService] Error logging endpoint call: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'endpoint_id' => $endpoint->getId(),
-					'trace' => $e->getTraceAsString(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'endpoint_id' => $endpoint->getId(), 'trace' => $e->getTraceAsString()]
 			);
-		}//end try
+		}
 	}//end logEndpointCall()
+
+	/**
+	 * The log row of one endpoint call, kept for a week.
+	 *
+	 * @param Endpoint         $endpoint The endpoint that was called.
+	 * @param EndpointExchange $exchange The request and its result.
+	 *
+	 * @return EndpointLog
+	 */
+	private function endpointLog(Endpoint $endpoint, EndpointExchange $exchange): EndpointLog {
+		$log = $this->newEndpointLog();
+		$log->setEndpointId($endpoint->getId());
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$log->setUserId($user->getUID());
+		}
+
+		$log->setRequest($exchange->request);
+		// POSITIONAL: setResponse() is magic (Entity::__call), where a named argument never reaches $args[0].
+		$log->setResponse(['statusCode' => $exchange->result['statusCode'], 'body' => $exchange->result['response']]);
+		$log->setStatusCode($exchange->result['statusCode']);
+		$log->setStatusMessage($exchange->result['error'] ?? 'Success');
+		$log->calculateSize();
+
+		return $log;
+	}//end endpointLog()
+
+	/**
+	 * A new log row with its uuid, created now and expiring in a week.
+	 *
+	 * @return EndpointLog
+	 */
+	private function newEndpointLog(): EndpointLog {
+		$log = new EndpointLog();
+		$log->setUuid(Uuid::v4()->toRfc4122());
+		$log->setCreated(new DateTime());
+		$log->setExpires((new DateTime())->modify('+1 week'));
+
+		return $log;
+	}//end newEndpointLog()
+
 }//end class

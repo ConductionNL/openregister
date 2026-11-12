@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for RenderObject handler
@@ -67,7 +68,7 @@ class RenderObjectIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore cleanup errors.
 			}
@@ -175,7 +176,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			$data,
 			null,
-			null,
 			false,
 			false
 		);
@@ -192,7 +192,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$schema,
 			$data,
 			null,
-			null,
 			false,
 			false
 		);
@@ -203,25 +202,6 @@ class RenderObjectIntegrationTest extends TestCase {
 	// =========================================================================
 	// Ultra preload cache tests
 	// =========================================================================
-
-	public function testSetUltraPreloadCache(): void {
-		$this->renderHandler->setUltraPreloadCache([]);
-		$this->assertSame(0, $this->renderHandler->getUltraCacheSize());
-	}
-
-	public function testGetUltraCacheSizeEmpty(): void {
-		$this->renderHandler->setUltraPreloadCache([]);
-		$this->assertSame(0, $this->renderHandler->getUltraCacheSize());
-	}
-
-	public function testSetUltraPreloadCacheWithObjects(): void {
-		$entity = new ObjectEntity();
-		$entity->setUuid(Uuid::v4()->toRfc4122());
-		$entity->setObject(['title' => 'Cached']);
-
-		$this->renderHandler->setUltraPreloadCache([$entity->getUuid() => $entity]);
-		$this->assertSame(1, $this->renderHandler->getUltraCacheSize());
-	}
 
 	// =========================================================================
 	// clearCache tests
@@ -1135,22 +1115,6 @@ class RenderObjectIntegrationTest extends TestCase {
 	// Ultra cache with real objects
 	// =========================================================================
 
-	public function testUltraPreloadCacheWithRealObject(): void {
-		$object = $this->createObject([
-			'title' => 'phpunit-ultra-real-' . uniqid(),
-		]);
-
-		// Set the object in ultra cache.
-		$this->renderHandler->setUltraPreloadCache([
-			$object->getUuid() => $object,
-		]);
-
-		$this->assertSame(1, $this->renderHandler->getUltraCacheSize());
-
-		// Reset.
-		$this->renderHandler->setUltraPreloadCache([]);
-	}
-
 	// =========================================================================
 	// renderEntity - extend @self.schema populates schema data
 	// =========================================================================
@@ -1786,7 +1750,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$parentSchema,
 			['title' => 'phpunit-inv-parent-obj-' . uniqid()],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1797,7 +1760,6 @@ class RenderObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$childSchema,
 			['name' => 'Child Object', 'parent' => $parent->getUuid()],
-			null,
 			null,
 			false,
 			false
@@ -1969,42 +1931,6 @@ class RenderObjectIntegrationTest extends TestCase {
 	// =========================================================================
 	// renderEntity - extend with preloaded ultra cache
 	// =========================================================================
-
-	public function testRenderEntityExtendWithUltraCache(): void {
-		$related = $this->createObject([
-			'title' => 'phpunit-ultra-ext-rel-' . uniqid(),
-		]);
-
-		$main = $this->createObject([
-			'title' => 'phpunit-ultra-ext-main-' . uniqid(),
-			'category' => $related->getUuid(),
-		]);
-
-		// Set ultra preload cache with the related object.
-		$this->renderHandler->setUltraPreloadCache([
-			$related->getUuid() => $related,
-		]);
-
-		$rendered = $this->renderHandler->renderEntity(
-			$main,
-			['category'],
-			0,
-			[],
-			[],
-			[],
-			[],
-			[],
-			[],
-			[],
-			false,
-			false
-		);
-
-		$this->assertInstanceOf(ObjectEntity::class, $rendered);
-
-		// Reset ultra cache.
-		$this->renderHandler->setUltraPreloadCache([]);
-	}
 
 	// =========================================================================
 	// renderEntities with extend + fields + unset combined

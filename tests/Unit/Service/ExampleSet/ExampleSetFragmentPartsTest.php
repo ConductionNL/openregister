@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
@@ -47,7 +48,34 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -101,7 +129,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function testAFileMovedToAnotherFolderStillArrived(): void {
 		$this->alpha(fragment: ['objects' => [[
@@ -129,7 +157,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-files-on-kept-objects/specs/example-sets/spec.md#requirement-a-later-install-attaches-the-files-an-object-gained
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-later-install-attaches-the-files-an-object-gained
 	 */
 	public function testFilesDeclaredLaterAreAttachedToTheKeptObjectOnce(): void {
 		$object = ['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['title' => 'Besluit']];
@@ -267,7 +295,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-typed-app-config/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
 	 */
 	public function testAnIntegerAppConfigEntryIsWrittenAsAnInteger(): void {
 		$this->appValues['alpha'] = ['counter' => '7'];
@@ -348,7 +376,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	public function testTheInstanceAddressFillsAPlaceholderAndIsNeverEmpty(): void {
 		$this->alpha(['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['url' => '{{instance:baseUrl}}/apps/x']]]]);
 		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
-		$this->assertSame('https://cloud.example.test/apps/x', $this->store->find(register: 'pub', schema: 'publication', filters: [])[0]['url']);
+		$this->assertSame('https://cloud.example.test/apps/x', $this->store->find(table: new RegisterSchemaRef(register: 'pub', schema: 'publication'), filters: [])[0]['url']);
 
 		$this->remover->remove(set: 'demo');
 		$this->baseUrl = '';
@@ -370,8 +398,8 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 
 		$this->assertTrue($report['ok'], json_encode($report));
-		$case   = $this->store->find(register: 'cases', schema: 'case', filters: [])[0];
-		$result = $this->store->find(register: 'cases', schema: 'result', filters: [])[0];
+		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0];
+		$result = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'result'), filters: [])[0];
 		$this->assertSame($result['id'], $case['result']);
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -445,7 +473,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertCount(2, $this->organisations, 'created once');
-		$row = $this->store->find(register: 'pub', schema: 'publication', filters: [])[0];
+		$row = $this->store->find(table: new RegisterSchemaRef(register: 'pub', schema: 'publication'), filters: [])[0];
 		$this->assertSame('org-2', $row['organization']);
 		$this->assertSame('org-existing', $row['other']);
 
@@ -482,7 +510,7 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-organisation-quota-and-members/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
 	 */
 	public function testAnOrganisationIsCreatedWithItsQuotaAndMembers(): void {
 		$file = $this->castFile();

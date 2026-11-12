@@ -27,6 +27,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -40,103 +43,31 @@ use OCP\EventDispatcher\Event;
 class ObjectTransitionedEvent extends Event {
 
 	/**
-	 * Object after the transition (lifecycle field is `to`).
+	 * The acting user and whether a rule made the move.
 	 *
-	 * @var ObjectEntity
+	 * @var TransitionActor
 	 */
-	private ObjectEntity $object;
-
-	/**
-	 * Action name from the transition table (e.g. "publish").
-	 *
-	 * @var string
-	 */
-	private string $action;
-
-	/**
-	 * Lifecycle state value before the transition.
-	 *
-	 * @var string
-	 */
-	private string $from;
-
-	/**
-	 * Lifecycle state value after the transition.
-	 *
-	 * @var string
-	 */
-	private string $to;
-
-	/**
-	 * Caller uid (null when the transition was applied by a system process).
-	 *
-	 * @var string|null
-	 */
-	private ?string $userId;
-
-	/**
-	 * Register slug.
-	 *
-	 * @var string
-	 */
-	private string $register;
-
-	/**
-	 * Schema slug.
-	 *
-	 * @var string
-	 */
-	private string $schema;
-
-	/**
-	 * Whether a rule made this move rather than a caller asking for it.
-	 *
-	 * @var boolean
-	 */
-	private bool $automatic;
+	private readonly TransitionActor $actor;
 
 	/**
 	 * Capture the post-transition state for downstream listeners.
 	 *
-	 * @param ObjectEntity $object Object after the transition.
-	 * @param string $action Action name.
-	 * @param string $from State before.
-	 * @param string $to State after.
-	 * @param string|null $userId Caller uid (null for system-applied transitions).
-	 * @param string $register Register slug.
-	 * @param string $schema Schema slug.
-	 * @param bool $automatic True when a transition's `autoWhen` fired this move. Additive
-	 *                       and defaulting to false, so every existing dispatcher and
-	 *                       listener is unaffected.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `automatic` records WHO caused
-	 * the move, which is data this event carries, not a switch that changes what
-	 * the constructor does. A listener needs it precisely because "notify the
-	 * applicant" is right for a person's move and wrong for a rule's. Splitting
-	 * the event into two classes to avoid one boolean would force every existing
-	 * listener to subscribe twice.
+	 * @param ObjectEntity         $object Object after the transition.
+	 * @param TransitionMove       $move   The action applied and the states it moved between.
+	 * @param RegisterSchemaRef    $scope  Register and schema slugs of the object.
+	 * @param TransitionActor|null $actor  Who made the move; null for a system-applied,
+	 *                                     non-automatic transition.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		ObjectEntity $object,
-		string $action,
-		string $from,
-		string $to,
-		?string $userId,
-		string $register,
-		string $schema,
-		bool $automatic = false,
+		private readonly ObjectEntity $object,
+		private readonly TransitionMove $move,
+		private readonly RegisterSchemaRef $scope,
+		?TransitionActor $actor = null,
 	) {
 		parent::__construct();
-		$this->object = $object;
-		$this->action = $action;
-		$this->from = $from;
-		$this->to = $to;
-		$this->userId = $userId;
-		$this->register = $register;
-		$this->schema = $schema;
-		$this->automatic = $automatic;
+		$this->actor = $actor ?? new TransitionActor();
 	}//end __construct()
 
 	/**
@@ -151,7 +82,7 @@ class ObjectTransitionedEvent extends Event {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function isAutomatic(): bool {
-		return $this->automatic;
+		return $this->actor->automatic;
 	}//end isAutomatic()
 
 	/**
@@ -173,7 +104,7 @@ class ObjectTransitionedEvent extends Event {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
 	 */
 	public function getAction(): string {
-		return $this->action;
+		return $this->move->action;
 	}//end getAction()
 
 	/**
@@ -184,7 +115,7 @@ class ObjectTransitionedEvent extends Event {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
 	 */
 	public function getFrom(): string {
-		return $this->from;
+		return $this->move->from;
 	}//end getFrom()
 
 	/**
@@ -195,7 +126,7 @@ class ObjectTransitionedEvent extends Event {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
 	 */
 	public function getTo(): string {
-		return $this->to;
+		return $this->move->to;
 	}//end getTo()
 
 	/**
@@ -206,7 +137,7 @@ class ObjectTransitionedEvent extends Event {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
 	 */
 	public function getUserId(): ?string {
-		return $this->userId;
+		return $this->actor->userId;
 	}//end getUserId()
 
 	/**
@@ -217,7 +148,7 @@ class ObjectTransitionedEvent extends Event {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
 	 */
 	public function getRegister(): string {
-		return $this->register;
+		return (string) $this->scope->register;
 	}//end getRegister()
 
 	/**
@@ -228,6 +159,6 @@ class ObjectTransitionedEvent extends Event {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-2
 	 */
 	public function getSchema(): string {
-		return $this->schema;
+		return (string) $this->scope->schema;
 	}//end getSchema()
 }//end class

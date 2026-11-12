@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md
+ * @spec openspec/specs/magic-table-columns/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md
+ * @spec openspec/specs/magic-table-columns/spec.md
  */
 class WidenMagicNumberColumnsTest extends TestCase {
 

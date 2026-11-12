@@ -4,16 +4,32 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
-use OCA\OpenRegister\Service\Notification\RecipientResolverInterface;
-use OCA\OpenRegister\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ChannelSet;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
+use OCA\OpenRegister\Notifications\Service\Notification\AppIntegrations;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryLedger;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
+use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
+use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Service\Notification\MailingRequest;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
-use OCA\OpenRegister\Service\Notification\EmailSender;
+use OCA\OpenRegister\Service\Notification\ReferenceOrigin;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
@@ -348,7 +364,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 					'trigger' => ['type' => 'updated'],
 					'channels' => ['webhook'],
 					'webhook' => [
-						'url' => 'https://example.com/hooks/x',
+						'url' => 'https://93.184.215.14/hooks/x',
 					],
 					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
 					'subject' => 'inline',
@@ -364,6 +380,96 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		$dispatcher = $this->makeDispatcher();
 		$dispatcher->dispatch($this->object($schema), 'updated');
 	}//end testInlinePostFiresWhenWebhookNotPersistent()
+
+	/**
+	 * A webhook to a scheme other than http or https is not sent.
+	 *
+	 * @return void
+	 */
+	public function testInlinePostToAnotherSchemeIsNotSent(): void {
+		$schema = $this->schemaWithNotification(
+			notifications: [
+				'inline-hook' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'ftp://93.184.215.14/hooks/x'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'inline',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->httpClient->expects($this->never())->method('newClient');
+
+		$this->makeDispatcher()->dispatch($this->object(schema: $schema), 'updated');
+	}//end testInlinePostToAnotherSchemeIsNotSent()
+
+	/**
+	 * The target is checked by Nextcloud's client at connect time, on the address it calls.
+	 *
+	 * @return void
+	 */
+	public function testInlinePostLeavesTheAddressCheckToTheNextcloudClient(): void {
+		$schema = $this->schemaWithNotification(
+			notifications: [
+				'inline-hook' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'http://169.254.169.254/latest/meta-data'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'inline',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$calls = [];
+		$client = $this->createMock(originalClassName: IClient::class);
+		$client->method('request')->willReturnCallback(
+			static function (string $method, string $url, array $opts) use (&$calls) {
+				$calls[] = ['url' => $url, 'options' => $opts];
+				throw new \OCP\Http\Client\LocalServerException('Host "169.254.169.254" violates local access rules');
+			}
+		);
+		$this->httpClient->method('newClient')->willReturn($client);
+
+		$this->makeDispatcher()->dispatch($this->object(schema: $schema), 'updated');
+
+		$this->assertCount(expectedCount: 1, haystack: $calls);
+		$this->assertSame(expected: 'http://169.254.169.254/latest/meta-data', actual: $calls[0]['url']);
+		$this->assertSame(expected: ['allow_local_address' => false], actual: ($calls[0]['options']['nextcloud'] ?? null));
+		$this->assertFalse(condition: ($calls[0]['options']['allow_redirects'] ?? null));
+	}//end testInlinePostLeavesTheAddressCheckToTheNextcloudClient()
+
+	public function testInlinePostDoesNotFollowRedirects(): void {
+		$schema = $this->schemaWithNotification(
+			[
+				'inline-hook' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'https://93.184.215.14/hooks/x'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'inline',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$options = null;
+		$client = $this->createMock(IClient::class);
+		$client->method('request')->willReturnCallback(
+			function (string $method, string $url, array $opts) use (&$options) {
+				$options = $opts;
+				return $this->createMock(\OCP\Http\Client\IResponse::class);
+			}
+		);
+		$this->httpClient->method('newClient')->willReturn($client);
+
+		$this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+
+		$this->assertFalse($options['allow_redirects'] ?? null);
+	}//end testInlinePostDoesNotFollowRedirects()
 
 	// ====================================================================
 	// NL/EN i18n — Open spec item:
@@ -602,7 +708,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 				'broadcast' => [
 					'trigger' => ['type' => 'updated'],
 					'channels' => ['webhook'],
-					'webhook' => ['url' => 'https://example.com/h'],
+					'webhook' => ['url' => 'https://93.184.215.14/h'],
 					'recipients' => [['kind' => 'users', 'users' => ['nl-user', 'en-user']]],
 					'subject' => [
 						'defaultLocale' => 'en',
@@ -825,7 +931,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		// Concurrent dispatcher / prior dispatch already holds the (slug, key)
 		// slot — record() throws DuplicateDispatchException and dispatch must abort.
 		$logMapper->method('record')->willThrowException(
-			new \OCA\OpenRegister\Db\DuplicateDispatchException('duplicate (slug, key)')
+			new \OCA\OpenRegister\Notifications\Db\DuplicateDispatchException('duplicate (slug, key)')
 		);
 
 		$this->notificationManager->expects($this->never())->method('notify');
@@ -940,7 +1046,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	 * An opt-in e-mail reaches only the recipient who switched it on; the
 	 * other still gets the Nextcloud notification and no mail.
 	 *
-	 * @spec openspec/changes/notification-opt-in-channels/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-rule-can-declare-a-channel-that-is-off-until-someone-switches-it-on
 	 */
 	public function testOptInEmailReachesOnlyWhoSwitchedItOn(): void {
 		$schema = $this->schemaWithNotification(
@@ -1113,8 +1219,8 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		$calls = [];
 		$parties = $this->createMock(PartyNotificationService::class);
 		$parties->method('notifyParties')->willReturnCallback(
-			function (string $objectUuid, string $subject, string $body, ?string $role = null, string $category = 'service') use (&$calls): array {
-				$calls[] = ['objectUuid' => $objectUuid, 'subject' => $subject, 'body' => $body, 'role' => $role, 'category' => $category];
+			function (PartyMessage $message, ?string $role = null) use (&$calls): array {
+				$calls[] = ['objectUuid' => $message->objectUuid, 'subject' => $message->subject, 'body' => $message->body, 'role' => $role, 'category' => $message->category];
 				return [];
 			}
 		);
@@ -1176,13 +1282,19 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	public function testAnEmailRuleIsSentThroughTheReferencedAddressNotifier(): void {
 		$calls = [];
 		$notifier = $this->createMock(ReferencedAddressNotifier::class);
-		$notifier->method('notify')->willReturnCallback(
-			function (ObjectEntity $object, array $data, array $recipientsSpec, string $subject, string $body, string $category) use (&$calls): array {
-				$calls[] = ['uuid' => $object->getUuid(), 'recipients' => $recipientsSpec, 'subject' => $subject, 'body' => $body, 'category' => $category];
+		$notifier->method('mail')->willReturnCallback(
+			function (ReferenceOrigin $origin, MailingRequest $request) use (&$calls): array {
+				$calls[] = [
+					'uuid' => $origin->object->getUuid(),
+					'recipients' => $request->recipients,
+					'subject' => $request->subject,
+					'body' => $request->body,
+					'category' => $request->category,
+				];
 				return [['field' => 'supplierRef.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED]];
 			}
 		);
-		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+		$this->serverServices[ReferencedAddressNotifierInterface::class] = $notifier;
 
 		$recipients = [['kind' => 'email', 'field' => 'supplierRef.contactEmail']];
 		$schema = $this->schemaWithNotification(
@@ -1214,8 +1326,8 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	 */
 	public function testAnEmailEntryWithoutTheEmailChannelIsNotSent(): void {
 		$notifier = $this->createMock(ReferencedAddressNotifier::class);
-		$notifier->expects($this->never())->method('notify');
-		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+		$notifier->expects($this->never())->method('mail');
+		$this->serverServices[ReferencedAddressNotifierInterface::class] = $notifier;
 
 		$schema = $this->schemaWithNotification(
 			[
@@ -1259,28 +1371,53 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		?IAppManager $appManager = null,
 	): AnnotationNotificationDispatcher {
 		return new AnnotationNotificationDispatcher(
-			$this->schemaMapper,
-			$this->notificationManager,
-			$this->logger,
-			$this->groupManager,
-			$this->userManager,
-			$this->mailer,
-			$this->activityManager,
-			$this->httpClient,
-			$this->serverContainer,
-			null,
-			$config,
-			null,
-			null,
-			null,
-			$dispatchLogMapper,
-			$preferenceService,
-			null,
-			null,
-			null,
-			null,
-			null,
-			$appManager
+			channels: new ChannelSet(
+				ncSender: new NcNotificationSender(
+					notificationManager: $this->notificationManager,
+					logger: $this->logger,
+					userManager: $this->userManager
+				),
+				emailSender: new EmailSender(
+					userManager: $this->userManager,
+					mailer: $this->mailer,
+					logger: $this->logger
+				),
+				talkSender: new TalkSender(
+					httpClient: $this->httpClient,
+					logger: $this->logger,
+					config: ($config ?? $this->serverContainer->get(IConfig::class))
+				),
+				activityManager: $this->activityManager
+			),
+			gates: new DispatchGates(
+				throttle: new DispatchThrottle(),
+				deliveryHold: new DeliveryHold(),
+				preferenceService: $preferenceService
+			),
+			integrations: new AppIntegrations(
+				httpClient: $this->httpClient,
+				serverContainer: $this->serverContainer,
+				appManager: $appManager
+			),
+			ledger: new DeliveryLedger(
+				logger: $this->logger,
+				dispatchLogMapper: $dispatchLogMapper
+			),
+			audience: new RuleAudience(
+				schemaMapper: $this->schemaMapper,
+				recipientResolver: new NotificationRecipientResolver(
+					userManager: $this->userManager,
+					groupManager: $this->groupManager,
+					logger: $this->logger,
+					serverContainer: $this->serverContainer
+				),
+				config: $config
+			),
+			rendering: new MessageRendering(
+				templating: new NotificationTemplating(
+					logger: $this->logger
+				)
+			)
 		);
 	}//end makeDispatcher()
 

@@ -55,12 +55,7 @@ import {
 					<template v-if="type === 'register'">
 						<NcActionButton
 							closeAfterClick
-							@click="
-								() => {
-									registerStore.setRegisterItem(item)
-									navigationStore.setModal('publishRegister')
-								}
-							">
+							@click="openRegisterModal('publishRegister')">
 							<template #icon>
 								<CloudUploadOutline :size="20" />
 							</template>
@@ -68,12 +63,7 @@ import {
 						</NcActionButton>
 						<NcActionButton
 							closeAfterClick
-							@click="
-								() => {
-									registerStore.setRegisterItem(item)
-									navigationStore.setModal('importRegister')
-								}
-							">
+							@click="openRegisterModal('importRegister')">
 							<template #icon>
 								<Upload :size="20" />
 							</template>
@@ -297,13 +287,7 @@ import {
 									<NcActionButton
 										closeAfterClick
 										@click="
-											() => {
-												registerStore.setRegisterItem(item)
-												schemaStore.setSchemaItem(schema)
-												navigationStore.setModal(
-													'exportRegister',
-												)
-											}
+											openSchemaModal(schema, 'exportRegister')
 										">
 										<template #icon>
 											<Export :size="20" />
@@ -313,13 +297,7 @@ import {
 									<NcActionButton
 										closeAfterClick
 										@click="
-											() => {
-												registerStore.setRegisterItem(item)
-												schemaStore.setSchemaItem(schema)
-												navigationStore.setModal(
-													'importRegister',
-												)
-											}
+											openSchemaModal(schema, 'importRegister')
 										">
 										<template #icon>
 											<Upload :size="20" />
@@ -357,18 +335,12 @@ import {
 										{{ t('openregister', 'Delete Objects') }}
 									</NcActionButton>
 									<NcActionButton
-										v-if="
-											(schema.stats?.objects?.deleted || 0) > 0
-										"
+										v-if="deletedCount(schema) > 0"
 										:title="
 											t(
 												'openregister',
 												'Permanently delete all {count} soft-deleted objects. This cannot be undone!',
-												{
-													count:
-														schema.stats?.objects
-															?.deleted || 0,
-												},
+												{ count: deletedCount(schema) },
 											)
 										"
 										closeAfterClick
@@ -380,11 +352,7 @@ import {
 											t(
 												'openregister',
 												'Permanently Delete ({count})',
-												{
-													count:
-														schema.stats?.objects
-															?.deleted || 0,
-												},
+												{ count: deletedCount(schema) },
 											)
 										}}
 									</NcActionButton>
@@ -477,59 +445,22 @@ import {
 		</div>
 
 		<!-- Edit Register Dialog (register type only) -->
-		<CnFormDialog
+		<EditRegisterFormDialog
 			v-if="type === 'register' && showEditRegisterDialog"
-			ref="editRegisterDialog"
-			:schema="registerSchema"
 			:item="item"
-			:dialogTitle="t('openregister', 'Edit Register')"
-			@confirm="onSaveRegister"
-			@close="showEditRegisterDialog = false">
-			<template #form="{ formData, errors, updateField }">
-				<div class="formContainer">
-					<NcTextField
-						:label="t('openregister', 'Title') + ' *'"
-						:modelValue="formData.title || ''"
-						:error="!!errors.title"
-						:helperText="errors.title"
-						@update:modelValue="(v) => updateField('title', v)" />
-					<NcTextField
-						:label="t('openregister', 'Slug') + ' *'"
-						:modelValue="formData.slug || ''"
-						:error="!!errors.slug"
-						:helperText="errors.slug"
-						@update:modelValue="(v) => updateField('slug', v)" />
-					<NcTextArea
-						:label="t('openregister', 'Description')"
-						:modelValue="formData.description || ''"
-						@update:modelValue="(v) => updateField('description', v)" />
-					<NcSelect
-						inputLabel="Schemas"
-						:options="schemaSelectOptions"
-						:modelValue="getSchemaSelectValue(formData.schemas)"
-						:multiple="true"
-						:closeOnSelect="false"
-						:loading="schemasLoading"
-						@update:modelValue="
-							(vals) => updateField('schemas', vals)
-						" />
-				</div>
-			</template>
-		</CnFormDialog>
+			schemasLabel="Schemas"
+			:afterSave="emitRefresh"
+			@close="showEditRegisterDialog = false" />
 	</div>
 </template>
 
 <script>
-import { CnFormDialog } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import {
 	NcActionButton,
 	NcActions,
 	NcButton,
-	NcSelect,
-	NcTextArea,
-	NcTextField,
 } from '@nextcloud/vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -549,17 +480,312 @@ import Sync from 'vue-material-design-icons/Sync.vue'
 import Table from 'vue-material-design-icons/Table.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
+
+const JSON_HEADERS = {
+	'Content-Type': 'application/json',
+	Accept: 'application/json',
+}
+
+const COLUMN_CHANGES = [
+	['added', 'added'],
+	['removed', 'removed'],
+	['deRequired', 'de-required'],
+	['unchanged', 'unchanged'],
+]
+
+/**
+ * The absolute URL of an OpenRegister API path.
+ *
+ * @param {string} path The path below /api/
+ * @return {string} The URL
+ */
+function apiUrl(path) {
+	return `${window.location.origin}/index.php/apps/openregister/api/${path}`
+}
+
+/**
+ * The message of a failed request: the server's, else the error's own.
+ *
+ * @param {Error} error The error
+ * @return {string} The message
+ */
+function errorText(error) {
+	return error.response?.data?.message || error.message || 'Unknown error'
+}
+
+/**
+ * The placeholders of a "failed for {schema}: {error}" message.
+ *
+ * @param {object} schema The schema the request was for
+ * @param {Error} error The error
+ * @return {{schema: string, error: string}} The placeholders
+ */
+function schemaFailure(schema, error) {
+	return { schema: schema.title, error: errorText(error) }
+}
+
+/**
+ * The column changes of a magic table sync, as short phrases.
+ *
+ * @param {object} columns The column statistics
+ * @return {Array<string>} The phrases
+ */
+function columnChanges(columns) {
+	return COLUMN_CHANGES.filter(([key]) => columns[key].count > 0).map(
+		([key, label]) => `${columns[key].count} ${label}`,
+	)
+}
+
+/**
+ * The detail phrases of a magic table sync.
+ *
+ * @param {object} stats The sync statistics
+ * @return {Array<string>} The phrases
+ */
+function magicTableDetails(stats) {
+	const details = []
+	if (stats.metadata && stats.properties) {
+		details.push(
+			`${stats.metadata.count} metadata columns, ${stats.properties.count} property columns`,
+		)
+	}
+	const changes = stats.columns ? columnChanges(stats.columns) : []
+	if (changes.length > 0) {
+		details.push(`Columns: ${changes.join(', ')}`)
+	}
+	return details
+}
+
+/**
+ * The toast for a magic table sync response.
+ *
+ * @param {object} data The response body
+ * @param {object} schema The synced schema
+ * @return {string} The message
+ */
+function magicTableSyncMessage(data, schema) {
+	if (!data || !data.success) {
+		return t('openregister', 'Magic table sync completed for {schema}', {
+			schema: schema.title,
+		})
+	}
+	const details = magicTableDetails(data.statistics)
+	const message =
+		details.length > 0
+			? `Magic table synced: ${details.join(' • ')}`
+			: `Magic table synced successfully for ${schema.title}`
+	return t('openregister', message)
+}
+
+/**
+ * The fields of a stored schema that a storage change writes back.
+ *
+ * @param {object} current The stored schema
+ * @return {object} The schema to save
+ */
+function schemaUpdate(current) {
+	return {
+		title: current.title,
+		type: current.type || 'object',
+		properties: current.properties || {},
+		required: current.required || [],
+		description: current.description || '',
+	}
+}
+
+/**
+ * Give every property a table column, or take them all away.
+ *
+ * @param {object} schema The schema to save; its properties change in place
+ * @param {string} configurationType 'magic' for table columns, else blob storage
+ */
+function convertStorage(schema, configurationType) {
+	if (configurationType !== 'magic') {
+		removeTableColumns(schema.properties)
+		return
+	}
+	if (!schema.properties || typeof schema.properties !== 'object') {
+		schema.properties = {}
+	}
+	addTableColumns(schema.properties)
+}
+
+/**
+ * Give each property without a table column the default one.
+ *
+ * @param {object} properties The schema properties
+ */
+function addTableColumns(properties) {
+	Object.keys(properties).forEach((key) => {
+		if (!properties[key].table) {
+			properties[key].table = {
+				enabled: true,
+				indexed: false,
+				searchable: false,
+			}
+		}
+	})
+}
+
+/**
+ * Remove the table column of each property.
+ *
+ * @param {object} properties The schema properties
+ */
+function removeTableColumns(properties) {
+	if (!properties || typeof properties !== 'object') {
+		return
+	}
+	Object.keys(properties).forEach((key) => {
+		if (properties[key].table) {
+			delete properties[key].table
+		}
+	})
+}
+
+/**
+ * The toast announcing a storage change.
+ *
+ * @param {object} schema The schema
+ * @param {string} configurationType 'magic' for table columns, else blob storage
+ * @return {string} The message
+ */
+function conversionNotice(schema, configurationType) {
+	return configurationType === 'magic'
+		? t('openregister', 'Converting {schema} to magic table...', {
+				schema: schema.title,
+			})
+		: t('openregister', 'Converting {schema} to blob storage...', {
+				schema: schema.title,
+			})
+}
+
+/**
+ * The confirmation text for removing objects for good.
+ *
+ * @param {object} counts Active, deleted and total objects, and the schema title
+ * @return {string} The text
+ */
+function hardDeletionPrompt(counts) {
+	if (counts.active > 0 && counts.deleted > 0) {
+		return allObjectsDeletionPrompt(counts)
+	}
+	return t(
+		'openregister',
+		'⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema "{schema}".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
+		{ count: counts.deleted, schema: counts.schema },
+	)
+}
+
+/**
+ * The confirmation text for a soft delete, or null after explaining that
+ * there are no active objects.
+ *
+ * @param {object} counts Active objects and the schema title
+ * @return {string|null} The text
+ */
+function softDeletionPrompt(counts) {
+	if (counts.active === 0) {
+		showError(
+			t(
+				'openregister',
+				'No active objects to soft-delete for schema {schema}. Use "Permanently Delete" to remove soft-deleted objects.',
+				{ schema: counts.schema },
+			),
+		)
+		return null
+	}
+	return t(
+		'openregister',
+		'Are you sure you want to soft-delete {count} active objects for schema "{schema}"?\n\nThey will be marked as deleted but can be permanently removed later.',
+		{ count: counts.active, schema: counts.schema },
+	)
+}
+
+/**
+ * Say a schema's objects are about to be deleted, permanently or softly.
+ *
+ * @param {object} schema The schema
+ * @param {boolean} hardDelete Whether the objects are deleted permanently
+ * @return {void}
+ */
+function announceDeletionStart(schema, hardDelete) {
+	const action = hardDelete ? 'permanently deleting' : 'soft-deleting'
+	showSuccess(
+		t('openregister', 'Starting {action} for {schema}...', {
+			action,
+			schema: schema.title,
+		}),
+	)
+}
+
+/**
+ * Why deleting a schema's objects failed.
+ *
+ * @param {object} schema The schema
+ * @param {Error} error What went wrong
+ * @return {string} The message
+ */
+function deletionFailureText(schema, error) {
+	return t(
+		'openregister',
+		'Failed to delete objects for {schema}: {error}',
+		schemaFailure(schema, error),
+	)
+}
+
+/**
+ * Ask the server to delete a schema's objects.
+ *
+ * @param {string} url The bulk delete URL
+ * @param {boolean} hardDelete Whether the objects are deleted permanently
+ * @return {Promise<object>} The axios response
+ */
+function postDeletion(url, hardDelete) {
+	return axios.post(url, { hardDelete }, { headers: JSON_HEADERS })
+}
+
+/**
+ * Refresh the register list and the dashboard's registers together.
+ *
+ * @return {Promise<void>}
+ */
+async function refreshRegisterViews() {
+	await Promise.all([
+		registerStore.refreshRegisterList(),
+		dashboardStore.fetchRegisters(),
+	])
+}
+
+/**
+ * The toast for a bulk delete response.
+ *
+ * @param {object} data The response body
+ * @param {object} schema The schema
+ * @return {string} The message
+ */
+function deletionResult(data, schema) {
+	if (data && data.success) {
+		return t(
+			'openregister',
+			'Successfully deleted {count} objects for {schema}',
+			{ count: data.deleted_count || 0, schema: schema.title },
+		)
+	}
+	return t('openregister', 'Objects deletion completed for {schema}', {
+		schema: schema.title,
+	})
+}
 
 export default {
 	name: 'RegisterSchemaCard',
 	components: {
+		EditRegisterFormDialog,
 		NcActions,
 		NcActionButton,
 		NcButton,
-		NcTextField,
-		NcTextArea,
-		NcSelect,
-		CnFormDialog,
 		DatabaseOutline,
 		FileTreeOutline,
 		DotsHorizontal,
@@ -603,8 +829,6 @@ export default {
 			itemsExpanded: false,
 			descriptionExpanded: false,
 			showEditRegisterDialog: false,
-			schemaSelectOptions: [],
-			schemasLoading: false,
 		}
 	},
 
@@ -712,46 +936,6 @@ export default {
 		},
 
 		/**
-		 * @spec exclude computed inline form-schema definition for edit dialog, UI plumbing
-		 */
-		registerSchema() {
-			return {
-				title: t('openregister', 'Register'),
-				properties: {
-					title: {
-						type: 'string',
-						title: t('openregister', 'Title'),
-						required: true,
-						minLength: 1,
-						order: 1,
-					},
-
-					slug: {
-						type: 'string',
-						title: t('openregister', 'Slug'),
-						required: true,
-						minLength: 1,
-						order: 2,
-					},
-
-					description: {
-						type: 'string',
-						title: t('openregister', 'Description'),
-						order: 3,
-					},
-
-					schemas: {
-						type: 'array',
-						title: t('openregister', 'Schemas'),
-						order: 4,
-					},
-				},
-
-				required: ['title', 'slug'],
-			}
-		},
-
-		/**
 		 * @spec exclude computed order-sorted property list for display, UI plumbing
 		 */
 		sortedProperties() {
@@ -774,20 +958,43 @@ export default {
 		},
 	},
 
-	watch: {
-		/**
-		 * @param val
-		 * @spec exclude UI handler/computed dialog-open trigger
-		 */
-		showEditRegisterDialog(val) {
-			if (val) {
-				this.loadSchemaOptions()
-			}
-		},
-	},
-
 	methods: {
 		// Common methods
+		/**
+		 * Open a register modal for this card's register.
+		 *
+		 * @param {string} modal The modal to open
+		 * @spec exclude store/modal-dispatch UI handler
+		 */
+		openRegisterModal(modal) {
+			registerStore.setRegisterItem(this.item)
+			navigationStore.setModal(modal)
+		},
+
+		/**
+		 * Open a register modal for one schema of this card's register.
+		 *
+		 * @param {object} schema The schema
+		 * @param {string} modal The modal to open
+		 * @spec exclude store/modal-dispatch UI handler
+		 */
+		openSchemaModal(schema, modal) {
+			registerStore.setRegisterItem(this.item)
+			schemaStore.setSchemaItem(schema)
+			navigationStore.setModal(modal)
+		},
+
+		/**
+		 * The number of soft-deleted objects of a schema, 0 when unknown.
+		 *
+		 * @param {object} schema The schema
+		 * @return {number} The count
+		 * @spec exclude UI plumbing: reads the schema statistics
+		 */
+		deletedCount(schema) {
+			return schema.stats?.objects?.deleted || 0
+		},
+
 		/**
 		 * @spec exclude store/modal-dispatch UI handler opening edit, register/schema contract owned by register/schema capability
 		 */
@@ -801,56 +1008,10 @@ export default {
 		},
 
 		/**
-		 * @spec exclude store passthrough loading schema select options, UI plumbing
+		 * @spec exclude UI event relay after the register dialog saved
 		 */
-		async loadSchemaOptions() {
-			this.schemasLoading = true
-			try {
-				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
-					id: s.id,
-					label: s.title,
-				}))
-			} catch (error) {
-				console.error('Failed to load schemas:', error)
-			} finally {
-				this.schemasLoading = false
-			}
-		},
-
-		/**
-		 * @param schemas
-		 * @spec exclude computed mapping of schema ids to select options, UI plumbing
-		 */
-		getSchemaSelectValue(schemas) {
-			if (!Array.isArray(schemas)) return []
-			return schemas.map((s) => {
-				const id = typeof s === 'object' ? s.id : s
-				return (
-					this.schemaSelectOptions.find(
-						(o) => String(o.id) === String(id),
-					) || { id, label: String(id) }
-				)
-			})
-		},
-
-		/**
-		 * @param formData
-		 * @spec exclude store passthrough saving register from dialog + refresh emit, contract owned by register capability
-		 */
-		async onSaveRegister(formData) {
-			try {
-				await registerStore.saveRegister({
-					...formData,
-					schemas: (formData.schemas || []).map((s) =>
-						typeof s === 'object' ? s.id : s,
-					),
-				})
-				this.$refs.editRegisterDialog.setResult({ success: true })
-				this.$emit('refresh')
-			} catch (error) {
-				this.$refs.editRegisterDialog.setResult({ error: error.message })
-			}
+		emitRefresh() {
+			this.$emit('refresh')
 		},
 
 		/**
@@ -884,20 +1045,8 @@ export default {
 		 * @spec exclude API fetch + browser file-download UI plumbing; OAS contract owned by openapi-generation capability
 		 */
 		async downloadOas() {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
 			try {
-				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-					type: 'application/json',
-				})
-				const downloadLink = document.createElement('a')
-				downloadLink.href = URL.createObjectURL(blob)
-				downloadLink.download = `${this.item.title.toLowerCase()}-api-specification.json`
-				document.body.appendChild(downloadLink)
-				downloadLink.click()
-				document.body.removeChild(downloadLink)
-				URL.revokeObjectURL(downloadLink.href)
+				await downloadRegisterOas(this.item)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -908,16 +1057,11 @@ export default {
 		 * @spec exclude window.open to external Redoc viewer, UI plumbing
 		 */
 		viewOasDoc() {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
-			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
-				'_blank',
-			)
+			viewRegisterOas(this.item.id)
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude computed read of schema property table mapping for icon display, UI plumbing
 		 */
 		hasMagicMapping(schema) {
@@ -931,7 +1075,7 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude computed active-object count from schema stats for display, UI plumbing
 		 */
 		getSchemaObjectCount(schema) {
@@ -944,170 +1088,46 @@ export default {
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude API passthrough triggering magic-table sync with toast; sync contract owned by magic-table capability
 		 */
 		async syncMagicTable(schema) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/tables/sync/${this.item.id}/${schema.id}`
-
+			const url = apiUrl(`tables/sync/${this.item.id}/${schema.id}`)
 			try {
 				showSuccess(
 					t('openregister', 'Syncing magic table for {schema}...', {
 						schema: schema.title,
 					}),
 				)
-
-				const response = await axios.post(
-					apiUrl,
-					{},
-					{
-						headers: {
-							'Content-Type': 'application/json',
-							Accept: 'application/json',
-						},
-					},
-				)
-
-				if (response.data && response.data.success) {
-					const stats = response.data.statistics
-					const details = []
-
-					if (stats.metadata && stats.properties) {
-						details.push(
-							`${stats.metadata.count} metadata columns, ${stats.properties.count} property columns`,
-						)
-					}
-
-					if (stats.columns) {
-						const changes = []
-						if (stats.columns.added.count > 0) {
-							changes.push(`${stats.columns.added.count} added`)
-						}
-						if (stats.columns.removed.count > 0) {
-							changes.push(`${stats.columns.removed.count} removed`)
-						}
-						if (stats.columns.deRequired.count > 0) {
-							changes.push(
-								`${stats.columns.deRequired.count} de-required`,
-							)
-						}
-						if (stats.columns.unchanged.count > 0) {
-							changes.push(
-								`${stats.columns.unchanged.count} unchanged`,
-							)
-						}
-
-						if (changes.length > 0) {
-							details.push(`Columns: ${changes.join(', ')}`)
-						}
-					}
-
-					const message =
-						details.length > 0
-							? `Magic table synced: ${details.join(' \u2022 ')}`
-							: `Magic table synced successfully for ${schema.title}`
-
-					showSuccess(t('openregister', message))
-				} else {
-					showSuccess(
-						t(
-							'openregister',
-							'Magic table sync completed for {schema}',
-							{ schema: schema.title },
-						),
-					)
-				}
+				const response = await axios.post(url, {}, { headers: JSON_HEADERS })
+				showSuccess(magicTableSyncMessage(response.data, schema))
 			} catch (error) {
 				console.error('Error syncing magic table:', error)
-				const errorMessage =
-					error.response?.data?.message || error.message || 'Unknown error'
 				showError(
 					t(
 						'openregister',
 						'Failed to sync magic table for {schema}: {error}',
-						{
-							schema: schema.title,
-							error: errorMessage,
-						},
+						schemaFailure(schema, error),
 					),
 				)
 			}
 		},
 
 		/**
-		 * @param schema
-		 * @param configurationType
+		 * @param {object} schema
+		 * @param {string} configurationType
 		 * @spec exclude API passthrough toggling schema magic/blob config with toast; schema contract owned by schema capability
 		 */
 		async setSchemaConfiguration(schema, configurationType) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/schemas/${schema.id}`
-
+			const url = apiUrl(`schemas/${schema.id}`)
 			try {
-				const fetchResponse = await axios.get(apiUrl, {
+				const fetchResponse = await axios.get(url, {
 					headers: { Accept: 'application/json' },
 				})
-
-				const currentSchema = fetchResponse.data
-
-				const updatedSchema = {
-					title: currentSchema.title,
-					type: currentSchema.type || 'object',
-					properties: currentSchema.properties || {},
-					required: currentSchema.required || [],
-					description: currentSchema.description || '',
-				}
-
-				if (configurationType === 'magic') {
-					if (
-						!updatedSchema.properties
-						|| typeof updatedSchema.properties !== 'object'
-					) {
-						updatedSchema.properties = {}
-					}
-
-					Object.keys(updatedSchema.properties).forEach((key) => {
-						if (!updatedSchema.properties[key].table) {
-							updatedSchema.properties[key].table = {
-								enabled: true,
-								indexed: false,
-								searchable: false,
-							}
-						}
-					})
-
-					showSuccess(
-						t('openregister', 'Converting {schema} to magic table...', {
-							schema: schema.title,
-						}),
-					)
-				} else {
-					if (
-						updatedSchema.properties
-						&& typeof updatedSchema.properties === 'object'
-					) {
-						Object.keys(updatedSchema.properties).forEach((key) => {
-							if (updatedSchema.properties[key].table) {
-								delete updatedSchema.properties[key].table
-							}
-						})
-					}
-
-					showSuccess(
-						t('openregister', 'Converting {schema} to blob storage...', {
-							schema: schema.title,
-						}),
-					)
-				}
-
-				await axios.put(apiUrl, updatedSchema, {
-					headers: {
-						'Content-Type': 'application/json',
-						Accept: 'application/json',
-					},
-				})
-
+				const updatedSchema = schemaUpdate(fetchResponse.data)
+				convertStorage(updatedSchema, configurationType)
+				showSuccess(conversionNotice(schema, configurationType))
+				await axios.put(url, updatedSchema, { headers: JSON_HEADERS })
 				showSuccess(
 					t(
 						'openregister',
@@ -1118,280 +1138,169 @@ export default {
 				this.$emit('refresh')
 			} catch (error) {
 				console.error('Error updating schema configuration:', error)
-				const errorMessage =
-					error.response?.data?.message || error.message || 'Unknown error'
 				showError(
 					t(
 						'openregister',
 						'Failed to update schema configuration for {schema}: {error}',
-						{
-							schema: schema.title,
-							error: errorMessage,
-						},
+						schemaFailure(schema, error),
 					),
 				)
 			}
 		},
 
 		/**
-		 * @param schema
+		 * @param {object} schema
 		 * @spec exclude API passthrough triggering object validation with toast; validation contract owned by oas-validation capability
 		 */
 		async validateSchemaObjects(schema) {
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/objects/validate`
-
+			const url = apiUrl('objects/validate')
 			try {
 				showSuccess(
 					t('openregister', 'Starting validation for {schema}...', {
 						schema: schema.title,
 					}),
 				)
-
 				const response = await axios.post(
-					apiUrl,
-					{
-						register: this.item.id,
-						schema: schema.id,
-					},
-					{
-						headers: {
-							'Content-Type': 'application/json',
-							Accept: 'application/json',
-						},
-					},
+					url,
+					{ register: this.item.id, schema: schema.id },
+					{ headers: JSON_HEADERS },
 				)
-
-				if (response.data && response.data.success) {
-					const stats = response.data.statistics
-					showSuccess(
-						t(
-							'openregister',
-							'Validation completed for {schema}: {processed} processed, {updated} updated, {failed} failed',
-							{
-								schema: schema.title,
-								processed: stats.processed,
-								updated: stats.updated,
-								failed: stats.failed,
-							},
-						),
-					)
-
-					if (stats.errors && stats.errors.length > 0) {
-						console.warn('Validation errors:', stats.errors)
-					}
-
-					this.$emit('refresh')
-				} else {
-					showSuccess(
-						t('openregister', 'Validation completed for {schema}', {
-							schema: schema.title,
-						}),
-					)
-				}
+				this.reportValidation(response.data, schema)
 			} catch (error) {
 				console.error('Error validating schema objects:', error)
-				const errorMessage =
-					error.response?.data?.message || error.message || 'Unknown error'
 				showError(
-					t('openregister', 'Failed to validate {schema}: {error}', {
-						schema: schema.title,
-						error: errorMessage,
-					}),
+					t(
+						'openregister',
+						'Failed to validate {schema}: {error}',
+						schemaFailure(schema, error),
+					),
 				)
 			}
 		},
 
 		/**
-		 * @param schema
-		 * @param hardDelete
+		 * Show the outcome of a validation run and refresh the card when it ran.
+		 *
+		 * @param {object} data The response body
+		 * @param {object} schema The validated schema
+		 * @spec exclude UI plumbing: toast for a validation response
+		 */
+		reportValidation(data, schema) {
+			if (!data || !data.success) {
+				showSuccess(
+					t('openregister', 'Validation completed for {schema}', {
+						schema: schema.title,
+					}),
+				)
+				return
+			}
+			const stats = data.statistics
+			showSuccess(
+				t(
+					'openregister',
+					'Validation completed for {schema}: {processed} processed, {updated} updated, {failed} failed',
+					{
+						schema: schema.title,
+						processed: stats.processed,
+						updated: stats.updated,
+						failed: stats.failed,
+					},
+				),
+			)
+			if (stats.errors && stats.errors.length > 0) {
+				console.warn('Validation errors:', stats.errors)
+			}
+			this.$emit('refresh')
+		},
+
+		/**
+		 * @param {object} schema
+		 * @param {boolean} hardDelete
 		 * @spec exclude confirm-dialog + bulk-delete API passthrough with toast; bulk-delete contract owned by scoped-object-delete-api capability
 		 */
 		async deleteSchemaObjects(schema, hardDelete = false) {
-			const totalObjects = schema.stats?.objects?.total || 0
-			const activeObjects = this.getSchemaObjectCount(schema)
-			const deletedObjects = schema.stats?.objects?.deleted || 0
+			const prompt = this.deletionPrompt(schema, hardDelete)
+			if (prompt && confirm(prompt)) {
+				await this.runSchemaDeletion(schema, hardDelete)
+			}
+		},
 
-			if (totalObjects === 0) {
+		/**
+		 * The confirmation text for deleting a schema's objects, or null after
+		 * explaining why there is nothing to delete.
+		 *
+		 * @param {object} schema The schema
+		 * @param {boolean} hardDelete Whether objects are removed for good
+		 * @return {string|null} The confirmation text
+		 * @spec exclude UI plumbing: confirmation text for a bulk delete
+		 */
+		deletionPrompt(schema, hardDelete) {
+			const counts = this.objectCounts(schema)
+			if (counts.total === 0) {
 				showError(
 					t('openregister', 'No objects to delete for schema {schema}', {
 						schema: schema.title,
 					}),
 				)
-				return
+				return null
 			}
+			return hardDelete
+				? hardDeletionPrompt(counts)
+				: softDeletionPrompt(counts)
+		},
 
-			let confirmMessage = ''
-			if (hardDelete) {
-				if (activeObjects > 0 && deletedObjects > 0) {
-					confirmMessage = t(
-						'openregister',
-						'\u26A0\uFE0F PERMANENT DELETION WARNING \u26A0\uFE0F\n\nYou are about to PERMANENTLY delete ALL objects for schema "{schema}":\n\n\u2022 Active objects: {active}\n\u2022 Soft-deleted objects: {deleted}\n\u2022 Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
-						{
-							active: activeObjects,
-							deleted: deletedObjects,
-							total: totalObjects,
-							schema: schema.title,
-						},
-					)
-				} else {
-					confirmMessage = t(
-						'openregister',
-						'\u26A0\uFE0F PERMANENT DELETION WARNING \u26A0\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema "{schema}".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
-						{
-							count: deletedObjects,
-							schema: schema.title,
-						},
-					)
-				}
-			} else {
-				if (activeObjects === 0) {
-					showError(
-						t(
-							'openregister',
-							'No active objects to soft-delete for schema {schema}. Use "Permanently Delete" to remove soft-deleted objects.',
-							{
-								schema: schema.title,
-							},
-						),
-					)
-					return
-				}
-				confirmMessage = t(
-					'openregister',
-					'Are you sure you want to soft-delete {count} active objects for schema "{schema}"?\n\nThey will be marked as deleted but can be permanently removed later.',
-					{
-						count: activeObjects,
-						schema: schema.title,
-					},
-				)
-			}
-
-			if (!confirm(confirmMessage)) {
-				return
-			}
-
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/bulk/${this.item.id}/${schema.id}/delete-objects`
-
-			try {
-				const actionType = hardDelete
-					? 'permanently deleting'
-					: 'soft-deleting'
-				showSuccess(
-					t('openregister', 'Starting {action} for {schema}...', {
-						action: actionType,
-						schema: schema.title,
-					}),
-				)
-
-				const response = await axios.post(
-					apiUrl,
-					{
-						hardDelete,
-					},
-					{
-						headers: {
-							'Content-Type': 'application/json',
-							Accept: 'application/json',
-						},
-					},
-				)
-
-				if (response.data && response.data.success) {
-					const deletedCount = response.data.deleted_count || 0
-
-					showSuccess(
-						t(
-							'openregister',
-							'Successfully deleted {count} objects for {schema}',
-							{
-								count: deletedCount,
-								schema: schema.title,
-							},
-						),
-					)
-				} else {
-					showSuccess(
-						t(
-							'openregister',
-							'Objects deletion completed for {schema}',
-							{ schema: schema.title },
-						),
-					)
-				}
-
-				await Promise.all([
-					registerStore.refreshRegisterList(),
-					dashboardStore.fetchRegisters(),
-				])
-			} catch (error) {
-				console.error('Error deleting schema objects:', error)
-				const errorMessage =
-					error.response?.data?.message || error.message || 'Unknown error'
-				showError(
-					t(
-						'openregister',
-						'Failed to delete objects for {schema}: {error}',
-						{
-							schema: schema.title,
-							error: errorMessage,
-						},
-					),
-				)
+		/**
+		 * How many objects a schema holds in this register: in total, active
+		 * and soft-deleted.
+		 *
+		 * @param {object} schema The schema
+		 * @return {{total: number, active: number, deleted: number, schema: string}} The counts
+		 */
+		objectCounts(schema) {
+			return {
+				total: schema.stats?.objects?.total || 0,
+				active: this.getSchemaObjectCount(schema),
+				deleted: this.deletedCount(schema),
+				schema: schema.title,
 			}
 		},
 
 		/**
-		 * @param schema
+		 * Delete a schema's objects on the server and refresh the lists.
+		 *
+		 * @param {object} schema The schema
+		 * @param {boolean} hardDelete Whether objects are removed for good
+		 * @spec exclude bulk-delete API passthrough with toast
+		 */
+		async runSchemaDeletion(schema, hardDelete) {
+			const url = apiUrl(`bulk/${this.item.id}/${schema.id}/delete-objects`)
+			try {
+				announceDeletionStart(schema, hardDelete)
+				const response = await postDeletion(url, hardDelete)
+				showSuccess(deletionResult(response.data, schema))
+				await refreshRegisterViews()
+			} catch (error) {
+				console.error('Error deleting schema objects:', error)
+				showError(deletionFailureText(schema, error))
+			}
+		},
+
+		/**
+		 * @param {object} schema
 		 * @spec exclude confirm-dialog + schema-delete API passthrough with toast; schema contract owned by schema capability
 		 */
 		async removeSchemaFromRegister(schema) {
-			const objectCount = this.getSchemaObjectCount(schema)
-
-			if (objectCount > 0) {
-				showError(
-					t(
-						'openregister',
-						'Cannot remove schema {schema} because it contains {count} objects',
-						{
-							schema: schema.title,
-							count: objectCount,
-						},
-					),
-				)
+			if (!this.mayRemoveSchema(schema)) {
 				return
 			}
-
-			if (
-				!confirm(
-					t(
-						'openregister',
-						'Are you sure you want to remove the schema "{schema}" from register "{register}"? This action cannot be undone.',
-						{
-							schema: schema.title,
-							register: this.item.title,
-						},
-					),
-				)
-			) {
-				return
-			}
-
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/schemas/${schema.id}`
-
+			const url = apiUrl(`schemas/${schema.id}`)
 			try {
 				showSuccess(
 					t('openregister', 'Removing schema {schema}...', {
 						schema: schema.title,
 					}),
 				)
-
-				await axios.delete(apiUrl, {
-					headers: { Accept: 'application/json' },
-				})
-
+				await axios.delete(url, { headers: { Accept: 'application/json' } })
 				showSuccess(
 					t('openregister', 'Schema {schema} removed successfully', {
 						schema: schema.title,
@@ -1400,21 +1309,71 @@ export default {
 				this.$emit('refresh')
 			} catch (error) {
 				console.error('Error removing schema:', error)
-				const errorMessage =
-					error.response?.data?.message || error.message || 'Unknown error'
 				showError(
-					t('openregister', 'Failed to remove schema {schema}: {error}', {
-						schema: schema.title,
-						error: errorMessage,
-					}),
+					t(
+						'openregister',
+						'Failed to remove schema {schema}: {error}',
+						schemaFailure(schema, error),
+					),
 				)
 			}
 		},
+
+		/**
+		 * Whether a schema may leave the register: it holds no objects and the
+		 * user confirms.
+		 *
+		 * @param {object} schema The schema
+		 * @return {boolean} Whether to remove it
+		 * @spec exclude UI plumbing: guard and confirmation before removing a schema
+		 */
+		mayRemoveSchema(schema) {
+			const count = this.getSchemaObjectCount(schema)
+			if (count > 0) {
+				showError(
+					t(
+						'openregister',
+						'Cannot remove schema {schema} because it contains {count} objects',
+						{ schema: schema.title, count },
+					),
+				)
+				return false
+			}
+			return confirm(
+				t(
+					'openregister',
+					'Are you sure you want to remove the schema "{schema}" from register "{register}"? This action cannot be undone.',
+					{ schema: schema.title, register: this.item.title },
+				),
+			)
+		},
 	},
+}
+
+/**
+ * The warning before permanently deleting both the active and the
+ * soft-deleted objects of a schema.
+ *
+ * @param {{total: number, active: number, deleted: number, schema: string}} counts The counts
+ * @return {string} The warning
+ */
+function allObjectsDeletionPrompt(counts) {
+	return t(
+		'openregister',
+		'⚠️ PERMANENT DELETION WARNING ⚠️\n\nYou are about to PERMANENTLY delete ALL objects for schema "{schema}":\n\n• Active objects: {active}\n• Soft-deleted objects: {deleted}\n• Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?',
+		{
+			active: counts.active,
+			deleted: counts.deleted,
+			total: counts.total,
+			schema: counts.schema,
+		},
+	)
 }
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/common.scss' as *;
+
 .registerSchemaCard {
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border);
@@ -1584,48 +1543,13 @@ export default {
 	padding: 16px !important;
 }
 
-.managedBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	margin-left: 8px;
-	vertical-align: middle;
-}
+@include managed-badge;
 
-.managedBadge--external {
-	background: var(--color-success);
-	color: white;
-}
+@include managed-badge-external;
 
-.managedBadge--local {
-	background: var(--color-warning);
-	color: var(--color-main-text);
-}
+@include managed-badge-local;
 
-.statusPill {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 0.75em;
-	font-weight: 600;
-	text-transform: uppercase;
-	margin-left: 8px;
-	white-space: nowrap;
-}
-
-.statusPill--alert {
-	background-color: var(--color-warning);
-	color: var(--color-main-background);
-}
-
-.statusPill--success {
-	background-color: var(--color-success);
-	color: white;
-}
+@include status-pill-rules;
 
 .schemaNameCell {
 	display: table-cell;

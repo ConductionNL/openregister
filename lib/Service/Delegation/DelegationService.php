@@ -48,8 +48,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Delegation;
 
-use DateTime;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
@@ -73,28 +73,25 @@ class DelegationService {
 	 *
 	 * @param DelegationResolver $resolver      Decides whether the delegation is permitted.
 	 * @param IUserManager       $userManager   Resolves a uid to an account.
-	 * @param ObjectService      $objectService Owns the identity-switch primitive.
+	 * @param ObjectOperationsInterface      $objectService Owns the identity-switch primitive.
 	 * @param LoggerInterface    $logger        Records every delegation, taken or refused.
 	 */
 	public function __construct(
 		private readonly DelegationResolver $resolver,
 		private readonly IUserManager $userManager,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
 	/**
-	 * Run `$operation` as `$actingAs`, on behalf of `$principal`.
+	 * Run `$operation` as the request's `actingAs`, on behalf of its `principal`.
 	 *
 	 * Acting as yourself short-circuits the store entirely — see
 	 * {@see DelegationResolver} for why that matters beyond speed.
 	 *
-	 * @param string        $principal The uid the work is being done by.
-	 * @param string        $actingAs  The uid whose rights the work should use.
-	 * @param callable      $operation The work.
-	 * @param array         $scope     What the work needs, for scope matching.
-	 * @param DateTime|null $now       The moment to judge liveness at; defaults to now.
+	 * @param DelegationRequest $request   Who acts as whom, for what, when.
+	 * @param callable          $operation The work.
 	 *
 	 * @return mixed Whatever the operation returns.
 	 *
@@ -102,39 +99,11 @@ class DelegationService {
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function runAsDelegated(
-		string $principal,
-		string $actingAs,
-		callable $operation,
-		array $scope = [],
-		?DateTime $now = null,
-	) {
-		$verdict = $this->verdictFor(
-			principal: $principal,
-			actingAs: $actingAs,
-			scope: $scope,
-			now: ($now ?? new DateTime())
-		);
+	public function runAsDelegated(DelegationRequest $request, callable $operation) {
+		$verdict = $this->verdictFor(request: $request);
 
 		if ($verdict->permitted === false) {
-			// 🔴 Log the refusal at WARNING, not INFO. A delegation that was
-			// asked for and refused is the security-relevant event here: the
-			// permitted case is ordinary operation, and burying refusals at the
-			// same level as successes is how a probing pattern becomes
-			// invisible in a log nobody greps.
-			$this->logger->warning(
-				message: '[DelegationService] Delegation refused',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'principal' => $principal,
-					'actingAs' => $actingAs,
-					'reason' => $verdict->reason,
-					'scope' => $scope,
-				]
-			);
-
-			throw new DelegationRefused(principal: $principal, actingAs: $actingAs, verdict: $verdict);
+			$this->refuse(request: $request, verdict: $verdict);
 		}
 
 		if ($verdict->reason === DelegationVerdict::REASON_SELF) {
@@ -144,48 +113,132 @@ class DelegationService {
 			return $operation();
 		}
 
-		$user = $this->userManager->get($actingAs);
-		if ($user === null) {
-			// A grant naming an account that no longer exists is not a licence
-			// to run as nobody. `runAs(null)` is not even expressible, but the
-			// tempting repair — fall back to the principal — would silently
-			// execute the work under the WRONG identity while the audit trail
-			// said otherwise.
-			$gone = DelegationVerdict::refused(
-				reason: DelegationVerdict::REASON_UNNAMED,
-				detail: sprintf('"%s" resolves to no account, so it cannot be acted as.', $actingAs)
-			);
+		$user = $this->actedAsUser(request: $request, verdict: $verdict);
 
-			$this->logger->error(
-				message: '[DelegationService] A live grant names an account that does not resolve',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'principal' => $principal,
-					'actingAs' => $actingAs,
-					'grantId' => $verdict->grant?->getId(),
-				]
-			);
+		$this->logActingOnBehalf(request: $request, verdict: $verdict);
 
-			throw new DelegationRefused(principal: $principal, actingAs: $actingAs, verdict: $gone);
-		}//end if
+		return $this->objectService->runAs(user: $user, operation: $operation);
+	}//end runAsDelegated()
 
+	/**
+	 * Record that work runs on behalf of another user, with the grant that allows it.
+	 *
+	 * @param DelegationRequest $request The permitted request.
+	 * @param DelegationVerdict $verdict The permitting verdict.
+	 *
+	 * @return void
+	 */
+	private function logActingOnBehalf(DelegationRequest $request, DelegationVerdict $verdict): void {
 		$this->logger->info(
 			message: '[DelegationService] Acting on behalf of another user',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'principal' => $principal,
-				'actingAs' => $actingAs,
+				'principal' => $request->principal,
+				'actingAs' => $request->actingAs,
 				'grantId' => $verdict->grant?->getId(),
 				'grantedBy' => $verdict->grant?->getGrantedBy(),
 				'statedReason' => $verdict->grant?->getReason(),
-				'scope' => $scope,
+				'scope' => $request->scope,
+			]
+		);
+	}//end logActingOnBehalf()
+
+	/**
+	 * Log and throw a refused delegation.
+	 *
+	 * @param DelegationRequest $request The refused request.
+	 * @param DelegationVerdict $verdict The refusal.
+	 *
+	 * @return never
+	 *
+	 * @throws DelegationRefused Always.
+	 */
+	private function refuse(DelegationRequest $request, DelegationVerdict $verdict): never {
+		// 🔴 Log the refusal at WARNING, not INFO. A delegation that was
+		// asked for and refused is the security-relevant event here: the
+		// permitted case is ordinary operation, and burying refusals at the
+		// same level as successes is how a probing pattern becomes
+		// invisible in a log nobody greps.
+		$this->logger->warning(
+			message: '[DelegationService] Delegation refused',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'principal' => $request->principal,
+				'actingAs' => $request->actingAs,
+				'reason' => $verdict->reason,
+				'scope' => $request->scope,
 			]
 		);
 
-		return $this->objectService->runAs(user: $user, operation: $operation);
-	}//end runAsDelegated()
+		throw new DelegationRefused(principal: $request->principal, actingAs: $request->actingAs, verdict: $verdict);
+	}//end refuse()
+
+	/**
+	 * The account a permitted delegation acts as.
+	 *
+	 * @param DelegationRequest $request The permitted request.
+	 * @param DelegationVerdict $verdict The permitting verdict.
+	 *
+	 * @return IUser The acted-as account.
+	 *
+	 * @throws DelegationRefused When the acted-as uid resolves to no account.
+	 */
+	private function actedAsUser(DelegationRequest $request, DelegationVerdict $verdict): IUser {
+		$user = $this->userManager->get($request->actingAs);
+		if ($user !== null) {
+			return $user;
+		}
+
+		$this->refuseUnresolvedAccount(request: $request, verdict: $verdict);
+	}//end actedAsUser()
+
+	/**
+	 * Log and throw a permitted delegation whose acted-as uid resolves to no account.
+	 *
+	 * @param DelegationRequest $request The permitted request.
+	 * @param DelegationVerdict $verdict The permitting verdict.
+	 *
+	 * @return never
+	 *
+	 * @throws DelegationRefused Always.
+	 */
+	private function refuseUnresolvedAccount(DelegationRequest $request, DelegationVerdict $verdict): never {
+		// A grant naming an account that no longer exists is not a licence
+		// to run as nobody. `runAs(null)` is not even expressible, but the
+		// tempting repair — fall back to the principal — would silently
+		// execute the work under the WRONG identity while the audit trail
+		// said otherwise.
+		$gone = $this->unresolvedAccountVerdict(request: $request);
+
+		$this->logger->error(
+			message: '[DelegationService] A live grant names an account that does not resolve',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'principal' => $request->principal,
+				'actingAs' => $request->actingAs,
+				'grantId' => $verdict->grant?->getId(),
+			]
+		);
+
+		throw new DelegationRefused(principal: $request->principal, actingAs: $request->actingAs, verdict: $gone);
+	}//end refuseUnresolvedAccount()
+
+	/**
+	 * The refusal for an acted-as uid that resolves to no account.
+	 *
+	 * @param DelegationRequest $request The permitted request.
+	 *
+	 * @return DelegationVerdict The refusal.
+	 */
+	private function unresolvedAccountVerdict(DelegationRequest $request): DelegationVerdict {
+		return DelegationVerdict::refused(
+			reason: DelegationVerdict::REASON_UNNAMED,
+			detail: sprintf('"%s" resolves to no account, so it cannot be acted as.', $request->actingAs)
+		);
+	}//end unresolvedAccountVerdict()
 
 	/**
 	 * Would this delegation be permitted, without performing it?
@@ -199,26 +252,15 @@ class DelegationService {
 	 * first firing, which is exactly why the fire path re-resolves rather than
 	 * trusting that the definition was once valid.
 	 *
-	 * @param string        $principal The uid the work would be done by.
-	 * @param string        $actingAs  The uid whose rights it would use.
-	 * @param array         $scope     What the work needs.
-	 * @param DateTime|null $now       The moment to judge at; defaults to now.
+	 * @param DelegationRequest $request Who would do the work, whose rights it
+	 *                                   would use, what it needs and the moment
+	 *                                   to judge at.
 	 *
 	 * @return DelegationVerdict The verdict, carrying its reason.
 	 *
 	 * @spec openspec/specs/delegation-grants/spec.md
 	 */
-	public function verdictFor(
-		string $principal,
-		string $actingAs,
-		array $scope = [],
-		?DateTime $now = null,
-	): DelegationVerdict {
-		return $this->resolver->resolve(
-			principal: $principal,
-			actingAs: $actingAs,
-			now: ($now ?? new DateTime()),
-			scope: $scope
-		);
+	public function verdictFor(DelegationRequest $request): DelegationVerdict {
+		return $this->resolver->resolve(request: $request);
 	}//end verdictFor()
 }//end class

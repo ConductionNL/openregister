@@ -2909,7 +2909,7 @@
         "Complete: {outcome}": "Dovrši: {outcome}",
         "Could not load the task": "Zadatak se ne može učitati",
         "The task refused that action": "Zadatak je odbio tu radnju",
-        "Store": "Trgovina",
+        "Marketplace": "Trgovina",
         "Install registers, schemas and flows that other organisations have published.": "Instalirajte registre, sheme i tokove koje su objavile druge organizacije.",
         "No such run": "Nema takvog izvođenja",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izvođenje ne postoji ili ga ne smijete vidjeti. Brisanjem toka brišu se i njegova izvođenja.",

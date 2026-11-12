@@ -1,0 +1,69 @@
+{
+    "native": {
+        "result": {
+            "own": {
+                "source": "native",
+                "inheritedFrom": null
+            }
+        },
+        "rowsLeft": 0
+    },
+    "inherited": {
+        "result": {
+            "own": {
+                "source": "native",
+                "inheritedFrom": null
+            },
+            "name": {
+                "source": "inherited",
+                "inheritedFrom": "parent-2"
+            }
+        },
+        "rowsLeft": 0
+    },
+    "second parent": {
+        "result": {
+            "age": {
+                "source": "inherited",
+                "inheritedFrom": "parent-3"
+            }
+        },
+        "rowsLeft": 0
+    },
+    "parent missing": {
+        "result": {
+            "age": {
+                "source": "inherited",
+                "inheritedFrom": "parent-3"
+            }
+        },
+        "rowsLeft": 0
+    },
+    "found nowhere": {
+        "result": {
+            "age": {
+                "source": "inherited",
+                "inheritedFrom": null
+            }
+        },
+        "rowsLeft": 0
+    },
+    "empty parent entry": {
+        "result": {
+            "age": {
+                "source": "inherited",
+                "inheritedFrom": "parent-3"
+            }
+        },
+        "rowsLeft": 0
+    },
+    "no stored row": {
+        "result": {
+            "age": {
+                "source": "inherited",
+                "inheritedFrom": null
+            }
+        },
+        "rowsLeft": 0
+    }
+}

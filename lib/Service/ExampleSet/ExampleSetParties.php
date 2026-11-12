@@ -23,18 +23,20 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateTime;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -43,13 +45,18 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ContactLink::partyUid is the link table's own key for a party.
  *
- * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
  */
 class ExampleSetParties extends ExampleSetEngineRows {
 	/**
 	 * The party link fields a fragment may set.
 	 */
 	public const FIELDS = ['objectUuid', 'partyUuid', 'role', 'validFrom', 'validUntil', 'note', 'primary'];
+
+	/**
+	 * The fields a party link needs, with what each holds.
+	 */
+	private const REQUIRED = ['objectUuid' => 'the object it is on', 'partyUuid' => 'the party', 'role' => 'a role'];
 
 	/**
 	 * Constructor.
@@ -68,7 +75,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function part(): string {
 		return 'parties';
@@ -80,7 +87,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-parties-refresh-in-place/specs/example-sets/spec.md#requirement-a-refresh-writes-a-party-link-again-where-it-is
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-a-party-link-again-where-it-is
 	 */
 	public function updatesInPlace(): bool {
 		return true;
@@ -91,7 +98,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function noun(): string {
 		return 'party';
@@ -105,21 +112,17 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a party field a set may write';
-		}
-
-		foreach (['objectUuid' => 'the object it is on', 'partyUuid' => 'the party', 'role' => 'a role'] as $field => $what) {
-			if (is_string($data[$field] ?? null) === false || trim($data[$field]) === '') {
-				return 'a party link needs '.$what.' ('.$field.')';
-			}
-		}
-
-		return $this->datesRefusal(data: $data);
+		$rules = new ExampleSetFieldRules();
+		return $rules->firstRefusal(
+			checks: [
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a party', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a party link', required: self::REQUIRED)),
+				fn (): string => $rules->datesRefusal(data: $data, fields: ['validFrom', 'validUntil']),
+			]
+		);
 	}//end refusal()
 
 	/**
@@ -129,15 +132,14 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 * occ install has no user, and a schema that refuses "Anonymous" would
 	 * otherwise read as "no such object".
 	 *
-	 * @param string               $app  The app that ships the fragment, recorded as the linker.
-	 * @param string               $key  The link's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled link fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{objectUuid: string, partyUuid: string, role: string}|null} The record entry, or why the write failed.
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$objectUuid = (string) $data['objectUuid'];
 		$object     = $this->parties()->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {
@@ -145,13 +147,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		}
 
 		try {
-			$this->roles()->importParty(
-				objectUuid: $objectUuid,
-				registerId: (int) $object->getRegister(),
-				schemaId: $object->getSchema(),
-				payload: array_diff_key($data, ['objectUuid' => true]),
-				linkedBy: $app
-			);
+			$this->import(row: $row, object: $object);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
@@ -160,20 +156,38 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	}//end write()
 
 	/**
+	 * Link the party through the party role service.
+	 *
+	 * @param ExampleSetRow $row    The link row: the app that ships the fragment, recorded as the linker, and the filled link fields.
+	 * @param ObjectEntity  $object The object.
+	 *
+	 * @return void
+	 */
+	private function import(ExampleSetRow $row, ObjectEntity $object): void {
+		$this->roles()->importParty(
+			object: $object,
+			payload: array_diff_key($row->data, ['objectUuid' => true]),
+			linkedBy: $row->app
+		);
+	}//end import()
+
+	/**
 	 * Whether a written party link is no longer there.
 	 *
 	 * @param array<string, mixed> $entry A record entry from write().
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function lost(array $entry): bool {
 		try {
 			return $this->links()->findByObjectContactAndRole(
-				objectUuid: (string) $entry['objectUuid'],
-				contactUid: ContactLink::partyUid(partyUuid: (string) $entry['partyUuid']),
-				role: (string) $entry['role']
+				ref: new PersonLinkRef(
+					objectUuid: (string) $entry['objectUuid'],
+					contactUid: ContactLink::partyUid(partyUuid: (string) $entry['partyUuid']),
+					role: (string) $entry['role']
+				)
 			) === null;
 		} catch (Throwable) {
 			return true;
@@ -187,7 +201,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when it was already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function revert(array $entry): string {
 		if ($this->lost(entry: $entry) === true) {
@@ -197,8 +211,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		try {
 			$this->roles()->removeParty(
 				objectUuid: (string) $entry['objectUuid'],
-				partyUuid: (string) $entry['partyUuid'],
-				role: (string) $entry['role']
+				holding: new PartyHolding(partyUuid: (string) $entry['partyUuid'], role: (string) $entry['role'])
 			);
 		} catch (Throwable) {
 			return 'failed';
@@ -206,29 +219,6 @@ class ExampleSetParties extends ExampleSetEngineRows {
 
 		return 'removed';
 	}//end revert()
-
-	/**
-	 * A validFrom or validUntil that is not a date.
-	 *
-	 * @param array<string, mixed> $data The filled link fields.
-	 *
-	 * @return string
-	 */
-	private function datesRefusal(array $data): string {
-		foreach (['validFrom', 'validUntil'] as $field) {
-			if (isset($data[$field]) === false) {
-				continue;
-			}
-
-			try {
-				new DateTime((string) $data[$field]);
-			} catch (Throwable) {
-				return $field.' "'.(string) $data[$field].'" is not a date';
-			}
-		}
-
-		return '';
-	}//end datesRefusal()
 
 	/**
 	 * The party role service.
@@ -251,9 +241,9 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	/**
 	 * The party link mapper.
 	 *
-	 * @return ContactLinkMapper
+	 * @return ContactLinkMapperInterface
 	 */
-	private function links(): ContactLinkMapper {
-		return $this->container->get(ContactLinkMapper::class);
+	private function links(): ContactLinkMapperInterface {
+		return $this->container->get(ContactLinkMapperInterface::class);
 	}//end links()
 }//end class

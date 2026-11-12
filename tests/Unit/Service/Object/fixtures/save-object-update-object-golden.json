@@ -1,0 +1,258 @@
+{
+    "file update": {
+        "trace": [
+            [
+                "findSchema",
+                7
+            ],
+            [
+                "retention",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "old",
+                    "kept": "yes"
+                }
+            ],
+            [
+                "update",
+                "3",
+                "7",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "new",
+                    "doc": "raw"
+                },
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "old",
+                    "kept": "yes"
+                }
+            ],
+            [
+                "audit",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "old",
+                    "kept": "yes"
+                },
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "new",
+                    "doc": "raw"
+                }
+            ],
+            [
+                "file",
+                "doc",
+                "raw"
+            ],
+            [
+                "store",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "new",
+                    "doc": 42
+                },
+                null
+            ]
+        ],
+        "register": "3",
+        "version": "9.0.0",
+        "schema": "7",
+        "updatedSet": true,
+        "image": null,
+        "lastLog": {
+            "log": 1
+        },
+        "object": {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "title": "new",
+            "doc": 42
+        },
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "silent with given old": {
+        "trace": [
+            [
+                "findSchema",
+                7
+            ],
+            [
+                "retention",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "given old"
+                }
+            ],
+            [
+                "update",
+                "3",
+                "7",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "new",
+                    "doc": null
+                },
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "given old"
+                }
+            ]
+        ],
+        "register": "3",
+        "version": "0.0.1",
+        "schema": "7",
+        "updatedSet": true,
+        "image": "img.png",
+        "lastLog": null,
+        "object": {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "title": "new",
+            "doc": null
+        },
+        "log": []
+    },
+    "ids and audit off": {
+        "trace": [
+            [
+                "findRegister",
+                3
+            ],
+            [
+                "findSchema",
+                7
+            ],
+            [
+                "findSchema",
+                7
+            ],
+            [
+                "retention",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "old",
+                    "kept": "yes"
+                }
+            ],
+            [
+                "update",
+                "3",
+                "7",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "new",
+                    "doc": "raw"
+                },
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "old",
+                    "kept": "yes"
+                }
+            ],
+            [
+                "file",
+                "doc",
+                "raw"
+            ],
+            [
+                "store",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "new",
+                    "doc": 42
+                },
+                null
+            ]
+        ],
+        "register": "3",
+        "version": "0.0.1",
+        "schema": "7",
+        "updatedSet": true,
+        "image": null,
+        "lastLog": null,
+        "object": {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "title": "new",
+            "doc": 42
+        },
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "image field not a file": {
+        "trace": [
+            [
+                "findSchema",
+                7
+            ],
+            [
+                "retention",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "old",
+                    "kept": "yes"
+                }
+            ],
+            [
+                "update",
+                "3",
+                "7",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "new",
+                    "doc": "raw"
+                },
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "old",
+                    "kept": "yes"
+                }
+            ],
+            [
+                "audit",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "old",
+                    "kept": "yes"
+                },
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "new",
+                    "doc": "raw"
+                }
+            ],
+            [
+                "file",
+                "doc",
+                "raw"
+            ],
+            [
+                "store",
+                {
+                    "id": "11111111-1111-1111-1111-111111111111",
+                    "title": "new",
+                    "doc": 42
+                },
+                "img.png"
+            ]
+        ],
+        "register": "3",
+        "version": "0.0.1",
+        "schema": "7",
+        "updatedSet": true,
+        "image": "img.png",
+        "lastLog": {
+            "log": 1
+        },
+        "object": {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "title": "new",
+            "doc": 42
+        },
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    }
+}

@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/views-list-leaves-out-others-private-views/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -26,8 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -39,7 +39,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @spec openspec/changes/views-list-leaves-out-others-private-views/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 class ViewMapperListsOnlyReachableViewsTest extends TestCase {
 
@@ -64,10 +64,14 @@ class ViewMapperListsOnlyReachableViewsTest extends TestCase {
 		$mapper = $this->getMockBuilder(ViewMapper::class)
 			->setConstructorArgs([
 				$db,
-				$this->createMock(OrganisationMapper::class),
-				$this->createMock(IAppConfig::class),
-				$this->createMock(IUserSession::class),
-				$this->createMock(IGroupManager::class),
+				new \OCA\OpenRegister\Search\Db\ViewMapperAccess(
+					new \OCA\OpenRegister\Db\Tenancy\TenancyServices(
+						$this->createMock(OrganisationMapper::class),
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class)
+					),
+					$this->createMock(IAppConfig::class)
+				),
 				$this->createMock(IEventDispatcher::class),
 			])
 			->onlyMethods(['findEntities', 'verifyRbacPermission', 'applyOrganisationFilter'])

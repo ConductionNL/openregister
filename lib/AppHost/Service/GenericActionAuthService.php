@@ -175,6 +175,24 @@ class GenericActionAuthService {
 	 * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.2
 	 */
 	public function getMatrix(): array {
+		$matrix = [];
+		foreach ($this->storedMatrix() as $action => $groups) {
+			if (is_string($action) === false || is_array($groups) === false) {
+				continue;
+			}
+
+			$matrix[$action] = self::groupNames(groups: $groups);
+		}
+
+		return $matrix;
+	}//end getMatrix()
+
+	/**
+	 * The stored matrix as decoded; empty when it is not valid JSON or not an object.
+	 *
+	 * @return array
+	 */
+	private function storedMatrix(): array {
 		$json = $this->appConfig->getValueString($this->appId, static::CONFIG_KEY, '{}');
 
 		try {
@@ -187,24 +205,26 @@ class GenericActionAuthService {
 			return [];
 		}
 
-		$matrix = [];
-		foreach ($decoded as $action => $groups) {
-			if (is_string($action) === false || is_array($groups) === false) {
-				continue;
-			}
+		return $decoded;
+	}//end storedMatrix()
 
-			$clean = [];
-			foreach ($groups as $group) {
-				if (is_string($group) === true && $group !== '') {
-					$clean[] = $group;
-				}
+	/**
+	 * The distinct non-empty group names of one action, in stored order.
+	 *
+	 * @param array $groups The stored groups of an action.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function groupNames(array $groups): array {
+		$clean = [];
+		foreach ($groups as $group) {
+			if (is_string($group) === true && $group !== '') {
+				$clean[] = $group;
 			}
-
-			$matrix[$action] = array_values(array_unique($clean));
 		}
 
-		return $matrix;
-	}//end getMatrix()
+		return array_values(array_unique($clean));
+	}//end groupNames()
 
 	/**
 	 * Write the full matrix. Caller MUST enforce admin-only before invoking;

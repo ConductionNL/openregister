@@ -32,6 +32,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -41,8 +43,13 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IUserSession;
@@ -96,18 +103,10 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 			);
 
 		$this->handler = new SaveObjects(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->createMock(SaveObject::class),
-			$this->userSession,
-			$this->organisationService,
-			$this->createMock(LoggerInterface::class),
-			null,
-			null,
-			null,
-			$this->eventDispatcher,
-			$this->auditTrailMapper
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: null),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $this->eventDispatcher, auditTrailMapper: $this->auditTrailMapper),
+			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null)
 		);
 
 		// Clear static caches between tests.
@@ -227,10 +226,8 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 		$this->auditTrailMapper->expects($this->never())->method('createAuditTrail');
 
 		$result = $this->handler->saveObjects(
-			objects: [['name' => 'A'], ['name' => 'B']],
-			register: $register,
-			schema: $schema,
-			_events: true
+			[['name' => 'A'], ['name' => 'B']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: true, audit: true)
 		);
 
 		// Classification repaired: raw rows land in the saved bucket.
@@ -291,10 +288,8 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 			);
 
 		$result = $this->handler->saveObjects(
-			objects: [['name' => 'A']],
-			register: $register,
-			schema: $schema,
-			_events: true
+			[['name' => 'A']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: true, audit: true)
 		);
 
 		$this->assertSame(1, $result['statistics']['updated']);
@@ -354,10 +349,8 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 
 		// Events disabled (the BulkController default).
 		$result = $this->handler->saveObjects(
-			objects: [['name' => 'A'], ['name' => 'B']],
-			register: $register,
-			schema: $schema,
-			_events: false
+			[['name' => 'A'], ['name' => 'B']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true)
 		);
 
 		$this->assertSame(1, $result['statistics']['saved']);
@@ -369,6 +362,27 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 		$this->assertSame('create', $capturedEntries[0]['action']);
 		$this->assertSame([], $this->dispatchedEvents);
 	}//end testUnchangedRowsAndEventSuppression()
+
+	/**
+	 * A bulk save that asks for no audit trail writes no audit rows, and still dispatches its events.
+	 *
+	 * @return void
+	 */
+	public function testAuditOffWritesNoAuditRows(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->organisationService->method('getOrganisationForNewEntity')->willReturn(null);
+		$this->objectMapper->method('ultraFastBulkSave')->willReturn([$this->rawRow('uuid-created-1', 'created')]);
+		$this->mockRowConversion();
+		$this->auditTrailMapper->expects($this->never())->method('insertAuditTrails');
+
+		$result = $this->handler->saveObjects(
+			[['name' => 'A']],
+			new BulkSaveOptions(new BulkBatchDefaults($this->createRegister(1), $this->createSchema(1)), validation: false, events: true, audit: false)
+		);
+
+		$this->assertSame(1, $result['statistics']['saved']);
+		$this->assertCount(1, $this->dispatchedEvents);
+	}//end testAuditOffWritesNoAuditRows()
 
 	/**
 	 * MEMORY CONTRACT: audit entries are streamed to insertAuditTrails() in
@@ -401,7 +415,7 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 			$this->handler,
 			[
 				['created' => $created, 'updated' => []],
-				false,
+				self::bulkRun(events: false, audit: true),
 			]
 		);
 
@@ -432,13 +446,28 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 		$this->mockRowConversion();
 
 		$result = $this->handler->saveObjects(
-			objects: [['name' => 'A']],
-			register: $register,
-			schema: $schema
+			[['name' => 'A']],
+			new BulkSaveOptions(new BulkBatchDefaults($register, $schema), validation: false, events: false, audit: true)
 		);
 
 		$this->assertCount(1, $result['updated']);
 		$this->assertArrayNotHasKey('_pre_update_row', $result['updated'][0]);
 		$this->assertArrayNotHasKey('object_status', $result['updated'][0]);
 	}//end testPreUpdateRowDoesNotLeakIntoResponse()
+
+	/**
+	 * A bulk save run carrying the events and audit flags the side effects read.
+	 *
+	 * @param bool $events Whether lifecycle events are dispatched.
+	 * @param bool $audit  Whether audit trail rows are written.
+	 *
+	 * @return BulkSaveRun
+	 */
+	private static function bulkRun(bool $events, bool $audit): BulkSaveRun {
+		$run         = new BulkSaveRun();
+		$run->events = $events;
+		$run->audit  = $audit;
+
+		return $run;
+	}//end bulkRun()
 }//end class

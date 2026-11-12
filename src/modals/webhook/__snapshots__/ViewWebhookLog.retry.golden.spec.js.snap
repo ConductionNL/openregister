@@ -1,0 +1,135 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ViewWebhookLog.retryWebhook (golden) retries, answering delivered 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "/index.php/apps/openregister/api/webhooks/logs/4/retry",
+    ],
+    [
+      "showSuccess",
+      "Webhook retry delivered successfully",
+    ],
+    [
+      "closeModal",
+    ],
+    [
+      "webhook-log-retried",
+    ],
+  ],
+  "retrying": false,
+}
+`;
+
+exports[`ViewWebhookLog.retryWebhook (golden) retries, answering failedPlain 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "/index.php/apps/openregister/api/webhooks/logs/4/retry",
+    ],
+    [
+      "showError",
+      "Webhook retry delivery failed",
+    ],
+  ],
+  "retrying": false,
+}
+`;
+
+exports[`ViewWebhookLog.retryWebhook (golden) retries, answering failedWithError 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "/index.php/apps/openregister/api/webhooks/logs/4/retry",
+    ],
+    [
+      "showError",
+      "Refused",
+    ],
+  ],
+  "retrying": false,
+}
+`;
+
+exports[`ViewWebhookLog.retryWebhook (golden) retries, answering failedWithMessage 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "/index.php/apps/openregister/api/webhooks/logs/4/retry",
+    ],
+    [
+      "showError",
+      "Timeout",
+    ],
+  ],
+  "retrying": false,
+}
+`;
+
+exports[`ViewWebhookLog.retryWebhook (golden) retries, answering noData 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "/index.php/apps/openregister/api/webhooks/logs/4/retry",
+    ],
+    [
+      "showError",
+      "Webhook retry delivery failed",
+    ],
+  ],
+  "retrying": false,
+}
+`;
+
+exports[`ViewWebhookLog.retryWebhook (golden) retries, answering thrownPlain 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "/index.php/apps/openregister/api/webhooks/logs/4/retry",
+    ],
+    [
+      "showError",
+      "Failed to retry webhook",
+    ],
+  ],
+  "retrying": false,
+}
+`;
+
+exports[`ViewWebhookLog.retryWebhook (golden) retries, answering thrownWithError 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "/index.php/apps/openregister/api/webhooks/logs/4/retry",
+    ],
+    [
+      "showError",
+      "Gone",
+    ],
+  ],
+  "retrying": false,
+}
+`;
+
+exports[`ViewWebhookLog.retryWebhook (golden) retries, answering thrownWithMessage 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "/index.php/apps/openregister/api/webhooks/logs/4/retry",
+    ],
+    [
+      "showError",
+      "Busy",
+    ],
+  ],
+  "retrying": false,
+}
+`;

@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Mcp\Fixtures;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
+use OCA\OpenRegister\Mcp\Attribute\McpToolTitle;
 
 class AnnotationFixtureService {
 
@@ -40,6 +41,18 @@ class AnnotationFixtureService {
 	public function reassignCase(string $id): array {
 		return ['id' => $id];
 	}//end reassignCase()
+
+	#[McpTool(scope: 'create', annotations: ['citizenIntake' => true])]
+	#[McpToolTitle('Create a task')]
+	public function createTask(string $title): array {
+		return ['title' => $title];
+	}//end createTask()
+
+	#[McpTool(scope: 'read')]
+	#[McpToolTitle('  ')]
+	public function blankTitleTool(string $id): array {
+		return ['id' => $id];
+	}//end blankTitleTool()
 
 	#[McpTool(annotations: ['citizenIntake' => ['nested' => true]])]
 	public function badAnnotationTool(string $id): array {

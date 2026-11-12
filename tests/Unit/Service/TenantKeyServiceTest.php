@@ -177,6 +177,18 @@ class TenantKeyServiceTest extends TestCase {
 	 * key material) and getCurrentTenantKey() afterwards returns a fresh
 	 * 64-char hex key that differs from the pre-rotation key.
 	 */
+	public function testAFailedRotationRollsBackTheRetirement(): void {
+		$db = $this->createMock(IDBConnection::class);
+		$db->expects($this->once())->method('beginTransaction');
+		$db->method('getQueryBuilder')->willThrowException(new \RuntimeException('database gone'));
+		$db->expects($this->once())->method('rollBack');
+		$db->expects($this->never())->method('commit');
+		$svc = new TenantKeyService(db: $db, crypto: $this->createMock(ICrypto::class), logger: $this->createMock(LoggerInterface::class));
+
+		$this->expectException(\RuntimeException::class);
+		$svc->rotateTenantKey('tenant-abc');
+	}//end testAFailedRotationRollsBackTheRetirement()
+
 	public function testRotationReturnsMetadataOnlyAndNewKeyDiffers(): void {
 		$svc = $this->makeService();
 		$original = $svc->getCurrentTenantKey('tenant-rot');
@@ -242,6 +254,19 @@ class TenantKeyServiceTest extends TestCase {
 			$svc->getCurrentTenantKey('brand-new-tenant')
 		);
 	}//end testRotationWithNoPriorKeySucceeds()
+
+	/**
+	 * hasActiveKey() answers without creating a key.
+	 */
+	public function testHasActiveKeyDoesNotBootstrap(): void {
+		$svc = $this->makeService();
+
+		$this->assertFalse($svc->hasActiveKey('nobody'));
+		$this->assertFalse($svc->hasActiveKey('nobody'), 'asking twice still finds nothing: the first ask created no key');
+
+		$svc->getCurrentTenantKey('somebody');
+		$this->assertTrue($svc->hasActiveKey('somebody'));
+	}//end testHasActiveKeyDoesNotBootstrap()
 
 	/**
 	 * After rotation the store has exactly one active row and one retired row.

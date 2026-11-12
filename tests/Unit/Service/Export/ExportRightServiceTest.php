@@ -21,7 +21,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/export-as-its-own-right/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
 
 declare(strict_types=1);
@@ -219,4 +219,25 @@ final class ExportRightServiceTest extends TestCase {
 		self::assertArrayHasKey(ExportRightService::ACTION, PermissionCatalogue::CANONICAL);
 		self::assertNotSame('', PermissionCatalogue::CANONICAL[ExportRightService::ACTION]);
 	}//end testExportIsInTheCatalogueSoAnAdministratorCanGrantIt()
+	/**
+	 * A permission check that throws refuses, with the verb it evaluated; an
+	 * authorization block that cannot be resolved falls back to read.
+	 */
+	public function testAThrowingPermissionCheckRefusesAndAnUnresolvableBlockFallsBackToRead(): void {
+		$session = $this->createMock(IUserSession::class);
+		$groups = $this->createMock(IGroupManager::class);
+		$groups->method('isAdmin')->willReturn(false);
+
+		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions->method('resolveAuthorization')->willThrowException(new \RuntimeException('unreadable'));
+		$permissions->method('hasPermission')->willThrowException(new \RuntimeException('down'));
+
+		$refusal = (new ExportRightService($permissions, $session, $groups, new NullLogger()))
+			->refusalForUid($this->schema(), 'alice');
+
+		self::assertNotNull($refusal);
+		self::assertSame('export-right-missing', $refusal->getRule());
+		self::assertSame(403, $refusal->getStatusCode());
+		self::assertSame('read', $refusal->toResponseBody()['evaluated']);
+	}//end testAThrowingPermissionCheckRefusesAndAnUnresolvableBlockFallsBackToRead()
 }//end class

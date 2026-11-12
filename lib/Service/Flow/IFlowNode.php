@@ -148,13 +148,13 @@ interface IFlowNode {
 	 * decide whether to stop, continue, or dead-letter. Catching here defeats
 	 * that policy and produces a run that reports success while doing nothing.
 	 *
-	 * @param array $items The input items ({@see FlowItems}).
-	 * @param array $config The step's authored configuration.
-	 * @param array $context Run-level metadata — NOT the data channel.
+	 * @param FlowNodeCall $call The input items ({@see FlowItems}), the step's
+	 *                           authored configuration and the run-level
+	 *                           context, which is NOT the data channel.
 	 *
 	 * @return array The output items.
 	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array;
+	public function execute(FlowNodeCall $call): array;
 }//end interface

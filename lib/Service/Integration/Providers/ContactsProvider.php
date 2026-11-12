@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
@@ -49,6 +50,7 @@ use Throwable;
  * Contacts (vCard / People) integration provider.
  */
 class ContactsProvider extends AbstractIntegrationProvider {
+	use LinkTableAppDescriptor;
 
 	/**
 	 * NC app id required for this integration.
@@ -58,19 +60,31 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'contacts';
 
 	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContactService $contactService Backing service.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 *
-	 * @return void
+	 * @param AppProviderDescription $description    The app manager and localisation.
+	 * @param ContactService         $contactService Backing service.
 	 */
 	public function __construct(
+		AppProviderDescription $description,
 		private ContactService $contactService,
-		private IAppManager $appManager,
-		private IL10N $l10n,
 	) {
+		$this->appManager = $description->appManager;
+		$this->l10n = $description->l10n;
 	}//end __construct()
 
 	public function getId(): string {
@@ -89,31 +103,28 @@ class ContactsProvider extends AbstractIntegrationProvider {
 		return 'comms';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
 	/**
 	 * List vCard links for an OR object.
 	 *
-	 * @param string $register Register slug or numeric id (unused — CardDAV scope is per-user).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional filters (currently ignored).
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->contactsOf(objectId: $ref->id);
+	}//end list()
+
+	/**
+	 * The contacts linked to an object; none when the contacts cannot be read.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function contactsOf(string $objectId): array {
 		try {
 			$result = $this->contactService->getContactsForObject(objectUuid: $objectId);
 		} catch (Throwable $e) {
@@ -121,7 +132,7 @@ class ContactsProvider extends AbstractIntegrationProvider {
 		}
 
 		return $result['results'] ?? [];
-	}//end list()
+	}//end contactsOf()
 
 	/**
 	 * Update a contact link's role.
@@ -129,9 +140,7 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 * Only the role can be updated through the registry path — the
 	 * vCard itself is owned by NC Contacts.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid (unused; link id is enough).
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Numeric link id.
 	 * @param array<string,mixed> $payload Must carry `role`.
 	 *
@@ -139,9 +148,9 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
 		$role = (string)($payload['role'] ?? '');
-		$link = $this->contactService->updateRole(linkId: (int)$entityId, role: $role);
+		$link = $this->contactService->updateRole(linkId: (int)$entityId, role: $role, objectUuid: $ref->id);
 		return $link->jsonSerialize();
 	}//end update()
 
@@ -156,17 +165,15 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 * Any non-404 Throwable from the cleanup is swallowed at provider
 	 * level so the registry tab degrades gracefully per AD-23.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid (unused; link id is enough).
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Numeric link id.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->contactService->unlinkContact(linkId: (int)$entityId);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->contactService->unlinkContact(linkId: (int)$entityId, objectUuid: $ref->id);
 	}//end delete()
 
 	/**
@@ -178,22 +185,6 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$installed = $this->appManager->isInstalled(self::REQUIRED_APP);
-
-		$status = 'unavailable';
-		if ($installed === true) {
-			$status = 'ok';
-		}
-
-		$message = 'NC Contacts app is not installed';
-		if ($installed === true) {
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->appManager->isInstalled(self::REQUIRED_APP) === true, missing: 'NC Contacts app is not installed');
 	}//end health()
 }//end class

@@ -15,11 +15,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
@@ -82,7 +83,7 @@ class FilePublishingHandlerTest extends TestCase {
 		$this->container = $this->createMock(IServerContainer::class);
 		$this->restrictions = $this->createMock(FileRestrictionGuard::class);
 		$this->restrictions->method('readableNodes')->willReturnArgument(0);
-		$services = [FileRestrictionGuard::class => $this->restrictions];
+		$services = [FileRestrictionGuardInterface::class => $this->restrictions];
 		$partyIndicators = $this->partyIndicators;
 		$this->container->method('get')->willReturnCallback(
 			static fn (string $id): object => ($services[$id] ?? $partyIndicators)
@@ -126,7 +127,8 @@ class FilePublishingHandlerTest extends TestCase {
 
 		// Should not throw
 		$handler->setFileService($this->fileService);
-		$this->assertTrue(true);
+
+		$this->assertSame($this->fileService, (new \ReflectionProperty($handler, 'fileService'))->getValue($handler));
 	}
 
 	// =========================================================================
@@ -173,7 +175,7 @@ class FilePublishingHandlerTest extends TestCase {
 	 * share is never created. THE POINT: the guard runs before anything is
 	 * written, so a refusal cannot leave a half-published file behind.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	#[Test]
 	public function testPublishFileIsRefusedByAPartyIndicator(): void {

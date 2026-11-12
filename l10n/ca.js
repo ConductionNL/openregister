@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Completa: {outcome}",
         "Could not load the task": "No s'ha pogut carregar la tasca",
         "The task refused that action": "La tasca ha rebutjat aquesta acció",
-        "Store": "Botiga",
+        "Marketplace": "Botiga",
         "Install registers, schemas and flows that other organisations have published.": "Instal·leu registres, esquemes i fluxos publicats per altres organitzacions.",
         "No such run": "No existeix aquesta execució",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'execució no existeix o no la podeu veure. En esborrar un flux, se n'esborren les execucions.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Qui va aprovar la llista, i quan.",
         "Who made it.": "Qui l'ha fet.",
         "Who rejected the list, and why.": "Qui va rebutjar la llista, i per què.",
-        "Woo published": "Publicat d'acord amb la Woo"
+        "Woo published": "Publicat d'acord amb la Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Un PDF necessita un servidor d'ofimàtica (Collabora o Euro-Office) i no n'hi ha cap d'instal·lat. Demaneu a l'administrador que n'instal·li un, o baixeu l'informe en un altre format.",
+        "The report could not be downloaded.": "No s'ha pogut baixar l'informe."
     },
     "nplurals=2; plural=(n != 1);"
 )

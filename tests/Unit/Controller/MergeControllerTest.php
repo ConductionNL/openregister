@@ -26,7 +26,9 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\MergeController;
+use OCA\OpenRegister\Controller\Support\MergeControllerServices;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -59,16 +61,17 @@ class MergeControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 
 		$this->controller = new MergeController(
-			'openregister',
 			$this->request,
-			$this->mergeService,
-			$this->userSession
+			new MergeControllerServices(
+				$this->mergeService,
+				$this->userSession
+			)
 		);
 	}//end setUp()
 
 	/**
-	 * ADR-029 / ADR-005: every merge action must declare @NoAdminRequired +
-	 * @NoCSRFRequired via docblock and must NOT be @PublicPage.
+	 * ADR-029 / ADR-005 / ADR-054: every merge action must declare
+	 * @NoAdminRequired, must require the request token and must NOT be @PublicPage.
 	 *
 	 * @return void
 	 */
@@ -79,7 +82,7 @@ class MergeControllerTest extends TestCase {
 			$doc = $reflection->getMethod($method)->getDocComment();
 			$this->assertNotFalse($doc, sprintf('%s must have a docblock.', $method));
 			$this->assertStringContainsString('@NoAdminRequired', $doc, sprintf('%s missing @NoAdminRequired', $method));
-			$this->assertStringContainsString('@NoCSRFRequired', $doc, sprintf('%s missing @NoCSRFRequired', $method));
+			$this->assertStringNotContainsString('@NoCSRFRequired', $doc, sprintf('%s must require the request token', $method));
 			$this->assertStringNotContainsString('@PublicPage', $doc, sprintf('%s must not be @PublicPage', $method));
 		}
 	}//end testAllActionsCarryAuthAnnotations()
@@ -120,7 +123,7 @@ class MergeControllerTest extends TestCase {
 	public function testPreviewNeverWrites(): void {
 		$this->request->method('getParam')->willReturnArgument(1);
 		$this->mergeService->expects($this->once())->method('previewMerge')->willReturn([]);
-		$this->mergeService->expects($this->never())->method('executeMerge');
+		$this->mergeService->expects($this->never())->method('merge');
 		$this->mergeService->expects($this->never())->method('reverseMerge');
 
 		$this->controller->preview();
@@ -132,7 +135,7 @@ class MergeControllerTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 
-		$this->mergeService->method('executeMerge')->willThrowException(
+		$this->mergeService->method('merge')->willThrowException(
 			new NotAuthorizedException(message: 'denied')
 		);
 
@@ -155,8 +158,8 @@ class MergeControllerTest extends TestCase {
 
 		$operation = ['mergedIntoUuid' => 'into-uuid', 'mergedFromUuids' => ['from-uuid']];
 		$this->mergeService->expects($this->once())
-			->method('executeMerge')
-			->with('from-uuid', 'into-uuid', 'dup-review', 'alice')
+			->method('merge')
+			->with(new MergeInstruction(from: 'from-uuid', into: 'into-uuid', reason: 'dup-review', mergedBy: 'alice'))
 			->willReturn($operation);
 
 		$response = $this->controller->execute();
@@ -168,7 +171,7 @@ class MergeControllerTest extends TestCase {
 	public function testExecuteMapsRuntimeExceptionToNotFound(): void {
 		$this->request->method('getParam')->willReturnArgument(1);
 		$this->userSession->method('getUser')->willReturn(null);
-		$this->mergeService->method('executeMerge')->willThrowException(new RuntimeException('missing'));
+		$this->mergeService->method('merge')->willThrowException(new RuntimeException('missing'));
 
 		$response = $this->controller->execute();
 

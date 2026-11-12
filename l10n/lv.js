@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Pabeigt: {outcome}",
         "Could not load the task": "Neizdevās ielādēt uzdevumu",
         "The task refused that action": "Uzdevums noraidīja šo darbību",
-        "Store": "Veikals",
+        "Marketplace": "Veikals",
         "Install registers, schemas and flows that other organisations have published.": "Instalējiet reģistrus, shēmas un plūsmas, ko publicējušas citas organizācijas.",
         "No such run": "Nav šādas izpildes",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izpilde nepastāv, vai jums nav tiesību to redzēt. Dzēšot plūsmu, tiek dzēstas arī tās izpildes.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Kas apstiprināja sarakstu un kad.",
         "Who made it.": "Kas to izgatavoja.",
         "Who rejected the list, and why.": "Kas noraidīja sarakstu un kāpēc.",
-        "Woo published": "Publicēts saskaņā ar Woo"
+        "Woo published": "Publicēts saskaņā ar Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "PDF failam nepieciešams biroja serveris (Collabora vai Euro-Office), bet neviens nav instalēts. Lūdziet administratoram to instalēt vai lejupielādējiet pārskatu citā formātā.",
+        "The report could not be downloaded.": "Pārskatu neizdevās lejupielādēt."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

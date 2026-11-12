@@ -68,6 +68,119 @@ class ContentScanService {
 	private const MAX_SCAN_BYTES = 262144;
 
 	/**
+	 * The heuristic rule table: a case-insensitive regex plus a category, a severity and
+	 * a human-readable reason per rule, ordered dangerous-first for readability.
+	 *
+	 * @var array<int, array{pattern: string, category: string, severity: string, reason: string}>
+	 */
+	private const RULES = [
+		// Download-and-execute: the single most common skill/prompt supply-chain attack.
+		[
+			'pattern' => '/\b(?:curl|wget|fetch)\b[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/i',
+			'category' => 'remote-code',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Pipes a remote download straight into a shell (curl|bash).',
+		],
+		[
+			'pattern' => '/\b(?:ba)?sh\b\s*<\s*\(\s*(?:curl|wget)\b/i',
+			'category' => 'remote-code',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Executes a remotely fetched script via process substitution.',
+		],
+		[
+			'pattern' => '/\b(?:eval|exec|system|passthru|popen|proc_open)\s*\(\s*(?:\$?_?(?:GET|POST|REQUEST)|base64_decode|curl)/i',
+			'category' => 'remote-code',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Evaluates dynamically-fetched or request-supplied code.',
+		],
+		[
+			'pattern' => '/(?:iex|invoke-expression)\s*\(\s*(?:new-object\s+net\.webclient|iwr|invoke-webrequest)/i',
+			'category' => 'remote-code',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'PowerShell download-and-execute (IEX + WebClient).',
+		],
+		// Destructive shell.
+		[
+			'pattern' => '/\brm\s+-[a-z]*r[a-z]*f[a-z]*\s+(?:\/|~|\$HOME|\*)/i',
+			'category' => 'destructive',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Recursive force-delete of a root/home/glob path (rm -rf).',
+		],
+		[
+			'pattern' => '/\b(?:mkfs|dd\s+if=\S+\s+of=\/dev\/|>\s*\/dev\/sd[a-z])\b/i',
+			'category' => 'destructive',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Overwrites a raw block device (mkfs/dd/redirect to /dev/sdX).',
+		],
+		[
+			'pattern' => '/:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/',
+			'category' => 'destructive',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Fork-bomb definition.',
+		],
+		// Credential / data exfiltration.
+		[
+			'pattern' => '/\b(?:nc|ncat|netcat)\b[^\n]*\s-\w*e\w*\s/i',
+			'category' => 'exfiltration',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Netcat with -e (reverse/bind shell).',
+		],
+		[
+			'pattern' => '#(?:/dev/tcp/|/dev/udp/)\d#i',
+			'category' => 'exfiltration',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Bash /dev/tcp network socket (reverse shell / exfil).',
+		],
+		[
+			'pattern' => '#(?:cat|cp|curl|scp|tar|base64)\b[^\n]*(?:~|/root|/home/[^\s/]+)?'
+				. '/\.(?:ssh/id_|aws/credentials|kube/config|netrc|npmrc|docker/config)#i',
+			'category' => 'exfiltration',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Reads/copies known credential files (~/.ssh, ~/.aws, .netrc …).',
+		],
+		// Embedded secrets (someone shipping live keys inside skill content).
+		[
+			'pattern' => '/-----BEGIN\s+(?:RSA|OPENSSH|EC|DSA|PGP)?\s*PRIVATE KEY-----/i',
+			'category' => 'embedded-secret',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Embeds a private key block.',
+		],
+		[
+			'pattern' => '/\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/',
+			'category' => 'embedded-secret',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Embeds an AWS access-key id.',
+		],
+		[
+			'pattern' => '/\b(?:ghp|gho|ghs|ghr)_[A-Za-z0-9]{30,}\b/',
+			'category' => 'embedded-secret',
+			'severity' => self::SEVERITY_DANGEROUS,
+			'reason' => 'Embeds a GitHub access token.',
+		],
+		// Prompt-injection — the LLM-specific manipulation surface.
+		[
+			'pattern' => '/\b(?:ignore|disregard|forget)\b[^\n]{0,40}\b(?:previous|prior|above|earlier|all)\b'
+				. '[^\n]{0,20}\b(?:instruction|prompt|rule|direction)/i',
+			'category' => 'prompt-injection',
+			'severity' => self::SEVERITY_SUSPICIOUS,
+			'reason' => 'Instructs the model to ignore prior instructions.',
+		],
+		[
+			'pattern' => '/\b(?:reveal|print|repeat|show|leak|exfiltrate)\b[^\n]{0,30}'
+				. '\b(?:system prompt|your instructions|initial prompt|api[\s_-]?key|secret)/i',
+			'category' => 'prompt-injection',
+			'severity' => self::SEVERITY_SUSPICIOUS,
+			'reason' => 'Attempts to extract the system prompt or secrets.',
+		],
+		[
+			'pattern' => '/<\|im_(?:start|end)\|>\s*system|<\/?(?:system|assistant)>\s*(?:you are|ignore)/i',
+			'category' => 'prompt-injection',
+			'severity' => self::SEVERITY_SUSPICIOUS,
+			'reason' => 'Injects a forged system/role turn into the conversation.',
+		],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR-3 logger.
@@ -89,20 +202,50 @@ class ContentScanService {
 	 * @return array{safe: bool, severity: string, findings: array<int, array<string, string>>, scannedBytes: int, truncated: bool}
 	 */
 	public function scan(string $content, array $metadata = []): array {
-		$haystack = $content;
+		$haystack = $this->haystack(content: $content, metadata: $metadata);
+		$truncated = (strlen($haystack) > self::MAX_SCAN_BYTES);
+		$haystack = substr($haystack, 0, self::MAX_SCAN_BYTES);
+
+		$findings = $this->findings(normalised: $this->normalise(text: $haystack));
+		$severity = $this->worstSeverity(findings: $findings);
+		$this->logFlagged(severity: $severity, findings: $findings);
+
+		return [
+			'safe' => ($severity === self::SEVERITY_CLEAN),
+			'severity' => $severity,
+			'findings' => $findings,
+			'scannedBytes' => strlen($haystack),
+			'truncated' => $truncated,
+		];
+	}//end scan()
+
+
+	/**
+	 * The text to scan: the content, then the flattened metadata when there is any.
+	 *
+	 * @param string               $content  The primary text to scan.
+	 * @param array<string, mixed> $metadata Structured metadata to fold in.
+	 *
+	 * @return string The untruncated text.
+	 */
+	private function haystack(string $content, array $metadata): string {
 		$flattened = $this->flattenMetadata(metadata: $metadata);
-		if ($flattened !== '') {
-			$haystack .= "\n" . $flattened;
+		if ($flattened === '') {
+			return $content;
 		}
 
-		$truncated = false;
-		if (strlen($haystack) > self::MAX_SCAN_BYTES) {
-			$haystack = substr($haystack, 0, self::MAX_SCAN_BYTES);
-			$truncated = true;
-		}
+		return $content . "\n" . $flattened;
+	}//end haystack()
 
+	/**
+	 * One finding per rule that matches the normalised text.
+	 *
+	 * @param string $normalised The normalised text.
+	 *
+	 * @return array<int, array<string, string>> The findings, in rule order.
+	 */
+	private function findings(string $normalised): array {
 		$findings = [];
-		$normalised = $this->normalise(text: $haystack);
 		foreach ($this->rules() as $rule) {
 			if (preg_match($rule['pattern'], $normalised, $matches) !== 1) {
 				continue;
@@ -114,26 +257,27 @@ class ContentScanService {
 				'reason' => $rule['reason'],
 				'excerpt' => $this->excerpt(match: (string)($matches[0] ?? '')),
 			];
-		}//end foreach
+		}
 
-		$severity = $this->worstSeverity(findings: $findings);
+		return $findings;
+	}//end findings()
 
+	/**
+	 * Log a scan that flagged anything.
+	 *
+	 * @param string                             $severity The worst severity.
+	 * @param array<int, array<string, string>> $findings The findings.
+	 *
+	 * @return void
+	 */
+	private function logFlagged(string $severity, array $findings): void {
 		if ($severity !== self::SEVERITY_CLEAN) {
 			$this->logger->info(
 				'[ContentScanService] content scan flagged patterns',
 				['severity' => $severity, 'findingCount' => count($findings)]
 			);
 		}
-
-		return [
-			'safe' => ($severity === self::SEVERITY_CLEAN),
-			'severity' => $severity,
-			'findings' => $findings,
-			'scannedBytes' => strlen($haystack),
-			'truncated' => $truncated,
-		];
-
-	}//end scan()
+	}//end logFlagged()
 
 	/**
 	 * The heuristic rule table. Each rule is a case-insensitive regex plus a category,
@@ -143,115 +287,7 @@ class ContentScanService {
 	 * @return array<int, array{pattern: string, category: string, severity: string, reason: string}>
 	 */
 	private function rules(): array {
-		$dangerous = self::SEVERITY_DANGEROUS;
-		$suspicious = self::SEVERITY_SUSPICIOUS;
-
-		return [
-			// Download-and-execute: the single most common skill/prompt supply-chain attack.
-			[
-				'pattern' => '/\b(?:curl|wget|fetch)\b[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/i',
-				'category' => 'remote-code',
-				'severity' => $dangerous,
-				'reason' => 'Pipes a remote download straight into a shell (curl|bash).',
-			],
-			[
-				'pattern' => '/\b(?:ba)?sh\b\s*<\s*\(\s*(?:curl|wget)\b/i',
-				'category' => 'remote-code',
-				'severity' => $dangerous,
-				'reason' => 'Executes a remotely fetched script via process substitution.',
-			],
-			[
-				'pattern' => '/\b(?:eval|exec|system|passthru|popen|proc_open)\s*\(\s*(?:\$?_?(?:GET|POST|REQUEST)|base64_decode|curl)/i',
-				'category' => 'remote-code',
-				'severity' => $dangerous,
-				'reason' => 'Evaluates dynamically-fetched or request-supplied code.',
-			],
-			[
-				'pattern' => '/(?:iex|invoke-expression)\s*\(\s*(?:new-object\s+net\.webclient|iwr|invoke-webrequest)/i',
-				'category' => 'remote-code',
-				'severity' => $dangerous,
-				'reason' => 'PowerShell download-and-execute (IEX + WebClient).',
-			],
-			// Destructive shell.
-			[
-				'pattern' => '/\brm\s+-[a-z]*r[a-z]*f[a-z]*\s+(?:\/|~|\$HOME|\*)/i',
-				'category' => 'destructive',
-				'severity' => $dangerous,
-				'reason' => 'Recursive force-delete of a root/home/glob path (rm -rf).',
-			],
-			[
-				'pattern' => '/\b(?:mkfs|dd\s+if=\S+\s+of=\/dev\/|>\s*\/dev\/sd[a-z])\b/i',
-				'category' => 'destructive',
-				'severity' => $dangerous,
-				'reason' => 'Overwrites a raw block device (mkfs/dd/redirect to /dev/sdX).',
-			],
-			[
-				'pattern' => '/:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/',
-				'category' => 'destructive',
-				'severity' => $dangerous,
-				'reason' => 'Fork-bomb definition.',
-			],
-			// Credential / data exfiltration.
-			[
-				'pattern' => '/\b(?:nc|ncat|netcat)\b[^\n]*\s-\w*e\w*\s/i',
-				'category' => 'exfiltration',
-				'severity' => $dangerous,
-				'reason' => 'Netcat with -e (reverse/bind shell).',
-			],
-			[
-				'pattern' => '#(?:/dev/tcp/|/dev/udp/)\d#i',
-				'category' => 'exfiltration',
-				'severity' => $dangerous,
-				'reason' => 'Bash /dev/tcp network socket (reverse shell / exfil).',
-			],
-			[
-				'pattern' => '#(?:cat|cp|curl|scp|tar|base64)\b[^\n]*(?:~|/root|/home/[^\s/]+)?'
-					. '/\.(?:ssh/id_|aws/credentials|kube/config|netrc|npmrc|docker/config)#i',
-				'category' => 'exfiltration',
-				'severity' => $dangerous,
-				'reason' => 'Reads/copies known credential files (~/.ssh, ~/.aws, .netrc …).',
-			],
-			// Embedded secrets (someone shipping live keys inside skill content).
-			[
-				'pattern' => '/-----BEGIN\s+(?:RSA|OPENSSH|EC|DSA|PGP)?\s*PRIVATE KEY-----/i',
-				'category' => 'embedded-secret',
-				'severity' => $dangerous,
-				'reason' => 'Embeds a private key block.',
-			],
-			[
-				'pattern' => '/\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/',
-				'category' => 'embedded-secret',
-				'severity' => $dangerous,
-				'reason' => 'Embeds an AWS access-key id.',
-			],
-			[
-				'pattern' => '/\b(?:ghp|gho|ghs|ghr)_[A-Za-z0-9]{30,}\b/',
-				'category' => 'embedded-secret',
-				'severity' => $dangerous,
-				'reason' => 'Embeds a GitHub access token.',
-			],
-			// Prompt-injection — the LLM-specific manipulation surface.
-			[
-				'pattern' => '/\b(?:ignore|disregard|forget)\b[^\n]{0,40}\b(?:previous|prior|above|earlier|all)\b'
-					. '[^\n]{0,20}\b(?:instruction|prompt|rule|direction)/i',
-				'category' => 'prompt-injection',
-				'severity' => $suspicious,
-				'reason' => 'Instructs the model to ignore prior instructions.',
-			],
-			[
-				'pattern' => '/\b(?:reveal|print|repeat|show|leak|exfiltrate)\b[^\n]{0,30}'
-					. '\b(?:system prompt|your instructions|initial prompt|api[\s_-]?key|secret)/i',
-				'category' => 'prompt-injection',
-				'severity' => $suspicious,
-				'reason' => 'Attempts to extract the system prompt or secrets.',
-			],
-			[
-				'pattern' => '/<\|im_(?:start|end)\|>\s*system|<\/?(?:system|assistant)>\s*(?:you are|ignore)/i',
-				'category' => 'prompt-injection',
-				'severity' => $suspicious,
-				'reason' => 'Injects a forged system/role turn into the conversation.',
-			],
-		];
+		return self::RULES;
 
 	}//end rules()
 

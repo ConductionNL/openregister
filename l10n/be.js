@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Завяршыць: {outcome}",
         "Could not load the task": "Не ўдалося загрузіць задачу",
         "The task refused that action": "Задача адхіліла гэта дзеянне",
-        "Store": "Крама",
+        "Marketplace": "Крама",
         "Install registers, schemas and flows that other organisations have published.": "Усталюйце рэестры, схемы і патокі, апублікаваныя іншымі арганізацыямі.",
         "No such run": "Няма такога запуску",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не існуе, або вы не маеце права яго бачыць. Выдаленне патоку выдаляе і яго запускі.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Хто зацвердзіў спіс і калі.",
         "Who made it.": "Хто яго вырабіў.",
         "Who rejected the list, and why.": "Хто адхіліў спіс і чаму.",
-        "Woo published": "Апублікавана на падставе Woo"
+        "Woo published": "Апублікавана на падставе Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Для PDF патрэбны офісны сервер (Collabora або Euro-Office), але ніводны не ўсталяваны. Папрасіце адміністратара ўсталяваць яго або спампуйце справаздачу ў іншым фармаце.",
+        "The report could not be downloaded.": "Не ўдалося спампаваць справаздачу."
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

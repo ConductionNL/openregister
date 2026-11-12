@@ -20,24 +20,25 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
-use OCA\OpenRegister\Service\File\ObjectFileAccess;
-use OCA\OpenRegister\Service\File\OfficeSession;
-use OCA\OpenRegister\Service\File\OfficeSessionService;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\OfficeSession;
+use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -61,7 +62,7 @@ use Psr\Log\NullLogger;
 /**
  * readFiles to list, addFiles to upload, deleteFiles to delete, on top of read.
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+ * @spec openspec/specs/file-actions/spec.md
  */
 class FilesControllerFileVerbsTest extends TestCase {
 
@@ -121,7 +122,7 @@ class FilesControllerFileVerbsTest extends TestCase {
 	 *
 	 * @return FilesController
 	 */
-	private function controllerAs(string $uid, array $groups): FilesController {
+	private function controllerAs(string $uid, array $groups, ?IEventDispatcher $dispatcher = null): FilesController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($uid);
 		$user->method('getDisplayName')->willReturn(ucfirst($uid));
@@ -143,7 +144,7 @@ class FilesControllerFileVerbsTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($this->schema);
 
 		$logger = new NullLogger();
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,
@@ -153,7 +154,7 @@ class FilesControllerFileVerbsTest extends TestCase {
 			$appConfig,
 			$logger,
 			$this->createMock(ContainerInterface::class),
-			null,
+			$dispatcher,
 			null,
 			null,
 			new DenyResolver(new DenyEntryMatcher()),
@@ -187,8 +188,7 @@ class FilesControllerFileVerbsTest extends TestCase {
 			schemaMapper: $schemaMapper
 		);
 
-		return new FilesController(
-			'openregister',
+		return FilesControllerFactory::create(
 			$this->createMock(IRequest::class),
 			$this->fileService,
 			$this->objectService,
@@ -229,6 +229,89 @@ class FilesControllerFileVerbsTest extends TestCase {
 		$this->assertNotSame(403, $controller->create(register: '7', schema: '42', id: self::OBJECT_UUID)->getStatus(), 'addFiles is enough to add');
 		$this->assertSame(403, $controller->delete(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 1)->getStatus(), 'adding is not deleting');
 	}//end testAddingWithoutUpdateOnTheObject()
+
+	public function testAnExpiredFileVerbRowKeepsTheFilesClosed(): void {
+		// staff reads the object; legal read its files until yesterday.
+		$this->schema->setProperties(['department' => ['type' => 'string']]);
+		$this->schema->setAuthorization([
+			'read' => ['staff', 'legal'],
+			'matrix' => [
+				'field' => 'department',
+				'userSource' => ['groups' => true],
+				'rows' => [
+					[
+						'value' => '*',
+						'group' => 'legal',
+						'actions' => ['readFiles'],
+						'until' => (new \DateTimeImmutable('-1 day'))->format(DATE_ATOM),
+					],
+				],
+			],
+		]);
+		$this->fileService->expects($this->never())->method('getFiles');
+
+		$response = $this->controllerAs('medewerker', ['staff'])
+			->index(register: '7', schema: '42', id: self::OBJECT_UUID);
+
+		$this->assertSame(404, $response->getStatus(), 'an expired file grant is no grant, not the object rule');
+	}//end testAnExpiredFileVerbRowKeepsTheFilesClosed()
+
+	public function testAFailingProviderKeepsItsFilesClosed(): void {
+		$this->schema->setProperties(['department' => ['type' => 'string']]);
+		$this->schema->setAuthorization([
+			'read' => ['staff'],
+			'matrix' => [
+				'field' => 'department',
+				'userSource' => ['groups' => true],
+				'rowsFrom' => 'dossiq.case-type-rights',
+				'fileVerbs' => true,
+			],
+		]);
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willThrowException(new \RuntimeException('provider down'));
+		$this->fileService->expects($this->never())->method('getFiles');
+
+		$response = $this->controllerAs('medewerker', ['staff'], $dispatcher)
+			->index(register: '7', schema: '42', id: self::OBJECT_UUID);
+
+		$this->assertSame(404, $response->getStatus(), 'a provider that fails takes its grants away, not the file regime');
+	}//end testAFailingProviderKeepsItsFilesClosed()
+
+	/**
+	 * The file regime of a rowsFrom schema whose provider fails, by the declared fileVerbs.
+	 *
+	 * @param mixed $fileVerbs The declared fileVerbs, or the string 'absent'.
+	 *
+	 * @return int The status of a file list by an object reader.
+	 */
+	private function fileListWithAFailingProvider(mixed $fileVerbs): int {
+		$matrix = ['field' => 'department', 'userSource' => ['groups' => true], 'rowsFrom' => 'dossiq.case-type-rights'];
+		if ($fileVerbs !== 'absent') {
+			$matrix['fileVerbs'] = $fileVerbs;
+		}
+
+		$this->schema->setProperties(['department' => ['type' => 'string']]);
+		$this->schema->setAuthorization(['read' => ['staff'], 'matrix' => $matrix]);
+		$this->fileService->method('getFiles')->willReturn([]);
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willThrowException(new \RuntimeException('provider down'));
+
+		return $this->controllerAs('medewerker', ['staff'], $dispatcher)
+			->index(register: '7', schema: '42', id: self::OBJECT_UUID)
+			->getStatus();
+	}//end fileListWithAFailingProvider()
+
+	public function testARowsFromSchemaWithoutFileVerbsKeepsItsFilesClosedWhenTheProviderFails(): void {
+		$this->assertSame(404, $this->fileListWithAFailingProvider(fileVerbs: 'absent'));
+	}//end testARowsFromSchemaWithoutFileVerbsKeepsItsFilesClosedWhenTheProviderFails()
+
+	public function testANonBooleanFileVerbsOptsIn(): void {
+		$this->assertSame(404, $this->fileListWithAFailingProvider(fileVerbs: 'true'));
+	}//end testANonBooleanFileVerbsOptsIn()
+
+	public function testAnExplicitOptOutKeepsTheObjectRule(): void {
+		$this->assertSame(200, $this->fileListWithAFailingProvider(fileVerbs: false));
+	}//end testAnExplicitOptOutKeepsTheObjectRule()
 
 	public function testDeleteFilesDeletes(): void {
 		$this->fileService->method('deleteFile')->willReturn(true);

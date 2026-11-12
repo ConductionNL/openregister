@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -47,6 +47,8 @@ use ReflectionClass;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RenderObjectDeepTest extends TestCase {
+	use InverseRelationAccess;
+
 	/** @var RenderObject */
 	private RenderObject $handler;
 
@@ -99,25 +101,37 @@ class RenderObjectDeepTest extends TestCase {
 		$this->fileService = $this->createMock(FileService::class);
 
 		$this->handler = new RenderObject(
-			$this->fileMapper,
-			$this->objectMapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->systemTagManager,
-			$this->systemTagMapper,
-			$this->cacheHandler,
-			$this->objectCacheService,
-			$this->propertyRbacHandler,
-			$this->logger,
-			$this->fileService,
-			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
-			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
-			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
+				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
+					objectCacheService: $this->objectCacheService
+				),
+				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+					fileMapper: $this->fileMapper,
+					fileService: $this->fileService,
+					systemTagManager: $this->systemTagManager,
+					systemTagMapper: $this->systemTagMapper
+				)
+			),
+			enrichers: new \OCA\OpenRegister\Service\Object\RenderEnrichers(
+				translations: new \OCA\OpenRegister\Service\Object\RenderTranslations(
+					translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+					translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+					translationMapper: $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+					languageService: $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+				),
+				derivations: new \OCA\OpenRegister\Service\Object\RenderDerivations(
+					computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+					calculationEvaluator: $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+					linkedEntityEnricher: $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+					urnService: $this->createMock(\OCA\OpenRegister\Service\UrnService::class)
+				)
+			),
+			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
+				logger: $this->logger,
+				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions()
+			),
+			propertyRbacHandler: $this->propertyRbacHandler
 		);
 	}
 
@@ -178,29 +192,41 @@ class RenderObjectDeepTest extends TestCase {
 	 * Helper to invoke private methods via reflection.
 	 */
 	private function invokePrivateMethod(string $method, array $args = []) {
-		$ref = new \ReflectionMethod(RenderObject::class, $method);
+		$owner = $this->methodOwner($this->handler, $method);
+		$ref = new \ReflectionMethod($owner, $method);
 		$ref->setAccessible(true);
-		return $ref->invoke($this->handler, ...$args);
+		return $ref->invoke($owner, ...$args);
+	}
+
+	/**
+	 * The object that holds a private property.
+	 */
+	private function propertyOwner(string $property): object {
+		if ($property === 'inverseRelationCache') {
+			return $this->inversePart($this->handler);
+		}
+
+		return $this->handler;
 	}
 
 	/**
 	 * Helper to set private property via reflection.
 	 */
 	private function setPrivateProperty(string $property, $value): void {
-		$ref = new ReflectionClass(RenderObject::class);
-		$prop = $ref->getProperty($property);
+		$owner = $this->propertyOwner($property);
+		$prop = new \ReflectionProperty($owner, $property);
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, $value);
+		$prop->setValue($owner, $value);
 	}
 
 	/**
 	 * Helper to get private property via reflection.
 	 */
 	private function getPrivateProperty(string $property) {
-		$ref = new ReflectionClass(RenderObject::class);
-		$prop = $ref->getProperty($property);
+		$owner = $this->propertyOwner($property);
+		$prop = new \ReflectionProperty($owner, $property);
 		$prop->setAccessible(true);
-		return $prop->getValue($this->handler);
+		return $prop->getValue($owner);
 	}
 
 	// ── resolveSchemaReference tests ────────────────────────────────────
@@ -214,13 +240,14 @@ class RenderObjectDeepTest extends TestCase {
 	}
 
 	/**
-	 * Test resolveSchemaReference with UUID falls through to slug resolution
-	 * because preg_match === true check fails (returns 1, not true).
+	 * Test resolveSchemaReference with a UUID no schema answers to falls through
+	 * to slug resolution and keeps the reference.
 	 */
 	public function testResolveSchemaReferenceWithUuidFallsThrough(): void {
 		$uuid = 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4';
 
-		// UUID is not numeric and not a path, so it goes to slug-based findAll
+		$this->schemaMapper->method('find')
+			->willThrowException(new \Exception('not found'));
 		$this->schemaMapper->method('findAll')
 			->willReturn([]);
 
@@ -375,12 +402,7 @@ class RenderObjectDeepTest extends TestCase {
 			'parentRef' => 'parent-uuid-1',
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['parentRef'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['parentRef'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
 		$this->assertCount(1, $cache['parent-uuid-1_children']);
@@ -402,12 +424,7 @@ class RenderObjectDeepTest extends TestCase {
 			'module' => ['value' => 'parent-uuid-1'],
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['module'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['module'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
 		$this->assertCount(1, $cache['parent-uuid-1_linked']);
@@ -429,12 +446,7 @@ class RenderObjectDeepTest extends TestCase {
 			'parent-uuid-1_items' => [],
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['fieldA', 'fieldB'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['fieldA', 'fieldB'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
 		$this->assertCount(1, $cache['parent-uuid-1_items']);
@@ -455,12 +467,7 @@ class RenderObjectDeepTest extends TestCase {
 			'parents' => ['parent-uuid-1', 'other-uuid'],
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['parents'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['parents'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
 		$this->assertCount(1, $cache['parent-uuid-1_refs']);
@@ -481,15 +488,64 @@ class RenderObjectDeepTest extends TestCase {
 			'field' => 'different-uuid',
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['field'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['field'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
-		$this->assertCount(0, $cache['parent-uuid-1_items']);
+		$this->assertSame(['parent-uuid-1_items' => []], $cache);
+		$this->assertArrayNotHasKey('other-ref', $this->getPrivateProperty('objectsCache'));
+	}
+
+	/**
+	 * A schema with one inverse property, answered for every find.
+	 */
+	private function stubInverseSchema(string $ref): void {
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setProperties(['children' => ['type' => 'array', 'items' => ['$ref' => $ref, 'inversedBy' => 'parent']]]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('findAll')->willReturn([]);
+	}
+
+	/**
+	 * Test the batch preload queries for an entity in a register.
+	 */
+	public function testPreloadQueriesWithARegisterAndNumericSchema(): void {
+		$this->stubInverseSchema('42');
+		$this->objectMapper->expects($this->once())->method('findByRelationBatchInSchema')->willReturn([]);
+
+		$this->invokePrivateMethod('preloadInverseRelationships', [[$this->createObjectEntity(1, 'uuid-1')], ['children']]);
+	}
+
+	/**
+	 * Test the batch preload does not query without a register.
+	 */
+	public function testPreloadDoesNotQueryWithoutARegister(): void {
+		$this->stubInverseSchema('42');
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+
+		$this->invokePrivateMethod('preloadInverseRelationships', [[$this->createObjectEntity(1, 'uuid-1', [], '0')], ['children']]);
+	}
+
+	/**
+	 * Test the batch preload does not query for a schema reference that stays non-numeric.
+	 */
+	public function testPreloadDoesNotQueryWithoutANumericSchema(): void {
+		$this->stubInverseSchema('unknown-slug');
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+
+		$this->invokePrivateMethod('preloadInverseRelationships', [[$this->createObjectEntity(1, 'uuid-1')], ['children']]);
+	}
+
+	/**
+	 * Test the batch preload does not query for entities without a UUID.
+	 */
+	public function testPreloadDoesNotQueryWithoutEntityUuids(): void {
+		$this->stubInverseSchema('42');
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$entity = new ObjectEntity();
+		$entity->setSchema('1');
+		$entity->setRegister('1');
+
+		$this->invokePrivateMethod('preloadInverseRelationships', [[$entity], ['children']]);
 	}
 
 	// ── collectEntityUuids tests ────────────────────────────────────────
@@ -541,11 +597,7 @@ class RenderObjectDeepTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [
-			$entity,
-			['name' => 'Main'],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), ['name' => 'Main']]);
 
 		$this->assertArrayHasKey('children', $result);
 	}
@@ -571,11 +623,7 @@ class RenderObjectDeepTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [
-			$entity,
-			[],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), []]);
 
 		$this->assertArrayHasKey('items', $result);
 		$this->assertSame([], $result['items']);
@@ -602,11 +650,7 @@ class RenderObjectDeepTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [
-			$entity,
-			[],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), []]);
 
 		$this->assertArrayHasKey('singleProp', $result);
 	}
@@ -888,19 +932,6 @@ class RenderObjectDeepTest extends TestCase {
 	}
 
 	// ── preloadInverseRelationships tests ────────────────────────────────
-
-	/**
-	 * Test preloadInverseRelationships with empty entities does nothing.
-	 */
-	public function testPreloadInverseRelationshipsEmptyEntities(): void {
-		$this->invokePrivateMethod('preloadInverseRelationships', [
-			[],
-			['prop' => ['type' => 'array', 'items' => ['inversedBy' => 'x', '$ref' => '#/y']]],
-			['prop'],
-		]);
-
-		$this->assertTrue(true);
-	}
 
 	/**
 	 * Test preloadInverseRelationships with no matching extend returns early.

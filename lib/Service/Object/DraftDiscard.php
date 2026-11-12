@@ -30,11 +30,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Removes one owner's draft from a destination.
@@ -46,14 +47,12 @@ class DraftDiscard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService  $objects   Reads and deletes objects.
-	 * @param RegisterMapper $registers Resolves the destination register.
-	 * @param SchemaMapper   $schemas   Resolves the destination schema.
+	 * @param ObjectOperationsInterface $objects Reads and deletes objects.
+	 * @param SchemaCatalogInterface    $catalog Resolves the destination register and schema.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly SchemaCatalogInterface $catalog,
 	) {
 
 	}//end __construct()
@@ -61,16 +60,16 @@ class DraftDiscard {
 	/**
 	 * Discard the owner's draft with this id.
 	 *
-	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair (id, uuid, slug or entity).
-	 * @param string                                  $draftId     The draft's uuid.
-	 * @param DraftOwner                              $owner       The asserted owner.
+	 * @param DiscardDraftRequest $request The destination pair (id, uuid, slug or entity), the draft's uuid and the asserted owner.
 	 *
 	 * @return bool True when the draft was removed; false when it is unknown, not a draft,
 	 *              someone else's, its destination does not exist, or the delete failed.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-discarded-by-its-owner
 	 */
-	public function discard(array $destination, string $draftId, DraftOwner $owner): bool {
+	public function discard(DiscardDraftRequest $request): bool {
+		$destination = $request->destination;
+		$draftId     = $request->draftId;
 		if ($draftId === '') {
 			return false;
 		}
@@ -82,7 +81,10 @@ class DraftDiscard {
 			return false;
 		}
 
-		$draft = (new DraftFinder(objects: $this->objects))->own(register: $register, schema: $schema, draftId: $draftId, owner: $owner);
+		$draft = (new DraftFinder(objects: $this->objects))->own(
+			address: new DraftAddress(register: $register, schema: $schema, draftId: $draftId),
+			owner: $request->owner
+		);
 		if ($draft === null) {
 			return false;
 		}
@@ -91,12 +93,13 @@ class DraftDiscard {
 			// RBAC off: a scope-value owner has no Nextcloud user to judge;
 			// DraftFinder::own() above was the owner check.
 			return $this->objects->deleteObject(
-				uuid: (string)$draft->getUuid(),
-				register: $register,
-				schema: $schema,
+				deletion: new ObjectDeletion(
+					uuid: (string)$draft->getUuid(),
+					target: new ObjectFindTarget(register: $register, schema: $schema),
+					permanent: true
+				),
 				_rbac: false,
-				_multitenancy: false,
-				permanent: true
+				_multitenancy: false
 			);
 		} catch (Throwable) {
 			return false;
@@ -115,7 +118,7 @@ class DraftDiscard {
 			return $reference;
 		}
 
-		return $this->registers->find((string)$reference, _rbac: false, _multitenancy: false);
+		return $this->catalog->registers()->find((string)$reference, _rbac: false, _multitenancy: false);
 	}//end register()
 
 	/**
@@ -130,6 +133,6 @@ class DraftDiscard {
 			return $reference;
 		}
 
-		return $this->schemas->find((string)$reference, _multitenancy: false);
+		return $this->catalog->schemas()->find((string)$reference, _multitenancy: false);
 	}//end schema()
 }//end class

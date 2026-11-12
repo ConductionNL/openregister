@@ -23,14 +23,9 @@
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Party\PartySearchService;
-use OCP\App\IAppManager;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserManager;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -54,87 +49,66 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex configuration validation and transformation logic
  */
 class ConfigurationSettingsHandler {
-	/**
-	 * Default Fireworks API URL
-	 *
-	 * @var string
-	 */
-	private const FIREWORKS_API_URL = 'https://api.fireworks.ai/inference/v1';
+	use SettingsSectionDefaults;
 
 	/**
-	 * Configuration service
+	 * The JSON settings sections and the default of every key in them.
 	 *
-	 * @var IAppConfig
+	 * Multitenancy is enabled by default, for proper data isolation.
+	 *
+	 * @var array<string, array<string, mixed>>
 	 */
-	private IAppConfig $appConfig;
+	private const SECTION_DEFAULTS = [
+		'rbac' => [
+			'enabled' => true,
+			'anonymousGroup' => 'public',
+			'defaultNewUserGroup' => 'viewer',
+			'defaultObjectOwner' => '',
+			'adminOverride' => true,
+		],
+		'multitenancy' => [
+			'enabled' => true,
+			'defaultUserTenant' => '',
+			'defaultObjectTenant' => '',
+			'publishedObjectsBypassMultiTenancy' => false,
+			'adminOverride' => true,
+		],
+		'retention' => self::RETENTION_PERIOD_DEFAULTS,
+		'organisation' => [
+			'default_organisation' => null,
+			'auto_create_default_organisation' => true,
+		],
+	];
 
 	/**
-	 * Group manager
+	 * The flow engine switches: settings field => [app config key, default].
 	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
-
-	/**
-	 * User manager
+	 * These are administrator settings, deliberately: whether every hop is
+	 * audit-trailed is instance policy, not a per-user preference. Auditing is
+	 * write volume (one entry per node per run) and the step rows already
+	 * carry the operational history, so it is opt-in.
 	 *
-	 * @var IUserManager
+	 * @var array<string, array{0: string, 1: bool}>
 	 */
-	private IUserManager $userManager;
-
-	/**
-	 * Organisation mapper
-	 *
-	 * @var OrganisationMapper
-	 */
-	private OrganisationMapper $organisationMapper;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
-	 * Application name
-	 *
-	 * @var string
-	 */
-	private string $appName;
+	private const FLOW_SWITCHES = [
+		'auditEnabled' => ['flow_audit_enabled', false],
+		'killSwitch' => ['flow_kill_switch', false],
+	];
 
 	/**
 	 * Constructor for ConfigurationSettingsHandler
 	 *
-	 * @param IAppConfig $appConfig Configuration service.
-	 * @param IGroupManager $groupManager Group manager.
-	 * @param IUserManager $userManager User manager.
-	 * @param OrganisationMapper $organisationMapper Organisation mapper.
-	 * @param LoggerInterface $logger Logger.
-	 * @param IAppManager $appManager App manager, read for the app's own version info.
-	 * @param string $appName Application name.
-	 * @param SecuritySettingAnnouncer|null $announcer Tells the administrators when a marked setting moves.
-	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail, and announces it.
+	 * @param IAppConfig                   $appConfig Configuration service.
+	 * @param SettingsDirectory            $directory The group manager, user manager and organisation mapper.
+	 * @param ConfigurationSettingsSupport $support   The logger, app manager, announcer and change recorder.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		IAppConfig $appConfig,
-		IGroupManager $groupManager,
-		IUserManager $userManager,
-		OrganisationMapper $organisationMapper,
-		LoggerInterface $logger,
-		private readonly IAppManager $appManager,
-		string $appName = 'openregister',
-		private readonly ?SecuritySettingAnnouncer $announcer = null,
-		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
+		private readonly IAppConfig $appConfig,
+		private readonly SettingsDirectory $directory,
+		private readonly ConfigurationSettingsSupport $support,
 	) {
-		$this->appConfig = $appConfig;
-		$this->groupManager = $groupManager;
-		$this->userManager = $userManager;
-		$this->organisationMapper = $organisationMapper;
-		$this->logger = $logger;
-		$this->appName = $appName;
 	}//end __construct()
 
 	/**
@@ -146,7 +120,7 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function isMultiTenancyEnabled(): bool {
-		$multitenancyConfig = $this->appConfig->getValueString($this->appName, 'multitenancy', '');
+		$multitenancyConfig = $this->appConfig->getValueString(AppIdentity::APP_ID, 'multitenancy', '');
 		if (empty($multitenancyConfig) === true) {
 			return false;
 		}
@@ -190,243 +164,121 @@ class ConfigurationSettingsHandler {
 	 *         deleteLogRetention: 2592000000|mixed,
 	 *         auditTrailsEnabled: mixed|true,
 	 *         searchTrailsEnabled: mixed|true
-	 *     },
-	 *     solr?: array{
-	 *         enabled: false|mixed,
-	 *         host: 'solr'|mixed,
-	 *         port: 8983|mixed,
-	 *         path: '/solr'|mixed,
-	 *         core: 'openregister'|mixed,
-	 *         configSet: '_default'|mixed,
-	 *         scheme: 'http'|mixed,
-	 *         username: 'solr'|mixed,
-	 *         password: 'SolrRocks'|mixed,
-	 *         timeout: 30|mixed,
-	 *         autoCommit: mixed|true,
-	 *         commitWithin: 1000|mixed,
-	 *         enableLogging: mixed|true,
-	 *         zookeeperHosts: 'zookeeper:2181'|mixed,
-	 *         zookeeperUsername: ''|mixed,
-	 *         zookeeperPassword: ''|mixed,
-	 *         collection: 'openregister'|mixed,
-	 *         useCloud: mixed|true,
-	 *         objectCollection: mixed|null,
-	 *         fileCollection: mixed|null
 	 *     }
 	 * }
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *     Comprehensive settings aggregation requires full configuration structure
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *     Multiple configuration sections require conditional handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *     Configuration defaults and overrides create multiple execution paths
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function getSettings(): array {
 		try {
-			$data = [];
+			return $this->accessSettings() + $this->operationalSettings();
+		} catch (Exception $e) {
+			throw new RuntimeException('Failed to retrieve settings: ' . $e->getMessage());
+		}
+	}//end getSettings()
 
-			// Version information.
-			$data['version'] = [
+	/**
+	 * The version, RBAC and multitenancy sections with the groups, tenants and users to pick from.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function accessSettings(): array {
+		return [
+			'version' => [
 				'appName' => 'Open Register',
 				'appVersion' => '0.2.3',
-			];
+			],
+			'rbac' => $this->storedSection(key: 'rbac'),
+			'multitenancy' => $this->storedSection(key: 'multitenancy'),
+			'availableGroups' => $this->getAvailableGroups(),
+			'availableTenants' => $this->getAvailableOrganisations(),
+			'availableUsers' => $this->getAvailableUsers(),
+		];
+	}//end accessSettings()
 
-			// RBAC Settings.
-			$rbacConfig = $this->appConfig->getValueString($this->appName, 'rbac', '');
-			if (empty($rbacConfig) === true) {
-				$data['rbac'] = [
-					'enabled' => true,
-					'anonymousGroup' => 'public',
-					'defaultNewUserGroup' => 'viewer',
-					'defaultObjectOwner' => '',
-					'adminOverride' => true,
-				];
-			}
-
-			if (empty($rbacConfig) === false) {
-				$rbacData = json_decode($rbacConfig, true);
-				$data['rbac'] = [
-					'enabled' => $rbacData['enabled'] ?? true,
-					'anonymousGroup' => $rbacData['anonymousGroup'] ?? 'public',
-					'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
-					'defaultObjectOwner' => $rbacData['defaultObjectOwner'] ?? '',
-					'adminOverride' => $rbacData['adminOverride'] ?? true,
-				];
-			}
-
-			// Multitenancy Settings - ENABLED BY DEFAULT for proper data isolation.
-			$multitenancyConfig = $this->appConfig->getValueString($this->appName, 'multitenancy', '');
-			if (empty($multitenancyConfig) === true) {
-				$data['multitenancy'] = [
-					'enabled' => true,
-					'defaultUserTenant' => '',
-					'defaultObjectTenant' => '',
-					'publishedObjectsBypassMultiTenancy' => false,
-					'adminOverride' => true,
-				];
-			}
-
-			if (empty($multitenancyConfig) === false) {
-				$multitenancyData = json_decode($multitenancyConfig, true);
-				$data['multitenancy'] = [
-					'enabled' => $multitenancyData['enabled'] ?? true,
-					'defaultUserTenant' => $multitenancyData['defaultUserTenant'] ?? '',
-					'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
-					'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
-					'adminOverride' => $multitenancyData['adminOverride'] ?? true,
-				];
-			}
-
-			// Get available Nextcloud groups.
-			$data['availableGroups'] = $this->getAvailableGroups();
-
-			// Get available organisations as tenants.
-			$data['availableTenants'] = $this->getAvailableOrganisations();
-
-			// Get available users.
-			$data['availableUsers'] = $this->getAvailableUsers();
-
-			// Retention Settings with defaults.
-			$retentionConfig = $this->appConfig->getValueString($this->appName, 'retention', '');
-			if (empty($retentionConfig) === true) {
-				$data['retention'] = [
-					'objectArchiveRetention' => 31536000000,
-					// 1 year default
-					'objectDeleteRetention' => 63072000000,
-					// 2 years default
-					'searchTrailRetention' => 2592000000,
-					// 1 month default
-					'createLogRetention' => 2592000000,
-					// 1 month default
-					'readLogRetention' => 86400000,
-					// 24 hours default
-					'updateLogRetention' => 604800000,
-					// 1 week default
-					'deleteLogRetention' => 2592000000,
-					// 1 month default
-					'auditTrailsEnabled' => true,
-					// Audit trails enabled by default.
-					'searchTrailsEnabled' => true,
-					// Search trails enabled by default.
-				];
-			}//end if
-
-			if (empty($retentionConfig) === false) {
-				$retentionData = json_decode($retentionConfig, true);
-				$data['retention'] = [
-					'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-					'objectDeleteRetention' => $retentionData['objectDeleteRetention'] ?? 63072000000,
-					'searchTrailRetention' => $retentionData['searchTrailRetention'] ?? 2592000000,
-					'createLogRetention' => $retentionData['createLogRetention'] ?? 2592000000,
-					'readLogRetention' => $retentionData['readLogRetention'] ?? 86400000,
-					'updateLogRetention' => $retentionData['updateLogRetention'] ?? 604800000,
-					'deleteLogRetention' => $retentionData['deleteLogRetention'] ?? 2592000000,
-					'auditTrailsEnabled' => $retentionData['auditTrailsEnabled'] ?? true,
-					'searchTrailsEnabled' => $retentionData['searchTrailsEnabled'] ?? true,
-				];
-			}//end if
-
-			// Blob Migration Status.
-			$data['blobMigration'] = [
-				'processed' => (int)$this->appConfig->getValueString($this->appName, 'blob_migration_processed', '0'),
-				'remaining' => (int)$this->appConfig->getValueString($this->appName, 'blob_migration_remaining', '0'),
-				'complete' => $this->appConfig->getValueString(
-					$this->appName,
-					'blob_migration_complete',
-					'false'
-				) === 'true',
-				'lastRun' => $this->appConfig->getValueString($this->appName, 'blob_migration_last_run', ''),
-			];
-
-			// SOLR Search Configuration.
-			$solrConfig = $this->appConfig->getValueString($this->appName, 'solr', '');
-
-			if (empty($solrConfig) === true) {
-				$data['solr'] = [
-					'enabled' => false,
-					'host' => 'solr',
-					'port' => 8983,
-					'path' => '/solr',
-					'core' => 'openregister',
-					'configSet' => '_default',
-					'scheme' => 'http',
-					'username' => 'solr',
-					'password' => 'SolrRocks',
-					'timeout' => 30,
-					'autoCommit' => true,
-					'commitWithin' => 1000,
-					'enableLogging' => true,
-					'zookeeperHosts' => 'zookeeper:2181',
-					'zookeeperUsername' => '',
-					'zookeeperPassword' => '',
-					'collection' => 'openregister',
-					'useCloud' => true,
-					'objectCollection' => null,
-					'fileCollection' => null,
-				];
-			}//end if
-
-			if (empty($solrConfig) === false) {
-				$solrData = json_decode($solrConfig, true);
-				$data['solr'] = [
-					'enabled' => $solrData['enabled'] ?? false,
-					'host' => $solrData['host'] ?? 'solr',
-					'port' => $solrData['port'] ?? 8983,
-					'path' => $solrData['path'] ?? '/solr',
-					'core' => $solrData['core'] ?? 'openregister',
-					'configSet' => $solrData['configSet'] ?? '_default',
-					'scheme' => $solrData['scheme'] ?? 'http',
-					'username' => $solrData['username'] ?? 'solr',
-					'password' => $solrData['password'] ?? 'SolrRocks',
-					'timeout' => $solrData['timeout'] ?? 30,
-					'autoCommit' => $solrData['autoCommit'] ?? true,
-					'commitWithin' => $solrData['commitWithin'] ?? 1000,
-					'enableLogging' => $solrData['enableLogging'] ?? true,
-					'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
-					'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
-					'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
-					'collection' => $solrData['collection'] ?? 'openregister',
-					'useCloud' => $solrData['useCloud'] ?? true,
-					'objectCollection' => $solrData['objectCollection'] ?? null,
-					'fileCollection' => $solrData['fileCollection'] ?? null,
-				];
-			}//end if
-
-			// Flow engine. These are ADMINISTRATOR settings, deliberately: how
-			// long run history is kept, whether every hop is audit-trailed, and
-			// whether the oversight gate runs are instance policy, not a
-			// per-user preference.
-			//
-			// The two booleans have OPPOSITE defaults on purpose. Auditing is
-			// write volume — one entry per node per run — and the step rows
-			// already carry the operational history, so it is opt-in. Oversight
-			// is what STOPS a running flow, and a safety rail defaulting to off
-			// protects only the flows somebody remembered to configure.
-			$data['flow'] = [
-				'retentionDays' => (int)$this->appConfig->getValueString($this->appName, 'flow_run_retention_days', '31'),
-				'auditEnabled' => $this->appConfig->getValueBool($this->appName, 'flow_audit_enabled', false),
-				'oversightEnabled' => $this->appConfig->getValueBool($this->appName, 'flow_oversight_enabled', true),
-				'killSwitch' => $this->appConfig->getValueBool($this->appName, 'flow_kill_switch', false),
-			];
-
-			// The party query cap: the administered maximum a party search may
-			// return before it is refused. A refusal, never a truncation.
-			$data['party'] = [
+	/**
+	 * The retention, blob migration, flow engine and party query cap sections.
+	 *
+	 * The party query cap is the administered maximum a party search may return
+	 * before it is refused: a refusal, never a truncation.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function operationalSettings(): array {
+		return [
+			'retention' => $this->storedSection(key: 'retention'),
+			'blobMigration' => $this->blobMigrationStatus(),
+			'flow' => $this->flowSettings(),
+			'party' => [
 				'queryCap' => $this->appConfig->getValueInt(
-					$this->appName,
+					AppIdentity::APP_ID,
 					PartySearchService::CAP_KEY,
 					PartySearchService::DEFAULT_CAP
 				),
-			];
+			],
+		];
+	}//end operationalSettings()
 
-			return $data;
-		} catch (Exception $e) {
-			throw new RuntimeException('Failed to retrieve settings: ' . $e->getMessage());
-		}//end try
-	}//end getSettings()
+	/**
+	 * The blob migration progress as stored by the migration job.
+	 *
+	 * @return array{processed: int, remaining: int, complete: bool, lastRun: string}
+	 */
+	private function blobMigrationStatus(): array {
+		return [
+			'processed' => (int)$this->appConfig->getValueString(AppIdentity::APP_ID, 'blob_migration_processed', '0'),
+			'remaining' => (int)$this->appConfig->getValueString(AppIdentity::APP_ID, 'blob_migration_remaining', '0'),
+			'complete' => $this->appConfig->getValueString(AppIdentity::APP_ID, 'blob_migration_complete', 'false') === 'true',
+			'lastRun' => $this->appConfig->getValueString(AppIdentity::APP_ID, 'blob_migration_last_run', ''),
+		];
+	}//end blobMigrationStatus()
+
+	/**
+	 * The flow engine settings: run history retention and the switches in FLOW_SWITCHES.
+	 *
+	 * @return array<string, int|bool>
+	 */
+	private function flowSettings(): array {
+		$flow = [
+			'retentionDays' => (int)$this->appConfig->getValueString(AppIdentity::APP_ID, 'flow_run_retention_days', '31'),
+		];
+		foreach (self::FLOW_SWITCHES as $field => [$key, $default]) {
+			$flow[$field] = $this->appConfig->getValueBool(AppIdentity::APP_ID, $key, $default);
+		}
+
+		return $flow;
+	}//end flowSettings()
+
+	/**
+	 * A stored JSON section over its defaults, or the defaults when nothing is stored.
+	 *
+	 * @param string $key The app config key, one of SECTION_DEFAULTS.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function storedSection(string $key): array {
+		$stored = $this->appConfig->getValueString(AppIdentity::APP_ID, $key, '');
+		if (empty($stored) === true) {
+			return self::SECTION_DEFAULTS[$key];
+		}
+
+		return $this->overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: json_decode($stored, true));
+	}//end storedSection()
+
+	/**
+	 * Store a section as JSON, every default key taken from the given values when set there.
+	 *
+	 * @param string $key    The app config key, one of SECTION_DEFAULTS.
+	 * @param mixed  $values The submitted section.
+	 *
+	 * @return array<string, mixed> The stored section.
+	 */
+	private function storeSection(string $key, $values): array {
+		$section = $this->overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: $values);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, $key, json_encode($section));
+
+		return $section;
+	}//end storeSection()
 
 	/**
 	 * Get available Nextcloud groups.
@@ -442,7 +294,7 @@ class ConfigurationSettingsHandler {
 		$groups['public'] = 'Public (No restrictions)';
 
 		// Get all Nextcloud groups.
-		$nextcloudGroups = $this->groupManager->search('');
+		$nextcloudGroups = $this->directory->groupManager->search('');
 		foreach ($nextcloudGroups as $group) {
 			$groups[$group->getGID()] = $group->getDisplayName();
 		}
@@ -459,7 +311,7 @@ class ConfigurationSettingsHandler {
 	 */
 	private function getAvailableOrganisations(): array {
 		try {
-			$organisations = $this->organisationMapper->findAllWithUserCount();
+			$organisations = $this->directory->organisationMapper->findAllWithUserCount();
 			$tenants = [];
 
 			foreach ($organisations as $organisation) {
@@ -484,7 +336,7 @@ class ConfigurationSettingsHandler {
 		$users = [];
 
 		// Get all Nextcloud users (limit to prevent performance issues).
-		$nextcloudUsers = $this->userManager->search('', 100);
+		$nextcloudUsers = $this->directory->userManager->search('', 100);
 		foreach ($nextcloudUsers as $user) {
 			$users[$user->getUID()] = $user->getUID();
 			if (($user->getDisplayName() !== null) === true && ($user->getDisplayName() !== '') === true) {
@@ -532,37 +384,8 @@ class ConfigurationSettingsHandler {
 	 *         deleteLogRetention: 2592000000|mixed,
 	 *         auditTrailsEnabled: mixed|true,
 	 *         searchTrailsEnabled: mixed|true
-	 *     },
-	 *     solr?: array{
-	 *         enabled: false|mixed,
-	 *         host: 'solr'|mixed,
-	 *         port: 8983|mixed,
-	 *         path: '/solr'|mixed,
-	 *         core: 'openregister'|mixed,
-	 *         configSet: '_default'|mixed,
-	 *         scheme: 'http'|mixed,
-	 *         username: 'solr'|mixed,
-	 *         password: 'SolrRocks'|mixed,
-	 *         timeout: 30|mixed,
-	 *         autoCommit: mixed|true,
-	 *         commitWithin: 1000|mixed,
-	 *         enableLogging: mixed|true,
-	 *         zookeeperHosts: 'zookeeper:2181'|mixed,
-	 *         zookeeperUsername: ''|mixed,
-	 *         zookeeperPassword: ''|mixed,
-	 *         collection: 'openregister'|mixed,
-	 *         useCloud: mixed|true,
-	 *         objectCollection: mixed|null,
-	 *         fileCollection: mixed|null
 	 *     }
 	 * }
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 *     Comprehensive settings update requires handling all configuration sections
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *     Multiple configuration sections require conditional handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *     Configuration sections are independently optional
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
@@ -573,121 +396,11 @@ class ConfigurationSettingsHandler {
 		// request would announce changes nobody made and miss the ones they
 		// did. Cheap by construction: the registry reads only the marked keys,
 		// never getSettings(), which also lists every group and user.
-		$beforeSecurity = $this->announcer?->snapshot();
-		$beforeChange = $this->changeRecorder?->snapshot(keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
+		$beforeSecurity = $this->support->announcer?->snapshot();
+		$beforeChange = $this->support->changeRecorder?->snapshot(keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
 
 		try {
-			// Handle RBAC settings.
-			if (($data['rbac'] ?? null) !== null) {
-				$rbacData = $data['rbac'];
-				// Always store RBAC config with enabled state.
-				$rbacConfig = [
-					'enabled' => $rbacData['enabled'] ?? true,
-					'anonymousGroup' => $rbacData['anonymousGroup'] ?? 'public',
-					'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
-					'defaultObjectOwner' => $rbacData['defaultObjectOwner'] ?? '',
-					'adminOverride' => $rbacData['adminOverride'] ?? true,
-				];
-				$this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
-			}
-
-			// Handle the party query cap. A cap of zero or below is refused
-			// rather than stored: it would refuse every party query on the
-			// instance, which is never what a mistyped field is asking for.
-			if (($data['party'] ?? null) !== null && is_array($data['party']) === true) {
-				$cap = (int)($data['party']['queryCap'] ?? 0);
-				if ($cap > 0) {
-					$this->appConfig->setValueInt($this->appName, PartySearchService::CAP_KEY, $cap);
-				}
-			}
-
-			// Handle flow-engine settings.
-			if (($data['flow'] ?? null) !== null) {
-				$flowData = $data['flow'];
-
-				// A non-positive retention is refused rather than stored: zero
-				// would mean "delete all run history on the next sweep", which
-				// is never what a mistyped field is asking for.
-				$days = (int)($flowData['retentionDays'] ?? 31);
-				if ($days > 0) {
-					$this->appConfig->setValueString($this->appName, 'flow_run_retention_days', (string)$days);
-				}
-
-				$this->appConfig->setValueBool(
-					$this->appName,
-					'flow_audit_enabled',
-					(bool)($flowData['auditEnabled'] ?? false)
-				);
-				$this->appConfig->setValueBool(
-					$this->appName,
-					'flow_oversight_enabled',
-					(bool)($flowData['oversightEnabled'] ?? true)
-				);
-				$this->appConfig->setValueBool(
-					$this->appName,
-					'flow_kill_switch',
-					(bool)($flowData['killSwitch'] ?? false)
-				);
-			}//end if
-
-			// Handle Multitenancy settings - enabled by default.
-			if (($data['multitenancy'] ?? null) !== null) {
-				$multitenancyData = $data['multitenancy'];
-				// Always store Multitenancy config with enabled state (default: true).
-				$multitenancyConfig = [
-					'enabled' => $multitenancyData['enabled'] ?? true,
-					'defaultUserTenant' => $multitenancyData['defaultUserTenant'] ?? '',
-					'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
-					'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
-					'adminOverride' => $multitenancyData['adminOverride'] ?? true,
-				];
-				$this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
-			}
-
-			// Handle Retention settings.
-			if (($data['retention'] ?? null) !== null) {
-				$retentionData = $data['retention'];
-				$retentionConfig = [
-					'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-					'objectDeleteRetention' => $retentionData['objectDeleteRetention'] ?? 63072000000,
-					'searchTrailRetention' => $retentionData['searchTrailRetention'] ?? 2592000000,
-					'createLogRetention' => $retentionData['createLogRetention'] ?? 2592000000,
-					'readLogRetention' => $retentionData['readLogRetention'] ?? 86400000,
-					'updateLogRetention' => $retentionData['updateLogRetention'] ?? 604800000,
-					'deleteLogRetention' => $retentionData['deleteLogRetention'] ?? 2592000000,
-					'auditTrailsEnabled' => $retentionData['auditTrailsEnabled'] ?? true,
-					'searchTrailsEnabled' => $retentionData['searchTrailsEnabled'] ?? true,
-				];
-				$this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
-			}
-
-			// Handle SOLR settings.
-			if (($data['solr'] ?? null) !== null) {
-				$solrData = $data['solr'];
-				$solrConfig = [
-					'enabled' => $solrData['enabled'] ?? false,
-					'host' => $solrData['host'] ?? 'solr',
-					'port' => (int)($solrData['port'] ?? 8983),
-					'path' => $solrData['path'] ?? '/solr',
-					'core' => $solrData['core'] ?? 'openregister',
-					'configSet' => $solrData['configSet'] ?? '_default',
-					'scheme' => $solrData['scheme'] ?? 'http',
-					'username' => $solrData['username'] ?? 'solr',
-					'password' => $solrData['password'] ?? 'SolrRocks',
-					'timeout' => (int)($solrData['timeout'] ?? 30),
-					'autoCommit' => $solrData['autoCommit'] ?? true,
-					'commitWithin' => (int)($solrData['commitWithin'] ?? 1000),
-					'enableLogging' => $solrData['enableLogging'] ?? true,
-					'zookeeperHosts' => $solrData['zookeeperHosts'] ?? 'zookeeper:2181',
-					'zookeeperUsername' => $solrData['zookeeperUsername'] ?? '',
-					'zookeeperPassword' => $solrData['zookeeperPassword'] ?? '',
-					'collection' => $solrData['collection'] ?? 'openregister',
-					'useCloud' => $solrData['useCloud'] ?? true,
-					'objectCollection' => $solrData['objectCollection'] ?? null,
-					'fileCollection' => $solrData['fileCollection'] ?? null,
-				];
-				$this->appConfig->setValueString($this->appName, 'solr', json_encode($solrConfig));
-			}//end if
+			$this->storeSubmittedSections(data: $data);
 
 			// Record and announce after the writes and inside the try, so a
 			// save that threw records nothing. The recorder writes the
@@ -697,17 +410,85 @@ class ConfigurationSettingsHandler {
 			// successful save into an error. Without a recorder (older wiring)
 			// the announcer still tells a person on its own.
 			if ($beforeChange !== null) {
-				$this->changeRecorder?->record(before: $beforeChange, keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
-			} elseif ($this->announcer !== null && $beforeSecurity !== null) {
-				$this->announcer->announce($beforeSecurity, $this->announcer->snapshot());
+				$this->support->changeRecorder?->record(before: $beforeChange, keys: OwnSettingsChangeRecorder::FULL_SAVE_KEYS);
+			} elseif ($this->support->announcer !== null && $beforeSecurity !== null) {
+				$this->support->announcer->announce($beforeSecurity, $this->support->announcer->snapshot());
 			}
 
-			// Return the updated settings.
 			return $this->getSettings();
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update settings: ' . $e->getMessage());
 		}//end try
 	}//end updateSettings()
+
+	/**
+	 * Store every section the save carries; a section it leaves out or sends as null keeps its stored value.
+	 *
+	 * @param array<string, mixed> $data The submitted settings.
+	 *
+	 * @return void
+	 */
+	private function storeSubmittedSections(array $data): void {
+		if (($data['rbac'] ?? null) !== null) {
+			$this->storeSection(key: 'rbac', values: $data['rbac']);
+		}
+
+		$this->storePartyCap(party: $data['party'] ?? null);
+		$this->storeFlowSettings(flow: $data['flow'] ?? null);
+		foreach (['multitenancy', 'retention'] as $key) {
+			if (($data[$key] ?? null) !== null) {
+				$this->storeSection(key: $key, values: $data[$key]);
+			}
+		}
+	}//end storeSubmittedSections()
+
+	/**
+	 * Store the party query cap. A cap of zero or below is refused rather than
+	 * stored: it would refuse every party query on the instance, which is never
+	 * what a mistyped field is asking for.
+	 *
+	 * @param mixed $party The submitted party section.
+	 *
+	 * @return void
+	 */
+	private function storePartyCap($party): void {
+		if (is_array($party) === false) {
+			return;
+		}
+
+		$cap = (int)($party['queryCap'] ?? 0);
+		if ($cap > 0) {
+			$this->appConfig->setValueInt(AppIdentity::APP_ID, PartySearchService::CAP_KEY, $cap);
+		}
+	}//end storePartyCap()
+
+	/**
+	 * Store the flow engine settings. A non-positive retention is refused rather
+	 * than stored: zero would mean "delete all run history on the next sweep",
+	 * which is never what a mistyped field is asking for.
+	 *
+	 * @param mixed $flow The submitted flow section; null stores nothing.
+	 *
+	 * @return void
+	 */
+	private function storeFlowSettings($flow): void {
+		if ($flow === null) {
+			return;
+		}
+
+		if (is_array($flow) === false) {
+			$flow = [];
+		}
+
+		$days = (int)($flow['retentionDays'] ?? 31);
+		if ($days > 0) {
+			$this->appConfig->setValueString(AppIdentity::APP_ID, 'flow_run_retention_days', (string)$days);
+		}
+
+		foreach (self::FLOW_SWITCHES as $field => [$key, $default]) {
+			$this->appConfig->setValueBool(AppIdentity::APP_ID, $key, (bool)($flow[$field] ?? $default));
+		}
+	}//end storeFlowSettings()
 
 	/**
 	 * Get focused RBAC settings only
@@ -727,32 +508,8 @@ class ConfigurationSettingsHandler {
 	 */
 	public function getRbacSettingsOnly(): array {
 		try {
-			$rbacConfig = $this->appConfig->getValueString($this->appName, 'rbac', '');
-
-			$rbacData = [];
-			if (empty($rbacConfig) === true) {
-				$rbacData = [
-					'enabled' => true,
-					'anonymousGroup' => 'public',
-					'defaultNewUserGroup' => 'viewer',
-					'defaultObjectOwner' => '',
-					'adminOverride' => true,
-				];
-			}
-
-			if (empty($rbacConfig) === false) {
-				$storedData = json_decode($rbacConfig, true);
-				$rbacData = [
-					'enabled' => $storedData['enabled'] ?? true,
-					'anonymousGroup' => $storedData['anonymousGroup'] ?? 'public',
-					'defaultNewUserGroup' => $storedData['defaultNewUserGroup'] ?? 'viewer',
-					'defaultObjectOwner' => $storedData['defaultObjectOwner'] ?? '',
-					'adminOverride' => $storedData['adminOverride'] ?? true,
-				];
-			}
-
 			return [
-				'rbac' => $rbacData,
+				'rbac' => $this->storedSection(key: 'rbac'),
 				'availableGroups' => $this->getAvailableGroups(),
 				'availableUsers' => $this->getAvailableUsers(),
 			];
@@ -780,17 +537,9 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateRbacSettingsOnly(array $rbacData): array {
-		$beforeChange = $this->changeRecorder?->snapshot(keys: ['rbac']);
+		$beforeChange = $this->support->changeRecorder?->snapshot(keys: ['rbac']);
 		try {
-			$rbacConfig = [
-				'enabled' => $rbacData['enabled'] ?? true,
-				'anonymousGroup' => $rbacData['anonymousGroup'] ?? 'public',
-				'defaultNewUserGroup' => $rbacData['defaultNewUserGroup'] ?? 'viewer',
-				'defaultObjectOwner' => $rbacData['defaultObjectOwner'] ?? '',
-				'adminOverride' => $rbacData['adminOverride'] ?? true,
-			];
-
-			$this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
+			$rbacConfig = $this->storeSection(key: 'rbac', values: $rbacData);
 			$this->recordSettingsChange(before: $beforeChange, keys: ['rbac']);
 
 			return [
@@ -820,26 +569,8 @@ class ConfigurationSettingsHandler {
 	 */
 	public function getOrganisationSettingsOnly(): array {
 		try {
-			$organisationConfig = $this->appConfig->getValueString($this->appName, 'organisation', '');
-
-			$organisationData = [];
-			if (empty($organisationConfig) === true) {
-				$organisationData = [
-					'default_organisation' => null,
-					'auto_create_default_organisation' => true,
-				];
-			}
-
-			if (empty($organisationConfig) === false) {
-				$storedData = json_decode($organisationConfig, true);
-				$organisationData = [
-					'default_organisation' => $storedData['default_organisation'] ?? null,
-					'auto_create_default_organisation' => $storedData['auto_create_default_organisation'] ?? true,
-				];
-			}
-
 			return [
-				'organisation' => $organisationData,
+				'organisation' => $this->storedSection(key: 'organisation'),
 			];
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to retrieve Organisation settings: ' . $e->getMessage());
@@ -864,14 +595,9 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateOrganisationSettingsOnly(array $organisationData): array {
-		$beforeChange = $this->changeRecorder?->snapshot(keys: ['organisation']);
+		$beforeChange = $this->support->changeRecorder?->snapshot(keys: ['organisation']);
 		try {
-			$organisationConfig = [
-				'default_organisation' => $organisationData['default_organisation'] ?? null,
-				'auto_create_default_organisation' => $organisationData['auto_create_default_organisation'] ?? true,
-			];
-
-			$this->appConfig->setValueString($this->appName, 'organisation', json_encode($organisationConfig));
+			$organisationConfig = $this->storeSection(key: 'organisation', values: $organisationData);
 			$this->recordSettingsChange(before: $beforeChange, keys: ['organisation']);
 
 			return [
@@ -895,7 +621,7 @@ class ConfigurationSettingsHandler {
 			$settings = $this->getOrganisationSettingsOnly();
 			return $settings['organisation']['default_organisation'] ?? null;
 		} catch (Exception $e) {
-			$this->logger->warning(
+			$this->support->logger->warning(
 				message: '[ConfigurationSettingsHandler] Failed to get default organisation UUID: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -916,7 +642,7 @@ class ConfigurationSettingsHandler {
 			$multitenancySettings = $this->getMultitenancySettingsOnly();
 			return $multitenancySettings['multitenancy']['defaultUserTenant'] ?? null;
 		} catch (Exception $e) {
-			$this->logger->warning(
+			$this->support->logger->warning(
 				message: '[ConfigurationSettingsHandler] Failed to get tenant ID: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -951,7 +677,7 @@ class ConfigurationSettingsHandler {
 			$settings['organisation']['default_organisation'] = $uuid;
 			$this->updateOrganisationSettingsOnly(organisationData: $settings['organisation']);
 		} catch (Exception $e) {
-			$this->logger->error(
+			$this->support->logger->error(
 				message: '[ConfigurationSettingsHandler] Failed to set default organisation UUID: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
@@ -979,33 +705,8 @@ class ConfigurationSettingsHandler {
 	 */
 	public function getMultitenancySettingsOnly(): array {
 		try {
-			$multitenancyConfig = $this->appConfig->getValueString($this->appName, 'multitenancy', '');
-
-			$multitenancyData = [];
-			if (empty($multitenancyConfig) === true) {
-				// Default: multitenancy enabled for proper data isolation.
-				$multitenancyData = [
-					'enabled' => true,
-					'defaultUserTenant' => '',
-					'defaultObjectTenant' => '',
-					'publishedObjectsBypassMultiTenancy' => false,
-					'adminOverride' => true,
-				];
-			}
-
-			if (empty($multitenancyConfig) === false) {
-				$storedData = json_decode($multitenancyConfig, true);
-				$multitenancyData = [
-					'enabled' => $storedData['enabled'] ?? true,
-					'defaultUserTenant' => $storedData['defaultUserTenant'] ?? '',
-					'defaultObjectTenant' => $storedData['defaultObjectTenant'] ?? '',
-					'publishedObjectsBypassMultiTenancy' => $storedData['publishedObjectsBypassMultiTenancy'] ?? false,
-					'adminOverride' => $storedData['adminOverride'] ?? true,
-				];
-			}
-
 			return [
-				'multitenancy' => $multitenancyData,
+				'multitenancy' => $this->storedSection(key: 'multitenancy'),
 				'availableTenants' => $this->getAvailableOrganisations(),
 			];
 		} catch (Exception $e) {
@@ -1026,18 +727,9 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
 	 */
 	public function updateMultitenancySettingsOnly(array $multitenancyData): array {
-		$beforeChange = $this->changeRecorder?->snapshot(keys: ['multitenancy']);
+		$beforeChange = $this->support->changeRecorder?->snapshot(keys: ['multitenancy']);
 		try {
-			// Default: enabled=true for proper data isolation.
-			$multitenancyConfig = [
-				'enabled' => $multitenancyData['enabled'] ?? true,
-				'defaultUserTenant' => $multitenancyData['defaultUserTenant'] ?? '',
-				'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
-				'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
-				'adminOverride' => $multitenancyData['adminOverride'] ?? true,
-			];
-
-			$this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
+			$multitenancyConfig = $this->storeSection(key: 'multitenancy', values: $multitenancyData);
 			$this->recordSettingsChange(before: $beforeChange, keys: ['multitenancy']);
 
 			return [
@@ -1060,299 +752,12 @@ class ConfigurationSettingsHandler {
 	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
 	 */
 	private function recordSettingsChange(?array $before, array $keys): void {
-		if ($before === null || $this->changeRecorder === null) {
+		if ($before === null || $this->support->changeRecorder === null) {
 			return;
 		}
 
-		$this->changeRecorder->record(before: $before, keys: $keys);
+		$this->support->changeRecorder->record(before: $before, keys: $keys);
 	}//end recordSettingsChange()
-
-	/**
-	 * Get LLM settings only
-	 *
-	 * @return array LLM configuration
-	 *
-	 * @throws \RuntimeException If LLM settings retrieval fails
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *     Backward compatibility requires multiple field existence checks
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *     Default configuration structure requires comprehensive initialization
-	 *     Nested else branches handle optional vector config backward compatibility
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
-	 */
-	public function getLLMSettingsOnly(): array {
-		try {
-			$llmConfig = $this->appConfig->getValueString($this->appName, 'llm', '');
-
-			if (empty($llmConfig) === true) {
-				// Return default configuration.
-				return [
-					'enabled' => false,
-					'embeddingProvider' => null,
-					'chatProvider' => null,
-					'openaiConfig' => [
-						'apiKey' => '',
-						'model' => null,
-						'chatModel' => null,
-						'organizationId' => '',
-					],
-					'ollamaConfig' => [
-						'url' => 'http://localhost:11434',
-						'model' => null,
-						'chatModel' => null,
-					],
-					'fireworksConfig' => [
-						'apiKey' => '',
-						'embeddingModel' => null,
-						'chatModel' => null,
-						'baseUrl' => 'https://api.fireworks.ai/inference/v1',
-					],
-					'vectorConfig' => [
-						'backend' => 'php',
-						'solrField' => '_embedding_',
-					],
-				];
-			}//end if
-
-			$decoded = json_decode($llmConfig, true);
-
-			// Ensure enabled field exists (for backward compatibility).
-			if (isset($decoded['enabled']) === false) {
-				$decoded['enabled'] = false;
-			}
-
-			// Ensure vector config exists (for backward compatibility).
-			if (isset($decoded['vectorConfig']) === false) {
-				$decoded['vectorConfig'] = [
-					'backend' => 'php',
-					'solrField' => '_embedding_',
-				];
-			}
-
-			if (isset($decoded['vectorConfig']) === true) {
-				// Ensure all vector config fields exist.
-				if (isset($decoded['vectorConfig']['backend']) === false) {
-					$decoded['vectorConfig']['backend'] = 'php';
-				}
-
-				if (isset($decoded['vectorConfig']['solrField']) === false) {
-					$decoded['vectorConfig']['solrField'] = '_embedding_';
-				}
-
-				// Remove deprecated solrCollection if it exists.
-				unset($decoded['vectorConfig']['solrCollection']);
-			}
-
-			return $decoded;
-		} catch (Exception $e) {
-			throw new RuntimeException('Failed to retrieve LLM settings: ' . $e->getMessage());
-		}//end try
-	}//end getLLMSettingsOnly()
-
-	/**
-	 * Update LLM settings only
-	 *
-	 * @param array $llmData LLM configuration data
-	 *
-	 * @throws \RuntimeException If LLM settings update fails
-	 *
-	 * @return array Updated LLM config with providers and their configurations.
-	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity) PATCH behavior requires merging multiple nested configuration structures
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
-	 */
-	public function updateLLMSettingsOnly(array $llmData): array {
-		try {
-			// Get existing config for PATCH support.
-			$existingConfig = $this->getLLMSettingsOnly();
-
-			// Merge with existing config (PATCH behavior).
-			$newConfig = $llmData;
-			$oldConfig = $existingConfig;
-			$newOpenai = $newConfig['openaiConfig'] ?? [];
-			$oldOpenai = $oldConfig['openaiConfig'] ?? [];
-			$newOllama = $newConfig['ollamaConfig'] ?? [];
-			$oldOllama = $oldConfig['ollamaConfig'] ?? [];
-			$newFireworks = $newConfig['fireworksConfig'] ?? [];
-			$oldFireworks = $oldConfig['fireworksConfig'] ?? [];
-			$newVector = $newConfig['vectorConfig'] ?? [];
-			$oldVector = $oldConfig['vectorConfig'] ?? [];
-
-			$llmConfig = [
-				'enabled' => $newConfig['enabled'] ?? $oldConfig['enabled'] ?? false,
-				'embeddingProvider' => $newConfig['embeddingProvider'] ?? $oldConfig['embeddingProvider'] ?? null,
-				'chatProvider' => $newConfig['chatProvider'] ?? $oldConfig['chatProvider'] ?? null,
-				'openaiConfig' => [
-					'apiKey' => $newOpenai['apiKey'] ?? $oldOpenai['apiKey'] ?? '',
-					'model' => $newOpenai['model'] ?? $oldOpenai['model'] ?? null,
-					'chatModel' => $newOpenai['chatModel'] ?? $oldOpenai['chatModel'] ?? null,
-					'organizationId' => $newOpenai['organizationId'] ?? $oldOpenai['organizationId'] ?? '',
-				],
-				'ollamaConfig' => [
-					'url' => $newOllama['url'] ?? $oldOllama['url'] ?? 'http://localhost:11434',
-					'model' => $newOllama['model'] ?? $oldOllama['model'] ?? null,
-					'chatModel' => $newOllama['chatModel'] ?? $oldOllama['chatModel'] ?? null,
-				],
-				'fireworksConfig' => [
-					'apiKey' => $newFireworks['apiKey'] ?? $oldFireworks['apiKey'] ?? '',
-					'embeddingModel' => $newFireworks['embeddingModel'] ?? $oldFireworks['embeddingModel'] ?? null,
-					'chatModel' => $newFireworks['chatModel'] ?? $oldFireworks['chatModel'] ?? null,
-					'baseUrl' => $newFireworks['baseUrl'] ?? $oldFireworks['baseUrl'] ?? self::FIREWORKS_API_URL,
-				],
-				'vectorConfig' => [
-					'backend' => $newVector['backend'] ?? $oldVector['backend'] ?? 'php',
-					'solrField' => $newVector['solrField'] ?? $oldVector['solrField'] ?? '_embedding_',
-				],
-			];
-
-			$this->appConfig->setValueString($this->appName, 'llm', json_encode($llmConfig));
-			return $llmConfig;
-		} catch (Exception $e) {
-			throw new RuntimeException('Failed to update LLM settings: ' . $e->getMessage());
-		}//end try
-	}//end updateLLMSettingsOnly()
-
-	/**
-	 * Get File Management settings only
-	 *
-	 * @return array File management configuration
-	 *
-	 * @throws \RuntimeException If File Management settings retrieval fails
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many default configuration values
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
-	 */
-	public function getFileSettingsOnly(): array {
-		try {
-			$fileConfig = $this->appConfig->getValueString($this->appName, 'fileManagement', '');
-
-			if (empty($fileConfig) === true) {
-				// Return default configuration.
-				return [
-					'vectorizationEnabled' => false,
-					'provider' => null,
-					'chunkingStrategy' => 'RECURSIVE_CHARACTER',
-					'chunkSize' => 1000,
-					'chunkOverlap' => 200,
-					// LLPhant-friendly defaults: native PHP support + common library-based formats.
-					'enabledFileTypes' => [
-						'txt',
-						'md',
-						'html',
-						'json',
-						'xml',
-						'csv',
-						'pdf',
-						'docx',
-						'doc',
-						'xlsx',
-						'xls',
-					],
-					'ocrEnabled' => false,
-					'maxFileSizeMB' => 100,
-					// Text extraction settings (for FileConfiguration component).
-					'extractionScope' => 'objects',
-					// None, all, folders, objects.
-					'textExtractor' => 'llphant',
-					// Llphant, dolphin.
-					'extractionMode' => 'background',
-					// Background, immediate, manual.
-					'maxFileSize' => 100,
-					'batchSize' => 10,
-					'dolphinApiEndpoint' => '',
-					'dolphinApiKey' => '',
-					// Presidio entity recognition settings.
-					'presidioApiEndpoint' => '',
-					'entityRecognitionEnabled' => false,
-					'entityRecognitionMethod' => 'hybrid',
-					// Regex, presidio, llm, hybrid.
-				];
-			}//end if
-
-			return json_decode($fileConfig, true);
-		} catch (Exception $e) {
-			throw new RuntimeException('Failed to retrieve File Management settings: ' . $e->getMessage());
-		}//end try
-	}//end getFileSettingsOnly()
-
-	/**
-	 * Update File Management settings only
-	 *
-	 * @param array $fileData File management configuration data
-	 *
-	 * @return (false|int|mixed|null|string[])[] Updated file management configuration
-	 *
-	 * @throws \RuntimeException
-	 *
-	 * @psalm-return array{vectorizationEnabled: false|mixed, provider: mixed|null,
-	 *     chunkingStrategy: 'RECURSIVE_CHARACTER'|mixed, chunkSize: 1000|mixed,
-	 *     chunkOverlap: 200|mixed,
-	 *     enabledFileTypes: list{'txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf',
-	 *     'docx', 'doc', 'xlsx', 'xls'}|mixed, ocrEnabled: false|mixed,
-	 *     maxFileSizeMB: 100|mixed, extractionScope: 'objects'|mixed,
-	 *     textExtractor: 'llphant'|mixed, extractionMode: 'background'|mixed,
-	 *     maxFileSize: 100|mixed, batchSize: 10|mixed,
-	 *     dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many configuration fields
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
-	 */
-	public function updateFileSettingsOnly(array $fileData): array {
-		try {
-			$fileConfig = [
-				'vectorizationEnabled' => $fileData['vectorizationEnabled'] ?? false,
-				'provider' => $fileData['provider'] ?? null,
-				'chunkingStrategy' => $fileData['chunkingStrategy'] ?? 'RECURSIVE_CHARACTER',
-				'chunkSize' => $fileData['chunkSize'] ?? 1000,
-				'chunkOverlap' => $fileData['chunkOverlap'] ?? 200,
-				'enabledFileTypes' => $fileData['enabledFileTypes'] ?? [
-					'txt',
-					'md',
-					'html',
-					'json',
-					'xml',
-					'csv',
-					'pdf',
-					'docx',
-					'doc',
-					'xlsx',
-					'xls',
-				],
-				'ocrEnabled' => $fileData['ocrEnabled'] ?? false,
-				'maxFileSizeMB' => $fileData['maxFileSizeMB'] ?? 100,
-				// Text extraction settings (from FileConfiguration component).
-				'extractionScope' => $fileData['extractionScope'] ?? 'objects',
-				// None, all, folders, objects.
-				'textExtractor' => $fileData['textExtractor'] ?? 'llphant',
-				// Llphant, dolphin.
-				'extractionMode' => $fileData['extractionMode'] ?? 'background',
-				// Background, immediate, manual.
-				'maxFileSize' => $fileData['maxFileSize'] ?? 100,
-				'batchSize' => $fileData['batchSize'] ?? 10,
-				'dolphinApiEndpoint' => $fileData['dolphinApiEndpoint'] ?? '',
-				'dolphinApiKey' => $fileData['dolphinApiKey'] ?? '',
-				// Presidio entity recognition settings.
-				'presidioApiEndpoint' => $fileData['presidioApiEndpoint'] ?? '',
-				'entityRecognitionEnabled' => $fileData['entityRecognitionEnabled'] ?? false,
-				'entityRecognitionMethod' => $fileData['entityRecognitionMethod'] ?? 'hybrid',
-				// Regex, presidio, llm, hybrid.
-			];
-
-			$this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
-			return $fileConfig;
-		} catch (Exception $e) {
-			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
-		}//end try
-	}//end updateFileSettingsOnly()
 
 
 
@@ -1368,17 +773,7 @@ class ConfigurationSettingsHandler {
 	 */
 	public function getVersionInfoOnly(): array {
 		try {
-			$appInfo = $this->appManager->getAppInfo($this->appName);
-
-			return [
-				'version' => ($appInfo['version'] ?? null) ?? 'unknown',
-				'name' => ($appInfo['name'] ?? null) ?? 'OpenRegister',
-				'description' => ($appInfo['description'] ?? null) ?? '',
-				'author' => ($appInfo['author'] ?? null) ?? 'Conduction',
-				'licence' => ($appInfo['licence'] ?? null) ?? 'EUPL-1.2',
-				'timestamp' => time(),
-				'date' => date('Y-m-d H:i:s'),
-			];
+			return self::versionInfoOf(appInfo: $this->support->appManager->getAppInfo(AppIdentity::APP_ID));
 		} catch (\Throwable $e) {
 			return [
 				'version' => 'unknown',
@@ -1386,4 +781,23 @@ class ConfigurationSettingsHandler {
 			];
 		}
 	}//end getVersionInfoOnly()
+
+	/**
+	 * The version info an app info block gives, each field defaulted, stamped with now.
+	 *
+	 * @param array<string, mixed>|null $appInfo The app info.
+	 *
+	 * @return array Version info with name, version, description, author, licence, timestamp, and date.
+	 */
+	private static function versionInfoOf(?array $appInfo): array {
+		return [
+			'version' => ($appInfo['version'] ?? null) ?? 'unknown',
+			'name' => ($appInfo['name'] ?? null) ?? 'OpenRegister',
+			'description' => ($appInfo['description'] ?? null) ?? '',
+			'author' => ($appInfo['author'] ?? null) ?? 'Conduction',
+			'licence' => ($appInfo['licence'] ?? null) ?? 'EUPL-1.2',
+			'timestamp' => time(),
+			'date' => date('Y-m-d H:i:s'),
+		];
+	}//end versionInfoOf()
 }//end class

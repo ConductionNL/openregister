@@ -1,0 +1,607 @@
+<?php
+
+/**
+ * OpenRegister AggregationController
+ *
+ * HTTP entry point for the two aggregation surfaces OR exposes:
+ *
+ *  - {@see aggregate()}  — named-annotation surface backed by the
+ *    `x-openregister-aggregations` block on a schema. Schema-author
+ *    declared, immutable per release. Original surface.
+ *  - {@see timeseries()} — ad-hoc surface where the client supplies
+ *    the field, optional bucketing interval, and bounds at request
+ *    time. Added by `add-time-bucket-aggregation`. Backs the
+ *    nextcloud-vue `CnChartWidget.dataSource` bucket shorthand.
+ *
+ * Both paths share `AggregationRunner` for RBAC + multi-tenant
+ * gating + Postgres / fallback dispatch. The ad-hoc path DOES consult
+ * `AggregationCache` (see `AggregationRunner::runAdhoc()`); `value()`,
+ * `grouped()` and `timeseries()` all surface the resulting hit/miss
+ * verdict via `X-OR-Cache`, closing #1610.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <dev@conduction.nl>
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/aggregations-backend-native/spec.md
+ * @spec openspec/specs/aggregations-backend-native/spec.md
+ * @spec openspec/specs/aggregations-backend-native/spec.md
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+ * @spec openspec/specs/aggregation-api/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Search\Controller;
+
+use OCA\OpenRegister\AppInfo\Application;
+use InvalidArgumentException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
+use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
+use OCA\OpenRegister\Search\Controller\Support\AggregationRun;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Support\AggregationFilterRequest;
+use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\UnknownFilterKeys;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IRequest;
+use RuntimeException;
+
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The count went to the
+ * threshold when reading both filter spellings (openregister#3611) added three
+ * references: `FilterParams` for the grammar, `Schema` to pass the already
+ * resolved entity into it, and a logger for the one warning an unknown key
+ * raises. The cheap way back under the limit is to re-resolve the schema
+ * instead of passing it, which would let the validator police one schema's
+ * property list while the aggregate ran over another's, and that is exactly
+ * the mismatch `timeseries()` resolves the schema up front to avoid.
+ */
+class AggregationController extends Controller {
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest                      $request  The current request.
+	 * @param AggregationControllerServices $services The runner, the ad-hoc validator and the logger.
+	 */
+	public function __construct(
+		IRequest $request,
+		private readonly AggregationControllerServices $services,
+	) {
+		parent::__construct(appName: Application::APP_ID, request: $request);
+	}//end __construct()
+
+	/**
+	 * Read this request's filter map in BOTH spellings.
+	 *
+	 * The aggregations have always read `filter[x]=v` and dropped a bare
+	 * `x=v`, while object search did the opposite, so one query answered two
+	 * different numbers depending on which sibling endpoint served it and
+	 * neither errored (openregister#3611). A bare key now joins the filter
+	 * map here, on one condition: it must name a property the schema
+	 * declares. A parameter that names nothing (a cache-buster, a stray
+	 * `v=2`) is still ignored, exactly as before, because turning those into
+	 * filters would silently zero every widget that carries one.
+	 *
+	 * Whatever the endpoint could not make sense of is logged once, naming
+	 * the keys, the endpoint and the schema. A warning, not a refusal: a 400
+	 * would break every caller on the old spelling in the same minute.
+	 *
+	 * The schema is looked up only when the request carries something that
+	 * could be a filter, so the common control-params-only request pays
+	 * nothing. The lookup is the register-scoped one `runAdhocByRef()` will
+	 * repeat, so both resolve the same schema.
+	 *
+	 * @param AggregationRun $run    The register and schema references, and the schema when already resolved.
+	 * @param string         $action The controller action, keying its control params.
+	 *
+	 * @return array<string, mixed> The normalised filter map.
+	 *
+	 * @throws RuntimeException When the schema cannot be resolved.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	private function resolveFilter(AggregationRun $run, string $action): array {
+		$bracket = (array)($this->request->getParam(FilterParams::FILTER_KEY, []));
+		$params = $this->request->getParams();
+		$controlParams = FilterParams::AGGREGATION_CONTROL_PARAMS[$action];
+
+		if ($bracket === []
+			&& FilterParams::hasBareCandidates(params: $params, controlParams: $controlParams) === false
+		) {
+			return [];
+		}
+
+		$resolvedSchema = $run->schemaEntity;
+		if ($resolvedSchema === null) {
+			$resolvedSchema = $this->services->runner->findSchema(schemaRef: $run->schema, registerRef: $run->register);
+		}
+
+		$normalised = FilterParams::forAggregation(
+			request: new AggregationFilterRequest(bracket: $bracket, params: $params, controlParams: $controlParams),
+			properties: ($resolvedSchema->getProperties() ?? [])
+		);
+
+		FilterParams::warnUnknownKeys(
+			logger: $this->services->logger,
+			unknown: new UnknownFilterKeys(
+				keys: $normalised['unknown'],
+				endpoint: 'aggregation#' . $action,
+				table: new RegisterSchemaRef(register: $run->register, schema: $run->schema)
+			)
+		);
+
+		return $normalised['filter'];
+	}//end resolveFilter()
+
+	/**
+	 * Run a named aggregation declared on the schema.
+	 *
+	 * Surfaces an `X-OR-Cache: hit|miss` response header in addition
+	 * to the `cached: true` field in the body, closing the deferred
+	 * "controller-response header" follow-up from
+	 * `aggregations-backend-native` task 6.3. Reverse proxies and
+	 * downstream observability stacks can grep the header without
+	 * parsing the JSON envelope.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema Schema reference.
+	 * @param string $name Aggregation name.
+	 *
+	 * @return JSONResponse JSON response with aggregation result.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+	 */
+	public function aggregate(string $register, string $schema, string $name): JSONResponse {
+		return $this->runNamed(run: new AggregationRun(register: $register, schema: $schema), name: $name);
+	}//end aggregate()
+
+	/**
+	 * Run a named aggregation, narrowed by the request's filter.
+	 *
+	 * @param AggregationRun $run  The register and schema references.
+	 * @param string         $name Aggregation name.
+	 *
+	 * @return JSONResponse The result with its cache header, 403 when refused, 404 when unknown.
+	 */
+	private function runNamed(AggregationRun $run, string $name): JSONResponse {
+		try {
+			// `filter[...]` NARROWS a declared aggregation; it can never relax
+			// it. The runner refuses any key the declaration already
+			// constrains, so this cannot be used to widen a scoping filter —
+			// see AggregationRunner::mergeNarrowingFilter().
+			//
+			// It exists because an annotation has no way to name the caller's
+			// context: `$currentUser` is the only placeholder the resolver
+			// knows, so a per-tenant figure declared once could not be asked
+			// for per tenant.
+			//
+			// Both spellings narrow: `filter[administrationId]=X` and a bare
+			// `administrationId=X` reach the runner as the same constraint.
+			$extraFilter = $this->resolveFilter(run: $run, action: 'aggregate');
+
+			$result = $this->services->runner->run(
+				ref: new NamedAggregationRef(register: $run->register, schema: $run->schema, name: $name),
+				options: new NamedAggregationOptions(bypassRbac: false, extraFilter: $extraFilter)
+			);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return $this->withCacheHeader(result: $result);
+	}//end runNamed()
+
+	/**
+	 * Ad-hoc single-value aggregation entry point.
+	 *
+	 * The non-bucketed sibling of {@see timeseries()} — returns one scalar
+	 * `value` for manifest-configured KPI widgets (nextcloud-vue CnStatWidget).
+	 * RBAC + multi-tenancy are enforced inside AggregationRunner::runAdhocByRef.
+	 *
+	 * Accepts: metric (default count), field (required for non-count),
+	 * filter[...] (operator-aware), metrics[...] (optional multi-metric
+	 * list — REQ-AGG-102; when supplied, the response carries `values`
+	 * instead of a single scalar `value`). The literal `value` URL never
+	 * collides with the named `{name}` aggregate route.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema Schema reference.
+	 *
+	 * @return JSONResponse JSON response with the scalar aggregation value
+	 *                      (or `values` for a multi-metric request) and an
+	 *                      `X-OR-Cache: hit|miss` header (REQ-AGG-105).
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	public function value(string $register, string $schema): JSONResponse {
+		$run = new AggregationRun(register: $register, schema: $schema);
+		try {
+			$run->filter = $this->resolveFilter(run: $run, action: 'value');
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return $this->runAdhocQuery(run: $run, groupBy: null);
+	}//end value()
+
+	/**
+	 * Parse the optional `metrics` multi-metric list request param
+	 * (REQ-AGG-102) into the shape {@see AggregationQuery::create()}'s
+	 * `metrics` argument expects.
+	 *
+	 * Wire shape: `metrics[0][metric]=count&metrics[1][metric]=sum&
+	 * metrics[1][field]=price` (PHP parses this into a nested array via
+	 * `IRequest::getParam()`, same convention as the existing `filter[...]`
+	 * param). Returns null when the param is absent/empty so callers can
+	 * distinguish "no metrics list — use the legacy single metric/field
+	 * pair" from "an explicit (possibly one-element) list".
+	 *
+	 * @return array<int, array{metric: string, field: ?string}>|null
+	 */
+	private function parseMetricsParam(): ?array {
+		$raw = $this->request->getParam('metrics');
+		if (is_array($raw) === false || count($raw) === 0) {
+			return null;
+		}
+
+		$metrics = [];
+		foreach ($raw as $entry) {
+			if (is_array($entry) === false) {
+				continue;
+			}
+
+			$metrics[] = $this->metricEntry(entry: $entry);
+		}
+
+		if (count($metrics) === 0) {
+			return null;
+		}
+
+		return $metrics;
+	}//end parseMetricsParam()
+
+	/**
+	 * One `metrics[...]` entry as the query expects it; a blank field means none.
+	 *
+	 * @param array<string, mixed> $entry The raw entry.
+	 *
+	 * @return array{metric: string, field: mixed}
+	 */
+	private function metricEntry(array $entry): array {
+		$entryField = ($entry['field'] ?? null);
+		if ($entryField === '') {
+			$entryField = null;
+		}
+
+		return [
+			'metric' => (string)($entry['metric'] ?? ''),
+			'field' => $entryField,
+		];
+	}//end metricEntry()
+
+	/**
+	 * Surface the `X-OR-Cache: hit|miss` header on an ad-hoc envelope
+	 * (REQ-AGG-105) — the `value`/`grouped`/`timeseries` counterpart of
+	 * the header {@see aggregate()} already sets from `cached`.
+	 *
+	 * @param array<string, mixed> $result The runner's result envelope.
+	 *
+	 * @return JSONResponse The response with the header attached.
+	 */
+	private function withCacheHeader(array $result): JSONResponse {
+		$response = new JSONResponse($result);
+		$cacheHeader = 'miss';
+		if (($result['cached'] ?? false) === true) {
+			$cacheHeader = 'hit';
+		}
+
+		$response->addHeader('X-OR-Cache', $cacheHeader);
+		return $response;
+	}//end withCacheHeader()
+
+	/**
+	 * Ad-hoc categorical group-by aggregation entry point.
+	 *
+	 * The non-time sibling of {@see timeseries()} — groups by a NON-date field
+	 * and returns `{ groups: [{ key, value }] }` for manifest-configured
+	 * category charts (nextcloud-vue CnChartWidget group-by source).
+	 *
+	 * Accepts: groupBy (required field — a single field name, a
+	 * comma-separated list, or a repeated `groupBy[]` array for a
+	 * multi-field cross-tab groupBy, REQ-AGG-101), metric (default count),
+	 * field (required for non-count), metrics[...] (optional multi-metric
+	 * list, REQ-AGG-102), sort (asc|desc), limit (top-N), filter[...].
+	 * A single groupBy field keeps the legacy `{key, value}` per-group
+	 * shape byte-identical; more than one field switches to `{keys, value}`.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema Schema reference.
+	 *
+	 * @return JSONResponse JSON response with `{ groups, backend, cached }`
+	 *                      and an `X-OR-Cache: hit|miss` header (REQ-AGG-105).
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	public function grouped(string $register, string $schema): JSONResponse {
+		$groupFields = $this->parseGroupByParam();
+		if (count($groupFields) === 0) {
+			return new JSONResponse(['error' => 'groupBy is required'], Http::STATUS_BAD_REQUEST);
+		}
+
+		$run = new AggregationRun(register: $register, schema: $schema);
+		try {
+			$run->filter = $this->resolveFilter(run: $run, action: 'grouped');
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return $this->runAdhocQuery(run: $run, groupBy: $this->groupSpec(groupFields: $groupFields));
+	}//end grouped()
+
+	/**
+	 * Build the ad-hoc query from the request's metric params and run it.
+	 *
+	 * An input AggregationQuery::create() refuses is a 400 and never runs.
+	 *
+	 * @param AggregationRun            $run     The register and schema references and the resolved filter map.
+	 * @param array<string, mixed>|null $groupBy The groupBy spec, or null.
+	 *
+	 * @return JSONResponse The runner's envelope, or the refusal.
+	 */
+	private function runAdhocQuery(AggregationRun $run, ?array $groupBy): JSONResponse {
+		$metrics = $this->parseMetricsParam();
+		$primary = $this->primaryMetric(metrics: $metrics);
+
+		try {
+			$query = AggregationQuery::create(
+				metric: $primary['metric'],
+				field: $primary['field'],
+				filter: $run->filter,
+				groupBy: $groupBy,
+				metrics: $metrics
+			);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->runAndRespond(run: $run, query: $query);
+	}//end runAdhocQuery()
+
+	/**
+	 * The primary metric and field: the first metrics entry when a list was
+	 * sent, else the `metric` (default count) and `field` params, an empty
+	 * field meaning none.
+	 *
+	 * @param array<int, array{metric: string, field: ?string}>|null $metrics The parsed metrics list.
+	 *
+	 * @return array{metric: string, field: mixed} The primary pair.
+	 */
+	private function primaryMetric(?array $metrics): array {
+		if ($metrics !== null) {
+			return ['metric' => $metrics[0]['metric'], 'field' => $metrics[0]['field']];
+		}
+
+		$field = $this->request->getParam('field');
+		if ($field === '') {
+			$field = null;
+		}
+
+		return ['metric' => (string)$this->request->getParam('metric', 'count'), 'field' => $field];
+	}//end primaryMetric()
+
+	/**
+	 * Run an ad-hoc query; the runner decides access.
+	 *
+	 * A refusal is a 403 and an unknown register or schema a 404, each
+	 * carrying the runner's message.
+	 *
+	 * @param AggregationRun   $run   The register and schema references.
+	 * @param AggregationQuery $query The validated query.
+	 *
+	 * @return JSONResponse The envelope with its cache header, or the refusal.
+	 */
+	private function runAndRespond(AggregationRun $run, AggregationQuery $query): JSONResponse {
+		try {
+			$result = $this->services->runner->runAdhocByRef(registerRef: $run->register, schemaRef: $run->schema, query: $query);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		return $this->withCacheHeader(result: $result);
+	}//end runAndRespond()
+
+	/**
+	 * The groupBy spec of a grouped request.
+	 *
+	 * A single field keeps the pre-existing `{field: ...}` shape
+	 * (byte-identical response for existing single-field callers);
+	 * more than one field switches to the multi-field `{fields: [...]}`
+	 * cross-tab shape (REQ-AGG-101). `sort` (asc|desc) and a positive
+	 * `limit` are carried when sent.
+	 *
+	 * @param array<int, string> $groupFields The non-empty group fields.
+	 *
+	 * @return array<string, mixed> The groupBy spec.
+	 */
+	private function groupSpec(array $groupFields): array {
+		$groupSpec = ['field' => $groupFields[0]];
+		if (count($groupFields) > 1) {
+			$groupSpec = ['fields' => $groupFields];
+		}
+
+		$sort = $this->request->getParam('sort');
+		if ($sort === 'asc' || $sort === 'desc') {
+			$groupSpec['sort'] = $sort;
+		}
+
+		$limit = $this->request->getParam('limit');
+		if ($limit !== null && (string)$limit !== '' && (int)$limit > 0) {
+			$groupSpec['limit'] = (int)$limit;
+		}
+
+		return $groupSpec;
+	}//end groupSpec()
+
+	/**
+	 * Parse the `groupBy` request param into an ordered list of field
+	 * names (REQ-AGG-101).
+	 *
+	 * Accepts three wire shapes so existing single-field callers are
+	 * unaffected:
+	 *  - a single field name: `groupBy=status` → `['status']`;
+	 *  - a comma-separated list: `groupBy=status,type` → `['status', 'type']`;
+	 *  - a repeated-param array (PHP's `groupBy[]=status&groupBy[]=type`
+	 *    parsing): `['status', 'type']` passed straight through.
+	 * Blank entries are dropped; the result may be empty (caller 400s).
+	 *
+	 * @return array<int, string> Ordered, non-empty field names.
+	 */
+	private function parseGroupByParam(): array {
+		$fields = [];
+		foreach ($this->groupByCandidates() as $candidate) {
+			if (is_string($candidate) === false) {
+				continue;
+			}
+
+			$trimmed = trim($candidate);
+			if ($trimmed === '') {
+				continue;
+			}
+
+			$fields[] = $trimmed;
+		}
+
+		return $fields;
+	}//end parseGroupByParam()
+
+	/**
+	 * The raw `groupBy` entries: the repeated-param array as given, else the comma-separated parts.
+	 *
+	 * @return array<int|string, mixed>
+	 */
+	private function groupByCandidates(): array {
+		$raw = $this->request->getParam('groupBy', '');
+
+		if (is_array($raw) === true) {
+			return $raw;
+		}
+
+		return explode(',', (string)$raw);
+	}//end groupByCandidates()
+
+	/**
+	 * Ad-hoc time-bucket aggregation entry point.
+	 *
+	 * Accepts query params:
+	 *  - field        (required)
+	 *  - interval     (optional — MINUTE|HOUR|DAY|WEEK|MONTH|QUARTER|YEAR)
+	 *  - from, to     (required when interval set; ISO-8601)
+	 *  - metric       (optional, default `count`)
+	 *  - metricField  (required when metric != count)
+	 *  - filter[...]  (optional, reuses the existing filter vocabulary)
+	 *  - cumulative   (optional, default `false` — REQ-AGG-103; running
+	 *                  total of the metric alongside each per-bucket
+	 *                  value, ordered ascending by bucket start. Only
+	 *                  valid when `interval` is set.)
+	 *
+	 * Returns `{ groups: [{ key, value, cumulative? }], backend, cached }`
+	 * matching the GraphQL `groups` field shape so `CnChartWidget` can
+	 * normalise once. The `cumulative` per-group field is present only
+	 * when the request set `cumulative=true`.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema Schema reference.
+	 *
+	 * @return JSONResponse JSON response with bucketed groups and an
+	 *                      `X-OR-Cache: hit|miss` header (REQ-AGG-105).
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-15
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	public function timeseries(string $register, string $schema): JSONResponse {
+		// Resolve schema first so the validator can consult the
+		// declared property list. A missing schema is a 404; a bad
+		// query-param shape is a 400.
+		//
+		// The `{register}` path segment is passed through: this lookup must
+		// resolve the SAME schema that runAdhocByRef() resolves below, and the
+		// register is what disambiguates a slug several apps share. Without it
+		// the validator would police one app's property list while the
+		// aggregate ran over another's rows.
+		try {
+			$schemaEntity = $this->services->runner->findSchema(schemaRef: $schema, registerRef: $register);
+		} catch (RuntimeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
+		$run = new AggregationRun(register: $register, schema: $schema, schemaEntity: $schemaEntity);
+
+		$input = $this->timeseriesInput(run: $run);
+
+		try {
+			$query = $this->services->validator->validate(input: $input, schema: $schemaEntity);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->runAndRespond(run: $run, query: $query);
+	}//end timeseries()
+
+	/**
+	 * The time-bucket request as the validator reads it, from the active request.
+	 *
+	 * @param AggregationRun $run The register and schema references, with the resolved schema.
+	 *
+	 * @return array<string, mixed> field, interval, from, to, metric, metricField, filter and cumulative.
+	 *
+	 * @throws RuntimeException When the schema cannot be resolved for the filter.
+	 */
+	private function timeseriesInput(AggregationRun $run): array {
+		// Pull the request shape from the active IRequest. The filter
+		// map comes through as a nested array because PHP parses
+		// `filter[x][op]=y` into `$_GET['filter']['x']['op']='y'`.
+		return [
+			'field' => $this->request->getParam('field', ''),
+			'interval' => $this->request->getParam('interval'),
+			'from' => $this->request->getParam('from'),
+			'to' => $this->request->getParam('to'),
+			'metric' => $this->request->getParam('metric', 'count'),
+			'metricField' => $this->request->getParam('metricField'),
+			'filter' => $this->resolveFilter(run: $run, action: 'timeseries'),
+			'cumulative' => $this->request->getParam('cumulative', false),
+		];
+	}//end timeseriesInput()
+}//end class

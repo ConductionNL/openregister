@@ -22,7 +22,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-one-run-at-a-time/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
+ * @spec openspec/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\Lock\LockedException;
 /**
  * An exclusive lock per set, held for the length of an install or a removal.
  *
- * @spec openspec/changes/example-set-one-run-at-a-time/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
+ * @spec openspec/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
  */
 class ExampleSetLock {
 	/**
@@ -57,7 +57,7 @@ class ExampleSetLock {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-one-run-at-a-time/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
+	 * @spec openspec/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
 	 */
 	public static function path(string $set): string {
 		return 'openregister/example-set/'.$set;
@@ -70,7 +70,7 @@ class ExampleSetLock {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-one-run-at-a-time/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
+	 * @spec openspec/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
 	 */
 	public function busy(string $set): string {
 		return 'another install or removal of set "'.$set.'" is running, so this one wrote nothing.'
@@ -84,7 +84,7 @@ class ExampleSetLock {
 	 *
 	 * @return bool True when this run holds the set; false when another run does.
 	 *
-	 * @spec openspec/changes/example-set-one-run-at-a-time/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
+	 * @spec openspec/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
 	 */
 	public function hold(string $set): bool {
 		try {
@@ -103,7 +103,7 @@ class ExampleSetLock {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-one-run-at-a-time/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
+	 * @spec openspec/specs/example-sets/spec.md#requirement-one-install-or-removal-of-a-set-runs-at-a-time
 	 */
 	public function release(string $set): void {
 		$this->locks->releaseLock(self::path(set: $set), ILockingProvider::LOCK_EXCLUSIVE);

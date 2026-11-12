@@ -10,8 +10,11 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -42,7 +45,7 @@ class BranchDispatcher implements FlowStepDispatcher {
 			foreach ($items as $i => $item) {
 				$json = (array)($item['json'] ?? []);
 				$json[$field] = $value;
-				$out[] = FlowItems::item(json: $json, binary: [], fromItemIndex: $i);
+				$out[] = FlowItems::item(json: $json, options: new FlowItemOptions(binary: [], fromItemIndex: $i));
 			}
 			return $out;
 		}
@@ -60,12 +63,10 @@ class FlowMergeTest extends TestCase {
 
 	private function walk(array $flow, array $items, FlowStepDispatcher $d): array {
 		return $this->engine->run(
-			flow: $flow,
-			store: new MethodMarkingStore(false, 'marking'),
-			subject: new MergeSubject(),
-			dispatcher: $d,
-			context: [],
-			items: $items
+			start: (new FlowRunStart(flow: $flow, store: new MethodMarkingStore(false, 'marking'), subject: new MergeSubject(), dispatcher: $d)),
+			origin: new FlowRunOrigin(
+				items: $items
+			)
 		);
 	}
 

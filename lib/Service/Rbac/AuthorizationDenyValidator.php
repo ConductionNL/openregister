@@ -40,7 +40,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use OCA\OpenRegister\Exception\AuthorizationBlockException;
 /**
  * Refuses an authorization block whose deny contradicts its grants.
  */
-class AuthorizationDenyValidator {
+class AuthorizationDenyValidator implements AuthorizationDenyValidatorInterface {
 
 	/**
 	 * The verb that carries administration of a register.
@@ -71,10 +71,10 @@ class AuthorizationDenyValidator {
 	/**
 	 * Constructor.
 	 *
-	 * @param DenyResolver $denyResolver The one reader of the deny grammar.
+	 * @param DenyResolverInterface $denyResolver The one reader of the deny grammar.
 	 */
 	public function __construct(
-		private readonly DenyResolver $denyResolver,
+		private readonly DenyResolverInterface $denyResolver,
 	) {
 	}//end __construct()
 
@@ -90,7 +90,7 @@ class AuthorizationDenyValidator {
 	 *
 	 * @return string[] One sentence per contradiction; empty when the block is storable.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function findings(?array $authorization, string $subject): array {
 		if (is_array($authorization) === false || $authorization === []) {
@@ -117,7 +117,7 @@ class AuthorizationDenyValidator {
 	 *
 	 * @throws AuthorizationBlockException When the block contradicts itself.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function assertStorable(?array $authorization, string $subject): void {
 		$findings = $this->findings(authorization: $authorization, subject: $subject);
@@ -138,16 +138,24 @@ class AuthorizationDenyValidator {
 	 */
 	private function collisionFindings(array $authorization, string $subject): array {
 		$findings = [];
+		foreach ($this->collisions(authorization: $authorization) as $collision) {
+			$findings[] = $collision->sentence(subject: $subject);
+		}
 
+		return $findings;
+	}//end collisionFindings()
+
+	/**
+	 * Every principal a verb's deny list names that the same verb's grant list names too.
+	 *
+	 * @param array $authorization The block as written.
+	 *
+	 * @return array<int, DenyCollision> The collisions, by deny verb and in deny-list order.
+	 */
+	private function collisions(array $authorization): array {
+		$collisions = [];
 		foreach ($this->denyResolver->denyBlock(authorization: $authorization) as $action => $denyEntries) {
-			if (is_string($action) === false || is_array($denyEntries) === false) {
-				continue;
-			}
-
-			// `roles` is a role-to-group map, not a verb's rule list. It is
-			// expanded into verbs long before enforcement, and reading it here
-			// as if it were one would compare a role name against a group name.
-			if ($action === self::ROLES_KEY) {
+			if (self::isVerbRuleList(action: $action, entries: $denyEntries) === false) {
 				continue;
 			}
 
@@ -155,24 +163,28 @@ class AuthorizationDenyValidator {
 			$denied = $this->principalsNamedIn(entries: $denyEntries);
 
 			foreach (array_intersect($denied, $granted) as $principal) {
-				$findings[] = sprintf(
-					'The authorization of %s both grants and denies "%s" to "%s" at the same level: '
-					. 'the rule "%s" in %s and the rule "%s" in %s.deny. '
-					. 'Remove one of the two; a deny wins, so leaving both stored would grant nothing '
-					. 'and read as a grant.',
-					$subject,
-					$action,
-					$principal,
-					$principal,
-					$action,
-					$principal,
-					$action
-				);
+				$collisions[] = new DenyCollision(action: $action, principal: $principal);
 			}
 		}
 
-		return $findings;
-	}//end collisionFindings()
+		return $collisions;
+	}//end collisions()
+
+	/**
+	 * Whether a deny-block entry is one verb's rule list.
+	 *
+	 * `roles` is a role-to-group map, not a verb's rule list. It is
+	 * expanded into verbs long before enforcement, and reading it here
+	 * as if it were one would compare a role name against a group name.
+	 *
+	 * @param mixed $action  The entry's key.
+	 * @param mixed $entries The entry's value.
+	 *
+	 * @return bool True for a verb and its list.
+	 */
+	private static function isVerbRuleList(mixed $action, mixed $entries): bool {
+		return (is_string($action) === true && is_array($entries) === true && $action !== self::ROLES_KEY);
+	}//end isVerbRuleList()
 
 	/**
 	 * The refusal that keeps a register administrable, or null.
@@ -186,27 +198,47 @@ class AuthorizationDenyValidator {
 		$denied = $this->principalsNamedIn(
 			entries: ($this->denyResolver->denyBlock(authorization: $authorization)[self::ACTION_MANAGE] ?? null)
 		);
-		if ($denied === []) {
+		if ($denied === [] || $this->survivingManagers(authorization: $authorization, denied: $denied) !== []) {
 			return null;
 		}
 
-		$granted = $this->principalsNamedIn(entries: ($authorization[self::ACTION_MANAGE] ?? null));
-		$surviving = array_values(array_diff($granted, $denied));
-		if ($surviving !== []) {
-			return null;
-		}
+		return self::orphanedManageSentence(subject: $subject, denied: $this->quoteList(values: $denied));
+	}//end orphanedManageFinding()
 
+	/**
+	 * The refusal of a deny that would leave nobody holding `manage`.
+	 *
+	 * @param string $subject What the block belongs to.
+	 * @param string $denied  The denied principals, quoted and listed.
+	 *
+	 * @return string The sentence.
+	 */
+	private static function orphanedManageSentence(string $subject, string $denied): string {
 		return sprintf(
 			'The authorization of %s would deny "%s" to %s and leave no principal holding it, '
 			. 'so nobody could edit the access rules of %s afterwards. '
 			. 'Grant "%s" to another group first, then write the deny.',
 			$subject,
 			self::ACTION_MANAGE,
-			$this->quoteList(values: $denied),
+			$denied,
 			$subject,
 			self::ACTION_MANAGE
 		);
-	}//end orphanedManageFinding()
+	}//end orphanedManageSentence()
+
+	/**
+	 * The principals granted `manage` that the deny does not take it from.
+	 *
+	 * @param array    $authorization The block as written.
+	 * @param string[] $denied        The principals denied `manage`.
+	 *
+	 * @return string[] The surviving managers.
+	 */
+	private function survivingManagers(array $authorization, array $denied): array {
+		$granted = $this->principalsNamedIn(entries: ($authorization[self::ACTION_MANAGE] ?? null));
+
+		return array_values(array_diff($granted, $denied));
+	}//end survivingManagers()
 
 	/**
 	 * The principal names one rule list mentions.
@@ -250,30 +282,52 @@ class AuthorizationDenyValidator {
 	 * @return string|null The principal, or null when the entry names none.
 	 */
 	private function principalOf(mixed $entry): ?string {
-		$candidate = null;
-
-		if (is_string($entry) === true) {
-			$candidate = $entry;
-		}
-
-		if (is_array($entry) === true) {
-			$group = ($entry['group'] ?? null);
-			if (is_string($group) === true) {
-				$candidate = $group;
-			}
-
-			$user = ($entry['user'] ?? null);
-			if ($candidate === null && is_string($user) === true && $user !== '') {
-				$candidate = (DenyResolver::USER_PREFIX . $user);
-			}
-		}
-
+		$candidate = $this->candidateOf(entry: $entry);
 		if ($candidate === null || $candidate === '') {
 			return null;
 		}
 
 		return $this->denyResolver->entryNames(entry: $entry, principals: [$candidate]);
 	}//end principalOf()
+
+	/**
+	 * The principal one entry spells: the string itself, its group, else its user.
+	 *
+	 * @param mixed $entry The deny entry as written.
+	 *
+	 * @return string|null The spelled principal, or null when it spells none.
+	 */
+	private function candidateOf(mixed $entry): ?string {
+		if (is_string($entry) === true) {
+			return $entry;
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		$group = ($entry['group'] ?? null);
+		if (is_string($group) === true) {
+			return $group;
+		}
+
+		return $this->userPrincipal(user: ($entry['user'] ?? null));
+	}//end candidateOf()
+
+	/**
+	 * The `user:` principal of a non-empty user id.
+	 *
+	 * @param mixed $user The entry's `user` value.
+	 *
+	 * @return string|null The prefixed principal, or null when the id is not a non-empty string.
+	 */
+	private function userPrincipal(mixed $user): ?string {
+		if (is_string($user) === false || $user === '') {
+			return null;
+		}
+
+		return (DenyResolverInterface::USER_PREFIX . $user);
+	}//end userPrincipal()
 
 	/**
 	 * Render a list of principals for a message.

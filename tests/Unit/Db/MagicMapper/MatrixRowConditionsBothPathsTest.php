@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -32,18 +32,24 @@ use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\SchemaRegisterLookup;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -54,6 +60,9 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Both enforcement paths give the same answer for the new row keys.
@@ -170,15 +179,13 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$matcher = new ConditionMatcher(
-			$session,
+			new ConditionUserResolvers($session, $groups, new MemberOfResolver(new SchemaRegisterLookup($schemas, $registers), $container, $evaluator, new NullLogger())),
 			$container,
 			$evaluator,
-			new NullLogger(),
-			$groups,
-			new MemberOfResolver($schemas, $registers, $container, $evaluator, new NullLogger())
+			new NullLogger()
 		);
 
-		$permissions = new PermissionHandler(
+		$permissions = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,
@@ -193,7 +200,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($permissions, $registers, $objects) {
-				if ($id === PermissionHandler::class) {
+				if ($id === PermissionHandlerInterface::class) {
 					return $permissions;
 				}
 
@@ -209,7 +216,21 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 			}
 		);
 
-		$rbac = new MagicRbacHandler($session, $groups, $users, $appConfig, $matcher, $container, new NullLogger());
+		$rbac = new MagicRbacHandler(
+			identity: new MagicMapperIdentity(
+				userSession: $session,
+				groupManager: $groups,
+				userManager: $users
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $matcher,
+				container: $container,
+				logger: new NullLogger()
+			)
+		);
 
 		return [$permissions, $rbac];
 	}//end handlers()
@@ -249,7 +270,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 			$test->getMockBuilder(DateTimeNormalizer::class)->disableOriginalConstructor()->getMock(),
 			relatedRows: $test->getMockBuilder(RelatedRowQueryApplier::class)->disableOriginalConstructor()->getMock()
 		);
-		$conditions = $search->buildWhereConditionsSql(query: [], schema: $schema);
+		$conditions = $search->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: $schema)));
 
 		$pdo = new PDO('sqlite::memory:');
 		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -354,7 +375,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 						return $object;
 					})()
 				),
-				$rbac->hasPermission(schema: $schema, action: 'update', objectOwner: 'importer', objectData: ['assignedGroup' => $team, 'status' => $status]),
+				$rbac->hasPermission(ask: new RbacPermissionAsk(schema: $schema, action: 'update', objectOwner: 'importer', objectData: ['assignedGroup' => $team, 'status' => $status])),
 				'the row-level verdict agrees for ' . $uuid
 			);
 		}

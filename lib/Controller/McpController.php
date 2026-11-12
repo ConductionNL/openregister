@@ -29,8 +29,10 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Service\Authorization\GrantableRightsIndex;
-use OCA\OpenRegister\Service\McpDiscoveryService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\McpControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
+use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
@@ -49,26 +51,30 @@ class McpController extends Controller {
 	/**
 	 * MCP discovery service instance
 	 *
-	 * @var McpDiscoveryService
+	 * @var McpCatalogueInterface
 	 */
-	private readonly McpDiscoveryService $mcpDiscoveryService;
+	private readonly McpCatalogueInterface $mcpDiscoveryService;
 
 	/**
-	 * McpController constructor
+	 * The cached menu of rights that may be offered
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request Request object
-	 * @param McpDiscoveryService  $mcpDiscoveryService  MCP discovery service
-	 * @param GrantableRightsIndex $grantableRightsIndex The cached menu of rights that may be offered
+	 * @var GrantableRightsIndexInterface
+	 */
+	private readonly GrantableRightsIndexInterface $grantableRightsIndex;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param IRequest              $request  Request object
+	 * @param McpControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		McpDiscoveryService $mcpDiscoveryService,
-		private readonly GrantableRightsIndex $grantableRightsIndex,
+		McpControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-		$this->mcpDiscoveryService = $mcpDiscoveryService;
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->mcpDiscoveryService = $services->mcpDiscoveryService;
+		$this->grantableRightsIndex = $services->grantableRightsIndex;
 	}//end __construct()
 
 	/**

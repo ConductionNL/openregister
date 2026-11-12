@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -45,20 +45,6 @@ use OCP\AppFramework\Http\JSONResponse;
 class CallerRefusedException extends Exception {
 
 	/**
-	 * The HTTP status the refusal answers with.
-	 *
-	 * @var integer
-	 */
-	private readonly int $statusCode;
-
-	/**
-	 * Extra body fields, and the headers that repeat them.
-	 *
-	 * @var array<string, int|string>
-	 */
-	private readonly array $details;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param int $statusCode The HTTP status.
@@ -67,49 +53,47 @@ class CallerRefusedException extends Exception {
 	 *
 	 * @return void
 	 */
-	public function __construct(int $statusCode, string $message, array $details = []) {
+	public function __construct(
+		private readonly int $statusCode,
+		string $message,
+		private readonly array $details = [],
+	) {
 		parent::__construct(message: $message, code: $statusCode);
-		$this->statusCode = $statusCode;
-		$this->details = $details;
-
 	}//end __construct()
 
 	/**
-	 * The refusal for a caller over its ceiling.
+	 * The refusal for a caller over its ceiling, from the breach the limiter found.
 	 *
-	 * @param int $limit The administered ceiling.
-	 * @param int $windowSeconds The window the ceiling applies over.
-	 * @param int $resetAt The unix time the window rolls.
-	 * @param int $now The current unix time.
+	 * @param CeilingBreach $breach The ceiling, its window, when it rolls and the current time.
 	 *
 	 * @return self The refusal.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public static function overLimit(int $limit, int $windowSeconds, int $resetAt, int $now): self {
-		$retryAfter = max(1, ($resetAt - $now));
+	public static function overCeiling(CeilingBreach $breach): self {
+		$retryAfter = $breach->retryAfter();
 
 		return new self(
 			statusCode: Http::STATUS_TOO_MANY_REQUESTS,
-			message: 'This caller is limited to ' . $limit . ' calls per ' . $windowSeconds
+			message: 'This caller is limited to ' . $breach->limit . ' calls per ' . $breach->windowSeconds
 				. ' seconds. The limit resets in ' . $retryAfter . ' seconds.',
 			details: [
-				'limit' => $limit,
-				'windowSeconds' => $windowSeconds,
+				'limit' => $breach->limit,
+				'windowSeconds' => $breach->windowSeconds,
 				'remaining' => 0,
-				'resetAt' => gmdate('c', $resetAt),
+				'resetAt' => gmdate('c', $breach->resetAt),
 				'retryAfterSeconds' => $retryAfter,
 			],
 		);
 
-	}//end overLimit()
+	}//end overCeiling()
 
 	/**
 	 * The refusal for a caller calling from an address it is not bound to.
 	 *
 	 * @return self The refusal.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
 	public static function wrongAddress(): self {
 		return new self(
@@ -124,7 +108,7 @@ class CallerRefusedException extends Exception {
 	 *
 	 * @return JSONResponse The refusal, with the ceiling repeated in headers.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function toResponse(): JSONResponse {
 		$body = ['error' => $this->getMessage()];

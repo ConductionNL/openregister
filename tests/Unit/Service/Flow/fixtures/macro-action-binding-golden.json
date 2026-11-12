@@ -1,0 +1,379 @@
+{
+    "macro absent, flow absent": {
+        "parse": [],
+        "refusals": []
+    },
+    "macro absent, flow name": {
+        "parse": [
+            [
+                "act",
+                "Flow A"
+            ]
+        ],
+        "refusals": []
+    },
+    "macro absent, flow padded": {
+        "parse": [
+            [
+                "act",
+                "Flow B"
+            ]
+        ],
+        "refusals": []
+    },
+    "macro absent, flow empty": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro absent, flow blank": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro absent, flow int": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro absent, flow null": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro absent, flow array": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro true, flow absent": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" is true but no \"flow\" is named."
+        ]
+    },
+    "macro true, flow name": {
+        "parse": [
+            [
+                "act",
+                "Flow A"
+            ]
+        ],
+        "refusals": []
+    },
+    "macro true, flow padded": {
+        "parse": [
+            [
+                "act",
+                "Flow B"
+            ]
+        ],
+        "refusals": []
+    },
+    "macro true, flow empty": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro true, flow blank": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro true, flow int": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro true, flow null": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro true, flow array": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro false, flow absent": {
+        "parse": [],
+        "refusals": []
+    },
+    "macro false, flow name": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" is named but \"macro\" is false."
+        ]
+    },
+    "macro false, flow padded": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" is named but \"macro\" is false."
+        ]
+    },
+    "macro false, flow empty": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro false, flow blank": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro false, flow int": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro false, flow null": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro false, flow array": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro string, flow absent": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false."
+        ]
+    },
+    "macro string, flow name": {
+        "parse": [
+            [
+                "act",
+                "Flow A"
+            ]
+        ],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false."
+        ]
+    },
+    "macro string, flow padded": {
+        "parse": [
+            [
+                "act",
+                "Flow B"
+            ]
+        ],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false."
+        ]
+    },
+    "macro string, flow empty": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro string, flow blank": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro string, flow int": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro string, flow null": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro string, flow array": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro null, flow absent": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false."
+        ]
+    },
+    "macro null, flow name": {
+        "parse": [
+            [
+                "act",
+                "Flow A"
+            ]
+        ],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false."
+        ]
+    },
+    "macro null, flow padded": {
+        "parse": [
+            [
+                "act",
+                "Flow B"
+            ]
+        ],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false."
+        ]
+    },
+    "macro null, flow empty": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro null, flow blank": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro null, flow int": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro null, flow null": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro null, flow array": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro int, flow absent": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false."
+        ]
+    },
+    "macro int, flow name": {
+        "parse": [
+            [
+                "act",
+                "Flow A"
+            ]
+        ],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false."
+        ]
+    },
+    "macro int, flow padded": {
+        "parse": [
+            [
+                "act",
+                "Flow B"
+            ]
+        ],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false."
+        ]
+    },
+    "macro int, flow empty": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro int, flow blank": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro int, flow int": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro int, flow null": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "macro int, flow array": {
+        "parse": [],
+        "refusals": [
+            "Action \"act\": \"macro\" must be true or false.",
+            "Action \"act\": \"flow\" must name a flow."
+        ]
+    },
+    "no block": {
+        "parse": [],
+        "refusals": []
+    },
+    "block not an array": {
+        "parse": [],
+        "refusals": []
+    },
+    "odd keys and definitions": {
+        "parse": [
+            [
+                "ok",
+                "F"
+            ]
+        ],
+        "refusals": []
+    },
+    "several actions": {
+        "parse": [
+            [
+                "c",
+                "C"
+            ],
+            [
+                "e",
+                "E"
+            ]
+        ],
+        "refusals": [
+            "Action \"a\": \"macro\" must be true or false.",
+            "Action \"a\": \"flow\" must name a flow.",
+            "Action \"b\": \"macro\" is true but no \"flow\" is named.",
+            "Action \"d\": \"flow\" is named but \"macro\" is false.",
+            "Action \"e\": \"macro\" must be true or false."
+        ]
+    }
+}

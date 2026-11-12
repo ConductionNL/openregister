@@ -2909,7 +2909,7 @@
         "Complete: {outcome}": "Užbaigti: {outcome}",
         "Could not load the task": "Nepavyko įkelti užduoties",
         "The task refused that action": "Užduotis atmetė šį veiksmą",
-        "Store": "Parduotuvė",
+        "Marketplace": "Parduotuvė",
         "Install registers, schemas and flows that other organisations have published.": "Įdiekite registrus, schemas ir srautus, kuriuos paskelbė kitos organizacijos.",
         "No such run": "Tokio vykdymo nėra",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Vykdymas neegzistuoja arba neturite teisės jo matyti. Ištrynus srautą ištrinami ir jo vykdymai.",

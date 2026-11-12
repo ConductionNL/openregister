@@ -1,0 +1,175 @@
+{
+    "no properties": [],
+    "not mentioned": [],
+    "null clears": [
+        {
+            "property": "g",
+            "position": null,
+            "member": null,
+            "code": "repeating-group-below-minimum",
+            "message": "'g' needs at least 1 rows. It was sent 0."
+        }
+    ],
+    "empty string clears": [
+        {
+            "property": "g",
+            "position": null,
+            "member": null,
+            "code": "repeating-group-below-minimum",
+            "message": "'g' needs at least 1 rows. It was sent 0."
+        }
+    ],
+    "empty list": [
+        {
+            "property": "g",
+            "position": null,
+            "member": null,
+            "code": "repeating-group-below-minimum",
+            "message": "'g' needs at least 1 rows. It was sent 0."
+        }
+    ],
+    "a scalar": [
+        {
+            "property": "g",
+            "position": null,
+            "member": null,
+            "code": "repeating-group-not-a-list",
+            "message": "'g' is a repeating group, so it takes a list of rows."
+        }
+    ],
+    "a map": [
+        {
+            "property": "g",
+            "position": null,
+            "member": null,
+            "code": "repeating-group-not-a-list",
+            "message": "'g' is a repeating group, so it takes a list of rows."
+        }
+    ],
+    "too many": [
+        {
+            "property": "g",
+            "position": null,
+            "member": null,
+            "code": "repeating-group-above-maximum",
+            "message": "'g' takes at most 2 rows. It was sent 3."
+        }
+    ],
+    "a row that is no object": [
+        {
+            "property": "g",
+            "position": 1,
+            "member": null,
+            "code": "repeating-group-row-not-an-object",
+            "message": "Row 1 of 'g' has to be a set of fields."
+        },
+        {
+            "property": "g",
+            "position": 2,
+            "member": null,
+            "code": "repeating-group-row-not-an-object",
+            "message": "Row 2 of 'g' has to be a set of fields."
+        }
+    ],
+    "a good row": [],
+    "a row with everything wrong": [
+        {
+            "property": "g",
+            "position": 1,
+            "member": "naam",
+            "code": "repeating-group-member-type",
+            "message": "Row 1 of 'g' has the wrong kind of value in 'naam'. It takes a string."
+        },
+        {
+            "property": "g",
+            "position": 1,
+            "member": "aandeel",
+            "code": "repeating-group-member-type",
+            "message": "Row 1 of 'g' has the wrong kind of value in 'aandeel'. It takes a integer."
+        },
+        {
+            "property": "g",
+            "position": 1,
+            "member": "getal",
+            "code": "repeating-group-member-type",
+            "message": "Row 1 of 'g' has the wrong kind of value in 'getal'. It takes a number."
+        },
+        {
+            "property": "g",
+            "position": 1,
+            "member": "vlag",
+            "code": "repeating-group-member-type",
+            "message": "Row 1 of 'g' has the wrong kind of value in 'vlag'. It takes a boolean."
+        },
+        {
+            "property": "g",
+            "position": 1,
+            "member": "lijst",
+            "code": "repeating-group-member-type",
+            "message": "Row 1 of 'g' has the wrong kind of value in 'lijst'. It takes a array."
+        },
+        {
+            "property": "g",
+            "position": 1,
+            "member": "ding",
+            "code": "repeating-group-member-type",
+            "message": "Row 1 of 'g' has the wrong kind of value in 'ding'. It takes a object."
+        },
+        {
+            "property": "g",
+            "position": 1,
+            "member": "7",
+            "code": "repeating-group-member-type",
+            "message": "Row 1 of 'g' has the wrong kind of value in '7'. It takes a integer."
+        }
+    ],
+    "missing members": [
+        {
+            "property": "g",
+            "position": 1,
+            "member": "naam",
+            "code": "repeating-group-member-required",
+            "message": "Row 1 of 'g' is missing 'naam'."
+        },
+        {
+            "property": "g",
+            "position": 1,
+            "member": "5",
+            "code": "repeating-group-member-required",
+            "message": "Row 1 of 'g' is missing '5'."
+        },
+        {
+            "property": "g",
+            "position": 2,
+            "member": "naam",
+            "code": "repeating-group-member-required",
+            "message": "Row 2 of 'g' is missing 'naam'."
+        },
+        {
+            "property": "g",
+            "position": 2,
+            "member": "5",
+            "code": "repeating-group-member-required",
+            "message": "Row 2 of 'g' is missing '5'."
+        }
+    ],
+    "unknown bound text": [],
+    "broken items": [],
+    "no items": [],
+    "two groups": [
+        {
+            "property": "a",
+            "position": null,
+            "member": null,
+            "code": "repeating-group-not-a-list",
+            "message": "'a' is a repeating group, so it takes a list of rows."
+        },
+        {
+            "property": "b",
+            "position": null,
+            "member": null,
+            "code": "repeating-group-below-minimum",
+            "message": "'b' needs at least 1 rows. It was sent 0."
+        }
+    ]
+}

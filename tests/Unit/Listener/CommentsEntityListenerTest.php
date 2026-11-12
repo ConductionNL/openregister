@@ -29,10 +29,10 @@ class CommentsEntityListenerTest extends TestCase {
 	}
 
 	public function testEarlyReturnForNonCommentsEntityEvent(): void {
+		$this->expectNotToPerformAssertions();
+
 		$event = $this->createMock(Event::class);
 		$this->listener->handle($event);
-		// No exception = pass
-		$this->assertTrue(true);
 	}
 
 	public function testRegistersOpenregisterEntityCollection(): void {

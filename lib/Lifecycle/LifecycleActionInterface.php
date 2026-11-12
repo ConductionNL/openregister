@@ -48,14 +48,13 @@ interface LifecycleActionInterface {
 	/**
 	 * Run the action on a transitioning object.
 	 *
-	 * @param array<string, mixed> $objectData The object payload after the lifecycle field was moved to its target value.
-	 * @param array<string, mixed> $previousData The object payload before the transition (for conditions / diffing).
-	 * @param array<string, mixed> $parameters The declared `actionParameters` block (empty array when absent).
-	 * @param string $actionName The declared `action` name that resolved to this handler.
+	 * @param LifecycleActionContext $context The payload after and before the transition, the declared
+	 *                                        `actionParameters` block and the declared action name.
 	 *
-	 * @return array<string, mixed> The object payload, with any self-mutations applied. Return the input unchanged for pure side-effect actions.
+	 * @return array<string, mixed> The object payload, with any self-mutations applied. Return
+	 *                              `$context->objectData` unchanged for pure side-effect actions.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function execute(array $objectData, array $previousData, array $parameters, string $actionName): array;
+	public function execute(LifecycleActionContext $context): array;
 }//end interface

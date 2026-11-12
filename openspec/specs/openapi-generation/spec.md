@@ -10,7 +10,9 @@ status: done
 Auto-generate OpenAPI 3.1.0 specifications from register and schema definitions stored in OpenRegister, producing complete API documentation that covers every CRUD endpoint, query parameter, authentication scheme, and response model. The generated spec MUST be downloadable in JSON and YAML formats, serveable via an interactive Swagger UI, and MUST regenerate automatically when schemas change so that documentation never drifts from the live API surface. The generation pipeline MUST also support NL API Design Rules compliance markers for Dutch government API interoperability.
 
 **Source**: Gap identified in cross-platform analysis; developer experience improvement. Competitors Strapi (`@strapi/openapi`) and Directus both auto-generate OpenAPI specs from their data models. NocoDB exposes a Swagger endpoint per base.
+
 ## Requirements
+
 ### Requirement: The system MUST auto-generate OpenAPI 3.1.0 specs from register/schema definitions
 Each register MUST have an automatically generated OpenAPI 3.1.0 specification reflecting all schemas belonging to that register, their properties, and all available CRUD operations. The generation MUST be driven by `OasService::createOas()` reading from `RegisterMapper` and `SchemaMapper`, using `BaseOas.json` as the foundation template.
 
@@ -518,6 +520,67 @@ capability specs.
 - **THEN** the entity MUST be deleted via the mapper and the response MUST return an empty JSON body
 - **AND** deleting a non-existent ID MUST return HTTP 404 for controllers that catch `DoesNotExistException`
 
+### Requirement: Two contract versions are served at once, with a declared lifecycle (REQ-AVS-005)
+
+An API version SHALL carry a status of supported, deprecated with an end
+date, or withdrawn. A supported and a deprecated version SHALL be served
+at the same time, each described by its own generated OpenAPI document. A
+deprecated version SHALL answer normally and SHALL carry its end date in
+the response. A withdrawn version SHALL answer 410 naming its successor.
+
+#### Scenario: five suppliers move at their own pace
+
+- **GIVEN** version 1 deprecated with an end date and version 2 supported
+- **WHEN** a client calls version 1
+- **THEN** the call succeeds and the response names the end date
+
+#### Scenario: a withdrawn version says where to go
+
+- **GIVEN** version 1 withdrawn with version 2 as its successor
+- **WHEN** a client calls version 1
+- **THEN** the response is 410 and names version 2
+
+#### Scenario: each version has its own description
+
+- **GIVEN** two versions served at once
+- **WHEN** the OpenAPI documents are fetched
+- **THEN** each describes only its own routes
+- @e2e exclude {generator output, covered by unit tests}
+
+### Requirement: The root OpenAPI document is published by the API itself (REQ-OAS-PUB-001)
+
+`GET /index.php/apps/openregister/api/openapi.json` MUST return the OpenAPI document at `openapi.json` in the repository root without authentication, with `Access-Control-Allow-Origin: *` and with `info.version` set to the installed app version (NL API Design Rules, /core/publish-openapi). When the document is not installed it MUST answer 404. The document MUST pass the Spectral ruleset of the NL API Design Rules (`https://static.developer.overheid.nl/adr/ruleset.yaml`) apart from findings that need a change to existing URLs or error formats.
+
+#### Scenario: anyone can read the root API description
+
+@e2e exclude an anonymous JSON endpoint, not browser behaviour; covered by PHPUnit OpenApiControllerTest.
+
+- GIVEN a client that is not logged in
+- WHEN it requests `/index.php/apps/openregister/api/openapi.json`
+- THEN it MUST receive the OpenAPI document with status 200
+- AND the response MUST carry `Access-Control-Allow-Origin: *`
+
+### Requirement: API errors are RFC 9457 problem details (REQ-OAS-ERR-001)
+
+A 4xx or 5xx JSON response under the app's `/api/` MUST be served as `application/problem+json` with `type`, `title` and `status`, plus `detail` when the body carries a `message` or `error` text and `instance` set to the request path without its query string. Every member the body already had MUST be kept with its value unchanged. A list body, a body already served as problem details and a response that is not JSON MUST be left as they are. Paths that speak a protocol defined elsewhere MUST be left as they are: MCP, GraphQL, OGC WFS, iCalendar feeds, Prometheus metrics, the health check and federation between instances (`StandardProtocolPaths`). The root OpenAPI document MUST describe every error response with the `Problem` schema.
+
+#### Scenario: a file action that fails answers with problem details
+
+@e2e exclude a response header and body shape, not browser behaviour; covered by PHPUnit ProblemDetailsMiddlewareTest.
+
+- GIVEN an object without the requested file
+- WHEN a client requests the file and the controller answers 404 with `{"error": "File not found"}`
+- THEN the response MUST carry `Content-Type: application/problem+json`
+- AND the body MUST be `{"type": "about:blank", "title": "Not Found", "status": 404, "detail": "File not found", "instance": "<request path>", "error": "File not found"}`
+
+#### Scenario: a protocol endpoint keeps its own error format
+
+@e2e exclude a response header and body shape, not browser behaviour; covered by PHPUnit ProblemDetailsMiddlewareTest.
+
+- GIVEN a JSON-RPC request to `/api/mcp` that the server rejects
+- WHEN the controller answers with a JSON-RPC error object
+- THEN the response MUST keep its body and its `application/json` content type
+
 ## Current Implementation Status
 - **Fully implemented -- OAS generation from schemas**: `OasService` (`lib/Service/OasService.php`) generates OpenAPI specs from register/schema definitions via `createOas()`. It maps schema properties to OpenAPI types, generates paths for CRUD operations, and handles multi-register generation with operationId prefixing.
 - **Fully implemented -- controller and endpoints**: `OasController` (`lib/Controller/OasController.php`) exposes endpoints at `/api/registers/{id}/oas` (single register) and `/api/registers/oas` (all registers). Both are annotated `@PublicPage` and `@NoCSRFRequired` for unauthenticated access. `RegistersController` also provides OAS access and GitHub publishing of generated specs.
@@ -534,7 +597,8 @@ capability specs.
 - **Not implemented -- YAML format**: Only JSON output is supported; YAML export is not implemented.
 - **Not implemented -- spec versioning/hashing**: No content hash, ETag, or version tracking tied to schema changes exists.
 - **Not implemented -- example payloads**: The generated OAS does not include example request/response bodies for endpoints (though individual properties may carry `example` from schema definitions).
-- **Not implemented -- NL API Design Rules markers**: No `x-nl-api-design-rules` extension or RFC 7807 problem details schema.
+- **Not implemented -- NL API Design Rules markers**: No `x-nl-api-design-rules` extension.
+- **Fully implemented -- problem details**: `ProblemDetailsMiddleware` serves the API's JSON errors as RFC 9457 `application/problem+json` (REQ-OAS-ERR-001), and the root `openapi.json` describes them with its `Problem` schema.
 - **Not implemented -- i18n of API descriptions**: All descriptions are English-only; no language parameter or Accept-Language support.
 
 ## Standards & References

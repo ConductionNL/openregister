@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+ * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -40,18 +40,18 @@ use Throwable;
  *
  * @template-implements IEventListener<ObjectUpdatedEvent>
  *
- * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+ * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
  */
 class ReferencedCalculationListener implements IEventListener {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ReferencedCalculationRefresher $refresher Re-saves the objects that read the updated one.
-	 * @param LoggerInterface                $logger    The logger.
+	 * @param ReferencedCalculationRefresherInterface $refresher Re-saves the objects that read the updated one.
+	 * @param LoggerInterface                         $logger    The logger.
 	 */
 	public function __construct(
-		private readonly ReferencedCalculationRefresher $refresher,
+		private readonly ReferencedCalculationRefresherInterface $refresher,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -63,7 +63,7 @@ class ReferencedCalculationListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectUpdatedEvent) === false) {

@@ -3,7 +3,7 @@
 namespace Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use PHPUnit\Framework\TestCase;
 
 class ViewTest extends TestCase {

@@ -11,8 +11,8 @@ declare(strict_types=1);
 
 namespace Unit\Db;
 
-use OCA\OpenRegister\Db\AnonymisationLog;
-use OCA\OpenRegister\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Files\Db\AnonymisationLog;
+use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

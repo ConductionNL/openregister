@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FlowRunDetail shows no version badge without a version 1`] = `"t:Run of {flow}{"flow":"Enquiry"}[error] t:Failed2 Nov 2026, 10:00:00t:Show on the canvast:Retry"`;
+
+exports[`FlowRunDetail shows the header with the listed semantic version 1`] = `"t:Run of {flow}{"flow":"Enquiry"}"`;
+
+exports[`FlowRunDetail shows the header with the listed semantic version 2`] = `"t:Run of {flow}{"flow":"Enquiry"}[error] t:Failed[info] v1.0.02 Nov 2026, 10:00:00t:Show on the canvast:Retry"`;
+
+exports[`FlowRunDetail shows the whole page text 1`] = `"t:Flows / Enquiry / t:Run {id}{"id":"run-1234"}t:Run of {flow}{"flow":"Enquiry"}[error] t:Failed[info] v1.0.02 Nov 2026, 10:00:00t:Show on the canvast:Retryt:This run failedBoomt:About this runt:Started2 Nov 2026, 10:00:00t:How it startedt:Someone starts itt:Aboute2236ef7-0000-4000-8000-000000000000t:Stepst:Objectst:Taskst:Contextt:Raw logt:This run recorded no steps.t:Changed by this runt:This run changed no objects."`;

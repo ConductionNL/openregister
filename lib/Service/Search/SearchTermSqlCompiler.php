@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Search;
  * silent wrong answer this whole change exists to remove. Callers wrap each
  * column in COALESCE for that reason.
  */
-final class SearchTermSqlCompiler {
+final class SearchTermSqlCompiler implements SearchTermSqlCompilerInterface {
 	/**
 	 * Compile a node tree to one SQL boolean expression.
 	 *
@@ -65,16 +65,26 @@ final class SearchTermSqlCompiler {
 			return '(NOT ' . $this->compile(node: $node->children[0], leafBuilder: $leafBuilder) . ')';
 		}
 
-		$glue = ' AND ';
-		if ($node->type === SearchTermNode::TYPE_OR) {
-			$glue = ' OR ';
-		}
-
 		$parts = [];
 		foreach ($node->children as $child) {
 			$parts[] = $this->compile(node: $child, leafBuilder: $leafBuilder);
 		}
 
-		return '(' . implode($glue, $parts) . ')';
+		return '(' . implode(self::glueOf(node: $node), $parts) . ')';
 	}//end compile()
+
+	/**
+	 * The SQL operator that joins a group node's children.
+	 *
+	 * @param SearchTermNode $node An AND or OR group.
+	 *
+	 * @return string ' OR ' for an OR group, ' AND ' otherwise.
+	 */
+	private static function glueOf(SearchTermNode $node): string {
+		if ($node->type === SearchTermNode::TYPE_OR) {
+			return ' OR ';
+		}
+
+		return ' AND ';
+	}//end glueOf()
 }//end class

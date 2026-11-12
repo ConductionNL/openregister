@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Class BulkActionRegistry
  */
-class BulkActionRegistry {
+class BulkActionRegistry implements BulkActionRegistryInterface {
 
 	/**
 	 * The registered actions, keyed by their id.
@@ -76,7 +76,7 @@ class BulkActionRegistry {
 	 *
 	 * @throws InvalidArgumentException When the id is malformed or taken.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function register(BulkActionInterface $action): void {
 		$id = $action->getId();
@@ -103,7 +103,7 @@ class BulkActionRegistry {
 	 *
 	 * @throws InvalidArgumentException When no such action is registered.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function get(string $id): BulkActionInterface {
 		$this->load();
@@ -122,7 +122,7 @@ class BulkActionRegistry {
 	 *
 	 * @return bool True when the action exists.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function has(string $id): bool {
 		$this->load();
@@ -135,7 +135,7 @@ class BulkActionRegistry {
 	 *
 	 * @return array<string, BulkActionInterface> The actions.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function all(): array {
 		$this->load();
@@ -148,33 +148,46 @@ class BulkActionRegistry {
 	 *
 	 * @return array<int, array<string, mixed>> One entry per action.
 	 *
-	 * @spec openspec/changes/bulk-action-jobs/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function describe(): array {
 		$catalogue = [];
 
 		foreach ($this->all() as $id => $action) {
-			// An action that cannot be undone says so BEFORE it runs, which is
-			// the whole of D-4: the operator reads it in the same list they
-			// pick the action from, not in the error after they tried.
-			$window = null;
-			if ($action instanceof ReversibleBulkActionInterface) {
-				$window = $action->getReversalWindow();
-			}
-
-			$catalogue[] = [
-				'id' => $id,
-				'label' => $action->getLabel(),
-				'description' => $action->getDescription(),
-				'requiresJustification' => $action->requiresJustification(),
-				'guards' => $action->getGuards(),
-				'reversible' => ($window !== null),
-				'reversalWindow' => $window,
-			];
+			$catalogue[] = self::catalogueEntry(id: $id, action: $action);
 		}
 
 		return $catalogue;
 	}//end describe()
+
+	/**
+	 * One action as the catalogue lists it.
+	 *
+	 * An action that cannot be undone says so BEFORE it runs, which is
+	 * the whole of D-4: the operator reads it in the same list they
+	 * pick the action from, not in the error after they tried.
+	 *
+	 * @param int|string          $id     The action id.
+	 * @param BulkActionInterface $action The action.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function catalogueEntry(int|string $id, BulkActionInterface $action): array {
+		$window = null;
+		if ($action instanceof ReversibleBulkActionInterface) {
+			$window = $action->getReversalWindow();
+		}
+
+		return [
+			'id' => $id,
+			'label' => $action->getLabel(),
+			'description' => $action->getDescription(),
+			'requiresJustification' => $action->requiresJustification(),
+			'guards' => $action->getGuards(),
+			'reversible' => ($window !== null),
+			'reversalWindow' => $window,
+		];
+	}//end catalogueEntry()
 
 	/**
 	 * Dispatch the registration event once.

@@ -23,11 +23,12 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationHandlerStores;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -53,9 +54,6 @@ class RelationHandlerTest extends TestCase {
 	/** @var MockObject|SchemaMapper */
 	private $schemaMapper;
 
-	/** @var MockObject|PerformanceHandler */
-	private $performanceHandler;
-
 	/** @var MockObject|MagicRbacHandler */
 	private $rbacHandler;
 
@@ -73,170 +71,36 @@ class RelationHandlerTest extends TestCase {
 	protected function setUp(): void {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->performanceHandler = $this->createMock(PerformanceHandler::class);
 		$this->rbacHandler = $this->createMock(MagicRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 
 		$this->handler = new RelationHandler(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->performanceHandler,
+			new RelationHandlerStores($this->objectMapper, $this->schemaMapper, $this->registerMapper),
 			$this->rbacHandler,
-			$this->logger,
-			$this->registerMapper
+			$this->logger
 		);
 	}
 
-	// =============================================
-	// extractAllRelationshipIds tests
-	// =============================================
-
 	/**
-	 * Test extractAllRelationshipIds returns empty array for empty input
+	 * The cross-table lookup and the per-table read both answer these rows, readable by an admin.
+	 *
+	 * @param ObjectEntity[] $entities The related rows.
 	 *
 	 * @return void
 	 */
-	public function testExtractAllRelationshipIdsEmptyObjects(): void {
-		$result = $this->handler->extractAllRelationshipIds([], ['field1']);
-		$this->assertIsArray($result);
-		$this->assertEmpty($result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds extracts single string values
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSingleStringValues(): void {
-		$object1 = $this->createMock(ObjectEntity::class);
-		$object1->method('getObject')->willReturn([
-			'related_id' => 'uuid-1',
-		]);
-
-		$object2 = $this->createMock(ObjectEntity::class);
-		$object2->method('getObject')->willReturn([
-			'related_id' => 'uuid-2',
-		]);
-
-		$result = $this->handler->extractAllRelationshipIds(
-			[$object1, $object2],
-			['related_id']
-		);
-
-		$this->assertContains('uuid-1', $result);
-		$this->assertContains('uuid-2', $result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds extracts array values
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsArrayValues(): void {
-		$object = $this->createMock(ObjectEntity::class);
-		$object->method('getObject')->willReturn([
-			'tags' => ['uuid-a', 'uuid-b', 'uuid-c'],
-		]);
-
-		$result = $this->handler->extractAllRelationshipIds(
-			[$object],
-			['tags']
-		);
-
-		$this->assertContains('uuid-a', $result);
-		$this->assertContains('uuid-b', $result);
-		$this->assertContains('uuid-c', $result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds removes duplicates
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsRemovesDuplicates(): void {
-		$object1 = $this->createMock(ObjectEntity::class);
-		$object1->method('getObject')->willReturn([
-			'related' => 'uuid-same',
-		]);
-
-		$object2 = $this->createMock(ObjectEntity::class);
-		$object2->method('getObject')->willReturn([
-			'related' => 'uuid-same',
-		]);
-
-		$result = $this->handler->extractAllRelationshipIds(
-			[$object1, $object2],
-			['related']
-		);
-
-		// Should have only one instance of uuid-same.
-		$this->assertCount(1, $result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds skips empty values
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSkipsEmptyValues(): void {
-		$object = $this->createMock(ObjectEntity::class);
-		$object->method('getObject')->willReturn([
-			'related' => '',
-			'other' => null,
-		]);
-
-		$result = $this->handler->extractAllRelationshipIds(
-			[$object],
-			['related', 'other']
-		);
-
-		$this->assertEmpty($result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds limits array relationships to 10
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsLimitsArrayTo10(): void {
-		$largeArray = [];
-		for ($i = 0; $i < 20; $i++) {
-			$largeArray[] = 'uuid-' . $i;
+	private function relatedRowsAre(array $entities): void {
+		foreach ($entities as $entity) {
+			$entity->setRegister('1');
+			$entity->setSchema('1');
 		}
 
-		$object = $this->createMock(ObjectEntity::class);
-		$object->method('getObject')->willReturn([
-			'many_relations' => $largeArray,
-		]);
-
-		$result = $this->handler->extractAllRelationshipIds(
-			[$object],
-			['many_relations']
-		);
-
-		// Should be limited to 10.
-		$this->assertCount(10, $result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds skips non-existent extend properties
-	 *
-	 * @return void
-	 */
-	public function testExtractAllRelationshipIdsSkipsNonExistentProperties(): void {
-		$object = $this->createMock(ObjectEntity::class);
-		$object->method('getObject')->willReturn([
-			'existing' => 'uuid-1',
-		]);
-
-		$result = $this->handler->extractAllRelationshipIds(
-			[$object],
-			['non_existent_property']
-		);
-
-		$this->assertEmpty($result);
-	}
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn($entities);
+		$this->objectMapper->method('findAllInRegisterSchemaTable')->willReturn($entities);
+		$this->registerMapper->method('find')->willReturn(new Register());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->rbacHandler->method('isAdmin')->willReturn(true);
+	}//end relatedRowsAre()
 
 	// =============================================
 	// bulkLoadRelationshipsBatched tests
@@ -258,17 +122,12 @@ class RelationHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testBulkLoadRelationshipsBatchedIndexesByUuidAndId(): void {
-		$obj = $this->getMockBuilder(ObjectEntity::class)
-			->onlyMethods(['getUuid'])
-			->addMethods(['getId'])
-			->onlyMethods(['getObject'])
-			->getMock();
-		$obj->method('getUuid')->willReturn('test-uuid-123');
-		$obj->method('getId')->willReturn(42);
-
-		$this->objectMapper
-			->method('findAll')
-			->willReturn([$obj]);
+		$obj = new ObjectEntity();
+		$obj->setUuid('test-uuid-123');
+		$idProp = (new \ReflectionClass($obj))->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($obj, 42);
+		$this->relatedRowsAre(entities: [$obj]);
 
 		$result = $this->handler->bulkLoadRelationshipsBatched(['test-uuid-123']);
 
@@ -290,12 +149,13 @@ class RelationHandlerTest extends TestCase {
 		}
 
 		$this->objectMapper
-			->method('findAll')
+			->expects($this->exactly(4))
+			->method('findMultipleAcrossAllMagicTables')
 			->willReturn([]);
 
 		// Should not throw, just cap.
 		$result = $this->handler->bulkLoadRelationshipsBatched($ids);
-		$this->assertIsArray($result);
+		$this->assertSame([], $result);
 	}
 
 	/**
@@ -305,7 +165,7 @@ class RelationHandlerTest extends TestCase {
 	 */
 	public function testBulkLoadRelationshipsBatchedHandlesExceptions(): void {
 		$this->objectMapper
-			->method('findAll')
+			->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \Exception('DB error'));
 
 		// Should not throw, continue with next batch.
@@ -334,12 +194,10 @@ class RelationHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testLoadRelationshipChunkOptimizedDelegatesToMapper(): void {
-		$obj = $this->createMock(ObjectEntity::class);
-
-		$this->objectMapper
-			->expects($this->once())
-			->method('findAll')
-			->willReturn([$obj]);
+		$obj = new ObjectEntity();
+		$obj->setUuid('uuid-1');
+		$this->relatedRowsAre(entities: [$obj]);
+		$this->objectMapper->expects($this->once())->method('findMultipleAcrossAllMagicTables');
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
 		$this->assertCount(1, $result);
@@ -353,7 +211,7 @@ class RelationHandlerTest extends TestCase {
 	 */
 	public function testLoadRelationshipChunkOptimizedReturnsEmptyOnException(): void {
 		$this->objectMapper
-			->method('findAll')
+			->method('findMultipleAcrossAllMagicTables')
 			->willThrowException(new \Exception('DB error'));
 
 		$result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
@@ -453,68 +311,4 @@ class RelationHandlerTest extends TestCase {
 		$this->assertEmpty($result['results']);
 	}
 
-	// =============================================
-	// extractRelatedData tests
-	// =============================================
-
-	/**
-	 * Test extractRelatedData delegates to PerformanceHandler
-	 *
-	 * @return void
-	 */
-	public function testExtractRelatedDataDelegatesToPerformanceHandler(): void {
-		$expected = ['related' => ['uuid-1'], 'relatedNames' => ['uuid-1' => 'Name']];
-
-		$this->performanceHandler
-			->expects($this->once())
-			->method('extractRelatedData')
-			->willReturn($expected);
-
-		$result = $this->handler->extractRelatedData(
-			['some' => 'data'],
-			true,
-			true
-		);
-
-		$this->assertEquals($expected, $result);
-	}
-
-	// =============================================
-	// applyInversedByFilter tests
-	// =============================================
-
-	/**
-	 * Test applyInversedByFilter returns empty when schema is false
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnsEmptyWhenSchemaIsFalse(): void {
-		$filters = ['schema' => false];
-		$result = $this->handler->applyInversedByFilter($filters, function () {
-			return [];
-		});
-
-		$this->assertEquals([], $result);
-	}
-
-	/**
-	 * Test applyInversedByFilter returns empty when no sub-filters
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnsEmptyWhenNoSubFilters(): void {
-		$schema = $this->createMock(Schema::class);
-		$schema->method('getProperties')->willReturn([]);
-
-		$this->schemaMapper
-			->method('find')
-			->willReturn($schema);
-
-		$filters = ['schema' => 1, 'name' => 'test'];
-		$result = $this->handler->applyInversedByFilter($filters, function () {
-			return [];
-		});
-
-		$this->assertEquals([], $result);
-	}
 }

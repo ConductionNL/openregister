@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Sharing;
 
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use PHPUnit\Framework\TestCase;
 
@@ -188,14 +190,14 @@ class SharePrincipalDeriverTest extends TestCase {
 	public function testGrantsMatchesUserWithThePermission(): void {
 		$shared = [['type' => 'user', 'id' => 'alice', 'permission' => 'run']];
 
-		$this->assertTrue($this->deriver->grants($shared, 'alice', [], ['run']));
+		$this->assertTrue($this->deriver->grants(new ShareGrantee('alice', []), new ShareListCheck($shared, ['run'])));
 	}
 
 	public function testGrantsRefusesUserWithoutThePermission(): void {
 		$shared = [['type' => 'user', 'id' => 'alice', 'permission' => 'read']];
 
 		$this->assertFalse(
-			$this->deriver->grants($shared, 'alice', [], ['run']),
+			$this->deriver->grants(new ShareGrantee('alice', []), new ShareListCheck($shared, ['run'])),
 			'a read-only recipient must be refused at the trigger even though RBAC lets them see the flow'
 		);
 	}
@@ -203,21 +205,21 @@ class SharePrincipalDeriverTest extends TestCase {
 	public function testGrantsMatchesViaGroupMembership(): void {
 		$shared = [['type' => 'group', 'id' => 'finance', 'permission' => 'run']];
 
-		$this->assertTrue($this->deriver->grants($shared, 'alice', ['finance'], ['run']));
-		$this->assertFalse($this->deriver->grants($shared, 'alice', ['legal'], ['run']));
+		$this->assertTrue($this->deriver->grants(new ShareGrantee('alice', ['finance']), new ShareListCheck($shared, ['run'])));
+		$this->assertFalse($this->deriver->grants(new ShareGrantee('alice', ['legal']), new ShareListCheck($shared, ['run'])));
 	}
 
 	public function testGrantsRefusesAnonymous(): void {
 		$shared = [['type' => 'user', 'id' => 'alice', 'permission' => 'run']];
 
-		$this->assertFalse($this->deriver->grants($shared, '', [], ['run']));
+		$this->assertFalse($this->deriver->grants(new ShareGrantee('', []), new ShareListCheck($shared, ['run'])));
 	}
 
 	public function testGrantsRefusesWhenPermissionIsAbsent(): void {
 		$shared = [['type' => 'user', 'id' => 'alice']];
 
 		$this->assertFalse(
-			$this->deriver->grants($shared, 'alice', [], ['run']),
+			$this->deriver->grants(new ShareGrantee('alice', []), new ShareListCheck($shared, ['run'])),
 			'an entry with no permission must not satisfy an explicit verb check'
 		);
 	}

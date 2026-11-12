@@ -87,6 +87,14 @@ class FlowStateHandle implements JsonSerializable {
 	private bool $dirty = false;
 
 	/**
+	 * The keys written through this handle, as opposed to those it was built
+	 * over (written by earlier runs).
+	 *
+	 * @var array<string, true>
+	 */
+	private array $written = [];
+
+	/**
 	 * Build a handle over stored values.
 	 *
 	 * @param array|null $values The values already stored for this flow.
@@ -121,6 +129,7 @@ class FlowStateHandle implements JsonSerializable {
 	public function set(string $key, mixed $value): void {
 		$this->values[$key] = $value;
 		$this->dirty = true;
+		$this->written[$key] = true;
 
 	}//end set()
 
@@ -153,6 +162,20 @@ class FlowStateHandle implements JsonSerializable {
 	public function has(string $key): bool {
 		return array_key_exists($key, $this->values);
 	}//end has()
+
+	/**
+	 * The keys this handle set, still present in the state.
+	 *
+	 * @return array<int, string> The keys.
+	 */
+	public function writtenKeys(): array {
+		return array_values(
+			array_filter(
+				array_map('strval', array_keys($this->written)),
+				fn (string $key): bool => array_key_exists($key, $this->values)
+			)
+		);
+	}//end writtenKeys()
 
 	/**
 	 * Whether anything was written since this handle was built.

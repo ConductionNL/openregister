@@ -1,0 +1,480 @@
+{
+    "LinkServiceCreateGoldenTest::testCreateAndLinkCardGolden card service fails": {
+        "error": [
+            "Exception",
+            "Failed to create Deck card: deck down",
+            500
+        ],
+        "calls": [
+            [
+                "create",
+                [
+                    "Card",
+                    5,
+                    "plain",
+                    0,
+                    "alice"
+                ]
+            ]
+        ]
+    },
+    "LinkServiceCreateGoldenTest::testCreateAndLinkCardGolden description and due date": {
+        "result": {
+            "link": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "boardId": 12,
+                "stackId": 5,
+                "cardId": 77,
+                "cardTitle": "Card",
+                "dueDate": "2026-12-01T10:00:00+00:00",
+                "labels": null,
+                "assignees": null,
+                "linkedBy": "alice",
+                "linkedAt": "string"
+            },
+            "calls": [
+                [
+                    "create",
+                    [
+                        "Card",
+                        5,
+                        "plain",
+                        0,
+                        "alice"
+                    ]
+                ],
+                [
+                    "update",
+                    [
+                        77,
+                        "Card",
+                        5,
+                        "plain",
+                        "alice",
+                        "Follow up\n\n[Object: obj-1](/apps/openregister/objects/obj-1)",
+                        0,
+                        "2026-12-01T10:00:00+00:00"
+                    ]
+                ]
+            ]
+        }
+    },
+    "LinkServiceCreateGoldenTest::testCreateAndLinkCardGolden empty description, bad due date": {
+        "result": {
+            "link": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "boardId": 12,
+                "stackId": 5,
+                "cardId": 77,
+                "cardTitle": "Card",
+                "dueDate": null,
+                "labels": null,
+                "assignees": null,
+                "linkedBy": "alice",
+                "linkedAt": "string"
+            },
+            "calls": [
+                [
+                    "create",
+                    [
+                        "Card",
+                        5,
+                        "plain",
+                        0,
+                        "alice"
+                    ]
+                ],
+                [
+                    "update",
+                    [
+                        77,
+                        "Card",
+                        5,
+                        "plain",
+                        "alice",
+                        "[Object: obj-1](/apps/openregister/objects/obj-1)",
+                        0,
+                        "soon"
+                    ]
+                ]
+            ]
+        }
+    },
+    "LinkServiceCreateGoldenTest::testCreateAndLinkCardGolden no description": {
+        "result": {
+            "link": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "boardId": 12,
+                "stackId": 5,
+                "cardId": 77,
+                "cardTitle": "Card",
+                "dueDate": null,
+                "labels": null,
+                "assignees": null,
+                "linkedBy": "alice",
+                "linkedAt": "string"
+            },
+            "calls": [
+                [
+                    "create",
+                    [
+                        "Card",
+                        5,
+                        "plain",
+                        0,
+                        "alice"
+                    ]
+                ],
+                [
+                    "update",
+                    [
+                        77,
+                        "Card",
+                        5,
+                        "plain",
+                        "alice",
+                        "[Object: obj-1](/apps/openregister/objects/obj-1)",
+                        0,
+                        null
+                    ]
+                ]
+            ]
+        }
+    },
+    "LinkServiceCreateGoldenTest::testCreateAndLinkPoiGolden blank name": {
+        "error": [
+            "Exception",
+            "POI name is required",
+            400
+        ],
+        "calls": []
+    },
+    "LinkServiceCreateGoldenTest::testCreateAndLinkPoiGolden defaults": {
+        "result": {
+            "link": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "favoriteId": 32,
+                "name": "Home",
+                "category": null,
+                "lat": 52.37,
+                "lng": 4.89,
+                "comment": null,
+                "linkedBy": "alice",
+                "linkedAt": "string"
+            },
+            "calls": [
+                [
+                    "alice",
+                    "Home",
+                    52.37,
+                    4.89,
+                    null,
+                    null,
+                    null
+                ]
+            ]
+        }
+    },
+    "LinkServiceCreateGoldenTest::testCreateAndLinkPoiGolden full poi": {
+        "result": {
+            "link": {
+                "id": null,
+                "objectUuid": "obj-1",
+                "registerId": 3,
+                "schemaId": 4,
+                "favoriteId": 31,
+                "name": "Office",
+                "category": "work",
+                "lat": 52.37,
+                "lng": 4.89,
+                "comment": "third floor",
+                "linkedBy": "alice",
+                "linkedAt": "string"
+            },
+            "calls": [
+                [
+                    "alice",
+                    "Office",
+                    52.37,
+                    4.89,
+                    "work",
+                    "third floor",
+                    null
+                ]
+            ]
+        }
+    },
+    "LinkServiceCreateGoldenTest::testCreateAndLinkPoiGolden maps throws": {
+        "error": [
+            "Exception",
+            "Failed to create Maps POI",
+            500
+        ],
+        "calls": [
+            [
+                "alice",
+                "Office",
+                52.37,
+                4.89,
+                null,
+                null,
+                null
+            ]
+        ]
+    },
+    "LinkServiceCreateGoldenTest::testCreateAndLinkPoiGolden no favourite id": {
+        "error": [
+            "Exception",
+            "Failed to create Maps POI",
+            500
+        ],
+        "calls": [
+            [
+                "alice",
+                "Office",
+                52.37,
+                4.89,
+                null,
+                null,
+                null
+            ]
+        ]
+    },
+    "LinkServiceCreateGoldenTest::testCreateShareGolden bad expiration": {
+        "error": [
+            "Exception",
+            "Invalid expiration date",
+            400
+        ],
+        "calls": []
+    },
+    "LinkServiceCreateGoldenTest::testCreateShareGolden email share, blank password": {
+        "result": {
+            "returnsBuiltShare": true,
+            "calls": [
+                [
+                    "setNode",
+                    "node#10"
+                ],
+                [
+                    "setShareType",
+                    4
+                ],
+                [
+                    "setSharedBy",
+                    "openregister"
+                ],
+                [
+                    "setPermissions",
+                    1
+                ],
+                [
+                    "setSharedWith",
+                    "x@y.nl"
+                ]
+            ]
+        }
+    },
+    "LinkServiceCreateGoldenTest::testCreateShareGolden file outside folder": {
+        "error": [
+            "Exception",
+            "File does not belong to this object",
+            404
+        ],
+        "calls": []
+    },
+    "LinkServiceCreateGoldenTest::testCreateShareGolden group without recipient": {
+        "error": [
+            "Exception",
+            "shareWith is required for this share type",
+            400
+        ],
+        "calls": []
+    },
+    "LinkServiceCreateGoldenTest::testCreateShareGolden link with password and expiry": {
+        "result": {
+            "returnsBuiltShare": true,
+            "calls": [
+                [
+                    "setNode",
+                    "node#10"
+                ],
+                [
+                    "setShareType",
+                    3
+                ],
+                [
+                    "setSharedBy",
+                    "openregister"
+                ],
+                [
+                    "setPermissions",
+                    17
+                ],
+                [
+                    "setPassword",
+                    "secret"
+                ],
+                [
+                    "setExpirationDate",
+                    "2026-12-24T00:00:00+00:00"
+                ]
+            ]
+        }
+    },
+    "LinkServiceCreateGoldenTest::testCreateShareGolden manager refuses": {
+        "error": [
+            "Exception",
+            "sharing disabled",
+            400
+        ],
+        "calls": []
+    },
+    "LinkServiceCreateGoldenTest::testCreateShareGolden unsupported type": {
+        "error": [
+            "Exception",
+            "Unsupported share type",
+            400
+        ],
+        "calls": []
+    },
+    "LinkServiceCreateGoldenTest::testCreateShareGolden user share": {
+        "result": {
+            "returnsBuiltShare": true,
+            "calls": [
+                [
+                    "setNode",
+                    "node#10"
+                ],
+                [
+                    "setShareType",
+                    0
+                ],
+                [
+                    "setSharedBy",
+                    "openregister"
+                ],
+                [
+                    "setPermissions",
+                    1
+                ],
+                [
+                    "setSharedWith",
+                    "bob"
+                ]
+            ]
+        }
+    },
+    "LinkServiceCreateGoldenTest::testLinkEmailGolden bad message id": {
+        "error": [
+            "Exception",
+            "Invalid mail message id",
+            400
+        ],
+        "calls": []
+    },
+    "LinkServiceCreateGoldenTest::testLinkEmailGolden message not found": {
+        "error": [
+            "Exception",
+            "Mail message not found",
+            404
+        ],
+        "calls": []
+    },
+    "LinkServiceCreateGoldenTest::testLinkEmailGolden no schema": {
+        "result": {
+            "id": null,
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": null,
+            "mailAccountId": 42,
+            "mailMessageId": 7,
+            "mailMessageUid": "uid-7",
+            "subject": "Hello",
+            "sender": "a@b.nl",
+            "senderName": null,
+            "mailDate": "2026-01-01T00:00:00+00:00",
+            "metadata": null,
+            "linkedBy": "alice",
+            "linkedAt": "string",
+            "rfcMessageId": null
+        }
+    },
+    "LinkServiceCreateGoldenTest::testLinkEmailGolden no user": {
+        "error": [
+            "Exception",
+            "No user logged in",
+            401
+        ],
+        "calls": []
+    },
+    "LinkServiceCreateGoldenTest::testLinkEmailGolden row without uid or date": {
+        "result": {
+            "id": null,
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "mailAccountId": 42,
+            "mailMessageId": 7,
+            "mailMessageUid": null,
+            "subject": null,
+            "sender": null,
+            "senderName": null,
+            "mailDate": null,
+            "metadata": null,
+            "linkedBy": "alice",
+            "linkedAt": "string",
+            "rfcMessageId": null
+        }
+    },
+    "LinkServiceCreateGoldenTest::testLinkEmailGolden uid from row": {
+        "result": {
+            "id": null,
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "mailAccountId": 42,
+            "mailMessageId": 7,
+            "mailMessageUid": "row-uid",
+            "subject": "Hello",
+            "sender": "a@b.nl",
+            "senderName": null,
+            "mailDate": "2026-01-01T00:00:00+00:00",
+            "metadata": null,
+            "linkedBy": "alice",
+            "linkedAt": "string",
+            "rfcMessageId": null
+        }
+    },
+    "LinkServiceCreateGoldenTest::testLinkEmailGolden uid given": {
+        "result": {
+            "id": null,
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "mailAccountId": 42,
+            "mailMessageId": 7,
+            "mailMessageUid": "uid-7",
+            "subject": "Hello",
+            "sender": "a@b.nl",
+            "senderName": null,
+            "mailDate": "2026-01-01T00:00:00+00:00",
+            "metadata": null,
+            "linkedBy": "alice",
+            "linkedAt": "string",
+            "rfcMessageId": null
+        }
+    }
+}

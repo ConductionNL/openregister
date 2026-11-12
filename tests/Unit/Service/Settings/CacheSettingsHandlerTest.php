@@ -24,9 +24,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
 
 use Exception;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SchemaCacheClearers;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -53,8 +54,8 @@ class CacheSettingsHandlerTest extends TestCase {
 	/** @var SchemaCacheHandler&MockObject */
 	private SchemaCacheHandler $schemaCacheService;
 
-	/** @var FacetCacheHandler&MockObject */
-	private FacetCacheHandler $facetCacheService;
+	/** @var FacetResultCacheClearer&MockObject */
+	private FacetResultCacheClearer $facetCacheService;
 
 	/** @var CacheHandler&MockObject */
 	private CacheHandler $cacheHandler;
@@ -72,14 +73,13 @@ class CacheSettingsHandlerTest extends TestCase {
 
 		$this->cacheFactory = $this->createMock(ICacheFactory::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheService = $this->createMock(FacetCacheHandler::class);
+		$this->facetCacheService = $this->createMock(FacetResultCacheClearer::class);
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->container = $this->createMock(IAppContainer::class);
 
 		$this->handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			$this->cacheHandler,
 			$this->container
 		);
@@ -152,8 +152,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testGetCacheStatsStructureOnException(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -296,6 +295,8 @@ class CacheSettingsHandlerTest extends TestCase {
 
 		$this->assertIsFloat($result['overview']['overallHitRate']);
 		$this->assertIsFloat($result['overview']['cacheEfficiency']);
+		// 25 hits out of 50 requests.
+		$this->assertSame(50.0, $result['overview']['overallHitRate']);
 	}
 
 	// =========================================================================
@@ -325,9 +326,7 @@ class CacheSettingsHandlerTest extends TestCase {
 			->willReturn(['entries' => 5, 'total_entries' => 5]);
 		$this->schemaCacheService->method('clearAllCaches');
 
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturn(['total_entries' => 3]);
-		$this->facetCacheService->method('clearAllCaches');
+		$this->facetCacheService->method('clearAll');
 
 		$distributedCache = $this->createMock(ICache::class);
 		$distributedCache->method('clear');
@@ -364,9 +363,7 @@ class CacheSettingsHandlerTest extends TestCase {
 			->willReturn(['entries' => 5, 'total_entries' => 5]);
 		$this->schemaCacheService->expects($this->once())->method('clearAllCaches');
 
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturn(['total_entries' => 3]);
-		$this->facetCacheService->expects($this->once())->method('clearAllCaches');
+		$this->facetCacheService->expects($this->once())->method('clearAll');
 
 		$distributedCache = $this->createMock(ICache::class);
 		$distributedCache->expects($this->once())->method('clear');
@@ -426,9 +423,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testClearCacheFacet(): void {
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturn(['total_entries' => 5]);
-		$this->facetCacheService->expects($this->once())->method('clearAllCaches');
+		$this->facetCacheService->expects($this->once())->method('clearAll');
 
 		$result = $this->handler->clearCache('facet');
 
@@ -480,6 +475,40 @@ class CacheSettingsHandlerTest extends TestCase {
 	}
 
 	/**
+	 * Characterisation: each clear type empties its services in a fixed
+	 * order, the result envelope keeps its key order, and an unknown type is
+	 * wrapped as a RuntimeException naming it.
+	 *
+	 * @return void
+	 */
+	public function testClearCacheTypesClearTheirServicesInOrder(): void {
+		$expected = [
+			'all' => ['object', 'schema', 'facet', 'distributed', 'names'],
+			'object' => ['object'],
+			'schema' => ['schema'],
+			'facet' => ['facet'],
+			'distributed' => ['distributed'],
+			'names' => ['names'],
+		];
+		foreach ($expected as $type => $services) {
+			$result = $this->handler->clearCache($type, 'user123');
+
+			$this->assertSame(['type', 'userId', 'timestamp', 'results', 'errors', 'totalCleared'], array_keys($result));
+			$this->assertSame($type, $result['type']);
+			$this->assertSame($services, array_keys($result['results']), $type);
+			$this->assertSame([], $result['errors']);
+			$this->assertIsInt($result['totalCleared']);
+		}
+
+		try {
+			$this->handler->clearCache('');
+			$this->fail('An empty type should be refused');
+		} catch (RuntimeException $e) {
+			$this->assertSame('Failed to clear cache: Invalid cache type: ', $e->getMessage());
+		}
+	}
+
+	/**
 	 * Test clearCache with invalid type throws
 	 *
 	 * @return void
@@ -514,8 +543,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearCacheObjectNoCacheHandler(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -535,8 +563,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearCacheNamesNoCacheHandler(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -561,22 +588,6 @@ class CacheSettingsHandlerTest extends TestCase {
 		$this->assertFalse($result['results']['schema']['success']);
 		$this->assertSame(0, $result['results']['schema']['cleared']);
 		$this->assertSame('schema error', $result['results']['schema']['error']);
-	}
-
-	/**
-	 * Test clearCache facet when facetCacheService throws
-	 *
-	 * @return void
-	 */
-	public function testClearCacheFacetOnException(): void {
-		$this->facetCacheService->method('getCacheStatistics')
-			->willThrowException(new Exception('facet error'));
-
-		$result = $this->handler->clearCache('facet');
-
-		$this->assertFalse($result['results']['facet']['success']);
-		$this->assertSame(0, $result['results']['facet']['cleared']);
-		$this->assertSame('facet error', $result['results']['facet']['error']);
 	}
 
 	/**
@@ -634,9 +645,7 @@ class CacheSettingsHandlerTest extends TestCase {
 			->willReturn(['entries' => 0, 'total_entries' => 0]);
 		$this->schemaCacheService->method('clearAllCaches');
 
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturn(['total_entries' => 0]);
-		$this->facetCacheService->method('clearAllCaches');
+		$this->facetCacheService->method('clearAll');
 
 		$distributedCache = $this->createMock(ICache::class);
 		$distributedCache->method('clear');
@@ -661,8 +670,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearObjectCacheContainerFallback(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -688,8 +696,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearObjectCacheContainerFails(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -743,8 +750,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testWarmupNamesCacheNoCacheHandler(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			null
 		);
@@ -764,8 +770,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testWarmupNamesCacheContainerFallback(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -793,8 +798,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testWarmupNamesCacheContainerFails(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -877,21 +881,14 @@ class CacheSettingsHandlerTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testClearFacetCacheClearedCount(): void {
-		$callCount = 0;
-		$this->facetCacheService->method('getCacheStatistics')
-			->willReturnCallback(function () use (&$callCount) {
-				$callCount++;
-				if ($callCount === 1) {
-					return ['total_entries' => 20];
-				}
-				return ['total_entries' => 0];
-			});
-		$this->facetCacheService->method('clearAllCaches');
+	public function testClearFacetCacheReportsNothingCleared(): void {
+		$this->facetCacheService->expects($this->once())->method('clearAll');
 
 		$result = $this->handler->clearCache('facet');
 
-		$this->assertSame(20, $result['results']['facet']['cleared']);
+		$this->assertSame(0, $result['results']['facet']['cleared']);
+		$this->assertSame(0, $result['results']['facet']['before']['total_entries']);
+		$this->assertSame([], $result['results']['facet']['after']['by_type']);
 	}
 
 	// =========================================================================
@@ -934,21 +931,6 @@ class CacheSettingsHandlerTest extends TestCase {
 	// Constructor test
 	// =========================================================================
 
-	/**
-	 * Test constructor with minimal parameters
-	 *
-	 * @return void
-	 */
-	public function testConstructorMinimalParams(): void {
-		$handler = new CacheSettingsHandler(
-			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService
-		);
-
-		$this->assertInstanceOf(CacheSettingsHandler::class, $handler);
-	}
-
 	// =========================================================================
 	// Edge case: clearNamesCache container fallback
 	// =========================================================================
@@ -961,8 +943,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearNamesCacheContainerFallback(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);
@@ -988,8 +969,7 @@ class CacheSettingsHandlerTest extends TestCase {
 	public function testClearNamesCacheContainerFails(): void {
 		$handler = new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			null,
 			$this->container
 		);

@@ -37,7 +37,7 @@ calendar consisting only of enumerated dates SHALL be refused at write time.
 - **GIVEN** a request body with `workingWeekdays`, `hoursPerWorkingDay`, an empty `rules` list and twenty `exceptions`
 - **WHEN** it is posted to `/api/objects/flow-timers/working-calendar`
 - **THEN** the response is 422 and names the missing rules
-- @e2e exclude {API contract, covered by Newman (`tests/newman/openregister-working-calendars.postman_collection.json`, request 2) and by `WorkingCalendarGuardListenersTest::testAnEnumeratedOnlyCalendarIsRefusedOnCreate`; the admin form's half is additionally asserted in `tests/e2e/ci/working-calendar-admin.spec.ts`}
+- @e2e exclude {API contract, covered by Newman (`tests/integration/openregister-working-calendars.postman_collection.json`, request 2) and by `WorkingCalendarGuardListenersTest::testAnEnumeratedOnlyCalendarIsRefusedOnCreate`; the admin form's half is additionally asserted in `tests/e2e/ci/working-calendar-admin.spec.ts`}
 
 ### Requirement: Only an administrator writes a calendar, and a referenced one cannot be deleted
 

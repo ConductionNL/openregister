@@ -11,7 +11,6 @@
  * - `FileMapper::setDescriptionForFile / setCategoryForFile / setLabelsForFile`
  *   persist and round-trip the field.
  * - `FileMapper::incrementDownloadCount()` is idempotent + monotonic.
- * - `FileMapper::setLockForFile()` round-trips lock fields.
  * - `FileMapper::findByFileIds()` does the bulk lookup in one round trip.
  *
  * @category Test
@@ -30,9 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use DateTime;
-use OCA\OpenRegister\Db\File;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\File;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use PHPUnit\Framework\TestCase;
 
@@ -132,44 +130,6 @@ class FileMetadataPersistenceIntegrationTest extends TestCase {
 		$this->assertSame(2, $second->getDownloadCount());
 		$this->assertSame(3, $third->getDownloadCount());
 	}//end testIncrementDownloadCountIsMonotonic()
-
-	public function testSetLockRoundTripsAndReleases(): void {
-		$fileId = $this->randomFileId();
-		$this->createdFileIds[] = $fileId;
-
-		$now = new DateTime('2026-05-02T14:00:00+00:00');
-		$expires = new DateTime('2026-05-02T14:30:00+00:00');
-
-		$locked = $this->fileMapper->setLockForFile(
-			fileId: $fileId,
-			lockedBy: 'behandelaar-1',
-			lockedAt: $now,
-			lockExpires: $expires
-		);
-
-		$this->assertSame('behandelaar-1', $locked->getLockedBy());
-		$this->assertEquals(
-			$now->format('c'),
-			$locked->getLockedAt()->format('c'),
-			'lockedAt round-trips through datetime conversion'
-		);
-		$this->assertEquals(
-			$expires->format('c'),
-			$locked->getLockExpires()->format('c'),
-			'lockExpires round-trips through datetime conversion'
-		);
-
-		// Release the lock by passing null on each lock field.
-		$released = $this->fileMapper->setLockForFile(
-			fileId: $fileId,
-			lockedBy: null,
-			lockedAt: null,
-			lockExpires: null
-		);
-		$this->assertNull($released->getLockedBy());
-		$this->assertNull($released->getLockedAt());
-		$this->assertNull($released->getLockExpires());
-	}//end testSetLockRoundTripsAndReleases()
 
 	public function testFindByFileIdsBulkLookup(): void {
 		$fileIds = [

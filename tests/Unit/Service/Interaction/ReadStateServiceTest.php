@@ -20,7 +20,8 @@ declare(strict_types=1);
 namespace Unit\Service\Interaction;
 
 use DateTime;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
@@ -162,20 +163,39 @@ class ReadStateServiceTest extends TestCase {
 		$this->mapper->expects($this->once())
 			->method('markSeen')
 			->with(
-				$this->equalTo('alice'),
-				$this->equalTo('uuid-case-1'),
-				$this->equalTo('cases'),
-				$this->equalTo('case')
+				$this->callback(
+					fn (ObjectReadState $sighting): bool => [$sighting->getUserId(), $sighting->getObjectUuid(), $sighting->getRegister(), $sighting->getSchema(), $sighting->getSubSeen()]
+						=== ['alice', 'uuid-case-1', 'cases', 'case', null]
+						&& $sighting->getLastSeenAt() instanceof DateTime
+				)
 			)
 			->willReturn($this->makeRow());
 
 		$this->serviceAs('alice')->markRead(
-			object: $this->makeObject(),
-			register: 'cases',
-			schema: 'case'
+			target: new AddressedObject(object: $this->makeObject(), register: 'cases', schema: 'case')
 		);
 
 	}//end testMarkingReadWritesTheCallersOwnRow()
+
+	/**
+	 * Opening a sub-resource records its own seen moment, at the moment of the sighting.
+	 *
+	 * @return void
+	 */
+	public function testMarkingASubResourceReadRecordsItsMoment(): void {
+		$this->mapper->expects($this->once())
+			->method('markSeen')
+			->with(
+				$this->callback(
+					fn (ObjectReadState $sighting): bool => array_keys((array)$sighting->getSubSeen()) === ['files']
+						&& $sighting->getSubSeen()['files'] === $sighting->getLastSeenAt()->format(\DateTimeInterface::ATOM)
+				)
+			)
+			->willReturn($this->makeRow());
+
+		$this->serviceAs('alice')->markRead(target: new AddressedObject(object: $this->makeObject()), subResource: 'files');
+
+	}//end testMarkingASubResourceReadRecordsItsMoment()
 
 	/**
 	 * Marking back to unread removes the caller's row and nobody else's.
@@ -227,7 +247,7 @@ class ReadStateServiceTest extends TestCase {
 
 		$this->expectException(NotAuthorizedException::class);
 
-		$this->serviceAs(null)->markRead(object: $this->makeObject());
+		$this->serviceAs(null)->markRead(target: new AddressedObject(object: $this->makeObject()));
 
 	}//end testAnonymousCannotMarkAnythingRead()
 
@@ -309,7 +329,7 @@ class ReadStateServiceTest extends TestCase {
 		$service = $this->serviceAs('alice');
 		$this->assertTrue($service->isUnreadForCaller(objectUuid: 'uuid-case-1'));
 
-		$service->markRead(object: $this->makeObject());
+		$service->markRead(target: new AddressedObject(object: $this->makeObject()));
 
 		$this->assertFalse($service->isUnreadForCaller(objectUuid: 'uuid-case-1'));
 

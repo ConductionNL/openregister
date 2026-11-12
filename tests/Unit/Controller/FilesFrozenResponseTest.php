@@ -22,11 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
-use OCA\OpenRegister\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\ObjectService;
@@ -65,10 +66,9 @@ class FilesFrozenResponseTest extends TestCase {
 
 		$fileService = $this->createMock(FileService::class);
 		$fileService->expects($this->never())->method('deleteFile');
-		$fileService->expects($this->never())->method('updateFile');
+		$fileService->expects($this->never())->method('overwriteFile');
 
-		return new FilesController(
-			'openregister',
+		return FilesControllerFactory::create(
 			$this->createMock(IRequest::class),
 			$fileService,
 			$objectService,

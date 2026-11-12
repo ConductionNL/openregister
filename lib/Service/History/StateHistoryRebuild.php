@@ -37,9 +37,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\History;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\StateHistory;
-use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Db\StateHistoryMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -47,18 +48,18 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
  */
-class StateHistoryRebuild {
+class StateHistoryRebuild implements StateHistoryRebuildInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param StateHistoryMapper $intervals The projection.
-	 * @param AuditTrailMapper   $audit     The trail it derives from.
+	 * @param StateHistoryMapperInterface $intervals The projection.
+	 * @param AuditTrailMapperInterface   $audit     The trail it derives from.
 	 * @param LoggerInterface    $logger    Diagnostics.
 	 */
 	public function __construct(
-		private readonly StateHistoryMapper $intervals,
-		private readonly AuditTrailMapper $audit,
+		private readonly StateHistoryMapperInterface $intervals,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -89,14 +90,38 @@ class StateHistoryRebuild {
 			return [];
 		}
 
-		$intervals = [];
-		$first = $moves[0];
+		return array_merge(
+			self::priorInterval(first: $moves[0]),
+			self::movedIntervals(moves: $moves)
+		);
+	}//end intervalsFor()
+
+	/**
+	 * Where the object was before the first recorded move, when that is known.
+	 *
+	 * @param array<string, mixed> $first The first move.
+	 *
+	 * @return array<int, array{value: string, enteredAt: null, leftAt: mixed}> That interval, or none.
+	 */
+	private static function priorInterval(array $first): array {
 		if (is_scalar($first['old']) === true && (string)$first['old'] !== '') {
 			// Where the object was before anything was recorded about it. Its
 			// start is unknown, which is a fact, not a zero.
-			$intervals[] = ['value' => (string)$first['old'], 'enteredAt' => null, 'leftAt' => $first['at']];
+			return [['value' => (string)$first['old'], 'enteredAt' => null, 'leftAt' => $first['at']]];
 		}
 
+		return [];
+	}//end priorInterval()
+
+	/**
+	 * One interval per move into a value, lasting until the next move.
+	 *
+	 * @param array<int, array<string, mixed>> $moves The moves, in order.
+	 *
+	 * @return array<int, array{value: string, enteredAt: mixed, leftAt: mixed}> The intervals.
+	 */
+	private static function movedIntervals(array $moves): array {
+		$intervals = [];
 		foreach ($moves as $index => $move) {
 			if (is_scalar($move['new']) === false || (string)$move['new'] === '') {
 				continue;
@@ -110,7 +135,7 @@ class StateHistoryRebuild {
 		}
 
 		return $intervals;
-	}//end intervalsFor()
+	}//end movedIntervals()
 
 	/**
 	 * The recorded moves of one property, oldest first.
@@ -129,70 +154,122 @@ class StateHistoryRebuild {
 	 */
 	private function movesIn(array $changes, string $property): array {
 		$moves = [];
-
 		foreach ($changes as $change) {
-			$entry = ((array)($change['changed'] ?? []))[$property] ?? null;
-			if (is_array($entry) === false || array_key_exists('new', $entry) === false) {
-				continue;
+			$move = $this->moveOf(change: $change, property: $property);
+			if ($move !== null) {
+				$moves[] = $move;
 			}
-
-			$stampedAt = $this->moment(raw: ($change['created'] ?? null));
-			if ($stampedAt === null) {
-				continue;
-			}
-
-			$moves[] = [
-				'old' => ($entry['old'] ?? null),
-				'new' => ($entry['new'] ?? null),
-				'at' => $stampedAt,
-			];
-		}//end foreach
+		}
 
 		return $moves;
 	}//end movesIn()
 
 	/**
+	 * The move one audited change records for the property, or null when it records none or has no moment.
+	 *
+	 * @param mixed  $change   One audited change.
+	 * @param string $property The state property.
+	 *
+	 * @return array{old: mixed, new: mixed, at: mixed}|null The move.
+	 */
+	private function moveOf(mixed $change, string $property): ?array {
+		$entry = ((array)($change['changed'] ?? []))[$property] ?? null;
+		if (is_array($entry) === false || array_key_exists('new', $entry) === false) {
+			return null;
+		}
+
+		$stampedAt = $this->moment(raw: ($change['created'] ?? null));
+		if ($stampedAt === null) {
+			return null;
+		}
+
+		return [
+			'old' => ($entry['old'] ?? null),
+			'new' => ($entry['new'] ?? null),
+			'at' => $stampedAt,
+		];
+	}//end moveOf()
+
+	/**
 	 * Rebuild one object's line.
 	 *
-	 * @param string $objectUuid The object.
-	 * @param string $property   The declared lifecycle property.
-	 * @param string $register   The register slug.
-	 * @param string $schema     The schema slug.
+	 * @param ObjectRef $ref      The object, with its register and schema slugs.
+	 * @param string    $property The declared lifecycle property.
 	 *
 	 * @return int Intervals written.
 	 *
 	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
 	 */
-	public function rebuildObject(string $objectUuid, string $property, string $register, string $schema): int {
+	public function rebuild(ObjectRef $ref, string $property): int {
 		try {
-			$intervals = $this->intervalsFor(
-				changes: $this->audit->findChangesForObject(objectUuid: $objectUuid),
-				property: $property
-			);
-
-			$this->intervals->deleteForObject(objectUuid: $objectUuid);
-
-			foreach ($intervals as $interval) {
-				$row = new StateHistory();
-				$row->setObjectUuid($objectUuid);
-				$row->setRegister($register);
-				$row->setSchema($schema);
-				$row->setProperty($property);
-				$row->setValue($interval['value']);
-				$row->setEnteredAt($interval['enteredAt']);
-				$row->setLeftAt($interval['leftAt']);
-				$this->intervals->insert($row);
-			}
-
-			return count($intervals);
+			return $this->replaceIntervals(ref: $ref, property: $property);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[StateHistoryRebuild] Could not rebuild {object}: {error}',
-				['object' => $objectUuid, 'error' => $e->getMessage(), 'exception' => $e]
+				['object' => $ref->id, 'error' => $e->getMessage(), 'exception' => $e]
 			);
 			return 0;
-		}//end try
-	}//end rebuildObject()
+		}
+	}//end rebuild()
+
+	/**
+	 * Replace the object's stored intervals for the property with the ones its audit trail gives.
+	 *
+	 * @param ObjectRef $ref      The object.
+	 * @param string    $property The state property.
+	 *
+	 * @return integer The intervals written.
+	 */
+	private function replaceIntervals(ObjectRef $ref, string $property): int {
+		$intervals = $this->intervalsFor(
+			changes: $this->audit->findChangesForObject(objectUuid: $ref->id),
+			property: $property
+		);
+
+		$this->intervals->deleteForObject(objectUuid: $ref->id);
+
+		$template = self::template(ref: $ref, property: $property);
+		foreach ($intervals as $interval) {
+			$this->insertInterval(template: $template, interval: $interval);
+		}
+
+		return count($intervals);
+	}//end replaceIntervals()
+
+	/**
+	 * The row every interval of one object's line shares: object, register,
+	 * schema and property.
+	 *
+	 * @param ObjectRef $ref      The object.
+	 * @param string    $property The declared lifecycle property.
+	 *
+	 * @return StateHistory The template row, without an interval.
+	 */
+	private static function template(ObjectRef $ref, string $property): StateHistory {
+		$row = new StateHistory();
+		$row->setObjectUuid($ref->id);
+		$row->setRegister((string)$ref->register);
+		$row->setSchema((string)$ref->schema);
+		$row->setProperty($property);
+
+		return $row;
+	}//end template()
+
+	/**
+	 * Write one interval of the line.
+	 *
+	 * @param StateHistory                                               $template The object's shared row.
+	 * @param array{value: string, enteredAt: ?DateTime, leftAt: ?DateTime} $interval The interval.
+	 *
+	 * @return void
+	 */
+	private function insertInterval(StateHistory $template, array $interval): void {
+		$row = clone $template;
+		$row->setValue($interval['value']);
+		$row->setEnteredAt($interval['enteredAt']);
+		$row->setLeftAt($interval['leftAt']);
+		$this->intervals->insert($row);
+	}//end insertInterval()
 
 	/**
 	 * Read a recorded moment.

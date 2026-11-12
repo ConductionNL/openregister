@@ -11,7 +11,7 @@
  * @license  EUPL-1.2
  * @link     https://github.com/OpenRegister/OpenRegister
  *
- * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
  */
 
 declare(strict_types=1);
@@ -25,9 +25,16 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\BulkRowRules;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -44,7 +51,7 @@ use ReflectionMethod;
  * A caller with update on the object but not on a protected property cannot write that property through the bulk
  * path, explicitly or by leaving it out.
  *
- * @spec openspec/changes/bulk-save-applies-property-authorization/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-bulk-save-applies-property-authorization-per-row
  */
 class BulkSavePropertyAuthorizationTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -52,6 +59,11 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 	private const UUID = '11111111-1111-1111-1111-111111111111';
 
 	private SaveObjects $handler;
+
+	/**
+	 * The same handler built without its property authorization handler.
+	 */
+	private SaveObjects $unguarded;
 
 	private Schema $schema;
 
@@ -90,23 +102,20 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 		$mapper->method('find')->willReturn($existing);
 		$mapper->method('findObjectsByUuidsInRegisterSchema')->willReturn([self::UUID => $existing]);
 
+		$this->unguarded = new SaveObjects(
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $session, organisationService: $this->createMock(OrganisationService::class), groupManager: $groups),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
+			checks: new BulkRowChecks(permissionHandler: $permissions)
+		);
+
 		$this->handler = new SaveObjects(
-			objectEntityMapper: $mapper,
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			saveHandler: $this->createMock(SaveObject::class),
-			userSession: $session,
-			organisationService: $this->createMock(OrganisationService::class),
-			logger: $this->createMock(LoggerInterface::class),
-			groupManager: $groups,
-			permissionHandler: $permissions,
-			propertyRbac: new PropertyRbacHandler(
-				$session,
-				$groups,
-				$this->createMock(ConditionMatcher::class),
-				$this->createMock(LoggerInterface::class),
-				self::stateFieldRuleResolver($session, $groups)
-			),
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $session, organisationService: $this->createMock(OrganisationService::class), groupManager: $groups),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
+			checks: new BulkRowChecks(permissionHandler: $permissions, rowRules: new BulkRowRules(
+				propertyRbac: new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groups), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groups)), logger: $this->createMock(LoggerInterface::class))
+			))
 		);
 
 		$ref = new ReflectionClass(SaveObjects::class);
@@ -130,7 +139,11 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($this->handler, [$rows, $this->register, $this->schema, true, false, &$result]);
+		$batch  = new SafeguardBatchRun(objects: $rows, defaults: new BulkBatchDefaults($this->register, $this->schema), flags: ['rbac' => true, 'validation' => false], result: $result);
+		$passed = $method->invokeArgs($this->handler, [$batch]);
+		$result = $batch->result;
+
+		return $passed;
 	}//end safeguard()
 
 	public function testAnExplicitWriteOfAProtectedPropertyIsRefused(): void {
@@ -160,6 +173,19 @@ class BulkSavePropertyAuthorizationTest extends TestCase {
 
 		$this->assertCount(1, $passed);
 	}//end testAnUnchangedProtectedValuePasses()
+
+	public function testWithoutThePropertyHandlerAGovernedRowIsRefused(): void {
+		$this->handler = $this->unguarded;
+
+		$result = [];
+		$passed = $this->safeguard(
+			rows: [['@self' => ['uuid' => self::UUID], 'title' => 'Offerte', 'restricted' => false]],
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertStringContainsString('Property authorization is unavailable', $result['invalid'][0]['error']);
+	}//end testWithoutThePropertyHandlerAGovernedRowIsRefused()
 
 	public function testASystemOperationWritesAProtectedPropertyAsTheObjectRuleLetsIt(): void {
 		$result = [];

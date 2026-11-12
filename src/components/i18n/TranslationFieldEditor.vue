@@ -134,7 +134,7 @@ export default {
 
 	methods: {
 		/**
-		 * @param lang
+		 * @param {string} lang
 		 * @spec exclude computed read of per-language value from v-model prop, UI plumbing
 		 */
 		getValue(lang) {
@@ -147,7 +147,7 @@ export default {
 		},
 
 		/**
-		 * @param lang
+		 * @param {string} lang
 		 * @spec exclude computed text-direction (rtl/ltr) display helper, UI plumbing
 		 */
 		dirFor(lang) {
@@ -155,7 +155,7 @@ export default {
 		},
 
 		/**
-		 * @param lang
+		 * @param {string} lang
 		 * @spec exclude computed placeholder display helper, UI plumbing
 		 */
 		placeholderFor(lang) {
@@ -163,8 +163,8 @@ export default {
 		},
 
 		/**
-		 * @param lang
-		 * @param newValue
+		 * @param {string} lang
+		 * @param {string} newValue
 		 * @spec exclude per-language input emitting v-model input; translatable-field contract owned by register-i18n capability
 		 */
 		onInput(lang, newValue) {

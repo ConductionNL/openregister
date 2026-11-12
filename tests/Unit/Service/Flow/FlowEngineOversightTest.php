@@ -12,6 +12,7 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
+use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\IFlowOversightCheck;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Workflow\MarkingStore\MethodMarkingStore;
@@ -61,11 +62,7 @@ class FlowEngineOversightTest extends TestCase {
 		// Same subject and marking-store construction as FlowEngineTest — this
 		// test is about the gate, not about re-deriving how a run is set up.
 		return $engine->run(
-			$this->linearFlow(),
-			new MethodMarkingStore(false, 'marking'),
-			new FlowSubject(),
-			new RecordingDispatcher(),
-			$context
+			start: (new FlowRunStart(flow: $this->linearFlow(), store: new MethodMarkingStore(false, 'marking'), subject: new FlowSubject(), dispatcher: new RecordingDispatcher()))->withContext(context: $context)
 		);
 	}//end runGated()
 
@@ -102,16 +99,16 @@ class FlowEngineOversightTest extends TestCase {
 	}//end testAConsentingCheckLetsTheRunComplete()
 
 	/**
-	 * A per-flow opt-out is honoured: the gate is not consulted at all.
+	 * The gate has no opt-out, and a run's context comes from the caller.
 	 */
-	public function testAFlowThatOptsOutIsNotGated(): void {
+	public function testAnOptOutInTheContextDoesNotOpenTheGate(): void {
 		$registry = new FlowOversightRegistry(new \Psr\Log\NullLogger());
 		$registry->register($this->check('test.kill', 'The kill switch is set.'));
 
 		$result = $this->runGated($registry, ['oversight' => false]);
 
-		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
-	}//end testAFlowThatOptsOutIsNotGated()
+		$this->assertSame(FlowEngine::STATUS_STOPPED, $result['status']);
+	}//end testAnOptOutInTheContextDoesNotOpenTheGate()
 
 	/**
 	 * No registry CONSENTS, exactly as an empty one does — the two are the same

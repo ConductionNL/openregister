@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
-use OCA\OpenRegister\Db\NotificationDispatchLog;
+use OCA\OpenRegister\Notifications\Db\NotificationDispatchLog;
 use PHPUnit\Framework\TestCase;
 
 /**

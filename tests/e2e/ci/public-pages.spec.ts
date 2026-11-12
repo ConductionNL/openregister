@@ -58,7 +58,12 @@ test.describe('pages and records reached without a session', () => {
 
 	test.beforeAll(async () => {
 		admin = await contextFor(ADMIN, ADMIN_PASS)
-		anon = await pwRequest.newContext({ baseURL: BASE })
+		anon = await pwRequest.newContext({
+			baseURL: BASE,
+			// Empty headers are what make it anonymous: a bare newContext()
+			// inherits the suite's Authorization header from playwright.config.ts.
+			extraHTTPHeaders: {},
+		})
 
 		const reg = await admin.post(`${API}/registers`, {
 			data: { title: `e2e public pages ${RUN}`, description: 'e2e' },

@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -44,7 +45,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
- * @spec openspec/changes/organisation-update-needs-admin/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
  */
 class OrganisationUpdateRoleTest extends TestCase {
 
@@ -98,7 +99,7 @@ class OrganisationUpdateRoleTest extends TestCase {
 			logger: new NullLogger()
 		);
 
-		return new OrganisationController(
+		return OrganisationControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			organisationService: $service,

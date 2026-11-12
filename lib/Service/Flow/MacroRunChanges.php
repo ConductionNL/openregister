@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+ * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Flow;
 /**
  * Summarises the changes in a flow run's log.
  *
- * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+ * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
  */
 final class MacroRunChanges {
 
@@ -62,7 +62,7 @@ final class MacroRunChanges {
 	 *
 	 * @return array<int, array{step: string, kind: string}> One entry per completed changing step.
 	 *
-	 * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+	 * @spec openspec/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
 	 */
 	public function fromLog(array $log, array $nodes = []): array {
 		$labels  = $this->labelsOf(nodes: $nodes);
@@ -109,11 +109,7 @@ final class MacroRunChanges {
 		}
 
 		$node = (string)($entry['transition'] ?? '');
-		$kind = (self::KINDS[(string)($entry['type'] ?? '')] ?? null);
-		if ($kind === null && isset($labels[$node]) === true) {
-			$kind = 'step';
-		}
-
+		$kind = self::kindOf(entry: $entry, labels: $labels);
 		if ($kind === null) {
 			return null;
 		}
@@ -123,4 +119,21 @@ final class MacroRunChanges {
 			'kind' => $kind,
 		];
 	}//end changeOf()
+
+	/**
+	 * What kind of change a completed entry is: its type's kind, or a labelled step, or none.
+	 *
+	 * @param array<string, mixed>  $entry  The completed history entry.
+	 * @param array<string, string> $labels Step labels by node.
+	 *
+	 * @return string|null The kind.
+	 */
+	private static function kindOf(array $entry, array $labels): ?string {
+		$kind = (self::KINDS[(string)($entry['type'] ?? '')] ?? null);
+		if ($kind === null && isset($labels[(string)($entry['transition'] ?? '')]) === true) {
+			return 'step';
+		}
+
+		return $kind;
+	}//end kindOf()
 }//end class

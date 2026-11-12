@@ -45,7 +45,7 @@ class UserFormat implements Format {
 	 * @param (Closure(string): bool)|null $planned     Says whether a caller declared that an account with
 	 *                                                 this id is written before the object; null: none is.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function __construct(
 		private readonly IUserManager $userManager,
@@ -63,7 +63,7 @@ class UserFormat implements Format {
 	 * @return bool True when the user exists, or when the caller declared it is written first.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function validate(mixed $data): bool {
 		if (is_string($data) === false) {

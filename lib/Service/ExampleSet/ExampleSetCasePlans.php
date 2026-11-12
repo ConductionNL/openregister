@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
  */
 
 declare(strict_types=1);
@@ -32,7 +32,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\CaseItem;
-use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -43,7 +44,7 @@ use Throwable;
 /**
  * Checks, writes, proves and deletes the case plans of an example set.
  *
- * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
  */
 class ExampleSetCasePlans extends ExampleSetEngineRows {
 	/**
@@ -68,7 +69,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function part(): string {
 		return 'casePlans';
@@ -79,7 +80,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function noun(): string {
 		return 'case plan';
@@ -96,28 +97,52 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a case plan field a set may write';
-		}
+		$rules = new ExampleSetFieldRules();
+		return $rules->firstRefusal(
+			checks: [
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a case plan', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(
+					data: $data,
+					shape: new ExampleSetRowShape(row: 'a case plan', required: ['object' => 'the object it is on'])
+				),
+				fn (): string => $this->definitionRefusal(definition: ($data['definition'] ?? null)),
+				fn (): string => $this->historyRefusal(data: $data),
+			]
+		);
+	}//end refusal()
 
-		if (is_string($data['object'] ?? null) === false || trim($data['object']) === '') {
-			return 'a case plan needs the object it is on (object)';
-		}
-
-		if ($this->hasItems(definition: ($data['definition'] ?? null)) === false) {
+	/**
+	 * Why a plan's definition lists no items, or ''.
+	 *
+	 * @param mixed $definition The declared definition.
+	 *
+	 * @return string
+	 */
+	private function definitionRefusal(mixed $definition): string {
+		if ($this->hasItems(definition: $definition) === false) {
 			return 'a case plan needs a definition with its items (definition.items)';
 		}
 
+		return '';
+	}//end definitionRefusal()
+
+	/**
+	 * Why a plan's history is not a list, or ''; a plan without a history is fine.
+	 *
+	 * @param array<string, mixed> $data The filled plan fields.
+	 *
+	 * @return string
+	 */
+	private function historyRefusal(array $data): string {
 		if (isset($data['history']) === true && (is_array($data['history']) === false || array_is_list($data['history']) === false)) {
 			return 'history is a list';
 		}
 
 		return '';
-	}//end refusal()
+	}//end historyRefusal()
 
 	/**
 	 * Whether a definition lists at least one item.
@@ -133,15 +158,14 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	/**
 	 * Bring the plan's items in through the case layer as the fragment's app.
 	 *
-	 * @param string               $app  The app that ships the fragment; the plan is written as that app.
-	 * @param string               $key  The plan's key in the fragment (unused).
-	 * @param array<string, mixed> $data The filled plan fields.
+	 * @param ExampleSetRow $row The row: its app, its key in the fragment and its filled fields.
 	 *
 	 * @return array{error: string, entry: array{object: string, created: array<int, string>}|null} The entry, or why not.
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
-	public function write(string $app, string $key, array $data): array {
+	public function write(ExampleSetRow $row): array {
+		$data = $row->data;
 		$objectUuid = (string) $data['object'];
 		$object     = $this->container->get(PartyService::class)->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {
@@ -149,20 +173,35 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 		}
 
 		try {
-			$result = $this->container->get(CasePlanService::class)->ensureItems(
-				objectUuid: $objectUuid,
-				registerId: (int) $object->getRegister(),
-				schemaId: (int) $object->getSchema(),
-				definition: (array) $data['definition'],
-				history: (array) ($data['history'] ?? []),
-				app: $app
-			);
+			$created = $this->ensureItems(row: $row, object: $object);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['object' => $objectUuid, 'created' => array_values(array_map('strval', $result['created']))]];
+		return ['error' => '', 'entry' => ['object' => $objectUuid, 'created' => $created]];
 	}//end write()
+
+	/**
+	 * Put the plan's items on the object, through the case plan service.
+	 *
+	 * @param ExampleSetRow $row    The plan row: the app that ships the fragment and the filled plan fields.
+	 * @param ObjectEntity  $object The object.
+	 *
+	 * @return array<int, string> The ids of the items the service created.
+	 */
+	private function ensureItems(ExampleSetRow $row, ObjectEntity $object): array {
+		$data   = $row->data;
+		$result = $this->container->get(CasePlanService::class)->ensureItems(
+			objectUuid: (string) $data['object'],
+			registerId: (int) $object->getRegister(),
+			schemaId: (int) $object->getSchema(),
+			definition: (array) $data['definition'],
+			history: (array) ($data['history'] ?? []),
+			app: $row->app
+		);
+
+		return array_values(array_map('strval', $result['created']));
+	}//end ensureItems()
 
 	/**
 	 * Whether none of the items the set created are there any more.
@@ -171,7 +210,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function lost(array $entry): bool {
 		try {
@@ -191,11 +230,11 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return string `removed` (also when they were already gone) or `failed`.
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function revert(array $entry): string {
 		try {
-			$mapper = $this->container->get(CaseItemMapper::class);
+			$mapper = $this->container->get(CaseItemMapperInterface::class);
 			foreach ($this->createdItems(entry: $entry) as $item) {
 				$this->deleteRealisationTask(item: $item);
 				$mapper->delete($item);
@@ -214,7 +253,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-case-plans/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	private function deleteRealisationTask(CaseItem $item): void {
 		$uuid = trim((string) $item->getRealisationUuid());
@@ -240,7 +279,7 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	private function createdItems(array $entry): array {
 		$keys  = array_map('strval', (array) ($entry['created'] ?? []));
 		$items = array_filter(
-			$this->container->get(CaseItemMapper::class)->findByObject(objectUuid: (string) $entry['object']),
+			$this->container->get(CaseItemMapperInterface::class)->findByObject(objectUuid: (string) $entry['object']),
 			static fn (CaseItem $item): bool => in_array((string) $item->getItemKey(), $keys, true)
 		);
 

@@ -30,7 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ManifestService;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ManifestControllerServices;
+use OCA\OpenRegister\Service\ManifestServiceInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -56,24 +58,42 @@ use Throwable;
  */
 class ManifestController extends Controller {
 	/**
+	 * Service that enriches manifests.
+	 *
+	 * @var ManifestServiceInterface
+	 */
+	private readonly ManifestServiceInterface $manifestService;
+
+	/**
+	 * Nextcloud app manager (path resolution).
+	 *
+	 * @var IAppManager
+	 */
+	private readonly IAppManager $appManager;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name ('openregister').
 	 * @param IRequest $request The HTTP request.
-	 * @param ManifestService $manifestService Service that enriches manifests.
-	 * @param IAppManager $appManager Nextcloud app manager (path resolution).
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param ManifestControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ManifestService $manifestService,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		ManifestControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->manifestService = $services->manifestService;
+		$this->appManager = $services->appManager;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -101,37 +121,76 @@ class ManifestController extends Controller {
 			return new JSONResponse(['error' => 'Invalid app ID.'], Http::STATUS_BAD_REQUEST);
 		}
 
-		// Resolve the app's manifest.json path via the app manager.
 		$manifest = $this->loadBundledManifest(appId: $appId);
 		if ($manifest === null) {
-			return new JSONResponse(
-				['error' => sprintf('Manifest not found for app "%s".', $appId)],
-				Http::STATUS_NOT_FOUND
-			);
+			return $this->manifestNotFound(appId: $appId);
 		}
 
 		try {
-			$enriched = $this->manifestService->getEnrichedManifest(manifest: $manifest);
-
-			// ETag over the final per-user payload: NotModifiedMiddleware turns a
-			// matching If-None-Match into a 304, so warm reloads skip the transfer
-			// (fleet manifests reach ~270KB) while staying fully fresh — enrichment
-			// still runs, and any change in manifest OR runtime.user changes the tag.
-			// `private, no-cache` replaces the default `no-store`: the browser MAY
-			// store the response but MUST revalidate, which is what makes the 304
-			// path usable at all.
-			$response = new JSONResponse($enriched);
-			$response->setETag(md5(json_encode($enriched)));
-			$response->addHeader('Cache-Control', 'private, no-cache');
-			return $response;
+			return $this->enrichedResponse(manifest: $manifest);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: sprintf('[ManifestController] Enrichment failed for app "%s": %s', $appId, $e->getMessage()),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
-			);
-			return new JSONResponse(['error' => 'Internal server error.'], Http::STATUS_INTERNAL_SERVER_ERROR);
-		}//end try
+			return $this->enrichmentFailed(appId: $appId, e: $e);
+		}
 	}//end index()
+
+	/**
+	 * The 404 for an app without a loadable bundled manifest.
+	 *
+	 * @param string $appId The app slug.
+	 *
+	 * @return JSONResponse The 404.
+	 *
+	 * @spec exclude Private response helper of the manifest endpoint.
+	 */
+	private function manifestNotFound(string $appId): JSONResponse {
+		return new JSONResponse(
+			['error' => sprintf('Manifest not found for app "%s".', $appId)],
+			Http::STATUS_NOT_FOUND
+		);
+	}//end manifestNotFound()
+
+	/**
+	 * The enriched manifest with an ETag over the final per-user payload.
+	 *
+	 * NotModifiedMiddleware turns a matching If-None-Match into a 304, so warm
+	 * reloads skip the transfer (fleet manifests reach ~270KB) while staying
+	 * fully fresh — enrichment still runs, and any change in manifest OR
+	 * runtime.user changes the tag. `private, no-cache` replaces the default
+	 * `no-store`: the browser MAY store the response but MUST revalidate, which
+	 * is what makes the 304 path usable at all.
+	 *
+	 * @param array<string, mixed> $manifest The bundled manifest.
+	 *
+	 * @return JSONResponse The enriched manifest.
+	 *
+	 * @spec exclude Private response helper of the manifest endpoint.
+	 */
+	private function enrichedResponse(array $manifest): JSONResponse {
+		$enriched = $this->manifestService->getEnrichedManifest(manifest: $manifest);
+
+		$response = new JSONResponse($enriched);
+		$response->setETag(hash(algo: 'xxh128', data: json_encode($enriched)));
+		$response->addHeader('Cache-Control', 'private, no-cache');
+		return $response;
+	}//end enrichedResponse()
+
+	/**
+	 * Log an enrichment failure and answer a generic 500.
+	 *
+	 * @param string $appId The app slug.
+	 * @param Throwable $e The enrichment failure.
+	 *
+	 * @return JSONResponse The 500.
+	 *
+	 * @spec exclude Private response helper of the manifest endpoint.
+	 */
+	private function enrichmentFailed(string $appId, Throwable $e): JSONResponse {
+		$this->logger->error(
+			message: sprintf('[ManifestController] Enrichment failed for app "%s": %s', $appId, $e->getMessage()),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
+		);
+		return new JSONResponse(['error' => 'Internal server error.'], Http::STATUS_INTERNAL_SERVER_ERROR);
+	}//end enrichmentFailed()
 
 	/**
 	 * Load and JSON-decode a host app's bundled `src/manifest.json`.
@@ -146,13 +205,47 @@ class ManifestController extends Controller {
 	 *              contract is owned by openregister-app-manifest REQ-OR-MAN-012.
 	 */
 	private function loadBundledManifest(string $appId): ?array {
+		$manifestPath = $this->readableManifestPath(appId: $appId);
+		if ($manifestPath === null) {
+			return null;
+		}
+
+		return $this->decodeManifest(appId: $appId, manifestPath: $manifestPath);
+	}//end loadBundledManifest()
+
+	/**
+	 * The app's installation path, resolved via the app manager.
+	 *
+	 * @param string $appId The app slug.
+	 *
+	 * @return string|null The path, or null when the app is unknown.
+	 *
+	 * @spec exclude Private helper of loadBundledManifest().
+	 */
+	private function appPath(string $appId): ?string {
 		try {
-			$appPath = $this->appManager->getAppPath(appId: $appId);
+			return $this->appManager->getAppPath(appId: $appId);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				message: sprintf('[ManifestController] App "%s" path not found: %s', $appId, $e->getMessage()),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
+			return null;
+		}
+	}//end appPath()
+
+	/**
+	 * The app's bundled `src/manifest.json` path, when it is readable.
+	 *
+	 * @param string $appId The app slug.
+	 *
+	 * @return string|null The path, or null when the app or file is missing.
+	 *
+	 * @spec exclude Private helper of loadBundledManifest().
+	 */
+	private function readableManifestPath(string $appId): ?string {
+		$appPath = $this->appPath(appId: $appId);
+		if ($appPath === null) {
 			return null;
 		}
 
@@ -165,6 +258,20 @@ class ManifestController extends Controller {
 			return null;
 		}
 
+		return $manifestPath;
+	}//end readableManifestPath()
+
+	/**
+	 * Read and JSON-decode a manifest file into an array.
+	 *
+	 * @param string $appId The app slug, for the log line.
+	 * @param string $manifestPath The readable manifest path.
+	 *
+	 * @return array<string, mixed>|null The decoded manifest, or null when it is not a JSON object.
+	 *
+	 * @spec exclude Private helper of loadBundledManifest().
+	 */
+	private function decodeManifest(string $appId, string $manifestPath): ?array {
 		$raw = file_get_contents($manifestPath);
 		if ($raw === false) {
 			return null;
@@ -180,5 +287,5 @@ class ManifestController extends Controller {
 		}
 
 		return $decoded;
-	}//end loadBundledManifest()
+	}//end decodeManifest()
 }//end class

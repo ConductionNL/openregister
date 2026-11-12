@@ -26,12 +26,18 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Exception\OfficeServerRequiredException;
+use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Service\Export\ExportRequest;
+use OCA\OpenRegister\Service\Export\RowsTable;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -42,8 +48,22 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
+/**
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtWriter
+ * @uses \OCA\OpenRegister\Service\Export\Odt\HtmlToOdt
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
+ * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
+ */
 class ExportServicePdfTest extends TestCase {
+
+	/**
+	 * Office converter double that records the ODT it was given.
+	 *
+	 * @var NcOfficeConverterInterface
+	 */
+	private NcOfficeConverterInterface $converter;
 
 	/**
 	 * @var RegisterMapper&MockObject
@@ -85,15 +105,93 @@ class ExportServicePdfTest extends TestCase {
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 
-		$this->service = new ExportService(
+		$this->converter = new class implements NcOfficeConverterInterface {
+			public bool $available = true;
+
+			public string $lastOdt = '';
+
+			public function isAvailable(): bool {
+				return $this->available;
+			}
+
+			public function pdfToOdt(string $pdfBytes): string {
+				return '';
+			}
+
+			public function odtToPdf(string $odtBytes): string {
+				$this->lastOdt = $odtBytes;
+				return '%PDF-1.7 converted';
+			}
+		};
+
+		$this->service = $this->makeService(converter: $this->converter);
+	}
+
+	/**
+	 * Build the service with the given office converter.
+	 */
+	private function makeService(?NcOfficeConverterInterface $converter): ExportService {
+		return new ExportService(
 			$this->registerMapper,
 			$this->userManager,
 			$this->groupManager,
 			$this->objectService,
 			$this->cacheHandler,
 			$this->propertyRbacHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class)
+			$converter
 		);
+	}
+
+	/**
+	 * Text of content.xml in the ODT the converter received.
+	 */
+	private function convertedOdtText(): string {
+		$file = tempnam(sys_get_temp_dir(), 'odt');
+		file_put_contents($file, $this->converter->lastOdt);
+		$zip = new \ZipArchive();
+		$zip->open($file);
+		$xml = (string) $zip->getFromName('content.xml');
+		$zip->close();
+		unlink($file);
+
+		return strip_tags(str_replace('<', ' <', $xml));
+	}
+
+	// --- office server ---
+
+	/**
+	 * The PDF is the office server's conversion of an ODT holding the rows.
+	 */
+	public function testRenderRowsToPdfConvertsAnOdtOfTheRows(): void {
+		$pdf = $this->service->renderTableToPdf(table: new RowsTable(title: 'Uitkeringen', columns: ['naam' => 'Naam'], rows: [['naam' => 'Łukasz Żółć']]));
+
+		$this->assertSame('%PDF-1.7 converted', $pdf);
+		$this->assertStringContainsString('Uitkeringen', $this->convertedOdtText());
+		$this->assertStringContainsString('Łukasz Żółć', $this->convertedOdtText());
+	}
+
+	/**
+	 * Without an office server, PDF export refuses with a clear error before reading anything.
+	 */
+	public function testWithoutOfficeServerPdfExportIsRefused(): void {
+		$this->converter->available = false;
+		$this->objectService->expects($this->never())->method('searchObjects');
+
+		$this->assertFalse($this->service->isPdfAvailable());
+
+		$this->expectException(OfficeServerRequiredException::class);
+		$this->service->exportToPdf(request: new ObjectExportRequest(schema: new Schema()));
+	}
+
+	/**
+	 * Without any converter bound, PDF is not available either.
+	 */
+	public function testWithoutConverterPdfIsNotAvailable(): void {
+		$service = $this->makeService(converter: null);
+
+		$this->assertFalse($service->isPdfAvailable());
+		$this->expectException(OfficeServerRequiredException::class);
+		$service->renderTableToPdf(table: new RowsTable(title: 'T', columns: ['a' => 'A'], rows: []));
 	}
 
 	/**
@@ -122,7 +220,7 @@ class ExportServicePdfTest extends TestCase {
 		$method = $reflection->getMethod('buildPdfSection');
 		$method->setAccessible(true);
 
-		return $method->invoke($this->service, $register, $schema, $objects, $currentUser);
+		return $method->invoke($this->service, new ExportRequest(register: $register, schema: $schema, currentUser: $currentUser), $objects);
 	}
 
 	// --- exportToPdf: happy path ---
@@ -139,7 +237,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([$object]);
 
-		$pdf = $this->service->exportToPdf(null, $schema);
+		$pdf = $this->service->exportToPdf(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertIsString($pdf);
 		$this->assertStringStartsWith('%PDF', $pdf);
@@ -155,7 +253,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$pdf = $this->service->exportToPdf(null, $schema);
+		$pdf = $this->service->exportToPdf(request: new ObjectExportRequest(schema: $schema));
 
 		$this->assertStringStartsWith('%PDF', $pdf);
 	}
@@ -184,7 +282,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->propertyRbacHandler->method('canReadProperty')->willReturn(true);
 		$this->objectService->method('searchObjects')->willReturn([]);
 
-		$pdf = $this->service->exportToPdf($register, null);
+		$pdf = $this->service->exportToPdf(request: new ObjectExportRequest(register: $register));
 
 		$this->assertStringStartsWith('%PDF', $pdf);
 	}
@@ -194,11 +292,8 @@ class ExportServicePdfTest extends TestCase {
 	// NOTE: the boundary conditions ("N rows over the cap throws" / "N rows
 	// at the cap doesn't throw") are asserted directly against the
 	// extracted `guardPdfRowCap()` helper via reflection, rather than by
-	// running MAX_PDF_EXPORT_ROWS (5000) objects through a real Dompdf
-	// render. Dompdf's table layout (`Cellmap`) has real, substantial
-	// per-row memory cost — exactly the risk the cap exists to bound — so a
-	// full-scale render-based test would itself be slow/memory-hungry
-	// rather than a fast unit assertion. The "under cap succeeds end to
+	// building a document of MAX_PDF_EXPORT_ROWS (5000) rows, which would
+	// make this a slow test rather than a fast unit assertion. The "under cap succeeds end to
 	// end" path is still covered at realistic scale by
 	// `testExportToPdfProducesValidPdfMagicBytes()` above, and the
 	// over-cap short-circuit (no rendering work happens) is covered by
@@ -227,9 +322,15 @@ class ExportServicePdfTest extends TestCase {
 		$method = new ReflectionMethod(ExportService::class, 'guardPdfRowCap');
 		$method->setAccessible(true);
 
-		// No exception expected — must not throw at exactly the cap.
-		$method->invoke($this->service, ExportService::MAX_PDF_EXPORT_ROWS);
-		$this->addToAssertionCount(1);
+		// The pair is testGuardPdfRowCapThrowsWhenOverCap: one row more is refused.
+		$refusedAt = null;
+		try {
+			$method->invoke($this->service, ExportService::MAX_PDF_EXPORT_ROWS);
+		} catch (ExportTooLargeException $e) {
+			$refusedAt = $e->getRowCount();
+		}
+
+		$this->assertNull($refusedAt, 'An export of exactly MAX_PDF_EXPORT_ROWS rows must not be refused.');
 	}
 
 	public function testExportToPdfShortCircuitsBeforeRenderingWhenOverCap(): void {
@@ -239,7 +340,7 @@ class ExportServicePdfTest extends TestCase {
 
 		// A small array whose *count* (via a stub with a custom count) simulates
 		// an over-cap fetch cheaply: since the guard runs on count($objects)
-		// immediately after the fetch and before any HTML/Dompdf work, a real
+		// immediately after the fetch and before any document is built, a real
 		// over-cap array of lightweight ObjectEntity references is itself cheap
 		// (no rendering happens) — this proves the short-circuit rather than the
 		// guard math already covered above.
@@ -253,7 +354,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->expectException(ExportTooLargeException::class);
 
 		try {
-			$this->service->exportToPdf(null, $schema);
+			$this->service->exportToPdf(request: new ObjectExportRequest(schema: $schema));
 		} catch (ExportTooLargeException $e) {
 			$this->assertSame($overCap, $e->getRowCount());
 			$this->assertSame(ExportService::MAX_PDF_EXPORT_ROWS, $e->getMaxRows());
@@ -292,7 +393,7 @@ class ExportServicePdfTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn($objects);
 
 		$this->expectException(ExportTooLargeException::class);
-		$this->service->exportToPdf($register, null);
+		$this->service->exportToPdf(request: new ObjectExportRequest(register: $register));
 	}
 
 	// --- buildPdfSection: column selection / RBAC parity + truncation ---
@@ -327,7 +428,7 @@ class ExportServicePdfTest extends TestCase {
 
 		$this->propertyRbacHandler
 			->method('canReadProperty')
-			->willReturnCallback(static fn ($schema, $property, $object) => $property !== 'restricted');
+			->willReturnCallback(static fn (SchemaProperty $read, PropertyAccessRequest $request) => $read->name !== 'restricted');
 
 		$object = $this->createObjectEntity('uuid-1', 'Object', ['public' => 'ok', 'restricted' => 'nope']);
 
@@ -397,11 +498,8 @@ class ExportServicePdfTest extends TestCase {
 	 * A caller that fetched its own rows gets them rendered as a PDF (portaliq#765).
 	 */
 	public function testRenderRowsToPdfRendersRowsTheCallerFetched(): void {
-		$pdf = $this->service->renderRowsToPdf(
-			title: 'My statements',
-			columns: ['period' => 'Period', 'amount' => 'Amount'],
-			rows: [['period' => '2026-08', 'amount' => 12.5], ['period' => '2026-09', 'amount' => null]]
-		);
+		$pdf = $this->service->renderTableToPdf(table: new RowsTable(title: 'My statements', columns: ['period' => 'Period', 'amount' => 'Amount'], rows: [['period' => '2026-08', 'amount' => 12.5], ['period' => '2026-09', 'amount' => null]]
+		));
 
 		$this->assertStringStartsWith('%PDF-', $pdf);
 	}//end testRenderRowsToPdfRendersRowsTheCallerFetched()
@@ -414,7 +512,7 @@ class ExportServicePdfTest extends TestCase {
 
 		$this->expectException(ExportTooLargeException::class);
 
-		$this->service->renderRowsToPdf(title: 'Too long', columns: ['a' => 'A'], rows: $rows);
+		$this->service->renderTableToPdf(table: new RowsTable(title: 'Too long', columns: ['a' => 'A'], rows: $rows));
 	}//end testRenderRowsToPdfRefusesMoreRowsThanTheCap()
 
 	/**
@@ -422,11 +520,11 @@ class ExportServicePdfTest extends TestCase {
 	 * and a list of column keys doubles as their labels.
 	 */
 	public function testRowsSectionFollowsTheColumnsAndEscapesEveryCell(): void {
-		$html = (new RowsPdfSection())->build(
+		$html = (new RowsPdfSection())->build(table: new RowsTable(
 			title: 'Cases <b>',
 			columns: ['status', 'title'],
 			rows: [['title' => '<script>x</script>', 'status' => ['open', 'late'], 'extra' => 'not a column'], ['status' => true]]
-		);
+		));
 
 		$this->assertStringContainsString('<h1>Cases &lt;b&gt;</h1>', $html);
 		$this->assertStringContainsString('<th>status</th><th>title</th>', $html);

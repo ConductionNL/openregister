@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use Throwable;
 
@@ -42,7 +43,7 @@ use Throwable;
  * It is separate from {@see ConditionTracer} because the tracer asks a
  * different question: not "is this true" but "which operand made it false".
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class ConditionDialect {
 
@@ -59,13 +60,13 @@ final class ConditionDialect {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalculationEvaluator        $ast     The JSON-AST evaluator.
+	 * @param CalculationEvaluatorInterface        $ast     The JSON-AST evaluator.
 	 * @param ExpressionValueSources|null $sources Integriq's value sources; null leaves source nodes unresolved.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CalculationEvaluator $ast,
+		private readonly CalculationEvaluatorInterface $ast,
 		private readonly ?ExpressionValueSources $sources=null,
 	) {
 	}//end __construct()
@@ -86,7 +87,7 @@ final class ConditionDialect {
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's stateless
 	 *   JSONLogic facade; calling it statically IS the reuse.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function holds(mixed $node, array $document): bool {
@@ -96,25 +97,49 @@ final class ConditionDialect {
 
 		// A value source node is replaced by its value before either dialect
 		// sees it; an unresolved one fails closed (expression-value-sources D-1, D-3).
-		if ($this->sources !== null && $this->sources->mentionsSource(node: $node) === true) {
-			$substituted = $this->sources->substitute(node: $node);
-			if ($substituted['resolved'] === false) {
-				return false;
-			}
-
-			$node = $substituted['node'];
+		$substituted = $this->substituted(node: $node);
+		if ($substituted['resolved'] === false) {
+			return false;
 		}
 
+		$node = $substituted['node'];
 		if ($this->isAst(op: (string)array_key_first($node)) === false) {
 			return FlowExpression::isTrue(logic: $node, data: $document);
 		}
 
+		return $this->astHolds(node: $node, document: $document);
+	}//end holds()
+
+	/**
+	 * The node with every value source replaced by its value.
+	 *
+	 * @param array<mixed> $node The condition node.
+	 *
+	 * @return array{resolved: bool, node: mixed} The node, unchanged when there are no sources to resolve.
+	 */
+	private function substituted(array $node): array {
+		if ($this->sources === null || $this->sources->mentionsSource(node: $node) === false) {
+			return ['resolved' => true, 'node' => $node];
+		}
+
+		return $this->sources->substitute(node: $node);
+	}//end substituted()
+
+	/**
+	 * Whether a JSON-AST node holds; a node that cannot be evaluated does not.
+	 *
+	 * @param mixed $node The JSON-AST node.
+	 * @param array<string, mixed> $document The evaluation document.
+	 *
+	 * @return bool True when the node holds.
+	 */
+	private function astHolds(mixed $node, array $document): bool {
 		try {
 			return (bool)$this->ast->evaluate($document, $node);
 		} catch (Throwable $e) {
 			return false;
 		}
-	}//end holds()
+	}//end astHolds()
 
 	/**
 	 * Whether an operator key belongs to the JSON AST rather than to JSONLogic.
@@ -123,7 +148,7 @@ final class ConditionDialect {
 	 *
 	 * @return bool True when the AST evaluator owns the key.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function isAst(string $op): bool {
 		return self::isAstOperator(op: $op);
@@ -140,7 +165,7 @@ final class ConditionDialect {
 	 *
 	 * @return bool True when the AST evaluator owns the key.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public static function isAstOperator(string $op): bool {
 		return (in_array($op, self::SHARED_SPELLINGS, true) === false
@@ -169,7 +194,7 @@ final class ConditionDialect {
 	 *
 	 * @return bool True when every operator in the tree is one the evaluator holds.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public static function isWellFormedAst(mixed $node): bool {
 		if (is_array($node) === false) {
@@ -186,6 +211,19 @@ final class ConditionDialect {
 		}
 
 		$op = (string)array_key_first($node);
+
+		return self::isWellFormedOperation(op: $op, args: $node[$op]);
+	}//end isWellFormedAst()
+
+	/**
+	 * Whether one operator and its argument are well formed.
+	 *
+	 * @param string $op The operator key.
+	 * @param mixed $args The operator's argument.
+	 *
+	 * @return bool True when the evaluator holds the operator and every node below it.
+	 */
+	private static function isWellFormedOperation(string $op, mixed $args): bool {
 		if (array_key_exists($op, CalculationEvaluator::OPERATORS) === false) {
 			return false;
 		}
@@ -194,17 +232,12 @@ final class ConditionDialect {
 			return true;
 		}
 
-		$args = $node[$op];
 		if (CalculationEvaluator::OPERATORS[$op]['arity'] === 'dict') {
-			if (is_array($args) === false) {
-				return false;
-			}
-
-			return self::everyItemIsWellFormed(items: array_values($args));
+			return is_array($args) === true && self::everyItemIsWellFormed(items: array_values($args)) === true;
 		}
 
 		return self::isWellFormedAst(node: $args);
-	}//end isWellFormedAst()
+	}//end isWellFormedOperation()
 
 	/**
 	 * Whether every item of a list is a well-formed node or literal.
@@ -213,7 +246,7 @@ final class ConditionDialect {
 	 *
 	 * @return bool True when all of them are.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private static function everyItemIsWellFormed(array $items): bool {
 		foreach ($items as $item) {
@@ -239,7 +272,7 @@ final class ConditionDialect {
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's stateless
 	 *   JSONLogic facade; calling it statically IS the reuse.
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public static function isValidCondition(mixed $node): bool {
 		if (is_array($node) === false || $node === []) {

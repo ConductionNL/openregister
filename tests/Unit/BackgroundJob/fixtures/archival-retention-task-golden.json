@@ -1,0 +1,828 @@
+{
+    "annotation unusable": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_table_3_7",
+                null
+            ]
+        },
+        {
+            "warning": [
+                "[ArchivalRetentionTask] Skipping row on \"ledger\": RetentionEvaluator: annotation.retention.default is missing or not a string.",
+                {
+                    "app": "openregister"
+                }
+            ]
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] schema=\"ledger\" scanned=1 expired=0 deleted=0 held=0 unresolved=0",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "scanned": 1,
+                    "expired": 0,
+                    "deleted": 0,
+                    "held": 0,
+                    "unresolved": 0
+                }
+            ]
+        }
+    ],
+    "every row branch": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_table_3_7",
+                null
+            ]
+        },
+        {
+            "warning": [
+                "[ArchivalRetentionTask] Row with unparseable _created skipped on \"ledger\": Failed to parse time string (not a date) at position 0 (n): The timezone could not be found in the database",
+                {
+                    "app": "openregister"
+                }
+            ]
+        },
+        {
+            "magicFind": [
+                "unloadable",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "warning": [
+                "[ArchivalRetentionTask] Kept row on \"ledger\" uuid \"unloadable\": its legal-hold status could not be read: cannot load",
+                {
+                    "app": "openregister"
+                }
+            ]
+        },
+        {
+            "magicFind": [
+                "held",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "held"
+            ]
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] legal hold kept row schema=\"ledger\" uuid=\"held\" past retention",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "uuid": "held"
+                }
+            ]
+        },
+        {
+            "magicFind": [
+                "gone",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "gone"
+            ]
+        },
+        {
+            "setRegister": [
+                3
+            ]
+        },
+        {
+            "setSchema": [
+                7
+            ]
+        },
+        {
+            "deleteObject": [
+                "gone",
+                null,
+                null,
+                false,
+                false,
+                true
+            ]
+        },
+        {
+            "magicFind": [
+                "refused",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "refused"
+            ]
+        },
+        {
+            "setRegister": [
+                3
+            ]
+        },
+        {
+            "setSchema": [
+                7
+            ]
+        },
+        {
+            "deleteObject": [
+                "refused",
+                null,
+                null,
+                false,
+                false,
+                true
+            ]
+        },
+        {
+            "magicFind": [
+                "broken",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "broken"
+            ]
+        },
+        {
+            "setRegister": [
+                3
+            ]
+        },
+        {
+            "setSchema": [
+                7
+            ]
+        },
+        {
+            "deleteObject": [
+                "broken",
+                null,
+                null,
+                false,
+                false,
+                true
+            ]
+        },
+        {
+            "warning": [
+                "[ArchivalRetentionTask] Delete failed on schema \"ledger\" uuid \"broken\": delete failed",
+                {
+                    "app": "openregister"
+                }
+            ]
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] schema=\"ledger\" scanned=9 expired=6 deleted=1 held=1 unresolved=1",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "scanned": 9,
+                    "expired": 6,
+                    "deleted": 1,
+                    "held": 1,
+                    "unresolved": 1
+                }
+            ]
+        },
+        {
+            "groupGet": [
+                "archivaris"
+            ]
+        },
+        {
+            "setApp": [
+                "openregister"
+            ]
+        },
+        {
+            "setUser": [
+                "ann"
+            ]
+        },
+        {
+            "setObject": [
+                "retention_sweep",
+                "ledger"
+            ]
+        },
+        {
+            "setSubject": [
+                "retention_holds_skipped",
+                {
+                    "schemaSlug": "ledger",
+                    "skippedCount": 1
+                }
+            ]
+        },
+        {
+            "notify": []
+        },
+        {
+            "setApp": [
+                "openregister"
+            ]
+        },
+        {
+            "setUser": [
+                "bob"
+            ]
+        },
+        {
+            "setObject": [
+                "retention_sweep",
+                "ledger"
+            ]
+        },
+        {
+            "setSubject": [
+                "retention_holds_skipped",
+                {
+                    "schemaSlug": "ledger",
+                    "skippedCount": 1
+                }
+            ]
+        },
+        {
+            "notify": []
+        }
+    ],
+    "held without group": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_table_3_7",
+                null
+            ]
+        },
+        {
+            "magicFind": [
+                "held",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "held"
+            ]
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] legal hold kept row schema=\"ledger\" uuid=\"held\" past retention",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "uuid": "held"
+                }
+            ]
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] schema=\"ledger\" scanned=1 expired=1 deleted=0 held=1 unresolved=0",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "scanned": 1,
+                    "expired": 1,
+                    "deleted": 0,
+                    "held": 1,
+                    "unresolved": 0
+                }
+            ]
+        },
+        {
+            "groupGet": [
+                "archivaris"
+            ]
+        }
+    ],
+    "no held rows": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_table_3_7",
+                null
+            ]
+        },
+        {
+            "magicFind": [
+                "gone",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "gone"
+            ]
+        },
+        {
+            "setRegister": [
+                3
+            ]
+        },
+        {
+            "setSchema": [
+                7
+            ]
+        },
+        {
+            "deleteObject": [
+                "gone",
+                null,
+                null,
+                false,
+                false,
+                true
+            ]
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] schema=\"ledger\" scanned=1 expired=1 deleted=1 held=0 unresolved=0",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "scanned": 1,
+                    "expired": 1,
+                    "deleted": 1,
+                    "held": 0,
+                    "unresolved": 0
+                }
+            ]
+        }
+    ],
+    "notify throws": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_table_3_7",
+                null
+            ]
+        },
+        {
+            "magicFind": [
+                "held",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "held"
+            ]
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] legal hold kept row schema=\"ledger\" uuid=\"held\" past retention",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "uuid": "held"
+                }
+            ]
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] schema=\"ledger\" scanned=1 expired=1 deleted=0 held=1 unresolved=0",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "scanned": 1,
+                    "expired": 1,
+                    "deleted": 0,
+                    "held": 1,
+                    "unresolved": 0
+                }
+            ]
+        },
+        {
+            "groupGet": [
+                "archivaris"
+            ]
+        },
+        {
+            "warning": [
+                "[ArchivalRetentionTask] Hold notify error: groups down",
+                {
+                    "app": "openregister"
+                }
+            ]
+        }
+    ],
+    "query throws": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_table_3_7",
+                null
+            ]
+        },
+        {
+            "error": [
+                "[ArchivalRetentionTask] Sweep failed on schema \"ledger\": query down",
+                {
+                    "app": "openregister",
+                    "exception": "query down"
+                }
+            ]
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] schema=\"ledger\" scanned=0 expired=0 deleted=0 held=0 unresolved=0",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "scanned": 0,
+                    "expired": 0,
+                    "deleted": 0,
+                    "held": 0,
+                    "unresolved": 0
+                }
+            ]
+        }
+    ],
+    "register not an entity": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_table_3_7",
+                null
+            ]
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] schema=\"ledger\" scanned=0 expired=0 deleted=0 held=0 unresolved=0",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "scanned": 0,
+                    "expired": 0,
+                    "deleted": 0,
+                    "held": 0,
+                    "unresolved": 0
+                }
+            ]
+        }
+    ],
+    "registers throw": [
+        {
+            "error": [
+                "[ArchivalRetentionTask] Failed to load registers: registers down",
+                {
+                    "app": "openregister",
+                    "exception": "registers down"
+                }
+            ]
+        }
+    ],
+    "rule on a row field": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "select": [
+                "*"
+            ]
+        },
+        {
+            "from": [
+                "openregister_table_3_7",
+                null
+            ]
+        },
+        {
+            "magicFind": [
+                "other",
+                3,
+                7,
+                [
+                    false,
+                    false,
+                    false
+                ]
+            ]
+        },
+        {
+            "hasActiveLegalHold": [
+                "other"
+            ]
+        },
+        {
+            "setRegister": [
+                3
+            ]
+        },
+        {
+            "setSchema": [
+                7
+            ]
+        },
+        {
+            "deleteObject": [
+                "other",
+                null,
+                null,
+                false,
+                false,
+                true
+            ]
+        },
+        {
+            "closeCursor": []
+        },
+        {
+            "info": [
+                "[ArchivalRetentionTask] schema=\"ledger\" scanned=2 expired=1 deleted=1 held=0 unresolved=0",
+                {
+                    "app": "openregister",
+                    "schemaSlug": "ledger",
+                    "scanned": 2,
+                    "expired": 1,
+                    "deleted": 1,
+                    "held": 0,
+                    "unresolved": 0
+                }
+            ]
+        }
+    ],
+    "schema not annotated": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        }
+    ],
+    "schema not loadable": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "warning": [
+                "[ArchivalRetentionTask] Schema #7 not loadable: schema gone",
+                {
+                    "app": "openregister"
+                }
+            ]
+        }
+    ],
+    "table check throws": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        },
+        {
+            "warning": [
+                "[ArchivalRetentionTask] Cannot check magic-table existence for schema \"ledger\": table check down",
+                {
+                    "app": "openregister"
+                }
+            ]
+        }
+    ],
+    "table missing": [
+        {
+            "schemaFind": [
+                7,
+                [],
+                true,
+                true
+            ]
+        },
+        {
+            "tableExists": [
+                3,
+                7
+            ]
+        }
+    ]
+}

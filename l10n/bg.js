@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Завършване: {outcome}",
         "Could not load the task": "Задачата не можа да се зареди",
         "The task refused that action": "Задачата отказа това действие",
-        "Store": "Магазин",
+        "Marketplace": "Магазин",
         "Install registers, schemas and flows that other organisations have published.": "Инсталирайте регистри, схеми и потоци, публикувани от други организации.",
         "No such run": "Няма такова изпълнение",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Изпълнението не съществува или нямате право да го видите. Изтриването на поток изтрива и изпълненията му.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Кой е одобрил списъка и кога.",
         "Who made it.": "Кой го е изработил.",
         "Who rejected the list, and why.": "Кой е отхвърлил списъка и защо.",
-        "Woo published": "Публикувано по Woo"
+        "Woo published": "Публикувано по Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "За PDF е нужен офис сървър (Collabora или Euro-Office), а такъв не е инсталиран. Помолете администратора да инсталира един или изтеглете отчета в друг формат.",
+        "The report could not be downloaded.": "Отчетът не можа да бъде изтеглен."
     },
     "nplurals=2; plural=(n != 1);"
 )

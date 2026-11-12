@@ -1,0 +1,1784 @@
+{
+    "dry run": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "name": "First",
+                        "title": "One",
+                        "status": null
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "title": "Two"
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "title": "Three"
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "title": "Four"
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "title": "Fail me"
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 6,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [
+                    "Row 1: dropped 1 property the schema does not declare: extra.",
+                    "Row 2: dropped 2 properties the schema does not declare: undeclaredA, undeclaredB."
+                ],
+                "dryRun": true,
+                "rows": [
+                    {
+                        "index": 0,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "name": "First",
+                            "title": "One",
+                            "status": null
+                        }
+                    },
+                    {
+                        "index": 1,
+                        "valid": false,
+                        "errors": [
+                            "title is wrong"
+                        ],
+                        "preview": {
+                            "title": "Two"
+                        }
+                    },
+                    {
+                        "index": 2,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "title": "Three"
+                        }
+                    },
+                    {
+                        "index": 3,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "title": "Four"
+                        }
+                    },
+                    {
+                        "index": 4,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "title": "Fail me"
+                        }
+                    }
+                ],
+                "validRows": 4,
+                "invalidRows": 1,
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "totalProcessed": 5,
+                    "totalFound": 6
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "dry run with pack": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    1
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "@self": {
+                            "id": "self-1"
+                        },
+                        "name": "First",
+                        "title": "One",
+                        "status": "",
+                        "extra": "x",
+                        "_meta": 1,
+                        "@type": "t",
+                        "id": "i",
+                        "uuid": "u"
+                    },
+                    1
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    2
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "id": 7,
+                        "title": "Two",
+                        "undeclaredA": 1,
+                        "undeclaredB": 2
+                    },
+                    2
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    3
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "uuid": "uuid-3",
+                        "title": "Three"
+                    },
+                    3
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    4
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Four",
+                        "(empty)": "empty key"
+                    },
+                    4
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    6
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Fail me"
+                    },
+                    6
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "title": "mapped-One"
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "title": "mapped-Two"
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "title": "mapped-Three"
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "title": "mapped-Four"
+                    }
+                ]
+            },
+            {
+                "method": "validator.validateObject",
+                "args": [
+                    {
+                        "title": "mapped-Fail me"
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 6,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [],
+                "dryRun": true,
+                "rows": [
+                    {
+                        "index": 0,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "title": "mapped-One"
+                        }
+                    },
+                    {
+                        "index": 1,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "title": "mapped-Two"
+                        }
+                    },
+                    {
+                        "index": 2,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "title": "mapped-Three"
+                        }
+                    },
+                    {
+                        "index": 3,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "title": "mapped-Four"
+                        }
+                    },
+                    {
+                        "index": 4,
+                        "valid": true,
+                        "errors": [],
+                        "preview": {
+                            "title": "mapped-Fail me"
+                        }
+                    }
+                ],
+                "validRows": 5,
+                "invalidRows": 0,
+                "performance": {
+                    "totalTime": "<time>",
+                    "totalTimeMs": "<time>",
+                    "totalProcessed": 5,
+                    "totalFound": 6
+                },
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "invalid json": {
+        "calls": [],
+        "threw": "InvalidArgumentException",
+        "message": "JSON import expects an array of objects",
+        "code": 0
+    },
+    "json scalar": {
+        "calls": [],
+        "threw": "InvalidArgumentException",
+        "message": "JSON import expects an array of objects",
+        "code": 0
+    },
+    "no register, bundle with one schema": {
+        "calls": [
+            {
+                "method": "schemaMapper.getSlugToIdMap",
+                "args": []
+            },
+            {
+                "method": "importHandler.importSchema",
+                "args": [
+                    {
+                        "slug": "people",
+                        "title": "people"
+                    },
+                    {
+                        "people": 21
+                    },
+                    null,
+                    null,
+                    null,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "importHandler.importRegister",
+                "args": [
+                    {
+                        "slug": "reg"
+                    },
+                    null,
+                    null,
+                    null,
+                    false
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    [],
+                    [],
+                    {
+                        "register": 40
+                    },
+                    {
+                        "schema": 36
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 1,
+                "created": [
+                    "new-x"
+                ],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [
+                    "Row 1: dropped 2 properties the schema does not declare: registers, schemas."
+                ],
+                "schema": {
+                    "id": 36,
+                    "title": "Schema people",
+                    "slug": "people"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "no register, bundle with two schemas and hint": {
+        "calls": [
+            {
+                "method": "schemaMapper.getSlugToIdMap",
+                "args": []
+            },
+            {
+                "method": "importHandler.importSchema",
+                "args": [
+                    {
+                        "slug": "people",
+                        "title": "people"
+                    },
+                    {
+                        "people": 21
+                    },
+                    null,
+                    null,
+                    null,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "importHandler.importSchema",
+                "args": [
+                    {
+                        "title": "Other",
+                        "slug": "other"
+                    },
+                    {
+                        "people": 21
+                    },
+                    null,
+                    null,
+                    null,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "importHandler.importRegister",
+                "args": [
+                    {
+                        "slug": "reg",
+                        "title": "Reg"
+                    },
+                    null,
+                    null,
+                    null,
+                    false
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "From bundle"
+                    },
+                    [],
+                    {
+                        "register": 40
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 1,
+                "created": [
+                    "new-From bundle"
+                ],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "no register, bundle with two schemas, no hint": {
+        "calls": [
+            {
+                "method": "schemaMapper.getSlugToIdMap",
+                "args": []
+            },
+            {
+                "method": "importHandler.importSchema",
+                "args": [
+                    {
+                        "slug": "people",
+                        "title": "people"
+                    },
+                    {
+                        "people": 21
+                    },
+                    null,
+                    null,
+                    null,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "importHandler.importSchema",
+                "args": [
+                    {
+                        "title": "Other",
+                        "slug": "other"
+                    },
+                    {
+                        "people": 21
+                    },
+                    null,
+                    null,
+                    null,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "importHandler.importRegister",
+                "args": [
+                    {
+                        "slug": "reg",
+                        "title": "Reg"
+                    },
+                    null,
+                    null,
+                    null,
+                    false
+                ]
+            }
+        ],
+        "threw": "InvalidArgumentException",
+        "message": "Register bundle import requires exactly one schema when no schema is explicitly specified; found 2 in the bundle.",
+        "code": 0
+    },
+    "no register, empty bundle": {
+        "calls": [],
+        "threw": "OCA\\OpenRegister\\Exception\\RegisterNotFoundException",
+        "message": "Register not found: 'unknown' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "no register, no slug": {
+        "calls": [],
+        "threw": "OCA\\OpenRegister\\Exception\\RegisterNotFoundException",
+        "message": "Register not found: 'unknown' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "no register, plain list": {
+        "calls": [],
+        "threw": "OCA\\OpenRegister\\Exception\\RegisterNotFoundException",
+        "message": "Register not found: 'missing-reg' Create the register first, or supply a full register bundle (a register definition together with its schemas) to auto-create it.",
+        "code": 404
+    },
+    "no schema": {
+        "calls": [],
+        "threw": "InvalidArgumentException",
+        "message": "JSON import requires a specific schema",
+        "code": 0
+    },
+    "objects envelope wins": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Obj"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 1,
+                "created": [
+                    "new-Obj"
+                ],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "pack rows": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    1
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "@self": {
+                            "id": "self-1"
+                        },
+                        "name": "First",
+                        "title": "One",
+                        "status": "",
+                        "extra": "x",
+                        "_meta": 1,
+                        "@type": "t",
+                        "id": "i",
+                        "uuid": "u"
+                    },
+                    1
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    2
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "id": 7,
+                        "title": "Two",
+                        "undeclaredA": 1,
+                        "undeclaredB": 2
+                    },
+                    2
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    3
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "uuid": "uuid-3",
+                        "title": "Three"
+                    },
+                    3
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    4
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Four",
+                        "(empty)": "empty key"
+                    },
+                    4
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    6
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Fail me"
+                    },
+                    6
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "mapped-One"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "101",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "mapped-Two"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "mapped-Three"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "mapped-Four"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "mapped-Fail me"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 6,
+                "created": [
+                    "new-mapped-Two",
+                    "new-mapped-Three",
+                    "new-mapped-Four",
+                    "new-mapped-Fail me"
+                ],
+                "updated": [
+                    "101"
+                ],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "pack with skipped and failing rows": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    1
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "@self": {
+                            "id": "self-1"
+                        },
+                        "name": "First",
+                        "title": "One",
+                        "status": "",
+                        "extra": "x",
+                        "_meta": 1,
+                        "@type": "t",
+                        "id": "i",
+                        "uuid": "u"
+                    },
+                    1
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    2
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    3
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "uuid": "uuid-3",
+                        "title": "Three"
+                    },
+                    3
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    4
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Four",
+                        "(empty)": "empty key"
+                    },
+                    4
+                ]
+            },
+            {
+                "method": "mapping.isRowSkipped",
+                "args": [
+                    6
+                ]
+            },
+            {
+                "method": "mapping.mapRow",
+                "args": [
+                    {
+                        "title": "Fail me"
+                    },
+                    6
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "mapped-One"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "101",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "mapped-Four"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "mapped-Fail me"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 6,
+                "created": [
+                    "new-mapped-Four",
+                    "new-mapped-Fail me"
+                ],
+                "updated": [
+                    "101"
+                ],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "row": 3,
+                        "field": null,
+                        "error": "[migration-pack] missing \u2014 source column \"\"",
+                        "type": "MigrationPackMappingError",
+                        "original_value": null
+                    }
+                ],
+                "warnings": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "plain rows": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "name": "First",
+                        "title": "One",
+                        "status": null
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "self-1",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Two"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "7",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Three"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "uuid-3",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Four"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Fail me"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 6,
+                "created": [
+                    "new-Four"
+                ],
+                "updated": [
+                    "self-1",
+                    "7",
+                    "uuid-3"
+                ],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "object": null,
+                        "error": "Save refused",
+                        "type": "Exception"
+                    }
+                ],
+                "warnings": [
+                    "Row 1: dropped 1 property the schema does not declare: extra.",
+                    "Row 2: dropped 2 properties the schema does not declare: undeclaredA, undeclaredB."
+                ],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "plain rows as user without rbac": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "name": "First",
+                        "title": "One",
+                        "status": null
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "self-1",
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    {
+                        "user": "importer"
+                    },
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Two"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "7",
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    {
+                        "user": "importer"
+                    },
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Three"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    "uuid-3",
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    {
+                        "user": "importer"
+                    },
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Four"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    {
+                        "user": "importer"
+                    },
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Fail me"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                    null,
+                    {
+                        "user": "importer"
+                    },
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 6,
+                "created": [
+                    "new-Four"
+                ],
+                "updated": [
+                    "self-1",
+                    "7",
+                    "uuid-3"
+                ],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "object": null,
+                        "error": "Save refused",
+                        "type": "Exception"
+                    }
+                ],
+                "warnings": [
+                    "Row 1: dropped 1 property the schema does not declare: extra.",
+                    "Row 2: dropped 2 properties the schema does not declare: undeclaredA, undeclaredB."
+                ],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "publish flag warns": {
+        "calls": [
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead."
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "P"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 1,
+                "created": [
+                    "new-P"
+                ],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "results envelope": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "Env"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 1,
+                "created": [
+                    "new-Env"
+                ],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "results not a list": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 2,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "string keyed rows": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "A"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "objectService.saveObject",
+                "args": [
+                    {
+                        "title": "B"
+                    },
+                    [],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "JSON": {
+                "found": 2,
+                "created": [
+                    "new-A",
+                    "new-B"
+                ],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "warnings": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "unreadable file": {
+        "calls": [],
+        "threw": "InvalidArgumentException",
+        "message": "JSON import expects an array of objects",
+        "code": 0
+    }
+}

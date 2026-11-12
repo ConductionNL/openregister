@@ -31,7 +31,9 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WebhookStores;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -61,12 +63,16 @@ class WebhookAsyncDispatchTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new WebhookService(
-			webhookMapper: $this->webhookMapper,
-			logger: $this->logger,
-			webhookLogMapper: $this->webhookLogMapper,
-			mappingService: $this->mappingService,
-			mappingMapper: $this->mappingMapper,
-			jobList: $this->jobList
+			stores: new WebhookStores(
+				webhookMapper: $this->webhookMapper,
+				webhookLogMapper: $this->webhookLogMapper,
+				mappingMapper: $this->mappingMapper,
+				mappingService: $this->mappingService
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->jobList
+			),
+			logger: $this->logger
 		);
 	}
 
@@ -81,7 +87,7 @@ class WebhookAsyncDispatchTest extends TestCase {
 		$this->jobList->expects($this->never())->method('add');
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
-		$this->service->dispatchEvent($event, 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('OCA\\OpenRegister\\Event\\ObjectCreatedEvent', ['test' => 'data']);
 	}
 
 	/**
@@ -97,7 +103,7 @@ class WebhookAsyncDispatchTest extends TestCase {
 
 		$this->jobList->expects($this->never())->method('add');
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => 'data']);
+		$this->service->dispatchEvent('SomeEvent', ['test' => 'data']);
 	}
 
 	/**
@@ -129,7 +135,6 @@ class WebhookAsyncDispatchTest extends TestCase {
 		$this->webhookLogMapper->expects($this->never())->method('insert');
 
 		$this->service->dispatchEvent(
-			$event,
 			'OCA\\OpenRegister\\Event\\ObjectUpdatedEvent',
 			['test' => 'data']
 		);
@@ -160,7 +165,7 @@ class WebhookAsyncDispatchTest extends TestCase {
 				$enqueuedWebhookIds[] = $arg['webhook_id'];
 			});
 
-		$this->service->dispatchEvent($event, 'SomeEvent', ['k' => 'v']);
+		$this->service->dispatchEvent('SomeEvent', ['k' => 'v']);
 
 		$this->assertSame([1, 2, 3], $enqueuedWebhookIds);
 	}
@@ -182,13 +187,9 @@ class WebhookAsyncDispatchTest extends TestCase {
 		$partialService = $this->getMockBuilder(WebhookService::class)
 			->setConstructorArgs(
 				[
-					$this->webhookMapper,
+					new WebhookStores($this->webhookMapper, $this->webhookLogMapper, $this->mappingMapper, $this->mappingService),
+					new WebhookDispatchServices($this->jobList, null),
 					$this->logger,
-					$this->webhookLogMapper,
-					$this->mappingService,
-					$this->mappingMapper,
-					$this->jobList,
-					null,
 				]
 			)
 			->onlyMethods(['deliverWebhook'])
@@ -196,6 +197,6 @@ class WebhookAsyncDispatchTest extends TestCase {
 
 		$partialService->expects($this->never())->method('deliverWebhook');
 
-		$partialService->dispatchEvent($event, 'SomeEvent', ['test' => 'data']);
+		$partialService->dispatchEvent('SomeEvent', ['test' => 'data']);
 	}
 }

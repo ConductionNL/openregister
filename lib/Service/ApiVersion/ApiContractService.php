@@ -36,7 +36,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCA\OpenRegister\Service\OasService;
  * @category Service
  * @package  OCA\OpenRegister\Service\ApiVersion
  */
-class ApiContractService {
+class ApiContractService implements ApiContractServiceInterface {
 
 	/**
 	 * The HTTP methods an OpenAPI path item may carry an operation under.
@@ -94,7 +94,7 @@ class ApiContractService {
 	 *
 	 * @return array<string, mixed> The description.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function documentFor(ApiVersion $version, ?string $registerId = null): array {
 		$document = $this->oasService->createOas($registerId, false);
@@ -117,7 +117,7 @@ class ApiContractService {
 	 *
 	 * @return array<string, mixed> The stamp.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/openapi-generation/spec.md
+	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function stamp(ApiVersion $version): array {
 		$stamp = $version->jsonSerialize();
@@ -161,16 +161,27 @@ class ApiContractService {
 				continue;
 			}
 
-			foreach (self::OPERATION_KEYS as $method) {
-				if (isset($item[$method]) === true && is_array($item[$method]) === true) {
-					$item[$method]['deprecated'] = true;
-				}
-			}
-
-			$paths[$path] = $item;
+			$paths[$path] = self::deprecatePathItem(item: $item);
 		}
 
 		return $paths;
 
 	}//end markOperationsDeprecated()
+
+	/**
+	 * Mark each operation of one path item deprecated; other keys stay as they are.
+	 *
+	 * @param array<string, mixed> $item The path item.
+	 *
+	 * @return array<string, mixed> The path item, with each operation deprecated.
+	 */
+	private static function deprecatePathItem(array $item): array {
+		foreach (self::OPERATION_KEYS as $method) {
+			if (isset($item[$method]) === true && is_array($item[$method]) === true) {
+				$item[$method]['deprecated'] = true;
+			}
+		}
+
+		return $item;
+	}//end deprecatePathItem()
 }//end class

@@ -13,7 +13,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
 
 declare(strict_types=1);
@@ -21,8 +21,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Event\FileRestrictionAdmitEvent;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\File\FileRestrictionStore;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionCaller;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
 use OCP\IGroupManager;
@@ -36,7 +37,7 @@ use RuntimeException;
 /**
  * Who reads a restricted file.
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-restricted-file-is-readable-only-by-its-listed-principals-administrators-and-admitted-callers-req-pfrr-002
  */
 class FileRestrictionGuardTest extends TestCase {
 
@@ -82,7 +83,15 @@ class FileRestrictionGuardTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
-		return new FileRestrictionGuard($this->store, $session, $groupManager, $this->dispatcher, new NullLogger());
+		return new FileRestrictionGuard(
+			store: $this->store,
+			caller: new FileRestrictionCaller(
+				userSession: $session,
+				groupManager: $groupManager
+			),
+			dispatcher: $this->dispatcher,
+			logger: new NullLogger()
+		);
 	}//end guardFor()
 
 	public function testAFileWithoutRestrictionIsReadable(): void {

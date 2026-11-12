@@ -23,10 +23,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
@@ -34,7 +39,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards;
@@ -43,31 +48,55 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\CaseItemMapperInterface;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries;
-use OCA\OpenRegister\Db\TimelineEntry;
-use OCA\OpenRegister\Db\TimelineEntryMapper;
-use OCA\OpenRegister\Service\Timeline\TimelineKindService;
-use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
+use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
+use OCA\OpenRegister\Db\TalkLinkMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
+use OCA\OpenRegister\Service\ExampleSet\CollectivePageText;
+use OCA\OpenRegister\Service\ExampleSet\CollectiveSeat;
+use OCA\OpenRegister\Service\ExampleSet\CollectiveTeam;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkRoom;
 use OCA\OpenRegister\Db\DeckLink;
+use OCA\OpenRegister\Db\EmailLink;
+use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\EmailLinkMapperInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppAndHistoryRowKinds;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
 use OCA\OpenRegister\Db\DeckLinkMapper;
+use OCA\OpenRegister\Db\DeckLinkMapperInterface;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
@@ -78,24 +107,36 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\TaskAudit;
+use OCA\OpenRegister\Db\TaskAuditMapper;
+use OCA\OpenRegister\Db\TaskAuditMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCA\OpenRegister\Db\ObjectReadStateMapperInterface;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentNotFoundException;
-use OCA\OpenRegister\Db\Watcher;
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Service\ViewAudience;
+use OCA\OpenRegister\Search\Service\ViewDefinition;
+use OCA\OpenRegister\Search\Service\ViewEdit;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\TaskImport;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCP\Config\IUserConfig;
 use OCA\OpenRegister\Service\FileService;
@@ -104,12 +145,18 @@ use OCP\IConfig;
 use OCP\Security\ISecureRandom;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerObjects;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerSetup;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstallerWriters;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverRows;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverObjects;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverSettings;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetAccounts;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetRegisters;
@@ -193,6 +240,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, string> The uuids of the flows published, in order. */
 	protected array $publishedFlows = [];
 
+	/** @var array<int, array{uuid: string, enabled: bool, published: bool}> Each flow update, as it was saved. */
+	protected array $flowUpdates = [];
+
 	/** @var array<string, array<int, array<string, mixed>>> The Deck rows written, by kind (boards, stacks, labels, cards), keyed by id. */
 	protected array $deck = ['boards' => [], 'stacks' => [], 'labels' => [], 'cards' => []];
 
@@ -216,6 +266,12 @@ abstract class ExampleSetTestCase extends TestCase {
 
 	/** @var array<string, TimelineEntry> The timeline entries, by uuid. */
 	protected array $timelineEntries = [];
+
+	/** @var array<int, EmailLink> The email links, by id. */
+	protected array $emailLinks = [];
+
+	/** @var array<string, object> Services a test adds to the container, by id. */
+	protected array $services = [];
 
 	/** @var array<int, string> The timeline kinds the fake knows. */
 	protected array $timelineKinds = ['statuswijziging', 'contactmoment'];
@@ -243,6 +299,9 @@ abstract class ExampleSetTestCase extends TestCase {
 
 	/** @var array<string, FlowRun> The stored flow runs, by uuid. */
 	protected array $flowRuns = [];
+
+	/** @var array<int, TaskAudit> The task audit entries the set appended, in order. */
+	protected array $taskAudits = [];
 
 	/** @var array<string, View> The saved views, by uuid. */
 	protected array $savedViews = [];
@@ -274,35 +333,38 @@ abstract class ExampleSetTestCase extends TestCase {
 		$container       = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(fn (string $id): object => match ($id) {
 			FileService::class        => $this->fileService(),
-			OrganisationMapper::class => $this->organisationMapper(),
-			TaskService::class        => $this->taskService(),
+			OrganisationMapperInterface::class => $this->organisationMapper(),
+			TaskServiceInterface::class        => $this->taskService(),
 			TaskMapper::class         => $this->taskMapper(),
 			ViewService::class        => $this->viewService(),
-			ViewMapper::class         => $this->viewMapper(),
-			WatcherMapper::class      => $this->watcherMapper(),
+			ViewMapperInterface::class         => $this->viewMapper(),
+			WatcherMapperInterface::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
-			ContactLinkMapper::class  => $this->contactLinks(),
+			ContactLinkMapperInterface::class => $this->contactLinks(),
 			ICommentsManager::class   => $this->commentsManager(),
-			ObjectReadStateMapper::class => $this->readStateMapper(),
+			ObjectReadStateMapperInterface::class => $this->readStateMapper(),
 			FlowMapper::class         => $this->flowMapper(),
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
-			FlowRunMapper::class      => $this->flowRunMapper(),
+			FlowRunMapperInterface::class      => $this->flowRunMapper(),
+			TaskAuditMapperInterface::class => $this->taskAuditMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			ExampleSetTalkStore::class => $this->talkStore(),
-			TalkLinkMapper::class     => $this->talkLinkMapper(),
-			AuditTrailMapper::class   => $this->auditTrailMapper(),
+			TalkLinkMapperInterface::class => $this->talkLinkMapper(),
+			AuditTrailMapperInterface::class => $this->auditTrailMapper(),
 			TimelineEntryMapper::class => $this->timelineEntryMapper(),
 			TimelineKindService::class => $this->timelineKindService(),
-			DeckLinkMapper::class     => $this->deckLinkMapper(),
+			DeckLinkMapperInterface::class => $this->deckLinkMapper(),
+			EmailLinkMapperInterface::class => $this->emailLinkMapper(),
 			CalDavBackend::class      => $this->caldav(),
-			CalendarLinkMapper::class => $this->calendarLinkMapper(),
+			CalendarLinkMapperInterface::class => $this->calendarLinkMapper(),
 			CasePlanService::class    => $this->casePlans(),
-			CaseItemMapper::class     => $this->caseItemMapper(),
+			CaseItemMapperInterface::class => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
-			OrganisationService::class => $this->organisationService(),
+			OrganisationServiceInterface::class => $this->organisationService(),
+			default                   => $this->services[$id],
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -350,63 +412,90 @@ abstract class ExampleSetTestCase extends TestCase {
 		$this->catalogue = new ExampleSetCatalogue(appManager: $appManager, order: new ExampleSetOrder());
 		$people          = new ExampleSetPeople(accounts: $this->accounts, record: $this->record);
 		$this->installer = new ExampleSetInstaller(
-			store: $this->store,
-			people: $people,
-			values: new ExampleSetValues(),
-			record: $this->record,
-			proof: new ExampleSetProof(),
-			prerequisites: new ExampleSetPrerequisites(registers: $this->registers, instance: $instance, record: $this->record, people: $people),
-			changes: $changes,
-			files: $files,
-			appConfig: $setConfig,
-			userPreferences: $preferences,
-			engineRows: new ExampleSetEngineKinds(
-				tasks: new ExampleSetTasks(container: $container),
-				views: new ExampleSetViews(container: $container),
-				watchers: new ExampleSetWatchers(container: $container),
-				parties: new ExampleSetParties(container: $container),
-				notes: new ExampleSetNotes(container: $container),
-				readStates: new ExampleSetReadStates(container: $container),
-				flows: new ExampleSetFlows(container: $container),
-				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-				exportRuns: new ExampleSetExportRuns(container: $container),
-				deckCards: new ExampleSetDeckCards(container: $container),
-				appointments: new ExampleSetAppointments(container: $container),
-				casePlans: new ExampleSetCasePlans(container: $container),
-				collectivesPages: new ExampleSetCollectivesPages(container: $container),
-				talkConversations: new ExampleSetTalkConversations(container: $container),
-				auditEntries: new ExampleSetAuditEntries(container: $container),
-				timelineEntries: new ExampleSetTimelineEntries(container: $container)
+			objects: new ExampleSetInstallerObjects(store: $this->store, values: new ExampleSetValues(), record: $this->record, proof: new ExampleSetProof()),
+			setup: new ExampleSetInstallerSetup(
+				people: $people,
+				prerequisites: new ExampleSetPrerequisites(registers: $this->registers, instance: $instance, record: $this->record, people: $people),
+				appConfig: $setConfig,
+				userPreferences: $preferences
+			),
+			writers: new ExampleSetInstallerWriters(
+				changes: $changes,
+				files: $files,
+				engineRows: new ExampleSetEngineKinds(
+					work: new ExampleSetWorkRowKinds(
+						tasks: new ExampleSetTasks(container: $container),
+						notes: new ExampleSetNotes(container: $container),
+						readStates: new ExampleSetReadStates(container: $container),
+						watchers: new ExampleSetWatchers(container: $container)
+					),
+					own: new ExampleSetOwnRowKinds(
+						views: new ExampleSetViews(container: $container),
+						flows: new ExampleSetFlows(container: $container),
+						casePlans: new ExampleSetCasePlans(container: $container)
+					),
+					links: new ExampleSetLinkRowKinds(
+						parties: new ExampleSetParties(container: $container),
+						emailLinks: new ExampleSetEmailLinks(container: $container),
+						accessLinks: new ExampleSetAccessLinks(container: $container),
+						grants: new ExampleSetGrants(container: $container)
+					),
+					elsewhere: new ExampleSetAppAndHistoryRowKinds(
+						apps: new ExampleSetAppRowKinds(
+							deckCards: new ExampleSetDeckCards(container: $container),
+							appointments: new ExampleSetAppointments(container: $container),
+							collectivesPages: new ExampleSetCollectivesPages(container: $container),
+							talkConversations: new ExampleSetTalkConversations(container: $container)
+						),
+						history: new ExampleSetHistoryRowKinds(
+							exportRuns: new ExampleSetExportRuns(container: $container),
+							archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+							auditEntries: new ExampleSetAuditEntries(container: $container),
+							timelineEntries: new ExampleSetTimelineEntries(container: $container)
+						)
+					)
+				),
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
 		$this->remover   = new ExampleSetRemover(
-			store: $this->store,
-			accounts: $this->accounts,
-			record: $this->record,
-			changes: $changes,
-			registers: $this->registers,
-			files: $files,
-			appConfig: $setConfig,
-			instance: $instance,
-			userPreferences: $preferences,
-			engineRows: new ExampleSetEngineKinds(
-				tasks: new ExampleSetTasks(container: $container),
-				views: new ExampleSetViews(container: $container),
-				watchers: new ExampleSetWatchers(container: $container),
-				parties: new ExampleSetParties(container: $container),
-				notes: new ExampleSetNotes(container: $container),
-				readStates: new ExampleSetReadStates(container: $container),
-				flows: new ExampleSetFlows(container: $container),
-				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-				exportRuns: new ExampleSetExportRuns(container: $container),
-				deckCards: new ExampleSetDeckCards(container: $container),
-				appointments: new ExampleSetAppointments(container: $container),
-				casePlans: new ExampleSetCasePlans(container: $container),
-				collectivesPages: new ExampleSetCollectivesPages(container: $container),
-				talkConversations: new ExampleSetTalkConversations(container: $container),
-				auditEntries: new ExampleSetAuditEntries(container: $container),
-				timelineEntries: new ExampleSetTimelineEntries(container: $container)
+			objects: new ExampleSetRemoverObjects(store: $this->store, record: $this->record, files: $files, changes: $changes),
+			settings: new ExampleSetRemoverSettings(appConfig: $setConfig, userPreferences: $preferences, registers: $this->registers, instance: $instance),
+			rows: new ExampleSetRemoverRows(
+				accounts: $this->accounts,
+				engineRows: new ExampleSetEngineKinds(
+					work: new ExampleSetWorkRowKinds(
+						tasks: new ExampleSetTasks(container: $container),
+						notes: new ExampleSetNotes(container: $container),
+						readStates: new ExampleSetReadStates(container: $container),
+						watchers: new ExampleSetWatchers(container: $container)
+					),
+					own: new ExampleSetOwnRowKinds(
+						views: new ExampleSetViews(container: $container),
+						flows: new ExampleSetFlows(container: $container),
+						casePlans: new ExampleSetCasePlans(container: $container)
+					),
+					links: new ExampleSetLinkRowKinds(
+						parties: new ExampleSetParties(container: $container),
+						emailLinks: new ExampleSetEmailLinks(container: $container),
+						accessLinks: new ExampleSetAccessLinks(container: $container),
+						grants: new ExampleSetGrants(container: $container)
+					),
+					elsewhere: new ExampleSetAppAndHistoryRowKinds(
+						apps: new ExampleSetAppRowKinds(
+							deckCards: new ExampleSetDeckCards(container: $container),
+							appointments: new ExampleSetAppointments(container: $container),
+							collectivesPages: new ExampleSetCollectivesPages(container: $container),
+							talkConversations: new ExampleSetTalkConversations(container: $container)
+						),
+						history: new ExampleSetHistoryRowKinds(
+							exportRuns: new ExampleSetExportRuns(container: $container),
+							archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+							auditEntries: new ExampleSetAuditEntries(container: $container),
+							timelineEntries: new ExampleSetTimelineEntries(container: $container)
+						)
+					)
+				)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -467,7 +556,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	 */
 	private function taskService(): TaskService {
 		$service = $this->createMock(TaskService::class);
-		$service->method('import')->willReturnCallback(function (array $data, ?string $actor): Task {
+		$service->method('importTask')->willReturnCallback(function (TaskImport $import): Task {
+			[$data, $actor, $at] = [$import->data, $import->actor, $import->createdAt];
 			foreach ($this->engineTasks as $held) {
 				if ($held->getTaskKey() === (string) $data['key']) {
 					// The task key is unique in the engine (or_tasks_key_uniq).
@@ -475,14 +565,17 @@ abstract class ExampleSetTestCase extends TestCase {
 				}
 			}
 
-			$this->taskImports[] = ['data' => $data, 'actor' => $actor];
+			$this->taskImports[] = ['data' => $data, 'actor' => $actor, 'at' => $at];
 			$state = TaskState::normalise(value: (string) ($data['state'] ?? Task::STATE_AVAILABLE))['state'];
 			$task  = new Task();
 			$task->setUuid('task-'.count($this->taskImports));
+			$task->setId(count($this->taskImports));
 			$task->setTaskKey((string) $data['key']);
 			$task->setTitle((string) $data['title']);
 			$task->setObjectUuid((string) $data['objectUuid']);
 			$task->setAssignee(isset($data['assignee']) === true ? (string) $data['assignee'] : null);
+			$task->setRunUuid(isset($data['runUuid']) === true ? (string) $data['runUuid'] : null);
+			$task->setNodeId(isset($data['nodeId']) === true ? (string) $data['nodeId'] : null);
 			$task->setState($state);
 			$task->setIsTerminal(TaskState::isTerminal(state: $state));
 			$this->engineTasks[(string) $task->getUuid()] = $task;
@@ -525,27 +618,27 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function viewService(): ViewService {
 		$service = $this->createMock(ViewService::class);
 		$service->method('create')->willReturnCallback(
-			function (string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+			function (ViewEdit $edit): View {
 				$view = new View();
 				$view->setUuid('view-'.(++$this->viewsCreated));
-				$view->setName($name);
-				$view->setOwner($owner);
-				$view->setIsPublic($isPublic);
-				$view->setQuery($query);
-				$view->setAlert($alert);
-				$view->setSharedWith($sharedWith ?? []);
+				$view->setName($edit->definition->name);
+				$view->setOwner($edit->audience->owner);
+				$view->setIsPublic($edit->audience->isPublic);
+				$view->setQuery($edit->definition->query);
+				$view->setAlert($edit->alert);
+				$view->setSharedWith($edit->audience->sharedWith ?? []);
 				$this->savedViews[(string) $view->getUuid()] = $view;
 				return $view;
 			}
 		);
-		$service->method('update')->willReturnCallback(
-			function (int|string $id, string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $favoredBy = null, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+		$service->method('revise')->willReturnCallback(
+			function (int|string $id, ViewEdit $edit): View {
 				$view = ($this->savedViews[(string) $id] ?? throw new DoesNotExistException('no view '.$id));
-				$view->setName($name);
-				$view->setIsPublic($isPublic);
-				$view->setQuery($query);
-				$view->setAlert($alert);
-				$view->setSharedWith($sharedWith ?? []);
+				$view->setName($edit->definition->name);
+				$view->setIsPublic($edit->audience->isPublic);
+				$view->setQuery($edit->definition->query);
+				$view->setAlert($edit->alert);
+				$view->setSharedWith($edit->audience->sharedWith ?? []);
 				return $view;
 			}
 		);
@@ -587,6 +680,15 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->flows[(string) $flow->getUuid()] = $flow;
 			return $flow;
 		});
+		$mapper->method('update')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flowUpdates[] = [
+				'uuid'      => (string) $flow->getUuid(),
+				'enabled'   => (bool) $flow->getEnabled(),
+				'published' => in_array((string) $flow->getUuid(), $this->publishedFlows, true),
+			];
+			$this->flows[(string) $flow->getUuid()] = $flow;
+			return $flow;
+		});
 		$mapper->method('findByUuid')->willReturnCallback(function (string $uuid): Flow {
 			if (isset($this->flows[$uuid]) === false) {
 				throw new DoesNotExistException('No such flow');
@@ -606,8 +708,21 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function flowVersions(): FlowVersionService {
 		$versions = $this->createMock(FlowVersionService::class);
 		$versions->method('publish')->willReturnCallback(function (Flow $flow) {
+			// As the real service: only a draft head can be published.
+			if ($flow->getLifecycleStatus() === 'published') {
+				throw new \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused(
+					reason: \OCA\OpenRegister\Service\Flow\FlowLifecycleRefused::REASON_NOT_A_DRAFT,
+					flowId: (string) $flow->getUuid(),
+					state: 'published'
+				);
+			}
+
 			$this->publishedFlows[] = (string) $flow->getUuid();
 			$flow->setLifecycleStatus('published');
+			return $this->createMock(\OCA\OpenRegister\Db\FlowVersion::class);
+		});
+		$versions->method('publishShippedUpdate')->willReturnCallback(function (Flow $flow) {
+			$this->publishedFlows[] = (string) $flow->getUuid();
 			return $this->createMock(\OCA\OpenRegister\Db\FlowVersion::class);
 		});
 
@@ -637,7 +752,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function collectivesStore(): ExampleSetCollectivesStore {
 		$store = $this->createMock(ExampleSetCollectivesStore::class);
 		$store->method('available')->willReturnCallback(fn (): bool => $this->collectivesInstalled);
-		$store->method('collective')->willReturnCallback(function (string $owner, string $name, array $groups): array {
+		$store->method('collectiveOf')->willReturnCallback(function (CollectiveTeam $team, string $name): array {
+			[$owner, $groups] = [$team->owner, $team->groups];
 			foreach ($this->collectives['collectives'] as $id => $row) {
 				if ($row['name'] === $name) {
 					return ['id' => $id, 'created' => false];
@@ -648,7 +764,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->collectives['collectives'][$id] = ['name' => $name, 'owner' => $owner, 'groups' => $groups];
 			return ['id' => $id, 'created' => true];
 		});
-		$store->method('page')->willReturnCallback(function (int $collective, string $owner, string $title, string $content): array {
+		$store->method('page')->willReturnCallback(function (CollectiveSeat $seat, CollectivePageText $text): array {
+			[$collective, $owner, $title, $content] = [$seat->collective, $seat->owner, $text->title, $text->content];
 			foreach ($this->collectives['pages'] as $id => $row) {
 				if ($row['collective'] === $collective && $row['title'] === $title) {
 					return ['id' => $id, 'created' => false];
@@ -659,8 +776,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->collectives['pages'][$id] = ['collective' => $collective, 'title' => $title, 'content' => $content, 'owner' => $owner];
 			return ['id' => $id, 'created' => true];
 		});
-		$store->method('pageExists')->willReturnCallback(fn (int $collective, int $page, string $owner): bool => isset($this->collectives['pages'][$page]));
-		$store->method('deletePage')->willReturnCallback(function (int $collective, int $page, string $owner): void {
+		$store->method('pageFound')->willReturnCallback(fn (CollectiveSeat $seat, int $page): bool => isset($this->collectives['pages'][$page]));
+		$store->method('deletePage')->willReturnCallback(function (CollectiveSeat $seat, int $page): void {
 			unset($this->collectives['pages'][$page]);
 		});
 		$store->method('deleteCollective')->willReturnCallback(function (int $collective, string $owner): void {
@@ -729,9 +846,9 @@ abstract class ExampleSetTestCase extends TestCase {
 
 			return $entries;
 		});
-		$mapper->method('findForObjectByAction')->willReturnCallback(
-			fn (string $objectUuid, array $actions = [], int $limit = 50): array => array_values(
-				array_filter($this->auditTrail, static fn (AuditTrail $row): bool => $row->getObjectUuid() === $objectUuid && in_array($row->getAction(), $actions, true))
+		$mapper->method('findObjectActions')->willReturnCallback(
+			fn (string $objectUuid, ActionLookupOptions $options): array => array_values(
+				array_filter($this->auditTrail, static fn (AuditTrail $row): bool => $row->getObjectUuid() === $objectUuid && in_array($row->getAction(), $options->actions, true))
 			)
 		);
 		$mapper->method('find')->willReturnCallback(fn (int $id): AuditTrail => ($this->auditTrail[$id] ?? throw new DoesNotExistException('no entry '.$id)));
@@ -747,7 +864,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function talkStore(): ExampleSetTalkStore {
 		$store = $this->createMock(ExampleSetTalkStore::class);
 		$store->method('available')->willReturnCallback(fn (): bool => $this->talkInstalled);
-		$store->method('room')->willReturnCallback(function (string $owner, string $name, array $participants): array {
+		$store->method('openRoom')->willReturnCallback(function (ExampleSetTalkRoom $room): array {
+			[$owner, $name, $participants] = [$room->owner, $room->name, $room->participants];
 			foreach ($this->talk['rooms'] as $token => $room) {
 				if ($room['name'] === $name && $room['owner'] === $owner) {
 					return ['token' => $token, 'id' => $room['id'], 'created' => false];
@@ -758,9 +876,11 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->talk['rooms'][$token] = ['id' => (count($this->talk['rooms']) + 1), 'name' => $name, 'owner' => $owner, 'participants' => $participants];
 			return ['token' => $token, 'id' => $this->talk['rooms'][$token]['id'], 'created' => true];
 		});
-		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, \DateTime $start, \DateTime $end, array $joined): void {
-			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_started', 'at' => $start->format('c')];
-			$this->talk['messages'][] = ['room' => $token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
+		$store->method('heldCall')->willReturnCallback(function (\OCA\OpenRegister\Service\ExampleSet\HeldTalkCall $held): void {
+			$start = new \DateTime((string) $held->call['start']);
+			$end   = new \DateTime((string) $held->call['end']);
+			$this->talk['messages'][] = ['room' => $held->token, 'message' => 'call_started', 'at' => $start->format('c')];
+			$this->talk['messages'][] = ['room' => $held->token, 'message' => 'call_ended', 'at' => $end->format('c'), 'users' => $held->joined, 'duration' => ($end->getTimestamp() - $start->getTimestamp())];
 		});
 		$store->method('roomExists')->willReturnCallback(fn (string $token): bool => isset($this->talk['rooms'][$token]));
 		$store->method('deleteRoom')->willReturnCallback(function (string $token): void {
@@ -827,9 +947,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			return null;
 		};
 		$store->method('available')->willReturnCallback(fn (): bool => $this->deckInstalled);
-		$store->method('board')->willReturnCallback(function (string $owner, string $title, string $color, array $groups) use ($find, $add): array {
-			$found = $find('boards', 'owner', $owner, $title);
-			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('boards', ['owner' => $owner, 'title' => $title, 'groups' => $groups]), 'created' => true];
+		$store->method('board')->willReturnCallback(function (\OCA\OpenRegister\Service\ExampleSet\DeckBoardRequest $board) use ($find, $add): array {
+			$found = $find('boards', 'owner', $board->owner, $board->title);
+			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('boards', ['owner' => $board->owner, 'title' => $board->title, 'groups' => $board->groups]), 'created' => true];
 		});
 		$store->method('stack')->willReturnCallback(function (int $board, string $title) use ($find, $add): array {
 			$found = $find('stacks', 'board', $board, $title);
@@ -840,9 +960,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('labels', ['board' => $board, 'title' => $title, 'color' => $color]), 'created' => true];
 		});
 		$store->method('insertCard')->willReturnCallback(
-			fn (int $stack, string $owner, string $title, string $description, ?\DateTime $due, ?\DateTime $done, array $labels, array $assignees): int => $add(
+			fn (int $stack, array $card): int => $add(
 				'cards',
-				['stack' => $stack, 'owner' => $owner, 'title' => $title, 'due' => $due?->format('Y-m-d'), 'labels' => $labels, 'assignees' => $assignees]
+				['stack' => $stack, 'owner' => $card['owner'], 'title' => $card['title'], 'due' => $card['due']?->format('Y-m-d'), 'labels' => $card['labels'], 'assignees' => $card['assignees']]
 			)
 		);
 		$store->method('cardExists')->willReturnCallback(fn (int $card): bool => isset($this->deck['cards'][$card]));
@@ -1001,6 +1121,33 @@ abstract class ExampleSetTestCase extends TestCase {
 	}
 
 	/**
+	 * An email link mapper over $emailLinks.
+	 *
+	 * @return EmailLinkMapper
+	 */
+	private function emailLinkMapper(): EmailLinkMapper {
+		$mapper = $this->createMock(originalClassName: EmailLinkMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (EmailLink $link): EmailLink {
+			$link->setId(count($this->emailLinks) + 1);
+			$this->emailLinks[$link->getId()] = $link;
+			return $link;
+		});
+		$mapper->method('find')->willReturnCallback(function (int $id): EmailLink {
+			if (isset($this->emailLinks[$id]) === false) {
+				throw new DoesNotExistException('no email link '.$id);
+			}
+
+			return $this->emailLinks[$id];
+		});
+		$mapper->method('delete')->willReturnCallback(function (EmailLink $link): EmailLink {
+			unset($this->emailLinks[$link->getId()]);
+			return $link;
+		});
+
+		return $mapper;
+	}//end emailLinkMapper()
+
+	/**
 	 * A flow run mapper over $flowRuns, keyed by uuid.
 	 *
 	 * @return FlowRunMapper
@@ -1010,6 +1157,28 @@ abstract class ExampleSetTestCase extends TestCase {
 		$mapper->method('insert')->willReturnCallback(function (FlowRun $run): FlowRun {
 			$this->flowRuns[(string) $run->getUuid()] = $run;
 			return $run;
+		});
+		$mapper->method('findByUuid')->willReturnCallback(
+			fn (string $uuid): FlowRun => ($this->flowRuns[$uuid] ?? throw new DoesNotExistException('no run '.$uuid))
+		);
+		$mapper->method('update')->willReturnCallback(function (FlowRun $run): FlowRun {
+			$this->flowRuns[(string) $run->getUuid()] = $run;
+			return $run;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A task audit mapper that appends to $taskAudits.
+	 *
+	 * @return TaskAuditMapper
+	 */
+	private function taskAuditMapper(): TaskAuditMapper {
+		$mapper = $this->createMock(TaskAuditMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (TaskAudit $entry): TaskAudit {
+			$this->taskAudits[] = $entry;
+			return $entry;
 		});
 
 		return $mapper;
@@ -1084,8 +1253,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function readStateMapper(): ObjectReadStateMapper {
 		$mapper = $this->createMock(ObjectReadStateMapper::class);
 		$mapper->method('markSeen')->willReturnCallback(
-			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?array $subSeen = null, ?\DateTime $seenAt = null): ObjectReadState {
-				$this->readStates[$userId.' '.$objectUuid] = ($seenAt ?? new \DateTime());
+			function (ObjectReadState $sighting): ObjectReadState {
+				$this->readStates[$sighting->getUserId().' '.$sighting->getObjectUuid()] = ($sighting->getLastSeenAt() ?? new \DateTime());
 				return new ObjectReadState();
 			}
 		);
@@ -1107,14 +1276,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function watcherMapper(): WatcherMapper {
 		$mapper = $this->createMock(WatcherMapper::class);
 		$mapper->method('subscribe')->willReturnCallback(
-			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?bool $notify = null): Watcher {
-				$watcher = new Watcher();
-				$watcher->setUserId($userId);
-				$watcher->setObjectUuid($objectUuid);
-				$watcher->setRegister($register);
-				$watcher->setSchema($schema);
+			function (Watcher $watcher, ?bool $notify = null): Watcher {
 				$watcher->setNotify($notify ?? true);
-				$this->follows[$userId.' '.$objectUuid] = $watcher;
+				$this->follows[$watcher->getUserId().' '.$watcher->getObjectUuid()] = $watcher;
 				return $watcher;
 			}
 		);
@@ -1136,7 +1300,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function partyRoles(): PartyRoleService {
 		$roles = $this->createMock(PartyRoleService::class);
 		$roles->method('importParty')->willReturnCallback(
-			function (string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
+			function (ObjectEntity $object, array $payload, string $linkedBy): ContactLink {
+				$objectUuid = (string) $object->getUuid();
+				$registerId = (int) $object->getRegister();
 				if (str_starts_with((string) $payload['partyUuid'], 'not-a-party') === true) {
 					throw new \Exception('Object "'.$payload['partyUuid'].'" is not a party', 400);
 				}
@@ -1145,8 +1311,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				return new ContactLink();
 			}
 		);
-		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, string $partyUuid, ?string $role = null): int {
-			unset($this->partyLinks[$objectUuid.' '.$partyUuid.' '.$role]);
+		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, PartyHolding $holding): int {
+			unset($this->partyLinks[$objectUuid.' '.$holding->partyUuid.' '.$holding->role]);
 			return 1;
 		});
 
@@ -1173,6 +1339,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			$object->setUuid($uuid);
 			$object->setRegister('7');
 			$object->setSchema('9');
+			$object->setOwner($this->store->owners[$uuid] ?? null);
 			return $object;
 		});
 
@@ -1187,7 +1354,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function contactLinks(): ContactLinkMapper {
 		$links = $this->createMock(ContactLinkMapper::class);
 		$links->method('findByObjectContactAndRole')->willReturnCallback(
-			function (string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+			function (PersonLinkRef $ref): ?ContactLink {
+				[$objectUuid, $contactUid, $role] = [$ref->objectUuid, $ref->contactUid, $ref->role];
 				foreach (array_keys($this->partyLinks) as $key) {
 					[$object, $party, $linkRole] = explode(' ', $key, 3);
 					if ($object === $objectUuid && ContactLink::partyUid(partyUuid: $party) === $contactUid && $linkRole === $role) {
@@ -1200,6 +1368,21 @@ abstract class ExampleSetTestCase extends TestCase {
 		);
 
 		return $links;
+	}
+
+	/**
+	 * A stored moment as the set's local wall time, `Y-m-d H:i` in Amsterdam.
+	 *
+	 * @param \DateTimeInterface|null $moment The moment.
+	 *
+	 * @return string|null
+	 */
+	protected function local(?\DateTimeInterface $moment): ?string {
+		if ($moment === null) {
+			return null;
+		}
+
+		return DateTimeImmutable::createFromInterface($moment)->setTimezone(new DateTimeZone('Europe/Amsterdam'))->format('Y-m-d H:i');
 	}
 
 	/**
@@ -1272,7 +1455,8 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function fileService(): FileService {
 		$service = $this->createMock(FileService::class);
 		$service->method('addFile')->willReturnCallback(
-			function (string $objectEntity, string $fileName, mixed $content, bool $share = false): File {
+			function (FileTarget $target, FileUpload $upload): File {
+				[$objectEntity, $fileName, $content, $share] = [(string) $target->object, $upload->fileName, $upload->content, $upload->share];
 				$id = (string) (count($this->files, COUNT_RECURSIVE) + 100);
 				$this->files[$objectEntity][$id] = ['name' => $fileName, 'shared' => $share, 'content' => (string) $content];
 				$file = $this->createMock(File::class);

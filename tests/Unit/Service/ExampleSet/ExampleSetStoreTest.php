@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -36,13 +37,24 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\ExampleSet\ObjectCheck;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetDraft
+ * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  */
 class ExampleSetStoreTest extends TestCase {
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function testValidatePassesThePlannedAccountsToTheValidator(): void {
 		$objects = $this->createMock(ObjectService::class);
@@ -52,24 +64,24 @@ class ExampleSetStoreTest extends TestCase {
 
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->expects($this->once())
-			->method('validateObjectWithPlannedUsers')
-			->with(['assignee' => 'daan.verbeek'], 42, $this->anything(), ['daan.verbeek'])
+			->method('validateWithPlannedAccounts')
+			->with(['assignee' => 'daan.verbeek'], new \OCA\OpenRegister\Service\Object\PlannedAccountsCheck(schema: 42, plannedUsers: ['daan.verbeek']))
 			->willReturn(new ValidationResult(null));
 		$validator->expects($this->never())->method('validateObject');
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
-			ObjectService::class  => $objects,
+			\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class  => $objects,
 			ValidateObject::class => $validator,
 		});
 
 		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
 
-		$this->assertSame([], $store->validate(register: 'crm', schema: 'ticket', data: ['assignee' => 'daan.verbeek'], plannedUsers: ['daan.verbeek']));
+		$this->assertSame([], $store->refusalsFor(table: new RegisterSchemaRef(register: 'crm', schema: 'ticket'), check: new ObjectCheck(object: ['assignee' => 'daan.verbeek'], plannedUsers: ['daan.verbeek'])));
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	public function testARegisterAndASchemaAreFoundByTheirSlugsAndAMissOrAFailureIsNull(): void {
 		$objects = $this->createMock(ObjectService::class);
@@ -111,7 +123,7 @@ class ExampleSetStoreTest extends TestCase {
 	/**
 	 * A row of the set is deleted through the system path, which an archival schema lets through.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function testARecordedRowIsDeletedThroughTheSystemPath(): void {
 		$row = $this->createMock(ObjectEntity::class);
@@ -120,14 +132,14 @@ class ExampleSetStoreTest extends TestCase {
 		$objects->method('find')->willReturn($row);
 		$objects->expects($this->once())
 			->method('deleteObject')
-			->with('case-1', 'dossiq', 'case', false, false, true)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'case-1' && $deletion->target->register == 'dossiq' && $deletion->target->schema == 'case'), false, false, true)
 			->willReturn(true);
 
-		$this->assertSame('', $this->storeOver(objects: $objects)->deleteRecorded(register: 'dossiq', schema: 'case', id: 'case-1'));
+		$this->assertSame('', $this->storeOver(objects: $objects)->deleteRecorded(ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'case-1')));
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function testAHeldRowIsNeverDeleted(): void {
 		$row = $this->createMock(ObjectEntity::class);
@@ -136,11 +148,11 @@ class ExampleSetStoreTest extends TestCase {
 		$objects->method('find')->willReturn($row);
 		$objects->expects($this->never())->method('deleteObject');
 
-		$this->assertSame('it is under an active legal hold', $this->storeOver(objects: $objects)->deleteRecorded(register: 'dossiq', schema: 'case', id: 'case-1'));
+		$this->assertSame('it is under an active legal hold', $this->storeOver(objects: $objects)->deleteRecorded(ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'case-1')));
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function testARefusalIsReturnedAsTheReasonAndAGoneRowIsGone(): void {
 		$row = $this->createMock(ObjectEntity::class);
@@ -155,21 +167,21 @@ class ExampleSetStoreTest extends TestCase {
 		$objects->method('deleteObject')->willThrowException(new \RuntimeException('a relation still points here'));
 		$store = $this->storeOver(objects: $objects);
 
-		$this->assertSame('a relation still points here', $store->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'ticket-1'));
-		$this->assertSame('', $store->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'gone'));
+		$this->assertSame('a relation still points here', $store->deleteRecorded(ref: new ObjectRef(register: 'pipelinq', schema: 'ticket', id: 'ticket-1')));
+		$this->assertSame('', $store->deleteRecorded(ref: new ObjectRef(register: 'pipelinq', schema: 'ticket', id: 'gone')));
 	}
 
 	/**
 	 * A read that fails says nothing about the row: remove must not drop it from the record as gone.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	public function testAReadThatFailsLeavesTheRowInTheRecordAndNamesWhy(): void {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willThrowException(new \RuntimeException('db down'));
 		$objects->expects($this->never())->method('deleteObject');
 
-		$why = $this->storeOver(objects: $objects)->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'ticket-1');
+		$why = $this->storeOver(objects: $objects)->deleteRecorded(ref: new ObjectRef(register: 'pipelinq', schema: 'ticket', id: 'ticket-1'));
 
 		$this->assertNotSame('', $why);
 		$this->assertStringContainsString('db down', $why);
@@ -178,7 +190,7 @@ class ExampleSetStoreTest extends TestCase {
 	/**
 	 * A row that is not there reads as absent without an error; one that cannot be read comes back with its error.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function testReadTellsAbsentFromFailed(): void {
 		$objects = $this->createMock(ObjectService::class);
@@ -191,10 +203,10 @@ class ExampleSetStoreTest extends TestCase {
 		});
 		$store = $this->storeOver(objects: $objects);
 
-		$this->assertSame(['row' => null, 'error' => ''], $store->read(register: 'r', schema: 's', id: 'absent'));
-		$this->assertSame(['row' => null, 'error' => ''], $store->read(register: 'r', schema: 's', id: 'null'));
-		$this->assertSame(['row' => null, 'error' => 'db down'], $store->read(register: 'r', schema: 's', id: 'broken'));
-		$this->assertNull($store->get(register: 'r', schema: 's', id: 'broken'));
+		$this->assertSame(['row' => null, 'error' => ''], $store->readRow(ref: new ObjectRef(register: 'r', schema: 's', id: 'absent')));
+		$this->assertSame(['row' => null, 'error' => ''], $store->readRow(ref: new ObjectRef(register: 'r', schema: 's', id: 'null')));
+		$this->assertSame(['row' => null, 'error' => 'db down'], $store->readRow(ref: new ObjectRef(register: 'r', schema: 's', id: 'broken')));
+		$this->assertNull($store->row(ref: new ObjectRef(register: 'r', schema: 's', id: 'broken')));
 	}
 
 	/**
@@ -202,7 +214,7 @@ class ExampleSetStoreTest extends TestCase {
 	 * listener) is never refused as an anonymous caller, and an update is
 	 * marked as a write of declared state while it runs, and only then.
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-writes-declared-state-as-the-system
 	 */
 	public function testAWriteRunsAsTheSystemAndAnUpdateWritesDeclaredState(): void {
 		$actions = new LifecycleActionContext();
@@ -212,20 +224,20 @@ class ExampleSetStoreTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$seen, $actions, $saved): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen, $actions, $saved): ObjectEntity {
 				$seen[] = ['system' => SystemOperationContext::isActive(), 'declared' => $actions->writesDeclaredState(uuid: 'case-1')];
 				return $saved;
 			}
 		);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
-			ObjectService::class          => $objects,
+			\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class          => $objects,
 			LifecycleActionContext::class => $actions,
 		});
 		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
 
 		$this->assertSame('case-1', $store->create(register: 'dossiq', schema: 'case', data: ['title' => 'Zaak'])['id']);
-		$this->assertSame('', $store->update(register: 'dossiq', schema: 'case', id: 'case-1', data: ['status' => 'requested']));
+		$this->assertSame('', $store->update(ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'case-1'), data: ['status' => 'requested']));
 
 		$this->assertSame([['system' => true, 'declared' => false], ['system' => true, 'declared' => true]], $seen);
 		$this->assertFalse($actions->writesDeclaredState(uuid: 'case-1'), 'released after the write');
@@ -235,7 +247,7 @@ class ExampleSetStoreTest extends TestCase {
 	/**
 	 * The write rules of a schema: append-only, and the fields a rewrite must not send (readOnly, immutable, lenses).
 	 *
-	 * @spec openspec/changes/example-set-refresh-trusted-writes/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-sends-only-what-the-schema-lets-a-write-change
 	 */
 	public function testTheWriteRulesOfASchema(): void {
 		$schema = new Schema();
@@ -262,7 +274,7 @@ class ExampleSetStoreTest extends TestCase {
 	 * A declared owner goes to the save as `_owner`; a hand-over runs OpenRegister's ownership change as the system
 	 * and names a failure.
 	 *
-	 * @spec openspec/changes/example-set-object-owner/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-declared-object-may-name-its-owner-from-the-cast
 	 */
 	public function testTheOwnerGoesToTheSaveAndAHandOverRunsAsTheSystem(): void {
 		$saved = $this->createMock(ObjectEntity::class);
@@ -270,19 +282,22 @@ class ExampleSetStoreTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
 		$objects->expects($this->once())->method('saveObject')->with(
-			$this->anything(), $this->anything(), 'besluiten', 'decision', null, false, false, false, true, null, null, false, false, false, 'pieter'
+			$this->anything(),
+			$this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register == 'besluiten' && $options->target->schema == 'decision' && $options->uuid === null && $options->policy->silent === false && $options->policy->validation === true && $options->uploadedFiles === null && $options->actor->currentUser === null && $options->policy->failIfExists === false && $options->actor->unowned === false && $options->policy->dedupOverride === false && $options->actor->owner == 'pieter'),
+			false,
+			false
 		)->willReturn($saved);
 		$system    = [];
 		$ownership = $this->createMock(ObjectOwnershipService::class);
-		$ownership->method('reassignMany')->willReturnCallback(
-			static function (array $identifiers, string $newOwner) use (&$system): array {
+		$ownership->method('reassign')->willReturnCallback(
+			static function (array $identifiers, OwnershipReassignment $reassignment) use (&$system): array {
 				$system[] = SystemOperationContext::isActive();
 				return ['failed' => ($identifiers === ['gone'] ? [['identifier' => 'gone', 'reason' => 'not found']] : [])];
 			}
 		);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
-			ObjectService::class          => $objects,
+			\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class          => $objects,
 			ObjectOwnershipService::class => $ownership,
 		});
 		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
@@ -291,5 +306,79 @@ class ExampleSetStoreTest extends TestCase {
 		$this->assertSame('', $store->assignOwner(id: 'besluit-1', owner: 'pieter'));
 		$this->assertSame('not found', $store->assignOwner(id: 'gone', owner: 'pieter'));
 		$this->assertSame([true, true], $system);
+	}
+
+	/**
+	 * A draft declaration is written in status draft for its scoped owner and is not part of the validated data.
+	 *
+	 * @spec openspec/changes/example-set-draft-objects/specs/example-sets/spec.md#requirement-an-object-may-be-a-draft-of-a-portal-subject
+	 */
+	public function testADraftIsWrittenInStatusDraftForItsScopedOwner(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('setRegister')->willReturnSelf();
+		$objects->method('setSchema')->willReturnSelf();
+		$objects->method('getSchema')->willReturn(42);
+		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
+		$saved = $this->createMock(ObjectEntity::class);
+		$saved->method('jsonSerialize')->willReturn(['@self' => ['id' => 'draft-1']]);
+		$sent = [];
+		$objects->expects($this->once())->method('saveObject')->willReturnCallback(
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options) use (&$sent, $saved): ObjectEntity {
+				$sent = ['object' => $object, 'owner' => $options->actor->owner];
+				return $saved;
+			}
+		);
+
+		$validator = $this->createMock(ValidateObject::class);
+		$validator->expects($this->once())
+			->method('validateWithPlannedAccounts')
+			->with(['title' => 'Verlichting'], $this->anything())
+			->willReturn(new ValidationResult(null));
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
+			\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class => $objects,
+			ValidateObject::class => $validator,
+		});
+		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
+		$data  = ['title' => 'Verlichting', '@self' => ['status' => 'draft', 'owner' => 'portal:sanne.devries']];
+
+		$this->assertSame([], $store->refusalsFor(table: new RegisterSchemaRef(register: 'dossiq', schema: 'case'), check: new ObjectCheck(object: $data)));
+		$this->assertSame(['id' => 'draft-1', 'error' => ''], $store->create(register: 'dossiq', schema: 'case', data: $data));
+		$this->assertSame(['title' => 'Verlichting', '@self' => ['status' => 'draft']], $sent['object']);
+		$this->assertSame('portal:sanne.devries', $sent['owner']);
+	}
+
+	/**
+	 * A faulty draft declaration, or a draft that also names a cast owner, is refused and nothing is written.
+	 *
+	 * @spec openspec/changes/example-set-draft-objects/specs/example-sets/spec.md#requirement-an-object-may-be-a-draft-of-a-portal-subject
+	 */
+	public function testAFaultyDraftDeclarationIsRefusedAndNothingIsWritten(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->expects($this->never())->method('saveObject');
+		$store = $this->storeOver(objects: $objects);
+
+		$cases = [
+			'@self status may only be "draft"' => ['status' => 'published'],
+			'status and owner only'            => ['status' => 'draft', 'owner' => 'portal:x', 'locked' => true],
+			'is "<scope>:<reference>"'         => ['status' => 'draft', 'owner' => 'sanne'],
+			'draft owner "Portal:x"'           => ['status' => 'draft', 'owner' => 'Portal:x'],
+		];
+		foreach ($cases as $reason => $self) {
+			$refusal = $store->refusalsFor(table: new RegisterSchemaRef(register: 'dossiq', schema: 'case'), check: new ObjectCheck(object: ['title' => 'T', '@self' => $self]));
+			$this->assertCount(1, $refusal);
+			$this->assertStringContainsString($reason, $refusal[0]);
+			$created = $store->create(register: 'dossiq', schema: 'case', data: ['title' => 'T', '@self' => $self]);
+			$this->assertStringContainsString($reason, $created['error']);
+		}
+
+		$both = $store->create(
+			register: 'dossiq',
+			schema: 'case',
+			data: ['title' => 'T', '@self' => ['status' => 'draft', 'owner' => 'portal:sanne.devries']],
+			owner: 'pieter'
+		);
+		$this->assertStringContainsString('may not also name an owner from the cast', $both['error']);
 	}
 }

@@ -73,7 +73,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 
 declare(strict_types=1);
@@ -81,10 +81,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowMapper;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\FlowMapperInterface;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -93,7 +94,7 @@ use Throwable;
 /**
  * Removes non-flow rows the mis-scoped flow migration copied into the flow table.
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
  */
@@ -125,19 +126,17 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowMapper      $flowMapper    Reads and removes rows in the flow table.
-	 * @param FlowRunMapper   $flowRunMapper Proves a row has never been dispatched.
-	 * @param MagicMapper     $objectMapper  Resolves a uuid back to the object it was copied from.
-	 * @param SchemaMapper    $schemaMapper  Turns that object's schema reference into a slug.
+	 * @param FlowMapperInterface      $flowMapper    Reads and removes rows in the flow table.
+	 * @param FlowRunMapperInterface   $flowRunMapper Proves a row has never been dispatched.
+	 * @param MigratedFlowOrigins      $origins       Traces a row back to the object (and its schema) it was copied from.
 	 * @param LoggerInterface $logger        Records every removal and every spared ambiguity.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly FlowMapper $flowMapper,
-		private readonly FlowRunMapper $flowRunMapper,
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly FlowMapperInterface $flowMapper,
+		private readonly FlowRunMapperInterface $flowRunMapper,
+		private readonly MigratedFlowOrigins $origins,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -147,7 +146,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function getName(): string {
 		return 'Remove non-flow rows copied into the flow table by the mis-scoped flow migration';
@@ -163,43 +162,15 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
 	 */
 	public function run(IOutput $output): void {
-		$removed = 0;
-		$reported = [];
+		$purge = new PhantomFlowPurgeRun();
 
 		try {
 			foreach ($this->migratedFlows() as $flow) {
-				if ($this->isUnrunnableShell(flow: $flow) === false) {
-					continue;
-				}
-
-				$uuid = (string)$flow->getUuid();
-
-				if ($this->hasEverRun(flow: $flow) === true) {
-					$reported[] = $uuid . ' (unrunnable, but it has run history)';
-					continue;
-				}
-
-				$sourceSchema = $this->sourceSchemaSlug(uuid: $uuid);
-				if ($sourceSchema === null) {
-					$reported[] = $uuid . ' (unrunnable, but no source object to identify it by)';
-					continue;
-				}
-
-				if ($sourceSchema === self::FLOW_SCHEMA) {
-					$reported[] = $uuid . ' (unrunnable, but it really is a flow object — an empty draft)';
-					continue;
-				}
-
-				$this->flowMapper->delete($flow);
-				$removed++;
-				$this->logger->warning(
-					'[PurgePhantomMigratedFlows] removed ' . $uuid
-					. ': an unrunnable, never-dispatched copy of a `' . $sourceSchema . '` object'
-				);
-			}//end foreach
+				$this->triage(flow: $flow, purge: $purge);
+			}
 		} catch (Throwable $e) {
 			$this->logger->warning('[PurgePhantomMigratedFlows] aborted: ' . $e->getMessage());
 			$output->warning('Phantom-flow purge stopped early: ' . $e->getMessage());
@@ -209,14 +180,70 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 		// says only "done" cannot be told from one that matched nothing, and the
 		// reported rows are the ones a human has to look at — naming them here is
 		// the whole point of not deleting them.
-		$output->info(
-			sprintf('Phantom flow rows: %d removed, %d reported for review.', $removed, count($reported))
-		);
-
-		foreach ($reported as $line) {
-			$output->info('  needs review: ' . $line);
-		}
+		$purge->announce(output: $output);
 	}//end run()
+
+	/**
+	 * Decide one candidate row: skip it, report it, or hand it to the provenance proof.
+	 *
+	 * @param Flow                $flow  The candidate row.
+	 * @param PhantomFlowPurgeRun $purge The progress of this purge.
+	 *
+	 * @return void
+	 */
+	private function triage(Flow $flow, PhantomFlowPurgeRun $purge): void {
+		if ($this->isUnrunnableShell(flow: $flow) === false) {
+			return;
+		}
+
+		if ($this->hasEverRun(flow: $flow) === true) {
+			$purge->report(line: (string)$flow->getUuid() . ' (unrunnable, but it has run history)');
+			return;
+		}
+
+		$this->removeIfCopiedFromAnotherSchema(flow: $flow, purge: $purge);
+	}//end triage()
+
+	/**
+	 * Remove a never-run shell only when it provably came from a non-flow object.
+	 *
+	 * @param Flow                $flow  The unrunnable, never-dispatched row.
+	 * @param PhantomFlowPurgeRun $purge The progress of this purge.
+	 *
+	 * @return void
+	 */
+	private function removeIfCopiedFromAnotherSchema(Flow $flow, PhantomFlowPurgeRun $purge): void {
+		$uuid         = (string)$flow->getUuid();
+		$sourceSchema = $this->sourceSchemaSlug(uuid: $uuid);
+		if ($sourceSchema === null) {
+			$purge->report(line: $uuid . ' (unrunnable, but no source object to identify it by)');
+			return;
+		}
+
+		if ($sourceSchema === self::FLOW_SCHEMA) {
+			$purge->report(line: $uuid . ' (unrunnable, but it really is a flow object — an empty draft)');
+			return;
+		}
+
+		$this->removePhantom(flow: $flow, sourceSchema: $sourceSchema);
+		$purge->countRemoval();
+	}//end removeIfCopiedFromAnotherSchema()
+
+	/**
+	 * Delete a row proven to be a copy of a non-flow object, and say so.
+	 *
+	 * @param Flow   $flow         The row to delete.
+	 * @param string $sourceSchema The slug of the schema the row was copied from.
+	 *
+	 * @return void
+	 */
+	private function removePhantom(Flow $flow, string $sourceSchema): void {
+		$this->flowMapper->delete($flow);
+		$this->logger->warning(
+			'[PurgePhantomMigratedFlows] removed ' . (string)$flow->getUuid()
+			. ': an unrunnable, never-dispatched copy of a `' . $sourceSchema . '` object'
+		);
+	}//end removePhantom()
 
 	/**
 	 * Every flow this migration could have written, page by page.
@@ -228,9 +255,8 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 
 		while (true) {
 			$page = $this->flowMapper->findAllFlows(
-				app: self::MIGRATED_APP,
-				limit: self::PAGE,
-				offset: $offset
+				selection: new FlowSelection(app: self::MIGRATED_APP),
+				query: new ListQuery(limit: self::PAGE, offset: $offset)
 			);
 
 			if (empty($page) === true) {
@@ -268,6 +294,17 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 			return false;
 		}
 
+		return $this->hasNoStarter(flow: $flow);
+	}//end isUnrunnableShell()
+
+	/**
+	 * Whether nothing on this row names how it should start.
+	 *
+	 * @param Flow $flow The row under test.
+	 *
+	 * @return boolean True when trigger, trigger register, trigger schema and cron are all blank.
+	 */
+	private function hasNoStarter(Flow $flow): bool {
 		$starters = [
 			$flow->getTrigger(),
 			$flow->getTriggerRegister(),
@@ -282,7 +319,7 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 		}
 
 		return true;
-	}//end isUnrunnableShell()
+	}//end hasNoStarter()
 
 	/**
 	 * Whether this flow has ever been dispatched.
@@ -323,8 +360,24 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 			return null;
 		}
 
+		$schemaRef = $this->sourceSchemaRef(uuid: $uuid);
+		if ($schemaRef === null) {
+			return null;
+		}
+
+		return $this->schemaSlugOf(uuid: $uuid, schemaRef: $schemaRef);
+	}//end sourceSchemaSlug()
+
+	/**
+	 * The schema reference of the register object this uuid came from, if any.
+	 *
+	 * @param string $uuid The flow row's uuid.
+	 *
+	 * @return string|null The source object's schema reference, or null when nothing resolves.
+	 */
+	private function sourceSchemaRef(string $uuid): ?string {
 		try {
-			$objects = $this->objectMapper->findMultipleAcrossAllMagicTables(uuids: [$uuid]);
+			$objects = $this->origins->objectMapper->findMultipleAcrossAllMagicTables(uuids: [$uuid]);
 		} catch (Throwable $e) {
 			$this->logger->warning('[PurgePhantomMigratedFlows] could not resolve ' . $uuid . ': ' . $e->getMessage());
 			return null;
@@ -335,13 +388,36 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 			return null;
 		}
 
+		return $this->schemaRefOf(object: $object);
+	}//end sourceSchemaRef()
+
+	/**
+	 * An object's schema reference, when it carries one.
+	 *
+	 * @param ObjectEntity $object The source object.
+	 *
+	 * @return string|null The schema reference, or null when it is absent or blank.
+	 */
+	private function schemaRefOf(ObjectEntity $object): ?string {
 		$schemaRef = $object->getSchema();
 		if ($schemaRef === null || trim((string)$schemaRef) === '') {
 			return null;
 		}
 
+		return $schemaRef;
+	}//end schemaRefOf()
+
+	/**
+	 * The slug of the schema a source object points at, if it resolves to one.
+	 *
+	 * @param string $uuid      The flow row's uuid, for the log line.
+	 * @param string $schemaRef The source object's schema reference.
+	 *
+	 * @return string|null The schema slug, or null when the schema or its slug is missing.
+	 */
+	private function schemaSlugOf(string $uuid, string $schemaRef): ?string {
 		try {
-			$schema = $this->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false);
+			$schema = $this->origins->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->warning('[PurgePhantomMigratedFlows] could not resolve schema for ' . $uuid . ': ' . $e->getMessage());
 			return null;
@@ -353,5 +429,5 @@ class PurgePhantomMigratedFlows implements IRepairStep {
 		}
 
 		return $slug;
-	}//end sourceSchemaSlug()
+	}//end schemaSlugOf()
 }//end class

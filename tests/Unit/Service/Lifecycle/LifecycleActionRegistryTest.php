@@ -51,11 +51,7 @@ class LifecycleActionRegistryTest extends TestCase {
 		$this->serverContainer = $this->createMock(IServerContainer::class);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$this->registry = new LifecycleActionRegistry(
-			$this->container,
-			$this->serverContainer,
-			$logger
-		);
+		$this->registry = new LifecycleActionRegistry(new \OCA\OpenRegister\Service\Lifecycle\ContainerLookup($this->container, $this->serverContainer, $logger));
 	}//end setUp()
 
 	/**

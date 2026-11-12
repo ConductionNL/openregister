@@ -23,6 +23,7 @@ import {
 	orderedNodes,
 	runCounts,
 	runDuration,
+	shownStatus,
 	stepRows,
 } from './flowDetail.js'
 
@@ -209,6 +210,16 @@ describe('the derivations', () => {
 		})
 	})
 
+	it('counts a clean End as completed and a stop from a check as stopped', () => {
+		const runs = [{ status: 'stopped', outcome: 'completed' }, { status: 'stopped', outcome: 'stopped' }]
+		expect(runCounts(runs)).toMatchObject({ completed: 1, stopped: 1 })
+	})
+
+	it('shows the outcome of a run, else its status', () => {
+		expect(shownStatus({ status: 'stopped', outcome: 'completed' })).toBe('completed')
+		expect(shownStatus({ status: 'stopped' })).toBe('stopped')
+	})
+
 	it('has no average when no step recorded a duration', () => {
 		expect(
 			averageDuration([{ log: [] }, { log: [{ status: 'completed' }] }]),
@@ -237,6 +248,16 @@ describe('the derivations', () => {
 			label: 'Read objects',
 			error: 'Subject "e2236ef7" no longer exists.',
 		})
+	})
+
+	it('reads an End step as completed and a stop from a check as stopped', () => {
+		const nodes = [{ id: 'end', type: 'openregister.end' }, { id: 'gate', type: 'x' }]
+		const log = [
+			{ transition: 'end', status: 'stopped', checkId: null },
+			{ transition: 'gate', status: 'stopped', checkId: 'budget' },
+		]
+		const rows = stepRows({ log }, orderedNodes(nodes, []))
+		expect(rows.map((row) => row.status)).toEqual(['completed', 'stopped'])
 	})
 
 	it('merges a node logged many times and lists unreached nodes', () => {

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -23,9 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use DateTime;
-use OCP\IGroupManager;
 use OCP\IUserSession;
-use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -47,7 +45,7 @@ use Throwable;
  * the credential in a table and a mailbox, so for a secret the old and new
  * values are simply never handed over.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class SecuritySettingAnnouncer {
 	/**
@@ -68,15 +66,13 @@ class SecuritySettingAnnouncer {
 	 * Constructor.
 	 *
 	 * @param SecuritySettingRegistry $registry      The marker and the snapshot.
-	 * @param INotificationManager    $notifications Delivers the announcement.
-	 * @param IGroupManager           $groupManager  Finds the administrators.
+	 * @param AnnouncementRecipients $recipients The notification manager and the administrators it notifies.
 	 * @param IUserSession            $userSession   Names the actor.
 	 * @param LoggerInterface         $logger        Reports a delivery failure.
 	 */
 	public function __construct(
 		private readonly SecuritySettingRegistry $registry,
-		private readonly INotificationManager $notifications,
-		private readonly IGroupManager $groupManager,
+		private readonly AnnouncementRecipients $recipients,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -87,7 +83,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return array<string, mixed> Path to value.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function snapshot(): array {
 		try {
@@ -109,7 +105,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return int The number of notifications delivered.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function announce(array $before, array $after): int {
 		$changes = $this->changes(before: $before, after: $after);
@@ -117,8 +113,22 @@ class SecuritySettingAnnouncer {
 			return 0;
 		}
 
+		$recipients = $this->administratorsToTell();
+		if ($recipients === null) {
+			return 0;
+		}
+
+		return $this->announceTo(changes: $changes, recipients: $recipients);
+	}//end announce()
+
+	/**
+	 * The administrators to tell, or null (logged) when they cannot be found.
+	 *
+	 * @return array<int, string>|null The administrator uids.
+	 */
+	private function administratorsToTell(): ?array {
 		try {
-			$recipients = $this->administrators();
+			return $this->administrators();
 		} catch (Throwable $lookupFailed) {
 			$this->logger->warning(
 				message: '[SecuritySettingAnnouncer] Could not find the administrators to tell: '
@@ -126,20 +136,31 @@ class SecuritySettingAnnouncer {
 				context: ['app' => 'openregister']
 			);
 
-			return 0;
+			return null;
 		}
+	}//end administratorsToTell()
 
+	/**
+	 * Tell every administrator about every changed setting.
+	 *
+	 * @param array<string, array{old: mixed, new: mixed}> $changes    The changed settings, by path.
+	 * @param array<int, string>                           $recipients The administrator uids.
+	 *
+	 * @return int The notifications delivered.
+	 */
+	private function announceTo(array $changes, array $recipients): int {
 		$actor = $this->actor();
-		$sent = 0;
+		$sent  = 0;
 		foreach ($changes as $path => $change) {
-			$parameters = $this->parameters(path: $path, change: $change, actor: $actor);
+			$setting    = new SettingChange(path: (string)$path, old: $change['old'], new: $change['new']);
+			$parameters = $this->parameters(change: $setting, actor: $actor);
 			foreach ($recipients as $uid) {
-				$sent += $this->deliver(uid: $uid, path: $path, parameters: $parameters);
+				$sent += $this->deliver(uid: $uid, parameters: $parameters);
 			}
 		}
 
 		return $sent;
-	}//end announce()
+	}//end announceTo()
 
 	/**
 	 * The marked settings whose value moved.
@@ -153,7 +174,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return array<string, array{old: mixed, new: mixed}> Path to change.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function changes(array $before, array $after): array {
 		$changes = [];
@@ -180,28 +201,27 @@ class SecuritySettingAnnouncer {
 	/**
 	 * The notification parameters for one change.
 	 *
-	 * @param string                        $path   The setting path.
-	 * @param array{old: mixed, new: mixed} $change The old and new value.
-	 * @param string                        $actor  Who made the change.
+	 * @param SettingChange $change The setting path and its old and new value.
+	 * @param string        $actor  Who made the change.
 	 *
 	 * @return array<string, string|bool> The parameters, with no values for a secret.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	public function parameters(string $path, array $change, string $actor): array {
+	public function parameters(SettingChange $change, string $actor): array {
 		$parameters = [
-			'setting' => $path,
-			'label' => $this->registry->label(path: $path),
+			'setting' => $change->path,
+			'label' => $this->registry->label(path: $change->path),
 			'actor' => $actor,
-			'secret' => $this->registry->isSecret(path: $path),
+			'secret' => $this->registry->isSecret(path: $change->path),
 		];
 
 		if ($parameters['secret'] === true) {
 			return $parameters;
 		}
 
-		$parameters['oldValue'] = self::render(value: $change['old']);
-		$parameters['newValue'] = self::render(value: $change['new']);
+		$parameters['oldValue'] = self::render(value: $change->old);
+		$parameters['newValue'] = self::render(value: $change->new);
 
 		return $parameters;
 	}//end parameters()
@@ -213,7 +233,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return string The display form.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function render(mixed $value): string {
 		if (is_bool($value) === true) {
@@ -240,10 +260,10 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return string[] The recipients.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function administrators(): array {
-		$group = $this->groupManager->get(self::ADMIN_GROUP);
+		$group = $this->recipients->groupManager->get(self::ADMIN_GROUP);
 		if ($group === null) {
 			return [];
 		}
@@ -261,7 +281,7 @@ class SecuritySettingAnnouncer {
 	 *
 	 * @return string The display name, or `system` for a change with no session.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function actor(): string {
 		try {
@@ -286,22 +306,16 @@ class SecuritySettingAnnouncer {
 	 * Deliver one notification.
 	 *
 	 * @param string                     $uid        The recipient.
-	 * @param string                     $path       The setting path, used as the object id.
-	 * @param array<string, string|bool> $parameters The subject parameters.
+	 * @param array<string, string|bool> $parameters The subject parameters; their `setting` path is the object id.
 	 *
 	 * @return int 1 when delivered, 0 when not.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function deliver(string $uid, string $path, array $parameters): int {
+	private function deliver(string $uid, array $parameters): int {
+		$path = (string)$parameters['setting'];
 		try {
-			$notification = $this->notifications->createNotification();
-			$notification->setApp('openregister')
-				->setUser($uid)
-				->setDateTime(new DateTime())
-				->setObject('security_setting', $path)
-				->setSubject(self::SUBJECT, $parameters);
-			$this->notifications->notify($notification);
+			$this->notify(uid: $uid, parameters: $parameters);
 		} catch (Throwable $deliveryFailed) {
 			$this->logger->warning(
 				message: '[SecuritySettingAnnouncer] Could not announce a security setting change: '
@@ -314,4 +328,22 @@ class SecuritySettingAnnouncer {
 
 		return 1;
 	}//end deliver()
+
+	/**
+	 * Send the announcement notification to one administrator.
+	 *
+	 * @param string               $uid        The administrator.
+	 * @param array<string, mixed> $parameters The notification subject parameters; `setting` is the object id.
+	 *
+	 * @return void
+	 */
+	private function notify(string $uid, array $parameters): void {
+		$notification = $this->recipients->notifications->createNotification();
+		$notification->setApp('openregister')
+			->setUser($uid)
+			->setDateTime(new DateTime())
+			->setObject('security_setting', (string)$parameters['setting'])
+			->setSubject(self::SUBJECT, $parameters);
+		$this->recipients->notifications->notify($notification);
+	}//end notify()
 }//end class

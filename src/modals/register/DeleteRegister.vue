@@ -4,11 +4,22 @@ import { navigationStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteRegister'"
 		name="Register verwijderen"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="!success && registerStore.registerItem?.schemas.length === 0"
+		successText="Register succesvol verwijderd"
+		:closeLabel="
+			success || registerStore.registerItem?.schemas.length !== 0
+				? 'Sluiten'
+				: 'Annuleer'
+		"
+		confirmLabel="Verwijderen"
+		@cancel="closeDialog"
+		@confirm="deleteRegister()">
 		<p v-if="!success && registerStore.registerItem?.schemas.length === 0">
 			Wil je <b>{{ registerStore.registerItem?.title }}</b> definitief
 			verwijderen? Deze actie kan niet ongedaan worden gemaakt.
@@ -22,80 +33,25 @@ import { navigationStore, registerStore } from '../../store/store.js'
 			}}
 			in het register.
 		</p>
-		<NcNoteCard v-if="success" type="success">
-			<p>Register succesvol verwijderd</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-		<template v-if="registerStore.registerItem?.schemas.length === 0" #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Sluiten' : 'Annuleer' }}
-			</NcButton>
-			<NcButton
-				v-if="!success"
-				:disabled="loading"
-				variant="error"
-				@click="deleteRegister()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Verwijderen
-			</NcButton>
-		</template>
-		<template v-else #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				Sluiten
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import {
+	confirmDialogState,
+	settleConfirmRequest,
+} from '../shared/confirmDialogState.js'
 
 export default {
 	name: 'DeleteRegister',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		TrashCanOutline,
-		Cancel,
+		ConfirmDialogFrame,
 	},
 
-	data() {
-		return {
-			success: false,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-		}
-	},
+	mixins: [confirmDialogState(false)],
 
 	methods: {
-		/**
-		 * @spec exclude Modal close plumbing — closes the delete-register dialog and resets state.
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-			clearTimeout(this.closeModalTimeout)
-			this.success = false
-			this.loading = false
-			this.error = false
-		},
-
 		/**
 		 * @spec exclude Modal action plumbing — delegates deletion to registerStore.deleteRegister.
 		 */
@@ -104,28 +60,11 @@ export default {
 				return
 			}
 			this.loading = true
-			registerStore
-				.deleteRegister({
-					...registerStore.registerItem,
-				})
-				.then(({ response }) => {
-					this.success = response.ok
-					this.error = false
-					response.ok
-						&& (this.closeModalTimeout = setTimeout(
-							this.closeDialog,
-							2000,
-						))
-				})
-				.catch((error) => {
-					this.success = false
-					this.error =
-						error.message
-						|| 'Er is een fout opgetreden bij het verwijderen van het register'
-				})
-				.finally(() => {
-					this.loading = false
-				})
+			settleConfirmRequest(
+				this,
+				registerStore.deleteRegister({ ...registerStore.registerItem }),
+				'Er is een fout opgetreden bij het verwijderen van het register',
+			)
 		},
 	},
 }

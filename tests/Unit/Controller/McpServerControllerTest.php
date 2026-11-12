@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\McpServerController;
-use OCA\OpenRegister\Service\Mcp\McpProtocolService;
-use OCA\OpenRegister\Service\Mcp\McpResourcesService;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\McpServerControllerFactory;
+use OCA\OpenRegister\Mcp\Controller\McpServerController;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpProtocolService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -100,10 +101,9 @@ class McpServerControllerTest extends TestCase {
 
 		// A session without an agent: the scope passes every listing through.
 		$this->agentScope = $this->createMock(\OCA\OpenRegister\Service\Mcp\McpAgentScope::class);
-		$this->agentScope->method('filterListing')->willReturnArgument(2);
+		$this->agentScope->method('filterListing')->willReturnArgument(1);
 
-		$this->controller = new McpServerController(
-			'openregister',
+		$this->controller = McpServerControllerFactory::create(
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,
@@ -160,10 +160,6 @@ class McpServerControllerTest extends TestCase {
 	// Instantiation
 	// ---------------------------------------------------------------
 
-	public function testControllerInstantiation(): void {
-		$this->assertInstanceOf(McpServerController::class, $this->controller);
-	}
-
 	// ---------------------------------------------------------------
 	// handle() — Unauthenticated requests (#4284)
 	// ---------------------------------------------------------------
@@ -173,8 +169,7 @@ class McpServerControllerTest extends TestCase {
 	 * caller: the user session holds no user.
 	 */
 	private function unauthenticatedController(): McpServerController {
-		return new McpServerController(
-			'openregister',
+		return McpServerControllerFactory::create(
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,
@@ -238,8 +233,7 @@ class McpServerControllerTest extends TestCase {
 		$session->method('getUser')->willReturnOnConsecutiveCalls(null, $bob);
 
 		// Built while nobody is logged in: must not throw.
-		$controller = new McpServerController(
-			'openregister',
+		$controller = McpServerControllerFactory::create(
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,

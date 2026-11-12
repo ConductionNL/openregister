@@ -1,0 +1,1360 @@
+{
+    "pg / multiple / deleted false": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?,?,?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE _uuid IN (?,?,?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?,?,?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE _uuid IN (?,?,?) AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3"
+                ]
+            },
+            {
+                "registerFind": [
+                    9101,
+                    true,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9102,
+                    true,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9103,
+                    true,
+                    false
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Error fetching from table",
+                "context": {
+                    "table": "oc_openregister_table_9103_9204",
+                    "error": "gone"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete",
+                "context": {
+                    "requestedCount": 3,
+                    "foundCount": 3,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 expr.isNull(_deleted)",
+            "#1 andWhere(isNull(_deleted))",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_table_9102_9202, NULL)",
+            "#2 param :p2 = [\"u-3\"], 102",
+            "#2 expr.in(_uuid, :p2, NULL)",
+            "#2 where(in(_uuid, :p2, NULL))",
+            "#2 expr.isNull(_deleted)",
+            "#2 andWhere(isNull(_deleted))",
+            "#2 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ],
+            [
+                "u-3",
+                "9102",
+                "9202",
+                "Three"
+            ]
+        ]
+    },
+    "pg / multiple scoped / deleted false": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?,?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-3",
+                    "u-1",
+                    "u-3"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete",
+                "context": {
+                    "requestedCount": 2,
+                    "foundCount": 2,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 expr.isNull(_deleted)",
+            "#1 andWhere(isNull(_deleted))",
+            "#1 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ]
+        ]
+    },
+    "pg / relation / deleted false": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _relations::text LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE _relations::text LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _relations::text LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE _relations::text LIKE ? AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%"
+                ]
+            },
+            {
+                "registerFind": [
+                    9101,
+                    true,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9102,
+                    true,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9103,
+                    true,
+                    false
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: Error fetching from table",
+                "context": {
+                    "table": "oc_openregister_table_9103_9204",
+                    "error": "gone"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: Search complete",
+                "context": {
+                    "uuid": "target-uuid",
+                    "foundCount": 3,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 expr.isNull(_deleted)",
+            "#1 andWhere(isNull(_deleted))",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_table_9102_9202, NULL)",
+            "#2 param :p2 = [\"u-3\"], 102",
+            "#2 expr.in(_uuid, :p2, NULL)",
+            "#2 where(in(_uuid, :p2, NULL))",
+            "#2 expr.isNull(_deleted)",
+            "#2 andWhere(isNull(_deleted))",
+            "#2 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ],
+            [
+                "u-3",
+                "9102",
+                "9202",
+                "Three"
+            ]
+        ]
+    },
+    "pg / multiple / deleted true": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?,?,?) UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE _uuid IN (?,?,?) UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?,?,?) UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE _uuid IN (?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9103,
+                    true,
+                    false
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Error fetching from table",
+                "context": {
+                    "table": "oc_openregister_table_9103_9204",
+                    "error": "gone"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete",
+                "context": {
+                    "requestedCount": 3,
+                    "foundCount": 3,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_table_9102_9202, NULL)",
+            "#2 param :p2 = [\"u-3\"], 102",
+            "#2 expr.in(_uuid, :p2, NULL)",
+            "#2 where(in(_uuid, :p2, NULL))",
+            "#2 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ],
+            [
+                "u-3",
+                "9102",
+                "9202",
+                "Three"
+            ]
+        ]
+    },
+    "pg / multiple scoped / deleted true": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?,?) UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-3",
+                    "u-1",
+                    "u-3"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete",
+                "context": {
+                    "requestedCount": 2,
+                    "foundCount": 2,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ]
+        ]
+    },
+    "pg / relation / deleted true": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _relations::text LIKE ? UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE _relations::text LIKE ? UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _relations::text LIKE ? UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE _relations::text LIKE ?"
+            },
+            {
+                "execute": [
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9103,
+                    true,
+                    false
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: Error fetching from table",
+                "context": {
+                    "table": "oc_openregister_table_9103_9204",
+                    "error": "gone"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: Search complete",
+                "context": {
+                    "uuid": "target-uuid",
+                    "foundCount": 3,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_table_9102_9202, NULL)",
+            "#2 param :p2 = [\"u-3\"], 102",
+            "#2 expr.in(_uuid, :p2, NULL)",
+            "#2 where(in(_uuid, :p2, NULL))",
+            "#2 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ],
+            [
+                "u-3",
+                "9102",
+                "9202",
+                "Three"
+            ]
+        ]
+    },
+    "pg / multiple / union fails": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE _uuid IN (?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE _uuid IN (?) AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-1",
+                    "u-1",
+                    "u-1"
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: UNION query failed",
+                "context": {
+                    "error": "union refused"
+                }
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "pg / relation / union fails": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _relations::text LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE _relations::text LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _relations::text LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE _relations::text LIKE ? AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "%\"t\"%",
+                    "%\"t\"%",
+                    "%\"t\"%",
+                    "%\"t\"%"
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: UNION query failed",
+                "context": {
+                    "error": "union refused"
+                }
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "pg / multiple / no tables": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "pg / relation / no tables": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "pg / multiple / scope matches nothing": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "maria / multiple / deleted false": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?,?,?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE _uuid IN (?,?,?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?,?,?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE _uuid IN (?,?,?) AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9103,
+                    true,
+                    false
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Error fetching from table",
+                "context": {
+                    "table": "oc_openregister_table_9103_9204",
+                    "error": "gone"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete",
+                "context": {
+                    "requestedCount": 3,
+                    "foundCount": 3,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 expr.isNull(_deleted)",
+            "#1 andWhere(isNull(_deleted))",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_table_9102_9202, NULL)",
+            "#2 param :p2 = [\"u-3\"], 102",
+            "#2 expr.in(_uuid, :p2, NULL)",
+            "#2 where(in(_uuid, :p2, NULL))",
+            "#2 expr.isNull(_deleted)",
+            "#2 andWhere(isNull(_deleted))",
+            "#2 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ],
+            [
+                "u-3",
+                "9102",
+                "9202",
+                "Three"
+            ]
+        ]
+    },
+    "maria / multiple scoped / deleted false": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?,?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?,?) AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-3",
+                    "u-1",
+                    "u-3"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete",
+                "context": {
+                    "requestedCount": 2,
+                    "foundCount": 2,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 expr.isNull(_deleted)",
+            "#1 andWhere(isNull(_deleted))",
+            "#1 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ]
+        ]
+    },
+    "maria / relation / deleted false": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE CAST(_relations AS CHAR) LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE CAST(_relations AS CHAR) LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE CAST(_relations AS CHAR) LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE CAST(_relations AS CHAR) LIKE ? AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9103,
+                    true,
+                    false
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: Error fetching from table",
+                "context": {
+                    "table": "oc_openregister_table_9103_9204",
+                    "error": "gone"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: Search complete",
+                "context": {
+                    "uuid": "target-uuid",
+                    "foundCount": 3,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 expr.isNull(_deleted)",
+            "#1 andWhere(isNull(_deleted))",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_table_9102_9202, NULL)",
+            "#2 param :p2 = [\"u-3\"], 102",
+            "#2 expr.in(_uuid, :p2, NULL)",
+            "#2 where(in(_uuid, :p2, NULL))",
+            "#2 expr.isNull(_deleted)",
+            "#2 andWhere(isNull(_deleted))",
+            "#2 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ],
+            [
+                "u-3",
+                "9102",
+                "9202",
+                "Three"
+            ]
+        ]
+    },
+    "maria / multiple / deleted true": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?,?,?) UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE _uuid IN (?,?,?) UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?,?,?) UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE _uuid IN (?,?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3",
+                    "u-1",
+                    "u-2",
+                    "u-3"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9103,
+                    true,
+                    false
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Error fetching from table",
+                "context": {
+                    "table": "oc_openregister_table_9103_9204",
+                    "error": "gone"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete",
+                "context": {
+                    "requestedCount": 3,
+                    "foundCount": 3,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_table_9102_9202, NULL)",
+            "#2 param :p2 = [\"u-3\"], 102",
+            "#2 expr.in(_uuid, :p2, NULL)",
+            "#2 where(in(_uuid, :p2, NULL))",
+            "#2 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ],
+            [
+                "u-3",
+                "9102",
+                "9202",
+                "Three"
+            ]
+        ]
+    },
+    "maria / multiple scoped / deleted true": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?,?) UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?,?)"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-3",
+                    "u-1",
+                    "u-3"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: Batch search complete",
+                "context": {
+                    "requestedCount": 2,
+                    "foundCount": 2,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ]
+        ]
+    },
+    "maria / relation / deleted true": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE CAST(_relations AS CHAR) LIKE ? UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE CAST(_relations AS CHAR) LIKE ? UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE CAST(_relations AS CHAR) LIKE ? UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE CAST(_relations AS CHAR) LIKE ?"
+            },
+            {
+                "execute": [
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%",
+                    "%\"target-uuid\"%"
+                ]
+            },
+            {
+                "schemaFind": [
+                    9201,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "schemaFind": [
+                    9202,
+                    [],
+                    true,
+                    true
+                ]
+            },
+            {
+                "registerFind": [
+                    9103,
+                    true,
+                    false
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: Error fetching from table",
+                "context": {
+                    "table": "oc_openregister_table_9103_9204",
+                    "error": "gone"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: Search complete",
+                "context": {
+                    "uuid": "target-uuid",
+                    "foundCount": 3,
+                    "tablesWithMatches": 4
+                }
+            }
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_table_9101_9201, NULL)",
+            "#1 param :p1 = [\"u-1\",\"u-2\"], 102",
+            "#1 expr.in(_uuid, :p1, NULL)",
+            "#1 where(in(_uuid, :p1, NULL))",
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_table_9102_9202, NULL)",
+            "#2 param :p2 = [\"u-3\"], 102",
+            "#2 expr.in(_uuid, :p2, NULL)",
+            "#2 where(in(_uuid, :p2, NULL))",
+            "#2 executeQuery()"
+        ],
+        "found": [
+            [
+                "u-1",
+                "9101",
+                "9201",
+                "One"
+            ],
+            [
+                "u-2",
+                "9101",
+                "9201",
+                null
+            ],
+            [
+                "u-3",
+                "9102",
+                "9202",
+                "Three"
+            ]
+        ]
+    },
+    "maria / multiple / union fails": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE _uuid IN (?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE _uuid IN (?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE _uuid IN (?) AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE _uuid IN (?) AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "u-1",
+                    "u-1",
+                    "u-1",
+                    "u-1"
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] findMultipleAcrossAllMagicTables: UNION query failed",
+                "context": {
+                    "error": "union refused"
+                }
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "maria / relation / union fails": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            },
+            {
+                "prepare": "SELECT 'oc_openregister_table_9101_9201' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9201 WHERE CAST(_relations AS CHAR) LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9102_9202' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9102_9202 WHERE CAST(_relations AS CHAR) LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9101_9203' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9101_9203 WHERE CAST(_relations AS CHAR) LIKE ? AND _deleted IS NULL UNION ALL SELECT 'oc_openregister_table_9103_9204' AS _source_table, _uuid AS found_uuid FROM oc_openregister_table_9103_9204 WHERE CAST(_relations AS CHAR) LIKE ? AND _deleted IS NULL"
+            },
+            {
+                "execute": [
+                    "%\"t\"%",
+                    "%\"t\"%",
+                    "%\"t\"%",
+                    "%\"t\"%"
+                ]
+            },
+            {
+                "log": "error",
+                "message": "[MagicMapper] findByRelationAcrossAllMagicTables: UNION query failed",
+                "context": {
+                    "error": "union refused"
+                }
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "maria / multiple / no tables": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "maria / relation / no tables": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "maria / multiple / scope matches nothing": {
+        "events": [
+            {
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+            },
+            {
+                "execute": [
+                    "oc_openregister_table_%"
+                ]
+            }
+        ],
+        "queries": [],
+        "found": []
+    },
+    "multiple / empty": {
+        "events": [],
+        "queries": [],
+        "found": []
+    },
+    "relation / empty": {
+        "events": [],
+        "queries": [],
+        "found": []
+    }
+}

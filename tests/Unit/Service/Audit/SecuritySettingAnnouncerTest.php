@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -27,6 +27,7 @@ namespace Unit\Service\Audit;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
+use OCA\OpenRegister\Service\Audit\AnnouncementRecipients;
 use OCA\OpenRegister\Service\Audit\SecuritySettingRegistry;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -99,7 +100,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 		return $user;
 	}//end user()
 
-	private function announcer(?IGroupManager $groups = null): SecuritySettingAnnouncer {
+	private function announcer(?IGroupManager $groups = null, ?SecuritySettingRegistry $registry = null): SecuritySettingAnnouncer {
 		if ($groups === null) {
 			$admins = $this->createMock(IGroup::class);
 			$admins->method('getUsers')->willReturn([$this->user('beheer1', 'Beheer 1'), $this->user('beheer2', 'Beheer 2')]);
@@ -111,9 +112,8 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 		$session->method('getUser')->willReturn($this->user('jan', 'Jan Jansen'));
 
 		return new SecuritySettingAnnouncer(
-			new SecuritySettingRegistry($this->appConfig()),
-			$this->notificationManager(),
-			$groups,
+			$registry ?? new SecuritySettingRegistry($this->appConfig()),
+			new AnnouncementRecipients($this->notificationManager(), $groups),
 			$session,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -140,16 +140,25 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 	}//end testTheAdministratorsHearWhenAccessControlIsSwitchedOff()
 
 	public function testASecretIsAnnouncedWithoutEitherValue(): void {
-		$this->stored['solr'] = (string)json_encode(['password' => 'oud-geheim']);
-		$announcer = $this->announcer();
+		// No shipped setting is a secret, so a registry that marks one stands in.
+		$registry = $this->createMock(SecuritySettingRegistry::class);
+		$registry->method('snapshot')->willReturnCallback(
+			fn (): array => ['integration.apiToken' => $this->stored['integration.apiToken'] ?? null]
+		);
+		$registry->method('isSecurityRelevant')->willReturn(true);
+		$registry->method('isSecret')->willReturn(true);
+		$registry->method('label')->willReturn('Integration token');
+
+		$this->stored['integration.apiToken'] = 'oud-geheim';
+		$announcer = $this->announcer(registry: $registry);
 		$before = $announcer->snapshot();
 
-		$this->stored['solr'] = (string)json_encode(['password' => 'nieuw-geheim']);
+		$this->stored['integration.apiToken'] = 'nieuw-geheim';
 		$announcer->announce($before, $announcer->snapshot());
 
 		self::assertNotSame([], $this->sent, 'a changed secret is still announced');
 		$parameters = $this->sent[0]['parameters'];
-		self::assertSame('solr.password', $parameters['setting']);
+		self::assertSame('integration.apiToken', $parameters['setting']);
 		self::assertTrue($parameters['secret']);
 		self::assertArrayNotHasKey('oldValue', $parameters);
 		self::assertArrayNotHasKey('newValue', $parameters);
@@ -165,7 +174,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 		$registry = new SecuritySettingRegistry($this->appConfig());
 
 		self::assertTrue($registry->isSecret('integration.apiToken'));
-		self::assertTrue($registry->isSecret('solr.zookeeperPassword'));
+		self::assertTrue($registry->isSecret('mail.smtpPassword'));
 		self::assertFalse($registry->isSecret('rbac.enabled'));
 	}//end testACredentialMissingItsFlagIsStillNotQuoted()
 
@@ -229,8 +238,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 
 		$announcer = new SecuritySettingAnnouncer(
 			new SecuritySettingRegistry($this->appConfig()),
-			$manager,
-			$groups,
+			new AnnouncementRecipients($manager, $groups),
 			$session,
 			$this->createMock(LoggerInterface::class)
 		);
@@ -252,8 +260,7 @@ final class SecuritySettingAnnouncerTest extends TestCase {
 
 		$announcer = new SecuritySettingAnnouncer(
 			new SecuritySettingRegistry($this->appConfig()),
-			$this->notificationManager(),
-			$groups,
+			new AnnouncementRecipients($this->notificationManager(), $groups),
 			$session,
 			$this->createMock(LoggerInterface::class)
 		);

@@ -44,9 +44,10 @@ class MagicBulkHandlerPreUpdateStateTest extends TestCase {
 	 *
 	 * @param string $class The class holding the method.
 	 * @param string $method The method that must carry the flag.
+	 * @param int $position The slot the flag was appended at.
 	 */
 	#[\PHPUnit\Framework\Attributes\DataProvider('plumbedMethods')]
-	public function testTheFlagIsCarriedAndDefaultsToTheSafeValue(string $class, string $method): void {
+	public function testTheFlagIsCarriedAndDefaultsToTheSafeValue(string $class, string $method, int $position): void {
 		$parameters = (new ReflectionMethod($class, $method))->getParameters();
 
 		$found = null;
@@ -64,25 +65,62 @@ class MagicBulkHandlerPreUpdateStateTest extends TestCase {
 		);
 
 		// APPENDED, not inserted. A named argument needs the parameter to exist;
-		// a positional caller needs every earlier slot to stay where it was.
+		// a positional caller needs every earlier slot to stay where it was. So
+		// the flag keeps the slot it was appended at, and anything appended
+		// after it must be optional,
+		// so a positional caller that stops at the flag still works.
 		$this->assertSame(
-			(count($parameters) - 1),
+			$position,
 			$found->getPosition(),
-			"$class::$method must append the flag last, or every positional caller shifts."
+			"$class::$method moved the flag, so every positional caller shifts."
+		);
+		foreach (array_slice($parameters, ($position + 1)) as $later) {
+			$this->assertTrue(
+				$later->isDefaultValueAvailable(),
+				"$class::$method appended \${$later->getName()} after the flag without a default."
+			);
+		}
+	}
+
+	/**
+	 * The mapper and the handler take the flag only inside a BulkUpsertCommand,
+	 * so its TRUE default (pinned above) is the default of every bulk upsert.
+	 *
+	 * @param string $class The class holding the method.
+	 * @param string $method The bulk upsert entry point.
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('commandEntryPoints')]
+	public function testTheEntryPointsTakeTheCommand(string $class, string $method): void {
+		$parameters = (new ReflectionMethod($class, $method))->getParameters();
+
+		$this->assertCount(1, $parameters, "$class::$method takes more than the command.");
+		$this->assertSame(
+			\OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand::class,
+			(string) $parameters[0]->getType(),
+			"$class::$method no longer takes a BulkUpsertCommand."
 		);
 	}
 
 	/**
 	 * @return array<string, array{0: string, 1: string}>
 	 */
+	public static function commandEntryPoints(): array {
+		return [
+			'handler upsert' => [MagicBulkHandler::class, 'upsert'],
+			'mapper bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper::class, 'bulkUpsert'],
+			'writer interface bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper\MagicObjectWriterInterface::class, 'bulkUpsert'],
+		];
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string, 2: int}>
+	 */
 	public static function plumbedMethods(): array {
 		return [
-			'handler bulkUpsert' => [MagicBulkHandler::class, 'bulkUpsert'],
-			'handler executeUpsertChunk' => [MagicBulkHandler::class, 'executeUpsertChunk'],
-			'mapper bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper::class, 'bulkUpsert'],
-			'mapper ultraFastBulkSave' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSave'],
-			'mapper ultraFastBulkSaveSingleSchema' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSaveSingleSchema'],
-			'saveObjects persistChunk' => [\OCA\OpenRegister\Service\Object\SaveObjects::class, 'persistChunk'],
+			'upsert command' => [\OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand::class, '__construct', 3],
+			'mapper ultraFastBulkSave' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSave', 4],
+			'bulk save group' => [\OCA\OpenRegister\Db\MagicMapper\MagicBulkSaveGroup::class, '__construct', 1],
+			'saveObjects persistChunk' => [\OCA\OpenRegister\Service\Object\SaveObjects::class, 'persistChunk', 3],
 		];
 	}
 

@@ -548,7 +548,7 @@ class OrganisationTest extends TestCase {
 	/**
 	 * The quota carries the user limit and the object limit with the schema it counts.
 	 *
-	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	public function testJsonSerializeQuotaCarriesUsersAndObjects(): void {
 		$this->organisation->setUserQuota(50);

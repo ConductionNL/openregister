@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	/**
 	 * While the mode holds, an ordinary read is refused with the message.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */
@@ -77,33 +77,99 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	 * The console stays reachable, which is what makes leaving the mode
 	 * possible at all.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */
 	public function testTheOperationsConsoleIsNotClosedByTheModeItControls(): void {
-		$this->middleware(true)->beforeController(OperationsConsoleController::class, 'maintenance');
+		$refused = $this->refusalOf($this->middleware(true), OperationsConsoleController::class, 'index');
 
-		$this->addToAssertionCount(1);
+		// Pair: testAReadIsRefusedWithTheAdministeredMessage, same mode, another controller.
+		$this->assertNull($refused, 'The operations console was closed by the mode it controls.');
+	}
+
+	/**
+	 * Every controller that serves a route under /api/operations stays
+	 * reachable while the mode holds, read from appinfo/routes.php.
+	 *
+	 * The allowance used to name one class. When the maintenance and
+	 * consistency endpoints moved to their own controllers (bd7fe3470d) the
+	 * allowance did not follow, so entering the mode worked and leaving it
+	 * answered 503: the lock-out this middleware exists to prevent. Reading the
+	 * routes rather than a list written here is what keeps the next split from
+	 * doing the same.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 *
+	 * @return void
+	 */
+	public function testEveryOperationsRouteStaysReachable(): void {
+		$routes = require __DIR__.'/../../../appinfo/routes.php';
+
+		$controllers = [];
+		foreach ($routes['routes'] as $route) {
+			if (str_starts_with($route['url'], '/api/operations/') === false) {
+				continue;
+			}
+
+			[$short, $method] = explode('#', $route['name']);
+			$class            = 'OCA\\OpenRegister\\Controller\\'.ucfirst($short).'Controller';
+			$controllers[$class.'::'.$method] = [$class, $method];
+		}
+
+		$this->assertArrayHasKey(
+			'OCA\\OpenRegister\\Controller\\OperationsMaintenanceController::maintenance',
+			$controllers,
+			'The routes no longer carry the maintenance endpoint this test is about.'
+		);
+
+		$refused = [];
+		foreach ($controllers as $key => [$class, $method]) {
+			if ($this->refusalOf($this->middleware(true), $class, $method) !== null) {
+				$refused[] = $key;
+			}
+		}
+
+		$this->assertSame([], $refused, 'These operations endpoints are closed by the mode they administer.');
 	}
 
 	/**
 	 * With the mode off, nothing is refused.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */
 	public function testAnOpenInstanceRefusesNothing(): void {
-		$this->middleware(false)->beforeController(ObjectsController::class, 'index');
+		$refused = $this->refusalOf($this->middleware(false), ObjectsController::class, 'index');
 
-		$this->addToAssertionCount(1);
+		// Pair: testAReadIsRefusedWithTheAdministeredMessage, same read, mode held.
+		$this->assertNull($refused, 'An open instance refused an ordinary read.');
+	}
+
+	/**
+	 * Run beforeController and return the refusal it raised, or null.
+	 *
+	 * @param MaintenanceModeMiddleware $middleware The middleware under test.
+	 * @param string                    $controller The controller class.
+	 * @param string                    $method     The controller method.
+	 *
+	 * @return MaintenanceModeHeldException|null The refusal, if any.
+	 */
+	private function refusalOf(MaintenanceModeMiddleware $middleware, string $controller, string $method): ?MaintenanceModeHeldException {
+		try {
+			$middleware->beforeController($controller, $method);
+		} catch (MaintenanceModeHeldException $refusal) {
+			return $refusal;
+		}
+
+		return null;
 	}
 
 	/**
 	 * The refusal reaches the reader as a 503 naming the message.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */
@@ -123,7 +189,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	 * Any other exception passes through untouched: a middleware that
 	 * swallowed them would turn every failure into a maintenance notice.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
 	 *
 	 * @return void
 	 */

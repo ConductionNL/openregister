@@ -15,16 +15,17 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/file-download-audit-names-the-file/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
  */
 
 declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -37,7 +38,7 @@ use ReflectionMethod;
 /**
  * The audit row a download writes carries the file's name beside its id.
  *
- * @spec openspec/changes/file-download-audit-names-the-file/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-download-audit-row-names-the-file
  */
 class FilesDownloadAuditNamesTheFileTest extends TestCase {
 	/**
@@ -56,8 +57,7 @@ class FilesDownloadAuditNamesTheFileTest extends TestCase {
 			}
 		);
 
-		$controller = new FilesController(
-			appName: 'openregister',
+		$controller = FilesControllerFactory::create(
 			request: $this->createMock(IRequest::class),
 			fileService: $this->createMock(FileService::class),
 			objectService: $this->createMock(ObjectService::class),
@@ -68,7 +68,10 @@ class FilesDownloadAuditNamesTheFileTest extends TestCase {
 		);
 
 		$record = new ReflectionMethod(objectOrMethod: $controller, method: 'recordDownloadEvent');
-		$record->invoke($controller, 42, new ObjectEntity(), 'Medisch verslag.pdf');
+		$file = $this->createMock(\OCP\Files\File::class);
+		$file->method('getId')->willReturn(42);
+		$file->method('getName')->willReturn('Medisch verslag.pdf');
+		$record->invoke($controller, $file, new ObjectEntity());
 
 		$this->assertSame(
 			expected: ['action' => 'file.downloaded', 'fileId' => 42, 'data' => ['fileId' => 42, 'fileName' => 'Medisch verslag.pdf']],

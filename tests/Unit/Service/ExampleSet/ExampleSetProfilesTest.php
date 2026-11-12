@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
  */
 
 declare(strict_types=1);
@@ -16,8 +16,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountTerms;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountsInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProfiles;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount;
 
 /**
  * Profiles of the cast's accounts.
@@ -33,8 +36,9 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 		$profiles = (new \ReflectionClass(objectOrClass: ExampleSetProfiles::class))->newInstanceWithoutConstructor();
 		$profile  = $profiles->fromPerson(
 			person: [
-				'function' => 'Vergunningverlener',
-				'roles'    => ['Vergunningverlener', 'teamleider'],
+				'function'   => 'Vergunningverlener',
+				'department' => 'Vergunningen',
+				'roles'      => ['Vergunningverlener', 'teamleider'],
 				'absence'  => ['fromDay' => -2, 'untilDay' => 7, 'status' => 'Verlof', 'message' => 'Terug op 14 oktober'],
 				'status'   => ['status' => 'away', 'message' => 'Buiten'],
 			],
@@ -43,6 +47,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 
 		$this->assertSame(expected: 'Vergunningverlener', actual: $profile['headline']);
 		$this->assertSame(expected: 'Vergunningverlener, teamleider', actual: $profile['role']);
+		$this->assertSame(expected: 'Vergunningen', actual: $profile['organisation']);
 		$this->assertSame(expected: ['2026-10-05', '2026-10-14'], actual: [$profile['absence']['firstDay'], $profile['absence']['lastDay']]);
 		$this->assertSame(expected: ['away', 'Buiten'], actual: [$profile['status']['status'], $profile['status']['message']]);
 		$this->assertNull(actual: $profiles->fromPerson(person: ['function' => 'Intaker'], today: new DateTimeImmutable())['absence']);
@@ -91,7 +96,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 			}
 		};
 
-		$this->accounts->createUser(uid: 'adopted.one', displayName: 'Adopted', email: '', password: 'x');
+		$this->accounts->createAccount(account: new ExampleSetNewAccount(uid: 'adopted.one', displayName: 'Adopted', email: '', password: 'x'));
 		$people = new ExampleSetPeople(accounts: $this->accounts, record: $this->record, profiles: $profiles);
 		$plan   = [
 			'set'       => 'demo',
@@ -107,8 +112,7 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 		];
 		$record = $this->record->read(set: 'demo');
 
-		$report = ['users' => [], 'groups' => [], 'memberships' => [], 'dropped' => [], 'passwords' => []];
-		$people->install(plan: $plan, adopt: ['adopted.one'], password: 'pw', report: $report, record: $record);
+		$people->install(install: new ExampleSetAccountsInstall(plan: $plan, terms: new ExampleSetAccountTerms(set: (string) $plan['set'], adopt: ['adopted.one'], password: 'pw')), record: $record);
 
 		$this->assertSame(expected: ['sanne.bakker'], actual: array_keys($written));
 		$this->assertSame(expected: 'Vergunningverlener', actual: $written['sanne.bakker']['headline']);
@@ -137,11 +141,11 @@ class ExampleSetProfilesTest extends ExampleSetTestCase {
 		$accounts->method('getAccount')->willReturn($account);
 		$users = $this->createMock(\OCP\IUserManager::class);
 		$users->method('get')->willReturn($this->createMock(\OCP\IUser::class));
-		$profiles = new ExampleSetProfiles(users: $users, profiles: $accounts, container: $this->createMock(\Psr\Container\ContainerInterface::class));
+		$profiles = new ExampleSetProfiles(reach: new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(\Psr\Container\ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $users), profiles: $accounts);
 
-		$reasons = $profiles->fillMissing(uid: 'pieter', profile: ['headline' => 'Woo-coördinator', 'role' => 'Iets anders', 'absence' => null, 'status' => null]);
+		$reasons = $profiles->fillMissing(uid: 'pieter', profile: ['headline' => 'Woo-coördinator', 'role' => 'Iets anders', 'organisation' => 'Woo en informatie', 'absence' => null, 'status' => null]);
 
 		$this->assertSame(expected: [], actual: $reasons);
-		$this->assertSame(expected: ['headline' => 'Woo-coördinator', 'role' => 'Woo-coördinator'], actual: $values);
+		$this->assertSame(expected: ['headline' => 'Woo-coördinator', 'role' => 'Woo-coördinator', 'organisation' => 'Woo en informatie'], actual: $values);
 	}//end testFillingInWritesOnlyEmptyProperties()
 }//end class

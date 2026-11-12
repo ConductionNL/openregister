@@ -30,12 +30,28 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Merge;
 
+use OCA\OpenRegister\Service\Survivorship\MdmAnnotationChecks;
+
 /**
  * Shape validator for the `x-openregister-merge` annotation.
  *
  * @spec openspec/changes/mdm-merge-engine/tasks.md#1.2
  */
-class MergeAnnotationValidator {
+class MergeAnnotationValidator implements MergeAnnotationValidatorInterface {
+
+	/**
+	 * The optional fields that must be strings when present.
+	 *
+	 * @var array<int, string>
+	 */
+	private const STRING_FIELDS = [
+		'sourceLinkField',
+		'entityType',
+		'statusField',
+		'survivorStatus',
+		'mergedStatus',
+	];
+
 	/**
 	 * Validate the `x-openregister-merge` annotation in a schema shape.
 	 *
@@ -47,36 +63,28 @@ class MergeAnnotationValidator {
 	 */
 	public function validate(array $schema): array {
 		$annotation = ($schema['x-openregister-merge'] ?? null);
-		if ($annotation === null) {
-			return [];
+		$shapeErrors = (new MdmAnnotationChecks(annotation: 'merge'))->shapeErrors(annotation: $annotation);
+		if ($shapeErrors !== null) {
+			return $shapeErrors;
 		}
 
-		if (is_array($annotation) === false) {
-			return [
-				[
-					'code' => 'merge.not-object',
-					'message' => 'x-openregister-merge must be an object.',
-				],
-			];
-		}
+		return $this->annotationErrors(annotation: $annotation);
+	}//end validate()
 
-		$errors = [];
-
-		if (array_key_exists('reversalWindowDays', $annotation) === true) {
-			$window = $annotation['reversalWindowDays'];
-			if (is_int($window) === false || $window <= 0) {
-				$errors[] = [
-					'code' => 'merge.invalid-reversal-window',
-					'message' => 'x-openregister-merge "reversalWindowDays" must be a positive integer.',
-				];
-			}
-		}
-
+	/**
+	 * The errors of an annotation that is an object, in check order.
+	 *
+	 * @param array<string, mixed> $annotation Merge annotation.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors; empty when valid.
+	 */
+	private function annotationErrors(array $annotation): array {
+		$errors = $this->validateReversalWindow(annotation: $annotation);
 		$errors = array_merge($errors, $this->validateStringFields(annotation: $annotation));
 		$errors = array_merge($errors, $this->validateSourceLink(annotation: $annotation));
 
 		return $errors;
-	}//end validate()
+	}//end annotationErrors()
 
 	/**
 	 * Validate an optional `sourceLink` block. A `reverseFk` mode requires
@@ -90,36 +98,33 @@ class MergeAnnotationValidator {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
 	 */
 	private function validateSourceLink(array $annotation): array {
-		$sourceLink = ($annotation['sourceLink'] ?? null);
-		if ($sourceLink === null) {
+		return (new MdmAnnotationChecks(annotation: 'merge'))->errors(sourceLink: ($annotation['sourceLink'] ?? null));
+	}//end validateSourceLink()
+
+	/**
+	 * `reversalWindowDays`, when present, must be a positive integer.
+	 *
+	 * @param array<string, mixed> $annotation The merge annotation.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors (empty when valid).
+	 */
+	private function validateReversalWindow(array $annotation): array {
+		if (array_key_exists('reversalWindowDays', $annotation) === false) {
 			return [];
 		}
 
-		if (is_array($sourceLink) === false) {
+		$window = $annotation['reversalWindowDays'];
+		if (is_int($window) === false || $window <= 0) {
 			return [
 				[
-					'code' => 'merge.source-link-not-object',
-					'message' => 'x-openregister-merge "sourceLink" must be an object.',
+					'code' => 'merge.invalid-reversal-window',
+					'message' => 'x-openregister-merge "reversalWindowDays" must be a positive integer.',
 				],
 			];
 		}
 
-		if ((string)($sourceLink['mode'] ?? 'embedded') !== 'reverseFk') {
-			return [];
-		}
-
-		$errors = [];
-		if ((string)($sourceLink['sourceSchema'] ?? '') === ''
-			|| (string)($sourceLink['referenceField'] ?? '') === ''
-		) {
-			$errors[] = [
-				'code' => 'merge.source-link-reverse-fk-incomplete',
-				'message' => 'x-openregister-merge reverseFk "sourceLink" requires "sourceSchema" and "referenceField".',
-			];
-		}
-
-		return $errors;
-	}//end validateSourceLink()
+		return [];
+	}//end validateReversalWindow()
 
 	/**
 	 * Validate the optional string-valued fields, when present.
@@ -132,21 +137,8 @@ class MergeAnnotationValidator {
 	 */
 	private function validateStringFields(array $annotation): array {
 		$errors = [];
-
-		$stringFields = [
-			'sourceLinkField',
-			'entityType',
-			'statusField',
-			'survivorStatus',
-			'mergedStatus',
-		];
-
-		foreach ($stringFields as $field) {
-			if (array_key_exists($field, $annotation) === false) {
-				continue;
-			}
-
-			if (is_string($annotation[$field]) === false) {
+		foreach (self::STRING_FIELDS as $field) {
+			if (array_key_exists($field, $annotation) === true && is_string($annotation[$field]) === false) {
 				$errors[] = [
 					'code' => 'merge.field-not-string',
 					'message' => sprintf('x-openregister-merge "%s" must be a string.', $field),

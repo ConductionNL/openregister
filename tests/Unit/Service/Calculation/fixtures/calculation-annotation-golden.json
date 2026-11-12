@@ -1,0 +1,370 @@
+{
+    "aggregate-ok": [],
+    "aggregate-refs-every-error": [
+        {
+            "code": "aggregate-ref-malformed",
+            "message": "Aggregate-reference \"0\" must be a named object."
+        },
+        {
+            "code": "aggregate-ref-malformed",
+            "message": "Aggregate-reference \"g0\" must be a named object."
+        },
+        {
+            "code": "aggregate-ref-no-schema",
+            "message": "Aggregate-reference \"g1\" requires a target schema."
+        },
+        {
+            "code": "aggregate-ref-bad-metric",
+            "message": "Aggregate-reference \"g2\" metric must be one of [count, sum, avg, min, max]."
+        },
+        {
+            "code": "aggregate-ref-bad-metric",
+            "message": "Aggregate-reference \"g3\" metric must be one of [count, sum, avg, min, max]."
+        },
+        {
+            "code": "aggregate-ref-no-field",
+            "message": "Aggregate-reference \"g4\" metric \"sum\" requires a field."
+        },
+        {
+            "code": "aggregate-ref-no-field",
+            "message": "Aggregate-reference \"g5\" metric \"avg\" requires a field."
+        },
+        {
+            "code": "aggregate-ref-no-schema",
+            "message": "Aggregate-reference \"g7\" requires a target schema."
+        },
+        {
+            "code": "aggregate-ref-no-field",
+            "message": "Aggregate-reference \"g7\" metric \"min\" requires a field."
+        }
+    ],
+    "aggregate-unknown": [
+        {
+            "code": "calculation-aggregate-unknown",
+            "message": "Calculation \"a\": @aggregate.other is not a declared aggregate-reference. Declared: total."
+        }
+    ],
+    "bad-name-int": [
+        {
+            "code": "calculation-bad-name",
+            "message": "Calculation names must be non-empty strings."
+        }
+    ],
+    "bad-type": [
+        {
+            "code": "calculation-bad-type",
+            "message": "Calculation \"a\" type must be one of [string, integer, number, boolean, date]."
+        }
+    ],
+    "chain-no-cycle": [],
+    "cycle-after-finished-branch": [
+        {
+            "code": "calculation-cycle",
+            "message": "Calculation cycle detected: a -> b -> a."
+        }
+    ],
+    "cycle-self": [
+        {
+            "code": "calculation-cycle",
+            "message": "Calculation cycle detected: a -> a."
+        }
+    ],
+    "cycle-three": [
+        {
+            "code": "calculation-cycle",
+            "message": "Calculation cycle detected: a -> b -> c -> a."
+        }
+    ],
+    "cycle-two": [
+        {
+            "code": "calculation-cycle",
+            "message": "Calculation cycle detected: a -> b -> a."
+        }
+    ],
+    "cycle-via-bad-calc": [
+        {
+            "code": "calculation-bad-type",
+            "message": "Calculation \"b\" type must be one of [string, integer, number, boolean, date]."
+        },
+        {
+            "code": "calculation-no-expression",
+            "message": "Calculation \"b\" requires an expression."
+        }
+    ],
+    "date-diff-bad-unit": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"zzz\" is not a property or calculation."
+        },
+        {
+            "code": "calculation-dateDiff-invalid-unit",
+            "message": "Calculation \"a\": dateDiff unit \"fortnights\" is invalid. Supported: years, months, weeks, days, hours, minutes, seconds."
+        }
+    ],
+    "date-diff-missing-from": [
+        {
+            "code": "calculation-dateDiff-missing-keys",
+            "message": "Calculation \"a\": dateDiff requires keys: from, to, unit."
+        }
+    ],
+    "date-diff-missing-to": [
+        {
+            "code": "calculation-dateDiff-missing-keys",
+            "message": "Calculation \"a\": dateDiff requires keys: from, to, unit."
+        }
+    ],
+    "date-diff-missing-unit": [
+        {
+            "code": "calculation-dateDiff-missing-keys",
+            "message": "Calculation \"a\": dateDiff requires keys: from, to, unit."
+        }
+    ],
+    "date-diff-not-array": [
+        {
+            "code": "calculation-dateDiff-missing-keys",
+            "message": "Calculation \"a\": dateDiff requires keys: from, to, unit."
+        }
+    ],
+    "date-diff-ok": [],
+    "date-diff-unit-int": [],
+    "depends-on": [
+        {
+            "code": "calculation-dependson-ignored",
+            "message": "Calculation \"a\": \"dependsOn\" is not read. The properties an expression reads are derived from the expression itself."
+        }
+    ],
+    "depends-on-null": [
+        {
+            "code": "calculation-dependson-ignored",
+            "message": "Calculation \"a\": \"dependsOn\" is not read. The properties an expression reads are derived from the expression itself."
+        }
+    ],
+    "diamond": [],
+    "empty": [
+        {
+            "code": "calculations-empty",
+            "message": "x-openregister-calculations must declare at least one calculation."
+        }
+    ],
+    "empty-expr": [
+        {
+            "code": "calculation-malformed-expr",
+            "message": "Calculation \"a\": expression must be single-key."
+        }
+    ],
+    "malformed-spec": [
+        {
+            "code": "calculation-malformed",
+            "message": "Calculation \"a\" must be an object."
+        }
+    ],
+    "missing-type-and-expression": [
+        {
+            "code": "calculation-bad-type",
+            "message": "Calculation \"a\" type must be one of [string, integer, number, boolean, date]."
+        },
+        {
+            "code": "calculation-no-expression",
+            "message": "Calculation \"a\" requires an expression."
+        }
+    ],
+    "mixed-order": [
+        {
+            "code": "reference-no-schema",
+            "message": "Reference \"r\" requires a target schema."
+        },
+        {
+            "code": "reference-bad-mode",
+            "message": "Reference \"r\" mode must be relatedObject or lookup."
+        },
+        {
+            "code": "aggregate-ref-no-schema",
+            "message": "Aggregate-reference \"g\" requires a target schema."
+        },
+        {
+            "code": "aggregate-ref-no-field",
+            "message": "Aggregate-reference \"g\" metric \"sum\" requires a field."
+        },
+        {
+            "code": "calculation-bad-type",
+            "message": "Calculation \"a\" type must be one of [string, integer, number, boolean, date]."
+        },
+        {
+            "code": "calculation-dependson-ignored",
+            "message": "Calculation \"a\": \"dependsOn\" is not read. The properties an expression reads are derived from the expression itself."
+        },
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"nope\" is not a property or calculation."
+        },
+        {
+            "code": "calculation-self-unknown",
+            "message": "Calculation \"b\": @self.zz is not a known system field. Allowed: id, uuid, register, schema, owner, created, updated."
+        },
+        {
+            "code": "calculation-unknown-op",
+            "message": "Calculation \"b\": unknown operator \"pow\"."
+        },
+        {
+            "code": "calculation-dateDiff-invalid-unit",
+            "message": "Calculation \"b\": dateDiff unit \"eons\" is invalid. Supported: years, months, weeks, days, hours, minutes, seconds."
+        },
+        {
+            "code": "calculation-cycle",
+            "message": "Calculation cycle detected: d -> d."
+        }
+    ],
+    "multi-key": [
+        {
+            "code": "calculation-malformed-expr",
+            "message": "Calculation \"a\": expression must be single-key."
+        }
+    ],
+    "nested-list": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"nope\" is not a property or calculation."
+        },
+        {
+            "code": "calculation-unknown-op",
+            "message": "Calculation \"a\": unknown operator \"pow\"."
+        }
+    ],
+    "nested-scalar-arg": [],
+    "nested-string-arg": [],
+    "no-expression": [
+        {
+            "code": "calculation-no-expression",
+            "message": "Calculation \"a\" requires an expression."
+        }
+    ],
+    "no-key": [],
+    "no-properties": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"amount\" is not a property or calculation."
+        }
+    ],
+    "not-array": [
+        {
+            "code": "calculations-empty",
+            "message": "x-openregister-calculations must declare at least one calculation."
+        }
+    ],
+    "prop-calc": [],
+    "prop-empty": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"\" is not a property or calculation."
+        }
+    ],
+    "prop-empty-list": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"\" is not a property or calculation."
+        }
+    ],
+    "prop-empty-with-empty-property": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"\" is not a property or calculation."
+        }
+    ],
+    "prop-int": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"\" is not a property or calculation."
+        }
+    ],
+    "prop-list": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"b\": prop \"nope\" is not a property or calculation."
+        }
+    ],
+    "prop-ok": [],
+    "prop-unknown": [
+        {
+            "code": "calculation-prop-unknown",
+            "message": "Calculation \"a\": prop \"nope\" is not a property or calculation."
+        }
+    ],
+    "properties-not-array": [],
+    "ref-ok": [],
+    "ref-unknown": [
+        {
+            "code": "calculation-ref-unknown",
+            "message": "Calculation \"a\": @ref.boss is not a declared reference. Declared: owner."
+        }
+    ],
+    "ref-unknown-none-declared": [
+        {
+            "code": "calculation-ref-unknown",
+            "message": "Calculation \"a\": @ref.boss is not a declared reference. Declared: ."
+        }
+    ],
+    "refs-empty": [],
+    "refs-every-error": [
+        {
+            "code": "reference-malformed",
+            "message": "Reference \"0\" must be a named object."
+        },
+        {
+            "code": "reference-malformed",
+            "message": "Reference \"r1\" must be a named object."
+        },
+        {
+            "code": "reference-no-schema",
+            "message": "Reference \"r2\" requires a target schema."
+        },
+        {
+            "code": "reference-bad-mode",
+            "message": "Reference \"r3\" mode must be relatedObject or lookup."
+        },
+        {
+            "code": "reference-bad-mode",
+            "message": "Reference \"r4\" mode must be relatedObject or lookup."
+        },
+        {
+            "code": "reference-no-field",
+            "message": "Reference \"r5\" (relatedObject) requires a field."
+        },
+        {
+            "code": "reference-field-unknown",
+            "message": "Reference \"r6\": field \"nope\" is not a schema property."
+        },
+        {
+            "code": "reference-no-filters",
+            "message": "Reference \"r7\" (lookup) requires a filters map."
+        },
+        {
+            "code": "reference-no-filters",
+            "message": "Reference \"r8\" (lookup) requires a filters map."
+        },
+        {
+            "code": "reference-malformed",
+            "message": "Reference \"\" must be a named object."
+        }
+    ],
+    "refs-not-array": [],
+    "scalar-expression": [],
+    "self-ok": [],
+    "self-unknown": [
+        {
+            "code": "calculation-self-unknown",
+            "message": "Calculation \"a\": @self.secret is not a known system field. Allowed: id, uuid, register, schema, owner, created, updated."
+        }
+    ],
+    "two-cycles-first-wins": [
+        {
+            "code": "calculation-cycle",
+            "message": "Calculation cycle detected: p -> q -> p."
+        }
+    ],
+    "unknown-op": [
+        {
+            "code": "calculation-unknown-op",
+            "message": "Calculation \"a\": unknown operator \"pow\"."
+        }
+    ]
+}

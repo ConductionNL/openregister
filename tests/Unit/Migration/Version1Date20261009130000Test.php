@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
  * inserted and with which notify value, against a fixture where one pair is
  * already a follow (the union rule) and one is not (the control).
  *
- * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
+ * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-became-follows-with-notifications-off
  */
 class Version1Date20261009130000Test extends TestCase {
 	use SchemaTableMockTrait;

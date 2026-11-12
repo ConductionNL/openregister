@@ -29,8 +29,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\SchemaRegisterLookup;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -88,7 +90,7 @@ class ConditionMatcherMemberOfTest extends TestCase {
 			}
 		);
 
-		return new MemberOfResolver($schemas, $registers, $this->containerGiving($objects), new OperatorEvaluator(new NullLogger()), new NullLogger());
+		return new MemberOfResolver(new SchemaRegisterLookup($schemas, $registers), $this->containerGiving($objects), new OperatorEvaluator(new NullLogger()), new NullLogger());
 	}//end resolver()
 
 	/**
@@ -110,12 +112,10 @@ class ConditionMatcherMemberOfTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return new ConditionMatcher(
-			$session,
+			new ConditionUserResolvers($session, null, $this->resolver(userId: (string)$userId, set: $set)),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(new NullLogger()),
-			new NullLogger(),
-			null,
-			$this->resolver(userId: (string)$userId, set: $set)
+			new NullLogger()
 		);
 	}//end matcher()
 
@@ -226,7 +226,7 @@ class ConditionMatcherMemberOfTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$matcher = new ConditionMatcher(
-			$session,
+			new ConditionUserResolvers($session),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(new NullLogger()),
 			new NullLogger()
@@ -246,7 +246,7 @@ class ConditionMatcherMemberOfTest extends TestCase {
 	private function containerGiving(MagicMapper $objects): ContainerInterface {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id): mixed => ($id === MagicMapper::class) ? $objects : null
+			static fn (string $id): mixed => ($id === \OCA\OpenRegister\Db\MagicMapperInterface::class) ? $objects : null
 		);
 		return $container;
 	}//end containerGiving()

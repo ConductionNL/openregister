@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Lesti: {outcome}",
         "Could not load the task": "Ma setax jitgħabba l-kompitu",
         "The task refused that action": "Il-kompitu rrifjuta dik l-azzjoni",
-        "Store": "Ħanut",
+        "Marketplace": "Ħanut",
         "Install registers, schemas and flows that other organisations have published.": "Installa reġistri, skemi u flussi ppubblikati minn organizzazzjonijiet oħra.",
         "No such run": "M'hemm l-ebda eżekuzzjoni bħal din",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L-eżekuzzjoni ma teżistix, jew m'għandekx permess taraha. Meta tħassar fluss, jitħassru wkoll l-eżekuzzjonijiet tiegħu.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Min approva l-lista, u meta.",
         "Who made it.": "Min għamilha.",
         "Who rejected the list, and why.": "Min irrifjuta l-lista, u għaliex.",
-        "Woo published": "Ippubblikat skont il-Woo"
+        "Woo published": "Ippubblikat skont il-Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "PDF jeħtieġ server tal-uffiċċju (Collabora jew Euro-Office), u ma hemm l-ebda wieħed installat. Itlob lill-amministratur tiegħek jinstalla wieħed, jew niżżel ir-rapport f'format ieħor.",
+        "The report could not be downloaded.": "Ir-rapport ma setax jitniżżel."
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

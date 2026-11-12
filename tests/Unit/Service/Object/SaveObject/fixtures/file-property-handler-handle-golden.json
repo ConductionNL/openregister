@@ -1,0 +1,577 @@
+{
+    "not in schema": {
+        "object": {
+            "other": "kept",
+            "doc": "data:text/plain;base64,aGVsbG8="
+        },
+        "calls": [],
+        "exception": "Property 'doc' not found in schema configuration"
+    },
+    "not a file": {
+        "object": {
+            "other": "kept",
+            "doc": "data:text/plain;base64,aGVsbG8="
+        },
+        "calls": [],
+        "exception": "Property 'doc' is not configured as a file property"
+    },
+    "array of non-file": {
+        "object": {
+            "other": "kept",
+            "docs": [
+                "data:text/plain;base64,aGVsbG8="
+            ]
+        },
+        "calls": [],
+        "exception": "Property 'docs' is not configured as a file property"
+    },
+    "delete single": {
+        "object": {
+            "other": "kept",
+            "doc": null
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "existingFileIds": 42
+                }
+            },
+            {
+                "deleteFile": 42,
+                "object": "obj-1"
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Deleted file 42 for property doc",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "newValue": null
+                }
+            }
+        ],
+        "exception": null
+    },
+    "delete single numeric s": {
+        "object": {
+            "other": "kept",
+            "doc": null
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "existingFileIds": "43"
+                }
+            },
+            {
+                "deleteFile": 43,
+                "object": "obj-1"
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Deleted file 43 for property doc",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "newValue": null
+                }
+            }
+        ],
+        "exception": null
+    },
+    "delete single fails": {
+        "object": {
+            "other": "kept",
+            "doc": null
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "existingFileIds": 13
+                }
+            },
+            {
+                "deleteFile": 13,
+                "object": "obj-1"
+            },
+            {
+                "log": "warning",
+                "message": "[FilePropertyHandler] Failed to delete file 13: already gone",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "newValue": null
+                }
+            }
+        ],
+        "exception": null
+    },
+    "delete single non-num": {
+        "object": {
+            "other": "kept",
+            "doc": null
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "existingFileIds": "abc"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "newValue": null
+                }
+            }
+        ],
+        "exception": null
+    },
+    "delete single empty": {
+        "object": {
+            "other": "kept",
+            "doc": null
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "existingFileIds": ""
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "newValue": null
+                }
+            }
+        ],
+        "exception": null
+    },
+    "delete nothing stored": {
+        "object": {
+            "other": "kept",
+            "doc": null
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "existingFileIds": null
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "newValue": null
+                }
+            }
+        ],
+        "exception": null
+    },
+    "delete single, stored array": {
+        "object": {
+            "other": "kept",
+            "doc": null
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "existingFileIds": [
+                        42,
+                        43
+                    ]
+                }
+            },
+            {
+                "deleteFile": 42,
+                "object": "obj-1"
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Deleted file 42 for property doc",
+                "context": []
+            },
+            {
+                "deleteFile": 43,
+                "object": "obj-1"
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Deleted file 43 for property doc",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "doc",
+                    "newValue": null
+                }
+            }
+        ],
+        "exception": null
+    },
+    "delete array": {
+        "object": {
+            "other": "kept",
+            "docs": []
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "docs",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "docs",
+                    "existingFileIds": [
+                        10,
+                        "x",
+                        13,
+                        "20"
+                    ]
+                }
+            },
+            {
+                "deleteFile": 10,
+                "object": "obj-1"
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Deleted file 10 for property docs",
+                "context": []
+            },
+            {
+                "deleteFile": 13,
+                "object": "obj-1"
+            },
+            {
+                "log": "warning",
+                "message": "[FilePropertyHandler] Failed to delete file 13: already gone",
+                "context": []
+            },
+            {
+                "deleteFile": 20,
+                "object": "obj-1"
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Deleted file 20 for property docs",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "docs",
+                    "newValue": []
+                }
+            }
+        ],
+        "exception": null
+    },
+    "delete array via null": {
+        "object": {
+            "other": "kept",
+            "docs": []
+        },
+        "calls": [
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property deletion requested",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "docs",
+                    "uuid": "obj-1"
+                }
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Existing file IDs for deletion",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "docs",
+                    "existingFileIds": [
+                        11
+                    ]
+                }
+            },
+            {
+                "deleteFile": 11,
+                "object": "obj-1"
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] Deleted file 11 for property docs",
+                "context": []
+            },
+            {
+                "log": "info",
+                "message": "[FilePropertyHandler] File property set to null/empty",
+                "context": {
+                    "app": "openregister",
+                    "propertyName": "docs",
+                    "newValue": []
+                }
+            }
+        ],
+        "exception": null
+    },
+    "array non-array value": {
+        "object": {
+            "other": "kept",
+            "docs": "data:text/plain;base64,aGVsbG8="
+        },
+        "calls": [],
+        "exception": "Property 'docs' is configured as array but received non-array value"
+    },
+    "array upload": {
+        "object": {
+            "other": "kept",
+            "docs": [
+                101,
+                102
+            ]
+        },
+        "calls": [
+            {
+                "store": "data:text/plain;base64,aGVsbG8=",
+                "object": "obj-1",
+                "property": "docs",
+                "fileConfig": {
+                    "type": "file",
+                    "allowedTypes": [
+                        "text/plain"
+                    ]
+                },
+                "index": 0
+            },
+            {
+                "store": "data:text/plain;base64,aGVsbG8=",
+                "object": "obj-1",
+                "property": "docs",
+                "fileConfig": {
+                    "type": "file",
+                    "allowedTypes": [
+                        "text/plain"
+                    ]
+                },
+                "index": 2
+            }
+        ],
+        "exception": null
+    },
+    "single upload": {
+        "object": {
+            "other": "kept",
+            "doc": 101
+        },
+        "calls": [
+            {
+                "store": "data:text/plain;base64,aGVsbG8=",
+                "object": "obj-1",
+                "property": "doc",
+                "fileConfig": {
+                    "type": "file"
+                },
+                "index": null
+            }
+        ],
+        "exception": null
+    },
+    "single not a file value": {
+        "object": {
+            "other": "kept",
+            "doc": "plain text"
+        },
+        "calls": [],
+        "exception": null
+    },
+    "schema autoShare": {
+        "object": {
+            "other": "kept",
+            "doc": 101
+        },
+        "calls": [
+            {
+                "store": "data:text/plain;base64,aGVsbG8=",
+                "object": "obj-1",
+                "property": "doc",
+                "fileConfig": {
+                    "type": "file",
+                    "autoShare": true
+                },
+                "index": null
+            }
+        ],
+        "exception": null
+    },
+    "schema autoPublish": {
+        "object": {
+            "other": "kept",
+            "doc": 101
+        },
+        "calls": [
+            {
+                "log": "warning",
+                "message": "[FilePropertyHandler] Schema config key 'autoPublish' is deprecated and ignored; rename it to 'autoShare' to keep auto-sharing uploaded files.",
+                "context": {
+                    "app": "openregister",
+                    "schemaId": 7
+                }
+            },
+            {
+                "store": "data:text/plain;base64,aGVsbG8=",
+                "object": "obj-1",
+                "property": "doc",
+                "fileConfig": {
+                    "type": "file"
+                },
+                "index": null
+            }
+        ],
+        "exception": null
+    },
+    "property autoShare wins": {
+        "object": {
+            "other": "kept",
+            "doc": 101
+        },
+        "calls": [
+            {
+                "store": "data:text/plain;base64,aGVsbG8=",
+                "object": "obj-1",
+                "property": "doc",
+                "fileConfig": {
+                    "type": "file",
+                    "autoShare": false
+                },
+                "index": null
+            }
+        ],
+        "exception": null
+    }
+}

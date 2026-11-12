@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Dovrši: {outcome}",
         "Could not load the task": "Zadatak se ne može učitati",
         "The task refused that action": "Zadatak je odbio tu radnju",
-        "Store": "Trgovina",
+        "Marketplace": "Trgovina",
         "Install registers, schemas and flows that other organisations have published.": "Instalirajte registre, sheme i tokove koje su objavile druge organizacije.",
         "No such run": "Nema takvog izvođenja",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izvođenje ne postoji ili ga ne smijete vidjeti. Brisanjem toka brišu se i njegova izvođenja.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Tko je odobrio popis i kada.",
         "Who made it.": "Tko ga je izradio.",
         "Who rejected the list, and why.": "Tko je odbio popis i zašto.",
-        "Woo published": "Objavljeno prema Woo"
+        "Woo published": "Objavljeno prema Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Za PDF je potreban uredski poslužitelj (Collabora ili Euro-Office), a nijedan nije instaliran. Zamolite administratora da ga instalira ili preuzmite izvještaj u drugom formatu.",
+        "The report could not be downloaded.": "Izvještaj nije moguće preuzeti."
     },
     "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;"
 )

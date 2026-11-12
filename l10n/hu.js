@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Befejezés: {outcome}",
         "Could not load the task": "A feladat nem tölthető be",
         "The task refused that action": "A feladat elutasította a műveletet",
-        "Store": "Áruház",
+        "Marketplace": "Áruház",
         "Install registers, schemas and flows that other organisations have published.": "Telepítsen más szervezetek által közzétett nyilvántartásokat, sémákat és folyamatokat.",
         "No such run": "Nincs ilyen futás",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "A futás nem létezik, vagy nem láthatja. Egy folyamat törlése a futásait is törli.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Ki hagyta jóvá a listát, és mikor.",
         "Who made it.": "Ki készítette.",
         "Who rejected the list, and why.": "Ki utasította el a listát, és miért.",
-        "Woo published": "A Woo alapján közzétéve"
+        "Woo published": "A Woo alapján közzétéve",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "A PDF-hez irodai kiszolgáló (Collabora vagy Euro-Office) szükséges, de egyik sincs telepítve. Kérje meg a rendszergazdát, hogy telepítsen egyet, vagy töltse le a jelentést más formátumban.",
+        "The report could not be downloaded.": "A jelentést nem sikerült letölteni."
     },
     "nplurals=2; plural=(n != 1);"
 )

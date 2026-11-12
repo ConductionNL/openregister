@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+ * @spec openspec/specs/calendar-provider/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,8 @@ namespace OCA\OpenRegister\Service\Calendar;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CalendarFeedToken;
-use OCA\OpenRegister\Db\CalendarFeedTokenMapper;
+use OCA\OpenRegister\Db\CalendarFeedTokenMapperInterface;
+use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 
@@ -49,7 +50,7 @@ use OCP\Security\ISecureRandom;
  *
  * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
-class CalendarFeedTokenService {
+class CalendarFeedTokenService implements CalendarFeedTokenServiceInterface {
 
 	/**
 	 * The length of the opaque token, in characters.
@@ -61,14 +62,16 @@ class CalendarFeedTokenService {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalendarFeedTokenMapper $mapper The token store.
+	 * @param CalendarFeedTokenMapperInterface $mapper The token store.
 	 * @param ISecureRandom $secureRandom Nextcloud's secure RNG.
 	 * @param IURLGenerator $urlGenerator The URL generator, for the subscribable link.
+	 * @param IAppConfig|null $appConfig The default token lifetime; without it the built-in default applies.
 	 */
 	public function __construct(
-		private readonly CalendarFeedTokenMapper $mapper,
+		private readonly CalendarFeedTokenMapperInterface $mapper,
 		private readonly ISecureRandom $secureRandom,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly ?IAppConfig $appConfig = null,
 	) {
 
 	}//end __construct()
@@ -82,26 +85,99 @@ class CalendarFeedTokenService {
 	 * so the identity the token will carry is decided at the HTTP boundary and
 	 * is visible there.
 	 *
-	 * @param string $userId The principal the token will name.
-	 * @param string $scopeType `schema` or `view`.
-	 * @param string $scopeId The schema id, or the view uuid.
-	 * @param string|null $label Optional human label.
-	 * @param int|null $ttlSeconds Seconds until the token expires; null never expires.
+	 * The caller names what the token covers on an unsaved token: its scope
+	 * type and scope id, and optionally a label. Everything else (the secret,
+	 * the principal, the moments) is set here.
+	 *
+	 * @param string            $userId     The principal the token will name.
+	 * @param CalendarFeedToken $draft      The unsaved token: scopeType (`schema` or `view`), scopeId and label.
+	 * @param int|null          $ttlSeconds Seconds until the token expires; null or less than one takes the configured default.
 	 *
 	 * @return array<string, mixed> The token row plus its subscribable URL.
 	 *
 	 * @throws InvalidArgumentException When the scope is unusable or the caller is anonymous.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	public function mint(
-		string $userId,
-		string $scopeType,
-		string $scopeId,
-		?string $label = null,
-		?int $ttlSeconds = null,
-	): array {
-		$scopeType = trim($scopeType);
+	public function mint(string $userId, CalendarFeedToken $draft, ?int $ttlSeconds=null): array {
+		return $this->mintToken(mint: new FeedTokenMint(userId: $userId, draft: $draft, ttlSeconds: $ttlSeconds));
+	}//end mint()
+
+	/**
+	 * Mint a feed token for the principal the request names, as mint() does.
+	 *
+	 * @param FeedTokenMint $mint The principal, the unsaved token and its lifetime.
+	 *
+	 * @return array<string, mixed> The token row plus its subscribable URL.
+	 *
+	 * @throws InvalidArgumentException When the scope is unusable or the caller is anonymous.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	public function mintToken(FeedTokenMint $mint): array {
+		$token = $this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC);
+		$draft = $this->stampedDraft(mint: $mint, token: $token);
+
+		$saved = $this->mapper->insert($draft);
+		$data  = $saved->jsonSerialize();
+
+		// The only time the token itself is handed out: the store keeps its hash.
+		$data['token'] = $token;
+		$data['url'] = $this->feedUrl(token: $token);
+
+		return $data;
+	}//end mintToken()
+
+	/**
+	 * The stored form of a token: its SHA-256, so a read of the table yields no usable token.
+	 *
+	 * @param string $token The opaque token.
+	 *
+	 * @return string The hex digest.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	public static function storedForm(string $token): string {
+		return hash('sha256', $token);
+	}//end storedForm()
+
+	/**
+	 * The mint's draft token, stamped with a fresh secret, its principal and scope, and its lifetime from now.
+	 *
+	 * @param FeedTokenMint $mint  The draft, the principal and the lifetime.
+	 * @param string        $token The fresh token; its hash is stored.
+	 *
+	 * @return CalendarFeedToken The stamped draft, not yet saved.
+	 */
+	private function stampedDraft(FeedTokenMint $mint, string $token): CalendarFeedToken {
+		$draft     = $mint->draft;
+		$scopeType = self::scopeTypeOf(draft: $draft);
+		$scopeId   = self::scopeIdOf(draft: $draft);
+		$userId    = self::principalOf(userId: $mint->userId);
+		$now       = new DateTime();
+		$draft->setToken(self::storedForm(token: $token));
+		$draft->setUserId($userId);
+		$draft->setScopeType($scopeType);
+		$draft->setScopeId($scopeId);
+		$draft->setCreatedAt($now);
+		$draft->setExpiresAt(self::expiryOf(now: $now, ttlSeconds: $this->lifetimeOf(ttlSeconds: $mint->ttlSeconds)));
+		$draft->setRevokedAt(null);
+		$draft->setLastReadAt(null);
+
+		return $draft;
+	}//end stampedDraft()
+
+	/**
+	 * The draft's scope type, refusing anything but a schema or a view.
+	 *
+	 * @param CalendarFeedToken $draft The unsaved token.
+	 *
+	 * @return string The trimmed scope type.
+	 *
+	 * @throws InvalidArgumentException When the scope type is not a feed scope.
+	 */
+	private static function scopeTypeOf(CalendarFeedToken $draft): string {
+		$scopeType = trim((string)$draft->getScopeType());
 		if (in_array($scopeType, CalendarFeedToken::SCOPE_TYPES, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf(
@@ -112,40 +188,84 @@ class CalendarFeedTokenService {
 			);
 		}
 
-		$scopeId = trim($scopeId);
+		return $scopeType;
+	}//end scopeTypeOf()
+
+	/**
+	 * The draft's scope id, refusing an empty one.
+	 *
+	 * @param CalendarFeedToken $draft The unsaved token.
+	 *
+	 * @return string The trimmed scope id.
+	 *
+	 * @throws InvalidArgumentException When the token names no schema or view.
+	 */
+	private static function scopeIdOf(CalendarFeedToken $draft): string {
+		$scopeId = trim((string)$draft->getScopeId());
 		if ($scopeId === '') {
 			throw new InvalidArgumentException('A feed token must name the schema or view it covers.');
 		}
 
+		return $scopeId;
+	}//end scopeIdOf()
+
+	/**
+	 * The principal the token will name, refusing an anonymous caller.
+	 *
+	 * @param string $userId The principal as the caller passed it.
+	 *
+	 * @return string The trimmed principal.
+	 *
+	 * @throws InvalidArgumentException When no user is logged in.
+	 */
+	private static function principalOf(string $userId): string {
 		$userId = trim($userId);
 		if ($userId === '') {
 			throw new InvalidArgumentException('A logged-in user is required to mint a calendar feed token.');
 		}
 
-		$now = new DateTime();
-		$expires = null;
+		return $userId;
+	}//end principalOf()
+
+	/**
+	 * The lifetime of a token: the one asked for, or else the configured default.
+	 *
+	 * @param int|null $ttlSeconds The lifetime asked for; null or less than one asks for the default.
+	 *
+	 * @return int|null Seconds until expiry, or null when the configured default is no expiry.
+	 */
+	private function lifetimeOf(?int $ttlSeconds): ?int {
 		if ($ttlSeconds !== null && $ttlSeconds > 0) {
-			$expires = (clone $now)->modify('+' . $ttlSeconds . ' seconds');
+			return $ttlSeconds;
 		}
 
-		$entity = new CalendarFeedToken();
-		$entity->setToken($this->secureRandom->generate(self::TOKEN_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC));
-		$entity->setUserId($userId);
-		$entity->setScopeType($scopeType);
-		$entity->setScopeId($scopeId);
-		$entity->setLabel($label);
-		$entity->setCreatedAt($now);
-		$entity->setExpiresAt($expires);
-		$entity->setRevokedAt(null);
-		$entity->setLastReadAt(null);
+		$default = self::DEFAULT_TTL_SECONDS;
+		if ($this->appConfig !== null) {
+			$default = $this->appConfig->getValueInt('openregister', self::DEFAULT_TTL_KEY, self::DEFAULT_TTL_SECONDS);
+		}
 
-		$saved = $this->mapper->insert($entity);
+		if ($default <= 0) {
+			return null;
+		}
 
-		$data = $saved->jsonSerialize();
-		$data['url'] = $this->feedUrl(token: (string)$saved->getToken());
+		return $default;
+	}//end lifetimeOf()
 
-		return $data;
-	}//end mint()
+	/**
+	 * When a token minted now expires.
+	 *
+	 * @param DateTime $now        The minting moment.
+	 * @param int|null $ttlSeconds Seconds until expiry; null or less than one never expires.
+	 *
+	 * @return DateTime|null The expiry, or null for a token that never expires.
+	 */
+	private static function expiryOf(DateTime $now, ?int $ttlSeconds): ?DateTime {
+		if ($ttlSeconds === null || $ttlSeconds <= 0) {
+			return null;
+		}
+
+		return (clone $now)->modify('+' . $ttlSeconds . ' seconds');
+	}//end expiryOf()
 
 	/**
 	 * Resolve a token that may still answer, or null.
@@ -157,7 +277,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return CalendarFeedToken|null The live token, or null.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function resolve(string $token): ?CalendarFeedToken {
 		$token = trim($token);
@@ -165,7 +285,7 @@ class CalendarFeedTokenService {
 			return null;
 		}
 
-		$row = $this->mapper->findByToken(token: $token);
+		$row = $this->mapper->findByToken(token: self::storedForm(token: $token));
 		if ($row === null || $row->isLive() === false) {
 			return null;
 		}
@@ -183,7 +303,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function noteRead(CalendarFeedToken $token): void {
 		try {
@@ -202,7 +322,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return bool True when a token was revoked, false when there was none to revoke.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function revoke(int $id, string $userId): bool {
 		if (trim($userId) === '') {
@@ -231,9 +351,12 @@ class CalendarFeedTokenService {
 	 *
 	 * @param string $userId The principal whose tokens to list.
 	 *
-	 * @return array<int, array<string, mixed>> The serialised tokens, with their URLs.
+	 * The token itself is not stored, so neither it nor its URL can be listed;
+	 * the holder received both when the token was minted.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @return array<int, array<string, mixed>> The serialised tokens, without token or URL.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function listForUser(string $userId): array {
 		$userId = trim($userId);
@@ -244,7 +367,8 @@ class CalendarFeedTokenService {
 		$rows = [];
 		foreach ($this->mapper->findByUser(userId: $userId) as $row) {
 			$data = $row->jsonSerialize();
-			$data['url'] = $this->feedUrl(token: (string)$row->getToken());
+			$data['token'] = null;
+			$data['url'] = null;
 			$rows[] = $data;
 		}
 
@@ -258,7 +382,7 @@ class CalendarFeedTokenService {
 	 *
 	 * @return string The absolute feed URL.
 	 *
-	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function feedUrl(string $token): string {
 		return $this->urlGenerator->getAbsoluteURL(

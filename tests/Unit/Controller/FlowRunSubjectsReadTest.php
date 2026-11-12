@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowRunControllerFactory;
 use OCA\OpenRegister\Controller\FlowRunController;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Db\FlowRun;
@@ -51,9 +52,15 @@ use PHPUnit\Framework\TestCase;
  * Tests for the declared-subject read.
  *
  * @covers \OCA\OpenRegister\Controller\FlowRunController
+ * @uses \OCA\OpenRegister\Controller\Support\FlowRunRuns
+ * @uses \OCA\OpenRegister\Controller\Support\FlowRunAccess
+ * @uses \OCA\OpenRegister\Controller\Support\FlowRunPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\FlowRunControllerServices
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunnableGuard
+ * @uses \OCA\OpenRegister\Db\FlowRunViewer
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class FlowRunSubjectsReadTest extends TestCase {
 
@@ -88,7 +95,7 @@ final class FlowRunSubjectsReadTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		return new FlowRunController(
+		return FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			mapper: $mapper,

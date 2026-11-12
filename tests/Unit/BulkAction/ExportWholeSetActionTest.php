@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -28,6 +28,7 @@ namespace Unit\BulkAction;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed PHPUnit doubles, the type IS the documentation.
 
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\ExportProfile;
@@ -38,6 +39,11 @@ use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCA\OpenRegister\Service\Export\ExportRightService;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCP\Files\File;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -126,11 +132,12 @@ final class ExportWholeSetActionTest extends TestCase {
 	}//end testAFilteredProfileIsNotAWholeSetJob()
 
 	public function testAWholeSetProfileIsAccepted(): void {
+		$this->expectNotToPerformAssertions();
+
 		$this->profiles->method('find')->willReturn($this->profile(true));
 
 		$this->action()->validateParameters(['profileId' => 42]);
 
-		self::assertTrue(true);
 	}//end testAWholeSetProfileIsAccepted()
 
 	public function testTheRehearsalWritesNothing(): void {
@@ -142,7 +149,7 @@ final class ExportWholeSetActionTest extends TestCase {
 		$this->rootFolder->expects(self::never())->method('getUserFolder');
 		$this->recorder->expects(self::never())->method('recordCompleted');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], false, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: false, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
 		self::assertStringContainsString('Would be written', (string)$result->getReason());
@@ -153,7 +160,7 @@ final class ExportWholeSetActionTest extends TestCase {
 		$this->rights->method('refusalForUid')->willReturn(null);
 		$this->writer->method('csvLineFor')->willReturn('');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_SKIPPED, $result->getOutcome());
 	}//end testAnObjectTheProfileCannotProjectIsSkippedNotFailed()
@@ -166,16 +173,102 @@ final class ExportWholeSetActionTest extends TestCase {
 		$this->recorder->expects(self::once())->method('recordRefused');
 		$this->rootFolder->expects(self::never())->method('getUserFolder');
 
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, $this->actor());
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
 
 		self::assertSame(BulkJobMember::OUTCOME_REFUSED, $result->getOutcome());
 		self::assertSame('export-right-missing', $result->getReason());
 	}//end testARowTheActorMayNotExportIsRefusedAndRecorded()
 
 	public function testAJobWithNoActorIsRefusedRatherThanRunningAsNobody(): void {
-		$result = $this->action()->apply($this->object(), ['profileId' => 42], true, null);
+		$result = $this->action()->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: null));
 
 		self::assertSame(BulkJobMember::OUTCOME_REFUSED, $result->getOutcome());
 		self::assertSame('not-authenticated', $result->getReason());
 	}//end testAJobWithNoActorIsRefusedRatherThanRunningAsNobody()
+
+	public function testACommittedRowGrowsTheRunOfItsFile(): void {
+		$profile = $this->profile(true);
+		$profile->setRetentionDays(30);
+		$this->profiles->method('find')->willReturn($profile);
+		$this->rights->method('refusalForUid')->willReturn(null);
+		$this->writer->method('csvLineFor')->willReturn("\"Z-001\"\n");
+		$this->writer->method('csvOpeningFor')->willReturn("#meta\n\"zaaknummer\"\n");
+
+		$path = (string)tempnam(sys_get_temp_dir(), 'wholeset');
+		$stream = fopen($path, 'a');
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(4242);
+		$file->method('getPath')->willReturn('/eigenaar-1/files/Exports/datawarehouse_schema-19.csv');
+		$file->method('fopen')->willReturn($stream);
+
+		$exports = $this->createMock(Folder::class);
+		$exports->method('nodeExists')->willReturn(true);
+		$exports->method('get')->willReturn($file);
+
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('nodeExists')->willReturn(true);
+		$userFolder->method('get')->willReturn($exports);
+		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+		$runs = $this->createMock(ExportRunRecorder::class);
+		$runs->expects(self::once())->method('recordAppended')->with(
+			new ExportRunOrigin(source: 'whole-set', actor: 'eigenaar-1', profile: 'Datawarehouse'),
+			'csv',
+			new ExportRunFile(
+				filename: 'datawarehouse_schema-19.csv',
+				fileId: 4242,
+				filePath: '/eigenaar-1/files/Exports/datawarehouse_schema-19.csv'
+			),
+			30 * 86400
+		);
+
+		$action = new ExportWholeSetAction(
+			$this->profiles,
+			$this->writer,
+			$this->rights,
+			$this->recorder,
+			$this->createMock(SchemaMapper::class),
+			$this->rootFolder,
+			$runs
+		);
+		$result = $action->apply(step: new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor()));
+
+		self::assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
+		self::assertSame("\"Z-001\"\n", (string)file_get_contents($path));
+		unlink($path);
+	}//end testACommittedRowGrowsTheRunOfItsFile()
+
+	public function testARunThatCannotBeRecordedDoesNotFailTheRow(): void {
+		$this->profiles->method('find')->willReturn($this->profile(true));
+		$this->rights->method('refusalForUid')->willReturn(null);
+		$this->writer->method('csvLineFor')->willReturn("\"Z-001\"\n");
+
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(4242);
+		$file->method('getPath')->willReturn('/x.csv');
+		$file->method('fopen')->willReturn(fopen('php://memory', 'w+'));
+		$exports = $this->createMock(Folder::class);
+		$exports->method('nodeExists')->willReturn(true);
+		$exports->method('get')->willReturn($file);
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('nodeExists')->willReturn(true);
+		$userFolder->method('get')->willReturn($exports);
+		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+		$runs = $this->createMock(ExportRunRecorder::class);
+		$runs->method('recordAppended')->willThrowException(new \RuntimeException('table missing'));
+
+		$action = new ExportWholeSetAction(
+			$this->profiles,
+			$this->writer,
+			$this->rights,
+			$this->recorder,
+			$this->createMock(SchemaMapper::class),
+			$this->rootFolder,
+			$runs
+		);
+
+		$step = new BulkStep(object: $this->object(), parameters: ['profileId' => 42], commit: true, actor: $this->actor());
+		self::assertSame(BulkJobMember::OUTCOME_APPLIED, $action->apply(step: $step)->getOutcome());
+	}//end testARunThatCannotBeRecordedDoesNotFailTheRow()
 }//end class

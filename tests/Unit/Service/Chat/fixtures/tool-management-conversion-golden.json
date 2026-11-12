@@ -1,0 +1,735 @@
+{
+    "function names repeat": {
+        "functions": [
+            {
+                "name": "ping",
+                "parameters": []
+            },
+            {
+                "name": "ping",
+                "parameters": []
+            },
+            {
+                "name": "list_registers",
+                "description": "List"
+            }
+        ],
+        "infos": [
+            {
+                "name": "ping",
+                "owner": 0,
+                "description": "",
+                "parameters": [],
+                "required": []
+            },
+            {
+                "name": "ping",
+                "owner": 0,
+                "description": "",
+                "parameters": [],
+                "required": []
+            },
+            {
+                "name": "list_registers",
+                "owner": 1,
+                "description": "List",
+                "parameters": [],
+                "required": []
+            }
+        ]
+    },
+    "function without owner": {
+        "functions": [
+            {
+                "name": "ping",
+                "parameters": []
+            }
+        ],
+        "infos": [
+            {
+                "name": "orphan",
+                "owner": null,
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "type": "string",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    }
+                ],
+                "required": [
+                    {
+                        "name": "id",
+                        "same": true
+                    }
+                ]
+            },
+            {
+                "name": "ping",
+                "owner": 0,
+                "description": "",
+                "parameters": [],
+                "required": []
+            }
+        ]
+    },
+    "no tools": {
+        "functions": [],
+        "infos": []
+    },
+    "one rich tool": {
+        "functions": [
+            {
+                "name": "search_objects",
+                "description": "Search objects",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Text"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "enum": [
+                                10,
+                                20
+                            ],
+                            "format": "int32"
+                        },
+                        "filters": {
+                            "type": "object",
+                            "description": "Filters",
+                            "properties": {
+                                "status": {
+                                    "type": "string"
+                                },
+                                "deep": {
+                                    "type": "object",
+                                    "properties": {
+                                        "x": {
+                                            "type": "number"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "free": {
+                            "type": "object",
+                            "description": "Free-form"
+                        },
+                        "freeNoDescription": {
+                            "type": "object",
+                            "properties": []
+                        },
+                        "tags": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "ids": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        },
+                        "rows": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "a": {
+                                        "type": "boolean",
+                                        "description": "A"
+                                    },
+                                    "b": "not a def"
+                                }
+                            }
+                        },
+                        "blobs": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        },
+                        "untyped": {
+                            "type": "array"
+                        },
+                        "itemsScalar": {
+                            "type": "array",
+                            "items": "string"
+                        },
+                        "itemsNoType": {
+                            "type": "array",
+                            "items": {
+                                "description": "x"
+                            }
+                        },
+                        "noType": {
+                            "description": "Defaults to string"
+                        },
+                        "notArray": "string",
+                        "7": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "query",
+                        "rows",
+                        "missing",
+                        "filters",
+                        "7"
+                    ]
+                }
+            },
+            {
+                "name": "ping",
+                "parameters": []
+            }
+        ],
+        "infos": [
+            {
+                "name": "search_objects",
+                "owner": 0,
+                "description": "Search objects",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "type": "string",
+                        "description": "Text",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "limit",
+                        "type": "integer",
+                        "description": "",
+                        "enum": [
+                            10,
+                            20
+                        ],
+                        "format": "int32",
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "filters",
+                        "type": "object",
+                        "description": "Filters",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": [
+                            {
+                                "name": "status",
+                                "type": "string",
+                                "description": "",
+                                "enum": [],
+                                "format": null,
+                                "itemsOrProperties": null
+                            },
+                            {
+                                "name": "deep",
+                                "type": "object",
+                                "description": "",
+                                "enum": [],
+                                "format": null,
+                                "itemsOrProperties": [
+                                    {
+                                        "name": "x",
+                                        "type": "number",
+                                        "description": "",
+                                        "enum": [],
+                                        "format": null,
+                                        "itemsOrProperties": null
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "free",
+                        "type": "string",
+                        "description": "Free-form (pass as a JSON object).",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "freeNoDescription",
+                        "type": "string",
+                        "description": "A JSON object.",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "tags",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "ids",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "integer"
+                    },
+                    {
+                        "name": "rows",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": [
+                            {
+                                "name": "a",
+                                "type": "boolean",
+                                "description": "A",
+                                "enum": [],
+                                "format": null,
+                                "itemsOrProperties": null
+                            },
+                            {
+                                "name": "b",
+                                "type": "string",
+                                "description": "",
+                                "enum": [],
+                                "format": null,
+                                "itemsOrProperties": null
+                            }
+                        ]
+                    },
+                    {
+                        "name": "blobs",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "untyped",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "itemsScalar",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "itemsNoType",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "noType",
+                        "type": "string",
+                        "description": "Defaults to string",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "notArray",
+                        "type": "string",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "7",
+                        "type": "string",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    }
+                ],
+                "required": [
+                    {
+                        "name": "query",
+                        "same": true
+                    },
+                    {
+                        "name": "filters",
+                        "same": true
+                    },
+                    {
+                        "name": "rows",
+                        "same": true
+                    },
+                    {
+                        "name": "7",
+                        "same": true
+                    }
+                ]
+            },
+            {
+                "name": "ping",
+                "owner": 0,
+                "description": "",
+                "parameters": [],
+                "required": []
+            }
+        ]
+    },
+    "several tools": {
+        "functions": [
+            {
+                "name": "list_registers",
+                "description": "List"
+            },
+            {
+                "name": "get_object",
+                "description": "Get",
+                "parameters": {
+                    "required": [
+                        "id"
+                    ],
+                    "properties": null
+                }
+            },
+            {
+                "name": "search_objects",
+                "description": "Search objects",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Text"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "enum": [
+                                10,
+                                20
+                            ],
+                            "format": "int32"
+                        },
+                        "filters": {
+                            "type": "object",
+                            "description": "Filters",
+                            "properties": {
+                                "status": {
+                                    "type": "string"
+                                },
+                                "deep": {
+                                    "type": "object",
+                                    "properties": {
+                                        "x": {
+                                            "type": "number"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "free": {
+                            "type": "object",
+                            "description": "Free-form"
+                        },
+                        "freeNoDescription": {
+                            "type": "object",
+                            "properties": []
+                        },
+                        "tags": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "ids": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        },
+                        "rows": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "a": {
+                                        "type": "boolean",
+                                        "description": "A"
+                                    },
+                                    "b": "not a def"
+                                }
+                            }
+                        },
+                        "blobs": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        },
+                        "untyped": {
+                            "type": "array"
+                        },
+                        "itemsScalar": {
+                            "type": "array",
+                            "items": "string"
+                        },
+                        "itemsNoType": {
+                            "type": "array",
+                            "items": {
+                                "description": "x"
+                            }
+                        },
+                        "noType": {
+                            "description": "Defaults to string"
+                        },
+                        "notArray": "string",
+                        "7": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "query",
+                        "rows",
+                        "missing",
+                        "filters",
+                        "7"
+                    ]
+                }
+            },
+            {
+                "name": "ping",
+                "parameters": []
+            }
+        ],
+        "infos": [
+            {
+                "name": "list_registers",
+                "owner": 0,
+                "description": "List",
+                "parameters": [],
+                "required": []
+            },
+            {
+                "name": "get_object",
+                "owner": 1,
+                "description": "Get",
+                "parameters": [],
+                "required": []
+            },
+            {
+                "name": "search_objects",
+                "owner": 1,
+                "description": "Search objects",
+                "parameters": [
+                    {
+                        "name": "query",
+                        "type": "string",
+                        "description": "Text",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "limit",
+                        "type": "integer",
+                        "description": "",
+                        "enum": [
+                            10,
+                            20
+                        ],
+                        "format": "int32",
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "filters",
+                        "type": "object",
+                        "description": "Filters",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": [
+                            {
+                                "name": "status",
+                                "type": "string",
+                                "description": "",
+                                "enum": [],
+                                "format": null,
+                                "itemsOrProperties": null
+                            },
+                            {
+                                "name": "deep",
+                                "type": "object",
+                                "description": "",
+                                "enum": [],
+                                "format": null,
+                                "itemsOrProperties": [
+                                    {
+                                        "name": "x",
+                                        "type": "number",
+                                        "description": "",
+                                        "enum": [],
+                                        "format": null,
+                                        "itemsOrProperties": null
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "free",
+                        "type": "string",
+                        "description": "Free-form (pass as a JSON object).",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "freeNoDescription",
+                        "type": "string",
+                        "description": "A JSON object.",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "tags",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "ids",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "integer"
+                    },
+                    {
+                        "name": "rows",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": [
+                            {
+                                "name": "a",
+                                "type": "boolean",
+                                "description": "A",
+                                "enum": [],
+                                "format": null,
+                                "itemsOrProperties": null
+                            },
+                            {
+                                "name": "b",
+                                "type": "string",
+                                "description": "",
+                                "enum": [],
+                                "format": null,
+                                "itemsOrProperties": null
+                            }
+                        ]
+                    },
+                    {
+                        "name": "blobs",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "untyped",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "itemsScalar",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "itemsNoType",
+                        "type": "array",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": "string"
+                    },
+                    {
+                        "name": "noType",
+                        "type": "string",
+                        "description": "Defaults to string",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "notArray",
+                        "type": "string",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    },
+                    {
+                        "name": "7",
+                        "type": "string",
+                        "description": "",
+                        "enum": [],
+                        "format": null,
+                        "itemsOrProperties": null
+                    }
+                ],
+                "required": [
+                    {
+                        "name": "query",
+                        "same": true
+                    },
+                    {
+                        "name": "filters",
+                        "same": true
+                    },
+                    {
+                        "name": "rows",
+                        "same": true
+                    },
+                    {
+                        "name": "7",
+                        "same": true
+                    }
+                ]
+            },
+            {
+                "name": "ping",
+                "owner": 2,
+                "description": "",
+                "parameters": [],
+                "required": []
+            }
+        ]
+    }
+}

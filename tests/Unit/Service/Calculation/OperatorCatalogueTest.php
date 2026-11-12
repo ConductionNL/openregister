@@ -36,7 +36,7 @@ class OperatorCatalogueTest extends TestCase {
 	}
 
 	/**
-	 * Read the operator keys the evaluator's match actually dispatches on.
+	 * Read the operator keys the evaluator's match blocks actually dispatch on.
 	 *
 	 * @return array<int, string> The operator keys, sorted.
 	 */
@@ -45,19 +45,15 @@ class OperatorCatalogueTest extends TestCase {
 		$this->assertIsString(actual: $file);
 		$source = (string)file_get_contents($file);
 
-		$start = strpos($source, 'return match ($op) {');
-		$end = strpos($source, '};//end match', (int)$start);
-		$this->assertIsInt(actual: $start, message: 'the evaluator no longer has a single match dispatch');
-		$this->assertIsInt(actual: $end, message: 'the evaluator match is no longer terminated by //end match');
-
-		$block = substr($source, (int)$start, (int)$end - (int)$start);
-		preg_match_all("/^\s*((?:'[^']+'\s*,\s*)*'[^']+')\s*=>/m", $block, $matches);
+		preg_match_all('/return match \(\$op\) \{(.*?)\};\/\/end match/s', $source, $blocks);
+		$this->assertNotEmpty(actual: $blocks[1], message: 'the evaluator no longer has its match dispatch');
 
 		$operators = [];
-		foreach ($matches[1] as $group) {
-			preg_match_all("/'([^']+)'/", $group, $keys);
-			foreach ($keys[1] as $key) {
-				$operators[] = $key;
+		foreach ($blocks[1] as $block) {
+			preg_match_all("/^\s*((?:'[^']+'\s*,\s*)*'[^']+')\s*=>/m", $block, $matches);
+			foreach ($matches[1] as $group) {
+				preg_match_all("/'([^']+)'/", $group, $keys);
+				array_push($operators, ...$keys[1]);
 			}
 		}
 

@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -36,8 +36,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Service\Deferral\DeferralQueueServices;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Tests\Support\ShutdownFunctionSpy;
 use OCP\BackgroundJob\IJobList;
@@ -51,7 +52,7 @@ require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
 /**
  * Update notifications of large objects reach the job list in chunks it takes.
  *
- * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
  */
 class DeferredChunksFitTheJobLimitTest extends TestCase {
 
@@ -133,9 +134,11 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 		return new ListenerDeferralService(
 			userSession: $this->createMock(IUserSession::class),
 			organisation: $this->createMock(OrganisationService::class),
-			jobList: $jobList,
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $logger,
+			queue: new DeferralQueueServices(
+				jobList: $jobList,
+				appConfig: $this->createMock(IAppConfig::class),
+				logger: $logger
+			),
 			argumentLimit: $limit,
 		);
 	}//end deferral()
@@ -229,7 +232,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @dataProvider limits
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testAChunkOfLargeUpdatesIsSpreadOverJobsTheListTakes(int $limit, int $length): void {
 		$deferral = $this->deferral(limit: $limit);
@@ -260,7 +263,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testAnOversizedUpdateIsKeptWithoutItsOldData(): void {
 		$deferral = $this->deferral(limit: ListenerDeferralService::ARGUMENT_LENGTH_NC32);
@@ -289,7 +292,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testAnEntryTooLargeForAnyJobIsNamedAndTheRestGo(): void {
 		$deferral = $this->deferral();
@@ -313,9 +316,11 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 		$service = new ListenerDeferralService(
 			userSession: $this->createMock(IUserSession::class),
 			organisation: $this->createMock(OrganisationService::class),
-			jobList: $this->createMock(IJobList::class),
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
+			queue: new DeferralQueueServices(
+				jobList: $this->createMock(IJobList::class),
+				appConfig: $this->createMock(IAppConfig::class),
+				logger: $this->createMock(LoggerInterface::class)
+			),
 		);
 
 		$serverConstant = 'OC\\BackgroundJob\\JobList::MAX_ARGUMENT_JSON_LENGTH';
@@ -332,7 +337,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	public function testSmallEntriesStayInOneJob(): void {
 		$deferral = $this->deferral();

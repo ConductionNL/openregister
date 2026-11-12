@@ -24,16 +24,22 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolServices;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Unit tests for SchemaDerivedToolProvider.
@@ -123,9 +129,11 @@ class SchemaDerivedToolProviderTest extends TestCase {
 			appId: 'pipelinq',
 			schemaEntries: $schemaEntries,
 			suppressedIds: $suppressedIds,
-			objectService: $this->objectService,
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->logger
+			services: new SchemaDerivedToolServices(
+				objectService: $this->objectService,
+				auditTrailMapper: $this->auditTrailMapper,
+				logger: $this->logger,
+			),
 		);
 
 	}//end provider()
@@ -271,7 +279,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 	public function testInvokeUnknownToolIdThrows(): void {
 		$provider = $this->provider([]);
 
-		$this->auditTrailMapper->expects($this->never())->method('createToolInvocationEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordToolInvocation');
 
 		$this->expectException(InvalidArgumentException::class);
 		$provider->invokeTool('pipelinq.lead.search', []);
@@ -297,7 +305,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$entry = $this->enabledLeadEntry(['filters' => ['status']]);
 		$provider = $this->provider([$entry]);
 
-		$this->auditTrailMapper->expects($this->once())->method('createToolInvocationEntry');
+		$this->auditTrailMapper->expects($this->once())->method('recordToolInvocation');
 
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('Undeclared search filter');
@@ -393,19 +401,11 @@ class SchemaDerivedToolProviderTest extends TestCase {
 
 		$capturedDigest = null;
 		$this->auditTrailMapper->expects($this->once())
-			->method('createToolInvocationEntry')
-			->willReturnCallback(function (
-				string $toolId,
-				string $paramsDigest,
-				array $resultSummary,
-				?int $register,
-				?int $schema,
-				?int $object,
-				?string $objectUuid,
-			) use (&$capturedDigest) {
-				$capturedDigest = $paramsDigest;
-				$this->assertSame('pipelinq.lead.search', $toolId);
-				$this->assertFalse($resultSummary['isError']);
+			->method('recordToolInvocation')
+			->willReturnCallback(function (ToolInvocation $invocation) use (&$capturedDigest) {
+				$capturedDigest = $invocation->paramsDigest;
+				$this->assertSame('pipelinq.lead.search', $invocation->toolId);
+				$this->assertFalse($invocation->resultSummary['isError']);
 				return $this->createMock(AuditTrail::class);
 			});
 
@@ -423,7 +423,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('uuid-1', [], false, null, $entry['schema'], true, true)
+			->with(...FindCallShape::findArgs('uuid-1', [], false, null, $entry['schema'], true, true))
 			->willReturn($this->mockObject(['id' => 'uuid-1']));
 
 		$result = $provider->invokeTool('pipelinq.lead.get', ['id' => 'uuid-1']);
@@ -449,7 +449,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$captured = null;
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (mixed $object) use (&$captured) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured) {
 				$captured = $object;
 				return $this->mockObject(['id' => 'new-uuid', 'name' => 'X']);
 			});
@@ -468,7 +468,8 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$capturedArgs = null;
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->willReturnCallback(function (mixed ...$args) use (&$capturedArgs) {
+			->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$capturedArgs) {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$capturedArgs = $args;
 				return $this->mockObject(['id' => 'uuid-2', 'name' => 'Edited']);
 			});
@@ -491,7 +492,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		// by the name used at the call site, so named args here would
 		// silently compare against the wrong position for a signature whose
 		// constrained params are not its first N (see testGetReturnsSerializedObject).
-		$this->objectService->expects($this->once())->method('deleteObject')->with('uuid-3', null, $entry['schema'], true, true, false);
+		$this->objectService->expects($this->once())->method('deleteObject')->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'uuid-3' && $deletion->target->register === null && $deletion->target->schema == $entry['schema']), true, true, false);
 
 		$result = $provider->invokeTool('pipelinq.lead.delete', ['id' => 'uuid-3']);
 		$this->assertSame(['deleted' => true, 'id' => 'uuid-3'], $result);
@@ -505,17 +506,14 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$this->objectService->method('deleteObject')->willThrowException(new RuntimeException('Not authorized'));
 
 		$this->auditTrailMapper->expects($this->once())
-			->method('createToolInvocationEntry')
+			->method('recordToolInvocation')
 			->with(
-				'pipelinq.lead.delete',
-				$this->anything(),
-				$this->callback(function ($summary) {
-					return $summary['isError'] === true && $summary['errorClass'] === RuntimeException::class;
-				}),
-				null,
-				1,
-				null,
-				null
+				$this->callback(function (ToolInvocation $invocation) {
+					$summary = $invocation->resultSummary;
+					return $invocation->toolId === 'pipelinq.lead.delete'
+						&& $summary['isError'] === true && $summary['errorClass'] === RuntimeException::class
+						&& $invocation->about == new AuditedObject(null, 1, null, null);
+				})
 			)
 			->willReturn($this->createMock(AuditTrail::class));
 
@@ -529,7 +527,7 @@ class SchemaDerivedToolProviderTest extends TestCase {
 		$provider = $this->provider([$entry]);
 
 		$this->objectService->method('deleteObject');
-		$this->auditTrailMapper->method('createToolInvocationEntry')->willThrowException(new RuntimeException('db down'));
+		$this->auditTrailMapper->method('recordToolInvocation')->willThrowException(new RuntimeException('db down'));
 
 		$result = $provider->invokeTool('pipelinq.lead.delete', ['id' => 'uuid-3']);
 		$this->assertSame(['deleted' => true, 'id' => 'uuid-3'], $result);

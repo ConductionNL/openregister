@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Abschließen: {outcome}",
         "Could not load the task": "Aufgabe konnte nicht geladen werden",
         "The task refused that action": "Die Aufgabe hat diese Aktion abgelehnt",
-        "Store": "Store",
+        "Marketplace": "Store",
         "Install registers, schemas and flows that other organisations have published.": "Installieren Sie Register, Schemata und Flows, die andere Organisationen veröffentlicht haben.",
         "No such run": "Keine solche Ausführung",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Die Ausführung existiert nicht oder Sie dürfen sie nicht sehen. Wird ein Flow gelöscht, werden auch seine Ausführungen gelöscht.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Wer die Liste genehmigt hat, und wann.",
         "Who made it.": "Wer es hergestellt hat.",
         "Who rejected the list, and why.": "Wer die Liste abgelehnt hat, und warum.",
-        "Woo published": "Nach dem Woo veröffentlicht"
+        "Woo published": "Nach dem Woo veröffentlicht",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Für ein PDF wird ein Office-Server (Collabora oder Euro-Office) benötigt, und es ist keiner installiert. Wende dich an deinen Administrator, um einen installieren zu lassen, oder lade den Bericht in einem anderen Format herunter.",
+        "The report could not be downloaded.": "Der Bericht konnte nicht heruntergeladen werden."
     },
     "nplurals=2; plural=(n != 1);"
 )

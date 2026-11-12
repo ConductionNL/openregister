@@ -1,0 +1,721 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LLM configuration load golden loads empty 1`] = `
+{
+  "calls": [],
+  "loadingAfter": false,
+  "loadingWhile": true,
+  "logged": [],
+  "requests": [
+    [
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "shownErrors": [],
+  "state": "{
+ "llmEnabled": false,
+ "selectedEmbeddingProvider": null,
+ "selectedChatProvider": null,
+ "openaiConfig": {
+  "apiKey": "",
+  "model": null,
+  "chatModel": null,
+  "organizationId": ""
+ },
+ "ollamaConfig": {
+  "url": "http://localhost:11434",
+  "model": null,
+  "chatModel": null
+ },
+ "fireworksConfig": {
+  "apiKey": "",
+  "embeddingModel": null,
+  "chatModel": null,
+  "baseUrl": "https://api.fireworks.ai/inference/v1"
+ },
+ "aiFeatures": [
+  {
+   "id": "text_generation",
+   "label": "Text Generation",
+   "icon": "✍️",
+   "enabled": true
+  },
+  {
+   "id": "summarization",
+   "label": "Document Summarization",
+   "icon": "📋",
+   "enabled": true
+  },
+  {
+   "id": "semantic_search",
+   "label": "Semantic Search",
+   "icon": "🔍",
+   "enabled": true
+  },
+  {
+   "id": "embedding",
+   "label": "Text Embeddings",
+   "icon": "🧮",
+   "enabled": true
+  },
+  {
+   "id": "translation",
+   "label": "Translation",
+   "icon": "🌍",
+   "enabled": false
+  },
+  {
+   "id": "classification",
+   "label": "Content Classification",
+   "icon": "🏷️",
+   "enabled": false
+  }
+ ]
+}",
+}
+`;
+
+exports[`LLM configuration load golden loads empty configs 1`] = `
+{
+  "calls": [],
+  "loadingAfter": false,
+  "loadingWhile": true,
+  "logged": [],
+  "requests": [
+    [
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "shownErrors": [],
+  "state": "{
+ "llmEnabled": false,
+ "selectedEmbeddingProvider": null,
+ "selectedChatProvider": null,
+ "openaiConfig": {
+  "apiKey": "",
+  "model": null,
+  "chatModel": null,
+  "organizationId": ""
+ },
+ "ollamaConfig": {
+  "url": "http://localhost:11434",
+  "model": null,
+  "chatModel": null
+ },
+ "fireworksConfig": {
+  "apiKey": "",
+  "embeddingModel": null,
+  "chatModel": null,
+  "baseUrl": "https://api.fireworks.ai/inference/v1"
+ },
+ "aiFeatures": [
+  {
+   "id": "text_generation",
+   "label": "Text Generation",
+   "icon": "✍️",
+   "enabled": true
+  },
+  {
+   "id": "summarization",
+   "label": "Document Summarization",
+   "icon": "📋",
+   "enabled": true
+  },
+  {
+   "id": "semantic_search",
+   "label": "Semantic Search",
+   "icon": "🔍",
+   "enabled": true
+  },
+  {
+   "id": "embedding",
+   "label": "Text Embeddings",
+   "icon": "🧮",
+   "enabled": true
+  },
+  {
+   "id": "translation",
+   "label": "Translation",
+   "icon": "🌍",
+   "enabled": false
+  },
+  {
+   "id": "classification",
+   "label": "Content Classification",
+   "icon": "🏷️",
+   "enabled": false
+  }
+ ]
+}",
+}
+`;
+
+exports[`LLM configuration load golden loads fireworks known models 1`] = `
+{
+  "calls": [],
+  "loadingAfter": false,
+  "loadingWhile": true,
+  "logged": [],
+  "requests": [
+    [
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "shownErrors": [],
+  "state": "{
+ "llmEnabled": false,
+ "selectedEmbeddingProvider": null,
+ "selectedChatProvider": {
+  "id": "fireworks",
+  "name": "Fireworks AI",
+  "description": "Fast OSS models"
+ },
+ "openaiConfig": {
+  "apiKey": "",
+  "model": null,
+  "chatModel": null,
+  "organizationId": ""
+ },
+ "ollamaConfig": {
+  "url": "http://localhost:11434",
+  "model": null,
+  "chatModel": null
+ },
+ "fireworksConfig": {
+  "apiKey": "f",
+  "embeddingModel": {
+   "id": "nomic-ai/nomic-embed-text-v1.5",
+   "name": "Nomic Embed Text v1.5",
+   "dimensions": "768",
+   "cost": "$0.008/1M tokens"
+  },
+  "chatModel": {
+   "id": "accounts/fireworks/models/llama-v3p1-8b-instruct",
+   "name": "Llama 3.1 8B",
+   "contextWindow": "131K",
+   "cost": "$0.2/1M"
+  },
+  "baseUrl": "https://api.fireworks.ai/inference/v1"
+ },
+ "aiFeatures": [
+  {
+   "id": "text_generation",
+   "label": "Text Generation",
+   "icon": "✍️",
+   "enabled": true
+  },
+  {
+   "id": "summarization",
+   "label": "Document Summarization",
+   "icon": "📋",
+   "enabled": true
+  },
+  {
+   "id": "semantic_search",
+   "label": "Semantic Search",
+   "icon": "🔍",
+   "enabled": true
+  },
+  {
+   "id": "embedding",
+   "label": "Text Embeddings",
+   "icon": "🧮",
+   "enabled": true
+  },
+  {
+   "id": "translation",
+   "label": "Translation",
+   "icon": "🌍",
+   "enabled": false
+  },
+  {
+   "id": "classification",
+   "label": "Content Classification",
+   "icon": "🏷️",
+   "enabled": false
+  }
+ ]
+}",
+}
+`;
+
+exports[`LLM configuration load golden loads fireworks unknown models 1`] = `
+{
+  "calls": [],
+  "loadingAfter": false,
+  "loadingWhile": true,
+  "logged": [],
+  "requests": [
+    [
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "shownErrors": [],
+  "state": "{
+ "llmEnabled": false,
+ "selectedEmbeddingProvider": null,
+ "selectedChatProvider": null,
+ "openaiConfig": {
+  "apiKey": "",
+  "model": null,
+  "chatModel": null,
+  "organizationId": ""
+ },
+ "ollamaConfig": {
+  "url": "http://localhost:11434",
+  "model": null,
+  "chatModel": null
+ },
+ "fireworksConfig": {
+  "apiKey": "",
+  "embeddingModel": "x",
+  "chatModel": "y",
+  "baseUrl": "https://api.fireworks.ai/inference/v1"
+ },
+ "aiFeatures": [
+  {
+   "id": "text_generation",
+   "label": "Text Generation",
+   "icon": "✍️",
+   "enabled": true
+  },
+  {
+   "id": "summarization",
+   "label": "Document Summarization",
+   "icon": "📋",
+   "enabled": true
+  },
+  {
+   "id": "semantic_search",
+   "label": "Semantic Search",
+   "icon": "🔍",
+   "enabled": true
+  },
+  {
+   "id": "embedding",
+   "label": "Text Embeddings",
+   "icon": "🧮",
+   "enabled": true
+  },
+  {
+   "id": "translation",
+   "label": "Translation",
+   "icon": "🌍",
+   "enabled": false
+  },
+  {
+   "id": "classification",
+   "label": "Content Classification",
+   "icon": "🏷️",
+   "enabled": false
+  }
+ ]
+}",
+}
+`;
+
+exports[`LLM configuration load golden loads ollama 1`] = `
+{
+  "calls": [
+    "fetchOllamaModels",
+  ],
+  "loadingAfter": false,
+  "loadingWhile": true,
+  "logged": [],
+  "requests": [
+    [
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "shownErrors": [],
+  "state": "{
+ "llmEnabled": false,
+ "selectedEmbeddingProvider": {
+  "id": "ollama",
+  "name": "Ollama",
+  "description": "Local models (free, requires Ollama)"
+ },
+ "openaiConfig": {
+  "apiKey": "",
+  "model": null,
+  "chatModel": null,
+  "organizationId": ""
+ },
+ "ollamaConfig": {
+  "url": "http://localhost:11434",
+  "model": "m",
+  "chatModel": null
+ },
+ "fireworksConfig": {
+  "apiKey": "",
+  "embeddingModel": null,
+  "chatModel": null,
+  "baseUrl": "https://api.fireworks.ai/inference/v1"
+ },
+ "aiFeatures": [
+  {
+   "id": "text_generation",
+   "label": "Text Generation",
+   "icon": "✍️",
+   "enabled": true
+  },
+  {
+   "id": "summarization",
+   "label": "Document Summarization",
+   "icon": "📋",
+   "enabled": true
+  },
+  {
+   "id": "semantic_search",
+   "label": "Semantic Search",
+   "icon": "🔍",
+   "enabled": true
+  },
+  {
+   "id": "embedding",
+   "label": "Text Embeddings",
+   "icon": "🧮",
+   "enabled": true
+  },
+  {
+   "id": "translation",
+   "label": "Translation",
+   "icon": "🌍",
+   "enabled": false
+  },
+  {
+   "id": "classification",
+   "label": "Content Classification",
+   "icon": "🏷️",
+   "enabled": false
+  }
+ ]
+}",
+}
+`;
+
+exports[`LLM configuration load golden loads ollama chat without url 1`] = `
+{
+  "calls": [
+    "fetchOllamaModels",
+  ],
+  "loadingAfter": false,
+  "loadingWhile": true,
+  "logged": [],
+  "requests": [
+    [
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "shownErrors": [],
+  "state": "{
+ "llmEnabled": false,
+ "selectedEmbeddingProvider": null,
+ "selectedChatProvider": {
+  "id": "ollama",
+  "name": "Ollama",
+  "description": "Local LLMs"
+ },
+ "openaiConfig": {
+  "apiKey": "",
+  "model": null,
+  "chatModel": null,
+  "organizationId": ""
+ },
+ "ollamaConfig": {
+  "url": "http://localhost:11434",
+  "model": null,
+  "chatModel": null
+ },
+ "fireworksConfig": {
+  "apiKey": "",
+  "embeddingModel": null,
+  "chatModel": null,
+  "baseUrl": "https://api.fireworks.ai/inference/v1"
+ },
+ "aiFeatures": [
+  {
+   "id": "text_generation",
+   "label": "Text Generation",
+   "icon": "✍️",
+   "enabled": true
+  },
+  {
+   "id": "summarization",
+   "label": "Document Summarization",
+   "icon": "📋",
+   "enabled": true
+  },
+  {
+   "id": "semantic_search",
+   "label": "Semantic Search",
+   "icon": "🔍",
+   "enabled": true
+  },
+  {
+   "id": "embedding",
+   "label": "Text Embeddings",
+   "icon": "🧮",
+   "enabled": true
+  },
+  {
+   "id": "translation",
+   "label": "Translation",
+   "icon": "🌍",
+   "enabled": false
+  },
+  {
+   "id": "classification",
+   "label": "Content Classification",
+   "icon": "🏷️",
+   "enabled": false
+  }
+ ]
+}",
+}
+`;
+
+exports[`LLM configuration load golden loads ollama embedding, no stored url 1`] = `
+{
+  "calls": [],
+  "loadingAfter": false,
+  "loadingWhile": true,
+  "logged": [],
+  "requests": [
+    [
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "shownErrors": [],
+  "state": "{
+ "llmEnabled": false,
+ "selectedEmbeddingProvider": {
+  "id": "ollama",
+  "name": "Ollama",
+  "description": "Local models (free, requires Ollama)"
+ },
+ "selectedChatProvider": null,
+ "openaiConfig": {
+  "apiKey": "",
+  "model": null,
+  "chatModel": null,
+  "organizationId": ""
+ },
+ "ollamaConfig": {
+  "url": "",
+  "model": null,
+  "chatModel": null
+ },
+ "fireworksConfig": {
+  "apiKey": "",
+  "embeddingModel": null,
+  "chatModel": null,
+  "baseUrl": "https://api.fireworks.ai/inference/v1"
+ },
+ "aiFeatures": [
+  {
+   "id": "text_generation",
+   "label": "Text Generation",
+   "icon": "✍️",
+   "enabled": true
+  },
+  {
+   "id": "summarization",
+   "label": "Document Summarization",
+   "icon": "📋",
+   "enabled": true
+  },
+  {
+   "id": "semantic_search",
+   "label": "Semantic Search",
+   "icon": "🔍",
+   "enabled": true
+  },
+  {
+   "id": "embedding",
+   "label": "Text Embeddings",
+   "icon": "🧮",
+   "enabled": true
+  },
+  {
+   "id": "translation",
+   "label": "Translation",
+   "icon": "🌍",
+   "enabled": false
+  },
+  {
+   "id": "classification",
+   "label": "Content Classification",
+   "icon": "🏷️",
+   "enabled": false
+  }
+ ]
+}",
+}
+`;
+
+exports[`LLM configuration load golden loads openai 1`] = `
+{
+  "calls": [],
+  "loadingAfter": false,
+  "loadingWhile": true,
+  "logged": [],
+  "requests": [
+    [
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "shownErrors": [],
+  "state": "{
+ "llmEnabled": true,
+ "selectedEmbeddingProvider": {
+  "id": "openai",
+  "name": "OpenAI",
+  "description": "State-of-the-art embeddings (paid)"
+ },
+ "selectedChatProvider": {
+  "id": "openai",
+  "name": "OpenAI ChatGPT",
+  "description": "GPT-4, GPT-3.5 models"
+ },
+ "openaiConfig": {
+  "apiKey": "k",
+  "model": "m",
+  "chatModel": "c",
+  "organizationId": "o"
+ },
+ "ollamaConfig": {
+  "url": "http://localhost:11434",
+  "model": null,
+  "chatModel": null
+ },
+ "fireworksConfig": {
+  "apiKey": "",
+  "embeddingModel": null,
+  "chatModel": null,
+  "baseUrl": "https://api.fireworks.ai/inference/v1"
+ },
+ "aiFeatures": [
+  {
+   "id": "text_generation",
+   "label": "Text Generation",
+   "icon": "✍️",
+   "enabled": true
+  },
+  {
+   "id": "summarization",
+   "label": "Document Summarization",
+   "icon": "📋",
+   "enabled": false
+  },
+  {
+   "id": "semantic_search",
+   "label": "Semantic Search",
+   "icon": "🔍",
+   "enabled": false
+  },
+  {
+   "id": "embedding",
+   "label": "Text Embeddings",
+   "icon": "🧮",
+   "enabled": false
+  },
+  {
+   "id": "translation",
+   "label": "Translation",
+   "icon": "🌍",
+   "enabled": false
+  },
+  {
+   "id": "classification",
+   "label": "Content Classification",
+   "icon": "🏷️",
+   "enabled": false
+  }
+ ]
+}",
+}
+`;
+
+exports[`LLM configuration load golden loads rejected 1`] = `
+{
+  "calls": [],
+  "loadingAfter": false,
+  "loadingWhile": true,
+  "logged": [
+    [
+      "Failed to load LLM configuration:",
+      "Error: down",
+    ],
+  ],
+  "requests": [
+    [
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "shownErrors": [
+    [
+      "[Failed to load LLM configuration]",
+    ],
+  ],
+  "state": "{
+ "selectedEmbeddingProvider": null,
+ "selectedChatProvider": null,
+ "openaiConfig": {
+  "apiKey": "",
+  "model": null,
+  "chatModel": null,
+  "organizationId": ""
+ },
+ "ollamaConfig": {
+  "url": "http://localhost:11434",
+  "model": null,
+  "chatModel": null
+ },
+ "fireworksConfig": {
+  "apiKey": "",
+  "embeddingModel": null,
+  "chatModel": null,
+  "baseUrl": "https://api.fireworks.ai/inference/v1"
+ },
+ "aiFeatures": [
+  {
+   "id": "text_generation",
+   "label": "Text Generation",
+   "icon": "✍️",
+   "enabled": true
+  },
+  {
+   "id": "summarization",
+   "label": "Document Summarization",
+   "icon": "📋",
+   "enabled": true
+  },
+  {
+   "id": "semantic_search",
+   "label": "Semantic Search",
+   "icon": "🔍",
+   "enabled": true
+  },
+  {
+   "id": "embedding",
+   "label": "Text Embeddings",
+   "icon": "🧮",
+   "enabled": true
+  },
+  {
+   "id": "translation",
+   "label": "Translation",
+   "icon": "🌍",
+   "enabled": false
+  },
+  {
+   "id": "classification",
+   "label": "Content Classification",
+   "icon": "🏷️",
+   "enabled": false
+  }
+ ]
+}",
+}
+`;

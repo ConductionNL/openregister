@@ -73,29 +73,39 @@ function mountSidebar() {
 			return
 		}
 
-		try {
-			// Vue 2 allowed `$mount()` with no argument — it rendered off-DOM
-			// and exposed the result as `app.$el`, which the caller then
-			// appended. Vue 3's `mount()` REQUIRES a host element and returns
-			// the root component instance, not the element, so create the host
-			// ourselves, give it the id, attach it, and mount into it.
-			const host = document.createElement('div')
-			host.id = SIDEBAR_ROOT_ID
-			document.body.appendChild(host)
-
-			const app = createApp(MailSidebar)
-			// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
-			// reached every instance on the page. Vue 3's `app.mixin()` is
-			// per-app — each entry bundle must install `t`/`n` itself.
-			app.mixin({ methods: { t, n } })
-			app.mount(host)
-			return app
-		} catch (err) {
-			console.error('[OpenRegister] Mail sidebar mount failed:', err)
-		}
+		return mountSidebarApp()
 	}
 
 	tryMount()
+}
+
+/**
+ * Create the sidebar's host on document.body and mount the app into it; a
+ * failed mount is logged.
+ *
+ * @return {object|undefined} The app, when it mounted.
+ */
+function mountSidebarApp() {
+	try {
+		// Vue 2 allowed `$mount()` with no argument — it rendered off-DOM
+		// and exposed the result as `app.$el`, which the caller then
+		// appended. Vue 3's `mount()` REQUIRES a host element and returns
+		// the root component instance, not the element, so create the host
+		// ourselves, give it the id, attach it, and mount into it.
+		const host = document.createElement('div')
+		host.id = SIDEBAR_ROOT_ID
+		document.body.appendChild(host)
+
+		const app = createApp(MailSidebar)
+		// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
+		// reached every instance on the page. Vue 3's `app.mixin()` is
+		// per-app — each entry bundle must install `t`/`n` itself.
+		app.mixin({ methods: { t, n } })
+		app.mount(host)
+		return app
+	} catch (err) {
+		console.error('[OpenRegister] Mail sidebar mount failed:', err)
+	}
 }
 
 // Wait for DOM to be ready.

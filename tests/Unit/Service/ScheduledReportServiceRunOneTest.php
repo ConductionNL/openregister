@@ -27,13 +27,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ScheduledReport;
-use OCA\OpenRegister\Db\ScheduledReportMapper;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
+use OCA\OpenRegister\Service\ScheduledReportDelivery;
+use OCA\OpenRegister\Service\ScheduledReportExporters;
+use OCA\OpenRegister\Service\ScheduledReportOwnerServices;
+use OCA\OpenRegister\Service\ScheduledReportStores;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;
@@ -91,17 +97,14 @@ class ScheduledReportServiceRunOneTest extends TestCase {
 		);
 
 		$this->service = new ScheduledReportService(
-			$this->mapper,
-			$this->registerMapper,
-			$this->schemaMapper,
-			$this->exportService,
-			$this->rootFolder,
-			$this->userManager,
-			$this->userSession,
-			$this->notificationManager,
-			$this->createMock(LoggerInterface::class),
-			$this->mailer,
-			$this->config
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new ScheduledReportExporters($this->exportService, null, null),
+			new ScheduledReportDelivery(
+				new ScheduledReportOwnerServices($this->userManager, $this->userSession, $this->rootFolder, $this->notificationManager),
+				$this->mailer,
+				$this->config
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
 
@@ -244,4 +247,21 @@ class ScheduledReportServiceRunOneTest extends TestCase {
 		// the previously-active session user in the finally block.
 		self::assertSame(['owner', 'previous'], $setUserCalls);
 	}//end testSessionIsSwappedToOwnerAndRestoredAfterRun()
+
+	/**
+	 * The contract takes any ScheduledReportInterface, but only a stored
+	 * ScheduledReport row can run: anything else is refused before the
+	 * owner is looked up or an outcome is written.
+	 *
+	 * @return void
+	 */
+	public function testRunOneRefusesAReportThatIsNotAStoredRow(): void {
+		$this->userManager->expects($this->never())->method('get');
+		$this->mapper->expects($this->never())->method('update');
+		$this->exportService->expects($this->never())->method($this->anything());
+
+		$this->expectException(InvalidArgumentException::class);
+
+		$this->service->runOne($this->createMock(ScheduledReportInterface::class));
+	}//end testRunOneRefusesAReportThatIsNotAStoredRow()
 }//end class

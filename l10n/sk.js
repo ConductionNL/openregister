@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Dokončiť: {outcome}",
         "Could not load the task": "Úlohu sa nepodarilo načítať",
         "The task refused that action": "Úloha túto akciu odmietla",
-        "Store": "Obchod",
+        "Marketplace": "Obchod",
         "Install registers, schemas and flows that other organisations have published.": "Nainštalujte registre, schémy a toky zverejnené inými organizáciami.",
         "No such run": "Žiadny taký beh",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Beh neexistuje, alebo ho nesmiete vidieť. Vymazaním toku sa vymažú aj jeho behy.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Kto zoznam schválil a kedy.",
         "Who made it.": "Kto to vyrobil.",
         "Who rejected the list, and why.": "Kto zoznam zamietol a prečo.",
-        "Woo published": "Zverejnené podľa Woo"
+        "Woo published": "Zverejnené podľa Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "PDF vyžaduje kancelársky server (Collabora alebo Euro-Office) a žiadny nie je nainštalovaný. Požiadajte správcu o jeho inštaláciu alebo si stiahnite správu v inom formáte.",
+        "The report could not be downloaded.": "Správu sa nepodarilo stiahnuť."
     },
     "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);"
 )

@@ -15,10 +15,485 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
+import {
+	defaultFileOptions,
+	defaultFlowOptions,
+	defaultLlmOptions,
+	defaultMultitenancyOptions,
+	defaultRbacOptions,
+	defaultRetentionOptions,
+	emptyCacheStats,
+	emptySystemStats,
+} from './settingsDefaults.js'
 
-export const useSettingsStore = defineStore('settings', {
-	state: () => ({
-		// Loading states
+// The warning counts that make the retention status unhealthy, and the
+// words each count is reported with.
+const RETENTION_ISSUES = [
+	['auditTrailsWithoutExpiry', 'audit trails without expiry'],
+	['searchTrailsWithoutExpiry', 'search trails without expiry'],
+	['expiredAuditTrails', 'expired audit trails'],
+	['expiredSearchTrails', 'expired search trails'],
+	['expiredObjects', 'expired objects'],
+]
+
+/**
+ * The retention problems the warning counts show, one phrase per count above 0.
+ *
+ * @param {object} warnings The warning counts from the stats.
+ * @return {Array<string>} The phrases, e.g. `3 expired objects`.
+ * @spec exclude Client-side wording of the retention warning counts; no backend contract.
+ */
+function retentionIssues(warnings) {
+	return RETENTION_ISSUES.filter(([key]) => warnings[key] > 0).map(
+		([key, words]) => `${warnings[key]} ${words}`,
+	)
+}
+
+/**
+ * The body of a mass validate request, with the defaults for what the
+ * options leave out.
+ *
+ * @param {object} options The mass validate options.
+ * @return {{batchSize: number, maxObjects: number, mode: string, collectErrors: boolean}} The body.
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function massValidateRequest(options) {
+	return {
+		batchSize: options.batchSize || 1000,
+		maxObjects: options.maxObjects || 0,
+		mode: options.mode || 'serial',
+		collectErrors: options.collectErrors || false,
+	}
+}
+
+/**
+ * Ask the server to validate the objects.
+ *
+ * @param {object} options The mass validate options.
+ * @return {Promise<object>} The axios response.
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function requestMassValidation(options) {
+	return axios.post(
+		generateUrl('/apps/openregister/api/settings/mass-validate'),
+		massValidateRequest(options),
+	)
+}
+
+/**
+ * Tell the user how a mass validation the server answered went.
+ *
+ * @param {object} data The server's answer.
+ * @return {void}
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function reportMassValidation(data) {
+	if (data.success) {
+		showSuccess(
+			t('openregister', 'Mass validation completed successfully'),
+		)
+	} else {
+		showMassValidateFailure(data.message)
+	}
+}
+
+/**
+ * Log a failed settings load and tell the user.
+ *
+ * @param {Error} error What went wrong.
+ * @return {void}
+ * @spec exclude parallel fan-out wrapper over settings-load passthroughs
+ */
+function showLoadFailure(error) {
+	console.error('Failed to load settings:', error)
+	showError(
+		t('openregister', 'Failed to load settings: {error}', {
+			error: error.message,
+		}),
+	)
+}
+
+/**
+ * Tell the user a mass validation failed.
+ *
+ * @param {string} message Why it failed.
+ * @return {void}
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function showMassValidateFailure(message) {
+	showError(
+		t('openregister', 'Mass validation failed: {error}', {
+			error: message,
+		}),
+	)
+}
+
+/**
+ * The results a failed mass validation leaves in the store.
+ *
+ * @param {string} message Why it failed.
+ * @return {object} The results, with zero counts.
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function failedMassValidation(message) {
+	return {
+		success: false,
+		message,
+		error: message,
+		stats: {
+			total_objects: 0,
+			processed_objects: 0,
+			successful_saves: 0,
+			failed_saves: 0,
+			duration_seconds: 0,
+		},
+		errors: [],
+	}
+}
+
+/**
+ * Run a step and handle its failure: log it, show the failure message when
+ * there is one, then return the fallback when there is one, or rethrow.
+ *
+ * @param {() => Promise<object|undefined>} step The step to run.
+ * @param {object} report `log` (the console text), and optionally `failed(error)` (the message shown) and `fallback(error)` (what to return instead).
+ * @return {Promise<object|undefined>} What the step, or the fallback, returns.
+ * @spec exclude Client-side failure reporting shared by the settings API passthroughs.
+ */
+async function attempt(step, report) {
+	try {
+		return await step()
+	} catch (error) {
+		console.error(report.log, error)
+		if (report.failed) {
+			showError(report.failed(error))
+		}
+		if (report.fallback) {
+			return report.fallback(error)
+		}
+		throw error
+	}
+}
+
+/**
+ * Run work with a store flag raised, and lower the flag when the work ends.
+ *
+ * @param {object} store The settings store.
+ * @param {object} job `run()` (the work) and optionally `flag` (the state key to raise).
+ * @return {Promise<object|undefined>} What the work returns.
+ * @spec exclude Client-side loading flag around the settings API passthroughs.
+ */
+async function flagged(store, job) {
+	if (!job.flag) {
+		return job.run()
+	}
+	store[job.flag] = true
+	try {
+		return await job.run()
+	} finally {
+		store[job.flag] = false
+	}
+}
+
+/**
+ * Read settings into the store. A failure is logged and leaves the store as it was.
+ *
+ * @param {object} store The settings store.
+ * @param {object} job `send()`, `apply(data)` (runs when the answer has data), `log`, and optionally `flag` and `fallback()`.
+ * @return {Promise<object|undefined>} What `apply` returns, or the fallback after a failure.
+ * @spec exclude API passthrough helper for the settings GET endpoints.
+ */
+function readSettings(store, job) {
+	return flagged(store, {
+		flag: job.flag,
+		run: () =>
+			attempt(
+				async () => {
+					const response = await job.send()
+					return response.data ? job.apply(response.data) : undefined
+				},
+				{ log: job.log, fallback: job.fallback ?? (() => undefined) },
+			),
+	})
+}
+
+/**
+ * Write settings and report the outcome: merge the answer into the store and
+ * show the success message, or log and show the failure and rethrow it.
+ *
+ * @param {object} store The settings store.
+ * @param {object} job `send()`, `log`, `failed(error)`, and optionally `flag`, `apply(data)` and `done` (the success message).
+ * @return {Promise<object>} The answer's data.
+ * @spec exclude API passthrough helper for the settings write endpoints.
+ */
+function writeSettings(store, job) {
+	return flagged(store, {
+		flag: job.flag,
+		run: () =>
+			attempt(async () => {
+				const response = await job.send()
+				if (response.data && job.apply) {
+					job.apply(response.data)
+				}
+				if (job.done) {
+					showSuccess(job.done)
+				}
+				return response.data
+			}, job),
+	})
+}
+
+/**
+ * Merge freshly loaded statistics into the store and stamp them.
+ *
+ * @param {object} store The settings store.
+ * @param {object} job `flag`, `key` (the state key), `path`, `log` and `failed(error)`.
+ * @return {Promise<void>}
+ * @spec exclude API passthrough helper for the settings statistics endpoints.
+ */
+function loadStatistics(store, job) {
+	return flagged(store, {
+		flag: job.flag,
+		run: () =>
+			attempt(
+				async () => {
+					const response = await axios.get(api(job.path))
+					if (response.data) {
+						store[job.key] = { ...store[job.key], ...response.data }
+						store[job.key].lastUpdated = new Date().toISOString()
+					}
+				},
+				{ log: job.log, failed: job.failed, fallback: () => undefined },
+			),
+	})
+}
+
+/**
+ * Delete every record of one kind, tell the user how many went, and close
+ * the confirmation dialog.
+ *
+ * @param {object} store The settings store.
+ * @param {object} job `flag`, `path`, `hide` (the dialog's hide action), `done(count)`, `failed(reason)` and `log`.
+ * @return {Promise<void>}
+ * @spec exclude API passthrough helper for the clear-all endpoints.
+ */
+function clearAll(store, job) {
+	return flagged(store, {
+		flag: job.flag,
+		run: () =>
+			attempt(
+				async () => {
+					const response = await axios.delete(api(job.path))
+					if (response.data.success) {
+						showSuccess(job.done(response.data.deleted || 0))
+						store[job.hide]()
+					} else {
+						showError(job.failed(response.data.error || 'Unknown error'))
+					}
+				},
+				{
+					log: job.log,
+					failed: (error) => job.failed(error.message),
+					fallback: () => undefined,
+				},
+			),
+	})
+}
+
+/**
+ * Test the connection to a file processing service. A failure is answered,
+ * not thrown.
+ *
+ * @param {object} job `path` (the test endpoint under settings/files) and `log`.
+ * @param {object} connectionData The connection to test.
+ * @return {Promise<object>} The test result.
+ * @spec exclude API passthrough helper for POST /api/settings/files/test-*
+ */
+function testConnection(job, connectionData) {
+	return attempt(
+		() => dataOf(axios.post(api(`settings/files/${job.path}`), connectionData)),
+		{
+			log: job.log,
+			fallback: (error) => ({
+				success: false,
+				error: error.response?.data?.error || error.message,
+			}),
+		},
+	)
+}
+
+/**
+ * Turn an `{id: label}` map into select options, or keep the current options
+ * when the answer has no map.
+ *
+ * @param {object|undefined} map The map from the answer.
+ * @param {Array<object>} current The current options.
+ * @return {Array<{id: string, label: string}>} The options.
+ * @spec exclude Client-side shaping of select options.
+ */
+function idLabelOptions(map, current) {
+	return map ? Object.entries(map).map(([id, label]) => ({ id, label })) : current
+}
+
+/**
+ * Merge answered values into the store's objects, one state key per entry.
+ *
+ * @param {object} store The settings store.
+ * @param {object} parts The values to merge, keyed by state key.
+ * @return {void}
+ * @spec exclude Client-side merge of answered settings into the store.
+ */
+function merge(store, parts) {
+	for (const [key, values] of Object.entries(parts)) {
+		store[key] = { ...store[key], ...values }
+	}
+}
+
+/**
+ * The data of a request's answer.
+ *
+ * @param {Promise<object>} request The request.
+ * @return {Promise<object>} The answer's data.
+ * @spec exclude Client-side unwrapping of an API answer.
+ */
+async function dataOf(request) {
+	const response = await request
+	return response.data
+}
+
+/**
+ * The URL of an OpenRegister API path.
+ *
+ * @param {string} path The path below `/apps/openregister/api/`.
+ * @return {string} The URL.
+ * @spec exclude Client-side URL building for the settings API passthroughs.
+ */
+function api(path) {
+	return generateUrl(`/apps/openregister/api/${path}`)
+}
+
+/**
+ * Whether an LLM settings patch only toggles `enabled`, which saves without a
+ * success message.
+ *
+ * @param {object} partialData The patch.
+ * @return {boolean} True when `enabled` is the only key.
+ * @spec exclude Client-side choice of the LLM settings success message.
+ */
+function onlyTogglesEnabled(partialData) {
+	return (
+		Object.keys(partialData).length <= 1 && Object.hasOwn(partialData, 'enabled')
+	)
+}
+
+/**
+ * The probe result for an anonymisation backend that could not be reached.
+ *
+ * @param {Error} error Why the probe failed.
+ * @return {object} The result.
+ * @spec exclude Client-side fallback of POST /api/admin/anonymisation/test-connection
+ */
+function unreachableBackend(error) {
+	return {
+		reachable: false,
+		latencyMs: null,
+		error: error.response?.data?.error || error.message,
+		probedAt: null,
+	}
+}
+
+/**
+ * The memory prediction shown when none could be loaded.
+ *
+ * @return {object} The prediction.
+ * @spec exclude Client-side fallback of POST /api/settings/mass-validate/memory-prediction
+ */
+function unknownMemoryPrediction() {
+	return {
+		success: false,
+		prediction_safe: true,
+		formatted: {
+			total_predicted: 'Unknown',
+			available: 'Unknown',
+		},
+	}
+}
+
+/**
+ * Send a request whose answer says whether it worked, and report the outcome:
+ * run the success step, or show why the request was refused or failed.
+ * A failure is logged, shown and rethrown.
+ *
+ * @param {object} job `send()`, `ok(data)`, `reason(data)` (why it was refused), `succeeded(data)`, `failed(reason)` (the message shown), `log`, and optionally `settled()` (runs after either outcome).
+ * @return {Promise<object>} The answer's data.
+ * @spec exclude API passthrough helper for the settings actions that answer with a success flag.
+ */
+function confirmed(job) {
+	return attempt(
+		async () => {
+			const response = await job.send()
+			if (job.ok(response.data)) {
+				await job.succeeded(response.data)
+			} else {
+				showError(job.failed(job.reason(response.data) || 'Unknown error'))
+			}
+			await job.settled?.()
+			return response.data
+		},
+		{ log: job.log, failed: (error) => job.failed(error.message) },
+	)
+}
+
+/**
+ * How the names cache size changed during a warmup.
+ *
+ * @param {number} oldSize The size before.
+ * @param {number} newSize The size after.
+ * @return {string} The sentence.
+ * @spec exclude Client-side wording of the names cache warmup result.
+ */
+function cacheSizeChange(oldSize, newSize) {
+	const sizes = { old: oldSize, new: newSize }
+	if (newSize > oldSize) {
+		return t('openregister', 'Cache grew from {old} to {new} entries.', sizes)
+	}
+	if (newSize < oldSize) {
+		return t('openregister', 'Cache shrunk from {old} to {new} entries.', sizes)
+	}
+	return t('openregister', 'Cache stayed the same at {size} entries.', {
+		size: newSize,
+	})
+}
+
+/**
+ * The success message of a names cache warmup.
+ *
+ * @param {object} data The warmup answer.
+ * @return {string} The message.
+ * @spec exclude Client-side wording of the names cache warmup result.
+ */
+function warmupMessage(data) {
+	const oldSize = data.old_cache?.distributed_name_cache_size || 0
+	const newSize = data.new_cache?.distributed_name_cache_size || 0
+	return t(
+		'openregister',
+		'Names cache warmed up successfully: {count} names loaded in {time}. {message}',
+		{
+			count: data.loaded_names || 0,
+			time: data.execution_time || '0ms',
+			message: cacheSizeChange(oldSize, newSize),
+		},
+	)
+}
+
+/**
+ * The settings store's loading flags and cached stats, before anything loads.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsLoadingState() {
+	return {
 		loading: false,
 		loadingInProgress: false,
 		saving: false,
@@ -26,12 +501,19 @@ export const useSettingsStore = defineStore('settings', {
 		loadingStats: false,
 		loadingCacheStats: false,
 		loadingVersionInfo: false,
-
-		// Stats data (cached)
 		extractionStats: null,
 		vectorStats: null,
+	}
+}
 
-		// Cache states
+/**
+ * The settings store's cache management state.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsCacheState() {
+	return {
 		clearingCache: false,
 		warmingUpCache: false,
 		showClearCacheConfirmation: false,
@@ -41,175 +523,73 @@ export const useSettingsStore = defineStore('settings', {
 		warmupLastRun: null,
 		loadingWarmupInterval: false,
 		savingWarmupInterval: false,
+	}
+}
 
-		// Mass validation states
+/**
+ * The settings store's mass validation and clear-logs state.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsMaintenanceState() {
+	return {
 		massValidating: false,
 		showMassValidateConfirmation: false,
 		massValidateResults: null,
-
-		// Clear logs states
 		clearingAuditTrails: false,
 		clearingSearchTrails: false,
 		clearingBlobObjects: false,
 		showClearAuditTrailsConfirmation: false,
 		showClearSearchTrailsConfirmation: false,
 		showClearBlobObjectsConfirmation: false,
+	}
+}
 
-		// Settings data
-		rbacOptions: {
-			enabled: false,
-			anonymousGroup: 'public',
-			defaultNewUserGroup: 'viewer',
-			defaultObjectOwner: '',
-			adminOverride: true,
-		},
-
-		multitenancyOptions: {
-			enabled: false,
-			defaultUserTenant: '',
-			defaultObjectTenant: '',
-			adminOverride: true,
-		},
-
-		// Flow-engine instance policy. Administrator settings, not personal
-		// preferences: how long run history is kept, whether every hop is
-		// audit-trailed, and whether the oversight gate runs.
-		//
-		// `auditEnabled` and `oversightEnabled` default OPPOSITELY on purpose —
-		// auditing is write volume and opt-in, oversight is what stops a
-		// running flow and so must be on unless deliberately turned off.
-		flowOptions: {
-			retentionDays: 31,
-			auditEnabled: false,
-			oversightEnabled: true,
-			killSwitch: false,
-		},
-
-		retentionOptions: {
-			objectArchiveRetention: 31536000000, // 1 year
-			objectDeleteRetention: 63072000000, // 2 years
-			searchTrailRetention: 2592000000, // 1 month
-			createLogRetention: 2592000000, // 1 month
-			readLogRetention: 86400000, // 24 hours
-			updateLogRetention: 604800000, // 1 week
-			deleteLogRetention: 2592000000, // 1 month
-			auditTrailsEnabled: true, // Audit trails enabled by default
-			searchTrailsEnabled: true, // Search trails enabled by default
-		},
-
-		llmOptions: {
-			enabled: false,
-			providerId: 'none',
-			apiEndpoint: '',
-			apiKey: '',
-			model: null,
-			temperature: 0.7,
-			maxTokens: 2000,
-			enabledFeatures: [],
-		},
-
-		fileOptions: {
-			extractionScope: 'objects', // none, all, folders, objects
-			extractionMode: 'background', // background, immediate, manual
-			maxFileSize: 100,
-			batchSize: 10,
-			enabledFileTypes: [
-				'txt',
-				'pdf',
-				'docx',
-				'xlsx',
-				'pptx',
-				'html',
-				'md',
-				'json',
-			],
-		},
-
+/**
+ * The settings store's settings sections, before they load.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsSectionsState() {
+	return {
+		rbacOptions: defaultRbacOptions(),
+		multitenancyOptions: defaultMultitenancyOptions(),
+		flowOptions: defaultFlowOptions(),
+		retentionOptions: defaultRetentionOptions(),
+		llmOptions: defaultLlmOptions(),
+		fileOptions: defaultFileOptions(),
 		loadingLlmSettings: false,
 		loadingFileSettings: false,
+	}
+}
 
-		versionInfo: {
-			appName: 'Open Register',
-			appVersion: '0.2.3',
-		},
-
-		// Options data
+/**
+ * The settings store's version, select options and statistics, before they load.
+ *
+ * @return {object} The state.
+ * @spec exclude Client-side initial state of the settings store.
+ */
+function settingsOptionsState() {
+	return {
+		versionInfo: { appName: 'Open Register', appVersion: '0.2.3' },
 		groupOptions: [],
 		userOptions: [],
 		tenantOptions: [],
-		// Statistics data
-		stats: {
-			warnings: {
-				objectsWithoutOwner: 0,
-				objectsWithoutOrganisation: 0,
-				auditTrailsWithoutExpiry: 0,
-				searchTrailsWithoutExpiry: 0,
-				expiredAuditTrails: 0,
-				expiredSearchTrails: 0,
-				expiredObjects: 0,
-			},
-			totals: {
-				totalObjects: 0,
-				totalBlobObjects: 0,
-				totalMagicObjects: 0,
-				totalSize: 0,
-				totalBlobSize: 0,
-				totalMagicSize: 0,
-				totalAuditTrails: 0,
-				totalSearchTrails: 0,
-				totalConfigurations: 0,
-				totalDataAccessProfiles: 0,
-				totalOrganisations: 0,
-				totalRegisters: 0,
-				totalSchemas: 0,
-				totalSources: 0,
-				totalWebhookLogs: 0,
-				deletedObjects: 0,
-			},
-			lastUpdated: null,
-		},
-
-		// Cache statistics
-		cacheStats: {
-			overview: {
-				totalCacheSize: 0,
-				totalCacheEntries: 0,
-				overallHitRate: 0.0,
-				averageResponseTime: 0.0,
-				cacheEfficiency: 0.0,
-			},
-			services: {
-				object: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
-				schema: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
-				facet: { entries: 0, hits: 0, requests: 0, memoryUsage: 0 },
-			},
-			distributed: {
-				type: 'unknown',
-				backend: 'Unknown',
-				available: false,
-			},
-			performance: {
-				averageHitTime: 0,
-				averageMissTime: 0,
-				performanceGain: 0,
-				optimalHitRate: 85.0,
-				currentTrend: 'unknown',
-			},
-			names: {
-				cache_size: 0,
-				hit_rate: 0.0,
-				hits: 0,
-				misses: 0,
-				warmups: 0,
-				enabled: false,
-			},
-			lastUpdated: null,
-			unavailable: true,
-			errorMessage: 'Loading...',
-		},
-
-		// Dialog states
+		stats: emptySystemStats(),
+		cacheStats: emptyCacheStats(),
 		showRebaseConfirmation: false,
+	}
+}
+
+export const useSettingsStore = defineStore('settings', {
+	state: () => ({
+		...settingsLoadingState(),
+		...settingsCacheState(),
+		...settingsMaintenanceState(),
+		...settingsSectionsState(),
+		...settingsOptionsState(),
 	}),
 
 	getters: {
@@ -228,62 +608,21 @@ export const useSettingsStore = defineStore('settings', {
 		 *
 		 * @param {object} state - The state of the retention settings
 		 */
-		retentionStatusClass: (state) => {
-			const hasIssues =
-				state.stats.warnings.auditTrailsWithoutExpiry > 0
-				|| state.stats.warnings.searchTrailsWithoutExpiry > 0
-				|| state.stats.warnings.expiredAuditTrails > 0
-				|| state.stats.warnings.expiredSearchTrails > 0
-				|| state.stats.warnings.expiredObjects > 0
+		retentionStatusClass: (state) =>
+			retentionIssues(state.stats.warnings).length > 0
+				? 'warning-status'
+				: 'healthy-status',
 
-			return hasIssues ? 'warning-status' : 'healthy-status'
-		},
-
-		retentionStatusTextClass: (state) => {
-			const hasIssues =
-				state.stats.warnings.auditTrailsWithoutExpiry > 0
-				|| state.stats.warnings.searchTrailsWithoutExpiry > 0
-				|| state.stats.warnings.expiredAuditTrails > 0
-				|| state.stats.warnings.expiredSearchTrails > 0
-				|| state.stats.warnings.expiredObjects > 0
-
-			return hasIssues ? 'status-warning' : 'status-healthy'
-		},
+		retentionStatusTextClass: (state) =>
+			retentionIssues(state.stats.warnings).length > 0
+				? 'status-warning'
+				: 'status-healthy',
 
 		retentionStatusMessage: (state) => {
-			const warnings = state.stats.warnings
-			const hasIssues =
-				warnings.auditTrailsWithoutExpiry > 0
-				|| warnings.searchTrailsWithoutExpiry > 0
-				|| warnings.expiredAuditTrails > 0
-				|| warnings.expiredSearchTrails > 0
-				|| warnings.expiredObjects > 0
-
-			if (hasIssues) {
-				const issues = []
-				if (warnings.auditTrailsWithoutExpiry > 0)
-					issues.push(
-						`${warnings.auditTrailsWithoutExpiry} audit trails without expiry`,
-					)
-				if (warnings.searchTrailsWithoutExpiry > 0)
-					issues.push(
-						`${warnings.searchTrailsWithoutExpiry} search trails without expiry`,
-					)
-				if (warnings.expiredAuditTrails > 0)
-					issues.push(
-						`${warnings.expiredAuditTrails} expired audit trails`,
-					)
-				if (warnings.expiredSearchTrails > 0)
-					issues.push(
-						`${warnings.expiredSearchTrails} expired search trails`,
-					)
-				if (warnings.expiredObjects > 0)
-					issues.push(`${warnings.expiredObjects} expired objects`)
-
-				return `Issues found: ${issues.join(', ')}`
-			}
-
-			return 'All retention policies are properly configured and applied'
+			const issues = retentionIssues(state.stats.warnings)
+			return issues.length > 0
+				? `Issues found: ${issues.join(', ')}`
+				: 'All retention policies are properly configured and applied'
 		},
 	},
 
@@ -303,25 +642,29 @@ export const useSettingsStore = defineStore('settings', {
 			this.loadingInProgress = true
 
 			try {
-				// Load all settings sections in parallel for better performance
-				await Promise.allSettled([
-					this.loadRbacSettings(),
-					this.loadMultitenancySettings(),
-					this.loadRetentionSettings(),
-					this.loadVersionInfo(),
-					this.loadAvailableOptions(),
-				])
+				await this.loadAllSections()
 			} catch (error) {
-				console.error('Failed to load settings:', error)
-				showError(
-					t('openregister', 'Failed to load settings: {error}', {
-						error: error.message,
-					}),
-				)
+				showLoadFailure(error)
 			} finally {
 				this.loading = false
 				this.loadingInProgress = false
 			}
+		},
+
+		/**
+		 * Load every settings section, in parallel for better performance.
+		 *
+		 * @return {Promise<Array<object>>} The settled loads
+		 * @spec exclude parallel fan-out wrapper over settings-load passthroughs
+		 */
+		loadAllSections() {
+			return Promise.allSettled([
+				this.loadRbacSettings(),
+				this.loadMultitenancySettings(),
+				this.loadRetentionSettings(),
+				this.loadVersionInfo(),
+				this.loadAvailableOptions(),
+			])
 		},
 
 		/**
@@ -335,59 +678,32 @@ export const useSettingsStore = defineStore('settings', {
 			this.massValidateResults = null
 
 			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/mass-validate'),
-					{
-						batchSize: options.batchSize || 1000,
-						maxObjects: options.maxObjects || 0,
-						mode: options.mode || 'serial',
-						collectErrors: options.collectErrors || false,
-					},
-				)
-
+				const response = await requestMassValidation(options)
 				this.massValidateResults = response.data
-
-				if (response.data.success) {
-					showSuccess(
-						t('openregister', 'Mass validation completed successfully'),
-					)
-				} else {
-					showError(
-						t('openregister', 'Mass validation failed: {error}', {
-							error: response.data.message,
-						}),
-					)
-				}
-
+				reportMassValidation(response.data)
 				return response.data
 			} catch (error) {
-				console.error('Mass validation failed:', error)
-				const errorMessage = error.response?.data?.message || error.message
-				showError(
-					t('openregister', 'Mass validation failed: {error}', {
-						error: errorMessage,
-					}),
-				)
-
-				this.massValidateResults = {
-					success: false,
-					message: errorMessage,
-					error: errorMessage,
-					stats: {
-						total_objects: 0,
-						processed_objects: 0,
-						successful_saves: 0,
-						failed_saves: 0,
-						duration_seconds: 0,
-					},
-					errors: [],
-				}
-
+				this.massValidationFailed(error)
 				throw error
 			} finally {
 				this.massValidating = false
 			}
 		},
+		/**
+		 * Log a failed mass validation, say why it failed and keep its zero
+		 * results.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 * @spec exclude API passthrough to POST /api/settings/mass-validate
+		 */
+		massValidationFailed(error) {
+			console.error('Mass validation failed:', error)
+			const errorMessage = error.response?.data?.message || error.message
+			showMassValidateFailure(errorMessage)
+			this.massValidateResults = failedMassValidation(errorMessage)
+		},
+
 
 		/**
 		 * Load memory prediction for mass validation
@@ -396,26 +712,18 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/settings/mass-validate/memory-prediction
 		 */
 		async loadMassValidateMemoryPrediction(maxObjects = 0) {
-			try {
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/settings/mass-validate/memory-prediction',
+			return attempt(
+				() =>
+					dataOf(
+						axios.post(api('settings/mass-validate/memory-prediction'), {
+							maxObjects,
+						}),
 					),
-					{ maxObjects },
-				)
-
-				return response.data
-			} catch (error) {
-				console.error('Failed to load memory prediction:', error)
-				return {
-					success: false,
-					prediction_safe: true,
-					formatted: {
-						total_predicted: 'Unknown',
-						available: 'Unknown',
-					},
-				}
-			}
+				{
+					log: 'Failed to load memory prediction:',
+					fallback: unknownMemoryPrediction,
+				},
+			)
 		},
 
 		/**
@@ -454,26 +762,21 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/rbac
 		 */
 		async loadRbacSettings() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/rbac'),
-				)
-				if (response.data) {
-					this.rbacOptions = { ...this.rbacOptions, ...response.data.rbac }
-					if (response.data.availableGroups) {
-						this.groupOptions = Object.entries(
-							response.data.availableGroups,
-						).map(([id, label]) => ({ id, label }))
-					}
-					if (response.data.availableUsers) {
-						this.userOptions = Object.entries(
-							response.data.availableUsers,
-						).map(([id, label]) => ({ id, label }))
-					}
-				}
-			} catch (error) {
-				console.error('Failed to load RBAC settings:', error)
-			}
+			return readSettings(this, {
+				send: () => axios.get(api('settings/rbac')),
+				apply: (data) => {
+					merge(this, { rbacOptions: data.rbac })
+					this.groupOptions = idLabelOptions(
+						data.availableGroups,
+						this.groupOptions,
+					)
+					this.userOptions = idLabelOptions(
+						data.availableUsers,
+						this.userOptions,
+					)
+				},
+				log: 'Failed to load RBAC settings:',
+			})
 		},
 
 		/**
@@ -483,30 +786,17 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to PUT /api/settings/rbac
 		 */
 		async updateRbacSettings(rbacData) {
-			this.saving = true
-			try {
-				const response = await axios.put(
-					generateUrl('/apps/openregister/api/settings/rbac'),
-					rbacData,
-				)
-
-				if (response.data) {
-					this.rbacOptions = { ...this.rbacOptions, ...response.data.rbac }
-				}
-
-				showSuccess(t('openregister', 'RBAC settings updated successfully'))
-				return response.data
-			} catch (error) {
-				console.error('Failed to update RBAC settings:', error)
-				showError(
+			return writeSettings(this, {
+				flag: 'saving',
+				send: () => axios.put(api('settings/rbac'), rbacData),
+				apply: (data) => merge(this, { rbacOptions: data.rbac }),
+				done: t('openregister', 'RBAC settings updated successfully'),
+				log: 'Failed to update RBAC settings:',
+				failed: (error) =>
 					t('openregister', 'Failed to update RBAC settings: {error}', {
 						error: error.message,
 					}),
-				)
-				throw error
-			} finally {
-				this.saving = false
-			}
+			})
 		},
 
 		/**
@@ -515,24 +805,17 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/multitenancy
 		 */
 		async loadMultitenancySettings() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/multitenancy'),
-				)
-				if (response.data) {
-					this.multitenancyOptions = {
-						...this.multitenancyOptions,
-						...response.data.multitenancy,
-					}
-					if (response.data.availableTenants) {
-						this.tenantOptions = Object.entries(
-							response.data.availableTenants,
-						).map(([id, label]) => ({ id, label }))
-					}
-				}
-			} catch (error) {
-				console.error('Failed to load Multitenancy settings:', error)
-			}
+			return readSettings(this, {
+				send: () => axios.get(api('settings/multitenancy')),
+				apply: (data) => {
+					merge(this, { multitenancyOptions: data.multitenancy })
+					this.tenantOptions = idLabelOptions(
+						data.availableTenants,
+						this.tenantOptions,
+					)
+				},
+				log: 'Failed to load Multitenancy settings:',
+			})
 		},
 
 		/**
@@ -542,37 +825,24 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to PUT /api/settings/multitenancy
 		 */
 		async updateMultitenancySettings(multitenancyData) {
-			this.saving = true
-			try {
-				const response = await axios.put(
-					generateUrl('/apps/openregister/api/settings/multitenancy'),
-					multitenancyData,
-				)
-
-				if (response.data) {
-					this.multitenancyOptions = {
-						...this.multitenancyOptions,
-						...response.data.multitenancy,
-					}
-				}
-
-				showSuccess(
-					t('openregister', 'Multitenancy settings updated successfully'),
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to update Multitenancy settings:', error)
-				showError(
+			return writeSettings(this, {
+				flag: 'saving',
+				send: () =>
+					axios.put(api('settings/multitenancy'), multitenancyData),
+				apply: (data) =>
+					merge(this, { multitenancyOptions: data.multitenancy }),
+				done: t(
+					'openregister',
+					'Multitenancy settings updated successfully',
+				),
+				log: 'Failed to update Multitenancy settings:',
+				failed: (error) =>
 					t(
 						'openregister',
 						'Failed to update Multitenancy settings: {error}',
 						{ error: error.message },
 					),
-				)
-				throw error
-			} finally {
-				this.saving = false
-			}
+			})
 		},
 
 		/**
@@ -581,27 +851,13 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/retention
 		 */
 		async loadRetentionSettings() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/retention'),
-				)
-				if (response.data) {
-					this.retentionOptions = {
-						...this.retentionOptions,
-						...response.data,
-					}
-				}
-			} catch (error) {
-				console.error('Failed to load Retention settings:', error)
-			}
+			return readSettings(this, {
+				send: () => axios.get(api('settings/retention')),
+				apply: (data) => merge(this, { retentionOptions: data }),
+				log: 'Failed to load Retention settings:',
+			})
 		},
 
-		/**
-		 * Update Retention settings
-		 *
-		 * @param {object} retentionData - The retention settings to save
-		 * @spec exclude API passthrough to PUT /api/settings/retention
-		 */
 		/**
 		 * Load the flow-engine instance policy.
 		 *
@@ -615,16 +871,15 @@ export const useSettingsStore = defineStore('settings', {
 		 * @return {Promise<void>}
 		 */
 		async loadFlowSettings() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings'),
-				)
-				if (response.data?.flow) {
-					this.flowOptions = { ...this.flowOptions, ...response.data.flow }
-				}
-			} catch (error) {
-				console.error('Failed to load flow settings:', error)
-			}
+			return readSettings(this, {
+				send: () => axios.get(api('settings')),
+				apply: (data) => {
+					if (data.flow) {
+						merge(this, { flowOptions: data.flow })
+					}
+				},
+				log: 'Failed to load flow settings:',
+			})
 		},
 
 		/**
@@ -635,64 +890,43 @@ export const useSettingsStore = defineStore('settings', {
 		 * @return {Promise<object>} The stored settings.
 		 */
 		async updateFlowSettings(flowData) {
-			this.saving = true
-			try {
-				const response = await axios.put(
-					generateUrl('/apps/openregister/api/settings'),
-					{ flow: flowData },
-				)
-
-				if (response.data?.flow) {
-					this.flowOptions = { ...this.flowOptions, ...response.data.flow }
-				}
-
-				showSuccess(t('openregister', 'Flow settings updated'))
-				return response.data
-			} catch (error) {
-				console.error('Failed to update flow settings:', error)
-				showError(
+			return writeSettings(this, {
+				flag: 'saving',
+				send: () => axios.put(api('settings'), { flow: flowData }),
+				apply: (data) => {
+					if (data.flow) {
+						merge(this, { flowOptions: data.flow })
+					}
+				},
+				done: t('openregister', 'Flow settings updated'),
+				log: 'Failed to update flow settings:',
+				failed: (error) =>
 					t('openregister', 'Failed to update flow settings: {error}', {
 						error: error.message,
 					}),
-				)
-				throw error
-			} finally {
-				this.saving = false
-			}
+			})
 		},
 
+		/**
+		 * Update Retention settings
+		 *
+		 * @param {object} retentionData - The retention settings to save
+		 * @spec exclude API passthrough to PUT /api/settings/retention
+		 */
 		async updateRetentionSettings(retentionData) {
-			this.saving = true
-			try {
-				const response = await axios.put(
-					generateUrl('/apps/openregister/api/settings/retention'),
-					retentionData,
-				)
-
-				if (response.data) {
-					this.retentionOptions = {
-						...this.retentionOptions,
-						...response.data,
-					}
-				}
-
-				showSuccess(
-					t('openregister', 'Retention settings updated successfully'),
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to update Retention settings:', error)
-				showError(
+			return writeSettings(this, {
+				flag: 'saving',
+				send: () => axios.put(api('settings/retention'), retentionData),
+				apply: (data) => merge(this, { retentionOptions: data }),
+				done: t('openregister', 'Retention settings updated successfully'),
+				log: 'Failed to update Retention settings:',
+				failed: (error) =>
 					t(
 						'openregister',
 						'Failed to update Retention settings: {error}',
 						{ error: error.message },
 					),
-				)
-				throw error
-			} finally {
-				this.saving = false
-			}
+			})
 		},
 
 		/**
@@ -701,21 +935,16 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/llm
 		 */
 		async getLlmSettings() {
-			try {
-				this.loadingLlmSettings = true
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/llm'),
-				)
-				if (response.data) {
-					this.llmOptions = { ...this.llmOptions, ...response.data }
+			return readSettings(this, {
+				flag: 'loadingLlmSettings',
+				send: () => axios.get(api('settings/llm')),
+				apply: (data) => {
+					merge(this, { llmOptions: data })
 					return this.llmOptions
-				}
-			} catch (error) {
-				console.error('Failed to load LLM settings:', error)
-				return this.llmOptions
-			} finally {
-				this.loadingLlmSettings = false
-			}
+				},
+				log: 'Failed to load LLM settings:',
+				fallback: () => this.llmOptions,
+			})
 		},
 
 		/**
@@ -725,28 +954,16 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to PATCH /api/settings/llm
 		 */
 		async saveLlmSettings(llmData) {
-			try {
-				// Use PATCH instead of PUT for better partial update support
-				const response = await axios.patch(
-					generateUrl('/apps/openregister/api/settings/llm'),
-					llmData,
-				)
-
-				if (response.data) {
-					this.llmOptions = { ...this.llmOptions, ...response.data }
-				}
-
-				showSuccess(t('openregister', 'LLM settings saved successfully'))
-				return response.data
-			} catch (error) {
-				console.error('Failed to save LLM settings:', error)
-				showError(
+			return writeSettings(this, {
+				send: () => axios.patch(api('settings/llm'), llmData),
+				apply: (data) => merge(this, { llmOptions: data }),
+				done: t('openregister', 'LLM settings saved successfully'),
+				log: 'Failed to save LLM settings:',
+				failed: (error) =>
 					t('openregister', 'Failed to save LLM settings: {error}', {
 						error: error.message,
 					}),
-				)
-				throw error
-			}
+			})
 		},
 
 		/**
@@ -756,36 +973,23 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to PATCH /api/settings/llm (partial)
 		 */
 		async patchLlmSettings(partialData) {
-			try {
-				const response = await axios.patch(
-					generateUrl('/apps/openregister/api/settings/llm'),
-					partialData,
-				)
-
-				if (response.data && response.data.data) {
-					this.llmOptions = { ...this.llmOptions, ...response.data.data }
-				}
-
-				// Show success message only if not just toggling enabled
-				if (
-					Object.keys(partialData).length > 1
-					|| !Object.hasOwn(partialData, 'enabled')
-				) {
-					showSuccess(
-						t('openregister', 'LLM settings updated successfully'),
-					)
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('Failed to update LLM settings:', error)
-				showError(
+			const announce = !onlyTogglesEnabled(partialData)
+			return writeSettings(this, {
+				send: () => axios.patch(api('settings/llm'), partialData),
+				apply: (data) => {
+					if (data.data) {
+						merge(this, { llmOptions: data.data })
+					}
+				},
+				done: announce
+					? t('openregister', 'LLM settings updated successfully')
+					: null,
+				log: 'Failed to update LLM settings:',
+				failed: (error) =>
 					t('openregister', 'Failed to update LLM settings: {error}', {
 						error: error.message,
 					}),
-				)
-				throw error
-			}
+			})
 		},
 
 		/**
@@ -795,24 +999,20 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/vectors/stats (stat loader)
 		 */
 		async getVectorStats() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/vectors/stats'),
-				)
-				const stats = response.data
-				this.vectorStats = stats // Cache in state
-				return stats
-			} catch (error) {
-				console.error('Failed to load vector statistics:', error)
-				// Return empty stats instead of throwing to prevent UI breakage
-				const emptyStats = {
-					total_vectors: 0,
-					by_type: { object: 0, file: 0 },
-					connection_status: 'Error',
-				}
-				this.vectorStats = emptyStats
-				return emptyStats
-			}
+			const stats = await attempt(
+				() => dataOf(axios.get(api('vectors/stats'))),
+				{
+					log: 'Failed to load vector statistics:',
+					// Empty stats instead of an error, so the UI keeps working.
+					fallback: () => ({
+						total_vectors: 0,
+						by_type: { object: 0, file: 0 },
+						connection_status: 'Error',
+					}),
+				},
+			)
+			this.vectorStats = stats
+			return stats
 		},
 
 		/**
@@ -822,16 +1022,10 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/settings/llm/test
 		 */
 		async testLlmConnection(connectionData) {
-			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/llm/test'),
-					connectionData,
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to test LLM connection:', error)
-				throw error
-			}
+			return attempt(
+				() => dataOf(axios.post(api('settings/llm/test'), connectionData)),
+				{ log: 'Failed to test LLM connection:' },
+			)
 		},
 
 		/**
@@ -840,15 +1034,10 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/llm/usage
 		 */
 		async getLlmUsageStats() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/llm/usage'),
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to load LLM usage stats:', error)
-				return null
-			}
+			return attempt(() => dataOf(axios.get(api('settings/llm/usage'))), {
+				log: 'Failed to load LLM usage stats:',
+				fallback: () => null,
+			})
 		},
 
 		/**
@@ -857,21 +1046,16 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/files
 		 */
 		async getFileSettings() {
-			try {
-				this.loadingFileSettings = true
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/files'),
-				)
-				if (response.data) {
-					this.fileOptions = { ...this.fileOptions, ...response.data }
+			return readSettings(this, {
+				flag: 'loadingFileSettings',
+				send: () => axios.get(api('settings/files')),
+				apply: (data) => {
+					merge(this, { fileOptions: data })
 					return this.fileOptions
-				}
-			} catch (error) {
-				console.error('Failed to load file settings:', error)
-				return this.fileOptions
-			} finally {
-				this.loadingFileSettings = false
-			}
+				},
+				log: 'Failed to load file settings:',
+				fallback: () => this.fileOptions,
+			})
 		},
 
 		/**
@@ -881,27 +1065,16 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to PUT /api/settings/files
 		 */
 		async saveFileSettings(fileData) {
-			try {
-				const response = await axios.put(
-					generateUrl('/apps/openregister/api/settings/files'),
-					fileData,
-				)
-
-				if (response.data) {
-					this.fileOptions = { ...this.fileOptions, ...response.data }
-				}
-
-				showSuccess(t('openregister', 'File settings saved successfully'))
-				return response.data
-			} catch (error) {
-				console.error('Failed to save file settings:', error)
-				showError(
+			return writeSettings(this, {
+				send: () => axios.put(api('settings/files'), fileData),
+				apply: (data) => merge(this, { fileOptions: data }),
+				done: t('openregister', 'File settings saved successfully'),
+				log: 'Failed to save file settings:',
+				failed: (error) =>
 					t('openregister', 'Failed to save file settings: {error}', {
 						error: error.message,
 					}),
-				)
-				throw error
-			}
+			})
 		},
 
 		/**
@@ -910,17 +1083,15 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/files/stats (stat loader)
 		 */
 		async getExtractionStats() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/files/stats'),
-				)
-				const stats = response.data.data || response.data
-				this.extractionStats = stats // Cache in state
-				return stats
-			} catch (error) {
-				console.error('Failed to load extraction stats:', error)
-				return null
-			}
+			return attempt(
+				async () => {
+					const response = await axios.get(api('files/stats'))
+					const stats = response.data.data || response.data
+					this.extractionStats = stats
+					return stats
+				},
+				{ log: 'Failed to load extraction stats:', fallback: () => null },
+			)
 		},
 
 		/**
@@ -929,21 +1100,16 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/files/discover
 		 */
 		async discoverFiles() {
-			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/files/discover'),
-					{ limit: 100 },
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to discover files:', error)
-				showError(
-					t('openregister', 'Failed to discover files: {error}', {
-						error: error.message,
-					}),
-				)
-				throw error
-			}
+			return attempt(
+				() => dataOf(axios.post(api('files/discover'), { limit: 100 })),
+				{
+					log: 'Failed to discover files:',
+					failed: (error) =>
+						t('openregister', 'Failed to discover files: {error}', {
+							error: error.message,
+						}),
+				},
+			)
 		},
 
 		/**
@@ -953,28 +1119,17 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/files/extract|retry-failed
 		 */
 		async triggerFileExtraction(type = 'pending') {
-			try {
-				// Use new core file extraction endpoints
-				const endpoint =
-					type === 'failed'
-						? '/apps/openregister/api/files/retry-failed'
-						: '/apps/openregister/api/files/extract'
-
-				const response = await axios.post(generateUrl(endpoint), {
-					limit: 100,
-				})
-				return response.data
-			} catch (error) {
-				console.error(`Failed to trigger ${type} file extraction:`, error)
-				showError(
+			const endpoint =
+				type === 'failed' ? 'files/retry-failed' : 'files/extract'
+			return attempt(() => dataOf(axios.post(api(endpoint), { limit: 100 })), {
+				log: `Failed to trigger ${type} file extraction:`,
+				failed: (error) =>
 					t(
 						'openregister',
 						'Failed to start processing {type} files: {error}',
 						{ type, error: error.message },
 					),
-				)
-				throw error
-			}
+			})
 		},
 
 		/**
@@ -984,21 +1139,10 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/settings/files/test-dolphin
 		 */
 		async testDolphinConnection(connectionData) {
-			try {
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/settings/files/test-dolphin',
-					),
-					connectionData,
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to test Dolphin connection:', error)
-				return {
-					success: false,
-					error: error.response?.data?.error || error.message,
-				}
-			}
+			return testConnection(
+				{ path: 'test-dolphin', log: 'Failed to test Dolphin connection:' },
+				connectionData,
+			)
 		},
 
 		/**
@@ -1008,21 +1152,13 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/settings/files/test-presidio
 		 */
 		async testPresidioConnection(connectionData) {
-			try {
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/settings/files/test-presidio',
-					),
-					connectionData,
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to test Presidio connection:', error)
-				return {
-					success: false,
-					error: error.response?.data?.error || error.message,
-				}
-			}
+			return testConnection(
+				{
+					path: 'test-presidio',
+					log: 'Failed to test Presidio connection:',
+				},
+				connectionData,
+			)
 		},
 
 		/**
@@ -1032,21 +1168,13 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/settings/files/test-openanonymiser
 		 */
 		async testOpenAnonymiserConnection(connectionData) {
-			try {
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/settings/files/test-openanonymiser',
-					),
-					connectionData,
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to test OpenAnonymiser connection:', error)
-				return {
-					success: false,
-					error: error.response?.data?.error || error.message,
-				}
-			}
+			return testConnection(
+				{
+					path: 'test-openanonymiser',
+					log: 'Failed to test OpenAnonymiser connection:',
+				},
+				connectionData,
+			)
 		},
 
 		/**
@@ -1055,17 +1183,13 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/admin/anonymisation/backend-state
 		 */
 		async getAnonymisationBackendState() {
-			try {
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/admin/anonymisation/backend-state',
-					),
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to load anonymisation backend state:', error)
-				return null
-			}
+			return attempt(
+				() => dataOf(axios.get(api('admin/anonymisation/backend-state'))),
+				{
+					log: 'Failed to load anonymisation backend state:',
+					fallback: () => null,
+				},
+			)
 		},
 
 		/**
@@ -1075,23 +1199,18 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/admin/anonymisation/test-connection
 		 */
 		async testAnonymisationBackend(method) {
-			try {
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/admin/anonymisation/test-connection',
+			return attempt(
+				() =>
+					dataOf(
+						axios.post(api('admin/anonymisation/test-connection'), {
+							method,
+						}),
 					),
-					{ method },
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to probe anonymisation backend:', error)
-				return {
-					reachable: false,
-					latencyMs: null,
-					error: error.response?.data?.error || error.message,
-					probedAt: null,
-				}
-			}
+				{
+					log: 'Failed to probe anonymisation backend:',
+					fallback: unreachableBackend,
+				},
+			)
 		},
 
 		/**
@@ -1100,19 +1219,14 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/version
 		 */
 		async loadVersionInfo() {
-			try {
-				this.loadingVersionInfo = true
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/version'),
-				)
-				if (response.data) {
-					this.versionInfo = { ...this.versionInfo, ...response.data }
-				}
-			} catch (error) {
-				console.error('Failed to load version info:', error)
-			} finally {
-				this.loadingVersionInfo = false
-			}
+			return readSettings(this, {
+				flag: 'loadingVersionInfo',
+				send: () => axios.get(api('settings/version')),
+				apply: (data) => {
+					merge(this, { versionInfo: data })
+				},
+				log: 'Failed to load version info:',
+			})
 		},
 
 		/**
@@ -1135,25 +1249,16 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/statistics (stat loader)
 		 */
 		async loadStats() {
-			this.loadingStats = true
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/statistics'),
-				)
-				if (response.data) {
-					this.stats = { ...this.stats, ...response.data }
-					this.stats.lastUpdated = new Date().toISOString()
-				}
-			} catch (error) {
-				console.error('Failed to load statistics:', error)
-				showError(
+			return loadStatistics(this, {
+				flag: 'loadingStats',
+				key: 'stats',
+				path: 'settings/statistics',
+				log: 'Failed to load statistics:',
+				failed: (error) =>
 					t('openregister', 'Failed to load statistics: {error}', {
 						error: error.message,
 					}),
-				)
-			} finally {
-				this.loadingStats = false
-			}
+			})
 		},
 
 		/**
@@ -1162,25 +1267,16 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/cache (stat loader)
 		 */
 		async loadCacheStats() {
-			this.loadingCacheStats = true
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/cache'),
-				)
-				if (response.data) {
-					this.cacheStats = { ...this.cacheStats, ...response.data }
-					this.cacheStats.lastUpdated = new Date().toISOString()
-				}
-			} catch (error) {
-				console.error('Failed to load cache statistics:', error)
-				showError(
+			return loadStatistics(this, {
+				flag: 'loadingCacheStats',
+				key: 'cacheStats',
+				path: 'settings/cache',
+				log: 'Failed to load cache statistics:',
+				failed: (error) =>
 					t('openregister', 'Failed to load cache statistics: {error}', {
 						error: error.message,
 					}),
-				)
-			} finally {
-				this.loadingCacheStats = false
-			}
+			})
 		},
 
 		/**
@@ -1190,65 +1286,48 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/chat/stats
 		 */
 		async getChatStats() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/chat/stats'),
-				)
-				return response.data
-			} catch (error) {
-				console.error('Failed to load chat statistics:', error)
-				// Return empty stats if API not available yet
-				return {
+			return attempt(() => dataOf(axios.get(api('chat/stats'))), {
+				log: 'Failed to load chat statistics:',
+				// Empty stats while the chat API is not available.
+				fallback: () => ({
 					total_agents: 0,
 					total_conversations: 0,
 					total_messages: 0,
-				}
-			}
+				}),
+			})
 		},
 
 		/**
 		 * Clear specific cache type
 		 *
-		 * @param {string} type - The type of cache to clear
+		 * @param {string} cacheType - The type of cache to clear
 		 * @spec exclude API passthrough to DELETE /api/settings/cache
 		 */
-		async clearSpecificCache(type) {
-			this.clearingCache = type
+		async clearSpecificCache(cacheType) {
+			this.clearingCache = cacheType
 			try {
-				const response = await axios.delete(
-					generateUrl('/apps/openregister/api/settings/cache'),
-					{
-						data: { type },
+				return await confirmed({
+					send: () =>
+						axios.delete(api('settings/cache'), {
+							data: { type: cacheType },
+						}),
+					ok: (data) => data.success !== false,
+					reason: (data) => data.message,
+					succeeded: async () => {
+						showSuccess(
+							t('openregister', '{type} cache cleared successfully', {
+								type: cacheType,
+							}),
+						)
+						await this.loadCacheStats()
 					},
-				)
-
-				if (response.data.success !== false) {
-					showSuccess(
-						t('openregister', '{type} cache cleared successfully', {
-							type,
-						}),
-					)
-					// Reload cache stats to reflect changes
-					await this.loadCacheStats()
-				} else {
-					showError(
+					log: `Failed to clear ${cacheType} cache:`,
+					failed: (reason) =>
 						t('openregister', 'Failed to clear {type} cache: {error}', {
-							type,
-							error: response.data.message || 'Unknown error',
+							type: cacheType,
+							error: reason,
 						}),
-					)
-				}
-
-				return response.data
-			} catch (error) {
-				console.error(`Failed to clear ${type} cache:`, error)
-				showError(
-					t('openregister', 'Failed to clear {type} cache: {error}', {
-						type,
-						error: error.message,
-					}),
-				)
-				throw error
+				})
 			} finally {
 				this.clearingCache = false
 			}
@@ -1269,77 +1348,24 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/settings/cache/warmup-names
 		 */
 		async warmupNamesCache() {
-			this.warmingUpCache = true
-			try {
-				const response = await axios.post(
-					generateUrl(
-						'/apps/openregister/api/settings/cache/warmup-names',
-					),
-				)
-
-				if (response.data.success) {
-					const loadedCount = response.data.loaded_names || 0
-					const executionTime = response.data.execution_time || '0ms'
-					const oldCacheSize =
-						response.data.old_cache?.distributed_name_cache_size || 0
-					const newCacheSize =
-						response.data.new_cache?.distributed_name_cache_size || 0
-
-					let cacheMessage = ''
-					if (newCacheSize > oldCacheSize) {
-						cacheMessage = t(
-							'openregister',
-							'Cache grew from {old} to {new} entries.',
-							{ old: oldCacheSize, new: newCacheSize },
-						)
-					} else if (newCacheSize < oldCacheSize) {
-						cacheMessage = t(
-							'openregister',
-							'Cache shrunk from {old} to {new} entries.',
-							{ old: oldCacheSize, new: newCacheSize },
-						)
-					} else {
-						cacheMessage = t(
-							'openregister',
-							'Cache stayed the same at {size} entries.',
-							{ size: newCacheSize },
-						)
-					}
-
-					showSuccess(
-						t(
-							'openregister',
-							'Names cache warmed up successfully: {count} names loaded in {time}. {message}',
-							{
-								count: loadedCount,
-								time: executionTime,
-								message: cacheMessage,
-							},
-						),
-					)
-				} else {
-					showError(
-						t('openregister', 'Failed to warmup names cache: {error}', {
-							error: response.data.error || 'Unknown error',
-						}),
-					)
-				}
-
-				// Reload cache stats to reflect changes.
-				await this.loadCacheStats()
-
-				return response.data
-			} catch (error) {
-				console.error('Failed to warmup names cache:', error)
-				showError(
-					t('openregister', 'Failed to warmup names cache: {error}', {
-						error: error.message,
+			return flagged(this, {
+				flag: 'warmingUpCache',
+				run: () =>
+					confirmed({
+						send: () => axios.post(api('settings/cache/warmup-names')),
+						ok: (data) => data.success,
+						reason: (data) => data.error,
+						succeeded: (data) => showSuccess(warmupMessage(data)),
+						settled: () => this.loadCacheStats(),
+						log: 'Failed to warmup names cache:',
+						failed: (reason) =>
+							t(
+								'openregister',
+								'Failed to warmup names cache: {error}',
+								{ error: reason },
+							),
 					}),
-				)
-				throw error
-			} finally {
-				this.warmingUpCache = false
-			}
+			})
 		},
 
 		/**
@@ -1348,23 +1374,26 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to GET /api/settings/cache/warmup-interval
 		 */
 		async loadWarmupInterval() {
-			this.loadingWarmupInterval = true
-			try {
-				const response = await axios.get(
-					generateUrl(
-						'/apps/openregister/api/settings/cache/warmup-interval',
+			return flagged(this, {
+				flag: 'loadingWarmupInterval',
+				run: () =>
+					attempt(
+						async () => {
+							const response = await axios.get(
+								api('settings/cache/warmup-interval'),
+							)
+							if (response.data) {
+								this.warmupInterval = response.data.interval ?? 3600
+								this.warmupLastRun = response.data.last_run ?? null
+							}
+							return response.data
+						},
+						{
+							log: 'Failed to load warmup interval:',
+							fallback: () => undefined,
+						},
 					),
-				)
-				if (response.data) {
-					this.warmupInterval = response.data.interval ?? 3600
-					this.warmupLastRun = response.data.last_run ?? null
-				}
-				return response.data
-			} catch (error) {
-				console.error('Failed to load warmup interval:', error)
-			} finally {
-				this.loadingWarmupInterval = false
-			}
+			})
 		},
 
 		/**
@@ -1374,40 +1403,29 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to PUT /api/settings/cache/warmup-interval
 		 */
 		async saveWarmupInterval(interval) {
-			this.savingWarmupInterval = true
-			try {
-				const response = await axios.put(
-					generateUrl(
-						'/apps/openregister/api/settings/cache/warmup-interval',
-					),
-					{ interval },
-				)
-
-				if (response.data.success) {
-					this.warmupInterval = response.data.interval
-					showSuccess(response.data.message)
-				} else {
-					showError(
-						t(
-							'openregister',
-							'Failed to save warmup interval: {error}',
-							{ error: response.data.error || 'Unknown error' },
-						),
-					)
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('Failed to save warmup interval:', error)
-				showError(
-					t('openregister', 'Failed to save warmup interval: {error}', {
-						error: error.message,
+			return flagged(this, {
+				flag: 'savingWarmupInterval',
+				run: () =>
+					confirmed({
+						send: () =>
+							axios.put(api('settings/cache/warmup-interval'), {
+								interval,
+							}),
+						ok: (data) => data.success,
+						reason: (data) => data.error,
+						succeeded: (data) => {
+							this.warmupInterval = data.interval
+							showSuccess(data.message)
+						},
+						log: 'Failed to save warmup interval:',
+						failed: (reason) =>
+							t(
+								'openregister',
+								'Failed to save warmup interval: {error}',
+								{ error: reason },
+							),
 					}),
-				)
-				throw error
-			} finally {
-				this.savingWarmupInterval = false
-			}
+			})
 		},
 
 		/**
@@ -1416,38 +1434,29 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to POST /api/settings/rebase
 		 */
 		async rebase() {
-			this.rebasing = true
-			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/rebase'),
-				)
-
-				if (response.data.success !== false) {
-					showSuccess(
-						t('openregister', 'Rebase operation completed successfully'),
-					)
-					// Reload statistics to reflect changes
-					await this.loadStats()
-				} else {
-					showError(
-						t('openregister', 'Rebase operation failed: {error}', {
-							error: response.data.message || 'Unknown error',
-						}),
-					)
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('Rebase operation failed:', error)
-				showError(
-					t('openregister', 'Rebase operation failed: {error}', {
-						error: error.message,
+			return flagged(this, {
+				flag: 'rebasing',
+				run: () =>
+					confirmed({
+						send: () => axios.post(api('settings/rebase')),
+						ok: (data) => data.success !== false,
+						reason: (data) => data.message,
+						succeeded: async () => {
+							showSuccess(
+								t(
+									'openregister',
+									'Rebase operation completed successfully',
+								),
+							)
+							await this.loadStats()
+						},
+						log: 'Rebase operation failed:',
+						failed: (reason) =>
+							t('openregister', 'Rebase operation failed: {error}', {
+								error: reason,
+							}),
 					}),
-				)
-				throw error
-			} finally {
-				this.rebasing = false
-			}
+			})
 		},
 
 		/**
@@ -1457,35 +1466,38 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude dispatcher over update*Settings passthroughs + legacy PUT /api/settings
 		 */
 		async saveSettings(data) {
-			this.saving = true
-			try {
-				// Route to appropriate specific save method based on data content
-				if (data.rbac) {
-					return await this.updateRbacSettings(data.rbac)
-				} else if (data.multitenancy) {
-					return await this.updateMultitenancySettings(data.multitenancy)
-				} else if (data.retention) {
-					return await this.updateRetentionSettings(data.retention)
-				} else {
-					// Fallback to legacy endpoint
-					const response = await axios.put(
-						generateUrl('/apps/openregister/api/settings'),
-						data,
-					)
-					showSuccess(t('openregister', 'Settings updated successfully'))
-					return response.data
-				}
-			} catch (error) {
-				console.error('Failed to save settings:', error)
-				showError(
-					t('openregister', 'Failed to save settings: {error}', {
-						error: error.message,
-					}),
-				)
-				throw error
-			} finally {
-				this.saving = false
-			}
+			return flagged(this, {
+				flag: 'saving',
+				run: () =>
+					attempt(
+						async () => {
+							// Route to the save action of the section the data holds.
+							if (data.rbac) {
+								return this.updateRbacSettings(data.rbac)
+							} else if (data.multitenancy) {
+								return this.updateMultitenancySettings(
+									data.multitenancy,
+								)
+							} else if (data.retention) {
+								return this.updateRetentionSettings(data.retention)
+							}
+							const response = await axios.put(api('settings'), data)
+							showSuccess(
+								t('openregister', 'Settings updated successfully'),
+							)
+							return response.data
+						},
+						{
+							log: 'Failed to save settings:',
+							failed: (error) =>
+								t(
+									'openregister',
+									'Failed to save settings: {error}',
+									{ error: error.message },
+								),
+						},
+					),
+			})
 		},
 
 		/**
@@ -1523,30 +1535,29 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to DELETE /api/settings/cache
 		 */
 		async clearCache(type = 'all') {
-			this.clearingCache = true
-
-			try {
-				const response = await axios.delete(
-					generateUrl('/apps/openregister/api/settings/cache'),
-					{
-						data: { type },
-					},
-				)
-
-				if (response.data.success) {
-					// Reload cache stats after clearing
-					await this.loadCacheStats()
-				}
-			} catch (error) {
-				console.error('Failed to clear cache:', error)
-				showError(
-					t('openregister', 'Failed to clear cache: {error}', {
-						error: error.message,
-					}),
-				)
-			} finally {
-				this.clearingCache = false
-			}
+			return flagged(this, {
+				flag: 'clearingCache',
+				run: () =>
+					attempt(
+						async () => {
+							const response = await axios.delete(
+								api('settings/cache'),
+								{ data: { type } },
+							)
+							if (response.data.success) {
+								await this.loadCacheStats()
+							}
+						},
+						{
+							log: 'Failed to clear cache:',
+							failed: (error) =>
+								t('openregister', 'Failed to clear cache: {error}', {
+									error: error.message,
+								}),
+							fallback: () => undefined,
+						},
+					),
+			})
 		},
 
 		/**
@@ -1573,39 +1584,20 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to DELETE /api/audit-trails/clear-all
 		 */
 		async clearAllAuditTrails() {
-			this.clearingAuditTrails = true
-
-			try {
-				const response = await axios.delete(
-					generateUrl('/apps/openregister/api/audit-trails/clear-all'),
-				)
-
-				if (response.data.success) {
-					showSuccess(
-						t(
-							'openregister',
-							'Successfully cleared {count} audit trails',
-							{ count: response.data.deleted || 0 },
-						),
-					)
-					this.hideClearAuditTrailsDialog()
-				} else {
-					showError(
-						t('openregister', 'Failed to clear audit trails: {error}', {
-							error: response.data.error || 'Unknown error',
-						}),
-					)
-				}
-			} catch (error) {
-				console.error('Failed to clear audit trails:', error)
-				showError(
-					t('openregister', 'Failed to clear audit trails: {error}', {
-						error: error.message,
+			return clearAll(this, {
+				flag: 'clearingAuditTrails',
+				path: 'audit-trails/clear-all',
+				hide: 'hideClearAuditTrailsDialog',
+				done: (count) =>
+					t('openregister', 'Successfully cleared {count} audit trails', {
+						count,
 					}),
-				)
-			} finally {
-				this.clearingAuditTrails = false
-			}
+				log: 'Failed to clear audit trails:',
+				failed: (error) =>
+					t('openregister', 'Failed to clear audit trails: {error}', {
+						error,
+					}),
+			})
 		},
 
 		/**
@@ -1632,39 +1624,20 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to DELETE /api/search-trails/clear-all
 		 */
 		async clearAllSearchTrails() {
-			this.clearingSearchTrails = true
-
-			try {
-				const response = await axios.delete(
-					generateUrl('/apps/openregister/api/search-trails/clear-all'),
-				)
-
-				if (response.data.success) {
-					showSuccess(
-						t(
-							'openregister',
-							'Successfully cleared {count} search trails',
-							{ count: response.data.deleted || 0 },
-						),
-					)
-					this.hideClearSearchTrailsDialog()
-				} else {
-					showError(
-						t('openregister', 'Failed to clear search trails: {error}', {
-							error: response.data.error || 'Unknown error',
-						}),
-					)
-				}
-			} catch (error) {
-				console.error('Failed to clear search trails:', error)
-				showError(
-					t('openregister', 'Failed to clear search trails: {error}', {
-						error: error.message,
+			return clearAll(this, {
+				flag: 'clearingSearchTrails',
+				path: 'search-trails/clear-all',
+				hide: 'hideClearSearchTrailsDialog',
+				done: (count) =>
+					t('openregister', 'Successfully cleared {count} search trails', {
+						count,
 					}),
-				)
-			} finally {
-				this.clearingSearchTrails = false
-			}
+				log: 'Failed to clear search trails:',
+				failed: (error) =>
+					t('openregister', 'Failed to clear search trails: {error}', {
+						error,
+					}),
+			})
 		},
 
 		/**
@@ -1691,39 +1664,22 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to DELETE /api/objects/clear-blob
 		 */
 		async clearAllBlobObjects() {
-			this.clearingBlobObjects = true
-
-			try {
-				const response = await axios.delete(
-					generateUrl('/apps/openregister/api/objects/clear-blob'),
-				)
-
-				if (response.data.success) {
-					showSuccess(
-						t(
-							'openregister',
-							'Successfully cleared {count} blob storage objects',
-							{ count: response.data.deleted || 0 },
-						),
-					)
-					this.hideClearBlobObjectsDialog()
-				} else {
-					showError(
-						t('openregister', 'Failed to clear blob objects: {error}', {
-							error: response.data.error || 'Unknown error',
-						}),
-					)
-				}
-			} catch (error) {
-				console.error('Failed to clear blob objects:', error)
-				showError(
+			return clearAll(this, {
+				flag: 'clearingBlobObjects',
+				path: 'objects/clear-blob',
+				hide: 'hideClearBlobObjectsDialog',
+				done: (count) =>
+					t(
+						'openregister',
+						'Successfully cleared {count} blob storage objects',
+						{ count },
+					),
+				log: 'Failed to clear blob objects:',
+				failed: (error) =>
 					t('openregister', 'Failed to clear blob objects: {error}', {
-						error: error.message,
+						error,
 					}),
-				)
-			} finally {
-				this.clearingBlobObjects = false
-			}
+			})
 		},
 
 		/**
@@ -1768,50 +1724,36 @@ export const useSettingsStore = defineStore('settings', {
 		 * @spec exclude API passthrough to DELETE /api/settings/cache/appstore
 		 */
 		async clearAppStoreCache(type = 'all') {
-			this.clearingAppStoreCache = true
-
-			try {
-				const response = await axios.delete(
-					generateUrl('/apps/openregister/api/settings/cache/appstore'),
-					{
-						data: { type },
-					},
-				)
-
-				if (response.data.success) {
-					const invalidated =
-						response.data.invalidated?.join(', ') || 'cache'
-					showSuccess(
-						t(
-							'openregister',
-							'App store cache invalidated: {invalidated}',
-							{ invalidated },
-						),
-					)
-				} else {
-					showError(
-						t(
-							'openregister',
-							'Failed to invalidate app store cache: {error}',
-							{ error: response.data.error || 'Unknown error' },
-						),
-					)
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('Failed to invalidate app store cache:', error)
-				showError(
-					t(
-						'openregister',
-						'Failed to invalidate app store cache: {error}',
-						{ error: error.message },
-					),
-				)
-				throw error
-			} finally {
-				this.clearingAppStoreCache = false
-			}
+			return flagged(this, {
+				flag: 'clearingAppStoreCache',
+				run: () =>
+					confirmed({
+						send: () =>
+							axios.delete(api('settings/cache/appstore'), {
+								data: { type },
+							}),
+						ok: (data) => data.success,
+						reason: (data) => data.error,
+						succeeded: (data) => {
+							const invalidated =
+								data.invalidated?.join(', ') || 'cache'
+							showSuccess(
+								t(
+									'openregister',
+									'App store cache invalidated: {invalidated}',
+									{ invalidated },
+								),
+							)
+						},
+						log: 'Failed to invalidate app store cache:',
+						failed: (reason) =>
+							t(
+								'openregister',
+								'Failed to invalidate app store cache: {error}',
+								{ error: reason },
+							),
+					}),
+			})
 		},
 	},
 })

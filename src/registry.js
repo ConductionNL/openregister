@@ -48,13 +48,10 @@ import { defineAsyncComponent } from 'vue'
  * @return {object} A `{ kind: "page", component }` registry entry.
  */
 function page(component) {
-	return {
-		kind: 'page',
-		component:
-			typeof component === 'function'
-				? defineAsyncComponent(component)
-				: component,
+	if (typeof component !== 'function') {
+		return { kind: 'page', component }
 	}
+	return { kind: 'page', component: defineAsyncComponent(component) }
 }
 
 export default {

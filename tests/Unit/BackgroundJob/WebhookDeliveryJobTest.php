@@ -7,6 +7,8 @@ namespace Unit\BackgroundJob;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\WebhookDelivery;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -63,7 +65,7 @@ class WebhookDeliveryJobTest extends TestCase {
 
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
-			->with($webhook, 'TestEvent', ['key' => 'val'], 1)
+			->with(new WebhookDelivery(webhook: $webhook, event: new WebhookEvent(name: 'TestEvent', payload: ['key' => 'val']), attempt: 1))
 			->willReturn(true);
 
 		$this->runJob([
@@ -109,7 +111,7 @@ class WebhookDeliveryJobTest extends TestCase {
 
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
-			->with($webhook, 'TestEvent', [], 1)
+			->with(new WebhookDelivery(webhook: $webhook, event: new WebhookEvent(name: 'TestEvent', payload: []), attempt: 1))
 			->willReturn(true);
 
 		$this->runJob([
@@ -126,7 +128,7 @@ class WebhookDeliveryJobTest extends TestCase {
 
 		$this->webhookService->expects($this->once())
 			->method('deliverWebhook')
-			->with($webhook, 'TestEvent', [], 3)
+			->with(new WebhookDelivery(webhook: $webhook, event: new WebhookEvent(name: 'TestEvent', payload: []), attempt: 3))
 			->willReturn(true);
 
 		$this->runJob([

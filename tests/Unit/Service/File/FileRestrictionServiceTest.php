@@ -13,7 +13,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
  */
 
 declare(strict_types=1);
@@ -21,10 +21,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Service\File\FileRestrictionService;
-use OCA\OpenRegister\Service\File\FileRestrictionStore;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Service\File\FileRestriction;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionService;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionRecords;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionRequest;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -34,7 +37,7 @@ use Psr\Log\NullLogger;
 /**
  * Setting, changing and lifting a restriction.
  *
- * @spec openspec/changes/per-file-read-restriction/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
  */
 class FileRestrictionServiceTest extends TestCase {
 
@@ -53,26 +56,25 @@ class FileRestrictionServiceTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$this->service = new FileRestrictionService(
-			$this->store,
-			$this->createMock(FileRestrictionGuard::class),
-			$session,
-			new NullLogger(),
-			$this->fileMapper
+			records: new FileRestrictionRecords(
+				store: $this->store,
+				guard: $this->createMock(FileRestrictionGuard::class)
+			),
+			userSession: $session,
+			logger: new NullLogger(),
+			fileMapper: $this->fileMapper
 		);
 	}//end setUp()
 
 	public function testARestrictionIsStoredWithWhoSetIt(): void {
 		$this->store->expects($this->once())->method('save')->with(
 			42,
-			['pieter', '1001'],
-			['woo-team'],
-			'Commercially sensitive prices',
-			'pieter',
+			$this->equalTo(new FileRestriction(['pieter', '1001'], ['woo-team'], 'Commercially sensitive prices', 'pieter')),
 			$this->isInstanceOf(\DateTimeImmutable::class)
 		);
 		$this->store->method('find')->willReturn(['fileId' => 42]);
 
-		$stored = $this->service->restrict(42, [' pieter ', 'pieter', '1001', ''], ['woo-team'], ' Commercially sensitive prices ');
+		$stored = $this->service->restrict(new FileRestrictionRequest(fileId: 42, users: [' pieter ', 'pieter', '1001', ''], groups: ['woo-team'], reason: ' Commercially sensitive prices '));
 
 		$this->assertSame(['fileId' => 42], $stored);
 	}//end testARestrictionIsStoredWithWhoSetIt()
@@ -81,25 +83,25 @@ class FileRestrictionServiceTest extends TestCase {
 		$this->store->method('find')->willReturn(['fileId' => 42]);
 		$this->fileMapper->expects($this->once())->method('depublishFile')->with(42)->willReturn(['deleted_shares' => 1, 'file_id' => 42]);
 
-		$this->service->restrict(42, ['pieter'], [], 'Prices');
+		$this->service->restrict(new FileRestrictionRequest(fileId: 42, users: ['pieter'], groups: [], reason: 'Prices'));
 	}//end testRestrictingRevokesTheFilesPublicLinks()
 
 	public function testARefusedRestrictionRevokesNothing(): void {
 		$this->fileMapper->expects($this->never())->method('depublishFile');
 		$this->expectException(InvalidArgumentException::class);
-		$this->service->restrict(42, [], [], 'Prices');
+		$this->service->restrict(new FileRestrictionRequest(fileId: 42, users: [], groups: [], reason: 'Prices'));
 	}//end testARefusedRestrictionRevokesNothing()
 
 	public function testARestrictionWithoutPrincipalsIsRefused(): void {
 		$this->store->expects($this->never())->method('save');
 		$this->expectException(InvalidArgumentException::class);
-		$this->service->restrict(42, [], [' '], 'Prices');
+		$this->service->restrict(new FileRestrictionRequest(fileId: 42, users: [], groups: [' '], reason: 'Prices'));
 	}//end testARestrictionWithoutPrincipalsIsRefused()
 
 	public function testARestrictionWithoutReasonIsRefused(): void {
 		$this->store->expects($this->never())->method('save');
 		$this->expectException(InvalidArgumentException::class);
-		$this->service->restrict(42, ['pieter'], [], '  ');
+		$this->service->restrict(new FileRestrictionRequest(fileId: 42, users: ['pieter'], groups: [], reason: '  '));
 	}//end testARestrictionWithoutReasonIsRefused()
 
 	public function testLiftingAnswersWhatWasThereAndRemovesIt(): void {

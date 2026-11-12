@@ -20,6 +20,10 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\BackgroundJob\AuditExportSource;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -31,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryServices;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
@@ -73,6 +78,8 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->request->method('getParams')->willReturn([]);
 		$this->logService = $this->createMock(LogService::class);
+		// Explicit-reveal masking has its own test; here it passes the entries through.
+		$this->logService->method('maskExplicitReveal')->willReturnArgument(0);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->readAccess = $this->createMock(ObjectReadAccess::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
@@ -118,15 +125,9 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 			fn (string $app, string $key, string $default = ''): string => $key === ReadEventVisibility::CONFIG_KEY ? $this->readEventGroups : $default
 		);
 
-		$properties = new PropertyRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($this->userSession, $this->groupManager)
-		);
+		$properties = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($this->userSession, $this->groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($this->userSession, $this->groupManager)), logger: $this->createMock(LoggerInterface::class));
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
@@ -136,17 +137,18 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
 			new AuditTrailPageService(
-				$this->createMock(AuditTrailPageQuery::class),
-				$this->logService,
+				new AuditExportSource($this->createMock(AuditTrailPageQuery::class), $this->logService),
 				$this->createMock(IJobList::class)
 			),
 			new ObjectHistoryForReaders(
 				$this->readAccess,
-				$this->auditTrailMapper,
-				new HistoryEntryRedactor($properties),
-				$this->registerMapper,
+				new ObjectHistoryServices(
+					$this->auditTrailMapper,
+					new HistoryEntryRedactor($properties),
+					$this->registerMapper
+				),
 				$this->purposeGuard,
-				new ReadEventVisibility($appConfig, $this->groupManager, $this->userSession)
+				new ReadEventVisibility($appConfig, new CallerContext($this->userSession, $this->groupManager))
 			)
 		);
 	}
@@ -158,7 +160,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$object->setSchema('7');
 		$object->setObject(['titel' => 'Nieuw', 'interneAantekening' => 'geheim-nu']);
 
-		$this->readAccess->method('readable')->willReturn($object);
+		$this->readAccess->method('readableOrAmbiguous')->willReturn($object);
 		$this->readAccess->method('schemaOf')->willReturn($this->schema);
 
 		return $object;
@@ -193,12 +195,12 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 	public function testAReaderOfTheObjectGetsItsHistory(): void {
 		$this->readableObject();
 		$this->auditTrailMapper->expects($this->once())
-			->method('findAll')
-			->willReturnCallback(function (...$args) {
+			->method('findTrail')
+			->willReturnCallback(AuditTrailListing::positional(function (...$args) {
 				$filters = ($args[2] ?? []);
 				$this->assertSame(self::OBJECT_UUID, $filters['object_uuid'], 'entries are read by the uuid the read check resolved');
 				return [$this->updateEntry()];
-			});
+			}));
 		$this->logService->expects($this->never())->method('getLogs');
 
 		$result = $this->controllerFor('behandelaar', false, ['behandelaars'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
@@ -216,7 +218,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 
 	public function testPropertiesHiddenFromTheReaderAreFilteredFromEveryEntry(): void {
 		$this->readableObject();
-		$this->auditTrailMapper->method('findAll')->willReturn([$this->updateEntry()]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([$this->updateEntry()]);
 
 		$result = $this->controllerFor('behandelaar', false, ['behandelaars'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
@@ -248,7 +250,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 				'property' => 'interneAantekening',
 			],
 		]);
-		$this->auditTrailMapper->method('findAll')->willReturn([$entry]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([$entry]);
 
 		$result = $this->controllerFor('behandelaar', false, ['behandelaars'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
@@ -262,7 +264,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 
 	public function testAReaderAllowedThePropertySeesItInTheHistory(): void {
 		$this->readableObject();
-		$this->auditTrailMapper->method('findAll')->willReturn([$this->updateEntry()]);
+		$this->auditTrailMapper->method('findTrail')->willReturn([$this->updateEntry()]);
 
 		$result = $this->controllerFor('redacteur', false, ['redactie'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
@@ -276,13 +278,13 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->request->method('getParams')->willReturn(['_search' => 'klokkenluider', 'changed' => '%x%', '_sort' => ['ip_address' => 'ASC']]);
 		$this->auditTrailMapper->expects($this->once())
-			->method('findAll')
-			->willReturnCallback(function (...$args) {
+			->method('findTrail')
+			->willReturnCallback(AuditTrailListing::positional(function (...$args) {
 				$this->assertArrayNotHasKey('changed', $args[2], 'a reader may not filter on the raw payload');
 				$this->assertSame(['created' => 'DESC'], $args[3], 'a reader may not sort on a withheld column');
 				$this->assertNull($args[4] ?? null, 'the search must not run against the raw payload in SQL');
 				return [$this->updateEntry()];
-			});
+			}));
 
 		$result = $this->controllerFor('behandelaar', false, ['behandelaars'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
@@ -292,8 +294,8 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 	}
 
 	public function testAUserWhoMayNotReadTheObjectGets404AndNoEntryIsRead(): void {
-		$this->readAccess->method('readable')->willReturn(null);
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->readAccess->method('readableOrAmbiguous')->willReturn(null);
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 		$this->logService->expects($this->never())->method('getLogs');
 
 		$result = $this->controllerFor('buitenstaander', false, ['users'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
@@ -301,11 +303,23 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$this->assertSame(404, $result->getStatus());
 	}
 
+	public function testAReaderGetsTheSame409ForAnAmbiguousSlug(): void {
+		// #4037: a slug two objects of the register and schema hold is ambiguous for a
+		// reader too, not "not found", and neither object's history is read.
+		$this->readAccess->method('readableOrAmbiguous')->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two'));
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
+
+		$response = $this->controllerFor('alice', false, ['users'])->objects('dossiq', 'zaak', 'dubbel');
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame('ambiguous-identifier', $response->getData()['error']);
+	}
+
 	public function testTheDoelbindingRefusalOfTheObjectGetAppliesToItsHistory(): void {
 		$this->readableObject();
 		$this->purposeGuard->method('enforce')
 			->willThrowException(new PurposeRefusedException(rule: 'purpose-required', reason: 'Name a purpose.'));
-		$this->auditTrailMapper->expects($this->never())->method('findAll');
+		$this->auditTrailMapper->expects($this->never())->method('findTrail');
 
 		$result = $this->controllerFor('behandelaar', false, ['behandelaars'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
@@ -332,7 +346,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 	public function testAReaderOutsideTheNamedGroupsDoesNotSeeWhoReadTheObject(): void {
 		$this->readableObject();
 		$this->readEventGroups = '["dossiq-sensitive"]';
-		$this->auditTrailMapper->method('findAll')->willReturn($this->readAndUpdate());
+		$this->auditTrailMapper->method('findTrail')->willReturn($this->readAndUpdate());
 
 		$data = $this->controllerFor('behandelaar', false, ['behandelaars'])->objects('dossiq', 'zaak', self::OBJECT_UUID)->getData();
 
@@ -343,7 +357,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 
 	public function testNoGroupNamedMeansNoNonAdminSeesReads(): void {
 		$this->readableObject();
-		$this->auditTrailMapper->method('findAll')->willReturn($this->readAndUpdate());
+		$this->auditTrailMapper->method('findTrail')->willReturn($this->readAndUpdate());
 
 		$data = $this->controllerFor('behandelaar', false, ['behandelaars', 'dossiq-sensitive'])->objects('dossiq', 'zaak', self::OBJECT_UUID)->getData();
 
@@ -354,7 +368,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 	public function testAMemberOfANamedGroupSeesWhoReadTheObject(): void {
 		$this->readableObject();
 		$this->readEventGroups = '["dossiq-sensitive"]';
-		$this->auditTrailMapper->method('findAll')->willReturn($this->readAndUpdate());
+		$this->auditTrailMapper->method('findTrail')->willReturn($this->readAndUpdate());
 
 		$data = $this->controllerFor('pieter', false, ['dossiq-sensitive'])->objects('dossiq', 'zaak', self::OBJECT_UUID)->getData();
 
@@ -366,7 +380,7 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$entry = $this->updateEntry();
 		$this->logService->expects($this->once())->method('getLogs')->willReturn([$entry]);
 		$this->logService->method('count')->willReturn(1);
-		$this->readAccess->expects($this->never())->method('readable');
+		$this->readAccess->expects($this->never())->method('readableOrAmbiguous');
 
 		$result = $this->controllerFor('admin', true, ['admin'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
 
@@ -377,9 +391,9 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 
 	public function testAnAnonymousCallerGets401(): void {
 		$this->userSession->method('getUser')->willReturn(null);
-		$this->readAccess->expects($this->never())->method('readable');
+		$this->readAccess->expects($this->never())->method('readableOrAmbiguous');
 
-		$controller = new AuditTrailController(
+		$controller = AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,

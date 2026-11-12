@@ -119,7 +119,7 @@ class AvgRetentionServiceLegalHoldTest extends TestCase {
 				return $schema;
 			}
 		);
-		$guard = new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		$guard = new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 
 		return new AvgRetentionService(
 			$db,
@@ -189,7 +189,7 @@ class AvgRetentionServiceLegalHoldTest extends TestCase {
 
 	/**
 	 * A RELEASED HOLD IS NOT A HOLD. `active: false` is the shape
-	 * `RetentionService::releaseLegalHold()` writes, and it must not keep a
+	 * `RetentionService::releaseHold()` writes, and it must not keep a
 	 * record alive forever.
 	 *
 	 * @return void

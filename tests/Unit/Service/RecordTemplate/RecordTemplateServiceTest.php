@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\RecordTemplate;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -39,6 +40,9 @@ use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
+use OCA\OpenRegister\Service\RecordTemplate\TemplateListOptions;
+use OCA\OpenRegister\Service\RecordTemplate\TemplateChange;
+use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateCollaborators;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -51,6 +55,12 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService
  * @covers \OCA\OpenRegister\Db\RecordTemplate
  * @covers \OCA\OpenRegister\Exception\RecordTemplateRefused
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareListValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\RecordTemplateInput
  */
 class RecordTemplateServiceTest extends TestCase {
 
@@ -80,7 +90,7 @@ class RecordTemplateServiceTest extends TestCase {
 		$service = $this->service();
 		$service->create(data: $this->melding(), reach: $this->reach(userId: 'anna', groups: ['kcc']));
 
-		$listed = $service->listFor(reach: $this->reach(userId: 'bert', groups: ['kcc']), schema: 'meldingen');
+		$listed = $service->listFor(reach: $this->reach(userId: 'bert', groups: ['kcc']), options: new TemplateListOptions(schema: 'meldingen'));
 
 		self::assertCount(1, $listed);
 		self::assertSame('Melding wateroverlast', $listed[0]->getName());
@@ -101,7 +111,7 @@ class RecordTemplateServiceTest extends TestCase {
 		$stored = $service->create(data: $this->melding(['isPublic' => true]), reach: $this->reach(userId: 'anna', groups: ['kcc']));
 		$carla = $this->reach(userId: 'carla', groups: ['kcc']);
 
-		self::assertSame([], $service->listFor(reach: $carla, schema: 'meldingen'));
+		self::assertSame([], $service->listFor(reach: $carla, options: new TemplateListOptions(schema: 'meldingen')));
 		$this->assertRefused(status: 404, action: fn () => $service->get(uuid: (string)$stored->getUuid(), reach: $carla));
 	}//end testAMemberWithoutCreateRightsIsNotOfferedTheTemplate()
 
@@ -135,11 +145,11 @@ class RecordTemplateServiceTest extends TestCase {
 		$uuid = (string)$service->create(data: $this->melding(['sharedWith' => [['group' => 'kcc', 'mode' => 'write']]]), reach: $this->reach(userId: 'anna'))->getUuid();
 		$bert = $this->reach(userId: 'bert', groups: ['kcc']);
 
-		$this->assertRefused(status: 403, action: fn () => $service->change(uuid: $uuid, data: ['name' => 'Van Bert'], reach: $bert, partial: true));
+		$this->assertRefused(status: 403, action: fn () => $service->change(change: new TemplateChange(uuid: $uuid, data: ['name' => 'Van Bert'], partial: true), reach: $bert));
 		$this->assertRefused(status: 403, action: fn () => $service->delete(uuid: $uuid, reach: $bert));
 		self::assertSame('Melding wateroverlast', $this->rows[$uuid]->getName());
 
-		$renamed = $service->change(uuid: $uuid, data: ['name' => 'Wateroverlast kelder'], reach: $this->reach(userId: 'anna'), partial: true);
+		$renamed = $service->change(change: new TemplateChange(uuid: $uuid, data: ['name' => 'Wateroverlast kelder'], partial: true), reach: $this->reach(userId: 'anna'));
 		self::assertSame('Wateroverlast kelder', $renamed->getName());
 		self::assertSame(['categorie' => 'water', 'prioriteit' => 'hoog'], $renamed->getValues(), 'A PATCH keeps the fields it does not send.');
 
@@ -293,10 +303,10 @@ class RecordTemplateServiceTest extends TestCase {
 			return $this->rows[$uuid];
 		});
 		$mapper->method('findCandidates')->willReturnCallback(
-			fn (string $userId, ?string $register=null, ?string $schema=null): array => array_values(
+			fn (string $userId, ?ListQuery $query=null): array => array_values(
 				array_filter(
 					$this->rows,
-					static fn (RecordTemplate $row): bool => ($schema === null || $row->getSchema() === $schema)
+					static fn (RecordTemplate $row): bool => (($query?->filters['schema'] ?? null) === null || $row->getSchema() === $query->filters['schema'])
 				)
 			)
 		);
@@ -320,17 +330,14 @@ class RecordTemplateServiceTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid === 'kcc');
 		$viewers = new ViewerReachResolver(
-			userSession: $this->createMock(IUserSession::class),
-			groupManager: $groups,
+			caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($this->createMock(IUserSession::class), $groups),
 			logger: new NullLogger()
 		);
 
 		return new RecordTemplateService(
-			mapper: $mapper,
-			schemas: $schemas,
+			store: new RecordTemplateCollaborators(mapper: $mapper, schemas: $schemas, logger: new NullLogger()),
 			permissions: $permissions,
-			viewers: $viewers,
-			logger: new NullLogger()
+			viewers: $viewers
 		);
 	}//end service()
 }//end class

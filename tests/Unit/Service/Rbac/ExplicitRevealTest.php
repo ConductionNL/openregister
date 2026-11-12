@@ -29,14 +29,17 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
+use OCA\OpenRegister\Service\Audit\ReadableObject;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\Mcp\McpResourcesService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
+use OCA\OpenRegister\Service\Rbac\RevealRecording;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCP\IGroupManager;
@@ -45,11 +48,34 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Support\OrderParameter
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
+ * @uses \OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealCollector
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
  */
 class ExplicitRevealTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -95,14 +121,7 @@ class ExplicitRevealTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 		$groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 
-		$handler = new PropertyRbacHandler(
-			$session,
-			$groupManager,
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(LoggerInterface::class),
-			self::stateFieldRuleResolver($session, $groupManager),
-			$reveals
-		);
+		$handler = new PropertyRbacHandler(caller: new \OCA\OpenRegister\Service\PropertyRbacCaller($session, $groupManager), rules: new \OCA\OpenRegister\Service\PropertyRbacRules($this->createMock(ConditionMatcher::class), self::stateFieldRuleResolver($session, $groupManager)), logger: $this->createMock(LoggerInterface::class), reveals: $reveals);
 
 		return [$handler, $session];
 	}//end rules()
@@ -119,7 +138,7 @@ class ExplicitRevealTest extends TestCase {
 	private function masker(array $groups, ExplicitReveal $reveal, RevealCollector $reveals): ExplicitRevealMasker {
 		[$handler, $session] = $this->rules(groups: $groups, reveals: $reveals);
 
-		return new ExplicitRevealMasker($reveal, $handler, $session, $this->createMock(LoggerInterface::class), $reveals);
+		return new ExplicitRevealMasker($reveal, $handler, $session, new RevealRecording($this->createMock(LoggerInterface::class), $reveals));
 	}//end masker()
 
 	/**
@@ -131,6 +150,19 @@ class ExplicitRevealTest extends TestCase {
 		$this->assertSame(self::MASK, ExplicitReveal::mask(value: self::BSN));
 		$this->assertSame('', ExplicitReveal::mask(value: ''));
 	}//end testTheMaskKeepsTheLastFour()
+
+	/**
+	 * A short value (a PIN, a house number) shows none of its characters:
+	 * its last four would be the whole value, or most of it.
+	 *
+	 * @return void
+	 */
+	public function testTheMaskOfAShortValueShowsNoCharacter(): void {
+		$this->assertSame(expected: '*****', actual: ExplicitReveal::mask(value: '1234'));
+		$this->assertSame(expected: '*****', actual: ExplicitReveal::mask(value: '12345'));
+		$this->assertSame(expected: '*****', actual: ExplicitReveal::mask(value: '12345678'));
+		$this->assertSame(expected: '*****6789', actual: ExplicitReveal::mask(value: '123456789'));
+	}//end testTheMaskOfAShortValueShowsNoCharacter()
 
 	/**
 	 * A read without a grant gets the mask and records nothing, admins included.
@@ -230,7 +262,15 @@ class ExplicitRevealTest extends TestCase {
 	 */
 	public function testFilterAndSortOnItAreRefused(): void {
 		$reveal = new ExplicitReveal();
-		foreach ([['citizenServiceNumber' => self::BSN], ['_order' => ['citizenServiceNumber' => 'asc']], ['_order' => '{"citizenServiceNumber":"desc"}']] as $query) {
+		$queries = [
+			['citizenServiceNumber' => self::BSN],
+			['_order' => ['citizenServiceNumber' => 'asc']],
+			['_order' => '{"citizenServiceNumber":"desc"}'],
+			['_order' => ['citizenServiceNumber']],
+			['_order' => '[{"field":"citizenServiceNumber","direction":"DESC"}]'],
+			['_order' => 'citizenServiceNumber:desc'],
+		];
+		foreach ($queries as $query) {
 			try {
 				$reveal->refuseOracleQuery(query: $query, schema: $this->schema());
 				$this->fail('refused: ' . json_encode($query));
@@ -243,6 +283,32 @@ class ExplicitRevealTest extends TestCase {
 		$reveal->trustedDuring(fn () => $reveal->refuseOracleQuery(query: ['citizenServiceNumber' => self::BSN], schema: $this->schema()));
 		$this->addToAssertionCount(1);
 	}//end testFilterAndSortOnItAreRefused()
+
+	/**
+	 * A key spelling its column another way is refused too: a cross-schema search orders on the column.
+	 *
+	 * @return void
+	 */
+	public function testFilterAndSortOnItsColumnSpellingAreRefused(): void {
+		$reveal = new ExplicitReveal();
+		$queries = [
+			['citizen_service_number' => self::BSN],
+			['_order' => ['citizen_service_number' => 'asc']],
+			['_order' => 'citizen_service_number:desc'],
+			['_order' => ['CitizenServiceNumber' => 'asc']],
+		];
+		foreach ($queries as $query) {
+			try {
+				$reveal->refuseOracleQuery(query: $query, schema: $this->schema());
+				$this->fail('refused: ' . json_encode($query));
+			} catch (ExplicitRevealQueryException $refused) {
+				$this->assertStringContainsString('citizenServiceNumber', $refused->getMessage());
+			}
+		}
+
+		$reveal->refuseOracleQuery(query: ['display_name' => 'Sanne', '_order' => ['citizen' => 'asc']], schema: $this->schema());
+		$this->addToAssertionCount(1);
+	}//end testFilterAndSortOnItsColumnSpellingAreRefused()
 
 	/**
 	 * It takes no part in free-text search.
@@ -276,7 +342,7 @@ class ExplicitRevealTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setObject(['citizenServiceNumber' => self::BSN]);
 
-		$rows = (new HistoryEntryRedactor($properties))->redact(rows: [$entry], schema: $schema, object: $object);
+		$rows = (new HistoryEntryRedactor($properties))->redact(rows: [$entry], readable: new ReadableObject(object: $object, schema: $schema));
 
 		$this->assertSame(['old' => '*****0000', 'new' => self::MASK], $rows[0]['changed']['citizenServiceNumber']);
 		$this->assertNull($rows[0]['changed']['@self']['new']['name']);
@@ -298,13 +364,14 @@ class ExplicitRevealTest extends TestCase {
 
 		$service = (new ReflectionClass(McpResourcesService::class))->newInstanceWithoutConstructor();
 		$reflection = new ReflectionClass($service);
-		foreach (['schemaMapper' => $schemas, 'objectService' => $objects] as $name => $value) {
+		$catalog = new SchemaCatalog($this->createMock(RegisterMapper::class), $schemas, $this->createMock(MagicMapperInterface::class));
+		foreach (['catalog' => $catalog, 'objectService' => $objects] as $name => $value) {
 			$property = $reflection->getProperty($name);
 			$property->setValue($service, $value);
 		}
 
 		$method = $reflection->getMethod('readObjects');
-		$read = $method->invoke($service, 1, 7, '11111111-1111-4111-8111-111111111111');
+		$read = $method->invoke($service, new RegisterSchemaRef(1, 7), '11111111-1111-4111-8111-111111111111');
 
 		$this->assertSame(self::MASK, $read['citizenServiceNumber']);
 	}//end testAnMcpResourceReadsItMasked()
@@ -317,7 +384,7 @@ class ExplicitRevealTest extends TestCase {
 	public function testAWriteSendingTheMaskKeepsTheValue(): void {
 		$stored = ['citizenServiceNumber' => self::BSN];
 
-		$this->assertSame(self::BSN, ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => self::MASK], stored: $stored)['citizenServiceNumber']);
-		$this->assertSame('999990000', ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored)['citizenServiceNumber']);
+		$this->assertSame(self::BSN, ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->schema(), incoming: ['citizenServiceNumber' => self::MASK], stored: $stored))['citizenServiceNumber']);
+		$this->assertSame('999990000', ExplicitReveal::restoreMasked(write: new MaskedWrite(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored))['citizenServiceNumber']);
 	}//end testAWriteSendingTheMaskKeepsTheValue()
 }//end class

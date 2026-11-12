@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md
+ * @spec openspec/specs/magic-table-columns/spec.md
  */
 
 declare(strict_types=1);
@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
+use OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -40,7 +42,7 @@ use ReflectionClass;
 use ReflectionMethod;
 
 /**
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md
+ * @spec openspec/specs/magic-table-columns/spec.md
  */
 class MagicMapperNumberColumnTest extends TestCase {
 
@@ -82,11 +84,15 @@ class MagicMapperNumberColumnTest extends TestCase {
 		return $reflection->invokeArgs($mapper, $args);
 	}//end call()
 
+	private function column(string $propertyName, array $propertyConfig): array {
+		return (new MagicSchemaColumns(logger: $this->createMock(LoggerInterface::class)))->forProperty(propertyName: $propertyName, propertyConfig: $propertyConfig);
+	}//end column()
+
 	public function testANumberPropertyGetsTwentySixNotTenTwo(): void {
 		$mapper = $this->mapper();
 		$this->db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQLPlatform::class));
 
-		$column = $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number']]);
+		$column = $this->column('weight', ['type' => 'number']);
 
 		$this->assertSame('decimal', $column['type']);
 		$this->assertSame(20, $column['precision']);
@@ -95,7 +101,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 	}//end testANumberPropertyGetsTwentySixNotTenTwo()
 
 	public function testMultipleOfSetsTheColumnScale(): void {
-		$column = $this->call($this->mapper(), 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number', 'multipleOf' => 0.001]]);
+		$column = $this->column('weight', ['type' => 'number', 'multipleOf' => 0.001]);
 
 		$this->assertSame(17, $column['precision']);
 		$this->assertSame(3, $column['scale']);
@@ -103,10 +109,10 @@ class MagicMapperNumberColumnTest extends TestCase {
 
 	public function testFiveGramsRoundTrips(): void {
 		$mapper = $this->mapper();
-		$column = $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number']]);
+		$column = $this->column('weight', ['type' => 'number']);
 		$schema = $this->schema(properties: ['weight' => ['type' => 'number']]);
 
-		$prepared = $this->call($mapper, 'prepareObjectDataForTable', [['weight' => 0.005], $this->createMock(Register::class), $schema]);
+		$prepared = $this->call($mapper, 'prepareObjectDataForTable', [['weight' => 0.005], new \OCA\OpenRegister\Db\RegisterSchema($this->createMock(Register::class), $schema)]);
 
 		$this->assertSame(0.005, $prepared['weight']);
 		// What a DECIMAL(20,6) column returns for 0.005, read back the way every magic-table read does.
@@ -177,10 +183,10 @@ class MagicMapperNumberColumnTest extends TestCase {
 		});
 
 		$current = ['weight' => ['name' => 'weight', 'type' => 'numeric', 'precision' => 10, 'scale' => 2, 'nullable' => true, 'default' => null]];
-		$required = ['weight' => $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number']])];
+		$required = ['weight' => $this->column('weight', ['type' => 'number'])];
 
 		$this->assertSame(['weight'], $mapper->findDecimalColumnsNeedingWiden(currentColumns: $current, requiredColumns: $required));
-		$this->assertSame(['weight'], $mapper->widenDecimalColumns(tableName: 'openregister_table_ab', currentColumns: $current, requiredColumns: $required));
+		$this->assertSame(['weight'], $mapper->widenDecimalColumns(tableName: 'openregister_table_ab', columns: new MagicColumnDrift(current: $current, required: $required)));
 		$this->assertSame(['ALTER TABLE "oc_openregister_table_ab" ALTER COLUMN "weight" TYPE DECIMAL(20,6)'], $statements);
 	}//end testAnOldTwoDecimalColumnIsWidenedOnPostgres()
 
@@ -194,9 +200,9 @@ class MagicMapperNumberColumnTest extends TestCase {
 		});
 
 		$current = ['weight' => ['name' => 'weight', 'type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false, 'default' => null]];
-		$required = ['weight' => $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number', 'required' => true]])];
+		$required = ['weight' => $this->column('weight', ['type' => 'number', 'required' => true])];
 
-		$mapper->widenDecimalColumns(tableName: 'openregister_table_ab', currentColumns: $current, requiredColumns: $required);
+		$mapper->widenDecimalColumns(tableName: 'openregister_table_ab', columns: new MagicColumnDrift(current: $current, required: $required));
 
 		$this->assertSame(['ALTER TABLE `oc_openregister_table_ab` MODIFY `weight` DECIMAL(20,6) NOT NULL'], $statements);
 	}//end testAnOldTwoDecimalColumnIsWidenedOnMysqlKeepingNotNull()
@@ -204,7 +210,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 	public function testAWideEnoughColumnIsLeftAlone(): void {
 		$mapper = $this->mapper();
 		$current = ['weight' => ['name' => 'weight', 'type' => 'numeric', 'precision' => 20, 'scale' => 6, 'nullable' => true, 'default' => null]];
-		$required = ['weight' => $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number', 'multipleOf' => 0.01]])];
+		$required = ['weight' => $this->column('weight', ['type' => 'number', 'multipleOf' => 0.01])];
 
 		$this->assertSame([], $mapper->findDecimalColumnsNeedingWiden(currentColumns: $current, requiredColumns: $required));
 	}//end testAWideEnoughColumnIsLeftAlone()

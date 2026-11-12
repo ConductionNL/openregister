@@ -34,7 +34,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<SubjectExport>
  */
-class SubjectExportMapper extends QBMapper {
+class SubjectExportMapper extends QBMapper implements SubjectExportMapperInterface {
 	/**
 	 * Constructor.
 	 *
@@ -84,28 +84,6 @@ class SubjectExportMapper extends QBMapper {
 
 		return $this->findEntity(query: $qb);
 	}//end findByUuid()
-
-	/**
-	 * List the exports one account asked for, newest first.
-	 *
-	 * @param string      $requestedBy The requester's uid.
-	 * @param string|null $status      Optional status filter.
-	 *
-	 * @return SubjectExport[] The exports.
-	 */
-	public function findByRequester(string $requestedBy, ?string $status = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('requested_by', $qb->createNamedParameter($requestedBy)))
-			->orderBy('id', 'DESC');
-
-		if ($status !== null) {
-			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
-		}
-
-		return $this->findEntities(query: $qb);
-	}//end findByRequester()
 
 	/**
 	 * Create an export request, assigning a uuid and timestamps.

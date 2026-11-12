@@ -116,7 +116,7 @@ class ExportRunsHaveAProducerTest extends TestCase {
 		// that nothing calls is the guard-with-no-call-site shape all over
 		// again, and grepping for the helper alone cannot tell them apart.
 		$this->assertStringContainsString(
-			'$this->recordRun(report:',
+			'$this->recordRun(run:',
 			$source,
 			'The scheduled report runner defines a recordRun() that nothing calls.'
 		);
@@ -142,6 +142,19 @@ class ExportRunsHaveAProducerTest extends TestCase {
 			'The export profile run defines a recordRun() that nothing calls.'
 		);
 	}//end testRunningAnExportProfileWritesARun()
+
+	/**
+	 * The whole-set extract grows a run per file, and the container hands it the recorder.
+	 *
+	 * @return void
+	 */
+	public function testTheWholeSetExtractWritesARun(): void {
+		$source = $this->read('lib/BulkAction/ExportWholeSetAction.php');
+
+		$this->assertStringContainsString('runs->recordAppended(', $source, 'The whole-set extract writes files nobody can account for.');
+		$this->assertStringContainsString('$this->recordRow(profile:', $source, 'recordRow() is defined and nothing calls it.');
+		$this->assertStringContainsString('?ExportRunRecorder $runs', $source, 'The recorder must be a constructor dependency the container can resolve.');
+	}//end testTheWholeSetExtractWritesARun()
 
 	/**
 	 * The sweep job is declared, so the expiry is acted on.

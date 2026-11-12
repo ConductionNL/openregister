@@ -24,25 +24,27 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\ShippedRegister;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Imports and removes the registers a set requires.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
  */
 class ExampleSetRegisters {
 	/**
@@ -71,11 +73,11 @@ class ExampleSetRegisters {
 	 *
 	 * @phpstan-impure It reads the instance, which an import changes.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function exists(string $slug): bool {
 		try {
-			$this->container->get(RegisterMapper::class)->find(id: $slug, _rbac: false, _multitenancy: false);
+			$this->container->get(RegisterMapperInterface::class)->find(id: $slug, _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
 			return false;
 		}
@@ -97,13 +99,12 @@ class ExampleSetRegisters {
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>} Why it failed, or ''; and
 	 *                                                                                     the import job it ran under.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function import(string $slug): array {
 		return $this->recordedImport(
-			import: fn (RegisterDescriptorService $descriptors): array => $descriptors->reimport(
-				appId: self::APP,
-				slug: $slug,
+			import: fn (RegisterDescriptorService $descriptors): array => $descriptors->reimportShipped(
+				register: new ShippedRegister(appId: self::APP, slug: $slug),
 				via: 'example set install'
 			)
 		);
@@ -117,7 +118,7 @@ class ExampleSetRegisters {
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>} Why it failed, or ''; and
 	 *                                                                                     the import job it ran under.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function importMock(string $slug): array {
 		return $this->recordedImport(
@@ -137,11 +138,11 @@ class ExampleSetRegisters {
 	 *
 	 * @phpstan-impure It reads the instance, which an import changes.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function isBehind(string $slug, bool $mock): bool {
 		try {
-			return $this->container->get(RegisterDescriptorService::class)->isBehind(appId: self::APP, slug: $slug, mock: $mock);
+			return $this->container->get(RegisterDescriptorService::class)->isShippedBehind(register: new ShippedRegister(appId: self::APP, slug: $slug), mock: $mock);
 		} catch (Throwable) {
 			return false;
 		}
@@ -154,7 +155,7 @@ class ExampleSetRegisters {
 	 *
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>}
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	private function recordedImport(callable $import): array {
 		try {
@@ -163,18 +164,28 @@ class ExampleSetRegisters {
 			return ['error' => $e->getMessage(), 'jobs' => []];
 		}
 
-		$jobs = [];
-		if (is_string($result['importJobId'] ?? null) === true && $result['importJobId'] !== '') {
-			$jobs[] = ['appId' => (string) ($result['importAppId'] ?? self::APP), 'jobId' => $result['importJobId']];
-		}
-
 		$error = '';
 		if (($result['outcome'] ?? '') === 'failed') {
 			$error = (string) ($result['reason'] ?? 'the import failed');
 		}
 
-		return ['error' => $error, 'jobs' => $jobs];
+		return ['error' => $error, 'jobs' => $this->jobsOf(result: $result)];
 	}//end recordedImport()
+
+	/**
+	 * The import job an import result names, as the record keeps it; none when it names none.
+	 *
+	 * @param array<string, mixed> $result The import result.
+	 *
+	 * @return array<int, array{appId: string, jobId: string}>
+	 */
+	private function jobsOf(array $result): array {
+		if (is_string($result['importJobId'] ?? null) === true && $result['importJobId'] !== '') {
+			return [['appId' => (string) ($result['importAppId'] ?? self::APP), 'jobId' => $result['importJobId']]];
+		}
+
+		return [];
+	}//end jobsOf()
 
 	/**
 	 * Soft-delete the objects one import job created, and forget the job when that went cleanly.
@@ -188,12 +199,12 @@ class ExampleSetRegisters {
 	 *
 	 * @return bool True when nothing of the job is left.
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function removeImport(string $appId, string $jobId): bool {
 		try {
-			$uuids   = $this->container->get(AuditTrailMapper::class)->objectUuidsByImportJobId(importJobId: $jobId);
-			$objects = $this->container->get(ObjectService::class);
+			$uuids   = $this->container->get(AuditTrailMapperInterface::class)->objectUuidsByImportJobId(importJobId: $jobId);
+			$objects = $this->container->get(ObjectOperationsInterface::class);
 		} catch (Throwable) {
 			return false;
 		}
@@ -201,7 +212,7 @@ class ExampleSetRegisters {
 		$clean = true;
 		foreach ($uuids as $uuid) {
 			try {
-				$objects->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+				$objects->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (Throwable) {
 				$clean = false;
 			}

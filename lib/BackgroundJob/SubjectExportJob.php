@@ -24,8 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportAssemblerInterface;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -36,24 +35,30 @@ use Throwable;
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class SubjectExportJob extends QueuedJob {
 	/**
+	 * Logger, taken from the JobRuntime.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Wire the job.
 	 *
-	 * @param ITimeFactory         $time    The clock the job base class needs.
-	 * @param SubjectExportService $exports The assembler.
-	 * @param LoggerInterface      $logger  PSR logger.
+	 * @param JobRuntime $runtime The job runtime: scheduler clock and run log.
+	 * @param SubjectExportAssemblerInterface $exports The assembler.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		private readonly SubjectExportService $exports,
-		private readonly LoggerInterface $logger,
+		JobRuntime $runtime,
+		private readonly SubjectExportAssemblerInterface $exports,
 	) {
-		parent::__construct(time: $time);
+		$this->logger = $runtime->logger;
+		parent::__construct(time: $runtime->time);
 
 	}//end __construct()
 
@@ -64,14 +69,10 @@ class SubjectExportJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	protected function run($argument): void {
-		$uuid = '';
-		if (is_array($argument) === true) {
-			$uuid = trim((string)($argument['uuid'] ?? ''));
-		}
-
+		$uuid = self::exportUuidOf(argument: $argument);
 		if ($uuid === '') {
 			$this->logger->warning(
 				message: '[SubjectExportJob] Queued with no export uuid, so there is nothing to assemble'
@@ -90,4 +91,20 @@ class SubjectExportJob extends QueuedJob {
 			);
 		}
 	}//end run()
+
+	/**
+	 * The export uuid a job was queued with; empty when it has none.
+	 *
+	 * @param mixed $argument The job arguments.
+	 *
+	 * @return string
+	 */
+	private static function exportUuidOf(mixed $argument): string {
+		$uuid = '';
+		if (is_array($argument) === true) {
+			$uuid = trim((string)($argument['uuid'] ?? ''));
+		}
+
+		return $uuid;
+	}//end exportUuidOf()
 }//end class

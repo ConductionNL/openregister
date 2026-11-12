@@ -3,7 +3,7 @@
 /**
  * OdtSanitizerTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\Sanitizer\OdtSanitizer}.
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer}.
  * A synthetic .odt ZIP is built in-test covering each surgical pass.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace Unit\Service\File\Sanitizer;
 
 use OCA\OpenRegister\Exception\SanitizationException;
-use OCA\OpenRegister\Service\File\Sanitizer\OdtSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;
 

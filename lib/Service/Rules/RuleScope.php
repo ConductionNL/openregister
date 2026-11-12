@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\Rules;
  * Descriptive only. A scoped rule still carries its own condition; the scope
  * lets the inventory list one kind of object's rules.
  *
- * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 final class RuleScope {
 
@@ -43,7 +43,7 @@ final class RuleScope {
 	 *
 	 * @return array{property: string, value: string}|null The scope, or null for a rule about every object.
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function fromDeclaration(array $declaration): ?array {
 		$scope = ($declaration['scope'] ?? null);
@@ -53,12 +53,23 @@ final class RuleScope {
 
 		$property = ($scope['property'] ?? null);
 		$value = ($scope['value'] ?? null);
-		if (is_string($property) === false || $property === '' || is_scalar($value) === false) {
+		if ($this->isProperty(property: $property) === false || is_scalar($value) === false) {
 			return null;
 		}
 
 		return ['property' => $property, 'value' => (string)$value];
 	}//end fromDeclaration()
+
+	/**
+	 * Whether a scope names a property.
+	 *
+	 * @param mixed $property The scope's `property`.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function isProperty(mixed $property): bool {
+		return is_string($property) === true && $property !== '';
+	}//end isProperty()
 
 	/**
 	 * Whether a rule with this scope passes a filter.
@@ -71,7 +82,7 @@ final class RuleScope {
 	 *
 	 * @return bool True when the rule is listed.
 	 *
-	 * @spec openspec/changes/rule-inventory-scope/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function admits(?array $scope, array $filter): bool {
 		if ($filter === [] || $scope === null) {

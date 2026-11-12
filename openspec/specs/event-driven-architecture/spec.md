@@ -78,23 +78,23 @@ Pre-mutation event classes (`ObjectCreatingEvent`, `ObjectUpdatingEvent`, `Objec
 - **AND** the old object state from `$event->getOldObject()` MUST be preserved
 
 ### Requirement: Event listeners MUST be registered in Application.php via registerEventListener
-All event listener bindings MUST be declared in `Application::registerEventListeners()` using `IRegistrationContext::registerEventListener()`. This ensures Nextcloud's lazy-loading mechanism defers listener instantiation until the event is actually dispatched.
+All event listener bindings MUST be declared in `ListenerRegistrar::register()` using `IRegistrationContext::registerEventListener()`. This ensures Nextcloud's lazy-loading mechanism defers listener instantiation until the event is actually dispatched.
 
 #### Scenario: SolrEventListener registers for object and schema lifecycle events
 - **GIVEN** the OpenRegister app boots
-- **WHEN** `Application::registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `SolrEventListener::class` MUST be registered for `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, `SchemaCreatedEvent`, `SchemaUpdatedEvent`, and `SchemaDeletedEvent`
 - **AND** these registrations MUST use `$context->registerEventListener(EventClass::class, ListenerClass::class)` to enable lazy instantiation
 
 #### Scenario: HookListener registers for both pre and post mutation events
 - **GIVEN** the OpenRegister app boots
-- **WHEN** `Application::registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `HookListener::class` MUST be registered for all six object lifecycle events: `ObjectCreatingEvent`, `ObjectUpdatingEvent`, `ObjectDeletingEvent`, `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`
 - **AND** the HookListener MUST delegate execution to `HookExecutor` which loads hooks from the schema's `getHooks()` configuration
 
 #### Scenario: WebhookEventListener registers for object creation events
 - **GIVEN** the OpenRegister app boots
-- **WHEN** `Application::registerEventListeners()` is called
+- **WHEN** `ListenerRegistrar::register()` is called
 - **THEN** `WebhookEventListener::class` MUST be registered for `ObjectCreatedEvent`
 - **AND** it MUST dispatch events to `WebhookService::dispatchEvent()` with the extracted payload
 
@@ -874,12 +874,34 @@ locale map unchanged.
 - **THEN** the title is still `{"nl": "[Demo] Webshop"}`, not the string `'{"nl":"[Demo] Webshop"}'`
 - @e2e exclude {covered by SchemaTypeConverterTest::testAnUntouchedTranslatablePropertyKeepsItsLocaleMap}
 
+### Requirement: A deferred listener chunk fits the job argument limit
+
+The listener deferral service SHALL enqueue a buffered chunk as one or more background jobs whose JSON-encoded argument each stays within the running Nextcloud's job argument limit (4,000 characters on Nextcloud 32 and 33, 32,000 from 34; read from the server when it names the limit, 4,000 otherwise), keeping every entry once and in order. An entry that alone exceeds the limit SHALL be enqueued without its `oldData` and the reduction logged, naming that conditioned `updated` rules and `calculatedChange` rules are skipped for that object (they fail closed without the previous data); an entry that still exceeds it SHALL be left out and logged with its job class and uuid. The other entries of its chunk SHALL still be enqueued.
+
+#### Scenario: Twenty-five updates of large cases
+- GIVEN a schema that declares update notifications and 25 updates of cases of about 2,000 characters each in one request
+- WHEN the buffer is flushed
+- THEN every update reaches the job list once, in order, spread over more than one job, and no job argument is longer than the active limit (checked at 4,000 and at 32,000)
+- @e2e exclude pinned through `AnnotationNotificationListener` by `DeferredChunksFitTheJobLimitTest::testAChunkOfLargeUpdatesIsSpreadOverJobsTheListTakes`
+
+#### Scenario: An entry too large for the active limit is kept without its previous data
+- GIVEN an update whose previous data alone makes its entry longer than the active limit
+- WHEN the buffer is flushed
+- THEN the entry is enqueued without `oldData`, and the log names its uuid and says that conditioned `updated` rules and `calculatedChange` rules are skipped for this object
+- @e2e exclude pinned by `DeferredChunksFitTheJobLimitTest::testAnOversizedUpdateIsKeptWithoutItsOldData`
+
+#### Scenario: One entry too large for any job
+- GIVEN three updates of which the middle one is larger than a job may carry
+- WHEN the buffer is flushed
+- THEN the other two are enqueued and the log names the uuid of the one left out
+- @e2e exclude pinned by `DeferredChunksFitTheJobLimitTest::testAnEntryTooLargeForAnyJobIsNamedAndTheRestGo`
+
 ## Current Implementation Status
 - **Implemented:**
   - 39+ typed event classes in `lib/Event/` covering all entity types with Created/Updated/Deleted patterns, plus specialized events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent with StoppableEventInterface; ObjectLockedEvent, ObjectUnlockedEvent, ObjectRevertedEvent; ToolRegistrationEvent, DeepLinkRegistrationEvent, UserProfileUpdatedEvent)
   - 8 event listeners in `lib/Listener/`: WebhookEventListener, HookListener, ObjectChangeListener, ObjectCleanupListener, FileChangeListener, GraphQLSubscriptionListener, CommentsEntityListener, ToolRegistrationListener
   - 3 event listeners in `lib/EventListener/`: SolrEventListener, AbstractNodeFolderEventListener, AbstractNodesFolderEventListener
-  - Full event registration in `Application::registerEventListeners()` with lazy loading via `IRegistrationContext`
+  - Full event registration in `ListenerRegistrar::register()` with lazy loading via `IRegistrationContext`
   - `CloudEventFormatter` (`lib/Service/Webhook/CloudEventFormatter.php`) producing CloudEvents v1.0 payloads with UUID v4 IDs
   - `WebhookService` with three payload strategies (Mapping, CloudEvents, Standard), HMAC signing, filter matching with dot-notation
   - `Webhook` entity with events, filters, retry policy (exponential/linear/fixed), max retries, timeout, HMAC secret, mapping reference, and delivery statistics
@@ -922,7 +944,7 @@ locale map unchanged.
 
 **Status**: Implemented
 
-**Existing Implementation**: The event-driven architecture is built on 39+ custom typed event classes in `lib/Event/` covering Object, Register, Schema, Source, Configuration, View, Agent, Application, Conversation, and Organisation lifecycle operations. Eleven listeners handle these events across two namespaces (`lib/Listener/` and `lib/EventListener/`) for webhooks, Solr indexing, schema hook execution, text extraction, GraphQL subscriptions, note/task cleanup, file change detection, and tool registration. All event listener bindings are declared in `Application::registerEventListeners()` using Nextcloud's lazy-loading `IRegistrationContext`. Pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) implement `StoppableEventInterface` to allow hooks to reject or modify operations before persistence. Post-mutation events carry the full entity state for downstream consumption.
+**Existing Implementation**: The event-driven architecture is built on 39+ custom typed event classes in `lib/Event/` covering Object, Register, Schema, Source, Configuration, View, Agent, Application, Conversation, and Organisation lifecycle operations. Eleven listeners handle these events across two namespaces (`lib/Listener/` and `lib/EventListener/`) for webhooks, Solr indexing, schema hook execution, text extraction, GraphQL subscriptions, note/task cleanup, file change detection, and tool registration. All event listener bindings are declared in `ListenerRegistrar::register()` using Nextcloud's lazy-loading `IRegistrationContext`. Pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) implement `StoppableEventInterface` to allow hooks to reject or modify operations before persistence. Post-mutation events carry the full entity state for downstream consumption.
 
 **Nextcloud Core Integration**: All custom events extend `OCP\EventDispatcher\Event` and are dispatched via `IEventDispatcher::dispatchTyped()`. Listeners implement `OCP\EventDispatcher\IEventListener`. This makes every OpenRegister event natively consumable by any other Nextcloud app by simply registering a listener in their `Application::register()`. The typed event approach ensures compile-time type safety and IDE discoverability. Webhook delivery uses Nextcloud's `IJobList` with `QueuedJob` (WebhookDeliveryJob) and `TimedJob` (WebhookRetryJob) for async processing. The pre-mutation pattern (Creating/Updating/Deleting events with StoppableEventInterface) follows PSR-14 and integrates cleanly with Nextcloud's event propagation model.
 

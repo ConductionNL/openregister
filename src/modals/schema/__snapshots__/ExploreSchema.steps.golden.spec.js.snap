@@ -1,0 +1,67 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`explore schema before an analysis lists the analysis steps 1`] = `
+"<div class="steps-section">
+<h4>t:Analysis steps:</h4>
+<ol class="steps-list">
+<li>t:Retrieve all objects for this schema</li>
+<li>t:Extract properties from each object</li>
+<li>t:Detect data types and patterns</li>
+<li>t:Identify properties not in the schema</li>
+<li>t:Analyze existing properties for improvement opportunities</li>
+<li>t:Compare current schema with real object data</li>
+<li>t:Generate recommendations and confidence scores</li>
+</ol>
+</div>"
+`;
+
+exports[`explore schema before an analysis lists the analysis steps 2`] = `
+"<x-ncdialog name="Analyze Schema Properties" size="large">
+<slot-default>
+<x-ncnotecard type="error">
+<slot-default>
+<p>t:No schema selected for exploration</p>
+</slot-default>
+</x-ncnotecard>
+<div class="info-section">
+<x-ncnotecard type="info">
+<slot-default>
+<h4>t:This analysis may take some time</h4>
+<p>t:We'll scan all objects belonging to this schema to discover new properties and analyze existing properties for potential enhancements. The process involves examining each object's data structure, identifying properties not defined in the current schema, and finding opportunities to improve existing property definitions with better constraints, formats, and validation rules.</p>
+</slot-default>
+</x-ncnotecard>
+</div>
+<div>
+<div class="well-container">
+<div class="no-analysis">
+<div class="analysis-info">
+<x-schemastatsblock objectcount="0" objectstats="null" loading="false" title="t:Objects to be analyzed">
+</x-schemastatsblock>
+<div class="steps-section">
+<h4>t:Analysis steps:</h4>
+<ol class="steps-list">
+<li>t:Retrieve all objects for this schema</li>
+<li>t:Extract properties from each object</li>
+<li>t:Detect data types and patterns</li>
+<li>t:Identify properties not in the schema</li>
+<li>t:Analyze existing properties for improvement opportunities</li>
+<li>t:Compare current schema with real object data</li>
+<li>t:Generate recommendations and confidence scores</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="analysis-controls">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Analyze Objects</slot-default>
+<slot-icon>
+<x-databasesearch size="20">
+</x-databasesearch>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;

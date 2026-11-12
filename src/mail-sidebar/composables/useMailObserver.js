@@ -10,6 +10,35 @@
 
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
+// The Mail routes the sidebar recognises, most specific first, and the ids each yields.
+const MAIL_URL_ROUTES = [
+	// Path-based routing with thread: /apps/mail/box/{boxId}/thread/{threadId}.
+	// boxId may be 'priority', 'starred' or a numeric mailbox id; the account is
+	// unknown either way, so it falls back to the default account 1.
+	[
+		/\/apps\/mail\/box\/(\w+)\/thread\/(\d+)/,
+		(match) => ({ accountId: 1, messageId: parseInt(match[2], 10) }),
+	],
+	// Path-based routing without thread: /apps/mail/box/{mailboxId}.
+	[
+		/\/apps\/mail\/box\/(\d+)$/,
+		(match) => ({ accountId: parseInt(match[1], 10), messageId: null }),
+	],
+	// Hash-based routing: #/accounts/{accountId}/folders/{folderName}/messages/{messageId}.
+	[
+		/\/accounts\/(\d+)\/folders\/[^/]+\/messages\/(\d+)/,
+		(match) => ({
+			accountId: parseInt(match[1], 10),
+			messageId: parseInt(match[2], 10),
+		}),
+	],
+	// Hash-based folder-only: #/accounts/{accountId}/folders/...
+	[
+		/\/accounts\/(\d+)\/folders\//,
+		(match) => ({ accountId: parseInt(match[1], 10), messageId: null }),
+	],
+]
+
 /**
  * Parse the Mail app URL to extract accountId and messageId.
  *
@@ -23,57 +52,12 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
  * @return {{ accountId: number|null, messageId: number|null, sender: string|null }} Parsed IDs.
  */
 export function parseMailUrl(url) {
-	if (!url) {
-		return { accountId: null, messageId: null, sender: null }
-	}
-
-	// Path-based routing with thread: /apps/mail/box/{boxId}/thread/{threadId}
-	// boxId may be 'priority', 'starred', or a numeric mailbox ID.
-	const pathThreadMatch = url.match(/\/apps\/mail\/box\/(\w+)\/thread\/(\d+)/)
-	if (pathThreadMatch) {
-		const boxId = pathThreadMatch[1]
-		const threadId = parseInt(pathThreadMatch[2], 10)
-
-		// For priority/starred inboxes, accountId is unknown — fall back to the
-		// default account 1 (most setups have one account). For numeric box IDs
-		// the segment is a mailbox ID, not an account ID; still fall back to 1.
-		const accountId = /^\d+$/.test(boxId) ? 1 : 1
-
-		return { accountId, messageId: threadId, sender: null }
-	}
-
-	// Path-based routing without thread: /apps/mail/box/{mailboxId}
-	const pathBoxMatch = url.match(/\/apps\/mail\/box\/(\d+)$/)
-	if (pathBoxMatch) {
-		return {
-			accountId: parseInt(pathBoxMatch[1], 10),
-			messageId: null,
-			sender: null,
+	for (const [pattern, ids] of MAIL_URL_ROUTES) {
+		const match = url ? url.match(pattern) : null
+		if (match) {
+			return { ...ids(match), sender: null }
 		}
 	}
-
-	// Hash-based routing: #/accounts/{accountId}/folders/{folderName}/messages/{messageId}
-	const hashMessageMatch = url.match(
-		/\/accounts\/(\d+)\/folders\/[^/]+\/messages\/(\d+)/,
-	)
-	if (hashMessageMatch) {
-		return {
-			accountId: parseInt(hashMessageMatch[1], 10),
-			messageId: parseInt(hashMessageMatch[2], 10),
-			sender: null,
-		}
-	}
-
-	// Hash-based folder-only: #/accounts/{accountId}/folders/...
-	const hashFolderMatch = url.match(/\/accounts\/(\d+)\/folders\//)
-	if (hashFolderMatch) {
-		return {
-			accountId: parseInt(hashFolderMatch[1], 10),
-			messageId: null,
-			sender: null,
-		}
-	}
-
 	return { accountId: null, messageId: null, sender: null }
 }
 

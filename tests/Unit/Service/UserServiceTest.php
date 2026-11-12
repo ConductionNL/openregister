@@ -1554,17 +1554,6 @@ class UserServiceTest extends TestCase {
 	 */
 
 	/**
-	 * Test getDefaultPropertyScope for an unknown property (fallback to SCOPE_PRIVATE).
-	 */
-	public function testUpdateUserPropertiesDefaultScopeForUnknownProperty(): void {
-		// This is tested indirectly — when all known properties are tested above,
-		// the scope map is fully exercised. The fallback case is for properties
-		// not in the map. Since all standard fields ARE in the map, we verify
-		// coverage of the entire scope map through the test above.
-		$this->assertTrue(true);
-	}
-
-	/**
 	 * Test determineChangedFields detects changes in multiple field types.
 	 */
 	public function testUpdateUserPropertiesDetectsMultipleChanges(): void {
@@ -1616,6 +1605,7 @@ class UserServiceTest extends TestCase {
 
 		$this->assertNotNull($dispatchedEvent, 'Event should be dispatched for changed fields');
 		$this->assertInstanceOf(UserProfileUpdatedEvent::class, $dispatchedEvent);
+		$this->assertSame(['firstName', 'lastName', 'middleName'], $dispatchedEvent->getChanges());
 	}
 
 	/**
