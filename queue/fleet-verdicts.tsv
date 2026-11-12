@@ -4242,3 +4242,6 @@ portaliq	2367	02c076bf213879d27a66f26db2a64f37a38ef8e3	BLOCK	worker-47	unit 4526
 decidiq	2085	f1b82c46223e2cb12b66f59e730faaf42daeeb5a	GREEN	worker-57	tree 3159 tests, baseline 3109/0 fail, new failures 0; tests-only
 decidiq	2086	bfe84b3d7e136239a2f3097bc56c8e09d8fac426	GREEN	worker-57	tree 3159 tests, baseline 3109/0 fail, new failures 0; tests-only
 integriq	3410	05595700deeeac8c8a8670542ed0c195f9516a07	GREEN	worker-56	phpunit 7126 tests, baseline 3 inherited, 0 new; additive: Deprecation/Link headers and /api/v1 route aliases, existing routes and bodies unchanged
+pipelinq	3562	293d3fc246638b891566f47a1eabbf32bec7e0c5	GREEN	worker-05	5834 tests (baseline 5773), baseline 1 failure CrmPrivilegeRefusalGoldenTest inherited, 0 new; tests-only additions
+pipelinq	3563	d477c25f08d6fcf93fab30e0d974f73a04ec04ec	GREEN	worker-05	5834 tests (baseline 5773), baseline 1 failure CrmPrivilegeRefusalGoldenTest inherited, 0 new; tests-only additions
+pipelinq	3564	7b45e38231e8df3da7e1929dd0d16559edaa597e	GREEN	worker-05	5834 tests (baseline 5773), baseline 1 failure CrmPrivilegeRefusalGoldenTest inherited, 0 new; tests-only additions
