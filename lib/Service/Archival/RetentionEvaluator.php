@@ -86,9 +86,7 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 	/**
 	 * Compute the effective retention for a row.
 	 *
-	 * @param array<string, mixed> $annotation Full `x-openregister-archival` block from the schema's configuration.
-	 * @param array<string, mixed> $row Row data keyed by field name (output of the row's hydration).
-	 * @param DateTimeInterface $createdAt The row's `_created` timestamp.
+	 * @param AnnotatedRow $subject The archival annotation, the row it is evaluated against and when the row was created.
 	 *
 	 * @return array{
 	 *     effectiveRetention: string,
@@ -108,8 +106,8 @@ final class RetentionEvaluator implements RetentionEvaluatorInterface {
 	 *
 	 * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-4
 	 */
-	public function evaluate(array $annotation, array $row, DateTimeInterface $createdAt): array {
-		return $this->evaluated(subject: new AnnotatedRow(annotation: $annotation, row: $row, createdAt: $createdAt));
+	public function evaluate(AnnotatedRow $subject): array {
+		return $this->evaluated(subject: $subject);
 	}//end evaluate()
 
 	/**

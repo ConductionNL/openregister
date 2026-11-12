@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\AnnotatedRow;
 
 /**
  * Attaches what a schema's annotations say about a rendered record.
@@ -87,9 +88,11 @@ final class RecordAnnotations {
 	private function evaluateRetention(ObjectEntity $entity, array $annotation): void {
 		$retention = ($entity->getRetention() ?? []);
 		$retention['annotation'] = (new RetentionEvaluator(logger: $this->logger))->evaluate(
-			annotation: $annotation,
-			row: self::objectOf(entity: $entity),
-			createdAt: $entity->getCreated()
+			subject: new AnnotatedRow(
+				annotation: $annotation,
+				row: self::objectOf(entity: $entity),
+				createdAt: $entity->getCreated()
+			)
 		);
 		$entity->setRetention($retention);
 	}//end evaluateRetention()
