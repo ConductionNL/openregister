@@ -82,3 +82,4 @@ cover:buildiq:8ca317f6:6891a8ac	opened buildiq#1452 (12 tests, WidgetItemProject
 merge:dossiq:5897:42b1d38f	merged 8 of 9; #6002 not merged: its sha is truncated in the queue payload, needs a re-queue with the full tested sha	session-20261112T184441-b0114b7a	2026-11-12T19:21:51Z
 merge:dossiq:5851:d6298897	failed: merge step refused by this session's permission policy; nothing merged (all 9 heads still at the tested sha)	session-20261112T184435-4d12562d	2026-11-12T19:22:07Z
 merge:dossiq:5898:a1fd651d	failed: merge step refused by this session's permission policy; not attempted, heads untouched	session-20261112T184435-4d12562d	2026-11-12T19:22:33Z
+cover:dossiq:6ca0231e:1174c39d	PR dossiq#6089: 11 tests for CaseRegisterReads, ConfiguredSchemaWriter, FilledValue; suite 11968->11979, same 49 inherited failures	session-20261112T184438-005b5eda	2026-11-12T19:23:07Z
