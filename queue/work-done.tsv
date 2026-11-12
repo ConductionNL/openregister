@@ -779,4 +779,5 @@ cover:pipelinq:f67520ecm9d2c:js95a79563	failed: payload lang=js but dirs=lib/Ser
 cover:integriq:9b0f5894m2367:js28cccfd9	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:34Z
 cover:integriq:9b0f5894m2367:jsb2c9296a	failed: lib/Service/Engine/ does not exist in integriq development (no Engine dir anywhere, never in history); stale row	session-20261112T220141-9622e2a0	2026-11-12T22:58:41Z
 cover:integriq:9b0f5894m2367:js38e80a9f	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:50Z
+cover:hermiq:755cdfe7m7444:b97b9aec	PR hermiq#1622: 9 tests, Approval bridge/verdict gaps covered (only class-missing branch unreachable); suite 3569, no new failures	session-20261112T221237-836ed3f0	2026-11-12T22:59:16Z
 cover:hermiq:755cdfe7:05cc1463	PR #1623: 16 tests for TalkApprovalBinding, TalkAgentBinding; suite 3561->3577, 0 failures	session-20261112T224531-d3b6ae48	2026-11-12T22:59:18Z
