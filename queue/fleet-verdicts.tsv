@@ -4377,3 +4377,4 @@ hermiq	1625	82e61b1bd64017863033f5f7dc0e59d02ef7275a	GREEN	worker-04	tree 3623 t
 hermiq	1626	6b8354b4f2bc484eff0707f524cde038e76112ab	GREEN	worker-04	tree 3623 tests, baseline 3596 (145E/26F), 0 new failures; tests-only diff
 hermiq	1627	44e77e11a10f615a44d513dcdf24a094779318fd	GREEN	worker-04	tree 3623 tests, baseline 3596 (145E/26F), 0 new failures; tests-only diff
 hermiq	1628	b3a7d1ede8e2a326d9b81fb1c6fe47c7f380fa94	GREEN	worker-04	tree 3623 tests, baseline 3596 (145E/26F), 0 new failures; tests-only diff
+pipelinq	3588	065c816ec1a60b368a6644fc44092841caa544ab	GREEN	worker-54	tests only; phpunit 5854 run (baseline 5773, 1 inherited failure CrmPrivilegeRefusalGoldenTest), 0 new failures; vitest 3195 passed
