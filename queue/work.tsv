@@ -1203,3 +1203,8 @@ cover:openregister:7350e3efm0e99:js516a028c	cover	openregister	main	test/coverag
 cover:openregister:7350e3efm0e99:js716923f8	cover	openregister	main	test/coverage-js-716923f8	lang=js;dirs=lib/Service/Credential/;focus=uncovered;weight=771;coverage=83.1;target=90.0	2026-11-12T16:38:02Z
 cover:openregister:7350e3efm0e99:jsa01f8b82	cover	openregister	main	test/coverage-js-a01f8b82	lang=js;dirs=lib/Service/Form/;focus=uncovered;weight=744;coverage=83.1;target=90.0	2026-11-12T16:38:29Z
 measure:learniq:20261112h18	measure	learniq	development	queue/coverage/learniq.json	why=slices need per-directory coverage	2026-11-12T23:44:02Z
+merge:launchpad:1138:e654c706	merge	launchpad	development	development	prs=1138@e654c7062e2ec27a1f1e006871a9e2d6c2440b72	2026-11-12T23:49:03Z
+merge:filinq:1975:d4d1b305	merge	filinq	development	development	prs=1975@d4d1b3055d7ecf5cc26f8ec2e72511e2b294d758	2026-11-12T23:49:03Z
+merge:keepiq:1690:f5feabc3	merge	keepiq	development	development	prs=1690@f5feabc390d7e92ed8113c85039b1000e83ad400	2026-11-12T23:49:03Z
+merge:portaliq:2370:5ff6f0c9	merge	portaliq	development	development	prs=2370@5ff6f0c9f3e7b71faf9988c939c67d5474a1e060	2026-11-12T23:49:03Z
+merge:thematiq:1665:ee48871d	merge	thematiq	development	development	prs=1665@ee48871d866a634fd6fec6e35c119485dc8dccd6	2026-11-12T23:49:03Z
