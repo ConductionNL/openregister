@@ -179,3 +179,4 @@ gap:shillinq:9:7d352ecb	opened shillinq#2796 (7 secret-named config-key constant
 merge:stackiq:1657:abb4592f	stale	feeder	2026-11-12T20:00:22Z
 merge:stackiq:1665:21111797	stale	feeder	2026-11-12T20:00:22Z
 verify:filinq:1971:e7e07441	GREEN 1971	session-20261112T200014-a0c0c232	2026-11-12T20:02:36Z
+cover:stackiq:8cfacb29:38e80a9f	PR #1737: ReferencesAuditCommand 93%->100% (4 tests); rest of lib/Command already 100%, GemmaLinkBackfill is a data holder	session-20261112T184439-5c9a5b03	2026-11-12T20:02:41Z
