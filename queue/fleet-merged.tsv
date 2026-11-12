@@ -354,3 +354,4 @@ stackiq	1542	69e306bb1fd600b807c20d41242916836e2328fa	SKIP	worker-19	stack: #153
 stackiq	1546	db138c93a358741b35322339037564984a8996e8	SKIP	worker-19	stack: #1539 was not merged
 stackiq	1552	db75f09fa27afb615dd21277fb9638d8b7d1bdd3	SKIP	worker-19	stack: #1539 was not merged
 stackiq	1595	3325e9bea6413097830c0ae0c491df3926af883c	SKIP	worker-19	GATE UNMEASURED 3325e9bea6 does not merge cleanly onto development
+stackiq	1650	1a2001c15942e0a118ca7e3244bb3be47a989930	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure adrvalidator, secretscanning; this is not a pass
