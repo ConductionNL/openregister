@@ -823,5 +823,6 @@ cover:pipelinq:f67520ecm9d2c:a215617b	PR #3581: 7 tests, lib/Integration leaf pr
 cover:integriq:9b0f5894m2367:jsdfaef732	PR #3419: Notification ApprovalNotifier+Registrar 8 PHP tests (dirs were PHP), suite 7110->7118, 3 inherited	session-20261112T221237-c40cb74c	2026-11-12T23:07:07Z
 cover:keepiq:d76c2121:38e80a9f	PR keepiq#1692: 13 tests for lib/Command (4 classes), suite 3722->3735 green	session-20261112T221532-ade53a05	2026-11-12T23:07:04Z
 verify:keepiq:1682:32fecc34	GREEN 1682,1683,1684: 3781 tests vs baseline 3722, no failures	session-20261112T221528-d486fac0	2026-11-12T23:07:15Z
+cover:pipelinq:f67520ecm9d2c:50cc8442	PR pipelinq#3583: 29 tests for 13 lib/Util traits; suite 5773->5802, same 1 inherited failure	session-20261112T224530-a1180ad3	2026-11-12T23:07:50Z
 cover:pipelinq:f67520ecm9d2c:e372e6ff	PR pipelinq#3582: 5 tests, TenderPostedEvent to 100% + LandingPage event outcome; rest of lib/Event is getter-only; suite 5773->5778	session-20261112T221235-9e827ed1	2026-11-12T23:07:45Z
 verify:pipelinq:3561:a83ed2a7	8 GREEN (3561,3569-3574,3576), 3575 CONFLICT with 3569; 0 new failures	session-20261112T224530-faaec44c	2026-11-12T23:08:06Z
