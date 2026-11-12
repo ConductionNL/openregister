@@ -1,284 +1,284 @@
 {
  "app": "pipelinq",
  "commit": "69a4d43ce79228a1d26d708f5cc49571c69f82ad",
- "measured_at": "2026-11-12T22:18:58Z",
+ "measured_at": "2026-11-12T22:20:22Z",
  "php": {
   "tool": "pcov",
-  "pct": 0.0,
-  "statements": 58467,
-  "covered": 0,
+  "pct": 81.8,
+  "statements": 58420,
+  "covered": 47790,
   "dirs": {
    "lib/Activity/": [
     66,
-    0
+    47
    ],
    "lib/Activity/Setting/": [
-    28,
-    0
+    27,
+    27
    ],
    "lib/Adapter/": [
     60,
-    0
+    6
    ],
    "lib/AppInfo/": [
     27,
-    0
+    26
    ],
    "lib/BackgroundJob/": [
     1582,
-    0
+    1053
    ],
    "lib/Command/": [
     382,
-    0
+    324
    ],
    "lib/Controller/": [
     8322,
-    0
+    7092
    ],
    "lib/Dashboard/": [
-    37,
-    0
+    36,
+    26
    ],
    "lib/Dossiq/": [
     26,
-    0
+    26
    ],
    "lib/Event/": [
     87,
-    0
+    68
    ],
    "lib/Flow/": [
     128,
-    0
+    79
    ],
    "lib/Integration/": [
     302,
-    0
+    284
    ],
    "lib/Lifecycle/": [
     229,
-    0
+    210
    ],
    "lib/Listener/": [
     1580,
-    0
+    1172
    ],
    "lib/Mcp/": [
     29,
-    0
+    29
    ],
    "lib/Notification/": [
     120,
-    0
+    120
    ],
    "lib/Portal/": [
     556,
-    0
+    556
    ],
    "lib/Repair/": [
     2391,
-    0
+    1840
    ],
    "lib/Repair/Support/": [
     94,
-    0
+    93
    ],
    "lib/Sections/": [
     5,
-    0
+    4
    ],
    "lib/Service/": [
-    30849,
-    0
+    30815,
+    24755
    ],
    "lib/Service/Access/": [
     86,
-    0
+    78
    ],
    "lib/Service/Berichtenbox/": [
     12,
-    0
+    12
    ],
    "lib/Service/BsnAudit/": [
     4,
-    0
+    4
    ],
    "lib/Service/Competitor/": [
     600,
-    0
+    522
    ],
    "lib/Service/Consent/": [
     67,
-    0
+    66
    ],
    "lib/Service/Cti/": [
     93,
-    0
+    89
    ],
    "lib/Service/Cti/Adapter/": [
     243,
-    0
+    234
    ],
    "lib/Service/Cti/Result/": [
     17,
-    0
+    17
    ],
    "lib/Service/Demo/": [
     490,
-    0
+    428
    ],
    "lib/Service/Egress/": [
     118,
-    0
+    72
    ],
    "lib/Service/Event/": [
     67,
-    0
+    56
    ],
    "lib/Service/Export/": [
     1007,
-    0
+    835
    ],
    "lib/Service/External/Berichtenbox/": [
     48,
-    0
+    47
    ],
    "lib/Service/Forecast/": [
     4,
-    0
+    4
    ],
    "lib/Service/Gdpr/": [
     68,
-    0
+    39
    ],
    "lib/Service/Labels/": [
     96,
-    0
+    92
    ],
    "lib/Service/Lead/": [
     55,
-    0
+    51
    ],
    "lib/Service/Letter/": [
     160,
-    0
+    140
    ],
    "lib/Service/Lifecycle/": [
     134,
-    0
+    121
    ],
    "lib/Service/LineTotals/": [
     59,
-    0
+    58
    ],
    "lib/Service/Loyalty/": [
     15,
-    0
+    14
    ],
    "lib/Service/MailAddIn/": [
     86,
-    0
+    85
    ],
    "lib/Service/Marketing/": [
     1867,
-    0
+    1575
    ],
    "lib/Service/Marketing/Transport/": [
     335,
-    0
+    296
    ],
    "lib/Service/Matomo/": [
     72,
-    0
+    70
    ],
    "lib/Service/Mdm/": [
     126,
-    0
+    49
    ],
    "lib/Service/Merge/": [
     21,
-    0
+    21
    ],
    "lib/Service/Messaging/": [
     9,
-    0
+    9
    ],
    "lib/Service/Payment/": [
-    636,
-    0
+    633,
+    601
    ],
    "lib/Service/PersonLookup/": [
     10,
-    0
+    9
    ],
    "lib/Service/Portal/": [
-    1445,
-    0
+    1440,
+    1236
    ],
    "lib/Service/PosCart/": [
     67,
-    0
+    63
    ],
    "lib/Service/Provider/": [
-    105,
-    0
+    104,
+    92
    ],
    "lib/Service/ScheduledTask/": [
     92,
-    0
+    92
    ],
    "lib/Service/Search/": [
     383,
-    0
+    357
    ],
    "lib/Service/SearchConsole/": [
     298,
-    0
+    271
    ],
    "lib/Service/Settings/": [
     12,
-    0
+    11
    ],
    "lib/Service/Sla/": [
     212,
-    0
+    212
    ],
    "lib/Service/Social/": [
     877,
-    0
+    660
    ],
    "lib/Service/Store/": [
     86,
-    0
+    82
    ],
    "lib/Service/WebForm/": [
     400,
-    0
+    376
    ],
    "lib/Service/Worklist/": [
     66,
-    0
+    61
    ],
    "lib/Service/Zgw/": [
     728,
-    0
+    584
    ],
    "lib/Settings/": [
     24,
-    0
+    22
    ],
    "lib/SetupCheck/": [
-    29,
-    0
+    27,
+    23
    ],
    "lib/Support/": [
     32,
-    0
+    12
    ],
    "lib/Util/": [
     106,
-    0
+    105
    ]
   }
  },
