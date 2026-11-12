@@ -62,6 +62,7 @@ launchpad	1076	d24ff6893ef8c03eeaffb31cfa24655386cd4da5	MERGED	worker-29	GATE OK
 keepiq	1637	d78f50cb1b226f155be999046484bba5434833a9	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 launchpad	1078	5ced0af329f1c50affe62208fd3c7eee1ab037a1	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold
 keepiq	1638	d20516e05d654991adbd81f10a9a1adb1fe0680e	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+keepiq	1639	67b9d1c03a8275f85e7998941d70ebbd87063356	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 integriq	3338	34ecd231d9b81c5ee49917b3f862ae3e0f50ffcd	RED	worker-25	GATE RED checker floor: dockerimage: pass -> fail
 launchpad	1079	728c630edc950255f9d74689bca89b9f2900ab1e	MERGED	worker-29	GATE OK sbom, checker floor and maintainability floor hold
 integriq	3341	2dba04930c450d721874d6d0adf624475b7cec9b	MERGED	worker-25	GATE OK sbom, checker floor and maintainability floor hold
