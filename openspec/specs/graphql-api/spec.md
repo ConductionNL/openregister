@@ -586,6 +586,7 @@ Error responses MUST provide actionable information for developers while not lea
 - **GIVEN** `GraphQLController.execute()` processes a response
 - **WHEN** the response has `data` (even with errors): HTTP 200
 - **WHEN** the response has only `errors` and no `data`: HTTP 400
+- **WHEN** the first error code is `BAD_REQUEST`, with or without `data`: HTTP 400
 - **WHEN** the first error code is `RATE_LIMITED`: HTTP 429 with `Retry-After` header
 
 #### Scenario: Invalid request body handling

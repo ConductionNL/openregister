@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
+use OCA\OpenRegister\Service\Object\SaveObjectRelatedUpdateGuardInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectRelationScannerInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -68,6 +69,7 @@ final class A05InterfaceBindingsTest extends TestCase {
 		return [
 			'writer'           => [SaveObjectWriterInterface::class],
 			'relation scanner' => [SaveObjectRelationScannerInterface::class],
+			'related update guard' => [SaveObjectRelatedUpdateGuardInterface::class],
 		];
 	}//end roles()
 
@@ -110,6 +112,7 @@ final class A05InterfaceBindingsTest extends TestCase {
 	public function testEachRoleDeclaresOneMethod(): void {
 		$this->assertSame(['saveObject'], get_class_methods(SaveObjectWriterInterface::class));
 		$this->assertSame(['scanForRelations'], get_class_methods(SaveObjectRelationScannerInterface::class));
+		$this->assertSame(['assertMayUpdateRelated'], get_class_methods(SaveObjectRelatedUpdateGuardInterface::class));
 	}//end testEachRoleDeclaresOneMethod()
 
 	/**

@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 /**
  * What the cross-table scan looks for: the identifier matched against
  * _uuid/_slug/_uri, its numeric form for the bigint _id column, and whether
- * soft-deleted rows count.
+ * soft-deleted rows count. A uuid-only probe matches the _uuid column alone.
  *
  * @spec openspec/specs/magic-table-reads/spec.md
  */
@@ -41,18 +41,35 @@ final class MagicIdentifierProbe {
 	 *
 	 * @param string $identifier     The identifier to match.
 	 * @param bool   $includeDeleted Whether soft-deleted rows match.
+	 * @param bool   $uuidOnly       Whether only the _uuid column may match.
 	 *
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	public function __construct(
 		public readonly string $identifier,
 		public readonly bool $includeDeleted,
+		public readonly bool $uuidOnly = false,
 	) {
 		$idParam = -1;
-		if (is_numeric($identifier) === true) {
+		if ($uuidOnly === false && is_numeric($identifier) === true) {
 			$idParam = (int)$identifier;
 		}
 
 		$this->idParam = $idParam;
 	}//end __construct()
+
+	/**
+	 * The value bound against _slug and _uri: null in a uuid-only probe, which no row equals.
+	 *
+	 * @return string|null The value.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function otherParam(): ?string {
+		if ($this->uuidOnly === true) {
+			return null;
+		}
+
+		return $this->identifier;
+	}//end otherParam()
 }//end class

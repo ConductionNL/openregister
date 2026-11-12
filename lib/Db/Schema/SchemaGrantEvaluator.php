@@ -18,6 +18,9 @@
 
 namespace OCA\OpenRegister\Db\Schema;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantObject;
+
 
 /**
  * Answers whether a schema's authorization block lets a group perform an action.

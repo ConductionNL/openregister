@@ -28,6 +28,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Objects Tool
@@ -370,8 +373,9 @@ class ObjectsTool extends AbstractTool {
 
 		$object = $this->objectService->saveObject(
 			object: $objectData,
-			register: (int)$scope['register'],
-			schema: (int)$scope['schema']
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: (int)$scope['register'], schema: (int)$scope['schema'])
+			)
 		);
 
 		return $this->formatSuccess(
@@ -415,9 +419,10 @@ class ObjectsTool extends AbstractTool {
 		// Update object.
 		$object = $this->objectService->saveObject(
 			object: $mergedData,
-			register: $existingObject->getRegister(),
-			schema: $existingObject->getSchema(),
-			uuid: $existingObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $existingObject->getRegister(), schema: $existingObject->getSchema()),
+				uuid: $existingObject->getUuid()
+			)
 		);
 
 		return $this->formatSuccess(
@@ -454,7 +459,7 @@ class ObjectsTool extends AbstractTool {
 		}
 
 		$uuid = $object->getUuid() ?? (string)$object->getId();
-		$this->objectService->deleteObject(uuid: $uuid);
+		$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid));
 
 		return $this->formatSuccess(
 			data: ['id' => $id],

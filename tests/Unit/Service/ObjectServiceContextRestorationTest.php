@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -72,6 +73,12 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -232,14 +239,14 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		$this->saveHandler->method('applyAlwaysDefaults')->willReturnArgument(1);
 		$this->saveHandler->method('seedLifecycleFieldOnCreate')->willReturnArgument(1);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data, ...$rest): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data, ...$rest): ObjectEntity {
 				$this->saveScope = ['register' => $register, 'schema' => $schema];
 
 				$entity = new ObjectEntity();
 				$entity->setUuid('saved-uuid');
 				$entity->setObject($data);
 				return $entity;
-			}
+			})
 		);
 
 		// New object: no row exists yet, so the save is a CREATE. A test that
@@ -351,8 +358,9 @@ class ObjectServiceContextRestorationTest extends TestCase {
 	private function saveIntoBrokerScope(): void {
 		$this->service->saveObject(
 			object: ['name' => 'example credential'],
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -500,8 +508,9 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		try {
 			$this->service->saveObject(
 				object: ['name' => 'doomed'],
-				register: self::BROKER_REGISTER,
-				schema: self::BROKER_SCHEMA,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -539,9 +548,10 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		$this->deleteHandler->method('deleteObject')->willReturn(true);
 
 		$this->service->deleteObject(
-			uuid: 'a2e21c1c-4b71-4a5a-9f0e-2f7b4a1c1f11',
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			deletion: new ObjectDeletion(
+				uuid: 'a2e21c1c-4b71-4a5a-9f0e-2f7b4a1c1f11',
+				target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -567,8 +577,9 @@ class ObjectServiceContextRestorationTest extends TestCase {
 
 		$this->service->saveObjects(
 			objects: [['name' => 'bulk row']],
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			options: new BulkSaveOptions(
+				defaults: new BulkBatchDefaults(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -595,8 +606,7 @@ class ObjectServiceContextRestorationTest extends TestCase {
 
 		$this->service->findSilent(
 			id: 'a2e21c1c-4b71-4a5a-9f0e-2f7b4a1c1f11',
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			options: new ObjectFindOptions(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA),
 			_rbac: false,
 			_multitenancy: false
 		);

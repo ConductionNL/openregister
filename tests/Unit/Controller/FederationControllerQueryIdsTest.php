@@ -31,6 +31,7 @@ use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * A query share whose own filter is an id list reaches by id only what that list names.
@@ -42,6 +43,12 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\FederatedShare
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
  */
 class FederationControllerQueryIdsTest extends TestCase {
 
@@ -89,7 +96,8 @@ class FederationControllerQueryIdsTest extends TestCase {
 					|| in_array($row->getSlug(), $filters['_ids'], true) === true;
 			}));
 		});
-		$objects->method('saveObject')->willReturnCallback(function (...$args) use ($stored): ObjectEntity {
+		$objects->method('saveObject')->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($stored): ObjectEntity {
+			$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 			$this->writes[] = (array)($args[0] ?? []);
 			return $stored;
 		});

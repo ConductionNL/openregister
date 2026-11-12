@@ -421,6 +421,8 @@ class RelationHandler {
 	/**
 	 * One page of the items, with the total and the limit and offset as requested.
 	 *
+	 * A limit or offset that is not a number pages with its default.
+	 *
 	 * @param array<int, mixed>    $items The items.
 	 * @param array<string, mixed> $query The request's paging parameters.
 	 *
@@ -432,12 +434,28 @@ class RelationHandler {
 		$limit = $query['_limit'] ?? 30;
 		$offset = $query['_offset'] ?? 0;
 		return [
-			'results' => array_slice($items, $offset, $limit),
+			'results' => array_slice($items, self::pagingNumber(value: $offset, default: 0), self::pagingNumber(value: $limit, default: 30)),
 			'total' => count($items),
 			'limit' => $limit,
 			'offset' => $offset,
 		];
 	}//end paged()
+
+	/**
+	 * A paging parameter as a non-negative integer, or the default when it is not a number.
+	 *
+	 * @param mixed $value   The parameter as requested.
+	 * @param int   $default The value used when it is missing or not numeric.
+	 *
+	 * @return int The number.
+	 */
+	private static function pagingNumber(mixed $value, int $default): int {
+		if (is_int($value) === false && (is_string($value) === false || is_numeric($value) === false)) {
+			return $default;
+		}
+
+		return max(0, (int) $value);
+	}//end pagingNumber()
 
 	/**
 	 * Load the related objects: locate them in one UNION query, then read each table.

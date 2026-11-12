@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
+use OCA\OpenRegister\Service\Federation\ShareCreatorCheck;
 use OCA\OpenRegister\Service\Federation\ShareGrantorInterface;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -144,22 +145,6 @@ class FederationShareRightsCommand extends Command {
 	 * @return string|null The finding.
 	 */
 	private function finding(FederatedShare $share): ?string {
-		$owner = (string)$share->getOwner();
-		if ($owner === '') {
-			return 'creator not recorded (created before creators were recorded)';
-		}
-
-		$creator = $this->userManager->get($owner);
-		if ($creator === null) {
-			return 'creator no longer exists';
-		}
-
-		$previous = $this->userSession->getUser();
-		$this->userSession->setUser($creator);
-		try {
-			return $this->grantor->refusal(share: $share);
-		} finally {
-			$this->userSession->setUser($previous);
-		}
+		return (new ShareCreatorCheck(grantor: $this->grantor, userManager: $this->userManager, userSession: $this->userSession))->refusal(share: $share);
 	}//end finding()
 }//end class

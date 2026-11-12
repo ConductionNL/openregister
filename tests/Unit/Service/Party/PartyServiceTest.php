@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use Exception;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -351,17 +352,12 @@ class PartyServiceTest extends TestCase {
 	private function scopedService(array &$calls, ?ObjectEntity $inPartyTable, ?ObjectEntity $elsewhere): PartyService {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				mixed $register = null,
-				mixed $schema = null
-			) use (
+			function (...$args) use (
 				&$calls,
 				$inPartyTable,
 				$elsewhere
 			): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema] = FindCallShape::find(args: $args);
 				$calls[] = ['id' => (string)$id, 'register' => $register, 'schema' => $schema];
 				if ($schema === null) {
 					return $elsewhere;

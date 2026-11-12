@@ -30,6 +30,7 @@ use Symfony\Component\Console\Input\InputOption;
  * The command's name, description, help, arguments and options.
  *
  * @covers \OCA\OpenRegister\Command\PruneRetiredSchemasCommand
+ * @uses \OCA\OpenRegister\Service\SchemaTeardownOverride
  */
 class PruneRetiredSchemasCommandDefinitionTest extends TestCase {
 
