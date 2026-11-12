@@ -38,6 +38,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\AppraisalInterface;
 use OCA\OpenRegister\Service\Archival\RecordStateInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -221,14 +224,13 @@ class DestructionCheckJob extends TimedJob {
 	private function saveDestructionList(array $settings, array $listData): ObjectEntity {
 		$saveObject = $this->container->get(SaveObjectWriterInterface::class);
 		return $saveObject->saveObject(
-			$settings['destructionListRegister'],
-			$settings['destructionListSchema'],
-			$listData,
-			null,
-			false,
-			false,
-			true,
-			true
+			data: $listData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $settings['destructionListRegister'], schema: $settings['destructionListSchema']),
+				policy: new SavePolicy(silent: true)
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 	}//end saveDestructionList()
 
