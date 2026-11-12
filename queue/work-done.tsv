@@ -804,3 +804,4 @@ cover:integriq:9b0f5894m2367:js59826f43	failed: lang=js but dirs=lib/Settings/*.
 cover:pipelinq:f67520ecm9d2c:js28cccfd9	failed: payload lang=js but dirs=lib/Repair/Support/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T23:02:18Z
 cover:integriq:9b0f5894m2367:js1b97f731	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224530-a1180ad3	2026-11-12T23:02:53Z
 cover:keepiq:d76c2121:34763eb4	PR #1691: 19 tests, VaultKeyProof edges + OcsRefusal (3722->3741 OK)	session-20261112T221532-752808b3	2026-11-12T23:02:52Z
+cover:integriq:9b0f5894m2367:jse372e6ff	failed: lang=js but dirs=lib/Event/*.php is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T23:03:28Z
