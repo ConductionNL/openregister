@@ -148,3 +148,4 @@ decidiq	2024	9b211b1a98ca0929658ecd94d323216650135a28	MERGED	worker-19	GATE OK s
 buildiq	1312	39a2e7f76bd94dc9e91d82d98c8cd7fb8b685bf1	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1313	3f89f2dd5189731508395b0756ce188ba52d6bcb	FAIL	worker-53	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
 decidiq	2025	5c5ae169c64fb4b0671e3b838dfdf7194ce8d8d1	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1314	bbc1e087da8d48ebda4d94461b9bec4c4b6ab657	MERGED	worker-53	GATE OK sbom, checker floor and maintainability floor hold
