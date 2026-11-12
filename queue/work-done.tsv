@@ -732,6 +732,7 @@ cover:pipelinq:f67520ec:jsccb0cd24	PR #3578: 16 vitest tests for export list row
 verify:opencatalogi:2579:2b7defff	stale	session-20261112T224530-d70ae278	2026-11-12T22:48:51Z
 review:openregister:10052:4ec5c7aa	APPROVE: test-only, 46 jest tests pass merged with main, eslint clean	session-20261112T224535-bdffbbbc	2026-11-12T22:48:55Z
 cover:integriq:9b0f5894m2367:js06285390	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:12Z
+cover:hermiq:755cdfe7m7444:jsd81d2d49	PR #1618: 3 PHPUnit tests for SpeechClient::isReachable (task said js, dir was PHP), no new failures	session-20261112T221235-39b35722	2026-11-12T22:49:21Z
 cover:integriq:9b0f5894m2367:js0f20d6d0	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:21Z
 cover:integriq:9b0f5894m2367:jsf545d745	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:29Z
 cover:integriq:9b0f5894m2367:js93e5f5a4	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:38Z
