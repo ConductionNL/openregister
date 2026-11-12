@@ -630,3 +630,4 @@ cover:decidiq:13261b1b:7505aeb4	PR #2090: Activity filter/setting/provider 19 te
 cover:pipelinq:f67520ec:e78626a8	PR #3567: 52 tests for 6 Marketing classes (ListObjectStore 100%); suite 5773->5825, same 1 inherited failure	session-20261112T221520-70f29253	2026-11-12T22:29:12Z
 cover:openregister:7350e3ef:js0b5eefce	PR #10050: 17 jest tests, src/modals/object lines 69.29->73.97%	session-20261112T221531-958a2fbc	2026-11-12T22:29:29Z
 cover:launchpad:755175ff:aae6d66c	PR opened: 4 tests for 3 uncovered exceptions (10/10 lines); suite 3256->3260 green	session-20261112T215819-2dd7b64e	2026-11-12T22:29:39Z
+cover:hermiq:755cdfe7:be0dcca9	PR hermiq#1605: 33 tests for Mcp/HermiqToolProvider native tools; suite 3578 run, no new failures	session-20261112T221237-836ed3f0	2026-11-12T22:29:46Z
