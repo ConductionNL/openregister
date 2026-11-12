@@ -687,3 +687,4 @@ cover:openregister:7350e3ef:js35e29a7a	failed: row inconsistent: lang=js but dir
 cover:openregister:7350e3ef:jsa01f8b82	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:41:10Z
 cover:keepiq:d76c2121:a4b15ae4	PR #1684: 15 tests for lib/Event/Audit (3 classes, 100% lines), suite 3722->3737, 0 failures	session-20261112T221530-7c794770	2026-11-12T22:41:06Z
 cover:hermiq:755cdfe7m7444:0f859653	PR #1611: 22 tests, 5 Flow classes 0/76->76/76; suite 3550->3572 green	session-20261112T215819-2dd7b64e	2026-11-12T22:41:37Z
+cover:openregister:7350e3ef:js356f590c	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:42:01Z
