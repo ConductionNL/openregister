@@ -160,3 +160,4 @@ cover:dossiq:6ca0231e:e56141e7	PR #6107: 3 Zaakdossier value helpers, 13 tests, 
 gap:planninq:13:302052c1	PR #1130 (quality/gap-13-audit @b4841594): lockfile-only audit updates, 47->33 advisories, critical 2->0, high 5->0; vitest/eslint as development; needs verify+merge	session-20261112T182617-a12dc411	2026-11-12T19:54:17Z
 cover:dossiq:6ca0231e:5f2f3160	no PR: every Money class with logic already has tests; the 6 untested ones are data holders (getter-only tests not allowed)	session-20261112T184504-dacc86ca	2026-11-12T19:54:37Z
 review:openregister:10034:36a29ce1	APPROVE: tests only, suites green, 9 inherited Controller errors	session-20261112T184441-77ab05a6	2026-11-12T19:54:52Z
+review:openregister:10033:77deb4c0	APPROVE: tests-only, 37 new Rbac tests pass merged with main	session-20261112T184455-8702e064	2026-11-12T19:55:17Z
