@@ -426,6 +426,35 @@ class ObjectServiceDraftWriteTest extends TestCase {
 	}//end testANewObjectCannotTakeAUuidOfOnlyDigits()
 
 	/**
+	 * A new object may not take a UUID spelled with upper-case letters; the lower-case spelling is stored.
+	 *
+	 * @return void
+	 */
+	public function testANewObjectCannotTakeAnUpperCaseUuid(): void {
+		$this->signedIn(uid: 'colleague');
+		$this->hiddenFromTheCaller(status: null, exists: false);
+		[$register, $schema] = $this->scope();
+
+		try {
+			$this->service->saveObject(
+				object: ['subject' => 'shouted'],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '5B1F1A1E-0000-4000-8000-00000000000A')
+			);
+			$this->fail('A new object was stored under an upper-case uuid.');
+		} catch (ValidationException $refused) {
+			$this->assertStringContainsString('5b1f1a1e-0000-4000-8000-00000000000a', $refused->getMessage());
+		}
+
+		$this->assertSame([], $this->saves);
+
+		$this->service->saveObject(
+			object: ['subject' => 'quiet'],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '5b1f1a1e-0000-4000-8000-00000000000a')
+		);
+		$this->assertCount(1, $this->saves);
+	}//end testANewObjectCannotTakeAnUpperCaseUuid()
+
+	/**
 	 * Control: with RBAC off a uuid of only digits is the caller's own choice.
 	 *
 	 * @return void
