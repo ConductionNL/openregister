@@ -37,6 +37,17 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * an unknown target schema or an unreadable target writes nothing for it.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\CascadeItem
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
  */
 class InverseWriteBackBehaviourTest extends TestCase {
 

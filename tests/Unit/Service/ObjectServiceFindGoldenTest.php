@@ -80,6 +80,25 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @uses   \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses   \OCA\OpenRegister\Service\Object\ObjectFindScope
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAuthorisationServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectMapperServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectReadServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRemovalServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRuntimeServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSaveServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSearchServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectShapingServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectStorageServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
+ * @uses \OCA\OpenRegister\Service\Object\ReadScope
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

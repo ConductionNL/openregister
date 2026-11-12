@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRowShape;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFieldRules
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRowShape
  */
 class ExampleSetFieldRulesTest extends TestCase {
 	/**

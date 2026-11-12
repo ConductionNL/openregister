@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\TmloService
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
  */
 class TmloServiceTest extends TestCase {
 

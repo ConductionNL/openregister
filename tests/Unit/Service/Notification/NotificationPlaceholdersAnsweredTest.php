@@ -51,6 +51,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating
  * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues
  */
 class NotificationPlaceholdersAnsweredTest extends TestCase {
 

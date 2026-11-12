@@ -34,6 +34,8 @@ use TypeError;
  * fixtures/geo-spatial-evaluator-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Geo\GeoSpatialEvaluator
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoFilter
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoPoint
  */
 class GeoSpatialEvaluatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/geo-spatial-evaluator-golden.json';

@@ -30,6 +30,8 @@ use TypeError;
  * the notification each recipient gets, failure handling and every log line.
  *
  * @covers \OCA\OpenRegister\Service\NotificationService
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Service\ConfigurationUpdateNotice
  */
 final class NotificationServiceGoldenTest extends TestCase {
 

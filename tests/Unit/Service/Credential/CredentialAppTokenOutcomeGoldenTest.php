@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialAppTokenService
+ * @uses \OCA\OpenRegister\Service\Credential\BrokerTokenBinding
  */
 class CredentialAppTokenOutcomeGoldenTest extends TestCase {
 	/**

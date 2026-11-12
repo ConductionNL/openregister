@@ -26,6 +26,8 @@ use ReflectionProperty;
 /**
  * @covers \OCA\OpenRegister\Service\WritePhase
  * @covers \OCA\OpenRegister\Service\MdiIconSvg
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\MdiIconRenderer
  */
 final class StaticEntryPointsTest extends TestCase {
 

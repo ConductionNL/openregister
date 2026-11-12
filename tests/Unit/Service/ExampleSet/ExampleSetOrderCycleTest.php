@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrderPath
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetException
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
  */
 class ExampleSetOrderCycleTest extends TestCase {
 

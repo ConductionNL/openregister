@@ -48,6 +48,11 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\AnalyticsSeriesService
  * @uses   \OCA\OpenRegister\Db\AnalyticsSeries
  * @uses   \OCA\OpenRegister\Service\Integration\IntegrationRegistry
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\ActivityEntriesOptions
+ * @uses \OCA\OpenRegister\Service\ActivityFilter
+ * @uses \OCA\OpenRegister\Service\AnalyticsSeriesDraft
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
  */
 class ActivityAnalyticsGoldenTest extends TestCase {
 

@@ -207,6 +207,18 @@ class TalkLinkServiceRefactorGoldenTestComment extends TalkLinkServiceRefactorGo
  * ages are far past or far future so staleness never depends on the run date.
  *
  * @covers \OCA\OpenRegister\Service\TalkLinkService
+ * @uses \OCA\OpenRegister\Db\TalkLink
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\TalkLink\LinkedObject
+ * @uses \OCA\OpenRegister\Service\TalkLink\RoomCreation
+ * @uses \OCA\OpenRegister\Service\TalkLink\RoomPickerQuery
+ * @uses \OCA\OpenRegister\Service\TalkLink\RoomPickerRun
+ * @uses \OCA\OpenRegister\Service\TalkLink\RoomRefreshRun
+ * @uses \OCA\OpenRegister\Service\TalkLink\TalkGateway
+ * @uses \OCA\OpenRegister\Service\TalkLink\TalkLinkFactory
+ * @uses \OCA\OpenRegister\Service\TalkLink\TalkRoomFields
+ * @uses \OCA\OpenRegister\Service\TalkLink\TalkSession
+ * @uses \OCA\OpenRegister\Service\TalkLink\TalkViewer
  */
 class TalkLinkServiceRefactorGoldenTest extends TestCase {
 

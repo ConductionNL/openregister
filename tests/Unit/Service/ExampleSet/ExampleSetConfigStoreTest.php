@@ -33,6 +33,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigKey
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigValue
  */
 class ExampleSetConfigStoreTest extends TestCase {
 

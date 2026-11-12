@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetPathValue;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPathValue
  */
 class ExampleSetPathsBehaviourTest extends TestCase {
 

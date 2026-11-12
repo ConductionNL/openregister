@@ -30,6 +30,9 @@ use Stringable;
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ObjectFileProperties
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 final class ObjectFilePropertiesLogTest extends TestCase {
 

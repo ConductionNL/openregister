@@ -44,6 +44,15 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner
+ * @uses \OCA\OpenRegister\Db\EmptyJsonHydration
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\BulkRowChecks
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveReporting
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveSession
+ * @uses \OCA\OpenRegister\Service\Object\BulkSaveStores
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis
  */
 class SaveObjectsMixedSchemaPreparationGoldenTest extends TestCase {
 

@@ -17,6 +17,8 @@ use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 
 /**
  * @covers \OCA\OpenRegister\Service\CalendarEvent\VeventCodec
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\VeventDraft
  */
 class VeventCodecTest extends TestCase {
 

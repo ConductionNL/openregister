@@ -27,6 +27,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\GrantManageGuard
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantCaller
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantedPrincipal
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  */
 final class GrantManageGuardGoldenTest extends TestCase {
 

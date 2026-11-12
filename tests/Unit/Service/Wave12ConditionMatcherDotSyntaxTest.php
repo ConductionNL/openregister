@@ -31,6 +31,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\ConditionUserResolvers
  */
 class Wave12ConditionMatcherDotSyntaxTest extends TestCase {
 

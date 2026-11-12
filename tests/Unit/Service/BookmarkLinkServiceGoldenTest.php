@@ -56,6 +56,9 @@ if (class_exists('OCA\\Bookmarks\\QueryParameters') === false) {
  * @uses   \OCA\OpenRegister\Db\BookmarkLink
  * @uses   \OCA\OpenRegister\Service\BookmarkDraft
  * @uses   \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\BookmarkSearch
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
  */
 class BookmarkLinkServiceGoldenTest extends TestCase {
 

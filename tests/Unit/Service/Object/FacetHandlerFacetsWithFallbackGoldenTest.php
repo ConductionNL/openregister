@@ -38,6 +38,7 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\Object\FacetableFieldDiscovery
  * @covers \OCA\OpenRegister\Service\Object\FacetRun
  * @covers \OCA\OpenRegister\Service\Object\NonAggregatedFacetKey
+ * @uses \OCA\OpenRegister\Service\Object\FacetLookups
  */
 class FacetHandlerFacetsWithFallbackGoldenTest extends TestCase {
 

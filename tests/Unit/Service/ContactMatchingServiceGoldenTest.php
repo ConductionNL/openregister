@@ -41,6 +41,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\ContactMatchQuery
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ContactDetails
+ * @uses \OCA\OpenRegister\Service\ContactMatchingMappers
  */
 class ContactMatchingServiceGoldenTest extends TestCase {
 

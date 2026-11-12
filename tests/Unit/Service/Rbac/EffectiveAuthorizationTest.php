@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Rbac\RoleBlockExpander
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
  */
 class EffectiveAuthorizationTest extends TestCase {
 

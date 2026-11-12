@@ -31,6 +31,9 @@ use RuntimeException;
  * the saved log row and the structured log lines of every delivery outcome.
  *
  * @covers \OCA\OpenRegister\Service\WebhookDeliveryRecorder
+ * @uses \OCA\OpenRegister\Db\Webhook
+ * @uses \OCA\OpenRegister\Db\WebhookLog
+ * @uses \OCA\OpenRegister\Service\WebhookDeliveryAttempt
  */
 final class WebhookDeliveryRecorderGoldenTest extends TestCase {
 

@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs
  * @uses   \OCA\OpenRegister\Service\Object\RefLoopGuard
  * @uses   \OCA\OpenRegister\Service\Object\RefLoopGuardParser
+ * @uses \OCA\OpenRegister\Service\Oas\DynamicAnchorScan
  */
 final class OasRequestValidatorRefLoopTest extends TestCase {
 	/**

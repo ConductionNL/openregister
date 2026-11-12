@@ -36,6 +36,14 @@ use RuntimeException;
  * cache, and the exact calls made.
  *
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\ThresholdEvaluationService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\ThresholdRun
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\ThresholdTrigger
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions
+ * @uses \OCA\OpenRegister\Service\Aggregation\NamedAggregationRef
  */
 final class ThresholdEvaluationGoldenTest extends TestCase {
 

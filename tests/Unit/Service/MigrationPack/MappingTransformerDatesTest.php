@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
  * `type: true` trims; a date without a source format is parsed freely, and an unparseable one is a named error.
  *
  * @covers \OCA\OpenRegister\Service\MigrationPack\MappingTransformer
+ * @uses \OCA\OpenRegister\Service\MigrationPack\TransformRequest
  */
 class MappingTransformerDatesTest extends TestCase {
 

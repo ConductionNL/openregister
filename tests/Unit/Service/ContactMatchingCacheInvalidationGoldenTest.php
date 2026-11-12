@@ -29,6 +29,7 @@ use Psr\Log\LoggerInterface;
  * Pins which cache keys an object's properties invalidate.
  *
  * @covers \OCA\OpenRegister\Service\ContactMatchingService
+ * @uses \OCA\OpenRegister\Service\ContactMatchingMappers
  */
 class ContactMatchingCacheInvalidationGoldenTest extends TestCase {
 

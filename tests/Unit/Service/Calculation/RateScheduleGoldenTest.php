@@ -34,6 +34,11 @@ use PHPUnit\Framework\TestCase;
  * (and which refusal wins) for every malformed operand and schedule.
  *
  * @covers \OCA\OpenRegister\Service\Calculation\RateSchedule
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Service\Calculation\BandPosition
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
+ * @uses \OCA\OpenRegister\Service\Calculation\RateOperands
  *
  * @spec openspec/specs/computed-fields/spec.md
  */

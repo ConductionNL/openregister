@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration
  * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
  * @uses \OCA\OpenRegister\Service\Object\ReferenceKey
+ * @uses \OCA\OpenRegister\Service\Schemas\RepeatingGroupDeclarationRun
  */
 class PropertyValidatorReferenceKeyTest extends TestCase {
 

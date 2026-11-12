@@ -36,6 +36,7 @@ use ZipArchive;
  * Pins the full output of WordTextReader::read().
  *
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\WordTextReader
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlPackage
  */
 class WordTextReaderGoldenTest extends TestCase {
 

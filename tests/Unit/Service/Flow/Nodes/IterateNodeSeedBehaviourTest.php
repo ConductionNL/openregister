@@ -40,6 +40,11 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\IterationRun
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\NodeInvocation
  */
 class IterateNodeSeedBehaviourTest extends TestCase {
 

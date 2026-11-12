@@ -25,6 +25,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationReader
+ * @uses \OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\GeneratedIdentifierException
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  */
 final class GeneratedIdentifierDeclarationReaderTest extends TestCase {
 

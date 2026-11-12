@@ -35,6 +35,11 @@ use Psr\Log\NullLogger;
  * and every entity still gets an empty cache entry so the render does not fall back to the slow lookup.
  *
  * @covers \OCA\OpenRegister\Service\Object\InverseRelationPreload
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\InverseObjectHooks
+ * @uses \OCA\OpenRegister\Service\Object\InverseRenderSupport
+ * @uses \OCA\OpenRegister\Service\Object\InverseSchemaLookups
  */
 class InverseRelationPreloadEmptyFieldsTest extends TestCase {
 

@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\Case\CasePlanAct;
  * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
  * @uses \OCA\OpenRegister\Exception\CaseAccessDeniedException
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanAct
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups
  */
 final class CasePlanAuthorizationServiceGoldenTest extends TestCase {
 

@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  * Masking of one history change, diff or plain.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class ExplicitRevealChangeMaskTest extends TestCase {
 

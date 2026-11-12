@@ -50,6 +50,10 @@ use OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery;
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler
  * @uses \OCA\OpenRegister\Formats\BsnFormat
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\NlPatternSet
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityDetectionQuery
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores
+ * @uses \OCA\OpenRegister\Formats\IdentifierFormats
+ * @uses \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends
  */
 class BsnDetectionTest extends TestCase {
 

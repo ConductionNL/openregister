@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
  * Transforms return a value or a translated error; pointers walk nested rows.
  *
  * @covers \OCA\OpenRegister\Service\MigrationPack\MappingTransformer
+ * @uses \OCA\OpenRegister\Service\MigrationPack\TransformRequest
  */
 class MappingTransformerTest extends TestCase {
 

@@ -41,6 +41,14 @@ use ZBateson\MailMimeParser\MailMimeParser;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\EmlParser
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\AddressListSplitter
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlAttachment
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlAttachmentFile
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlAttachmentPart
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlBody
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlFlattener
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlHeaderParser
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure
  */
 class EmlParserGoldenTest extends TestCase {
 

@@ -69,6 +69,23 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteOptions
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlan
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteTemplate
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores
  */
 final class ObjectWriteBulkGoldenTest extends TestCase {
 

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Configuration\FinishedImportJob;
 
 /**
  * @covers \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder
+ * @uses \OCA\OpenRegister\Service\Configuration\FinishedImportJob
  */
 class AppImportJobRecorderTest extends TestCase {
 	/**

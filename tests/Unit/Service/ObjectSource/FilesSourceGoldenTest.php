@@ -50,6 +50,14 @@ use RuntimeException;
  * The files object source, recorded.
  *
  * @covers \OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\ObjectSource\FilesScan
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedObjectBinding
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
  */
 class FilesSourceGoldenTest extends TestCase {
 

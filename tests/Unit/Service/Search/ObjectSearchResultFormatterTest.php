@@ -47,6 +47,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\MdiIconRenderer
  * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
  * @uses \OCA\OpenRegister\Dto\DeepLinkRegistration
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
+ * @uses \OCA\OpenRegister\Service\Search\ObjectSearchHit
  */
 class ObjectSearchResultFormatterTest extends TestCase {
 

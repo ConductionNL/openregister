@@ -36,6 +36,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Service\Rbac\RoleBlockExpander
  */
 final class EffectiveAuthorizationGoldenTest extends TestCase {
 

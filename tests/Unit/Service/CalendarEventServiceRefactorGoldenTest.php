@@ -30,6 +30,14 @@ use RuntimeException;
  * record does not depend on the run.
  *
  * @covers \OCA\OpenRegister\Service\CalendarEventService
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\UserCalendarSelector
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\VeventCodec
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\VeventDraft
+ * @uses \OCA\OpenRegister\Service\CalendarScanRun
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\StoredEvent
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class CalendarEventServiceRefactorGoldenTest extends TestCase {
 

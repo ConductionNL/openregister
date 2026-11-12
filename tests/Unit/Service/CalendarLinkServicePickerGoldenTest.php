@@ -36,6 +36,8 @@ use Throwable;
 /**
  * @covers \OCA\OpenRegister\Service\CalendarLinkService
  * @covers \OCA\OpenRegister\Service\CalendarPickerScan
+ * @uses \OCA\OpenRegister\Service\CalendarPickerWindow
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
  */
 class CalendarLinkServicePickerGoldenTest extends TestCase {
 

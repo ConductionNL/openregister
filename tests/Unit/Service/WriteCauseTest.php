@@ -45,6 +45,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\CauseFrame
  *
  * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md
  */

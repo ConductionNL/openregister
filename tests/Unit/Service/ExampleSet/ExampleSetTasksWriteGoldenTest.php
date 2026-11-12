@@ -37,6 +37,15 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExternalTask
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRunSlot
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskClaim
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
+ * @uses \OCA\OpenRegister\Service\Task\TaskImport
  */
 class ExampleSetTasksWriteGoldenTest extends TestCase {
 	/**

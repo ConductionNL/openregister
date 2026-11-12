@@ -52,6 +52,12 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProfiles
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccounts
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountDirectory
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope
  */
 class ExampleSetSmallUnitsGoldenTest extends TestCase {
 

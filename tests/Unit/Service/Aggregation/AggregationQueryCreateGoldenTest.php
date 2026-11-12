@@ -21,6 +21,9 @@ use PHPUnit\Framework\TestCase;
  * rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryRules
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
  */
 class AggregationQueryCreateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/aggregation-query-create-golden.json';

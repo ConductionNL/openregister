@@ -47,6 +47,9 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\DsarErasureRun
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Verwerkingsactiviteit
+ * @uses \OCA\OpenRegister\Service\DsarGuards
+ * @uses \OCA\OpenRegister\Service\DsarStores
+ * @uses \OCA\OpenRegister\Service\DsarSubjectQuery
  */
 class DsarServiceGoldenTest extends TestCase {
 

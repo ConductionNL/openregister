@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService
  * @uses   \OCA\OpenRegister\Service\WriteCause
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\CauseFrame
  */
 class AppointmentAttendeeResponsesTest extends TestCase
 {

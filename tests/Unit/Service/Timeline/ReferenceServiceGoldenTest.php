@@ -45,6 +45,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Notifications\Db\EntryReference
  * @uses   \OCA\OpenRegister\Notifications\Db\ReferencePattern
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Notifications\Db\AdministeredDeclaration
  */
 class ReferenceServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/reference-service-golden.json';

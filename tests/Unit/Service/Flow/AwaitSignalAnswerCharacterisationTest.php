@@ -26,6 +26,13 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStop
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\EveryItemField
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\NodeInvocation
  */
 final class AwaitSignalAnswerCharacterisationTest extends TestCase {
 

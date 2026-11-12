@@ -92,6 +92,10 @@ class KnownTypeResolver implements IPrincipalResolver {
  * @uses \OCA\OpenRegister\Service\Task\TaskForm
  * @uses \OCA\OpenRegister\Service\Task\TaskFormReader
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TaskConfigCommon
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSources
  */
 final class UserTaskTypedPerformersTest extends TestCase {
 

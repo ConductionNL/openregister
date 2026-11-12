@@ -37,6 +37,8 @@ use RuntimeException;
  * reading; an unreadable ancestor is skipped.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\InheritedGrantLister
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class InheritedGrantListerFailureTest extends TestCase {
 

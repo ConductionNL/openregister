@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Translation\IdentityTranslationProvider
+ * @uses \OCA\OpenRegister\Service\Translation\LanguagePair
  */
 class IdentityTranslationProviderTest extends TestCase {
 

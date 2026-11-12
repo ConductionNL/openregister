@@ -41,6 +41,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\AppHost\Observability\MetricSample
  * @uses \OCA\OpenRegister\AppHost\Observability\ObservabilityManifest
  * @uses \OCA\OpenRegister\Service\Task\TaskTemporalProjection
+ * @uses \OCA\OpenRegister\AppHost\Observability\HealthCheckTarget
+ * @uses \OCA\OpenRegister\AppHost\Observability\HealthResponsePolicy
+ * @uses \OCA\OpenRegister\AppHost\Observability\ObservabilityProbes
  */
 class TaskMetricsProviderTest extends TestCase {
 

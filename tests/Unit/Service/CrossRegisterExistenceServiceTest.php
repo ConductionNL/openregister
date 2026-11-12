@@ -47,6 +47,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\CrossRegisterExistenceService
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
  *
  * @spec openspec/specs/cross-register-existence-query/spec.md
  */

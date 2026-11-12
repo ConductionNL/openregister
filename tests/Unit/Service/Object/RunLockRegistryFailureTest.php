@@ -39,6 +39,10 @@ use RuntimeException;
  * Bookkeeping failures never surface, and blank identifiers never reach the registry.
  *
  * @covers \OCA\OpenRegister\Service\Object\RunLockRegistry
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\RunObjectLock
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep
+ * @uses \OCA\OpenRegister\Service\Object\ObjectChangeRecording
  */
 class RunLockRegistryFailureTest extends TestCase {
 

@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\FlowVersion
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunCommit
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunMarkingRemap
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigration
  */
 class FlowRunMigrationEdgeSuffixBehaviourTest extends TestCase {
 

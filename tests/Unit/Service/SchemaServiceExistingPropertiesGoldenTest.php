@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
  * fixtures/schema-existing-properties-golden.json. Set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\SchemaService
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
  */
 class SchemaServiceExistingPropertiesGoldenTest extends TestCase {
 

@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\SchemaApplicationMigrator
+ * @uses \OCA\OpenRegister\Service\ApplicationMove
  */
 class SchemaApplicationMigratorQueryTest extends TestCase {
 

@@ -31,6 +31,9 @@ use PHPUnit\Framework\TestCase;
  * UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryRules
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
  */
 class AggregationQueryReadGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/aggregation-query-read-golden.json';

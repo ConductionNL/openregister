@@ -32,6 +32,12 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\ContactLink
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Party\PartyDefinition
+ * @uses \OCA\OpenRegister\Service\Party\PartyAddressSelection
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkRequest
+ * @uses \OCA\OpenRegister\Service\Party\PartyLinkTarget
+ * @uses \OCA\OpenRegister\Service\Party\PartyMergeRules
+ * @uses \OCA\OpenRegister\Service\Party\PartyPropertyNames
+ * @uses \OCA\OpenRegister\Service\PersonLinkRef
  */
 class PartyLinkWriterTest extends TestCase {
 

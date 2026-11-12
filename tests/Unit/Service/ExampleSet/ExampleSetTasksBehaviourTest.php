@@ -41,6 +41,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
  * @uses   \OCA\OpenRegister\Service\Task\TaskState
  * @uses   \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRunSlot
+ * @uses \OCA\OpenRegister\Service\Task\TaskImport
  */
 class ExampleSetTasksBehaviourTest extends TestCase {
 

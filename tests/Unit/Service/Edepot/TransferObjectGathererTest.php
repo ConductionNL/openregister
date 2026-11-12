@@ -31,6 +31,8 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\TransferObjectGatherer
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Edepot\TransferStores
  */
 class TransferObjectGathererTest extends TestCase {
 

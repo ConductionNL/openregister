@@ -33,6 +33,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Flow\FlowDeadEndVerdict
  * @uses   \OCA\OpenRegister\Service\Flow\FlowDeadEnd
  * @uses   \OCA\OpenRegister\Db\Flow
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class FlowDeadEndVerdictTest extends TestCase {
 

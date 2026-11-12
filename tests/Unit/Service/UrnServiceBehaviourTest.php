@@ -44,6 +44,11 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\UrnService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class UrnServiceBehaviourTest extends TestCase {
 

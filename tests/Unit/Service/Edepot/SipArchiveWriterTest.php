@@ -29,6 +29,8 @@ use ZipArchive;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\SipArchiveWriter
+ * @uses \OCA\OpenRegister\Service\Edepot\BagitPayload
+ * @uses \OCA\OpenRegister\Service\Edepot\SipPart
  */
 class SipArchiveWriterTest extends TestCase {
 

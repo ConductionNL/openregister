@@ -56,6 +56,11 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
  * @uses \OCA\OpenRegister\Db\Schema\AnnotationVocabulary
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftListRun
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftTally
  */
 class DraftExpiryBranchesTest extends TestCase {
 

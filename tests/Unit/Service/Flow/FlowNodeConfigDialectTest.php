@@ -71,6 +71,9 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\RouterNode
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode
  * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowPreflightStep
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  */
 class FlowNodeConfigDialectTest extends TestCase {
 	use FiltersFlowLevelFindings;

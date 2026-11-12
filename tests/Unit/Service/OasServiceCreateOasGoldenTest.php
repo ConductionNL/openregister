@@ -40,6 +40,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
  * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\OasSources
+ * @uses \OCA\OpenRegister\Service\Oas\OasIssue
  */
 class OasServiceCreateOasGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/oas-create-oas-golden.json';

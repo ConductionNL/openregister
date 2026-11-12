@@ -43,6 +43,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
  *
  * @covers \OCA\OpenRegister\Service\Configuration\GitHubHandler
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage
  */
 class GitHubHandlerSearchGoldenTest extends TestCase {
 

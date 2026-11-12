@@ -40,6 +40,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\RegisterSchemaLinkageRepairService
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
  */
 class RegisterSchemaLinkageRepairEvidenceTest extends TestCase {
 

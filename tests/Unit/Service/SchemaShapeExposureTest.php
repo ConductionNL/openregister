@@ -57,6 +57,10 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\OasSources
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class SchemaShapeExposureTest extends TestCase {
 

@@ -23,6 +23,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Serializer\RegisterExpansion
+ * @uses \OCA\OpenRegister\Service\Serializer\SchemaObjectCounts
  */
 class RegisterExpansionTest extends TestCase {
 

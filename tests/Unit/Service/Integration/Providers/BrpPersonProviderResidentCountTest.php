@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
 #[CoversClass(BrpPersonProvider::class)]
 #[UsesClass(AbstractIntegrationProvider::class)]
 #[UsesClass(ProviderUnavailableException::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Integration\UpstreamRequest::class)]
 class BrpPersonProviderResidentCountTest extends TestCase {
 
 	private const ADDRESS = '0518010000123456';

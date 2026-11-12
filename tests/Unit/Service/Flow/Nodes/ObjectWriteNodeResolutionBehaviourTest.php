@@ -68,6 +68,13 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Exception\SchemaNotInRegisterException
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteMatchFilters
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteMatcher
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
  */
 class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 

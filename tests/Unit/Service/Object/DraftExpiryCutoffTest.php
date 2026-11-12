@@ -37,6 +37,17 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
  * @covers \OCA\OpenRegister\Service\Object\DraftExpiry
  * @covers \OCA\OpenRegister\Service\Object\DraftExpiryPair
  * @covers \OCA\OpenRegister\Service\Object\DraftExpiryBatch
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftListRun
+ * @uses \OCA\OpenRegister\Service\Object\ExpiredDraftTally
  */
 class DraftExpiryCutoffTest extends TestCase {
 

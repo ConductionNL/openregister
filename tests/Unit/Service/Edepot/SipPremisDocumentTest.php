@@ -26,6 +26,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Edepot\SipPremisDocument
+ * @uses \OCA\OpenRegister\Service\Edepot\PremisIdentifier
+ * @uses \OCA\OpenRegister\Service\Edepot\SipLayout
  */
 class SipPremisDocumentTest extends TestCase {
 

@@ -38,6 +38,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Rules\AdministeredValidations
  * @uses   \OCA\OpenRegister\Service\Rules\ConditionRefusedException
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionEvaluation
+ * @uses \OCA\OpenRegister\Service\Rules\ValidationInput
  */
 class AdministeredValidationsGoldenTest extends TestCase {
 

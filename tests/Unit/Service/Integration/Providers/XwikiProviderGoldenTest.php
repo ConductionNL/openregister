@@ -44,6 +44,9 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Integration\Providers\XwikiProvider
  * @uses   \OCA\OpenRegister\Db\XwikiLink
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting
+ * @uses \OCA\OpenRegister\Service\Integration\UpstreamRequest
  */
 class XwikiProviderGoldenTest extends TestCase {
 

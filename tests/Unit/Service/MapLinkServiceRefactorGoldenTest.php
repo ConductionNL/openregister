@@ -93,6 +93,13 @@ class MapLinkServiceRefactorGoldenTestFavorites {
  * Set UPDATE_GOLDEN=1 to rewrite it. linkedAt (the wall clock) is masked.
  *
  * @covers \OCA\OpenRegister\Service\MapLinkService
+ * @uses \OCA\OpenRegister\Db\MapLink
+ * @uses \OCA\OpenRegister\Db\ProcessingLogEntry
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Db\XwikiLink
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Service\PoiDraft
  */
 class MapLinkServiceRefactorGoldenTest extends TestCase {
 

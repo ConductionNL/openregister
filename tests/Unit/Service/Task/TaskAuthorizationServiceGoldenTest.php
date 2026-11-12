@@ -43,6 +43,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Exception\TaskAccessDeniedException
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups
+ * @uses \OCA\OpenRegister\Service\Task\Authorization\TaskVerbAttempt
+ * @uses \OCA\OpenRegister\Service\Task\TaskAct
  */
 final class TaskAuthorizationServiceGoldenTest extends TestCase {
 

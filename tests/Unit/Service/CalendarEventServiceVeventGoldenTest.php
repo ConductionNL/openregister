@@ -23,6 +23,11 @@ use ReflectionMethod;
  * fixtures/calendar-vevent-golden.json. Set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\CalendarEventService
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\UserCalendarSelector
+ * @uses \OCA\OpenRegister\Service\CalendarEvent\VeventCodec
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
+ * @uses \OCA\OpenRegister\Service\StoredEvent
  */
 class CalendarEventServiceVeventGoldenTest extends TestCase {
 

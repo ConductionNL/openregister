@@ -30,6 +30,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\FlowTimer
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
  */
 class SmallUnitsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/small-units-golden.json';

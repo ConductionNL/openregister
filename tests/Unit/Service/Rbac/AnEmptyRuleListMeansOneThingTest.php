@@ -58,6 +58,11 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
  * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class AnEmptyRuleListMeansOneThingTest extends TestCase {
 

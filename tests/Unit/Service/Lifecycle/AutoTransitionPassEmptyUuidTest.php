@@ -29,6 +29,7 @@ use Psr\Log\LoggerInterface;
  * A write without a uuid is not recorded, so the pass never asks the runner about it.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
  */
 class AutoTransitionPassEmptyUuidTest extends TestCase {
 

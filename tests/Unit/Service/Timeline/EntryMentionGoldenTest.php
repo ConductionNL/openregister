@@ -47,6 +47,16 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Notifications\Db\TimelineEntry
+ * @uses \OCA\OpenRegister\Notifications\Db\Watcher
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\MentionDelivery
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\MentionPrincipals
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\MentionReadCheck
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\MentionRun
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\WrittenEntry
+ * @uses \OCA\OpenRegister\Service\Interaction\AddressedObject
  */
 class EntryMentionGoldenTest extends TestCase {
 

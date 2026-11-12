@@ -47,6 +47,10 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Configuration\ObjectChangePreview
  * @uses \OCA\OpenRegister\Service\Configuration\ObjectPreviewTargets
  * @uses \OCA\OpenRegister\Service\Configuration\PreviewHandler
+ * @uses \OCA\OpenRegister\Db\Register\RegisterJson
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Configuration\ProposedDefinition
  */
 class PreviewHandlerGoldenTest extends TestCase {
 

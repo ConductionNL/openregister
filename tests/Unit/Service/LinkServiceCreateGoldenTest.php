@@ -84,6 +84,11 @@ if (class_exists('OCA\\Maps\\Service\\FavoritesService') === false) {
  * @uses   \OCA\OpenRegister\Service\MailTableQueries
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MailMessageKey
+ * @uses \OCA\OpenRegister\Service\DeckCardRun
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\ShareRequest
+ * @uses \OCA\OpenRegister\Service\Sharing\ObjectShareLookup
  */
 class LinkServiceCreateGoldenTest extends TestCase {
 

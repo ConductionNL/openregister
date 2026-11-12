@@ -37,6 +37,9 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsPlan
  * @uses \OCA\OpenRegister\Service\Flow\FlowFieldPath
+ * @uses \OCA\OpenRegister\Service\Flow\FieldAssignment
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class SetFieldsNodeBlankSegmentBehaviourTest extends TestCase {
 

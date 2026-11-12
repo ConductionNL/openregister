@@ -37,6 +37,12 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Db\CaseItemMapper
  * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Db\FlowTimer\TimerSubject
+ * @uses \OCA\OpenRegister\Service\Case\CaseItemDeadline
+ * @uses \OCA\OpenRegister\Service\Case\CaseRearmSources
+ * @uses \OCA\OpenRegister\Service\Case\CaseTimerArmRun
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerValues
  */
 class CasePlanTimerRearmTest extends TestCase {
 

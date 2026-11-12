@@ -38,6 +38,12 @@ use ZipArchive;
  * Pins PresentationExtractor::extract().
  *
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\PresentationExtractor
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlFormatFilter
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlPackage
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PresentationRead
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PresentationSlideParser
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\SlideParagraphReader
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\SlideWalk
  */
 class PresentationExtractorGoldenTest extends TestCase {
 

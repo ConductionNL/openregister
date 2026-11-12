@@ -31,6 +31,16 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyTarget
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileInputReader
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyConfigs
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyFiles
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyParts
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileStoreRequest
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileUploadGuard
  */
 class FilePropertyHandlerHandleGoldenTest extends TestCase {
 

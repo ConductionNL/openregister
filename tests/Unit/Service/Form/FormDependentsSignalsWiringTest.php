@@ -36,6 +36,13 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\Form\FormDependentsSignals
  * @covers \OCA\OpenRegister\Service\Form\FormDependentsCheck
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\AbstractSchemaEvent
+ * @uses \OCA\OpenRegister\Event\FormDestinationDependentsEvent
+ * @uses \OCA\OpenRegister\Service\Form\FormDependent
+ * @uses \OCA\OpenRegister\Service\Form\FormDestination
+ * @uses \OCA\OpenRegister\Service\Form\FormUnpublishRun
+ * @uses \OCA\OpenRegister\Service\Form\PublishedForm
  */
 class FormDependentsSignalsWiringTest extends TestCase {
 

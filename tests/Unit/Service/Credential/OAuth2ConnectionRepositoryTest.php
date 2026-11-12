@@ -42,6 +42,9 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository
  * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2CredentialObjects
  */
 class OAuth2ConnectionRepositoryTest extends TestCase {
 	/** @var array<int, string> The order the discard touched custody and the object store. */

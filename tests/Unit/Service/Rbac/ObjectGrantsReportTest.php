@@ -79,6 +79,21 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Rbac\ShareGrantAttributes
  * @uses   \OCA\OpenRegister\Service\Rbac\PermissionBit
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\ConditionUserResolvers
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantHolder
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantReportSources
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantRowSet
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantRowsQuery
+ * @uses \OCA\OpenRegister\Service\Rbac\HeldRule
+ * @uses \OCA\OpenRegister\Service\Rbac\HoldersRun
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectAccessReportSources
+ * @uses \OCA\OpenRegister\Service\Rbac\PrincipalDirectory
+ * @uses \OCA\OpenRegister\Service\Rbac\ReportedPlace
+ * @uses \OCA\OpenRegister\Service\Rbac\RuleOrigin
+ * @uses \OCA\OpenRegister\Service\Rbac\RoleActionMap
  */
 class ObjectGrantsReportTest extends TestCase {
 

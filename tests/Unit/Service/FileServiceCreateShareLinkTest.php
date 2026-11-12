@@ -34,6 +34,7 @@ use ReflectionProperty;
 
 /**
  * @covers \OCA\OpenRegister\Service\FileService
+ * @uses \OCA\OpenRegister\Service\File\ShareLinkRequest
  */
 class FileServiceCreateShareLinkTest extends TestCase {
 

@@ -35,6 +35,8 @@ use Throwable;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  */

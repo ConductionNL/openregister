@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Path-item entries that are no operation, or an operation without responses, are passed over without a report.
  *
  * @covers \OCA\OpenRegister\Service\Oas\OasReferenceRepair
+ * @uses \OCA\OpenRegister\Service\Oas\OasValidationReport
  */
 class OasReferenceRepairOperationsTest extends TestCase {
 

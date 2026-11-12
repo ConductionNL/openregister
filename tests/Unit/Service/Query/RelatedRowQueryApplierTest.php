@@ -61,6 +61,15 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSource
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSqlTarget
+ * @uses \OCA\OpenRegister\Db\MagicMapper\AliasedRows
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowApplyRun
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBlockField
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterTarget
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowSubquery
  */
 class RelatedRowQueryApplierTest extends TestCase {
 

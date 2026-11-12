@@ -25,6 +25,8 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
  */
 class ValidateObjectRelationShapesTest extends TestCase {
 

@@ -44,6 +44,14 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Notifications\Db\ScheduledReport
  * @uses   \OCA\OpenRegister\Service\ScheduledReportRun
  * @uses   \OCA\OpenRegister\Exception\ExportTooLargeException
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest
+ * @uses \OCA\OpenRegister\Service\ScheduledReportDelivery
+ * @uses \OCA\OpenRegister\Service\ScheduledReportExportQuery
+ * @uses \OCA\OpenRegister\Service\ScheduledReportExporters
+ * @uses \OCA\OpenRegister\Service\ScheduledReportNotice
+ * @uses \OCA\OpenRegister\Service\ScheduledReportOwnerServices
+ * @uses \OCA\OpenRegister\Service\ScheduledReportStores
  */
 class ScheduledReportServiceNotifyGoldenTest extends TestCase {
 

@@ -23,6 +23,11 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * saveObject calls of the upsert, save and deprecation-sweep paths.
  *
  * @covers \OCA\OpenRegister\Service\VocabularyObjectStore
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 final class VocabularyObjectStoreGoldenTest extends TestCase {
 

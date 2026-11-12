@@ -38,6 +38,8 @@ use OCP\IUserSession;
  * group and user lookup, and every warning.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\TaskPoolRecipientResolver
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Service\PrincipalDirectory
  */
 final class TaskPoolRecipientResolverGoldenTest extends TestCase {
 

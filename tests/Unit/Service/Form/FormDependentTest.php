@@ -19,6 +19,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Form\FormDependent
+ * @uses \OCA\OpenRegister\Service\Form\PublishedForm
  */
 final class FormDependentTest extends TestCase {
 

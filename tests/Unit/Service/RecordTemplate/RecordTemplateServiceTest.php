@@ -61,6 +61,13 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
  * @uses \OCA\OpenRegister\Service\RecordTemplate\RecordTemplateInput
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ShareTargetLookup
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\RecordTemplateCollaborators
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\TemplateListOptions
+ * @uses \OCA\OpenRegister\Service\RecordTemplate\TemplateChange
  */
 class RecordTemplateServiceTest extends TestCase {
 

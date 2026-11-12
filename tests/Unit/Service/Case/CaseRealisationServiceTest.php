@@ -49,6 +49,10 @@ use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
  * @uses \OCA\OpenRegister\Db\CaseItem
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Case\CaseRealisationRuns
+ * @uses \OCA\OpenRegister\Service\Case\CaseRealisationTasks
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
+ * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
  */
 class CaseRealisationServiceTest extends TestCase {
 

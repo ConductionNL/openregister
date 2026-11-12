@@ -43,6 +43,10 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Db\Webhook
  * @uses   \OCA\OpenRegister\Service\Security\OutboundAddressGuard
  * @uses   \OCA\OpenRegister\Service\WebhookDeliveryRecorder
+ * @uses \OCA\OpenRegister\Service\WebhookDelivery
+ * @uses \OCA\OpenRegister\Service\WebhookDispatchServices
+ * @uses \OCA\OpenRegister\Service\WebhookEvent
+ * @uses \OCA\OpenRegister\Service\WebhookStores
  */
 class WebhookServiceSendRequestGoldenTest extends TestCase {
 

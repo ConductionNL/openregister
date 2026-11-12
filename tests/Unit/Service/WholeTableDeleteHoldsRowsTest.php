@@ -49,6 +49,25 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\SchemaDeletionService
  * @covers \OCA\OpenRegister\Service\WholeTableRows
  * @covers \OCA\OpenRegister\Service\SchemaTeardownGuard
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Service\SchemaDeletionStores
+ * @uses \OCA\OpenRegister\Service\TableDeletionOptions
+ * @uses \OCA\OpenRegister\Service\TableDeletionRun
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Exception\LockedException
  */
 final class WholeTableDeleteHoldsRowsTest extends TestCase {
 

@@ -50,6 +50,9 @@ use Stringable;
  * Stored-folder lookups, golden.
  *
  * @covers \OCA\OpenRegister\Service\File\FolderManagementHandler
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\File\ObjectFolderOptions
  */
 final class FolderManagementHandlerFolderLookupGoldenTest extends TestCase {
 

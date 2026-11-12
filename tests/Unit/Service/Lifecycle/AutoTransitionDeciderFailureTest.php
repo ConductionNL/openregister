@@ -35,6 +35,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecider
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Lifecycle\SchemaReading
  */
 class AutoTransitionDeciderFailureTest extends TestCase {
 

@@ -57,6 +57,9 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\ProcessingLogEntry
  * @uses \OCA\OpenRegister\Db\Verwerkingsactiviteit
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\ProcessingRead
+ * @uses \OCA\OpenRegister\Service\ReadCaptureRun
  */
 class ProcessingLogServiceTest extends TestCase {
 

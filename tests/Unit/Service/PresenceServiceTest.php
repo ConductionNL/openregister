@@ -50,6 +50,8 @@ use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\PresenceService
  * @uses \OCA\OpenRegister\Notifications\Db\ObjectPresence
+ * @uses \OCA\OpenRegister\Notifications\Service\PresenceBeat
+ * @uses \OCA\OpenRegister\Notifications\Service\PresenceLookup
  *
  * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md
  */

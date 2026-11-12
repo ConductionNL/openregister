@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * The clock is fixed and every end date carries an explicit offset.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ExternalGrantGuard
+ * @uses \OCA\OpenRegister\Service\Rbac\LapseWindow
  */
 class ExternalGrantGuardShapeTest extends TestCase {
 

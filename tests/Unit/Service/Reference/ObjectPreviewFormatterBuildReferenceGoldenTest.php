@@ -45,6 +45,12 @@ use Psr\Log\LoggerInterface;
  * UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewSources
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class ObjectPreviewFormatterBuildReferenceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/object-preview-build-reference-golden.json';

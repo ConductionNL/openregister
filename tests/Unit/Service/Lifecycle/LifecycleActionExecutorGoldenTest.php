@@ -40,6 +40,8 @@ use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
  * were recorded from the code as it stood before the refactor.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor
+ * @uses \OCA\OpenRegister\Lifecycle\LifecycleActionContext
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionPayload
  */
 class LifecycleActionExecutorGoldenTest extends TestCase {
 

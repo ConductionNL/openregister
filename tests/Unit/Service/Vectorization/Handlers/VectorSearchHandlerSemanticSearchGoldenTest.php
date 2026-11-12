@@ -28,6 +28,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
  * fixtures/vector-semantic-search-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler
+ * @uses \OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery
  */
 class VectorSearchHandlerSemanticSearchGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/vector-semantic-search-golden.json';

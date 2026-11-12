@@ -42,6 +42,12 @@ use ReflectionMethod;
  * The ownership check before a decision change, golden.
  *
  * @covers \OCA\OpenRegister\Service\Decision\RelationDecisionService
+ * @uses \OCA\OpenRegister\Db\Decision
+ * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionOwnedException
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionQuestion
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionRun
+ * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicy
  */
 final class RelationDecisionOwnedDecisionTest extends TestCase {
 

@@ -36,6 +36,12 @@ use OCA\OpenRegister\Search\Service\ViewEdit;
  * and which fields update() leaves untouched when given null.
  *
  * @covers \OCA\OpenRegister\Search\Service\ViewService
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Search\Db\View
+ * @uses \OCA\OpenRegister\Search\Service\PresentationCheck
+ * @uses \OCA\OpenRegister\Search\Service\ViewAudience
+ * @uses \OCA\OpenRegister\Search\Service\ViewDefinition
+ * @uses \OCA\OpenRegister\Search\Service\ViewEdit
  */
 final class ViewServiceSaveGoldenTest extends TestCase {
 

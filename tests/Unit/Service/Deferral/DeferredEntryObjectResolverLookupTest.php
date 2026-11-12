@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver
  * @uses   \OCA\OpenRegister\Service\WriteCause
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Service\CauseFrame
  */
 class DeferredEntryObjectResolverLookupTest extends TestCase {
 

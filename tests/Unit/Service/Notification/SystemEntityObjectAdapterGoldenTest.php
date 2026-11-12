@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  * non-string title, non-array serialization).
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\SystemEntityObjectAdapter
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 final class SystemEntityObjectAdapterGoldenTest extends TestCase {
 

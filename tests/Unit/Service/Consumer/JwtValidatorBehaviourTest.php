@@ -46,6 +46,9 @@ use OCA\OpenRegister\Service\Consumer\DecodedJwt;
  * @covers \OCA\OpenRegister\Service\Consumer\JwtValidator
  * @covers \OCA\OpenRegister\Service\Consumer\RsaJwsVerifier
  * @uses   \OCA\OpenRegister\Exception\AuthenticationException
+ * @uses \OCA\OpenRegister\Service\Consumer\ClaimValidationRun
+ * @uses \OCA\OpenRegister\Service\Consumer\DecodedJwt
+ * @uses \OCA\OpenRegister\Service\Consumer\JwsKey
  */
 class JwtValidatorBehaviourTest extends TestCase
 {

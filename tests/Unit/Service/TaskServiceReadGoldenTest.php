@@ -27,6 +27,10 @@ use RuntimeException;
  * PHP timezone setting.
  *
  * @covers \OCA\OpenRegister\Service\TaskService
+ * @uses \OCA\OpenRegister\Kernel\Contracts\TaskLocation
+ * @uses \OCA\OpenRegister\Service\TaskVtodoDocument
+ * @uses \OCA\OpenRegister\Service\Task\VtodoCalendarLocator
+ * @uses \OCA\OpenRegister\Service\Task\VtodoReader
  */
 class TaskServiceReadGoldenTest extends TestCase {
 

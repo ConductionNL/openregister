@@ -34,6 +34,14 @@ use OCA\OpenRegister\Notifications\Service\Notification\MailContent;
  * `send` is anything but boolean true.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService
+ * @uses \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\MailContent
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\OptOutQuestion
+ * @uses \OCA\OpenRegister\Notifications\Service\Party\PartyMessage
+ * @uses \OCA\OpenRegister\Notifications\Service\Party\PartyReachGates
+ * @uses \OCA\OpenRegister\Service\Party\PartyAddressSelection
  */
 class PartyNotificationServiceGoldenTest extends TestCase
 {

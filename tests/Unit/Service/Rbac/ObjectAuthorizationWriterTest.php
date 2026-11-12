@@ -38,6 +38,10 @@ use Psr\Log\LoggerInterface;
  * The single-column `_authorization` update.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationAssignment
  */
 class ObjectAuthorizationWriterTest extends TestCase {
 

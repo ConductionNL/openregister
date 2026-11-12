@@ -35,6 +35,11 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\ExampleSet\KeptObjectRewrite
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewriteRun
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewriteTally
+ * @uses \OCA\OpenRegister\Service\ExampleSet\RewrittenObject
  */
 class ExampleSetRewriterGoldenTest extends TestCase {
 	/**

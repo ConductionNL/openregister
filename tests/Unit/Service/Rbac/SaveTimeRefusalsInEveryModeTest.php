@@ -63,6 +63,12 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Db\JsonArrayColumn
+ * @uses \OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyCollision
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantDeclaration
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacChecks
  */
 class SaveTimeRefusalsInEveryModeTest extends TestCase {
 

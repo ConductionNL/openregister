@@ -57,6 +57,21 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 /**
  * @covers \OCA\OpenRegister\Service\Task\TaskFormSubjectWriter
  * @covers \OCA\OpenRegister\Service\Task\TaskFormInlineSave
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses \OCA\OpenRegister\Exception\InvalidTransitionInputException
+ * @uses \OCA\OpenRegister\Exception\TaskFormRefusedException
+ * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\CauseFrame
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormSubmission
+ * @uses \OCA\OpenRegister\Service\Task\TaskSubjectTransition
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class TaskFormSubjectWriterTest extends TestCase {
 

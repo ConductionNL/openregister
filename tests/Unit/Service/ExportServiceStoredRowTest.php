@@ -32,6 +32,15 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 #[CoversClass(ExportService::class)]
 #[UsesClass(StoredEntity::class)]
 #[UsesClass(Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Export\ExportRequest::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\SaveActor::class)]
+#[UsesClass(\OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy::class)]
 class ExportServiceStoredRowTest extends TestCase {
 
 	/**

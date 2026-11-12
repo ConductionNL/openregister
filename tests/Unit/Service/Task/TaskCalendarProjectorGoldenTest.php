@@ -50,6 +50,14 @@ use RuntimeException;
  * content hash.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskCalendarProjector
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskProjectionState
+ * @uses \OCA\OpenRegister\Service\Task\TaskCalendarProjectorServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskCalendarWrite
+ * @uses \OCA\OpenRegister\Service\Task\TaskProjectionRun
+ * @uses \OCA\OpenRegister\Service\Task\TaskVtodoRenderer
+ * @uses \OCA\OpenRegister\Service\Task\TaskVtodoStatusMapping
+ * @uses \OCA\OpenRegister\Exception\NoVtodoCalendarException
  */
 class TaskCalendarProjectorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/task-calendar-projector-golden.json';

@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * fixtures/geo-filter-parser-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Search\Service\Geo\GeoFilterParser
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoFilter
  */
 class GeoFilterParserGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/geo-filter-parser-golden.json';

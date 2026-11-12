@@ -70,6 +70,13 @@ use OCA\OpenRegister\Service\Flow\FlowServicePlatform;
  * @uses \OCA\OpenRegister\Db\FlowVersion
  * @uses \OCA\OpenRegister\Service\Flow\FlowLocator
  * @uses \OCA\OpenRegister\Service\Flow\FlowCaller
+ * @uses \OCA\OpenRegister\Service\Flow\FlowDefinitionStore
+ * @uses \OCA\OpenRegister\Service\Flow\FlowDeletionSweep
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunDispatch
+ * @uses \OCA\OpenRegister\Service\Flow\FlowServicePlatform
+ * @uses \OCA\OpenRegister\Db\Flow\TriggerLookup
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowLocatorStores
  */
 class FlowAdoptionTest extends TestCase {
 

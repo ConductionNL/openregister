@@ -27,6 +27,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\FragmentOrdering
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrderPath
  */
 class ExampleSetOrderTest extends TestCase {
 	public function testAfterDecidesTheOrderAndOpenRegisterComesFirst(): void {

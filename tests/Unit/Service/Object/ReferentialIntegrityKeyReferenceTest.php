@@ -65,6 +65,11 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Dto\DeletionEffects
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityCascadeControls
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityRelationIndex
+ * @uses \OCA\OpenRegister\Service\Object\IntegrityStorage
  */
 class ReferentialIntegrityKeyReferenceTest extends TestCase {
 

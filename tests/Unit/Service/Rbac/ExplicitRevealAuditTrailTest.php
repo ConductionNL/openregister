@@ -84,6 +84,27 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
  * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
  * @uses \OCA\OpenRegister\Service\Audit\ReadableAuditCursor
+ * @uses \OCA\OpenRegister\Controller\Support\AdministratorOnlyGate
+ * @uses \OCA\OpenRegister\Controller\Support\AuditObjectRef
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Audit\AuditTrailQuery
+ * @uses \OCA\OpenRegister\Service\Audit\TrailPageOptions
+ * @uses \OCA\OpenRegister\Service\LogExportFormatter
+ * @uses \OCA\OpenRegister\Service\LogObjectInTable
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\Audit\HistoryRedactionRun
+ * @uses \OCA\OpenRegister\Service\Audit\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableObject
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableTrailPageRequest
+ * @uses \OCA\OpenRegister\Service\Audit\ReadableTrailRun
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldLists
+ * @uses \OCA\OpenRegister\Service\PropertyRbacCaller
+ * @uses \OCA\OpenRegister\Service\PropertyRbacRules
+ * @uses \OCA\OpenRegister\Service\ProtectedPropertyRead
+ * @uses \OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker
+ * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 class ExplicitRevealAuditTrailTest extends TestCase {
 

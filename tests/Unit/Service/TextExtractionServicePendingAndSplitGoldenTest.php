@@ -41,6 +41,15 @@ use OCA\OpenRegister\Files\Service\SplitLevel;
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Files\Service\ChunkSizing
+ * @uses \OCA\OpenRegister\Files\Service\FileExtractionOptions
+ * @uses \OCA\OpenRegister\Files\Service\SplitLevel
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionReaders
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionSources
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionStorage
  */
 class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 

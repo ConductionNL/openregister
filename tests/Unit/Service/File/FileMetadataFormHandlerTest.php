@@ -31,6 +31,9 @@ use OCA\OpenRegister\Service\File\FileRename;
 /**
  * @covers \OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Files\Service\File\FileMetadataEdit
+ * @uses \OCA\OpenRegister\Service\File\FileMetadataChange
+ * @uses \OCA\OpenRegister\Service\File\FileRename
  */
 final class FileMetadataFormHandlerTest extends TestCase {
 

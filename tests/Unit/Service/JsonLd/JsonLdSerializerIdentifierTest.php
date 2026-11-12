@@ -29,6 +29,12 @@ use PHPUnit\Framework\TestCase;
  * Without a slug the register and schema are named by uuid, and without a uuid by id.
  *
  * @covers \OCA\OpenRegister\Service\JsonLd\JsonLdSerializer
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\JsonLd\JsonLdContextService
+ * @uses \OCA\OpenRegister\Service\JsonLd\JsonLdRouteSlug
+ * @uses \OCA\OpenRegister\Service\JsonLd\JsonLdTarget
  */
 class JsonLdSerializerIdentifierTest extends TestCase {
 

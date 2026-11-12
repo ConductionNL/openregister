@@ -34,6 +34,11 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Audit\AuditTrailPageService
+ * @uses \OCA\OpenRegister\BackgroundJob\AuditExportSource
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditPageRequest
+ * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria
+ * @uses \OCA\OpenRegister\Service\Audit\AuditTrailExport
+ * @uses \OCA\OpenRegister\Service\Audit\AuditTrailQuery
  */
 class AuditTrailPageServiceTest extends TestCase {
 

@@ -29,6 +29,9 @@ use RuntimeException;
  * A form that throws on read, or reads as nothing, is a 404 like any unknown form; an empty audience means public.
  *
  * @covers \OCA\OpenRegister\Service\Form\FormDefinitionResolver
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  */
 class FormDefinitionResolverMissingTest extends TestCase {
 

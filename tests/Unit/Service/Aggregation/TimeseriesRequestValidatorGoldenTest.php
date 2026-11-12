@@ -27,6 +27,10 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\MetricEntrySite
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\MetricsDeclaration
  * @uses   \OCA\OpenRegister\Search\Service\Aggregation\TimeseriesDateBucketValidator
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryRules
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\AggregationQueryShape
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\ValidatedTimeseriesRequest
  */
 class TimeseriesRequestValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/timeseries-request-golden.json';

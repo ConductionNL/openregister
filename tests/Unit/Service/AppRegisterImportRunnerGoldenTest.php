@@ -37,6 +37,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\AppRegisterImportRunner
+ * @uses \OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader
+ * @uses \OCA\OpenRegister\Service\RegisterImportRoute
  */
 class AppRegisterImportRunnerGoldenTest extends TestCase {
 

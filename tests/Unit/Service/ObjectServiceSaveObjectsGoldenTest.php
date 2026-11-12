@@ -26,6 +26,24 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @uses   \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
  * @uses   \OCA\OpenRegister\Service\Object\SavedScopeIds
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Object\AccessFlags
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectAuthorisationServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectCallerServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectHistoryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectMapperServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectReadServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRemovalServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectRuntimeServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSaveServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectSearchServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectShapingServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectStorageServices
+ * @uses \OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices
  */
 class ObjectServiceSaveObjectsGoldenTest extends TestCase {
 

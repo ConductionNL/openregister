@@ -37,6 +37,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserObjectRows
  * @uses   \OCA\OpenRegister\Service\ExampleSet\ExampleSetRow
  * @uses   \OCA\OpenRegister\Db\ObjectReadState
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue
  */
 class ExampleSetReadStatesBehaviourTest extends TestCase {
 

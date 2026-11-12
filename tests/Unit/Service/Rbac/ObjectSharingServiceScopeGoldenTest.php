@@ -52,6 +52,17 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectSharingService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationAssignment
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantManageGuard
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectGrantRecords
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectShareSurface
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectSharingContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ScopeChange
  */
 final class ObjectSharingServiceScopeGoldenTest extends TestCase {
 

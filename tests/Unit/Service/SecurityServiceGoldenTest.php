@@ -33,6 +33,11 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\SecurityService
+ * @uses \OCA\OpenRegister\Service\AuthFailureRun
+ * @uses \OCA\OpenRegister\Service\FailedAttempt
+ * @uses \OCA\OpenRegister\Service\LockoutStrike
+ * @uses \OCA\OpenRegister\Service\Security\OutboundAddressGuard
+ * @uses \OCA\OpenRegister\Service\Security\SafeFetchUrl
  */
 final class SecurityServiceGoldenTest extends TestCase {
 

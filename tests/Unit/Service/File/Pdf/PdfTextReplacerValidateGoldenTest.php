@@ -27,6 +27,10 @@ use Psr\Log\LoggerInterface;
  * numeric keys, invalid UTF-8) and the diagnostic the residual warning carries.
  *
  * @covers \OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer
+ * @uses \OCA\OpenRegister\Files\Service\File\Pdf\ExtractedText
+ * @uses \OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan
+ * @uses \OCA\OpenRegister\Files\Service\File\Pdf\SerialisedPdf
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor
  */
 final class PdfTextReplacerValidateGoldenTest extends TestCase {
 

@@ -21,6 +21,9 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunService::seedItemsFrom
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  */
 final class FlowRunServiceSeedItemsTest extends TestCase {
 

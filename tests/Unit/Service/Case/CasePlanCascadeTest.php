@@ -61,6 +61,20 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Case\CaseSentryMoment
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
  * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Service\Case\CaseAnchor
+ * @uses \OCA\OpenRegister\Service\Case\CaseCascadeReaders
+ * @uses \OCA\OpenRegister\Service\Case\CaseCascadeRun
+ * @uses \OCA\OpenRegister\Service\Case\CaseCascadeStep
+ * @uses \OCA\OpenRegister\Service\Case\CasePassState
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanMove
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanStore
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanTrigger
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryOccasion
+ * @uses \OCA\OpenRegister\Service\Case\CaseStateChange
+ * @uses \OCA\OpenRegister\Service\Case\CaseStepCause
+ * @uses \OCA\OpenRegister\Service\Case\CaseTransitionCause
+ * @uses \OCA\OpenRegister\Service\Case\CaseTransitionEffects
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions
  */
 class CasePlanCascadeTest extends TestCase {
 

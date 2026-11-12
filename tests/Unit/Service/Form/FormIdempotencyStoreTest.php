@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Form\FormIdempotencyStore
  * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
+ * @uses \OCA\OpenRegister\Service\Form\FormFileStorage
+ * @uses \OCA\OpenRegister\Service\Form\IdempotentRequest
  */
 class FormIdempotencyStoreTest extends TestCase {
 

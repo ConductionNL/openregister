@@ -31,6 +31,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\TokenGrant
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantReach
+ * @uses \OCA\OpenRegister\Service\Rbac\TokenGrantTerms
  */
 final class TokenGrantShapeGoldenTest extends TestCase {
 

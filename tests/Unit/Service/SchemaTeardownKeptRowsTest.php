@@ -62,6 +62,18 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @uses   \OCA\OpenRegister\Exception\ValidationException
  * @uses   \OCA\OpenRegister\Service\Object\FileWriteGuard
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\SchemaCascade
+ * @uses \OCA\OpenRegister\Service\SchemaDeletionStores
+ * @uses \OCA\OpenRegister\Service\TableDeletionRun
  */
 class SchemaTeardownKeptRowsTest extends TestCase {
 

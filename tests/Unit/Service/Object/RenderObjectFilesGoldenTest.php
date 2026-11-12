@@ -44,6 +44,12 @@ use ReflectionProperty;
  * @uses \OCA\OpenRegister\Service\Object\InverseObjectHooks
  * @uses \OCA\OpenRegister\Service\Object\InverseTarget
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Service\Object\RenderFileSources
+ * @uses \OCA\OpenRegister\Service\Object\RenderMappers
+ * @uses \OCA\OpenRegister\Service\Object\RenderReadExtensions
+ * @uses \OCA\OpenRegister\Service\Object\RenderRuntime
+ * @uses \OCA\OpenRegister\Service\Object\RenderStores
  */
 class RenderObjectFilesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/render-object-files-golden.json';

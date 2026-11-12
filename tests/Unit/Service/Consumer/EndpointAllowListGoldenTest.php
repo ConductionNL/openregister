@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\Consumer\EndpointAudience;
 
 /**
  * @covers \OCA\OpenRegister\Service\Consumer\EndpointAllowList
+ * @uses \OCA\OpenRegister\Exception\AuthenticationException
+ * @uses \OCA\OpenRegister\Service\Consumer\EndpointAudience
  */
 class EndpointAllowListGoldenTest extends TestCase
 {

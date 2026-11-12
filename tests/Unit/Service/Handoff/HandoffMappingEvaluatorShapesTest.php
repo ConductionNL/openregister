@@ -25,6 +25,7 @@ use PHPUnit\Framework\TestCase;
  * A scalar expression, or an object with no known operator, yields no field; known ones still map.
  *
  * @covers \OCA\OpenRegister\Service\Handoff\HandoffMappingEvaluator
+ * @uses \OCA\OpenRegister\Service\Handoff\HandoffMappingSource
  */
 class HandoffMappingEvaluatorShapesTest extends TestCase {
 

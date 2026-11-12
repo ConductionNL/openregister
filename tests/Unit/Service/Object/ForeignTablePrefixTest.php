@@ -41,6 +41,9 @@ use ReflectionMethod;
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\EmailService
  * @covers \OCA\OpenRegister\Service\Object\LinkedEntityEnricher
+ * @uses \OCA\OpenRegister\Service\Object\LinkedEntityQuery
+ * @uses \OCA\OpenRegister\Notifications\Service\EmailLinkedSchemas
+ * @uses \OCA\OpenRegister\Notifications\Service\EmailMailAppReader
  */
 class ForeignTablePrefixTest extends TestCase {
 	/** @var string[] The statements prepared. */

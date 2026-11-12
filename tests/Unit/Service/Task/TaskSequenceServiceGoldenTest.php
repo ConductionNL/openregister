@@ -49,6 +49,22 @@ use RuntimeException;
  * rewrite the fixture. The random sequence uuid is masked as `<seq>`.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskSequenceService
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\TaskSequence
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Event\AbstractTaskSequenceEvent
+ * @uses \OCA\OpenRegister\Event\TaskSequenceCompletedEvent
+ * @uses \OCA\OpenRegister\Event\TaskSequenceUndecidedEvent
+ * @uses \OCA\OpenRegister\Service\Task\ApprovingOutcomeSet
+ * @uses \OCA\OpenRegister\Service\Task\ChainPosition
+ * @uses \OCA\OpenRegister\Service\Task\PositionAdvance
+ * @uses \OCA\OpenRegister\Service\Task\ResolvedChain
+ * @uses \OCA\OpenRegister\Service\Task\SequenceAnchor
+ * @uses \OCA\OpenRegister\Service\Task\SequenceClosure
+ * @uses \OCA\OpenRegister\Service\Task\TaskSequenceServices
+ * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\Task\TaskTrigger
+ * @uses \OCA\OpenRegister\Service\Task\SequenceProvenance
  */
 class TaskSequenceServiceGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/task-sequence-service-golden.json';

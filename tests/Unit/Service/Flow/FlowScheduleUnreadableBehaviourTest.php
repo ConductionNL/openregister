@@ -30,6 +30,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowScheduleService
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunQueueOptions
  */
 class FlowScheduleUnreadableBehaviourTest extends TestCase {
 

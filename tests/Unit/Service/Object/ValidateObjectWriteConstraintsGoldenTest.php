@@ -40,6 +40,11 @@ use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\CustomValidationException
  * @uses   \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Object\ValidationLookups
+ * @uses \OCA\OpenRegister\Service\Object\ValidationSchemaSource
+ * @uses \OCA\OpenRegister\Service\Object\WriteConstraintCheck
  */
 class ValidateObjectWriteConstraintsGoldenTest extends TestCase {
 

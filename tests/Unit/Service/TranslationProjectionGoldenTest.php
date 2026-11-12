@@ -40,6 +40,12 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\Translation
+ * @uses \OCA\OpenRegister\Db\Register\RegisterLanguages
+ * @uses \OCA\OpenRegister\Db\TranslationEdit
+ * @uses \OCA\OpenRegister\Db\TranslationSlot
+ * @uses \OCA\OpenRegister\Service\RegisterSchemaMappers
+ * @uses \OCA\OpenRegister\Service\SourceLanguageLookup
+ * @uses \OCA\OpenRegister\Service\TranslationStores
  *
  * @spec openspec/specs/register-i18n/spec.md
  */

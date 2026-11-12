@@ -49,6 +49,17 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
 /**
  * @covers \OCA\OpenRegister\Service\Registry\RegistrySubscriptionService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\RegistrySubscription
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch
+ * @uses \OCA\OpenRegister\Service\Registry\InboundUpdate
+ * @uses \OCA\OpenRegister\Service\Registry\InboundUpdateRun
+ * @uses \OCA\OpenRegister\Service\Registry\RegistryIdentity
+ * @uses \OCA\OpenRegister\Service\Registry\RegistryInboundServices
  */
 class RegistrySubscriptionStateTest extends TestCase {
 

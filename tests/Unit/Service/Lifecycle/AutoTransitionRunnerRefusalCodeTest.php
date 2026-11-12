@@ -40,6 +40,14 @@ use Psr\Log\LoggerInterface;
  * A guard refusal that carries no usable code is logged with a null code; queued moves flush through the deferral service.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner
+ * @uses \OCA\OpenRegister\Exception\HookStoppedException
+ * @uses \OCA\OpenRegister\Service\Deferral\DeferralOptions
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecider
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionDecision
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionQueue
+ * @uses \OCA\OpenRegister\Service\Lifecycle\AutoTransitionSubject
+ * @uses \OCA\OpenRegister\Service\Lifecycle\SchemaReading
  */
 class AutoTransitionRunnerRefusalCodeTest extends TestCase {
 

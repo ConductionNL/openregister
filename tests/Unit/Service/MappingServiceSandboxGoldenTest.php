@@ -46,6 +46,16 @@ use Twig\TwigFunction;
  * Pins what the mapping engine allows and refuses, and how it caches.
  *
  * @covers \OCA\OpenRegister\Service\MappingService
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\Mapping\MappingSlug
+ * @uses \OCA\OpenRegister\Db\SubjectExport
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\MappingKeyRewrite
+ * @uses \OCA\OpenRegister\Service\MappingTwigSandbox
+ * @uses \OCA\OpenRegister\Twig\MappingExtension
+ * @uses \OCA\OpenRegister\Twig\MappingRuntimeLoader
+ * @uses \OCA\OpenRegister\Twig\MappingTwigInstaller
+ * @uses \OCA\OpenRegister\Service\RegisterMappingFunctionsEvent
  */
 class MappingServiceSandboxGoldenTest extends TestCase {
 

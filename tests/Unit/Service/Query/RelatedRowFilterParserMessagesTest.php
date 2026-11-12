@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowBlockField
  */
 class RelatedRowFilterParserMessagesTest extends TestCase {
 

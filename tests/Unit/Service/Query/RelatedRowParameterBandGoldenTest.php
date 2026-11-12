@@ -57,6 +57,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowSubquery
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowField
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
+ * @uses \OCA\OpenRegister\Db\MagicMapper\AliasedRows
  */
 class RelatedRowParameterBandGoldenTest extends TestCase {
 

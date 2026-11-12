@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  * Tasks 8.2 and 8.4: the end on a grant, and the area it is confined to.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Rbac\ConstraintPoint
  */
 class GrantConstraintsTest extends TestCase {
 

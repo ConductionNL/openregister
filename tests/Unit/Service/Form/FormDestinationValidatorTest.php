@@ -26,6 +26,13 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Form\FormDestinationValidator
  * @uses \OCA\OpenRegister\Service\Form\FormFieldRules
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Form\FixedValue
+ * @uses \OCA\OpenRegister\Service\Form\FormDestination
+ * @uses \OCA\OpenRegister\Service\Form\FormFinding
+ * @uses \OCA\OpenRegister\Service\Form\MappedField
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValueRules
  */
 class FormDestinationValidatorTest extends TestCase {
 

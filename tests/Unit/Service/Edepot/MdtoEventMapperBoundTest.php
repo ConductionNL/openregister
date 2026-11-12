@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditedObject
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Service\Edepot\AuditRecording
  */
 class MdtoEventMapperBoundTest extends TestCase {
 

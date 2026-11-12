@@ -50,6 +50,17 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Service\Object\AuditRecording
+ * @uses \OCA\OpenRegister\Service\Object\DeletionAttribution
+ * @uses \OCA\OpenRegister\Service\Object\DeletionIntegrity
+ * @uses \OCA\OpenRegister\Service\Object\RemovalOptions
+ * @uses \OCA\OpenRegister\Service\Object\RemovedDraft
  */
 class DraftRemovalRecordTest extends TestCase {
 

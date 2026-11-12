@@ -46,6 +46,10 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantManageGuard
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\Object\GroupRuleRequest
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantCaller
+ * @uses \OCA\OpenRegister\Service\Rbac\WrittenRuleRun
  */
 class AccessReviewGateTest extends TestCase {
 

@@ -43,6 +43,11 @@ use Stringable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectGrantResolver
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantLookup
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionBit
+ * @uses \OCA\OpenRegister\Service\Rbac\ShareGrantAttributes
+ * @uses \OCA\OpenRegister\Service\Rbac\ShareGrantRun
  */
 final class ObjectGrantResolverGoldenTest extends TestCase {
 

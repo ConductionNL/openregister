@@ -48,6 +48,9 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Service\Calculation\SequenceContext
  * @uses   \OCA\OpenRegister\Service\Calculation\EvaluationException
  * @uses   \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Service\Calculation\BandPosition
+ * @uses \OCA\OpenRegister\Service\Calculation\RateOperands
+ * @uses \OCA\OpenRegister\Service\SequenceScope
  */
 class CalculationEvaluatorGoldenTest extends TestCase {
 

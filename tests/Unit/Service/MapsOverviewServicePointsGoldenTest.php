@@ -37,6 +37,13 @@ use OCA\OpenRegister\Search\Service\MapOverview;
  * Allowed and refused outcomes of queryPoints / declareOverview.
  *
  * @covers \OCA\OpenRegister\Search\Service\MapsOverviewService
+ * @uses \OCA\OpenRegister\Search\Service\Geo\FeatureShape
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder
+ * @uses \OCA\OpenRegister\Search\Service\MapMarkerSource
+ * @uses \OCA\OpenRegister\Search\Service\MapsOverviewSources
+ * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistry
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses \OCA\OpenRegister\Search\Service\MapOverview
  */
 final class MapsOverviewServicePointsGoldenTest extends TestCase {
 

@@ -49,6 +49,12 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\TimeTrackerLinkService
  * @uses   \OCA\OpenRegister\Db\TimeTrackerLink
  * @uses   \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
+ * @uses \OCA\OpenRegister\Service\TimeTracker\ClientSearch
+ * @uses \OCA\OpenRegister\Service\TimeTracker\EntryRowLookup
+ * @uses \OCA\OpenRegister\Service\TimeTracker\NewClient
+ * @uses \OCA\OpenRegister\Service\TimeTracker\TimeEntry
  */
 class TimeTrackerLinkServiceGoldenTest extends TestCase {
 

@@ -57,6 +57,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
  * @uses   \OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration
  * @uses   \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Exception\BrokenReference
  */
 class ReferenceValidatorTest extends TestCase {
 

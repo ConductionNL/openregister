@@ -49,6 +49,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\LinkTableAppDescriptor
  * @uses   \OCA\OpenRegister\Db\TalkLink
  * @uses   \OCA\OpenRegister\Service\Integration\Providers\TalkRoomScope
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription
  */
 class TalkListGoldenTest extends TestCase {
 

@@ -23,6 +23,12 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileInputReader
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyConfigs
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyFiles
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyLog
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FilePropertyParts
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\FileUploadGuard
  *
  * @spec openspec/specs/content-versioning/spec.md
  */

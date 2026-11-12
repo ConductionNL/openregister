@@ -99,6 +99,15 @@ class DeckTalkSourcesGoldenTestBag {
  *
  * @covers \OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider
  * @covers \OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\ObjectSource\AtomMoment
+ * @uses \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedObjectBinding
+ * @uses \OCA\OpenRegister\Service\ObjectSource\SourcedTable
+ * @uses \OCA\OpenRegister\Service\ObjectSource\TalkRoomViewer
  */
 class DeckTalkSourcesGoldenTest extends TestCase {
 

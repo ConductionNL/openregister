@@ -31,6 +31,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningControl
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningFloorException
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
+ * @uses \OCA\OpenRegister\Service\Hardening\FloorBreach
+ * @uses \OCA\OpenRegister\Service\Hardening\FloorRule
  */
 class HardeningFloorGuardTest extends TestCase {
 

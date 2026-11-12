@@ -60,6 +60,12 @@ use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
  * @uses   \OCA\OpenRegister\Db\CospendLink
  * @uses   \OCA\OpenRegister\Db\FormLink
  * @uses   \OCA\OpenRegister\Db\TimeTrackerLink
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\FormsAppRows
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform
+ * @uses \OCA\OpenRegister\Service\Integration\Providers\MarkerScan
  */
 class LinkTableFallbackGoldenTest extends TestCase {
 

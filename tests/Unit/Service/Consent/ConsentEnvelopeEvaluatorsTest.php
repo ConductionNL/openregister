@@ -25,6 +25,10 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluators
+ * @uses \OCA\OpenRegister\Service\Consent\ConsentEnvelopeEvaluator
+ * @uses \OCA\OpenRegister\Service\Consent\ConsentEvidenceSource
+ * @uses \OCA\OpenRegister\Service\Consent\ConsentEvidenceStamp
+ * @uses \OCA\OpenRegister\Service\Consent\ConsentPropertyWrite
  */
 final class ConsentEnvelopeEvaluatorsTest extends TestCase {
 

@@ -39,6 +39,9 @@ use OCA\OpenRegister\Service\ExampleSet\DeckBoardRequest;
  * Golden pins for the Deck rows an example set removes.
  *
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\DeckBoardRequest
+ * @uses \OCA\OpenRegister\Service\ExampleSet\DeckColumn
+ * @uses \OCA\OpenRegister\Service\ExampleSet\DeckTitled
  */
 class ExampleSetDeckStoreWritesGoldenTest extends TestCase {
 

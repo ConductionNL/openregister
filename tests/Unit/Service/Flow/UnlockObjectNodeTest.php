@@ -36,6 +36,12 @@ use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode
  * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemShape
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LockStepContext
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UnlockActor
  */
 final class UnlockObjectNodeTest extends TestCase {
 

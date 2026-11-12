@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
  * withFallback: only missing rows are added, and only those the filter admits.
  *
  * @covers \OCA\OpenRegister\Service\Object\RelatedObjectSet
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class RelatedObjectSetFallbackTest extends TestCase {
 

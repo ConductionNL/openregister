@@ -28,6 +28,9 @@ use RuntimeException;
  * service derives from it are pinned exactly.
  *
  * @covers \OCA\OpenRegister\Service\ContactService
+ * @uses \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Service\ContactCardRef
+ * @uses \OCA\OpenRegister\Service\LinkSessionRuntime
  */
 class ContactServiceVcardFieldsTest extends TestCase {
 

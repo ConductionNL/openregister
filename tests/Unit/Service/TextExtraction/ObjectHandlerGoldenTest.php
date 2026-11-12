@@ -48,6 +48,12 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtraction\ObjectHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\ObjectTextPath
+ * @uses \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionObjects
  */
 class ObjectHandlerGoldenTest extends TestCase {
 

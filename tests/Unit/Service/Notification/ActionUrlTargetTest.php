@@ -29,6 +29,8 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\LinkableUrl
  */
 final class ActionUrlTargetTest extends TestCase {
 

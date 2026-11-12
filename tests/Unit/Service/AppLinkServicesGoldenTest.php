@@ -51,6 +51,9 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Db\EmailLink
  * @uses   \OCA\OpenRegister\Service\LinkTarget
  * @uses   \OCA\OpenRegister\Service\MailTableQueries
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\LinkPageWindow
+ * @uses \OCA\OpenRegister\Service\LinkServiceRuntime
  */
 class AppLinkServicesGoldenTest extends TestCase {
 

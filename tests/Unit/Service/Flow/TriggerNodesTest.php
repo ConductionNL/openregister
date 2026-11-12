@@ -49,6 +49,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode
  * @uses \OCA\OpenRegister\Service\Flow\FlowNextHint
  * @uses \OCA\OpenRegister\Service\Rules\RuleScope
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\TriggerNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class TriggerNodesTest extends TestCase {
 

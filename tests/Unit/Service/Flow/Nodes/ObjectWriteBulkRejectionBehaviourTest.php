@@ -56,6 +56,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteTemplate
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItemOptions
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  */
 class ObjectWriteBulkRejectionBehaviourTest extends TestCase {
 

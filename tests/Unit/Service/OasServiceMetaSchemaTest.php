@@ -38,6 +38,20 @@ use RuntimeException;
  * a validator that throws never blocks generation.
  *
  * @covers \OCA\OpenRegister\Service\OasService
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\PropertyAuthorization
+ * @uses \OCA\OpenRegister\Service\OasSources
+ * @uses \OCA\OpenRegister\Service\Oas\OasIssue
+ * @uses \OCA\OpenRegister\Service\Oas\OasNames
+ * @uses \OCA\OpenRegister\Service\Oas\OasPropertySanitizer
+ * @uses \OCA\OpenRegister\Service\Oas\OasRbacAnnotator
+ * @uses \OCA\OpenRegister\Service\Oas\OasReferenceRepair
+ * @uses \OCA\OpenRegister\Service\Oas\OasValidationReport
+ * @uses \OCA\OpenRegister\Service\Rbac\AggregateVisibility
+ * @uses \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
+ * @uses \OCA\OpenRegister\Exception\OasValidationException
  */
 class OasServiceMetaSchemaTest extends TestCase {
 

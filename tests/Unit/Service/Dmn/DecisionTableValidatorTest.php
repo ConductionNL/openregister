@@ -26,6 +26,9 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator
  * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator
  * @uses \OCA\OpenRegister\Service\Dmn\DecisionEvaluationException
+ * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableColumns
+ * @uses \OCA\OpenRegister\Service\Dmn\TableValidationRun
+ * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestValue
  */
 class DecisionTableValidatorTest extends TestCase {
 

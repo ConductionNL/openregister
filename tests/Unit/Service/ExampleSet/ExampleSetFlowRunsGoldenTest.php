@@ -41,6 +41,9 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRunsWrite;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRunSlot
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRunsWrite
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRunCheck
  */
 class ExampleSetFlowRunsGoldenTest extends TestCase {

@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Form\FormDefinitionResolver
  * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
  */
 class FormDefinitionResolverTest extends TestCase {
 

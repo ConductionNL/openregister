@@ -33,6 +33,7 @@ use RuntimeException;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\LinkedEntityEnricher
+ * @uses \OCA\OpenRegister\Service\Object\LinkedEntityQuery
  */
 class LinkedEntityEnricherGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/linked-entity-enricher-golden.json';

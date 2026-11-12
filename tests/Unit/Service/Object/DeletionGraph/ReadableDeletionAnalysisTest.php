@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Exception\ReferentialIntegrityException
  * @uses   \OCA\OpenRegister\Dto\DeletionAnalysis
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Dto\DeletionEffects
  */
 class ReadableDeletionAnalysisTest extends TestCase {
 

@@ -43,6 +43,12 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\RevealFlusher
  * @covers \OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Rbac\AuditRowWriter
+ * @uses \OCA\OpenRegister\Service\Rbac\PropertyReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealCollector
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealRecording
+ * @uses \OCA\OpenRegister\Service\Rbac\SettingsChange
  */
 class AuditRowWriteFailureGoldenTest extends TestCase {
 

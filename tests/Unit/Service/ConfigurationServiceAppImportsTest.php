@@ -53,6 +53,9 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\ConfigurationService
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationGitHosts
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationServicePlatform
+ * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationTransferHandlers
  */
 class ConfigurationServiceAppImportsTest extends TestCase {
 	/**

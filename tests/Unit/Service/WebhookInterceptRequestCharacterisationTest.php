@@ -46,6 +46,16 @@ use Psr\Log\LoggerInterface;
  * interceptRequest with matching webhooks.
  *
  * @covers \OCA\OpenRegister\Service\WebhookService
+ * @uses \OCA\OpenRegister\Db\Webhook
+ * @uses \OCA\OpenRegister\Db\WebhookLog
+ * @uses \OCA\OpenRegister\Service\WebhookDelivery
+ * @uses \OCA\OpenRegister\Service\WebhookDeliveryAttempt
+ * @uses \OCA\OpenRegister\Service\WebhookDeliveryRecorder
+ * @uses \OCA\OpenRegister\Service\WebhookDispatchServices
+ * @uses \OCA\OpenRegister\Service\WebhookEvent
+ * @uses \OCA\OpenRegister\Service\WebhookRequestOptions
+ * @uses \OCA\OpenRegister\Service\WebhookStores
+ * @uses \OCA\OpenRegister\Notifications\Service\Webhook\CloudEventAttributes
  */
 class WebhookInterceptRequestCharacterisationTest extends TestCase {
 

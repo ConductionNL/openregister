@@ -33,6 +33,12 @@ use PHPUnit\Framework\TestCase;
  * With one, the store is asked for that register and schema.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugClaims
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugScope
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
  */
 class ObjectSlugStoreScopeTest extends TestCase {
 

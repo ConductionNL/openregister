@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder
+ * @uses \OCA\OpenRegister\Support\AppConfigValue
  */
 class SecurityTxtBuilderTest extends TestCase {
 

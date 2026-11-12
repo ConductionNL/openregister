@@ -35,6 +35,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService
  * @uses   \OCA\OpenRegister\Db\CalendarFeedToken
+ * @uses \OCA\OpenRegister\Service\Calendar\FeedTokenMint
  */
 class CalendarFeedTokenServiceGuardsTest extends TestCase
 {

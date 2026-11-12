@@ -32,6 +32,7 @@ use RuntimeException;
  * Each supported type casts what it should and refuses what it should not.
  *
  * @covers \OCA\OpenRegister\Service\Schema\MigrationValueCaster
+ * @uses \OCA\OpenRegister\Service\Schema\CastTarget
  */
 class MigrationValueCasterTest extends TestCase {
 

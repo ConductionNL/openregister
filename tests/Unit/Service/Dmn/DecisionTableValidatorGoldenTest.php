@@ -31,6 +31,12 @@ use PHPUnit\Framework\TestCase;
  * fixtures/decision-table-validator-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Dmn\DecisionTableValidator
+ * @uses \OCA\OpenRegister\Service\Dmn\DecisionEvaluationException
+ * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableColumns
+ * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator
+ * @uses \OCA\OpenRegister\Service\Dmn\TableValidationRun
+ * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator
+ * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestValue
  */
 class DecisionTableValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/decision-table-validator-golden.json';
