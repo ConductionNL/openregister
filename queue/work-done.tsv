@@ -136,3 +136,4 @@ gap:learniq:13:302052c1	PR #2416 @4c9e6fe0: npm audit fix, 48->36 (critical 0, h
 gap:larpinq:1:e16dc70b	failed: #988 verified GREEN at aa3c5d02 (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T19:45:05Z
 merge:keepiq:1647:a689c3ce	merged 8 (1648-1655); 1647 already merged in previous task	session-20261112T184502-4ecd6072	2026-11-12T19:45:28Z
 review:openregister:10035:deba9134	APPROVE: tests only, 20 new tests pass, suites match main	session-20261112T184508-711de18c	2026-11-12T19:45:26Z
+gap:opencatalogi:3:475d3f06	failed: no opencatalogi route answers on /api/v{major} (all /api/...), so a versioned servers URL would misdescribe it; same URI-versioning owner decision as openregister gap 3	session-20261112T175557-37d60f4f	2026-11-12T19:45:49Z
