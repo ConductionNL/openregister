@@ -748,3 +748,4 @@ cover:pipelinq:f67520ecm9d2c:jsd528dcf0	failed: lang=js but dirs=lib/Dashboard/*
 cover:integriq:9b0f5894m2367:jsa42697be	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:37Z
 cover:integriq:9b0f5894m2367:js17bbac84	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:47Z
 cover:integriq:9b0f5894m2367:js1191da39	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:56Z
+verify:shillinq:2800:ce163956	stale	session-20261112T224530-faaec44c	2026-11-12T22:53:18Z
