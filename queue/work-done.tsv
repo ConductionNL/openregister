@@ -719,3 +719,4 @@ fix:launchpad:1121:30685fba	problem details limited to /api/v1; unversioned erro
 cover:pipelinq:f67520ecm9d2c:60c2c265	PR #3577: PosTenderController 41->98%, SlaPolicyController 48->90% (21 tests)	session-20261112T221234-13fcfd6a	2026-11-12T22:48:00Z
 fix:opencatalogi:2578:49238459	failed: exempting standard-protocol paths (sitemaps, dcat, feeds, federation...) from API-Version/problem details is the PR's deliberate design, not a defect; needs human review	session-20261112T224530-d70ae278	2026-11-12T22:47:54Z
 cover:integriq:9b0f5894m2367:js7927b05b	failed: payload mismatch, lang=js (js 72.18%) but dirs=lib/Service/Llm/*.php is PHP (php already 88%); generator bug, 103 lang=js rows point at lib/	session-20261112T224529-5928280e	2026-11-12T22:48:11Z
+verify:humaniq:1097:4d54e9c7	1097 BLOCK (contract middleware changes existing error responses; suite green 3788); 1098 skipped: head moved to 1cb193ab	session-20261112T224530-a1180ad3	2026-11-12T22:48:45Z
