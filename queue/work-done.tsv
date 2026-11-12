@@ -579,3 +579,4 @@ verify:opencatalogi:2578:44d28445	BLOCK 2578 (tests green; existing endpoints lo
 verify:learniq:2414:1a2fc932	failed: permission	session-20261112T221537-97382091	2026-11-12T22:16:42Z
 cover:launchpad:755175ff:38e80a9f	PR #1128: 10 tests CommandBase/DashboardDelete/I18nExportStrings; suite 3256->3266 green	session-20261112T215819-2dd7b64e	2026-11-12T22:16:52Z
 verify:planninq:1132:47f631ad	GREEN 1132 (894 tests, 0 new failures)	session-20261112T221234-13fcfd6a	2026-11-12T22:17:57Z
+cover:launchpad:755175ff:33ae6285	PR #1129: 5 tests pinning activity setting translations and order; suite 3256->3261 green	session-20261112T215819-2dd7b64e	2026-11-12T22:18:15Z
