@@ -318,3 +318,4 @@ cover:dossiq:6ca0231e:83885cb7	PR #6156: 11 tests for routing strategies, suite 
 cover:stackiq:8cfacb29:jsd48eb217	already done: src/store/modules at 85.39% lines / 84.27% branches (target 80); uncovered rest is setter-only catalog store and library wrapper; no PR	session-20261112T202437-4020bd95	2026-11-12T20:47:55Z
 cover:dossiq:6ca0231e:5706f9f2	PR #6157: 3 NoteEnvelope tests (43/43 statements); Notes dir otherwise already covered; suite 11976->11979, 19 inherited failures	session-20261112T200018-e68ecbf8	2026-11-12T20:48:18Z
 fix:buildiq:1458:9b4f8e93	not reproduced: dockerimage pass, score 84 on rerun at same head; REVERIFY queued, no push	session-20261112T175557-37d60f4f	2026-11-12T20:48:47Z
+cover:dossiq:6ca0231e:71f63b5c	PR #6158: dirs 85% lines; EscalationRuleValidator 78.7%->100%, RemedyLodging 90.3%->100% (9 tests, no risky); suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:49:01Z
