@@ -50,6 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableReaderInterface;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;
@@ -222,6 +223,8 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 			$run->shareType = $shareType;
 			$this->collectForType(run: $run);
 		}
+
+		$this->admitCandidates(run: $run);
 
 		return $this->expandDownHierarchies(granted: $run->granted);
 	}//end resolve()
@@ -448,7 +451,7 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	}//end warnPagingBound()
 
 	/**
-	 * Add one page of shares to the grant map, and say whether another page may follow.
+	 * Add one page of shares to the run's candidates, and say whether another page may follow.
 	 *
 	 * @param ShareGrantRun $run    The run whose grant map takes the shares.
 	 * @param IShare[]      $shares The page.
@@ -461,7 +464,10 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 		}
 
 		foreach ($shares as $share) {
-			$this->absorbShare(share: $share, run: $run);
+			$uuid = $this->shareAttributes()->objectUuidOf(share: $share);
+			if ($uuid !== null) {
+				$run->candidates[] = [$uuid, $share];
+			}
 		}
 
 		return count($shares) >= self::PAGE_SIZE;
@@ -511,19 +517,84 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	}//end warnUnreadableType()
 
 	/**
-	 * Add one share to the grant map, when it is a folder share on an object.
+	 * Grant each candidate share whose node is the folder stored for its object.
 	 *
+	 * The folder name only says which object a share is about. A folder
+	 * elsewhere that carries the same name is not the object's folder and
+	 * grants nothing.
+	 *
+	 * @param ShareGrantRun $run The run whose candidates are checked and whose grant map takes them.
+	 *
+	 * @return void
+	 */
+	private function admitCandidates(ShareGrantRun $run): void {
+		if ($run->candidates === []) {
+			return;
+		}
+
+		$folders = $this->storedFolders(uuids: array_column($run->candidates, 0));
+		foreach ($run->candidates as [$uuid, $share]) {
+			if (self::isOnFolder(share: $share, folder: ($folders[$uuid] ?? null)) === true) {
+				$this->absorbShare(uuid: $uuid, share: $share, run: $run);
+			}
+		}
+	}//end admitCandidates()
+
+	/**
+	 * The stored folder file id of each object, or nothing when they cannot be read.
+	 *
+	 * @param string[] $uuids The object uuids.
+	 *
+	 * @return array<string, int> Uuid => folder file id.
+	 */
+	private function storedFolders(array $uuids): array {
+		try {
+			$objects = $this->container->get(MagicCrossTableReaderInterface::class);
+			if (($objects instanceof MagicCrossTableReaderInterface) === true) {
+				return $objects->findFolderIdsByUuids(uuids: $uuids);
+			}
+		} catch (Throwable $e) {
+			// Logged below; an unreadable folder table grants nothing.
+		}
+
+		$this->logger->error(
+			message: '[ObjectGrantResolver] Could not read the stored object folders; treating the caller as holding no grants',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return [];
+	}//end storedFolders()
+
+	/**
+	 * Whether a share's node is the given folder.
+	 *
+	 * @param IShare       $share  The share.
+	 * @param integer|null $folder The object's stored folder file id, or null when it has none.
+	 *
+	 * @return bool
+	 */
+	private static function isOnFolder(IShare $share, ?int $folder): bool {
+		if ($folder === null) {
+			return false;
+		}
+
+		try {
+			return $share->getNodeId() === $folder;
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end isOnFolder()
+
+	/**
+	 * Add one share to the grant map for the object it was admitted on.
+	 *
+	 * @param string        $uuid  The object the share grants.
 	 * @param IShare        $share The share.
 	 * @param ShareGrantRun $run   The run whose grant map takes the share.
 	 *
 	 * @return void
 	 */
-	private function absorbShare(IShare $share, ShareGrantRun $run): void {
-		$uuid = $this->shareAttributes()->objectUuidOf(share: $share);
-		if ($uuid === null) {
-			return;
-		}
-
+	private function absorbShare(string $uuid, IShare $share, ShareGrantRun $run): void {
 		// A caller may hold several grants on one object (directly and
 		// through a group). The widest wins, which is how core itself
 		// composes overlapping shares.
