@@ -62,6 +62,37 @@ class OpenApiControllerTest extends TestCase {
 	}//end testServesTheShippedDocument()
 
 	/**
+	 * Every documented error response is problem details built on the Problem schema.
+	 *
+	 * @return void
+	 */
+	public function testErrorResponsesAreProblemDetails(): void {
+		$document = json_decode((string) file_get_contents(dirname(__DIR__, 3).'/openapi.json'), true);
+		$this->assertArrayHasKey(key: 'Problem', array: $document['components']['schemas']);
+
+		$errors = 0;
+		foreach ($document['paths'] as $path => $item) {
+			foreach ($item as $verb => $operation) {
+				foreach (($operation['responses'] ?? []) as $code => $response) {
+					if ((int) $code < 400) {
+						continue;
+					}
+
+					$errors++;
+					$this->assertSame(expected: ['application/problem+json'], actual: array_keys($response['content'] ?? []), message: "$verb $path $code");
+					$this->assertStringContainsString(
+						needle: '#/components/schemas/Problem"',
+						haystack: (string) json_encode($response['content']['application/problem+json']['schema'], JSON_UNESCAPED_SLASHES),
+						message: "$verb $path $code"
+					);
+				}
+			}
+		}
+
+		$this->assertGreaterThan(expected: 0, actual: $errors);
+	}//end testErrorResponsesAreProblemDetails()
+
+	/**
 	 * Empty JSON objects in the document stay objects when served.
 	 *
 	 * @return void
